@@ -1,0 +1,18 @@
+{
+  "name": "medisync",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+"scripts": {
+  "start:client": "cd client && npm start",
+  "start:server": "cd server && npm start",
+  "start:ml": "cd ml-engine && python app.py",
+  "start": "concurrently \"npm run start:server\" \"npm run start:client\" \"npm run start:ml\""
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

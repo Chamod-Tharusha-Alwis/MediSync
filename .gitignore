@@ -1,0 +1,16 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+venv/
+env/
+*.pyc
+
+# Environment Variables (CRITICAL: Do not upload your MongoDB URIs or JWT secrets!)
+.env
+
+# OS Files
+.DS_Store
+Thumbs.db
