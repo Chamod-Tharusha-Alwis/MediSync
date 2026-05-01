@@ -1,0 +1,90 @@
+### MediSync Backend Registration API Tests
+
+@baseUrl = http://localhost:5000/api
+
+### 1. Doctor Registration
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "testdoc@example.com",
+  "password": "Password123!",
+  "fullName": "Dr. Test Doctor",
+  "licenseNo": "SLMC-TEST001",
+  "specialization": "General Physician"
+}
+
+###
+
+### 2. Patient Registration
+POST {{baseUrl}}/patient/register
+Content-Type: application/json
+
+{
+  "nic": "123456789V",
+  "password": "Password123!",
+  "fullName": "Test Patient",
+  "dateOfBirth": "1995-05-15",
+  "gender": "Male",
+  "district": "Colombo",
+  "contactInfo": "0770000000"
+}
+
+###
+
+### 3. Pharmacy Registration
+POST {{baseUrl}}/pharmacy/register
+Content-Type: application/json
+
+{
+  "name": "Test Pharmacy",
+  "district": "Kandy",
+  "address": "123 Main St, Kandy",
+  "regNo": "PH-TEST-001",
+  "adminEmail": "admin@testpharmacy.com",
+  "adminPassword": "Password123!",
+  "adminName": "Test Pharmacist"
+}
+
+###
+
+### 4. Hospital Registration
+POST {{baseUrl}}/hospital/register
+Content-Type: application/json
+
+{
+  "name": "Test Hospital",
+  "type": "private",
+  "district": "Galle",
+  "address": "456 Hospital Rd, Galle",
+  "regNo": "HOSP-TEST-001",
+  "email": "admin@testhospital.com",
+  "password": "Password123!"
+}
+
+###
+
+### 5. Admin Login (Needed to get token for Admin Registration)
+# Run 'npm run seed:users' first to create this Super Admin
+POST {{baseUrl}}/admin/login
+Content-Type: application/json
+
+{
+  "email": "superadmin@medisync.com",
+  "password": "password123"
+}
+
+###
+
+### 6. Admin Registration (Requires Bearer Token from previous step)
+@adminToken = your_token_here
+
+POST {{baseUrl}}/admin/register
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "fullName": "New Sub Admin",
+  "email": "subadmin@medisync.com",
+  "password": "Password123!"
+}

@@ -9,7 +9,19 @@ const doctorSchema = new mongoose.Schema({
   specialization: String,
   licenseNo: { type: String, required: true, unique: true },
   hospitals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' }],
-  role: { type: String, default: 'doctor' }
+  role: { type: String, default: 'doctor' },
+  loginType: { type: String, enum: ['personal', 'hospital'] },
+  twoFactorEnabled: { type: Boolean, default: false },
+  otpSecret: String,
+  personalEmail: String,
+  orgLogins: [{
+    hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' },
+    orgEmail: String,
+    tempPassword: String,
+    mustChangePassword: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true }
+  }],
+  passwordChangedAt: Date
 }, { timestamps: true });
 
 doctorSchema.plugin(fieldEncryption, {

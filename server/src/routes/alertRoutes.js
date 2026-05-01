@@ -1,21 +1,11 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
+const alertController = require('../controllers/alertController');
 const protect = require('../middleware/auth');
 
-// POST /api/alerts/outbreak — called by ML engine
-router.post('/outbreak', (req, res) => {
-  const io = req.app.get('io');
-  const alertData = req.body;
-  
-  // Broadcast to all connected health officers
-  io.emit('outbreak_alert', alertData);
-  console.log('Outbreak alert triggered:', alertData);
-  
-  res.json({ message: 'Alert broadcast sent' });
-});
-
-// GET /api/alerts — get recent alerts
-router.get('/', protect(['health_officer', 'admin']), (req, res) => {
-  res.json({ alerts: [] }); // will connect to DB later
-});
+router.post('/trigger', alertController.triggerAlert); // Secured by internal key in controller
+router.post('/broadcast', protect(['admin']), alertController.broadcastAlert);
+router.get('/active', protect(), alertController.getActiveAlerts);
+router.get('/trends', protect(['admin', 'doctor', 'hospital_admin']), alertController.getDiseaseTrends);
 
 module.exports = router;

@@ -8,13 +8,28 @@ const patientSchema = new mongoose.Schema({
   gender: { type: String, enum: ['Male', 'Female', 'Other'] },
   district: String,
   contactInfo: String,
+  email: { type: String, required: true, unique: true },
   bloodGroup: String,
   allergies: [String],
+  password: { type: String, required: true }, // Added for auth
+  emergencyContact: {
+    name: String,
+    relationship: String,
+    phone: String
+  },
+  insurance: {
+    provider: String,
+    policyNumber: String,
+    expiryDate: Date
+  },
+  chronicConditions: [String],
+  riskScore: { type: Number, default: 0 },
+  riskLevel: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
 }, { timestamps: true });
 
-// AES-256 field-level encryption on sensitive fields
+// AES-256 field-level encryption on sensitive clinical fields (NOT nic - it's used as a lookup key)
 patientSchema.plugin(fieldEncryption, {
-  fields: ['nic', 'fullName', 'contactInfo', 'allergies'],
+  fields: ['fullName', 'contactInfo', 'allergies'],
   secret: process.env.ENCRYPTION_KEY,
   saltGenerator: (secret) => secret.slice(0, 16)
 });

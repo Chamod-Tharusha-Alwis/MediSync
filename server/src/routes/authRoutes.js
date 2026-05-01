@@ -1,24 +1,29 @@
-const router = require('express').Router();
-const { register, login, refresh, logout } = require('../controllers/authController');
-const Joi = require('joi');
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+const protect = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
 
-// Input validation middleware
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
-  next();
-};
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 100,
+  message: { error: 'Too many login attempts. Try again later.' },
+  skip: () => process.env.NODE_ENV !== 'production'
 });
 
-const nicSchema = /^([0-9]{9}[vVxX]|[0-9]{12})$/; // Sri Lankan NIC format
-
-router.post('/register', register);
-router.post('/login', validate(loginSchema), login);
-router.post('/refresh', refresh);
-router.post('/logout', logout);
+router.post('/register', authController.registerDoctor);
+router.post('/register-patient', authController.registerPatient);
+router.post('/register-pharmacy', authController.registerPharmacyStaff);
+router.post('/login', loginLimiter, authController.login);
+router.post('/verify-otp', authController.verifyLoginOTP);
+router.post('/send-otp', authController.sendOTP);
+router.post('/login-type', protect(['doctor']), authController.setLoginType);
+router.post('/change-password', protect(), authController.changePassword);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+router.post('/enable-2fa', protect(['doctor']), authController.enable2FA);
+router.post('/verify-2fa', protect(['doctor']), authController.verify2FASetup);
+router.post('/logout', protect(), authController.logout);
+router.post('/refresh', authController.refreshToken);
 
 module.exports = router;

@@ -1,9 +1,21 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
+const patientController = require('../controllers/patientController');
 const protect = require('../middleware/auth');
-const { getPatientByNic, createPatient } = require('../controllers/patientController');
+const rateLimit = require('express-rate-limit');
 
-// Only doctors, pharmacists can read; admin can create
-router.get('/:nic', protect(['doctor', 'pharmacist', 'health_officer']), getPatientByNic);
-router.post('/', protect(['doctor', 'admin']), createPatient);
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts. Try again later.' }
+});
+
+router.post('/register', patientController.registerPatient);
+router.post('/login', loginLimiter, patientController.loginPatient);
+
+router.get('/:nic', protect(['patient', 'doctor', 'admin']), patientController.getPatient);
+router.put('/:nic', protect(['patient']), patientController.updatePatient);
+router.get('/:nic/timeline', protect(['patient', 'doctor']), patientController.getTimeline);
+router.post('/consultation/:id/rate', protect(['patient']), patientController.rateConsultation);
 
 module.exports = router;

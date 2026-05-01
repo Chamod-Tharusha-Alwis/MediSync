@@ -1,0 +1,936 @@
+[
+  {
+    "disease": "Fungal infection",
+    "icd_code": "B49",
+    "symptoms": [
+      "Dischromic  Patches",
+      "Itching",
+      "Nodal Skin Eruptions",
+      "Skin Rash"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 2.75,
+    "description": "In humans, fungal infections occur when an invading fungus takes over an area of the body and is too much for the immune system to handle. Fungi can live in the air, soil, water, and plants. There are also some fungi that live naturally in the human body. Like many microbes, there are helpful fungi and harmful fungi.",
+    "precautions": [
+      "bath twice",
+      "use detol or neem in bathing water",
+      "keep infected area dry",
+      "use clean cloths"
+    ]
+  },
+  {
+    "disease": "Allergy",
+    "icd_code": "T78.4",
+    "symptoms": [
+      "Chills",
+      "Continuous Sneezing",
+      "Shivering",
+      "Watering From Eyes"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 4.0,
+    "description": "An allergy is an immune system response to a foreign substance that's not typically harmful to your body.They can include certain foods, pollen, or pet dander. Your immune system's job is to keep you healthy by fighting harmful pathogens.",
+    "precautions": [
+      "apply calamine",
+      "cover area with bandage",
+      "use ice to compress itching"
+    ]
+  },
+  {
+    "disease": "GERD",
+    "icd_code": "K21.0",
+    "symptoms": [
+      "Acidity",
+      "Chest Pain",
+      "Cough",
+      "Stomach Pain",
+      "Ulcers On Tongue",
+      "Vomiting"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 4.67,
+    "description": "Gastroesophageal reflux disease, or GERD, is a digestive disorder that affects the lower esophageal sphincter (LES), the ring of muscle between the esophagus and stomach. Many people, including pregnant women, suffer from heartburn or acid indigestion caused by GERD.",
+    "precautions": [
+      "avoid fatty spicy food",
+      "avoid lying down after eating",
+      "maintain healthy weight",
+      "exercise"
+    ]
+  },
+  {
+    "disease": "Chronic cholestasis",
+    "icd_code": "K83.0",
+    "symptoms": [
+      "Abdominal Pain",
+      "Itching",
+      "Loss Of Appetite",
+      "Nausea",
+      "Vomiting",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 7,
+    "avg_severity": 3.71,
+    "description": "Chronic cholestatic diseases, whether occurring in infancy, childhood or adulthood, are characterized by defective bile acid transport from the liver to the intestine, which is caused by primary damage to the biliary epithelium in most cases",
+    "precautions": [
+      "cold baths",
+      "anti itch medicine",
+      "consult doctor",
+      "eat healthy"
+    ]
+  },
+  {
+    "disease": "Drug Reaction",
+    "icd_code": "T88.7",
+    "symptoms": [
+      "Burning Micturition",
+      "Itching",
+      "Skin Rash",
+      "Spotting  Urination",
+      "Stomach Pain"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 3.6,
+    "description": "An adverse drug reaction (ADR) is an injury caused by taking medication. ADRs may occur following a single dose or prolonged administration of a drug or result from the combination of two or more drugs.",
+    "precautions": [
+      "stop irritation",
+      "consult nearest hospital",
+      "stop taking drug",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Peptic ulcer diseae",
+    "icd_code": "R69",
+    "symptoms": [
+      "Abdominal Pain",
+      "Indigestion",
+      "Internal Itching",
+      "Loss Of Appetite",
+      "Passage Of Gases",
+      "Vomiting"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 4.5,
+    "description": "Peptic ulcer disease (PUD) is a break in the inner lining of the stomach, the first part of the small intestine, or sometimes the lower esophagus. An ulcer in the stomach is called a gastric ulcer, while one in the first part of the intestines is a duodenal ulcer.",
+    "precautions": [
+      "avoid fatty spicy food",
+      "consume probiotic food",
+      "eliminate milk",
+      "limit alcohol"
+    ]
+  },
+  {
+    "disease": "AIDS",
+    "icd_code": "B24",
+    "symptoms": [
+      "Extra Marital Contacts",
+      "High Fever",
+      "Muscle Wasting",
+      "Patches In Throat"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 5.25,
+    "description": "Acquired immunodeficiency syndrome (AIDS) is a chronic, potentially life-threatening condition caused by the human immunodeficiency virus (HIV). By damaging your immune system, HIV interferes with your body's ability to fight infection and disease.",
+    "precautions": [
+      "avoid open cuts",
+      "wear ppe if possible",
+      "consult doctor",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Diabetes",
+    "icd_code": "E11.9",
+    "symptoms": [
+      "Blurred And Distorted Vision",
+      "Excessive Hunger",
+      "Fatigue",
+      "Increased Appetite",
+      "Irregular Sugar Level",
+      "Lethargy",
+      "Obesity",
+      "Polyuria",
+      "Restlessness",
+      "Weight Loss"
+    ],
+    "symptom_count": 10,
+    "avg_severity": 4.1,
+    "description": "Diabetes is a disease that occurs when your blood glucose, also called blood sugar, is too high. Blood glucose is your main source of energy and comes from the food you eat. Insulin, a hormone made by the pancreas, helps glucose from food get into your cells to be used for energy.",
+    "precautions": [
+      "have balanced diet",
+      "exercise",
+      "consult doctor",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Gastroenteritis",
+    "icd_code": "A09",
+    "symptoms": [
+      "Dehydration",
+      "Diarrhoea",
+      "Sunken Eyes",
+      "Vomiting"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 4.5,
+    "description": "Gastroenteritis is an inflammation of the digestive tract, particularly the stomach, and large and small intestines. Viral and bacterial gastroenteritis are intestinal infections associated with symptoms of diarrhea , abdominal cramps, nausea , and vomiting .",
+    "precautions": [
+      "stop eating solid food for while",
+      "try taking small sips of water",
+      "rest",
+      "ease back into eating"
+    ]
+  },
+  {
+    "disease": "Bronchial Asthma",
+    "icd_code": "J45.9",
+    "symptoms": [
+      "Breathlessness",
+      "Cough",
+      "Family History",
+      "Fatigue",
+      "High Fever",
+      "Mucoid Sputum"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 4.67,
+    "description": "Bronchial asthma is a medical condition which causes the airway path of the lungs to swell and narrow. Due to this swelling, the air path produces excess mucus making it hard to breathe, which results in coughing, short breath, and wheezing. The disease is chronic and interferes with daily working.",
+    "precautions": [
+      "switch to loose cloothing",
+      "take deep breaths",
+      "get away from trigger",
+      "seek help"
+    ]
+  },
+  {
+    "disease": "Hypertension",
+    "icd_code": "I10",
+    "symptoms": [
+      "Chest Pain",
+      "Dizziness",
+      "Headache",
+      "Lack Of Concentration",
+      "Loss Of Balance"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 4.2,
+    "description": "Hypertension (HTN or HT), also known as high blood pressure (HBP), is a long-term medical condition in which the blood pressure in the arteries is persistently elevated. High blood pressure typically does not cause symptoms.",
+    "precautions": [
+      "meditation",
+      "salt baths",
+      "reduce stress",
+      "get proper sleep"
+    ]
+  },
+  {
+    "disease": "Migraine",
+    "icd_code": "G43.9",
+    "symptoms": [
+      "Acidity",
+      "Blurred And Distorted Vision",
+      "Depression",
+      "Excessive Hunger",
+      "Headache",
+      "Indigestion",
+      "Irritability",
+      "Stiff Neck",
+      "Visual Disturbances"
+    ],
+    "symptom_count": 9,
+    "avg_severity": 3.56,
+    "description": "A migraine can cause severe throbbing pain or a pulsing sensation, usually on one side of the head. It's often accompanied by nausea, vomiting, and extreme sensitivity to light and sound. Migraine attacks can last for hours to days, and the pain can be so severe that it interferes with your daily activities.",
+    "precautions": [
+      "meditation",
+      "reduce stress",
+      "use poloroid glasses in sun",
+      "consult doctor"
+    ]
+  },
+  {
+    "disease": "Cervical spondylosis",
+    "icd_code": "M47.8",
+    "symptoms": [
+      "Back Pain",
+      "Dizziness",
+      "Loss Of Balance",
+      "Neck Pain",
+      "Weakness In Limbs"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 4.6,
+    "description": "Cervical spondylosis is a general term for age-related wear and tear affecting the spinal disks in your neck. As the disks dehydrate and shrink, signs of osteoarthritis develop, including bony projections along the edges of bones (bone spurs).",
+    "precautions": [
+      "use heating pad or cold pack",
+      "exercise",
+      "take otc pain reliver",
+      "consult doctor"
+    ]
+  },
+  {
+    "disease": "Paralysis (brain hemorrhage)",
+    "icd_code": "I61.9",
+    "symptoms": [
+      "Altered Sensorium",
+      "Headache",
+      "Vomiting",
+      "Weakness Of One Body Side"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 3.5,
+    "description": "Intracerebral hemorrhage (ICH) is when blood suddenly bursts into brain tissue, causing damage to your brain. Symptoms usually appear suddenly during ICH. They include headache, weakness, confusion, and paralysis, particularly on one side of your body.",
+    "precautions": [
+      "massage",
+      "eat healthy",
+      "exercise",
+      "consult doctor"
+    ]
+  },
+  {
+    "disease": "Jaundice",
+    "icd_code": "R17",
+    "symptoms": [
+      "Abdominal Pain",
+      "Dark Urine",
+      "Fatigue",
+      "High Fever",
+      "Itching",
+      "Vomiting",
+      "Weight Loss",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 8,
+    "avg_severity": 3.88,
+    "description": "Yellow staining of the skin and sclerae (the whites of the eyes) by abnormally high blood levels of the bile pigment bilirubin. The yellowing extends to other tissues and body fluids. Jaundice was once called the \"morbus regius\" (the regal disease) in the belief that only the touch of a king could cure it",
+    "precautions": [
+      "drink plenty of water",
+      "consume milk thistle",
+      "eat fruits and high fiberous food",
+      "medication"
+    ]
+  },
+  {
+    "disease": "Malaria",
+    "icd_code": "B54",
+    "symptoms": [
+      "Chills",
+      "Diarrhoea",
+      "Headache",
+      "High Fever",
+      "Muscle Pain",
+      "Nausea",
+      "Sweating",
+      "Vomiting"
+    ],
+    "symptom_count": 8,
+    "avg_severity": 4.25,
+    "description": "An infectious disease caused by protozoan parasites from the Plasmodium family that can be transmitted by the bite of the Anopheles mosquito or by a contaminated needle or transfusion. Falciparum malaria is the most deadly type.",
+    "precautions": [
+      "Consult nearest hospital",
+      "avoid oily food",
+      "avoid non veg food",
+      "keep mosquitos out"
+    ]
+  },
+  {
+    "disease": "Chicken pox",
+    "icd_code": "B01.9",
+    "symptoms": [
+      "Fatigue",
+      "Headache",
+      "High Fever",
+      "Itching",
+      "Lethargy",
+      "Loss Of Appetite",
+      "Malaise",
+      "Mild Fever",
+      "Red Spots Over Body",
+      "Skin Rash",
+      "Swelled Lymph Nodes"
+    ],
+    "symptom_count": 11,
+    "avg_severity": 4.0,
+    "description": "Chickenpox is a highly contagious disease caused by the varicella-zoster virus (VZV). It can cause an itchy, blister-like rash. The rash first appears on the chest, back, and face, and then spreads over the entire body, causing between 250 and 500 itchy blisters.",
+    "precautions": [
+      "use neem in bathing",
+      "consume neem leaves",
+      "take vaccine",
+      "avoid public places"
+    ]
+  },
+  {
+    "disease": "Dengue",
+    "icd_code": "A90",
+    "symptoms": [
+      "Back Pain",
+      "Chills",
+      "Fatigue",
+      "Headache",
+      "High Fever",
+      "Joint Pain",
+      "Loss Of Appetite",
+      "Malaise",
+      "Muscle Pain",
+      "Nausea",
+      "Pain Behind The Eyes",
+      "Red Spots Over Body",
+      "Skin Rash",
+      "Vomiting"
+    ],
+    "symptom_count": 14,
+    "avg_severity": 3.93,
+    "description": "an acute infectious disease caused by a flavivirus (species Dengue virus of the genus Flavivirus), transmitted by aedes mosquitoes, and characterized by headache, severe joint pain, and a rash. â called also breakbone fever, dengue fever.",
+    "precautions": [
+      "drink papaya leaf juice",
+      "avoid fatty spicy food",
+      "keep mosquitos away",
+      "keep hydrated"
+    ]
+  },
+  {
+    "disease": "Typhoid",
+    "icd_code": "A01.0",
+    "symptoms": [
+      "Abdominal Pain",
+      "Belly Pain",
+      "Chills",
+      "Constipation",
+      "Diarrhoea",
+      "Fatigue",
+      "Headache",
+      "High Fever",
+      "Nausea",
+      "Toxic Look (Typhos)",
+      "Vomiting"
+    ],
+    "symptom_count": 11,
+    "avg_severity": 4.55,
+    "description": "An acute illness characterized by fever caused by infection with the bacterium Salmonella typhi. Typhoid fever has an insidious onset, with fever, headache, constipation, malaise, chills, and muscle pain. Diarrhea is uncommon, and vomiting is not usually severe.",
+    "precautions": [
+      "eat high calorie vegitables",
+      "antiboitic therapy",
+      "consult doctor",
+      "medication"
+    ]
+  },
+  {
+    "disease": "hepatitis A",
+    "icd_code": "B15.9",
+    "symptoms": [
+      "Abdominal Pain",
+      "Dark Urine",
+      "Diarrhoea",
+      "Joint Pain",
+      "Loss Of Appetite",
+      "Mild Fever",
+      "Muscle Pain",
+      "Nausea",
+      "Vomiting",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 11,
+    "avg_severity": 4.09,
+    "description": "Hepatitis A is a highly contagious liver infection caused by the hepatitis A virus. The virus is one of several types of hepatitis viruses that cause inflammation and affect your liver's ability to function.",
+    "precautions": [
+      "Consult nearest hospital",
+      "wash hands through",
+      "avoid fatty spicy food",
+      "medication"
+    ]
+  },
+  {
+    "disease": "Hepatitis B",
+    "icd_code": "B16.9",
+    "symptoms": [
+      "Abdominal Pain",
+      "Dark Urine",
+      "Fatigue",
+      "Itching",
+      "Lethargy",
+      "Loss Of Appetite",
+      "Malaise",
+      "Receiving Blood Transfusion",
+      "Receiving Unsterile Injections",
+      "Yellow Urine",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 12,
+    "avg_severity": 3.58,
+    "description": "Hepatitis B is an infection of your liver. It can cause scarring of the organ, liver failure, and cancer. It can be fatal if it isn't treated. It's spread when people come in contact with the blood, open sores, or body fluids of someone who has the hepatitis B virus.",
+    "precautions": [
+      "consult nearest hospital",
+      "vaccination",
+      "eat healthy",
+      "medication"
+    ]
+  },
+  {
+    "disease": "Hepatitis C",
+    "icd_code": "B17.1",
+    "symptoms": [
+      "Family History",
+      "Fatigue",
+      "Loss Of Appetite",
+      "Nausea",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 4.17,
+    "description": "Inflammation of the liver due to the hepatitis C virus (HCV), which is usually spread via blood transfusion (rare), hemodialysis, and needle sticks. The damage hepatitis C does to the liver can lead to cirrhosis and its complications as well as cancer.",
+    "precautions": [
+      "Consult nearest hospital",
+      "vaccination",
+      "eat healthy",
+      "medication"
+    ]
+  },
+  {
+    "disease": "Hepatitis D",
+    "icd_code": "B17.0",
+    "symptoms": [
+      "Abdominal Pain",
+      "Dark Urine",
+      "Fatigue",
+      "Joint Pain",
+      "Loss Of Appetite",
+      "Nausea",
+      "Vomiting",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 9,
+    "avg_severity": 4.0,
+    "description": "Hepatitis D, also known as the hepatitis delta virus, is an infection that causes the liver to become inflamed. This swelling can impair liver function and cause long-term liver problems, including liver scarring and cancer. The condition is caused by the hepatitis D virus (HDV).",
+    "precautions": [
+      "consult doctor",
+      "medication",
+      "eat healthy",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Hepatitis E",
+    "icd_code": "B17.2",
+    "symptoms": [
+      "Abdominal Pain",
+      "Acute Liver Failure",
+      "Coma",
+      "Dark Urine",
+      "Fatigue",
+      "High Fever",
+      "Joint Pain",
+      "Loss Of Appetite",
+      "Nausea",
+      "Stomach Bleeding",
+      "Vomiting",
+      "Yellowing Of Eyes",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 13,
+    "avg_severity": 4.77,
+    "description": "A rare form of liver inflammation caused by infection with the hepatitis E virus (HEV). It is transmitted via food or drink handled by an infected person or through infected water supplies in areas where fecal matter may get into the water. Hepatitis E does not cause chronic liver disease.",
+    "precautions": [
+      "stop alcohol consumption",
+      "rest",
+      "consult doctor",
+      "medication"
+    ]
+  },
+  {
+    "disease": "Alcoholic hepatitis",
+    "icd_code": "K70.1",
+    "symptoms": [
+      "Abdominal Pain",
+      "Distention Of Abdomen",
+      "Fluid Overload",
+      "History Of Alcohol Consumption",
+      "Swelling Of Stomach",
+      "Vomiting",
+      "Yellowish Skin"
+    ],
+    "symptom_count": 7,
+    "avg_severity": 4.57,
+    "description": "Alcoholic hepatitis is a diseased, inflammatory condition of the liver caused by heavy alcohol consumption over an extended period of time. It's also aggravated by binge drinking and ongoing alcohol use. If you develop this condition, you must stop drinking alcohol",
+    "precautions": [
+      "stop alcohol consumption",
+      "consult doctor",
+      "medication",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Tuberculosis",
+    "icd_code": "A15.0",
+    "symptoms": [
+      "Blood In Sputum",
+      "Breathlessness",
+      "Chest Pain",
+      "Chills",
+      "Cough",
+      "Fatigue",
+      "High Fever",
+      "Loss Of Appetite",
+      "Malaise",
+      "Mild Fever",
+      "Phlegm",
+      "Sweating",
+      "Swelled Lymph Nodes",
+      "Vomiting",
+      "Weight Loss",
+      "Yellowing Of Eyes"
+    ],
+    "symptom_count": 16,
+    "avg_severity": 4.69,
+    "description": "Tuberculosis (TB) is an infectious disease usually caused by Mycobacterium tuberculosis (MTB) bacteria. Tuberculosis generally affects the lungs, but can also affect other parts of the body. Most infections show no symptoms, in which case it is known as latent tuberculosis.",
+    "precautions": [
+      "cover mouth",
+      "consult doctor",
+      "medication",
+      "rest"
+    ]
+  },
+  {
+    "disease": "Common Cold",
+    "icd_code": "J06.9",
+    "symptoms": [
+      "Chest Pain",
+      "Chills",
+      "Congestion",
+      "Continuous Sneezing",
+      "Cough",
+      "Fatigue",
+      "Headache",
+      "High Fever",
+      "Loss Of Smell",
+      "Malaise",
+      "Muscle Pain",
+      "Phlegm",
+      "Redness Of Eyes",
+      "Runny Nose",
+      "Sinus Pressure",
+      "Swelled Lymph Nodes",
+      "Throat Irritation"
+    ],
+    "symptom_count": 17,
+    "avg_severity": 4.53,
+    "description": "The common cold is a viral infection of your nose and throat (upper respiratory tract). It's usually harmless, although it might not feel that way. Many types of viruses can cause a common cold.",
+    "precautions": [
+      "drink vitamin c rich drinks",
+      "take vapour",
+      "avoid cold food",
+      "keep fever in check"
+    ]
+  },
+  {
+    "disease": "Pneumonia",
+    "icd_code": "J18.9",
+    "symptoms": [
+      "Breathlessness",
+      "Chest Pain",
+      "Chills",
+      "Cough",
+      "Fast Heart Rate",
+      "Fatigue",
+      "High Fever",
+      "Malaise",
+      "Phlegm",
+      "Rusty Sputum",
+      "Sweating"
+    ],
+    "symptom_count": 11,
+    "avg_severity": 4.73,
+    "description": "Pneumonia is an infection in one or both lungs. Bacteria, viruses, and fungi cause it. The infection causes inflammation in the air sacs in your lungs, which are called alveoli. The alveoli fill with fluid or pus, making it difficult to breathe.",
+    "precautions": [
+      "consult doctor",
+      "medication",
+      "rest",
+      "follow up"
+    ]
+  },
+  {
+    "disease": "Dimorphic hemmorhoids(piles)",
+    "icd_code": "K64.9",
+    "symptoms": [
+      "Bloody Stool",
+      "Constipation",
+      "Irritation In Anus",
+      "Pain During Bowel Movements",
+      "Pain In Anal Region"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 5.2,
+    "description": "",
+    "precautions": [
+      "avoid fatty spicy food",
+      "consume witch hazel",
+      "warm bath with epsom salt",
+      "consume alovera juice"
+    ]
+  },
+  {
+    "disease": "Heart attack",
+    "icd_code": "I21.9",
+    "symptoms": [
+      "Breathlessness",
+      "Chest Pain",
+      "Sweating",
+      "Vomiting"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 4.75,
+    "description": "The death of heart muscle due to the loss of blood supply. The loss of blood supply is usually caused by a complete blockage of a coronary artery, one of the arteries that supplies blood to the heart muscle.",
+    "precautions": [
+      "call ambulance",
+      "chew or swallow asprin",
+      "keep calm"
+    ]
+  },
+  {
+    "disease": "Varicose veins",
+    "icd_code": "I83.9",
+    "symptoms": [
+      "Bruising",
+      "Cramps",
+      "Fatigue",
+      "Obesity",
+      "Prominent Veins On Calf",
+      "Swollen Blood Vessels",
+      "Swollen Legs"
+    ],
+    "symptom_count": 7,
+    "avg_severity": 4.57,
+    "description": "A vein that has enlarged and twisted, often appearing as a bulging, blue blood vessel that is clearly visible through the skin. Varicose veins are most common in older adults, particularly women, and occur especially on the legs.",
+    "precautions": [
+      "lie down flat and raise the leg high",
+      "use oinments",
+      "use vein compression",
+      "dont stand still for long"
+    ]
+  },
+  {
+    "disease": "Hypothyroidism",
+    "icd_code": "E03.9",
+    "symptoms": [
+      "Abnormal Menstruation",
+      "Brittle Nails",
+      "Cold Hands And Feets",
+      "Depression",
+      "Dizziness",
+      "Enlarged Thyroid",
+      "Fatigue",
+      "Irritability",
+      "Lethargy",
+      "Mood Swings",
+      "Puffy Face And Eyes",
+      "Swollen Extremeties",
+      "Weight Gain"
+    ],
+    "symptom_count": 13,
+    "avg_severity": 4.08,
+    "description": "Hypothyroidism, also called underactive thyroid or low thyroid, is a disorder of the endocrine system in which the thyroid gland does not produce enough thyroid hormone.",
+    "precautions": [
+      "reduce stress",
+      "exercise",
+      "eat healthy",
+      "get proper sleep"
+    ]
+  },
+  {
+    "disease": "Hyperthyroidism",
+    "icd_code": "E05.9",
+    "symptoms": [
+      "Abnormal Menstruation",
+      "Diarrhoea",
+      "Excessive Hunger",
+      "Fast Heart Rate",
+      "Fatigue",
+      "Irritability",
+      "Mood Swings",
+      "Muscle Weakness",
+      "Restlessness",
+      "Sweating",
+      "Weight Loss"
+    ],
+    "symptom_count": 11,
+    "avg_severity": 3.91,
+    "description": "Hyperthyroidism (overactive thyroid) occurs when your thyroid gland produces too much of the hormone thyroxine. Hyperthyroidism can accelerate your body's metabolism, causing unintentional weight loss and a rapid or irregular heartbeat.",
+    "precautions": [
+      "eat healthy",
+      "massage",
+      "use lemon balm",
+      "take radioactive iodine treatment"
+    ]
+  },
+  {
+    "disease": "Hypoglycemia",
+    "icd_code": "E16.0",
+    "symptoms": [
+      "Anxiety",
+      "Blurred And Distorted Vision",
+      "Drying And Tingling Lips",
+      "Excessive Hunger",
+      "Fatigue",
+      "Headache",
+      "Irritability",
+      "Nausea",
+      "Palpitations",
+      "Slurred Speech",
+      "Sweating",
+      "Vomiting"
+    ],
+    "symptom_count": 12,
+    "avg_severity": 3.92,
+    "description": "Hypoglycemia is a condition in which your blood sugar (glucose) level is lower than normal. Glucose is your body's main energy source. Hypoglycemia is often related to diabetes treatment. But other drugs and a variety of conditions â many rare â can cause low blood sugar in people who don't have diabetes.",
+    "precautions": [
+      "lie down on side",
+      "check in pulse",
+      "drink sugary drinks",
+      "consult doctor"
+    ]
+  },
+  {
+    "disease": "Osteoarthristis",
+    "icd_code": "R69",
+    "symptoms": [
+      "Hip Joint Pain",
+      "Joint Pain",
+      "Knee Pain",
+      "Neck Pain",
+      "Painful Walking",
+      "Swelling Joints"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 3.33,
+    "description": "Osteoarthritis is the most common form of arthritis, affecting millions of people worldwide. It occurs when the protective cartilage that cushions the ends of your bones wears down over time.",
+    "precautions": [
+      "acetaminophen",
+      "consult nearest hospital",
+      "follow up",
+      "salt baths"
+    ]
+  },
+  {
+    "disease": "Arthritis",
+    "icd_code": "M06.9",
+    "symptoms": [
+      "Movement Stiffness",
+      "Muscle Weakness",
+      "Painful Walking",
+      "Stiff Neck",
+      "Swelling Joints"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 3.6,
+    "description": "Arthritis is the swelling and tenderness of one or more of your joints. The main symptoms of arthritis are joint pain and stiffness, which typically worsen with age. The most common types of arthritis are osteoarthritis and rheumatoid arthritis.",
+    "precautions": [
+      "exercise",
+      "use hot and cold therapy",
+      "try acupuncture",
+      "massage"
+    ]
+  },
+  {
+    "disease": "(vertigo) Paroymsal  Positional Vertigo",
+    "icd_code": "R69",
+    "symptoms": [
+      "Headache",
+      "Loss Of Balance",
+      "Nausea",
+      "Spinning Movements",
+      "Unsteadiness",
+      "Vomiting"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 4.5,
+    "description": "Benign paroxysmal positional vertigo (BPPV) is one of the most common causes of vertigo â the sudden sensation that you're spinning or that the inside of your head is spinning. Benign paroxysmal positional vertigo causes brief episodes of mild to intense dizziness.",
+    "precautions": [
+      "lie down",
+      "avoid sudden change in body",
+      "avoid abrupt head movment",
+      "relax"
+    ]
+  },
+  {
+    "disease": "Acne",
+    "icd_code": "L70.0",
+    "symptoms": [
+      "Blackheads",
+      "Pus Filled Pimples",
+      "Scurring",
+      "Skin Rash"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 2.25,
+    "description": "Acne vulgaris is the formation of comedones, papules, pustules, nodules, and/or cysts as a result of obstruction and inflammation of pilosebaceous units (hair follicles and their accompanying sebaceous gland). Acne develops on the face and upper trunk. It most often affects adolescents.",
+    "precautions": [
+      "bath twice",
+      "avoid fatty spicy food",
+      "drink plenty of water",
+      "avoid too many products"
+    ]
+  },
+  {
+    "disease": "Urinary tract infection",
+    "icd_code": "N39.0",
+    "symptoms": [
+      "Bladder Discomfort",
+      "Burning Micturition",
+      "Continuous Feel Of Urine",
+      "Foul Smell Of Urine"
+    ],
+    "symptom_count": 4,
+    "avg_severity": 4.75,
+    "description": "Urinary tract infection: An infection of the kidney, ureter, bladder, or urethra. Abbreviated UTI. Not everyone with a UTI has symptoms, but common symptoms include a frequent urge to urinate and pain or burning when urinating.",
+    "precautions": [
+      "drink plenty of water",
+      "increase vitamin c intake",
+      "drink cranberry juice",
+      "take probiotics"
+    ]
+  },
+  {
+    "disease": "Psoriasis",
+    "icd_code": "L40.0",
+    "symptoms": [
+      "Inflammatory Nails",
+      "Joint Pain",
+      "Silver Like Dusting",
+      "Skin Peeling",
+      "Skin Rash",
+      "Small Dents In Nails"
+    ],
+    "symptom_count": 6,
+    "avg_severity": 2.5,
+    "description": "Psoriasis is a common skin disorder that forms thick, red, bumpy patches covered with silvery scales. They can pop up anywhere, but most appear on the scalp, elbows, knees, and lower back. Psoriasis can't be passed from person to person. It does sometimes happen in members of the same family.",
+    "precautions": [
+      "wash hands with warm soapy water",
+      "stop bleeding using pressure",
+      "consult doctor",
+      "salt baths"
+    ]
+  },
+  {
+    "disease": "Impetigo",
+    "icd_code": "L01.0",
+    "symptoms": [
+      "Blister",
+      "High Fever",
+      "Red Sore Around Nose",
+      "Skin Rash",
+      "Yellow Crust Ooze"
+    ],
+    "symptom_count": 5,
+    "avg_severity": 3.8,
+    "description": "Impetigo (im-puh-TIE-go) is a common and highly contagious skin infection that mainly affects infants and children. Impetigo usually appears as red sores on the face, especially around a child's nose and mouth, and on hands and feet. The sores burst and develop honey-colored crusts.",
+    "precautions": [
+      "soak affected area in warm water",
+      "use antibiotics",
+      "remove scabs with wet compressed cloth",
+      "consult doctor"
+    ]
+  }
+]
