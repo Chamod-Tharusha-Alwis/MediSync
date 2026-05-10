@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, Users, FileText, Settings, ActivitySquare } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, ActivitySquare, FlaskConical } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
+import TestManagement from './TestManagement';
 
 // Sub-components
 const DoctorRoster = () => {
@@ -34,7 +35,7 @@ const DoctorRoster = () => {
     e.preventDefault();
     setIsAdding(true);
     try {
-      await api.post('/hospital/staff', { email, licenseNo });
+      await api.post('/hospital/doctors/link', { email, doctorId: licenseNo });
       toast.success('Doctor linked successfully. Email sent.');
       setEmail('');
       setLicenseNo('');
@@ -48,7 +49,7 @@ const DoctorRoster = () => {
 
   const handleToggle = async (id) => {
     try {
-      await api.put(`/hospital/staff/${id}/toggle`, {});
+      await api.put(`/hospital/doctors/${id}/status`, {});
       toast.success('Status updated');
       fetchDoctors();
     } catch (err) {
@@ -256,6 +257,7 @@ const HospitalDashboard = () => {
   const menuItems = [
     { label: 'Overview', path: '/hospital/dashboard', icon: LayoutDashboard, end: true },
     { label: 'Doctor Roster', path: '/hospital/dashboard/doctors', icon: Users },
+    { label: 'Lab Tests', path: '/hospital/dashboard/tests', icon: FlaskConical },
     { label: 'Settings', path: '/hospital/dashboard/settings', icon: Settings },
   ];
 
@@ -263,7 +265,7 @@ const HospitalDashboard = () => {
     <div className="hospital-theme flex min-h-screen bg-[#0b1120]">
       <Sidebar menuItems={menuItems} title="Hospital Admin" themePrefix="hospital" />
       
-      <main className="flex-1 ml-64 p-4">
+      <main className="flex-1 lg:ml-64 p-4 lg:p-6 transition-all duration-300">
         {loading ? (
           <div className="flex h-full items-center justify-center">
             <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -272,6 +274,7 @@ const HospitalDashboard = () => {
           <Routes>
             <Route path="/dashboard" element={<Overview stats={stats} />} />
             <Route path="/dashboard/doctors" element={<DoctorRoster />} />
+            <Route path="/dashboard/tests" element={<TestManagement />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/hospital/dashboard" replace />} />
           </Routes>

@@ -5,50 +5,100 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Request interceptor — attach auth + optional patient-access token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    // Support patient-access temp token (stored in component state, passed via config)
+    if (config._patientAccessToken) {
+      config.headers['x-patient-access'] = config._patientAccessToken;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Helper: clear everything and redirect to login
+const clearSessionAndRedirect = () => {
+  localStorage.clear();
+  window.location.href = '/select-role';
+};
+
+// Response interceptor — handle 401 (expired session) and 403 (ban)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // Prevent infinite loops
-    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/login' && originalRequest.url !== '/auth/refresh') {
-      originalRequest._retry = true;
-      
-      try {
-        const { data } = await axios.post(
-          'http://localhost:5000/api/auth/refresh',
-          {},
-          { withCredentials: true }
-        );
-        
-        // Ensure we properly extract token based on standard API wrapper
-        const newToken = data?.data?.accessToken || data?.accessToken;
-        
-        if (newToken) {
-          localStorage.setItem('token', newToken);
-          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-          return api(originalRequest);
+    const status = error.response?.status;
+    const errBody = error.response?.data;
+
+    // ─── BAN DETECTION ───────────────────────────────────────────────────────
+    if (status === 403 && errBody?.error === 'Account suspended') {
+      // Dispatch custom event so BanNotice component can render
+      window.dispatchEvent(new CustomEvent('medisync:banned', {
+        detail: {
+          banType: errBody.banType,
+          reason: errBody.reason,
+          expiresAt: errBody.expiresAt,
+          message: errBody.message,
         }
-      } catch (refreshError) {
-        console.error('Session expired, logging out', refreshError);
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/select-role';
-        return Promise.reject(refreshError);
+      }));
+      localStorage.clear();
+      return Promise.reject(error);
+    }
+
+    // ─── PATIENT ACCESS REQUIRED (not a login error) ─────────────────────────
+    if (status === 403 && errBody?.requiresPatientAccess) {
+      // Let the calling component handle this — bubble up
+      return Promise.reject(error);
+    }
+
+    // ─── 401 — TOKEN REFRESH FLOW ─────────────────────────────────────────────
+    // Don't try to refresh on login/refresh endpoints themselves
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                           originalRequest.url?.includes('/auth/refresh') ||
+                           originalRequest.url?.includes('/patient/login');
+
+    if (status === 401) {
+      if (isAuthEndpoint) {
+        // If it's a login failure, clear any stale tokens just in case
+        localStorage.clear();
+        return Promise.reject(error);
+      }
+
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          const { data } = await axios.post(
+            'http://localhost:5000/api/auth/refresh',
+            {},
+            { withCredentials: true }
+          );
+
+          const newToken = data?.data?.accessToken || data?.accessToken;
+
+          if (newToken) {
+            localStorage.setItem('token', newToken);
+            api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          // Refresh failed — session is gone, force full logout
+          console.error('[MediSync] Session expired, clearing and redirecting.');
+          clearSessionAndRedirect();
+          return Promise.reject(refreshError);
+        }
+      } else {
+        // If retry is true but we still got 401, clear and redirect
+        clearSessionAndRedirect();
       }
     }
+
     return Promise.reject(error);
   }
 );

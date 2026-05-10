@@ -9,7 +9,6 @@ const consultationSchema = new mongoose.Schema({
   icdCode: String,
   icdDescription: String,
   notes: String,
-  clinicalNotes: String,
   district: String,
   symptoms: [String],
   isFollowUpRequired: { type: Boolean, default: false },
@@ -23,7 +22,6 @@ const consultationSchema = new mongoose.Schema({
 consultationSchema.plugin(fieldEncryption, {
   fields: ['patientNic', 'diagnosis', 'notes'],
   secret: process.env.ENCRYPTION_KEY,
-  saltGenerator: (secret) => secret.slice(0, 16)
 });
 
 module.exports = mongoose.model('Consultation', consultationSchema);

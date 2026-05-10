@@ -10,19 +10,38 @@ const jwt = require('jsonwebtoken');
 
 exports.registerHospital = async (req, res) => {
   try {
-    const { name, regNo, email, password, district, address, contactNo } = req.body;
-    
-    const existing = await Hospital.findOne({ $or: [{ email }, { regNo }] });
+    const {
+      name, regNo, district, address, contactNo, phone,
+      // Support both direct-account fields (old) and admin-setup fields (new test format)
+      email, password,
+      adminEmail, adminPassword
+    } = req.body;
+
+    // Resolve the actual email and password (prefer admin* fields if present)
+    const resolvedEmail    = adminEmail    || email;
+    const resolvedPassword = adminPassword || password;
+
+    if (!name || !regNo || !resolvedEmail || !resolvedPassword) {
+      return res.status(400).json({ error: 'Required fields missing (name, regNo, email/adminEmail, password/adminPassword)' });
+    }
+
+    const existing = await Hospital.findOne({ $or: [{ email: resolvedEmail }, { regNo }] });
     if (existing) return res.status(400).json({ error: 'Hospital email or Registration Number already exists' });
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(resolvedPassword);
     const hospital = new Hospital({
-      name, regNo, email, password: hashedPassword, district, address, phone: contactNo
+      name, regNo,
+      email: resolvedEmail,
+      password: hashedPassword,
+      district,
+      address,
+      phone: phone || contactNo || ''
     });
 
     await hospital.save();
     res.status(201).json({ message: 'Hospital registered successfully', data: { hospitalId: hospital._id } });
   } catch (error) {
+    console.error('registerHospital error:', error);
     res.status(500).json({ error: 'Registration failed', details: error.message });
   }
 };
@@ -93,21 +112,21 @@ exports.getDoctors = async (req, res) => {
 
 exports.addDoctor = async (req, res) => {
   try {
-    const { licenseNo, email, orgEmail } = req.body;
+    const { doctorId, email, orgEmail } = req.body;
     const hospitalId = req.user.id;
 
-    if (!licenseNo && !email) return res.status(400).json({ error: 'Provide licenseNo or email' });
+    if (!doctorId && !email) return res.status(400).json({ error: 'Provide doctorId (e.g. DR-XXXXXXXX) or email' });
 
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: 'Hospital not found' });
 
     let doctor = null;
-    if (licenseNo) {
-      const allDoctors = await Doctor.find({});
-      doctor = allDoctors.find(d => d.licenseNo === licenseNo);
+    if (doctorId) {
+      // Search by doctorId — a plain-text field, not encrypted
+      doctor = await Doctor.findOne({ doctorId });
     }
     if (!doctor && email) doctor = await Doctor.findOne({ email });
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found in system.' });
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found in system. Please verify the Doctor ID or email.' });
 
     const alreadyLinked = doctor.orgLogins && doctor.orgLogins.some(org => org.hospitalId.toString() === hospitalId);
     if (alreadyLinked) return res.status(400).json({ error: 'Doctor already linked' });
@@ -228,18 +247,33 @@ exports.updatePatientRecords = async (req, res) => {
 
 exports.getHospitalStaff = async (req, res) => {
   try {
-    const hospitalId = req.user.id;
-    const staff = await Doctor.find({ 'workplaces.hospitalId': hospitalId }).select('-password');
-    // Also support linkedHospital array if used instead
-    const staffLinked = await Doctor.find({ linkedHospitals: hospitalId }).select('-password');
-    
-    // Combine and deduplicate
-    const allStaff = [...staff, ...staffLinked];
-    const uniqueStaff = Array.from(new Set(allStaff.map(s => s._id.toString())))
-      .map(id => allStaff.find(s => s._id.toString() === id));
-      
-    res.json({ data: uniqueStaff });
+    const hospital = await Hospital.findById(req.user.id);
+    if (!hospital) {
+      return res.status(404).json({ error: 'Hospital not found' });
+    }
+    const Doctor = require('../models/Doctor');
+    const doctors = await Doctor.find({
+      'orgLogins.hospitalId': hospital._id
+    }).select('-password -otpSecret');
+    const staffWithStatus = doctors.map(doc => {
+      const orgLogin = doc.orgLogins.find(
+        ol => ol.hospitalId.toString() === hospital._id.toString()
+      );
+      return {
+        _id: doc._id,
+        doctorId: doc.doctorId,
+        fullName: doc.fullName,
+        specialization: doc.specialization,
+        email: doc.email,
+        lastLogin: doc.lastLogin,
+        isActive: orgLogin ? orgLogin.isActive : false,
+        mustChangePassword: orgLogin ? orgLogin.mustChangePassword : false,
+        orgEmail: orgLogin ? orgLogin.orgEmail : null
+      };
+    });
+    res.json({ data: staffWithStatus });
   } catch (error) {
+    console.error('getHospitalStaff error:', error);
     res.status(500).json({ error: 'Failed to fetch hospital staff', details: error.message });
   }
 };

@@ -8,10 +8,18 @@ const patientSchema = new mongoose.Schema({
   gender: { type: String, enum: ['Male', 'Female', 'Other'] },
   district: String,
   contactInfo: String,
+  address: { type: String, default: '' },  // physical address
   email: { type: String, required: true, unique: true },
   bloodGroup: String,
   allergies: [String],
   password: { type: String, required: true }, // Added for auth
+  isActive: { type: Boolean, default: true }, // for ban/block system
+  reportedDoctors: [{
+    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
+    reason: String,
+    reportedAt: { type: Date, default: Date.now },
+    status: { type: String, enum: ['pending', 'reviewed', 'dismissed'], default: 'pending' }
+  }],
   emergencyContact: {
     name: String,
     relationship: String,

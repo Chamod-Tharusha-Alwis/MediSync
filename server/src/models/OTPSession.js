@@ -12,12 +12,11 @@ const otpSessionSchema = new mongoose.Schema({
   },
   otp: {
     type: String,
-    required: true // hashed OTP
+    required: true // bcrypt-hashed OTP
   },
   expiresAt: {
     type: Date,
-    required: true,
-    index: { expires: '10m' } // TTL index to auto-delete after 10 minutes
+    required: true
   },
   used: {
     type: Boolean,
@@ -25,10 +24,19 @@ const otpSessionSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['login', 'password-reset', 'email-verify'],
+    enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access'],
     required: true
+  },
+  // Used for patient-access OTPs to track who requested access
+  metadata: {
+    requesterRole: String,
+    requesterName: String,
+    accessNic: String
   }
 }, { timestamps: true });
 
-// Ensure TTL index works properly by creating it explicitly in some setups, but mongoose index: {expires: '10m'} is usually enough
+// Explicit TTL index — MongoDB automatically deletes documents when expiresAt passes
+otpSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 module.exports = mongoose.model('OTPSession', otpSessionSchema);
+

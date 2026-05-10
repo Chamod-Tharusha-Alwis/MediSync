@@ -185,7 +185,7 @@ exports.login = async (req, res) => {
     const name = user.fullName || user.name || 'User';
 
     const accessToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: user._id, role: actualRole }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
     await createSession(user._id, modelName, accessToken, req);
 
@@ -229,7 +229,7 @@ exports.verifyLoginOTP = async (req, res) => {
     if (!doctor) return res.status(404).json({ error: 'User not found' });
 
     const accessToken = jwt.sign({ id: doctor._id, role: doctor.role, sub: doctor.doctorId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: doctor._id, role: doctor.role }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign({ id: doctor._id, role: doctor.role, sub: doctor.doctorId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
     await createSession(doctor._id, 'Doctor', accessToken, req);
 
@@ -514,7 +514,7 @@ exports.refreshToken = async (req, res) => {
       return res.status(403).json({ error: 'Invalid refresh token' });
     }
 
-    const accessToken = jwt.sign({ id: decoded.id, role: decoded.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: decoded.id, role: decoded.role, sub: decoded.sub }, process.env.JWT_SECRET, { expiresIn: '15m' });
     await createSession(decoded.id, 'User', accessToken, req);
 
     return res.status(200).json({ data: { accessToken }, message: "Token refreshed" });

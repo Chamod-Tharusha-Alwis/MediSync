@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const SessionToken = require('../models/SessionToken');
 const AuditLog = require('../models/AuditLog');
+const BanRecord = require('../models/BanRecord');
 
 const protect = (allowedRoles = []) => async (req, res, next) => {
   try {
@@ -35,6 +36,36 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
     // RBAC
     if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
       return res.status(403).json({ error: 'Access denied: insufficient permissions' });
+    }
+
+    // Ban check — verify user is not suspended
+    try {
+      const activeBan = await BanRecord.findOne({
+        targetId: decoded.id,
+        isActive: true,
+        $or: [
+          { expiresAt: null },
+          { expiresAt: { $gt: new Date() } }
+        ]
+      });
+
+      if (activeBan) {
+        const expiryStr = activeBan.expiresAt
+          ? new Date(activeBan.expiresAt).toLocaleDateString()
+          : null;
+        return res.status(403).json({
+          error: 'Account suspended',
+          banType: activeBan.banType,
+          reason: activeBan.reason,
+          expiresAt: activeBan.expiresAt,
+          message: activeBan.banType === 'permanent'
+            ? 'Your account has been permanently suspended. Contact support at support@medisync.lk.'
+            : `Your account is temporarily suspended until ${expiryStr}.`
+        });
+      }
+    } catch (banErr) {
+      console.error('Ban check error:', banErr.message);
+      // Don't block request if ban check fails
     }
 
     // Write to AuditLog

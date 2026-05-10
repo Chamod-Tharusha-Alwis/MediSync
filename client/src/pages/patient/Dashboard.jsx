@@ -1,16 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, HeartPulse, FileText, Pill } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, FileText, Pill, User, Clock } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
 import PageTransition from '../../components/common/PageTransition';
+import PatientHistory from './History';
+import PatientPrescriptions from './Prescriptions';
+import PatientProfile from './Profile';
 
 const Overview = ({ data }) => {
-  if (!data || !data.patient) return <div className="p-8 text-center text-slate-400">Loading your health records...</div>;
+  // Safe destructuring with fallbacks
+  const patient = data?.patient || {};
+  const prescriptions = data?.prescriptions || [];
+  const consultations = data?.consultations || [];
 
-  const { patient, prescriptions, consultations } = data;
-  const activeRxs = (prescriptions || []).filter(p => p.status === 'issued' && new Date(p.expiresAt) > new Date());
+  if (!data || !patient.fullName) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading your health records...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const activeRxs = prescriptions.filter(p => p.status === 'issued' && new Date(p.expiresAt) > new Date());
 
   return (
     <PageTransition className="p-4 md:p-8">
@@ -108,12 +125,12 @@ const Overview = ({ data }) => {
         <div className="glass-panel p-6 rounded-2xl">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Activity className="w-6 h-6 text-purple-400" />
+              <Clock className="w-6 h-6 text-purple-400" />
             </div>
             <h3 className="text-xl font-bold text-white">Recent Visits</h3>
           </div>
 
-          {consultations.length > 0 ? (
+          {consultations && consultations.length > 0 ? (
             <div className="relative border-l-2 border-slate-700 ml-3 space-y-6 pb-4">
               {consultations.slice(0, 5).map(c => (
                 <div key={c._id} className="relative pl-6">
@@ -134,7 +151,7 @@ const Overview = ({ data }) => {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p>No recent consultations found.</p>
             </div>
           )}
@@ -145,31 +162,56 @@ const Overview = ({ data }) => {
 };
 
 export default function PatientDashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const nic = localStorage.getItem('nic') || JSON.parse(localStorage.getItem('user') || '{}').nic;
-
-  useEffect(() => {
-    if (!nic) {
-      toast.error('Patient NIC not found. Please log in again.');
-      navigate('/patient/login');
-      return;
+  // Ensure we consistently use 'nic' as standard key
+  let nic = localStorage.getItem('nic');
+  if (!nic) {
+    // Check fallback just in case, but prefer 'nic'
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try { nic = JSON.parse(userStr).nic; } catch(e) {}
     }
-    
-    api.get(`/patient/${nic}`)
-      .then(res => {
-        setData(res.data.data || res.data);
-      })
-      .catch(err => {
-        toast.error('Failed to load patient data');
-      })
-      .finally(() => setLoading(false));
-  }, [nic, navigate]);
+  }
+
+  const { data: queryData, isLoading, isError, error } = useQuery({
+    queryKey: ['patientDashboard', nic],
+    queryFn: async () => {
+      const [patientRes, timelineRes] = await Promise.all([
+        api.get(`/patient/${nic}`),
+        api.get(`/patient/${nic}/timeline`)
+      ]);
+
+      const timeline = timelineRes.data.data || [];
+      return {
+        patient: patientRes.data.data,
+        prescriptions: timeline.filter(e => e.type === 'prescription').map(e => e.data),
+        consultations: timeline.filter(e => e.type === 'consultation').map(e => e.data)
+      };
+    },
+    enabled: !!nic,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!nic) return (
+    <div className="flex h-screen items-center justify-center bg-[#0b1120]">
+      <div className="text-center p-8 bg-slate-900 rounded-2xl border border-slate-800">
+        <p className="text-red-500 font-semibold mb-2">Session expired.</p>
+        <p className="text-slate-400 text-sm mb-4">Please log in again to access your records.</p>
+        <button onClick={() => navigate('/patient/login')} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl transition-colors">
+          Go to Login
+        </button>
+      </div>
+    </div>
+  );
+
+  const data = queryData;
 
   const menuItems = [
     { label: 'Overview', path: '/patient/dashboard', icon: LayoutDashboard, end: true },
-    { label: 'My Records', path: '/patient/dashboard/records', icon: FileText },
+    { label: 'Medical History', path: '/patient/dashboard/history', icon: FileText },
+    { label: 'Prescriptions', path: '/patient/dashboard/prescriptions', icon: Pill },
+    { label: 'My Profile', path: '/patient/dashboard/profile', icon: User },
   ];
 
   return (
@@ -177,14 +219,30 @@ export default function PatientDashboard() {
       <Sidebar menuItems={menuItems} title="Patient Portal" themePrefix="patient" />
       
       <main className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-y-auto h-screen">
-        {loading ? (
+        {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
+        ) : isError ? (
+          <div className="flex h-full items-center justify-center p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md w-full text-center">
+              <p className="text-red-400 font-semibold mb-2">Failed to load your records</p>
+              <p className="text-red-500/70 text-sm mb-6">
+                {error?.response?.data?.error || error?.message || 'Unknown error'}
+              </p>
+              <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition-colors text-sm font-medium">
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : !data ? (
+          <div className="text-center p-8 text-slate-500 mt-20">No data found</div>
         ) : (
           <Routes>
             <Route path="/dashboard" element={<Overview data={data} />} />
-            <Route path="/dashboard/records" element={<div className="p-8 text-white">Full Medical History (Coming soon)</div>} />
+            <Route path="/dashboard/history" element={<PatientHistory />} />
+            <Route path="/dashboard/prescriptions" element={<PatientPrescriptions />} />
+            <Route path="/dashboard/profile" element={<PatientProfile />} />
             <Route path="*" element={<Navigate to="/patient/dashboard" replace />} />
           </Routes>
         )}

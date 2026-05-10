@@ -3,7 +3,6 @@ const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient');
 const Prescription = require('../models/Prescription');
 const Consultation = require('../models/Consultation');
-const { generateReceiptNumber } = require('../utils/generateReceiptNumber');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -89,90 +88,154 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.createConsultation = async (req, res) => {
   try {
-    const { 
-      patientNic, symptoms, icdCode, icdDescription, diagnosis,
-      clinicalNotes, isFollowUpRequired, followUpDate,
-      loginType, sessionHospitalId, prescriptions 
-    } = req.body;
+    const {
+      patientNic, symptoms, icdCode, icdDescription,
+      diagnosis, notes, clinicalNotes, isFollowUpRequired,
+      followUpDate, followUpNotes, loginType, 
+      sessionHospitalId, prescriptions = [], tests = []
+    } = req.body
 
-    const patient = await Patient.findOne({ nic: patientNic });
-    if (!patient) return res.status(404).json({ error: 'Patient not found' });
-
-    // Check allergies against prescription drug names
-    const conflictWarnings = [];
-    if (patient.allergies && patient.allergies.length > 0 && prescriptions && prescriptions.length > 0) {
-      const patientAllergiesLower = patient.allergies.map(a => a.toLowerCase());
-      for (let rx of prescriptions) {
-        const drugName = rx.name || rx.drugName || '';
-        if (patientAllergiesLower.includes(drugName.toLowerCase())) {
-          conflictWarnings.push(`Patient is allergic to ${drugName}`);
-        }
-      }
+    // Validate patient exists
+    const patient = await Patient.findOne({ nic: patientNic })
+    if (!patient) {
+      return res.status(404).json({ 
+        error: 'Patient not found. Register patient first.' 
+      })
     }
-
-    // Create consultation
-    const consultation = new Consultation({
+    
+    // Build consultation object - only include fields that exist in schema
+    const consultationData = {
       patientNic,
       doctorId: req.user.id,
-      sessionHospitalId: loginType === 'hospital' ? sessionHospitalId : null,
-      symptoms,
-      icdCode,
-      diagnosis,
-      notes: clinicalNotes,
-      isFollowUpRequired,
-      followUpDate: isFollowUpRequired ? followUpDate : null
-    });
+      symptoms: symptoms || [],
+      diagnosis: diagnosis || '',
+      notes: notes || clinicalNotes || '',
+      isFollowUpRequired: isFollowUpRequired || false,
+      loginType: loginType || 'personal',
+    }
+    
+    // Optional fields - only add if schema has them
+    if (icdCode) consultationData.icdCode = icdCode
+    if (icdDescription) consultationData.icdDescription = icdDescription
+    if (followUpDate) consultationData.followUpDate = new Date(followUpDate)
+    if (followUpNotes) consultationData.followUpNotes = followUpNotes
+    if (sessionHospitalId) consultationData.sessionHospitalId = sessionHospitalId
+    if (patient.district) consultationData.district = patient.district
+    
+    const consultation = new Consultation(consultationData);
     await consultation.save();
-
-    // Create prescriptions - map to flat Prescription schema fields
-    let createdPrescriptions = [];
-    if (prescriptions && prescriptions.length > 0) {
-      for (let rx of prescriptions) {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + (rx.durationDays || 30));
-        
-        const prescription = new Prescription({
-          prescriptionId: generateReceiptNumber(),
+    
+    // Create prescriptions
+    const createdPrescriptions = []
+    const conflictWarnings = []
+    
+    for (const rxData of prescriptions) {
+      // Allergy check
+      const patientAllergies = patient.allergies || []
+      const hasConflict = patientAllergies.some(a => 
+        rxData.drugName && rxData.drugName.toLowerCase().includes(a.toLowerCase())
+      )
+      if (hasConflict) {
+        conflictWarnings.push({
+          drug: rxData.drugName,
+          allergen: patientAllergies.find(a => 
+            rxData.drugName.toLowerCase().includes(a.toLowerCase())
+          )
+        })
+      }
+      
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + (parseInt(rxData.durationDays) || 7))
+      
+      try {
+        const rxDoc = new Prescription({
           consultationId: consultation._id,
           patientNic,
           doctorId: req.user.id,
-          hospitalId: loginType === 'hospital' ? sessionHospitalId : null,
-          drugName: rx.name || rx.drugName,
-          dosage: rx.dosage,
-          frequency: rx.frequency,
-          durationDays: rx.durationDays,
+          drugName: rxData.drugName || rxData.name || '',
+          dosage: rxData.dosage || '',
+          frequency: rxData.frequency || '',
+          durationDays: parseInt(rxData.durationDays) || 7,
+          instructions: rxData.instructions || '',
           expiresAt,
-          status: 'issued'
+          status: 'issued',
+          hospitalId: sessionHospitalId || null,
         });
-        await prescription.save();
-        createdPrescriptions.push(prescription);
+        await rxDoc.save();
+        createdPrescriptions.push(rxDoc)
+      } catch (rxErr) {
+        console.error('Prescription create error:', rxErr.message)
+        throw rxErr
       }
     }
-
-    // Async ML calls (don't block)
-    const mlEngineUrl = process.env.ML_ENGINE_URL || 'http://localhost:5001';
     
-    // 1. Predict disease tracking
-    axios.post(`${mlEngineUrl}/api/ml/predict-disease`, { symptoms }).catch(e => console.error('ML predict error:', e.message));
-    
-    // 2. Ingest
-    axios.post(`${mlEngineUrl}/ingest`, {
-      district: patient.contactInfo?.district || 'Colombo',
-      drugCategory: icdDescription || diagnosis,
-      date: new Date().toISOString().split('T')[0]
-    }).catch(e => console.error('ML ingest error:', e.message));
-
-    return res.status(201).json({
-      message: 'Consultation created successfully',
-      data: {
-        consultationId: consultation._id,
-        prescriptions: createdPrescriptions,
-        conflictWarnings
+    // Create test orders if provided
+    const createdTests = []
+    for (const testData of tests) {
+      try {
+        const TestOrder = require('../models/TestOrder')
+        const testDoc = await TestOrder.create({
+          consultationId: consultation._id,
+          patientNic,
+          doctorId: req.user.id,
+          hospitalId: sessionHospitalId || null,
+          testName: testData.testName,
+          testCategory: testData.testCategory || 'other',
+          urgency: testData.urgency || 'routine',
+          instructions: testData.instructions || '',
+          isSurgeryRelated: testData.isSurgeryRelated || false,
+          surgeryNotes: testData.surgeryNotes || '',
+        })
+        createdTests.push(testDoc)
+      } catch (testErr) {
+        console.error('Test order creation error:', testErr.message)
+        // Don't fail consultation over test order error
       }
-    });
-
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to create consultation', details: error.message });
+    }
+    
+    // Async ML calls - don't block response
+    Promise.all([
+      axios.post(process.env.ML_ENGINE_URL + '/ingest', {
+        district: patient.district || 'Unknown',
+        drugCategory: prescriptions[0]?.category || 'general',
+        date: new Date().toISOString().split('T')[0]
+      }).catch(e => console.log('ML ingest error (non-critical):', e.message)),
+      axios.post(process.env.ML_ENGINE_URL + '/patient-risk', {
+        age: patient.dateOfBirth ? 
+          Math.floor((Date.now()-new Date(patient.dateOfBirth))/(365.25*24*3600*1000)) : 30,
+        chronicConditions: patient.chronicConditions || [],
+        consultationCount30days: 1,
+        activePrescriptionsCount: createdPrescriptions.length
+      }).catch(e => console.log('ML risk error (non-critical):', e.message))
+    ])
+    
+    res.status(201).json({
+      message: 'Consultation created successfully',
+      consultationId: consultation._id,
+      prescriptions: createdPrescriptions,
+      tests: createdTests,
+      conflictWarnings
+    })
+    
+  } catch (err) {
+    console.error('createConsultation ERROR:', err.message)
+    console.error('Full error:', err)
+    if (err.name === 'ValidationError') {
+      const fields = Object.keys(err.errors)
+      return res.status(400).json({
+        error: 'Validation failed',
+        fields,
+        details: fields.map(f => err.errors[f].message)
+      })
+    }
+    if (err.name === 'CastError') {
+      return res.status(400).json({
+        error: 'Invalid data format',
+        field: err.path,
+        value: err.value
+      })
+    }
+    res.status(500).json({ error: err.message })
   }
 };
 

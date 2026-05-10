@@ -26,12 +26,14 @@ const PatientLogin = () => {
       });
 
       const { accessToken, role, subId, name } = response.data.data;
-      
+
+      localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('token', accessToken);
       localStorage.setItem('role', role || 'patient');
       localStorage.setItem('userRole', role || 'patient');
       // subId is the patient's NIC for patients
       if (subId) localStorage.setItem('nic', subId);
+      if (name) localStorage.setItem('name', name);
       if (name) localStorage.setItem('userName', name);
 
       toast.success('Login successful!');

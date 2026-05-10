@@ -1,12 +1,37 @@
 const nodemailer = require('nodemailer');
 
+/**
+ * Gmail SMTP Configuration
+ * IMPORTANT: EMAIL_PASS must be a Gmail App Password (16 chars), NOT your account password.
+ * How to get an App Password:
+ *   1. Go to myaccount.google.com/security
+ *   2. Enable 2-Step Verification
+ *   3. Search for "App passwords" → Create one for "Mail"
+ *   4. Copy the 16-character code and set it as EMAIL_PASS in .env
+ */
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // TLS (STARTTLS), not SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certs in dev
   }
 });
+
+// Verify on startup and log result
+transporter.verify((error) => {
+  if (error) {
+    console.warn(`⚠️  Email service not configured: ${error.message}`);
+    console.warn('   Emails will be skipped. Set EMAIL_USER and EMAIL_PASS in .env');
+  } else {
+    console.log(`✅  Email service configured: ${process.env.EMAIL_USER}`);
+  }
+});
+
 
 exports.sendOTPEmail = async (to, name, otp) => {
   const mailOptions = {

@@ -35,7 +35,26 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
         setResults(res.data.data);
         setIsOpen(true);
       } catch (err) {
-        // Silently handle error or add UI toast if needed
+        // Fallback to standard list if drug search fails
+        const q = query.toLowerCase();
+        const fallbackDrugs = [
+          { _id: 'd1', name: 'Paracetamol', genericName: 'Acetaminophen', category: 'Analgesic', commonDosages: ['500mg', '1000mg'] },
+          { _id: 'd2', name: 'Amoxicillin', genericName: 'Amoxicillin', category: 'Antibiotic', commonDosages: ['250mg', '500mg'] },
+          { _id: 'd3', name: 'Ibuprofen', genericName: 'Ibuprofen', category: 'NSAID', commonDosages: ['200mg', '400mg'] },
+          { _id: 'd4', name: 'Omeprazole', genericName: 'Omeprazole', category: 'PPI', commonDosages: ['20mg', '40mg'] },
+          { _id: 'd5', name: 'Metformin', genericName: 'Metformin', category: 'Antidiabetic', commonDosages: ['500mg', '850mg'] },
+          { _id: 'd6', name: 'Atorvastatin', genericName: 'Atorvastatin', category: 'Statin', commonDosages: ['10mg', '20mg'] },
+          { _id: 'd7', name: 'Amlodipine', genericName: 'Amlodipine', category: 'Calcium Channel Blocker', commonDosages: ['5mg', '10mg'] },
+          { _id: 'd8', name: 'Loratadine', genericName: 'Loratadine', category: 'Antihistamine', commonDosages: ['10mg'] },
+          { _id: 'd9', name: 'Salbutamol', genericName: 'Albuterol', category: 'Bronchodilator', commonDosages: ['100mcg/dose'] },
+          { _id: 'd10', name: 'Losartan', genericName: 'Losartan', category: 'ARB', commonDosages: ['50mg', '100mg'] }
+        ];
+        
+        const filtered = fallbackDrugs.filter(d => 
+          d.name.toLowerCase().includes(q) || d.genericName.toLowerCase().includes(q)
+        );
+        setResults(filtered);
+        setIsOpen(true);
       } finally {
         setIsLoading(false);
       }

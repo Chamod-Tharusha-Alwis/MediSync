@@ -60,6 +60,7 @@ app.use('/api/patient', require('./routes/patientRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/drugs', require('./routes/drugRoutes'));
 app.use('/api/alerts', require('./routes/alertRoutes'));
+app.use('/api/tests', require('./routes/testRoutes'));
 
 // 404 Handler
 app.use((req, res, next) => {

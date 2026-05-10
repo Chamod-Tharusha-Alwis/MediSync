@@ -160,12 +160,12 @@ exports.dispense = async (req, res) => {
     if (prescription.expiresAt < new Date()) return res.status(400).json({ error: 'Prescription expired' });
 
     const dispensing = new Dispensing({
-      dispensingId: generateReceiptNumber(),
+      receiptNumber: generateReceiptNumber(),
       prescriptionId: prescription._id,
       pharmacyId: staff.pharmacyId,
-      pharmacistId: staff._id,
+      staffId: staff._id,
       patientNic,
-      dispensedItems: items || prescription.medications.map(m => ({ drugName: m.name, quantity: m.durationDays })),
+      items: items || [{ drugName: prescription.drugName, dosage: prescription.dosage, quantityDispensed: prescription.durationDays || 1, status: 'dispensed' }],
       notes
     });
     await dispensing.save();
@@ -175,7 +175,7 @@ exports.dispense = async (req, res) => {
     prescription.dispensedBy = staff.pharmacyId;
     await prescription.save();
 
-    res.status(201).json({ message: 'Dispensed successfully', data: { receiptNumber: dispensing.dispensingId } });
+    res.status(201).json({ message: 'Dispensed successfully', data: { receiptNumber: dispensing.receiptNumber } });
   } catch (error) {
     res.status(500).json({ error: 'Dispensing failed', details: error.message });
   }

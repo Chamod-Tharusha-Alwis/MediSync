@@ -8,12 +8,15 @@ import Sidebar from '../../components/common/Sidebar';
 import PageTransition from '../../components/common/PageTransition';
 import SymptomTagInput from '../../components/SymptomTagInput';
 import DrugSearchInput from '../../components/DrugSearchInput';
-import { LayoutDashboard, Users, FileText } from 'lucide-react';
+import PatientAccessModal from '../../components/PatientAccessModal';
+import { LayoutDashboard, Users, FileText, FlaskConical } from 'lucide-react';
 
 const NewConsultation = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [patientAccessToken, setPatientAccessToken] = useState('');
 
   // Form State
   const [patientNic, setPatientNic] = useState('');
@@ -26,6 +29,9 @@ const NewConsultation = () => {
   const [selectedIcd, setSelectedIcd] = useState('');
 
   const [prescriptions, setPrescriptions] = useState([]);
+  
+  const [orderedTests, setOrderedTests] = useState([]);
+  const [testInput, setTestInput] = useState('');
   
   const [isFollowUpRequired, setIsFollowUpRequired] = useState(false);
   const [followUpDate, setFollowUpDate] = useState('');
@@ -43,7 +49,7 @@ const NewConsultation = () => {
     try {
       const res = await axios.get(`/patient/${patientNic}`);
       setPatientData(res.data.data);
-      setStep(2);
+      setShowOtpModal(true);
     } catch (err) {
       toast.error('Patient not found');
     } finally {
@@ -51,14 +57,33 @@ const NewConsultation = () => {
     }
   };
 
+  const handleOtpSuccess = (token) => {
+    setPatientAccessToken(token);
+    setShowOtpModal(false);
+    setStep(2);
+  };
+
   const getDiagnosisSuggestions = async () => {
     if (symptoms.length === 0) return toast.error('Add at least one symptom');
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/ml/predict-disease', { symptoms });
+      const mlEngineUrl = process.env.REACT_APP_ML_ENGINE_URL || 'http://localhost:5001';
+      const res = await axios.post(`${mlEngineUrl}/api/ml/predict-disease`, { symptoms });
       setDiagnosesOptions(res.data.predictions || []);
     } catch (err) {
-      toast.error('Could not fetch ML suggestions');
+      toast.error('ML service unavailable. Using standard list.');
+      setDiagnosesOptions([
+        { disease: 'Common Cold', icd_code: 'J00', recommendedSpecialist: 'General Physician', confidence: 85, urgent: false },
+        { disease: 'Influenza', icd_code: 'J11.1', recommendedSpecialist: 'General Physician', confidence: 80, urgent: false },
+        { disease: 'Acute Bronchitis', icd_code: 'J20.9', recommendedSpecialist: 'Pulmonologist', confidence: 75, urgent: false },
+        { disease: 'Essential Hypertension', icd_code: 'I10', recommendedSpecialist: 'Cardiologist', confidence: 90, urgent: false },
+        { disease: 'Type 2 Diabetes Mellitus', icd_code: 'E11.9', recommendedSpecialist: 'Endocrinologist', confidence: 88, urgent: false },
+        { disease: 'Migraine', icd_code: 'G43.909', recommendedSpecialist: 'Neurologist', confidence: 70, urgent: false },
+        { disease: 'Acute Pharyngitis', icd_code: 'J02.9', recommendedSpecialist: 'ENT', confidence: 82, urgent: false },
+        { disease: 'Gastroenteritis', icd_code: 'A09', recommendedSpecialist: 'Gastroenterologist', confidence: 78, urgent: false },
+        { disease: 'Asthma', icd_code: 'J45.909', recommendedSpecialist: 'Pulmonologist', confidence: 85, urgent: true },
+        { disease: 'Urinary Tract Infection', icd_code: 'N39.0', recommendedSpecialist: 'Urologist', confidence: 80, urgent: false }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -87,6 +112,19 @@ const NewConsultation = () => {
     setPrescriptions(newP);
   };
 
+  const addTest = () => {
+    if (!testInput.trim()) return;
+    if (orderedTests.includes(testInput.trim())) return toast.error('Test already added');
+    setOrderedTests([...orderedTests, testInput.trim()]);
+    setTestInput('');
+  };
+
+  const removeTest = (index) => {
+    const newT = [...orderedTests];
+    newT.splice(index, 1);
+    setOrderedTests(newT);
+  };
+
   const handleSubmit = async () => {
     if (!selectedDiagnosis) return toast.error('Select a diagnosis');
     
@@ -100,10 +138,13 @@ const NewConsultation = () => {
         icdCode: selectedIcd,
         clinicalNotes,
         prescriptions,
+        orderedTests: orderedTests.map(t => ({ testName: t, instructions: '' })),
         isFollowUpRequired,
         followUpDate: isFollowUpRequired ? followUpDate : null,
         loginType: localStorage.getItem('loginType'),
-        sessionHospitalId: localStorage.getItem('hospitalId')
+        sessionHospitalId: localStorage.getItem('sessionHospitalId')
+      }, {
+        headers: { 'x-patient-access': patientAccessToken }
       });
       
       toast.success('Consultation saved successfully');
@@ -188,6 +229,17 @@ const NewConsultation = () => {
                   </motion.div>
                 )}
 
+                {/* OTP Modal */}
+                {showOtpModal && (
+                  <PatientAccessModal
+                    patientNic={patientNic}
+                    requesterName={localStorage.getItem('userName') || 'Doctor'}
+                    requesterRole="doctor"
+                    onSuccess={handleOtpSuccess}
+                    onClose={() => setShowOtpModal(false)}
+                  />
+                )}
+
                 {/* STEP 2: Clinical Assessment */}
                 {step === 2 && (
                   <motion.div
@@ -235,10 +287,43 @@ const NewConsultation = () => {
                           <textarea
                             value={clinicalNotes}
                             onChange={(e) => setClinicalNotes(e.target.value)}
-                            rows={5}
+                            rows={4}
                             className="w-full p-4 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-200 placeholder-slate-600 transition-colors"
                             placeholder="Enter detailed observation notes..."
                           />
+                        </div>
+
+                        {/* Order Lab Tests */}
+                        <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-2xl">
+                          <label className="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                            <FlaskConical className="w-4 h-4 text-purple-400" /> Order Lab Tests
+                          </label>
+                          <div className="flex gap-2 mb-3">
+                            <input
+                              type="text"
+                              value={testInput}
+                              onChange={(e) => setTestInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && addTest()}
+                              placeholder="e.g. Full Blood Count"
+                              className="flex-1 p-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-purple-500 outline-none text-white text-sm"
+                            />
+                            <button
+                              onClick={addTest}
+                              className="bg-purple-600 hover:bg-purple-500 text-white px-4 rounded-xl transition-colors font-medium text-sm"
+                            >
+                              Add Test
+                            </button>
+                          </div>
+                          {orderedTests.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {orderedTests.map((test, i) => (
+                                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-lg text-sm">
+                                  {test}
+                                  <button onClick={() => removeTest(i)} className="hover:text-white transition-colors"><FiTrash2 size={14}/></button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
 

@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert, ActivitySquare, MapPin } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert, ActivitySquare, MapPin, Radio, ScrollText, Activity } from 'lucide-react';
+import { io } from 'socket.io-client';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
+
+// Import admin pages
+import OutbreakMonitor from './OutbreakMonitor';
+import Broadcast from './Broadcast';
+import AuditLog from './AuditLog';
+import BanManagement from './BanManagement';
+import PatientReports from './PatientReports';
+import ManageAdmins from './ManageAdmins';
 
 // Sub-components
 const ManageHospitals = () => {
@@ -174,7 +183,7 @@ const AlertSettings = () => {
               {alerts.map(a => (
                 <div key={a._id} className="bg-red-900/10 border border-red-500/30 p-3 rounded-lg">
                   <p className="text-red-400 font-medium text-sm">{a.message}</p>
-                  <p className="text-slate-500 text-xs mt-1">Z-Score: {a.zScore.toFixed(2)} | Date: {new Date(a.date).toLocaleDateString()}</p>
+                  <p className="text-slate-500 text-xs mt-1">Z-Score: {a.zScore?.toFixed?.(2) || 'N/A'} | Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
@@ -200,7 +209,7 @@ const Overview = ({ stats, geo, activeAlerts }) => (
         <ShieldAlert className="w-8 h-8 text-red-500 shrink-0" />
         <div>
           <h3 className="text-red-400 font-bold text-lg">Active Outbreak Alert</h3>
-          <p className="text-red-300 text-sm">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore.toFixed(2)})</p>
+          <p className="text-red-300 text-sm">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
         </div>
       </div>
     )}
@@ -294,11 +303,62 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  // Socket.IO real-time integration
+  useEffect(() => {
+    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
+    const socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+    });
+
+    socket.on('connect', () => {
+      console.log('[Admin] Socket.IO connected:', socket.id);
+    });
+
+    socket.on('outbreak_alert', (data) => {
+      toast.error(
+        <div>
+          <p className="font-bold text-sm">🚨 Outbreak Alert</p>
+          <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
+          {data?.district && <p className="text-xs mt-0.5">District: {data.district}</p>}
+        </div>,
+        { autoClose: 10000, position: 'top-right' }
+      );
+      // Also update the alert list
+      setActiveAlerts(prev => [data, ...prev]);
+    });
+
+    socket.on('broadcast_message', (data) => {
+      toast.info(
+        <div>
+          <p className="font-bold text-sm">📢 Broadcast</p>
+          <p className="text-xs mt-1">{data?.message || 'A new system broadcast has been sent.'}</p>
+        </div>,
+        { autoClose: 8000, position: 'top-right' }
+      );
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('[Admin] Socket.IO connection error:', err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const menuItems = [
     { label: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard, end: true },
     { label: 'Hospitals', path: '/admin/dashboard/hospitals', icon: Building2 },
     { label: 'Users', path: '/admin/dashboard/users', icon: Users },
     { label: 'ML Alerts', path: '/admin/dashboard/alerts', icon: ShieldAlert },
+    { label: 'Outbreak Monitor', path: '/admin/dashboard/outbreak', icon: Activity },
+    { label: 'Broadcast', path: '/admin/dashboard/broadcast', icon: Radio },
+    { label: 'Audit Log', path: '/admin/dashboard/audit', icon: ScrollText },
+    { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
+    { label: 'Patient Reports', path: '/admin/dashboard/reports', icon: ClipboardList },
+    { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
   ];
 
   return (
@@ -316,6 +376,12 @@ const AdminDashboard = () => {
             <Route path="/dashboard/hospitals" element={<ManageHospitals />} />
             <Route path="/dashboard/users" element={<ManageUsers />} />
             <Route path="/dashboard/alerts" element={<AlertSettings />} />
+            <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
+            <Route path="/dashboard/broadcast" element={<Broadcast />} />
+            <Route path="/dashboard/audit" element={<AuditLog />} />
+            <Route path="/dashboard/bans" element={<BanManagement />} />
+            <Route path="/dashboard/reports" element={<PatientReports />} />
+            <Route path="/dashboard/admins" element={<ManageAdmins />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         )}
