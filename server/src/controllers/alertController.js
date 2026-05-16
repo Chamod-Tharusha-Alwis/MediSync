@@ -50,14 +50,29 @@ exports.broadcastAlert = async (req, res) => {
     }
 
     // Send emails to all patients in a district
-    const patients = await Patient.find({ district }).select('contactInfo');
-    const emailList = patients.filter(p => p.contactInfo && p.contactInfo.email).map(p => p.contactInfo.email);
+    const patients = await Patient.find({ district: district === 'Nationwide' ? { $exists: true } : district }).select('email fullName');
+    const emailList = patients.filter(p => p.email).map(p => p.email);
 
     if (emailList.length > 0) {
       await emailService.sendOutbreakAlert(emailList, district, message, zScore || 0);
     }
 
-    res.json({ message: `Broadcasted alert to ${emailList.length} patients in ${district}` });
+    // Save to database for history
+    const BroadcastMessage = require('../models/BroadcastMessage');
+    const newBroadcast = new BroadcastMessage({
+      title: req.body.title || 'System Alert',
+      message: message,
+      targetRole: req.body.targetRole || 'patient',
+      targetDistrict: district,
+      sentBy: req.user.id,
+      sentAt: new Date()
+    });
+    await newBroadcast.save();
+
+    res.json({ 
+      message: `Broadcasted alert to ${emailList.length} recipients in ${district}`,
+      data: newBroadcast
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to broadcast alert', details: error.message });
   }

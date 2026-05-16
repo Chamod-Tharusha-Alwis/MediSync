@@ -21,9 +21,16 @@ const BanManagement = () => {
   const fetchBans = async () => {
     setLoading(true);
     try {
+      let endpoint = '/admin/bans';
       const params = new URLSearchParams();
-      if (filter !== '') params.set('isActive', filter);
-      const { data } = await api.get(`/admin/bans?${params}`);
+      
+      if (filter === 'true') {
+        endpoint = '/admin/bans/active';
+      } else if (filter === 'false') {
+        params.set('isActive', 'false');
+      }
+      
+      const { data } = await api.get(`${endpoint}${params.toString() ? '?' + params.toString() : ''}`);
       setBans(data.data || []);
     } catch (err) {
       toast.error('Failed to load bans');
@@ -72,7 +79,7 @@ const BanManagement = () => {
   const handleLift = async (banId, name) => {
     if (!window.confirm(`Lift the suspension for ${name}?`)) return;
     try {
-      await api.put(`/admin/ban/${banId}/lift`, { liftReason: 'Admin decision' });
+      await api.put(`/admin/bans/${banId}/lift`, { liftReason: 'Admin decision' });
       toast.success('Suspension lifted');
       fetchBans();
     } catch (err) {

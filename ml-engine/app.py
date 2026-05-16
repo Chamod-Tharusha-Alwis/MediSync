@@ -261,6 +261,25 @@ def predict_outbreak():
         data = request.json or {}
         district = data.get('district', 'Colombo')
         
+        # Fetch latest data from database to get a real "latest_actual"
+        latest_actual = 0
+        try:
+            conn = sqlite3.connect(db_path)
+            c = conn.cursor()
+            # Get sum of counts for the last 7 days for this district
+            seven_days_ago = (datetime.now().date() - pd.Timedelta(days=7)).strftime('%Y-%m-%d')
+            c.execute('SELECT SUM(count) FROM outbreak_tracking WHERE district=? AND date >= ?', (district, seven_days_ago))
+            db_row = c.fetchone()
+            if db_row and db_row[0]:
+                latest_actual = float(db_row[0])
+            else:
+                # Fallback to last historical value if DB is empty
+                latest_actual = float(historical_df['y'].iloc[-1]) if historical_df is not None else 0
+            conn.close()
+        except Exception as e:
+            print(f"DB Fetch error in predict_outbreak: {e}")
+            latest_actual = float(historical_df['y'].iloc[-1]) if historical_df is not None else 0
+
         # Use Prophet model to forecast next 14 days
         if prophet_model is not None and historical_df is not None:
             future = prophet_model.make_future_dataframe(periods=14, freq='W')
@@ -273,8 +292,7 @@ def predict_outbreak():
             hist_mean = float(historical_df['y'].mean())
             hist_std  = float(historical_df['y'].std())
             
-            # Latest actual value for anomaly check
-            latest_actual = float(historical_df['y'].iloc[-1])
+            # Calculate overall Z-score for the current "latest_actual"
             overall_z = round((latest_actual - hist_mean) / (hist_std + 1e-9), 3)
             
             forecast_list = []
