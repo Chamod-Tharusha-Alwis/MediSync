@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Building2, User, Activity, Clock,
-  ChevronRight,
+  ChevronRight, Check, LayoutDashboard, Users,
   Pill, Plus, Calendar, ShieldAlert,
-  Stethoscope, FileText, TrendingUp, Loader2, LogOut
+  Stethoscope, FileText, TrendingUp, Loader2
 } from 'lucide-react';
+import { FiUser } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../api/axiosInstance';
+import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
+import Sidebar from '../../components/common/Sidebar';
 
 // ─── Workspace Selector ──────────────────────────────────────────────────────
 const WorkspaceSelector = ({ onSelect }) => (
@@ -107,7 +110,7 @@ const MedicalTimeline = ({ history }) => {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DoctorDashboard() {
   const navigate = useNavigate();
-  const [workspace, setWorkspace] = useState(null);
+  const [workspace, setWorkspace] = useState(() => localStorage.getItem('workspaceMode') || null);
   const [nic, setNic] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [patient, setPatient] = useState(null);
@@ -154,43 +157,60 @@ export default function DoctorDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/doctor/login');
-  };
+
 
   if (!workspace) {
-    return <WorkspaceSelector onSelect={(ws) => { setWorkspace(ws); localStorage.setItem('loginType', ws === 'Personal Clinic' ? 'personal' : 'hospital'); }} />;
+    return <WorkspaceSelector onSelect={(ws) => { 
+      setWorkspace(ws); 
+      localStorage.setItem('workspaceMode', ws); 
+      localStorage.setItem('loginType', ws === 'Personal Clinic' ? 'personal' : 'hospital'); 
+    }} />;
   }
 
+  const _dashWsMode    = localStorage.getItem('workspaceMode') || 'personal';
+  const _dashIsPersonal = _dashWsMode !== 'hospital';
+
+  const menuItems = [
+    { label: 'Dashboard',         path: '/doctor/dashboard',        icon: LayoutDashboard, end: true },
+    { label: 'New Consultation',  path: '/doctor/consultation/new', icon: Plus },
+    { label: 'Patient Directory', path: '/doctor/patients',          icon: Users },
+    ...(_dashIsPersonal ? [{ label: 'My Profile', path: '/doctor/profile', icon: FiUser }] : []),
+  ];
+
+
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100">
-      {/* ── Navbar ─────────────────────────────────────────── */}
-      <header className="bg-slate-900/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white text-sm">M</div>
-            <span className="text-lg font-bold text-white tracking-tight">
-              MediSync <span className="font-normal text-slate-400 ml-1">Workspace</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-slate-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-              <Building2 size={13} /> {workspace}
-            </span>
-            <span className="text-sm text-slate-300 hidden md:block">Dr. {doctorName}</span>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Logout"
-            >
-              <LogOut size={18} />
-            </button>
+    <div className="flex bg-[#080d1a] min-h-screen text-slate-200 font-sans">
+      <Sidebar menuItems={menuItems} title="Doctor Portal" themePrefix="doctor" userName={`Dr. ${doctorName}`} userRole="Verified Doctor" />
+
+      <main className="flex-1 lg:ml-64 p-6 lg:p-10 transition-all duration-300 space-y-8">
+        
+        {/* ── Dashboard Header ── */}
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 tracking-tight">
+                Dr. {doctorName}
+              </h1>
+              {/* Verified Badge */}
+              <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Check className="w-3.5 h-3.5" />
+                Verified Medical Professional
+              </span>
+            </div>
+            <p className="text-slate-400 mt-1.5 text-sm flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 text-slate-500" />
+              Current Workspace: <span className="text-slate-200 font-semibold">{workspace}</span>
+              <button 
+                onClick={() => { setWorkspace(null); localStorage.removeItem('workspaceMode'); }}
+                className="ml-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-0.5 rounded text-slate-300 transition-colors"
+              >
+                Change Workspace
+              </button>
+            </p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <ActiveOutbreakBanner />
 
         {/* ── Stats Row ──────────────────────────────────────── */}
         {!loadingStats && stats && (

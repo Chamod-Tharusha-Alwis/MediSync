@@ -7,6 +7,7 @@ import Sidebar from '../../components/common/Sidebar';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import TestManagement from './TestManagement';
+import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 
 // Sub-components
 const DoctorRoster = () => {
@@ -262,10 +263,12 @@ const HospitalDashboard = () => {
   ];
 
   return (
-    <div className="hospital-theme flex min-h-screen bg-[#0b1120]">
-      <Sidebar menuItems={menuItems} title="Hospital Admin" themePrefix="hospital" />
-      
-      <main className="flex-1 lg:ml-64 p-4 lg:p-6 transition-all duration-300">
+    <div className="hospital-theme flex flex-col min-h-screen bg-[#0b1120]">
+      <ActiveOutbreakBanner />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar menuItems={menuItems} title="Hospital Admin" themePrefix="hospital" />
+        
+        <main className="flex-1 lg:ml-64 p-4 lg:p-6 transition-all duration-300">
         {loading ? (
           <div className="flex h-full items-center justify-center">
             <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -280,6 +283,7 @@ const HospitalDashboard = () => {
           </Routes>
         )}
       </main>
+      </div>
     </div>
   );
 };

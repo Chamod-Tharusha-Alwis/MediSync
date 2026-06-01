@@ -1,23 +1,142 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Star, X, ChevronDown, ChevronUp, Stethoscope, FileText, Package } from 'lucide-react';
+import {
+  Calendar, Star, X, ChevronDown, ChevronUp,
+  Stethoscope, FileText, Package, FlaskConical,
+  User, Building2, Pill, Download, ShoppingBag, Loader2,
+} from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 
+/* ─── Framer Motion stagger variants ─────────────────────────────────────── */
+const feedVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.10, delayChildren: 0.05 },
+  },
+};
+
+const cardVariants = {
+  hidden:  { opacity: 0, y: 24, scale: 0.97 },
+  visible: {
+    opacity: 1, y: 0, scale: 1,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+/* ─── Event type config ───────────────────────────────────────────────────── */
+const typeConfig = {
+  consultation: {
+    Icon:       Stethoscope,
+    iconColor:  'text-blue-400',
+    iconBg:     'bg-blue-500/10 border-blue-500/20',
+    badge:      'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    dot:        'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.9)]',
+    cardBorder: 'border-blue-500/15 hover:border-blue-500/35 hover:shadow-[0_0_28px_rgba(59,130,246,0.12)]',
+    labTagBg:   'bg-blue-500/12 border-blue-500/25 text-blue-300',
+  },
+  prescription: {
+    Icon:       Pill,
+    iconColor:  'text-emerald-400',
+    iconBg:     'bg-emerald-500/10 border-emerald-500/20',
+    badge:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    dot:        'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]',
+    cardBorder: 'border-emerald-500/15 hover:border-emerald-500/35 hover:shadow-[0_0_28px_rgba(16,185,129,0.12)]',
+    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+  },
+  otc: {
+    Icon:       ShoppingBag,
+    iconColor:  'text-teal-400',
+    iconBg:     'bg-teal-500/10 border-teal-500/20',
+    badge:      'bg-teal-500/10 text-teal-400 border-teal-500/20',
+    dot:        'bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]',
+    cardBorder: 'border-teal-500/20 hover:border-teal-500/40 hover:shadow-[0_0_28px_rgba(20,184,166,0.12)]',
+    labTagBg:   'bg-teal-500/12 border-teal-500/25 text-teal-300',
+  },
+  dispensing: {
+    Icon:       Package,
+    iconColor:  'text-cyan-400',
+    iconBg:     'bg-cyan-500/10 border-cyan-500/20',
+    badge:      'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    dot:        'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]',
+    cardBorder: 'border-cyan-500/15 hover:border-cyan-500/35 hover:shadow-[0_0_28px_rgba(6,182,212,0.12)]',
+    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+  },
+  lab_test: {
+    Icon:       FlaskConical,
+    iconColor:  'text-purple-400',
+    iconBg:     'bg-purple-500/10 border-purple-500/20',
+    badge:      'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    dot:        'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.9)]',
+    cardBorder: 'border-purple-500/15 hover:border-purple-500/35 hover:shadow-[0_0_28px_rgba(139,92,246,0.12)]',
+    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+  },
+};
+const getTC = (type) => typeConfig[type] || typeConfig.consultation;
+
+/* ─── PDF download helper ─────────────────────────────────────────────────── */
+const downloadPdf = async (prescriptionId, setDownloading) => {
+  if (!prescriptionId) {
+    toast.error('No prescription ID available for this record.');
+    return;
+  }
+  setDownloading(true);
+  try {
+    const response = await api.get(`/prescription/download/${prescriptionId}`, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = `E-Prescription-${prescriptionId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('E-Prescription downloaded. Open it with your NIC as the password.');
+  } catch (err) {
+    toast.error(err.response?.data?.error || err.message || 'Download failed');
+  } finally {
+    setDownloading(false);
+  }
+};
+
+/* ─── Lab Test Tags — colored pill chips ─────────────────────────────────── */
+const LabTestTags = ({ tests, tc, limit = 4 }) => {
+  if (!tests || tests.length === 0) return null;
+  const visible = tests.slice(0, limit);
+  const overflow = tests.length - limit;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {visible.map((t, i) => (
+        <span
+          key={i}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide ${tc.labTagBg}`}
+        >
+          <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />
+          {typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test')}
+        </span>
+      ))}
+      {overflow > 0 && (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-slate-600 bg-slate-800/60 text-slate-400 text-[10px] font-bold">
+          +{overflow} more
+        </span>
+      )}
+    </div>
+  );
+};
+
+/* ─── Rating modal ────────────────────────────────────────────────────────── */
 const RatingModal = ({ show, onClose, consultationId, onRated }) => {
-  const [rating, setRating] = useState(0);
+  const [rating,      setRating]      = useState(0);
   const [hoveredStar, setHoveredStar] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting,  setSubmitting]  = useState(false);
 
   if (!show) return null;
 
   const handleSubmit = async () => {
-    if (rating === 0) {
-      toast.error('Please select a rating');
-      return;
-    }
+    if (rating === 0) return toast.error('Please select a rating');
     setSubmitting(true);
     try {
       await api.post(`/patient/consultation/${consultationId}/rate`, { rating });
@@ -26,70 +145,62 @@ const RatingModal = ({ show, onClose, consultationId, onRated }) => {
       onClose();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to submit rating');
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="absolute inset-0 bg-[#040814]/80 backdrop-blur-md" onClick={onClose} />
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-sm bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-8 z-10"
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1,    y: 0  }}
+          exit={{   opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          className="relative w-full max-w-sm glass-card-premium border border-white/5 rounded-2xl shadow-2xl p-8 z-10 overflow-hidden neumorphic-flat"
         >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-t-2xl" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
 
-          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+            <X className="w-4 h-4" />
           </button>
 
           <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-white">Rate Your Visit</h3>
-            <p className="text-slate-400 text-sm mt-2">How was your consultation experience?</p>
+            <h3 className="text-xl font-bold text-white tracking-tight">Rate Your Visit</h3>
+            <p className="text-slate-400 text-sm mt-1.5">How was your consultation experience?</p>
           </div>
 
           <div className="flex justify-center gap-2 mb-8">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
+            {[1, 2, 3, 4, 5].map(star => (
+              <button key={star}
                 onMouseEnter={() => setHoveredStar(star)}
                 onMouseLeave={() => setHoveredStar(0)}
                 onClick={() => setRating(star)}
-                className="transition-transform hover:scale-110"
+                className="transition-transform duration-200 hover:scale-110 p-1"
               >
-                <Star
-                  className={`w-10 h-10 transition-colors ${
-                    star <= (hoveredStar || rating)
-                      ? 'text-amber-400 fill-amber-400'
-                      : 'text-slate-600'
-                  }`}
-                />
+                <Star className={`w-9 h-9 transition-all duration-200 ${
+                  star <= (hoveredStar || rating)
+                    ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                    : 'text-slate-700'
+                }`} />
               </button>
             ))}
           </div>
 
           {rating > 0 && (
-            <p className="text-center text-sm text-slate-400 mb-6">
+            <p className="text-center text-sm font-bold text-amber-400 mb-6 font-mono tracking-wide uppercase bg-amber-500/5 py-1.5 rounded-lg border border-amber-500/10">
               {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
             </p>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={rating === 0 || submitting}
-            className="w-full py-3 px-4 rounded-xl text-sm font-medium text-white bg-amber-600/80 hover:bg-amber-600 border border-amber-600/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Submitting...' : 'Submit Rating'}
+          <button onClick={handleSubmit} disabled={rating === 0 || submitting}
+            className="w-full py-3 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-[0_4px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_4px_20px_rgba(245,158,11,0.4)] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed">
+            {submitting ? 'Submitting…' : 'Submit Rating'}
           </button>
         </motion.div>
       </motion.div>
@@ -97,230 +208,575 @@ const RatingModal = ({ show, onClose, consultationId, onRated }) => {
   );
 };
 
+/* ─── History feed card ───────────────────────────────────────────────────── */
+const HistoryCard = ({ event, onRate }) => {
+  const [expanded,    setExpanded]    = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const details = event.data || {};
+  const rawType = event.type || 'consultation';
+
+  // Treat OTC prescriptions as their own display type
+  const isOTC = rawType === 'prescription' && details.isOTC;
+  const type  = isOTC ? 'otc' : rawType;
+  const tc    = getTC(type);
+  const { Icon } = tc;
+
+  const dateStr = event.date
+    ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Unknown date';
+
+  // Merge labTests
+  const labTests = [
+    ...(details.labTests     || []),
+    ...(details.orderedTests || []),
+  ].filter((v, i, arr) => arr.indexOf(v) === i);
+
+  // Medications list (for OTC docs)
+  const meds = details.medications || [];
+
+  // Primary title
+  const cardTitle = isOTC
+    ? 'Direct Pharmacy Dispensation'
+    : (details.diagnosis || 'Medical Consultation');
+
+  return (
+    <motion.div variants={cardVariants} className="relative pl-14">
+      {/* Timeline dot */}
+      <div className="absolute left-4 top-6 w-5 h-5 rounded-full bg-slate-950 border-2 border-slate-800 flex items-center justify-center z-10">
+        <div className={`w-2 h-2 rounded-full ${tc.dot}`} />
+      </div>
+
+      {/* Card */}
+      <div
+        className={`glass-card rounded-2xl border ${tc.cardBorder} cursor-pointer transition-all duration-300 overflow-hidden neumorphic-flat`}
+        onClick={() => setExpanded(e => !e)}
+      >
+        {/* Card header */}
+        <div className="p-5 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {/* Type icon */}
+            <div className={`p-3 rounded-xl border flex-shrink-0 ${tc.iconBg}`}>
+              <Icon className={`w-5 h-5 ${tc.iconColor}`} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {/* Date + type badge + ID */}
+              <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                <span className="text-[10px] font-bold text-slate-500 font-mono tracking-wider uppercase">
+                  {dateStr}
+                </span>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border tracking-widest uppercase ${tc.badge}`}>
+                  {isOTC ? 'OTC Dispensation' : type.replace('_', ' ')}
+                </span>
+                {details.consultationId && (
+                  <span className="text-[9px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Ref: {details.consultationId}
+                  </span>
+                )}
+              </div>
+
+              {/* Title */}
+              <h4 className="text-base md:text-lg font-bold text-white truncate leading-tight">
+                {cardTitle}
+              </h4>
+
+              {/* Doctor / pharmacist / hospital */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                {details.doctorId?.fullName && (
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <User className="w-3 h-3" />
+                    Dr. {details.doctorId.fullName}
+                  </span>
+                )}
+                {isOTC && details.dispensedByPharmacist && (
+                  <span className="flex items-center gap-1 text-xs text-teal-400">
+                    <ShoppingBag className="w-3 h-3" />
+                    Dispensed by {details.dispensedByPharmacist}
+                  </span>
+                )}
+                {(details.hospitalId?.name || details.sessionHospitalId?.name) && (
+                  <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <Building2 className="w-3 h-3" />
+                    {details.hospitalId?.name || details.sessionHospitalId?.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Lab Test Tags (always visible) */}
+              <LabTestTags tests={labTests} tc={tc} limit={4} />
+
+              {/* Follow-up indicator */}
+              {details.followUpDate && new Date(details.followUpDate) > new Date() && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/12 border border-indigo-500/25">
+                  <Calendar className="w-3 h-3 text-indigo-400" />
+                  <span className="text-indigo-300 text-[10px] font-bold">
+                    Follow-up: {new Date(details.followUpDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: star rating + chevron */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {details.rating && (
+              <div className="flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/15 text-amber-400">
+                <Star className="w-3.5 h-3.5 fill-amber-400" />
+                <span className="text-xs font-bold font-mono">{details.rating}</span>
+              </div>
+            )}
+            <div className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors">
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded detail */}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.28, ease: 'easeInOut' }}
+              className="border-t border-white/5 overflow-hidden"
+            >
+              <div className="p-5 space-y-5">
+
+                {/* ── OTC medication list ── */}
+                {isOTC && meds.length > 0 && (
+                  <div>
+                    <p className="label-caps mb-2">Dispensed Medications</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {meds.map((m, i) => (
+                        <div key={i} className="flex justify-between items-center bg-teal-900/20 p-3 rounded-xl border border-teal-500/15">
+                          <div className="min-w-0">
+                            <div className="text-slate-200 font-bold text-sm truncate">{m.name}</div>
+                            <div className="text-slate-400 text-xs mt-0.5">{m.dosage}</div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded border border-teal-500/20 font-mono ml-2">
+                            {m.frequency}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {details.instructions && (
+                      <p className="text-xs text-slate-400 mt-3 italic bg-slate-950/30 p-2 rounded-lg border border-white/5">
+                        Note: {details.instructions}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Doctor consultation expanded view ── */}
+                {!isOTC && (
+                  <>
+                    {/* Symptoms */}
+                    {details.symptoms?.length > 0 && (
+                      <div>
+                        <p className="label-caps mb-2 text-slate-400 text-xs font-bold tracking-wider uppercase">Symptoms Reported</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {details.symptoms.map((s, i) => (
+                            <span key={i} className="px-2.5 py-1 bg-slate-900 border border-white/5 rounded-lg text-xs text-slate-300 font-semibold">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {details.prescriptions && details.prescriptions.length > 0 && (
+                      <div>
+                        <p className="label-caps mb-2 text-slate-400 text-xs font-bold tracking-wider uppercase">Prescribed Medications</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {details.prescriptions.map((p, pIdx) => {
+                            const rxMeds = p.medications && p.medications.length > 0
+                              ? p.medications
+                              : [{ name: p.drugName, dosage: p.dosage, frequency: p.frequency }];
+
+                            const isDispensed = p.status === 'dispensed';
+                            const statusPill = isDispensed ? (
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full border border-slate-700 bg-slate-800 text-slate-400 tracking-wider uppercase ml-2">
+                                Dispensed
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/12 text-emerald-400 tracking-wider uppercase ml-2">
+                                Ready For Pickup
+                              </span>
+                            );
+
+                            return (
+                              <div key={pIdx} className="col-span-1 md:col-span-2 space-y-1.5">
+                                {rxMeds.map((m, mIdx) => {
+                                  if (!m.name) return null;
+                                  return (
+                                    <div key={`${pIdx}-${mIdx}`} className="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-white/5">
+                                      <div className="flex justify-between items-start">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="text-slate-200 font-bold text-sm truncate flex items-center flex-wrap gap-1">
+                                            {m.name}
+                                            {statusPill}
+                                          </div>
+                                          <div className="text-slate-400 text-xs mt-0.5">{m.dosage}</div>
+                                          {p.instructions && (
+                                            <div className="text-slate-500 text-[10px] mt-0.5 italic">Note: {p.instructions}</div>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] font-bold bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-mono ml-2 flex-shrink-0">
+                                          {m.frequency}
+                                        </span>
+                                      </div>
+
+                                      {/* ⚠️ Alternative Dispense Warning */}
+                                      {p.isAlternativeDispensed && p.alternativeDetails && (
+                                        <div className="mt-2 flex items-start gap-2 bg-amber-500/8 border border-amber-500/25 rounded-lg px-3 py-2">
+                                          <span className="text-amber-400 text-xs font-black tracking-wide flex-shrink-0">⚠️ ALT DISPENSED:</span>
+                                          <span className="text-amber-300/90 text-xs font-medium">{p.alternativeDetails}</span>
+                                        </div>
+                                      )}
+
+                                      {/* Dispenser attribution (shown once per prescription, on first med row) */}
+                                      {mIdx === 0 && isDispensed && p.pharmacyName && (
+                                        <div className="mt-1.5 text-[10px] text-slate-500 flex items-center gap-1">
+                                          <span className="font-semibold text-slate-400">{p.pharmacyName}</span>
+                                          {p.dispensedByPharmacist && (
+                                            <span className="text-slate-600">&mdash; Pharmacist: {p.dispensedByPharmacist}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clinical notes */}
+                    {details.notes && (
+                      <div>
+                        <p className="label-caps mb-1.5 text-slate-400 text-xs font-bold tracking-wider uppercase">Clinical Notes</p>
+                        <p className="text-sm text-slate-300 bg-slate-950/30 p-3 rounded-xl border border-white/5 leading-relaxed italic">
+                          "{details.notes}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Lab tests */}
+                    {labTests.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="label-caps text-slate-400 text-xs font-bold tracking-wider uppercase">Lab Tests & Results</p>
+                        {labTests.map((labDoc, idx) => (
+                          <div key={idx} className="space-y-2">
+                            {(labDoc.tests || [labDoc]).map((t, i) => {
+                              // t could be a string if it's the old format, or an object if it's the new LabTest schema
+                              const isString = typeof t === 'string';
+                              const name = isString ? t : (t.testName || t.name || 'Lab Test');
+                              const isCompleted = !isString && t.status === 'completed';
+                              const isAbnormal = !isString && t.isAbnormal;
+
+                              return (
+                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-900/50 border border-white/5 gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <FlaskConical className={`w-4 h-4 ${isAbnormal ? 'text-rose-400' : 'text-purple-400'}`} />
+                                    <span className="text-sm font-semibold text-slate-200">{name}</span>
+                                  </div>
+                                  
+                                  {!isString && isCompleted ? (
+                                    <div className="flex items-center gap-3">
+                                      <span className={`text-sm font-bold ${isAbnormal ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                        {t.resultValue} {t.unit}
+                                      </span>
+                                      {t.referenceRange && (
+                                        <span className="text-xs text-slate-500">
+                                          (Ref: {t.referenceRange})
+                                        </span>
+                                      )}
+                                      {isAbnormal && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wider">
+                                          Abnormal
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-slate-500 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                                      {!isString ? (t.status === 'ordered' ? 'Pending' : t.status) : 'Ordered'}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Follow-up details */}
+                    {details.followUpDate && (
+                      <div>
+                        <p className="label-caps mb-1.5 text-slate-400 text-xs font-bold tracking-wider uppercase">Follow-up Scheduled</p>
+                        <div className="flex items-center gap-2 bg-indigo-500/8 border border-indigo-500/20 rounded-xl p-3">
+                          <Calendar className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-indigo-200 text-sm font-semibold">
+                              {new Date(details.followUpDate).toLocaleDateString('en-US', {
+                                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                              })}
+                            </p>
+                            {details.followUpNotes && (
+                              <p className="text-slate-400 text-xs mt-0.5 italic">{details.followUpNotes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Action row: PDF download + Rate button ── */}
+                    <div className="pt-2 border-t border-slate-900/60 flex flex-wrap justify-between items-center gap-3">
+                      {/* PDF Download — passes consultationId to backend */}
+                      {details.prescriptions && details.prescriptions.length > 0 && (
+                        <motion.button
+                          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                          onClick={e => { e.stopPropagation(); downloadPdf(details.consultationId, setDownloading); }}
+                          disabled={downloading}
+                          className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
+                        >
+                          {downloading
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Download className="w-3.5 h-3.5" />
+                          }
+                          {downloading ? 'Downloading…' : 'Download E-Prescription (PDF) 🔒'}
+                        </motion.button>
+                      )}
+
+                      {/* Rate consultation button or Display Rating */}
+                      {!details.rating ? (
+                        <motion.button
+                          whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+                          onClick={e => { e.stopPropagation(); onRate(details._id); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-all duration-200"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          Rate Consultation
+                        </motion.button>
+                      ) : (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`w-3.5 h-3.5 ${i < details.rating.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-600'}`} />
+                            ))}
+                          </div>
+                          {details.rating.comment && (
+                            <span className="text-xs text-slate-400 italic border-l border-slate-700 pl-2 ml-1">
+                              "{details.rating.comment}"
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ─── Summary chips ───────────────────────────────────────────────────────── */
+const SummaryChip = ({ icon: Icon, label, count, color }) => (
+  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl glass-card border border-white/5 ${color}`}>
+    <Icon className="w-4 h-4" />
+    <span className="text-xs font-bold">{count}</span>
+    <span className="text-xs text-slate-400 font-medium">{label}</span>
+  </div>
+);
+
+/* ─── Main Page ───────────────────────────────────────────────────────────── */
 const PatientHistory = () => {
-  const [timeline, setTimeline] = useState([]);
-  const [expandedId, setExpandedId] = useState(null);
+  const [timeline,    setTimeline]    = useState([]);
   const [ratingModal, setRatingModal] = useState({ show: false, consultationId: null });
+  const [filter,      setFilter]      = useState('all');
+
   let nic = localStorage.getItem('nic');
   if (!nic) {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try { nic = JSON.parse(userStr).nic; } catch(e) {}
-    }
+    const u = localStorage.getItem('user');
+    if (u) { try { nic = JSON.parse(u).nic; } catch {} }
   }
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['patientHistory', nic],
-    queryFn: async () => {
-      const res = await api.get(`/patient/${nic}/timeline`);
-      return res.data.data || res.data;
+    queryKey:  ['patientHistory', nic],
+    queryFn:   async () => {
+      const r = await api.get(`/patient/${nic}/timeline`);
+      console.log("HISTORY DATA:", r.data);
+      return r.data.data || r.data;
     },
-    enabled: !!nic,
-    retry: 1,
+    enabled:   !!nic,
+    retry:     1,
     staleTime: 5 * 60 * 1000,
   });
 
-  useEffect(() => {
-    if (data) {
-      setTimeline(Array.isArray(data) ? data : []);
-    }
-  }, [data]);
+  useEffect(() => { if (data) setTimeline(Array.isArray(data) ? data : []); }, [data]);
 
-  const handleRated = (consultationId, rating) => {
+  const handleRated = (consultationId, rating) =>
     setTimeline(prev => prev.map(item =>
-      (item.data?._id === consultationId) ? { ...item, data: { ...item.data, rating } } : item
+      item.data?._id === consultationId ? { ...item, data: { ...item.data, rating } } : item
     ));
-  };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'prescription': return <FileText className="w-5 h-5 text-emerald-400" />;
-      case 'dispensing': return <Package className="w-5 h-5 text-cyan-400" />;
-      default: return <Stethoscope className="w-5 h-5 text-blue-400" />;
-    }
-  };
+  /* Filtered feed — OTC filter maps to prescription events, prescription filter maps to consultations with nested prescriptions */
+  const filtered = filter === 'all'
+    ? timeline
+    : filter === 'otc'
+      ? timeline.filter(e => e.type === 'prescription' && e.data?.isOTC)
+      : filter === 'prescription'
+        ? timeline.filter(e => e.type === 'consultation' && e.data?.prescriptions && e.data.prescriptions.length > 0)
+        : timeline.filter(e => e.type === filter);
 
-  const getAccentColor = (type) => {
-    switch (type) {
-      case 'prescription': return 'border-emerald-500/30 bg-emerald-500/5';
-      case 'dispensing': return 'border-cyan-500/30 bg-cyan-500/5';
-      default: return 'border-blue-500/30 bg-blue-500/5';
-    }
-  };
-
+  /* ── Guards ── */
   if (!nic) return (
-    <div className="flex h-full items-center justify-center p-20 text-center">
-      <div>
-        <p className="text-red-500 font-semibold mb-2">Session expired.</p>
-        <button onClick={() => window.location.href = '/patient/login'} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl">Go to Login</button>
+    <div className="flex h-full items-center justify-center p-20 text-center bg-[#080d1a]">
+      <div className="glass-card-premium p-8 rounded-2xl border border-red-500/20 max-w-sm">
+        <p className="text-red-400 font-semibold mb-4">Session expired.</p>
+        <button onClick={() => window.location.href = '/patient/login'}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-bold transition-all duration-200">
+          Go to Login
+        </button>
       </div>
     </div>
   );
 
   if (isLoading) return (
-    <div className="flex h-full items-center justify-center p-20">
-      <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <div className="flex h-full items-center justify-center p-20 bg-[#080d1a]">
+      <div className="relative w-12 h-12">
+        <div className="absolute inset-0 border-4 border-teal-500/20 rounded-full animate-pulse" />
+        <div className="absolute inset-0 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
+      </div>
     </div>
   );
 
   if (isError) return (
-    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 m-4 text-center">
-      <p className="text-red-400 font-semibold mb-2">Failed to load history</p>
-      <p className="text-red-500/70 text-sm mb-4">
-        {error?.response?.data?.error || error?.message || 'Unknown error'}
-      </p>
-      <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded text-sm">
-        Retry
-      </button>
+    <div className="flex h-full items-center justify-center p-8 bg-[#080d1a]">
+      <div className="glass-card-premium border border-red-500/20 rounded-2xl p-8 max-w-md text-center">
+        <p className="text-red-400 font-bold mb-2">Failed to load history</p>
+        <p className="text-slate-400 text-sm mb-6">{error?.response?.data?.error || error?.message || 'Unknown error'}</p>
+        <button onClick={() => window.location.reload()}
+          className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-500 transition-colors">
+          Retry
+        </button>
+      </div>
     </div>
   );
 
+  /* Stats */
+  const consultCount    = timeline.filter(e => e.type === 'consultation').length;
+  const rxCount         = timeline.reduce((acc, e) => acc + (e.type === 'consultation' && e.data?.prescriptions ? e.data.prescriptions.length : 0), 0);
+  const otcCount        = timeline.filter(e => e.type === 'prescription' && e.data?.isOTC).length;
+  const dispensingCount = timeline.filter(e => e.type === 'dispensing').length;
+  const labTestCount    = timeline.reduce((acc, e) => {
+    const d = e.data || {};
+    return acc + (d.labTests?.length || 0) + (d.orderedTests?.length || 0);
+  }, 0);
+
   return (
-    <PageTransition className="p-4 md:p-8">
+    <PageTransition className="p-4 md:p-8 min-h-screen bg-[#080d1a]">
+
+      {/* ── Page header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Medical History</h1>
-        <p className="text-slate-400 mt-1">Your complete chronological health record.</p>
+        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 tracking-tight">
+          Medical History
+        </h1>
+        <p className="text-slate-400 mt-1 text-sm">Your complete chronological health and prescription record.</p>
       </div>
 
-      {timeline.length === 0 ? (
-        <div className="glass-panel rounded-2xl p-12 text-center">
-          <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 text-lg">No medical history available yet.</p>
-          <p className="text-slate-500 text-sm mt-2">Your consultations and prescriptions will appear here.</p>
-        </div>
-      ) : (
-        <div className="relative">
-          {/* Timeline Line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500/30 via-purple-500/20 to-transparent"></div>
-
-          <div className="space-y-6">
-            {timeline.map((event, index) => {
-              const details = event.data || {};
-              const eventId = details._id || index;
-              const isExpanded = expandedId === eventId;
-              const type = event.type || 'consultation';
-
-              return (
-                <motion.div
-                  key={eventId}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="relative pl-16"
-                >
-                  {/* Timeline Dot */}
-                  <div className="absolute left-4 w-5 h-5 rounded-full bg-slate-900 border-2 border-blue-500/50 flex items-center justify-center z-10">
-                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                  </div>
-
-                  {/* Card */}
-                  <div
-                    className={`glass-panel rounded-xl border ${getAccentColor(type)} cursor-pointer hover:border-slate-600 transition-all overflow-hidden`}
-                    onClick={() => setExpandedId(isExpanded ? null : eventId)}
-                  >
-                    <div className="p-5 flex items-start justify-between">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="p-2 bg-slate-800/60 rounded-lg shrink-0">
-                          {getIcon(type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                              {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown date'}
-                            </p>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 capitalize">{type}</span>
-                          </div>
-                          <h4 className="text-lg font-bold text-white truncate">{details.diagnosis || details.testName || 'Medical Event'}</h4>
-                          <p className="text-sm text-teal-400 font-medium mt-0.5">
-                            {type === 'prescription' ? `Dr. ${details.doctorId?.fullName || 'Doctor'}` : `Dr. ${details.doctorId?.fullName || 'Unknown'}`}
-                          </p>
-                          {(details.hospitalId?.name || details.sessionHospitalId?.name) && (
-                            <p className="text-xs text-slate-500 mt-0.5">{details.hospitalId?.name || details.sessionHospitalId?.name}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        {details.rating && (
-                          <div className="flex items-center gap-1 text-amber-400">
-                            <Star className="w-4 h-4 fill-amber-400" />
-                            <span className="text-sm font-bold">{details.rating}</span>
-                          </div>
-                        )}
-                        {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                      </div>
-                    </div>
-
-                    {/* Expanded Content */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-slate-700/50 bg-slate-800/20"
-                        >
-                          <div className="p-5 space-y-4">
-                            {details.symptoms && details.symptoms.length > 0 && (
-                              <div>
-                                <p className="text-xs font-bold text-slate-500 uppercase mb-2">Symptoms</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {details.symptoms.map((sym, i) => (
-                                    <span key={i} className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300">{sym}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {type === 'prescription' && details.medications && details.medications.length > 0 && (
-                              <div>
-                                <p className="text-xs font-bold text-slate-500 uppercase mb-2">Medications</p>
-                                <div className="space-y-2">
-                                  {details.medications.map((m, i) => (
-                                    <div key={i} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                                      <div>
-                                        <span className="text-white font-medium">{m.name}</span>
-                                        <span className="text-slate-500 text-xs ml-2">{m.dosage} — {m.frequency}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {details.notes && (
-                              <div>
-                                <p className="text-xs font-bold text-slate-500 uppercase mb-1">Clinical Notes</p>
-                                <p className="text-sm text-slate-300">{details.notes}</p>
-                              </div>
-                            )}
-
-                            {/* Rate Button */}
-                            {type === 'consultation' && !details.rating && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRatingModal({ show: true, consultationId: details._id });
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-colors"
-                              >
-                                <Star className="w-4 h-4" />
-                                Rate this visit
-                              </button>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+      {/* ── Summary chips ── */}
+      {timeline.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-8">
+          <SummaryChip icon={Stethoscope}   label="Consultations"   count={consultCount}    color="text-blue-400" />
+          <SummaryChip icon={Pill}          label="Prescriptions"   count={rxCount}         color="text-emerald-400" />
+          {otcCount > 0 && (
+            <SummaryChip icon={ShoppingBag} label="OTC Dispensed"   count={otcCount}        color="text-teal-400" />
+          )}
+          <SummaryChip icon={Package}       label="Dispensings"     count={dispensingCount} color="text-cyan-400" />
+          {labTestCount > 0 && (
+            <SummaryChip icon={FlaskConical} label="Lab Tests Ordered" count={labTestCount} color="text-purple-400" />
+          )}
         </div>
       )}
 
-      {/* Rating Modal */}
+      {/* ── Filter tabs ── */}
+      {timeline.length > 0 && (
+        <div className="flex gap-2 mb-8 flex-wrap">
+          {['all', 'consultation', 'prescription', 'otc', 'dispensing'].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all duration-200 ${
+                filter === f
+                  ? 'bg-teal-500/15 text-teal-400 border-teal-500/30 shadow-[0_0_12px_rgba(20,184,166,0.10)]'
+                  : 'text-slate-500 border-slate-800/60 hover:text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              {f === 'all' ? 'All Events' : f === 'otc' ? 'OTC Dispensed' : f.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Empty state ── */}
+      {timeline.length === 0 && (
+        <div className="glass-card-premium rounded-2xl p-16 text-center border border-white/5 max-w-lg mx-auto">
+          <Calendar className="w-14 h-14 text-slate-600 mx-auto mb-4 opacity-40" />
+          <p className="text-slate-300 text-lg font-bold">No medical history available yet</p>
+          <p className="text-slate-500 text-sm mt-2">Your consultations and prescriptions will appear here once registered.</p>
+        </div>
+      )}
+
+      {/* ── Feed ── */}
+      {filtered.length > 0 && (
+        <div className="relative max-w-3xl">
+          {/* Glowing vertical timeline line */}
+          <div
+            className="absolute left-6 top-4 bottom-4 w-[2px]"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(20,184,166,0.5), rgba(99,102,241,0.25), transparent)',
+              boxShadow: '0 0 8px rgba(20,184,166,0.15)',
+            }}
+            aria-hidden="true"
+          />
+
+          {/* Staggered card list */}
+          <motion.div
+            variants={feedVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-5"
+          >
+            {filtered.map((event, index) => (
+              <HistoryCard
+                key={event.data?._id || index}
+                event={event}
+                index={index}
+                onRate={(id) => setRatingModal({ show: true, consultationId: id })}
+              />
+            ))}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Empty filter result */}
+      {timeline.length > 0 && filtered.length === 0 && (
+        <div className="text-center py-16 text-slate-500">
+          <FileText className="w-10 h-10 mx-auto mb-3 opacity-20" />
+          <p className="text-sm font-semibold">No {filter} records found.</p>
+        </div>
+      )}
+
+      {/* Rating modal */}
       <RatingModal
         show={ratingModal.show}
         consultationId={ratingModal.consultationId}

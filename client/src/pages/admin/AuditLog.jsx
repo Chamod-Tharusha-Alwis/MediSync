@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ScrollText, Calendar, Shield, Search, ChevronLeft, ChevronRight, User, Globe } from 'lucide-react';
+import { ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';

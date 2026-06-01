@@ -136,6 +136,12 @@ const Home = () => {
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
 
+        <div className="absolute top-6 right-6 z-50 flex gap-4 md:gap-8 bg-white/5 px-6 py-3 rounded-full backdrop-blur-md border border-white/10">
+          <button onClick={() => navigate('/doctors')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Doctors</button>
+          <button onClick={() => navigate('/hospitals')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Hospitals</button>
+          <button onClick={() => navigate('/pharmacies')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Pharmacies</button>
+        </div>
+
         <div className="relative max-w-7xl mx-auto px-6 flex flex-col items-center text-center z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}

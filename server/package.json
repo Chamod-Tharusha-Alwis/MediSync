@@ -9,7 +9,8 @@
     "test": "jest",
     "seed": "node src/utils/seedData.js",
     "seed:users": "node src/utils/seedUsers.js",
-    "seed:drugs": "node src/utils/seedDrugs.js"
+    "seed:drugs": "node src/utils/seedDrugs.js",
+    "seed:admin": "node src/utils/seedAdmin.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
     "supertest": "^7.2.2"
   },
   "dependencies": {
+    "@pdfsmaller/pdf-encrypt-lite": "^1.0.2",
     "axios": "^1.15.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
@@ -28,6 +30,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.4.1",
+    "form-data": "^4.0.5",
     "helmet": "^8.1.0",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
@@ -37,7 +40,9 @@
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",
+    "node-vault": "^0.12.0",
     "nodemailer": "^8.0.7",
+    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
     "speakeasy": "^2.0.0",

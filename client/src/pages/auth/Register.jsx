@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, Key, Building, Loader2, Calendar, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';

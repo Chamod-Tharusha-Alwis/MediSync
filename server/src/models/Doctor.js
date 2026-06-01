@@ -14,6 +14,8 @@ const doctorSchema = new mongoose.Schema({
   twoFactorEnabled: { type: Boolean, default: false },
   otpSecret: String,
   personalEmail: String,
+  contactNumber: String,
+  clinicAddress: String,
   orgLogins: [{
     hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' },
     orgEmail: String,
@@ -26,7 +28,9 @@ const doctorSchema = new mongoose.Schema({
 
 doctorSchema.plugin(fieldEncryption, {
   fields: ['licenseNo'],
-  secret: process.env.ENCRYPTION_KEY,
+  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
+  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
+  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
   saltGenerator: (secret) => secret.slice(0, 16)
 });
 

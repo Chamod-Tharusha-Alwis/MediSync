@@ -36,7 +36,9 @@ testOrderSchema.index({ patientNic: 1, orderedAt: -1 });
 // Field-level encryption on sensitive clinical data
 testOrderSchema.plugin(fieldEncryption, {
   fields: ['patientNic', 'resultNotes'],
-  secret: process.env.ENCRYPTION_KEY,
+  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
+  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
+  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
   saltGenerator: (secret) => secret.slice(0, 16)
 });
 

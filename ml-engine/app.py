@@ -1,8 +1,13 @@
 import os
 import json
 import sqlite3
-from datetime import datetime
-from flask import Flask, request, jsonify
+import hmac
+import hashlib
+from datetime import datetime, timezone, timedelta
+from functools import wraps
+import io
+from flask import Flask, request, jsonify, send_file
+from pypdf import PdfReader, PdfWriter
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -45,6 +50,15 @@ def init_db():
             disease TEXT,
             icd_code TEXT,
             count INTEGER,
+            date DATE
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS outbreak_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            disease TEXT,
+            district TEXT,
+            is_true_outbreak INTEGER,
             date DATE
         )
     ''')
@@ -105,7 +119,37 @@ def get_specialist_for_disease(disease_name, icd_code):
         
     return 'General Physician'
 
+def verify_internal_token(token):
+    if not token:
+        return False
+    # Shared secret
+    secret = os.environ.get('INTERNAL_API_KEY', 'medisync-internal-secret-2024').encode('utf-8')
+    
+    # Get current and previous hour strings in UTC
+    now_utc = datetime.now(timezone.utc)
+    current_hour_str = now_utc.strftime('%Y-%m-%dT%H').encode('utf-8')
+    prev_hour_str = (now_utc - timedelta(hours=1)).strftime('%Y-%m-%dT%H').encode('utf-8')
+    
+    # Generate expected tokens
+    expected_current = hmac.new(secret, current_hour_str, hashlib.sha256).hexdigest()
+    expected_prev = hmac.new(secret, prev_hour_str, hashlib.sha256).hexdigest()
+    
+    # Secure comparison (constant time)
+    return hmac.compare_digest(token, expected_current) or hmac.compare_digest(token, expected_prev)
+
+def require_internal_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        token = request.headers.get('x-internal-key')
+        if not verify_internal_token(token):
+            return jsonify({"error": "Forbidden: Invalid internal credentials"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/api/ml/predict-disease', methods=['POST'])
+@require_internal_auth
 def predict_disease():
     data = request.json
     if not data or 'symptoms' not in data:
@@ -199,6 +243,7 @@ def predict_disease():
 
 
 @app.route('/ingest', methods=['POST'])
+@require_internal_auth
 def ingest_data():
     """
     Ingest route to save tracking data to SQLite DB.
@@ -255,92 +300,58 @@ else:
     historical_df = None
 
 
-@app.route('/api/ml/predict-outbreak', methods=['POST'])
+@app.route('/api/admin/outbreak/trigger', methods=['POST'])
 def predict_outbreak():
     try:
-        data = request.json or {}
-        district = data.get('district', 'Colombo')
+        raw_data = request.get_json()
         
-        # Fetch latest data from database to get a real "latest_actual"
-        latest_actual = 0
-        try:
-            conn = sqlite3.connect(db_path)
-            c = conn.cursor()
-            # Get sum of counts for the last 7 days for this district
-            seven_days_ago = (datetime.now().date() - pd.Timedelta(days=7)).strftime('%Y-%m-%d')
-            c.execute('SELECT SUM(count) FROM outbreak_tracking WHERE district=? AND date >= ?', (district, seven_days_ago))
-            db_row = c.fetchone()
-            if db_row and db_row[0]:
-                latest_actual = float(db_row[0])
-            else:
-                # Fallback to last historical value if DB is empty
-                latest_actual = float(historical_df['y'].iloc[-1]) if historical_df is not None else 0
-            conn.close()
-        except Exception as e:
-            print(f"DB Fetch error in predict_outbreak: {e}")
-            latest_actual = float(historical_df['y'].iloc[-1]) if historical_df is not None else 0
-
-        # Use Prophet model to forecast next 14 days
-        if prophet_model is not None and historical_df is not None:
-            future = prophet_model.make_future_dataframe(periods=14, freq='W')
-            forecast = prophet_model.predict(future)
+        # Bulletproof type-checking to handle raw JSON Arrays
+        data_list = []
+        if isinstance(raw_data, list):
+            data_list = raw_data
+        elif isinstance(raw_data, dict):
+            data_list = raw_data.get('data', []) or raw_data.get('payload', [])
             
-            # Get last 14 forecasted rows
-            forecast_tail = forecast.tail(14)
+        results = []
+        
+        for item in data_list:
+            if not isinstance(item, dict):
+                continue
+                
+            disease = item.get('disease', 'Unknown')
+            district = item.get('district', 'Unknown')
+            current_cases = int(item.get('last_7_days_count', 0))
+            baseline = int(item.get('previous_baseline_avg', 0))
             
-            # Calculate z-score using historical baseline
-            hist_mean = float(historical_df['y'].mean())
-            hist_std  = float(historical_df['y'].std())
+            anomaly = False
+            severity = 'low'
             
-            # Calculate overall Z-score for the current "latest_actual"
-            overall_z = round((latest_actual - hist_mean) / (hist_std + 1e-9), 3)
-            
-            forecast_list = []
-            for _, row in forecast_tail.iterrows():
-                yhat = max(0, round(float(row['yhat'])))
-                z = round((float(row['yhat']) - hist_mean) / (hist_std + 1e-9), 3)
-                forecast_list.append({
-                    'date': str(row['ds'].date()),
-                    'predicted_cases': yhat,
-                    'lower': max(0, round(float(row['yhat_lower']))),
-                    'upper': max(0, round(float(row['yhat_upper']))),
-                    'z_score': z
-                })
-            
-            anomaly = overall_z > 3.0
-            severity = 'high' if overall_z > 3.0 else 'moderate' if overall_z > 1.5 else 'low'
-            
-            return jsonify({
-                'disease': 'Dengue',
-                'district': district,
-                'z_score': overall_z,
-                'anomaly': anomaly,
-                'severity': severity,
-                'historical_mean': round(hist_mean, 2),
-                'historical_std': round(hist_std, 2),
-                'latest_actual': latest_actual,
-                'forecast': forecast_list,
-                'model': 'Facebook Prophet',
-                'data_points': len(historical_df),
-                'status': 'anomaly_detected' if anomaly else 'normal'
+            # Heuristic Anomaly Detection
+            if current_cases > (baseline * 1.5) and current_cases > 10:
+                anomaly = True
+                severity = 'high'
+            elif current_cases > (baseline * 1.2) and current_cases > 5:
+                anomaly = True
+                severity = 'medium'
+                
+            results.append({
+                "disease": disease,
+                "district": district,
+                "anomaly": anomaly,
+                "severity": severity,
+                "latest_actual": current_cases,
+                "baseline": baseline
             })
-        else:
-            return jsonify({
-                'disease': 'Dengue',
-                'district': district,
-                'z_score': 0,
-                'anomaly': False,
-                'severity': 'low',
-                'forecast': [],
-                'warning': 'Prophet model not loaded',
-                'status': 'model_unavailable'
-            })
+            
+        return jsonify({"results": results})
     except Exception as e:
-        print(f'predict-outbreak error: {e}')
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        traceback.print_exc() # Print full stack trace to the terminal
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/ml/check-interactions', methods=['POST'])
+@require_internal_auth
 def check_interactions():
     data = request.json
     if not data or 'drugs' not in data:
@@ -376,6 +387,7 @@ def check_interactions():
 
 
 @app.route('/model-status', methods=['GET'])
+@require_internal_auth
 def model_status():
     """Return ML engine health and training status."""
     return jsonify({
@@ -393,6 +405,7 @@ def model_status():
 
 
 @app.route('/patient-risk', methods=['POST'])
+@require_internal_auth
 def patient_risk():
     """
     Calculate a patient risk score based on clinical factors.
@@ -469,5 +482,257 @@ def patient_risk():
     })
 
 
+@app.route('/analyze-realtime', methods=['POST'])
+@require_internal_auth
+def analyze_realtime():
+    try:
+        body = request.json or {}
+        records = body.get('data', [])
+
+        if not records:
+            return jsonify({
+                'anomaly': False,
+                'disease': 'Unknown',
+                'district': 'Unknown',
+                'spike_percentage': 0,
+                'message': 'No data received for analysis.'
+            })
+
+        findings = []
+        for record in records:
+            disease              = record.get('disease', 'Unknown')
+            district             = record.get('district', 'Unknown')
+            last_7_days_count    = int(record.get('last_7_days_count', 0))
+            previous_baseline_avg = float(record.get('previous_baseline_avg', 0))
+
+            # Outbreak threshold: >10 cases AND >= 3× baseline (300% spike)
+            is_outbreak = (
+                last_7_days_count > 10 and
+                previous_baseline_avg > 0 and
+                last_7_days_count >= previous_baseline_avg * 3
+            )
+
+            # Also flag if baseline is 0 but recent count is high (new disease surge)
+            if not is_outbreak and previous_baseline_avg == 0 and last_7_days_count > 10:
+                is_outbreak = True
+
+            if is_outbreak:
+                if previous_baseline_avg > 0:
+                    pct = round(((last_7_days_count - previous_baseline_avg) / previous_baseline_avg) * 100)
+                else:
+                    pct = 999  # new surge with no baseline
+
+                findings.append({
+                    'anomaly': True,
+                    'disease': disease,
+                    'district': district,
+                    'last_7_days_count': last_7_days_count,
+                    'previous_baseline_avg': previous_baseline_avg,
+                    'spike_percentage': pct,
+                    'message': (
+                        f"OUTBREAK DETECTED: {disease} in {district}. "
+                        f"Cases this week: {last_7_days_count} "
+                        f"(+{pct}% vs baseline of {previous_baseline_avg:.1f}/week)."
+                    )
+                })
+
+        if findings:
+            # Return the most severe finding (highest spike)
+            worst = max(findings, key=lambda x: x['spike_percentage'])
+            worst['all_outbreaks'] = findings
+            worst['model'] = 'Real-time DB Aggregation + Threshold Analysis'
+
+            worst_spike = worst['spike_percentage']
+            if worst_spike < 150:
+                worst['risk_level'] = 'Normal'
+            elif worst_spike < 300:
+                worst['risk_level'] = 'Low'
+            elif worst_spike < 600:
+                worst['risk_level'] = 'Medium'
+            else:
+                worst['risk_level'] = 'High'
+
+            return jsonify(worst)
+
+        return jsonify({
+            'anomaly': False,
+            'disease': 'None',
+            'district': 'All',
+            'spike_percentage': 0,
+            'last_7_days_count': 0,
+            'previous_baseline_avg': 0,
+            'risk_level': 'Normal',
+            'model': 'Real-time DB Aggregation + Threshold Analysis',
+            'message': f'No outbreaks detected. Analysed {len(records)} disease-district combinations.'
+        })
+
+    except Exception as e:
+        print(f'analyze-realtime error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/predict-district-demand', methods=['POST'])
+@require_internal_auth
+def predict_district_demand():
+    try:
+        data = request.json or {}
+        district = data.get('district', 'Unknown')
+        drug_trends = data.get('drugTrends', {})
+
+        if not drug_trends:
+            return jsonify({
+                'district': district,
+                'alerts': [],
+                'message': 'No dispensing data found for this district.'
+            })
+
+        alerts = []
+        for drug_name, daily_counts in drug_trends.items():
+            if len(daily_counts) < 2:
+                continue
+            counts = [d.get('count', 0) for d in daily_counts]
+            n = len(counts)
+            mid = n // 2
+            baseline_avg = sum(counts[:mid]) / max(1, mid)
+            recent_avg = sum(counts[mid:]) / max(1, n - mid)
+            pct_change = ((recent_avg - baseline_avg) / max(1, baseline_avg)) * 100
+            slope = (counts[-1] - counts[0]) / max(1, n - 1)
+
+            if pct_change >= 50 or (slope > 0 and recent_avg >= baseline_avg * 1.5):
+                status = "Critical"
+                message = f"Dispensing surged by {round(pct_change)}% in {district}. Restock immediately."
+            elif pct_change >= 30 or (slope > 0 and recent_avg >= baseline_avg * 1.3):
+                status = "Warning"
+                message = f"Dispensing up {round(pct_change)}% in {district}. Consider restocking soon."
+            else:
+                continue
+
+            alerts.append({
+                "drugName": drug_name,
+                "trend": f"+{round(pct_change)}%" if pct_change >= 0 else f"{round(pct_change)}%",
+                "recentDailyAvg": round(recent_avg, 1),
+                "baselineDailyAvg": round(baseline_avg, 1),
+                "status": status,
+                "message": message
+            })
+
+        alerts.sort(key=lambda x: 0 if x['status'] == 'Critical' else 1)
+        return jsonify({
+            'district': district,
+            'alerts': alerts,
+            'drugsAnalyzed': len(drug_trends),
+            'generatedAt': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f'predict-district-demand error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/outbreak-feedback', methods=['POST'])
+@require_internal_auth
+def outbreak_feedback():
+    data = request.json or {}
+    if not data or 'disease' not in data or 'district' not in data or 'is_true_outbreak' not in data:
+        return jsonify({'error': 'Missing required fields (disease, district, is_true_outbreak)'}), 400
+        
+    disease = data['disease']
+    district = data['district']
+    is_true_outbreak = int(data['is_true_outbreak'])
+    date_str = data.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO outbreak_feedback (disease, district, is_true_outbreak, date) VALUES (?, ?, ?, ?)",
+            (disease, district, is_true_outbreak, date_str)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Feedback recorded successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.1', port=5001, debug=True)
+
+@app.route('/lab/encrypt-pdf', methods=['POST'])
+def encrypt_pdf():
+    """
+    Receives a plain PDF and a password (patient NIC).
+    Returns a password-encrypted PDF.
+    """
+    if 'pdf' not in request.files or 'password' not in request.form:
+        return jsonify({'error': 'pdf file and password are required'}), 400
+
+    pdf_file = request.files['pdf']
+    password = request.form['password'].strip()
+
+    try:
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            writer.add_page(page)
+
+        # Copy metadata
+        if reader.metadata:
+            writer.add_metadata(reader.metadata)
+
+        # Encrypt with patient NIC as user password
+        # owner_pwd=None means owner and user password are the same
+        writer.encrypt(user_password=password, owner_pwd=None, use_128bit=True)
+
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name='encrypted_report.pdf'
+        )
+    except Exception as e:
+        print(f'[Lab] encrypt_pdf error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/lab/decrypt-pdf', methods=['POST'])
+def decrypt_pdf():
+    """
+    Receives a password-encrypted PDF and the password (patient NIC).
+    Returns a decrypted PDF for download.
+    Used when patient or doctor (after OTP) downloads the report.
+    """
+    if 'pdf' not in request.files or 'password' not in request.form:
+        return jsonify({'error': 'pdf file and password are required'}), 400
+
+    pdf_file = request.files['pdf']
+    password = request.form['password'].strip()
+
+    try:
+        reader = PdfReader(pdf_file)
+
+        if reader.is_encrypted:
+            result = reader.decrypt(password)
+            if result == 0:
+                return jsonify({'error': 'Incorrect password'}), 401
+
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name='lab_report.pdf'
+        )
+    except Exception as e:
+        print(f'[Lab] decrypt_pdf error: {e}')
+        return jsonify({'error': str(e)}), 500

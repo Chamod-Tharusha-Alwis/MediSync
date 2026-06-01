@@ -37,6 +37,12 @@ const pharmacySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  inventory: [{
+    drugName: { type: String, required: true, trim: true },
+    stock: { type: Number, default: 0, min: 0 },
+    reorderLevel: { type: Number, default: 50 },
+    unit: { type: String, default: 'tablets' }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 const { hashPassword } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
+const { generateToken } = require('../utils/internalAuth');
 
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
 const ML_TIMEOUT = 30000; // 30 seconds
@@ -135,45 +136,199 @@ exports.getAuditLogs = async (req, res) => {
 // ─── NEW: ML — triggerMLDetection ────────────────────────────────────────────
 exports.triggerMLDetection = async (req, res) => {
   try {
-    console.log('[Admin] Calling ML engine: POST', `${ML_ENGINE_URL}/api/ml/predict-outbreak`);
-    const { data } = await axios.post(
-      `${ML_ENGINE_URL}/api/ml/predict-outbreak`,
-      { district: req.body.district || 'Colombo' },
-      { timeout: ML_TIMEOUT }
-    );
-    console.log('[Admin] ML outbreak result:', JSON.stringify(data, null, 2));
-    
-    // Return flattened so frontend gets z_score at top level
-    res.json({
-      disease: data.disease || 'Dengue',
-      district: data.district || 'Colombo',
-      z_score: data.z_score ?? 0,
-      anomaly: data.anomaly || false,
-      severity: data.severity || 'low',
-      historical_mean: data.historical_mean || 0,
-      historical_std: data.historical_std || 0,
-      data_points: data.data_points || 0,
-      forecast: data.forecast || [],
-      status: data.status || 'normal',
-      model: data.model || 'Prophet',
-      warning: data.warning || null
+    const now = new Date();
+
+    // Time windows
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    console.log('[DEBUG] 1. Querying MongoDB for recent consultations...');
+
+    // 1. Fetch last 30 days — NO .lean() so mongoose-field-encryption decrypts 'diagnosis' automatically
+    const recentConsultations = await Consultation.find({ createdAt: { $gte: thirtyDaysAgo } });
+
+    if (recentConsultations.length === 0) {
+      // No real data — fall back to Prophet prediction for demo
+      console.log('[Admin] No consultations found, falling back to Prophet...');
+      const { data } = await axios.post(
+        `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/api/ml/predict-outbreak`,
+        { district: req.body?.district || 'Colombo' },
+        { 
+          timeout: ML_TIMEOUT,
+          headers: { 'x-internal-key': generateToken() }
+        }
+      );
+      return res.json({
+        disease:          data.disease        || 'Dengue',
+        district:         data.district       || 'Colombo',
+        z_score:          data.z_score        ?? 0,
+        anomaly:          data.anomaly        || false,
+        severity:         data.severity       || 'low',
+        historical_mean:  data.historical_mean|| 0,
+        historical_std:   data.historical_std || 0,
+        data_points:      data.data_points    || 0,
+        forecast:         data.forecast       || [],
+        status:           data.status         || 'normal',
+        model:            data.model          || 'Prophet',
+        source:           'prophet_fallback'
+      });
+    }
+
+    const aggregatedData = {};
+    recentConsultations.forEach(c => {
+      const disease = c.diagnosis || c.icdDescription || 'Unknown';
+      const district = c.district || 'Colombo';
+      const key = `${district}_${disease}`;
+
+      if (!aggregatedData[key]) {
+        aggregatedData[key] = { district, disease, last_7_days_count: 0, previous_baseline_avg: 0 };
+      }
+
+      // Bucket into recent (7 days) or baseline (older 23 days)
+      if (c.createdAt >= sevenDaysAgo) {
+        aggregatedData[key].last_7_days_count += 1;
+      } else {
+        aggregatedData[key].previous_baseline_avg += 1;
+      }
     });
+
+    // Convert the 23-day baseline count into a weekly average
+    const payload = Object.values(aggregatedData).map(item => {
+      item.previous_baseline_avg = Math.round(item.previous_baseline_avg / 3.29); 
+      return item;
+    });
+
+    console.log('[Admin] Sending live DB data to ML Engine:', JSON.stringify(payload, null, 2));
+
+    console.log('[DEBUG] 2. Sending data payload to ML Engine...');
+
+    // Send as direct array payload to new route
+    const { data } = await axios.post(
+      `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
+      payload, 
+      { 
+        timeout: 30000,
+        headers: { 'x-internal-key': generateToken() }
+      }
+    );
+
+    console.log('[Admin] Real-time ML result:', JSON.stringify(data, null, 2));
+
+    // 5. If anomaly detected, save an OutbreakAlert record and emit Socket event
+    if (data.results && Array.isArray(data.results)) {
+      for (const result of data.results) {
+        if (result.anomaly) {
+          // --- DB SAVE (own try/catch so email still fires if this fails) ---
+          try {
+            const OutbreakAlert = require('../models/OutbreakAlert');
+            // Map severity to valid schema enum: ['Low', 'Moderate', 'High', 'Critical']
+            const severityMap = { 'low': 'Low', 'medium': 'Moderate', 'high': 'High' };
+            const mappedSeverity = severityMap[result.severity] || 'High';
+
+            const alert = await OutbreakAlert.create({
+              disease:        result.disease || 'Unknown',
+              location:       result.district || 'Nationwide',
+              affectedCount:  result.latest_actual || 0,
+              severity:       mappedSeverity,
+              status:         'Active',
+              message:        `Real-time outbreak detected: ${result.disease} in ${result.district}.`
+            });
+            console.log(`[Admin] ✅ OutbreakAlert saved: ${alert.disease} (${alert.severity})`);
+            const io = require('../app').get?.('io');
+            if (io) io.emit('outbreak_alert', alert);
+          } catch (dbErr) {
+            console.error('[Admin] Alert DB save failed:', dbErr.message);
+          }
+
+          // --- MASS EMAIL TRIGGER (own try/catch — independent of DB save) ---
+          if (result.severity === 'medium' || result.severity === 'high') {
+            try {
+              console.log(`[Admin] ${result.severity} risk outbreak detected! Triggering mass alert.`);
+              const Patient = require('../models/Patient');
+              const Doctor = require('../models/Doctor');
+              const PharmacyStaff = require('../models/PharmacyStaff');
+              const Hospital = require('../models/Hospital');
+              const emailService = require('../utils/emailService');
+
+              // Collect all emails
+              const [patients, doctors, pharmacists, hospitals] = await Promise.all([
+                Patient.find({}).select('email contactInfo'),
+                Doctor.find({}).select('email'),
+                PharmacyStaff.find({}).select('email'),
+                Hospital.find({}).select('email')
+              ]);
+
+              const allEmails = [
+                ...patients.map(p => p.email || p.contactInfo?.email),
+                ...doctors.map(d => d.email),
+                ...pharmacists.map(p => p.email),
+                ...hospitals.map(h => h.email)
+              ].filter(e => e);
+
+              const emailResult = await emailService.sendMassOutbreakAlert(
+                allEmails,
+                result.disease,
+                result.district,
+                result.severity,
+                Math.round(((result.latest_actual - result.baseline) / (result.baseline || 1)) * 100)
+              );
+              console.log(`[Admin] ✅ Mass alert sent to ${allEmails.length} users. Success: ${emailResult.success}`);
+            } catch (emailErr) {
+              console.error('[Admin] Mass email trigger failed:', emailErr.message);
+            }
+
+            // --- BROADCAST RECORD (own try/catch) ---
+            try {
+              const BroadcastMessage = require('../models/BroadcastMessage');
+              const broadcast = new BroadcastMessage({
+                title: `CRITICAL OUTBREAK ALERT`,
+                message: `A ${result.severity} risk outbreak of ${result.disease} has been detected in ${result.district}. Please take immediate precautions.`,
+                targetRole: 'all',
+                targetDistrict: result.district,
+                sentBy: req.user ? req.user.id : null,
+                sentAt: new Date()
+              });
+              await broadcast.save();
+              console.log('[Admin] ✅ BroadcastMessage saved');
+            } catch (broadcastErr) {
+              console.error('[Admin] Broadcast save failed:', broadcastErr.message);
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Return enriched response to the frontend
+    res.json({
+      results: data.results || [],
+      consultations_analysed: recentConsultations.length,
+      model: 'Real-time DB Aggregation + Threshold Analysis',
+      source: 'live_data',
+      data_points: recentConsultations.length
+    });
+
   } catch (err) {
     console.error('[Admin] ML trigger error:', err.message);
+    console.error('[FATAL] ML Engine API Failed:', err.response ? err.response.data : err.message);
     if (err.code === 'ECONNREFUSED') {
       return res.status(503).json({ error: 'ML Engine is offline' });
     }
     if (err.code === 'ECONNABORTED') {
       return res.status(504).json({ error: 'ML Engine timed out' });
     }
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.response ? err.response.data.error || 'ML Engine Error' : err.message });
   }
 };
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
   try {
-    const { data } = await axios.get(`${ML_ENGINE_URL}/model-status`, { timeout: ML_TIMEOUT });
+    const { data } = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
+      timeout: ML_TIMEOUT,
+      headers: { 'x-internal-key': generateToken() }
+    });
     return res.json({
       status: data.status || 'active',
       lastTrained: data.lastTrained || data.last_trained || null,

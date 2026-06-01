@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert, ActivitySquare, MapPin, Radio, ScrollText, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert, ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
@@ -16,6 +16,19 @@ import AuditLog from './AuditLog';
 import BanManagement from './BanManagement';
 import PatientReports from './PatientReports';
 import ManageAdmins from './ManageAdmins';
+import AnalyticsDashboard from './AnalyticsDashboard';
+
+// Helper for formatting time
+const timeAgo = (dateString) => {
+  if (!dateString) return '';
+  const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
 
 // Sub-components
 const ManageHospitals = () => {
@@ -83,6 +96,7 @@ const ManageUsers = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchUsers(); }, [roleFilter, page]);
 
   const handleToggle = async (userId, role) => {
@@ -151,10 +165,20 @@ const ManageUsers = () => {
 const AlertSettings = () => {
   const [sensitivity, setSensitivity] = useState(2.0);
   const [alerts, setAlerts] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get('/alerts/active').then(res => setAlerts(res.data.data)).catch(() => {});
   }, []);
+
+  const handleSave = () => {
+    setSaving(true);
+    // Simulate API call to save settings
+    setTimeout(() => {
+      toast.success(`ML Sensitivity updated to ${sensitivity} (Z-Score)`);
+      setSaving(false);
+    }, 800);
+  };
 
   return (
     <PageTransition className="p-6">
@@ -166,14 +190,26 @@ const AlertSettings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel p-6 rounded-xl">
           <h3 className="text-lg font-semibold text-white mb-4">Anomaly Threshold (Z-Score)</h3>
-          <p className="text-sm text-slate-400 mb-6">Lower values increase sensitivity, higher values reduce false positives.</p>
-          <input type="range" min="1" max="5" step="0.1" value={sensitivity} onChange={e => setSensitivity(e.target.value)} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+          <p className="text-sm text-slate-400 mb-6">Lower values increase sensitivity (more alerts), higher values reduce false positives.</p>
+          <input 
+            type="range" min="1" max="5" step="0.1" 
+            value={sensitivity} 
+            onChange={e => setSensitivity(parseFloat(e.target.value))} 
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" 
+          />
           <div className="flex justify-between text-xs text-slate-500 mt-2">
             <span>High Sensitivity (1.0)</span>
             <span className="text-blue-400 font-bold text-sm">Current: {sensitivity}</span>
             <span>Low Sensitivity (5.0)</span>
           </div>
-          <button className="mt-6 glass-button primary-gradient px-6 py-2 w-full">Save Configuration</button>
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="mt-6 glass-button primary-gradient px-6 py-2 w-full flex items-center justify-center gap-2"
+          >
+            {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : null}
+            Save Configuration
+          </button>
         </div>
 
         <div className="glass-panel p-6 rounded-xl">
@@ -183,7 +219,7 @@ const AlertSettings = () => {
               {alerts.map(a => (
                 <div key={a._id} className="bg-red-900/10 border border-red-500/30 p-3 rounded-lg">
                   <p className="text-red-400 font-medium text-sm">{a.message}</p>
-                  <p className="text-slate-500 text-xs mt-1">Z-Score: {a.zScore?.toFixed?.(2) || 'N/A'} | Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
+                  <p className="text-slate-500 text-xs mt-1">Status: {a.status} | Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
@@ -251,15 +287,38 @@ const Overview = ({ stats, geo, activeAlerts }) => (
           <ActivitySquare className="w-5 h-5 text-blue-400" />
           Recent Platform Activity
         </h3>
-        <p className="text-slate-400 text-sm">Monitoring real-time events from all connected hospitals.</p>
-        {/* Activity feed placeholder */}
-        <div className="mt-4 space-y-3">
-          {[1,2,3].map(i => (
-             <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-               <p className="text-sm text-slate-300">New consultation recorded at General Hospital</p>
-               <span className="text-xs text-slate-500">Just now</span>
-             </div>
-          ))}
+        <p className="text-slate-400 text-sm mb-4">Monitoring real-time events from all connected hospitals.</p>
+        
+        <div className="space-y-3 h-64 overflow-y-auto pr-2 custom-scrollbar">
+          {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
+            stats.recentAuditLogs.map((log) => {
+              // Extract action color
+              const actionLower = (log.action || '').toLowerCase();
+              let badgeColor = 'bg-slate-700 text-slate-300';
+              if (actionLower.includes('login')) badgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+              if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+              if (actionLower.includes('delete') || actionLower.includes('block')) badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
+
+              return (
+                <div key={log._id} className="bg-slate-800/50 p-3.5 rounded-lg border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${badgeColor}`}>
+                      {log.action}
+                    </span>
+                    <span className="text-xs text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-slate-300 leading-snug">
+                    <span className="font-semibold text-white">{log.actorRole?.replace('_', ' ')}</span> ({log.actorId}) accessed system.
+                  </p>
+                </div>
+              );
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500">
+              <ScrollText className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-sm">No recent activity found.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -305,7 +364,7 @@ const AdminDashboard = () => {
 
   // Socket.IO real-time integration
   useEffect(() => {
-    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
+    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
     const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5,
@@ -350,6 +409,7 @@ const AdminDashboard = () => {
 
   const menuItems = [
     { label: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard, end: true },
+    { label: 'Analytics', path: '/admin/dashboard/analytics', icon: TrendingUp },
     { label: 'Hospitals', path: '/admin/dashboard/hospitals', icon: Building2 },
     { label: 'Users', path: '/admin/dashboard/users', icon: Users },
     { label: 'ML Alerts', path: '/admin/dashboard/alerts', icon: ShieldAlert },
@@ -373,6 +433,7 @@ const AdminDashboard = () => {
         ) : (
           <Routes>
             <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
+            <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
             <Route path="/dashboard/hospitals" element={<ManageHospitals />} />
             <Route path="/dashboard/users" element={<ManageUsers />} />
             <Route path="/dashboard/alerts" element={<AlertSettings />} />

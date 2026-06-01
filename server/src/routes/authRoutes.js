@@ -4,19 +4,20 @@ const authController = require('../controllers/authController');
 const protect = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 5 : 100,
-  message: { error: 'Too many login attempts. Try again later.' },
-  skip: () => process.env.NODE_ENV !== 'production'
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window per IP
+  message: { error: 'Too many attempts. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 router.post('/register', authController.registerDoctor);
 router.post('/register-patient', authController.registerPatient);
 router.post('/register-pharmacy', authController.registerPharmacyStaff);
-router.post('/login', loginLimiter, authController.login);
-router.post('/verify-otp', authController.verifyLoginOTP);
-router.post('/send-otp', authController.sendOTP);
+router.post('/login', authRateLimiter, authController.login);
+router.post('/verify-otp', authRateLimiter, authController.verifyLoginOTP);
+router.post('/send-otp', authRateLimiter, authController.sendOTP);
 router.post('/login-type', protect(['doctor']), authController.setLoginType);
 router.post('/change-password', protect(), authController.changePassword);
 router.post('/forgot-password', authController.forgotPassword);

@@ -1,131 +1,378 @@
+/* ─── Fonts ───────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ─── Tailwind layers ─────────────────────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE LAYER  –  CSS custom properties & global resets
+   ═══════════════════════════════════════════════════════════════════════════ */
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
+    /* ── Semantic design tokens ── */
+    --background:           222.2 84% 4.9%;
+    --foreground:           210  40% 98%;
+    --card:                 222.2 84% 4.9%;
+    --card-foreground:      210  40% 98%;
+    --popover:              222.2 84% 4.9%;
+    --popover-foreground:   210  40% 98%;
+    --primary:              217.2 91.2% 59.8%;
+    --primary-foreground:   222.2 47.4% 11.2%;
+    --secondary:            217.2 32.6% 17.5%;
+    --secondary-foreground: 210  40% 98%;
+    --muted:                217.2 32.6% 17.5%;
+    --muted-foreground:     215  20.2% 65.1%;
+    --accent:               217.2 32.6% 17.5%;
+    --accent-foreground:    210  40% 98%;
+    --destructive:          0    62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+    --border:               217.2 32.6% 17.5%;
+    --input:                217.2 32.6% 17.5%;
+    --ring:                 224.3 76.3% 48%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    /* ── Glassmorphism surface tokens ── */
+    --glass-bg:             rgba(15,  23, 42, 0.40);
+    --glass-border:         rgba(255, 255, 255, 0.06);
+    --glass-shadow:         0 20px 60px rgba(0, 0, 0, 0.45);
+
+    /* ── Accent palette ── */
+    --teal-glow:            rgba(20, 184, 166, 0.25);
+    --lime-glow:            rgba(132, 204,  22, 0.20);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-[#0b1120] text-foreground antialiased selection:bg-primary/30 selection:text-white;
+    @apply bg-slate-950 text-foreground antialiased;
+    @apply selection:bg-teal-500/30 selection:text-white;
+    font-family: 'Outfit', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 40%),
-                      radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1), transparent 30%);
+
+    /* Deep layered background – GPU-composited via fixed attachment */
+    background-color: #020817;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%,  rgba(20, 184, 166, 0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(99,  102, 241, 0.10), transparent),
+      radial-gradient(ellipse 50% 35% at 0%   80%,  rgba(15,  23,  42, 0.95), transparent);
     background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* Smooth focus rings */
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal-400/60 ring-offset-2 ring-offset-slate-950;
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITIES LAYER  –  design-system atomic helpers
+   ═══════════════════════════════════════════════════════════════════════════ */
 @layer utilities {
+
+  /* ── Glassmorphism surfaces ─────────────────────────────────────────────── */
+
+  /* Primary glass panel – sidebars, nav, major surfaces */
   .glass-panel {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl;
+    background: rgba(8, 12, 28, 0.70);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.03) inset,
+      var(--glass-shadow);
   }
+
+  /* Standard glass card – dashboard cards, form panels */
   .glass-card {
-    @apply bg-slate-800/40 backdrop-blur-md border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300;
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    @apply rounded-2xl transition-all duration-300;
   }
+  .glass-card:hover {
+    border-color: rgba(20, 184, 166, 0.20);
+    box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.08) inset, 0 16px 48px rgba(0,0,0,0.4);
+  }
+
+  /* Premium glass card – stat cards, feature tiles */
+  .glass-card-premium {
+    background: linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.60) 0%,
+      rgba(8,  15, 32, 0.50) 100%
+    );
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 1px 0 0 rgba(255,255,255,0.08) inset,
+      0 16px 48px rgba(0,0,0,0.40);
+    @apply rounded-2xl;
+  }
+
+  /* Light glass – modals, dropdowns, tooltips */
+  .glass-modal {
+    background: rgba(12, 18, 40, 0.88);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.60);
+    @apply rounded-3xl;
+  }
+
+  /* ── Neumorphism helpers ─────────────────────────────────────────────────── */
+
+  /* Raised neumorphic – buttons, icon containers */
+  .neumorphic-flat {
+    box-shadow:
+       5px  5px 15px rgba(0,   0,   0,   0.50),
+      -3px -3px 10px rgba(255, 255, 255, 0.03);
+  }
+
+  /* Sunken neumorphic – inputs, active states */
+  .neumorphic-inset {
+    box-shadow:
+      inset  4px  4px 10px rgba(0,   0,   0,   0.45),
+      inset -2px -2px  6px rgba(255, 255, 255, 0.03);
+  }
+
+  /* Teal glow ring – active/focus indicator */
+  .glow-teal {
+    box-shadow:
+      0 0 0 1px rgba(20, 184, 166, 0.40),
+      0 0 20px rgba(20, 184, 166, 0.25),
+      0 0 60px rgba(20, 184, 166, 0.10);
+  }
+
+  /* Lime glow – success / active nav item */
+  .glow-lime {
+    box-shadow:
+      0 0 0 1px rgba(132, 204, 22, 0.35),
+      0 0 16px rgba(132, 204, 22, 0.20);
+  }
+
+  /* ── Form controls ──────────────────────────────────────────────────────── */
+
   .glass-input {
-    @apply bg-slate-900/50 border border-slate-700/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 text-slate-200 placeholder:text-slate-500 rounded-lg transition-all duration-200;
+    @apply bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3;
+    @apply text-slate-100 placeholder:text-slate-500;
+    @apply transition-all duration-200;
+    backdrop-filter: blur(8px);
   }
+  .glass-input:focus {
+    @apply outline-none border-teal-500/50 bg-slate-900/80;
+    box-shadow:
+      0 0 0 3px rgba(20, 184, 166, 0.12),
+      0 0 20px rgba(20, 184, 166, 0.08);
+  }
+
+  /* ── Buttons ────────────────────────────────────────────────────────────── */
+
+  /* Primary CTA – teal gradient */
   .glass-button {
-    @apply relative overflow-hidden bg-primary/90 hover:bg-primary text-white font-medium rounded-lg shadow-lg shadow-primary/25 transition-all duration-300;
+    @apply relative overflow-hidden inline-flex items-center justify-center gap-2;
+    @apply px-6 py-3 rounded-xl font-semibold text-white;
+    @apply transition-all duration-300 cursor-pointer select-none;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    box-shadow:
+      0 4px 20px rgba(20, 184, 166, 0.30),
+      0 1px 0 rgba(255,255,255,0.15) inset;
   }
   .glass-button::after {
     content: '';
-    @apply absolute inset-0 bg-white/20 translate-y-full transition-transform duration-300 ease-out;
+    @apply absolute inset-0 bg-white/10 translate-y-full transition-transform duration-300 ease-out;
+  }
+  .glass-button:hover {
+    box-shadow: 0 8px 32px rgba(20, 184, 166, 0.45), 0 1px 0 rgba(255,255,255,0.15) inset;
+    @apply -translate-y-px;
   }
   .glass-button:hover::after {
     @apply translate-y-0;
   }
-  
-  /* Hospital Admin Specific Theme (Purple/Fuchsia) */
-  .hospital-theme .glass-panel {
-    @apply border-purple-500/30 bg-indigo-950/40;
-  }
-  .hospital-theme .glass-card {
-    @apply bg-purple-900/20 border-purple-800/30 hover:border-purple-500/50;
-  }
-  .hospital-theme .primary-gradient {
-    @apply bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40;
-  }
-  .hospital-theme .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-400;
-  }
-  
-  /* Super Admin Specific Theme (Blue/Cyan) */
-  .admin-theme .primary-gradient {
-    @apply bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40;
-  }
-  .admin-theme .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400;
+  .glass-button:active {
+    @apply translate-y-0 scale-[0.98];
   }
 
-  /* Doctor Specific Theme (Emerald/Teal) */
+  /* Ghost / secondary button */
+  .glass-button-ghost {
+    @apply relative overflow-hidden inline-flex items-center justify-center gap-2;
+    @apply px-6 py-3 rounded-xl font-semibold text-slate-300;
+    @apply border border-white/10 transition-all duration-300 cursor-pointer;
+    background: rgba(255,255,255,0.03);
+  }
+  .glass-button-ghost:hover {
+    @apply text-white border-teal-500/40 bg-teal-500/10;
+    box-shadow: 0 4px 20px rgba(20, 184, 166, 0.12);
+  }
+
+  /* Danger / destructive */
+  .glass-button-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium;
+    @apply text-rose-400 border border-rose-500/20 bg-rose-500/5;
+    @apply transition-all duration-200 cursor-pointer;
+  }
+  .glass-button-danger:hover {
+    @apply text-rose-300 bg-rose-500/10 border-rose-500/40;
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.15);
+  }
+
+  /* ── Typography helpers ─────────────────────────────────────────────────── */
+
+  .text-gradient-teal {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #5eead4 100%);
+  }
+
+  .text-gradient-lime {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #a3e635 0%, #84cc16 100%);
+  }
+
+  .label-caps {
+    @apply text-[10px] font-extrabold uppercase tracking-widest text-slate-400;
+  }
+
+  /* ── Role-based accent themes ───────────────────────────────────────────── */
+
+  /* Doctor – Emerald / Teal */
   .doctor-theme .primary-gradient {
-    @apply bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40;
+    @apply bg-gradient-to-r from-emerald-600 to-teal-500 text-white;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.30);
   }
-  .doctor-theme .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400;
+  .doctor-theme .text-gradient   { @apply text-gradient-teal; }
+  .doctor-theme .accent-border   { @apply border-emerald-500/30; }
+  .doctor-theme .accent-bg       { @apply bg-emerald-500/10; }
+  .doctor-theme .accent-text     { @apply text-emerald-400; }
+  .doctor-theme .active-nav {
+    @apply bg-emerald-500/10 text-emerald-300 border border-emerald-500/25;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.12);
   }
 
-  /* Pharmacy Specific Theme (Amber/Orange) */
+  /* Hospital Admin – Purple / Indigo */
+  .hospital-theme .glass-panel    { @apply bg-indigo-950/50 border-purple-500/20; }
+  .hospital-theme .primary-gradient {
+    @apply bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.30);
+  }
+  .hospital-theme .text-gradient  { @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-400; }
+  .hospital-theme .accent-border  { @apply border-purple-500/30; }
+  .hospital-theme .accent-bg      { @apply bg-purple-500/10; }
+  .hospital-theme .accent-text    { @apply text-purple-400; }
+  .hospital-theme .active-nav {
+    @apply bg-purple-500/10 text-purple-300 border border-purple-500/25;
+  }
+
+  /* Admin – Blue / Cyan */
+  .admin-theme .primary-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-cyan-500 text-white;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.30);
+  }
+  .admin-theme .text-gradient   { @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400; }
+  .admin-theme .accent-border   { @apply border-blue-500/30; }
+  .admin-theme .accent-bg       { @apply bg-blue-500/10; }
+  .admin-theme .accent-text     { @apply text-blue-400; }
+  .admin-theme .active-nav {
+    @apply bg-blue-500/10 text-blue-300 border border-blue-500/25;
+  }
+
+  /* Pharmacy – Amber / Orange */
   .pharmacy-theme .primary-gradient {
-    @apply bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40;
+    @apply bg-gradient-to-r from-amber-500 to-orange-500 text-white;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.30);
   }
-  .pharmacy-theme .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400;
+  .pharmacy-theme .text-gradient { @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400; }
+  .pharmacy-theme .accent-border { @apply border-amber-500/30; }
+  .pharmacy-theme .accent-bg     { @apply bg-amber-500/10; }
+  .pharmacy-theme .accent-text   { @apply text-amber-400; }
+  .pharmacy-theme .active-nav {
+    @apply bg-amber-500/10 text-amber-300 border border-amber-500/25;
   }
 
-  /* Patient Specific Theme (Rose/Pink) */
+  /* Patient – Rose / Pink */
   .patient-theme .primary-gradient {
-    @apply bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40;
+    @apply bg-gradient-to-r from-rose-600 to-pink-500 text-white;
+    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.30);
   }
-  .patient-theme .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-pink-400;
+  .patient-theme .text-gradient  { @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-pink-400; }
+  .patient-theme .accent-border  { @apply border-rose-500/30; }
+  .patient-theme .accent-bg      { @apply bg-rose-500/10; }
+  .patient-theme .accent-text    { @apply text-rose-400; }
+  .patient-theme .active-nav {
+    @apply bg-rose-500/10 text-rose-300 border border-rose-500/25;
   }
 
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* ── Scrollbar ──────────────────────────────────────────────────────────── */
+  .custom-scrollbar          { scrollbar-width: thin; scrollbar-color: rgba(71, 85, 105, 0.6) transparent; }
+  .custom-scrollbar::-webkit-scrollbar         { width: 5px; height: 5px; }
+  .custom-scrollbar::-webkit-scrollbar-track   { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb   { background: rgba(71, 85, 105, 0.6); border-radius: 99px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.9); }
+
+  /* ── Animated gradient border ───────────────────────────────────────────── */
+  .gradient-border {
+    position: relative;
+    border-radius: inherit;
   }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.5);
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(20,184,166,0.40), rgba(99,102,241,0.20), rgba(20,184,166,0.10));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(71, 85, 105, 0.8);
-    border-radius: 10px;
+
+  /* ── Micro-interaction utilities ────────────────────────────────────────── */
+  .hover-lift {
+    @apply transition-transform duration-300 ease-out;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, 1);
+  .hover-lift:hover {
+    @apply -translate-y-1;
   }
+
+  /* ── Loading skeleton shimmer ───────────────────────────────────────────── */
+  .skeleton {
+    @apply rounded-xl bg-slate-800/60 relative overflow-hidden;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+  @keyframes skeleton-shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* ── Fade-in animations ─────────────────────────────────────────────────── */
+  @keyframes fade-in-down {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-down { animation: fade-in-down 0.6s ease-out both; }
+  .animate-fade-in      { animation: fade-in      0.5s ease-out both; }
+  .animate-fade-in-up   { animation: fade-in-up   0.6s ease-out both; }
 }

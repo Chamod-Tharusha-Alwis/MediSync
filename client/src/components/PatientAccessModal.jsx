@@ -24,13 +24,15 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
 
   const hasRequestedOTP = useRef(false);
 
-  // Send OTP on mount
+  // Send OTP on mount — intentionally runs once, sendOTP is stable
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!hasRequestedOTP.current) {
       hasRequestedOTP.current = true;
       sendOTP();
     }
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Countdown timer
   useEffect(() => {

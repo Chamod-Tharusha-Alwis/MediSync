@@ -89,13 +89,17 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      if (isOpen && focusedIndex >= 0) {
-        addSymptom(suggestions[focusedIndex]);
-      } else if (suggestions.length === 1) {
-        // Auto-select single match on Enter
-        addSymptom(suggestions[0]);
+      const val = inputValue.trim();
+      if (val) {
+        if (isOpen && focusedIndex >= 0 && suggestions[focusedIndex]) {
+          addSymptom(suggestions[focusedIndex]);
+        } else {
+          // Case-insensitive match against canonical symptoms list
+          const match = allSymptoms.find(s => s.toLowerCase() === val.toLowerCase());
+          addSymptom(match || val);
+        }
       }
     } else if (e.key === 'Backspace' && !inputValue && selectedSymptoms.length > 0) {
       removeSymptom(selectedSymptoms[selectedSymptoms.length - 1]);
@@ -106,7 +110,7 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
 
   return (
     <div className="w-full" ref={wrapperRef}>
-      <div className="min-h-[50px] p-2 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary flex flex-wrap gap-2 transition-all">
+      <div className="min-h-[50px] p-2 bg-slate-900/60 border border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500/40 flex flex-wrap gap-2 transition-all">
         <AnimatePresence>
           {selectedSymptoms.map(symptom => (
             <motion.span
@@ -114,13 +118,13 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0, width: 0, padding: 0, margin: 0 }}
               key={symptom}
-              className="inline-flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium"
+              className="inline-flex items-center bg-teal-500/10 text-teal-300 border border-teal-500/25 px-3 py-1 rounded-full text-sm font-medium"
             >
               {symptom}
               <button
                 type="button"
                 onClick={() => removeSymptom(symptom)}
-                className="ml-1 hover:text-primaryDark focus:outline-none"
+                className="ml-1 hover:text-teal-400 focus:outline-none"
               >
                 <FiX size={14} />
               </button>
@@ -142,26 +146,26 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
               ? 'Type to search ML-verified symptoms...'
               : ''
           }
-          className="flex-1 min-w-[180px] bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 py-1"
+          className="flex-1 min-w-[180px] bg-transparent outline-none text-sm text-slate-100 placeholder-slate-500 py-1"
           disabled={selectedSymptoms.length >= 15 || isLoadingList}
         />
         {isLoadingList && (
           <div className="flex items-center pr-2">
-            <FiLoader className="animate-spin text-gray-400" size={14} />
+            <FiLoader className="animate-spin text-slate-500" size={14} />
           </div>
         )}
       </div>
 
       {isOpen && suggestions.length > 0 && (
         <div className="relative z-50">
-          <div className="absolute top-1 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto py-1">
+          <div className="absolute top-1 left-0 w-full bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-xl max-h-60 overflow-auto py-1 custom-scrollbar">
             {suggestions.map((symptom, index) => (
               <div
                 key={symptom}
                 className={`px-4 py-2 cursor-pointer text-sm transition-colors ${
                   index === focusedIndex
-                    ? 'bg-primary/5 text-primary font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-teal-500/20 text-teal-300 font-medium'
+                    : 'text-slate-300 hover:bg-slate-800/40'
                 }`}
                 onClick={() => addSymptom(symptom)}
                 onMouseEnter={() => setFocusedIndex(index)}
@@ -169,7 +173,7 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
                 {symptom}
               </div>
             ))}
-            <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+            <div className="px-4 py-2 text-xs text-slate-500 border-t border-white/5">
               ✦ These symptoms are indexed by the ML prediction engine
             </div>
           </div>
@@ -178,8 +182,8 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
 
       {isOpen && suggestions.length === 0 && inputValue.trim() && !isLoadingList && (
         <div className="relative z-50">
-          <div className="absolute top-1 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-3 px-4">
-            <p className="text-xs text-gray-500">
+          <div className="absolute top-1 left-0 w-full bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-lg py-3 px-4">
+            <p className="text-xs text-slate-400">
               No ML-indexed symptom matches "<span className="font-semibold">{inputValue}</span>".
               Check spelling or try a broader term.
             </p>

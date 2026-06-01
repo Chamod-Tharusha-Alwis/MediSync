@@ -14,7 +14,7 @@ export default function Login() {
     setError('');
     try {
       const { data } = await api.post('/auth/login', form);
-      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('token', data.accessToken);
       localStorage.setItem('role', data.role);
 
       const routes = {

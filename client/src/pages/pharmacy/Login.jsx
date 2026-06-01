@@ -19,20 +19,16 @@ const PharmacyLogin = () => {
     setError(null);
 
     try {
-      const response = await axiosInstance.post('/auth/login', {
-        email,
-        password,
-        role: 'pharmacist'
-      });
-
-      const { accessToken, role, name } = response.data.data;
+      const response = await axiosInstance.post('/pharmacy/login', { email, password });
+      const { accessToken, role, pharmacyName, staffName } = response.data.data;
       
       localStorage.setItem('token', accessToken);
       localStorage.setItem('role', role || 'pharmacist');
       localStorage.setItem('userRole', role || 'pharmacist');
-      if (name) localStorage.setItem('userName', name);
+      if (staffName) localStorage.setItem('userName', staffName);
+      if (pharmacyName) localStorage.setItem('pharmacyName', pharmacyName);
 
-      toast.success('Login successful!');
+      toast.success(`Welcome back, ${staffName || 'Pharmacist'}!`);
       navigate('/pharmacy/dashboard');
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to authenticate. Please check your credentials.';

@@ -3,6 +3,10 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const protect = require('../middleware/auth');
 
+// ─── Analytics ───────────────────────────────────────────────────────────────
+const analyticsController = require('../controllers/analyticsController');
+router.get('/analytics/dashboard', protect(['admin', 'super_admin', 'hospital_admin']), analyticsController.getDashboardStats);
+
 // ─── Core stats & users ──────────────────────────────────────────────────────
 router.get('/stats', protect(['admin', 'super_admin']), adminController.getSystemStats);
 router.get('/users', protect(['admin', 'super_admin']), adminController.getAllUsers);

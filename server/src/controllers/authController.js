@@ -9,6 +9,7 @@ const PharmacyStaff = require('../models/PharmacyStaff');
 const Hospital = require('../models/Hospital');
 const SessionToken = require('../models/SessionToken');
 const OTPSession = require('../models/OTPSession');
+const Admin = require('../models/Admin');
 const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
 
@@ -140,8 +141,8 @@ exports.login = async (req, res) => {
       user = await Hospital.findOne({ email });
       modelName = 'Hospital';
       if (!user) {
-        user = await Doctor.findOne({ email, role: { $in: ['admin', 'super_admin'] } });
-        modelName = 'Doctor';
+        user = await Admin.findOne({ email, role: { $in: ['admin', 'super_admin'] } });
+        modelName = 'Admin';
       }
     } else {
       // Fallback: try all
@@ -149,6 +150,7 @@ exports.login = async (req, res) => {
       if (!user) { user = await Patient.findOne({ email }); modelName = 'Patient'; }
       if (!user) { user = await PharmacyStaff.findOne({ email }); modelName = 'PharmacyStaff'; }
       if (!user) { user = await Hospital.findOne({ email }); modelName = 'Hospital'; }
+      if (!user) { user = await Admin.findOne({ email }); modelName = 'Admin'; }
     }
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -515,7 +517,9 @@ exports.refreshToken = async (req, res) => {
     }
 
     const accessToken = jwt.sign({ id: decoded.id, role: decoded.role, sub: decoded.sub }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    await createSession(decoded.id, 'User', accessToken, req);
+    const pharmacyRoles = ['pharmacist', 'pharmacy_admin', 'assistant'];
+    const userModel = pharmacyRoles.includes(decoded.role) ? 'PharmacyStaff' : 'User';
+    await createSession(decoded.id, userModel, accessToken, req);
 
     return res.status(200).json({ data: { accessToken }, message: "Token refreshed" });
   } catch (err) {

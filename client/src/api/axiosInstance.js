@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5005/api',
   withCredentials: true,
 });
 
@@ -56,11 +56,22 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // ─── 403 — FORBIDDEN FLOW (Graceful return) ───────────────────────────────
+    if (status === 403) {
+      // Return gracefully, let the calling component handle it (e.g. toast notification)
+      // WITHOUT clearing session or redirecting
+      return Promise.reject(error);
+    }
+
     // ─── 401 — TOKEN REFRESH FLOW ─────────────────────────────────────────────
     // Don't try to refresh on login/refresh endpoints themselves
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
                            originalRequest.url?.includes('/auth/refresh') ||
                            originalRequest.url?.includes('/patient/login');
+
+    // ─── BACKGROUND ALERT REQUESTS — never log out on these ──────────────────
+    // The alert banner polls silently; a 401/403 here must not destroy the session.
+    const isAlertEndpoint = originalRequest.url?.includes('/alerts');
 
     if (status === 401) {
       if (isAuthEndpoint) {
@@ -69,12 +80,17 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // Fail silently for background alert polling — do NOT log the user out
+      if (isAlertEndpoint) {
+        return Promise.reject(error);
+      }
+
       if (!originalRequest._retry) {
         originalRequest._retry = true;
 
         try {
           const { data } = await axios.post(
-            'http://localhost:5000/api/auth/refresh',
+            'http://localhost:5005/api/auth/refresh',
             {},
             { withCredentials: true }
           );

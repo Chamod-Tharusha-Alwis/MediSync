@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, LayoutDashboard, Users, FileText, Activity, FlaskConical, Download } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutDashboard, Users, Activity, FlaskConical, Download } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import PageTransition from '../../components/common/PageTransition';
 import MedicalTimeline from '../../components/common/MedicalTimeline';
@@ -21,13 +21,11 @@ const DoctorPatientDetail = () => {
   
   // OTP State
   const [showOtp, setShowOtp] = useState(true);
-  const [accessToken, setAccessToken] = useState('');
 
   const menuItems = [
     { label: 'Dashboard', path: '/doctor/dashboard', icon: LayoutDashboard, end: true },
     { label: 'New Consultation', path: '/doctor/consultation/new', icon: Plus },
-    { label: 'My Patients', path: '/doctor/patients', icon: Users },
-    { label: 'Prescriptions', path: '/doctor/prescriptions', icon: FileText },
+    { label: 'Patient Directory', path: '/doctor/patients', icon: Users },
   ];
 
   const fetchRecords = async (token) => {
@@ -53,7 +51,6 @@ const DoctorPatientDetail = () => {
   };
 
   const handleOtpSuccess = (token) => {
-    setAccessToken(token);
     setShowOtp(false);
     fetchRecords(token);
   };

@@ -30,6 +30,7 @@ const PatientReports = () => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchReports(); }, [filter]);
 
   const handleReview = async (reportId, action) => {

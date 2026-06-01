@@ -1,0 +1,147 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Star, Building2, MapPin } from 'lucide-react';
+import api from '../../api/axiosInstance';
+import DoctorProfileModal from './DoctorProfileModal';
+
+const DoctorDirectory = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const res = await api.get('/public/doctors');
+        setDoctors(res.data.data);
+      } catch (err) {
+        console.error('Failed to fetch doctors', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  const filteredDoctors = doctors.filter(d => 
+    d.fullName?.toLowerCase().includes(search.toLowerCase()) || 
+    d.specialization?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pt-24 pb-12">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Header & Search */}
+        <div className="text-center mb-12">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4"
+          >
+            Find a Specialist
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-lg text-slate-500 mb-8 max-w-2xl mx-auto"
+          >
+            Browse our network of top-rated healthcare professionals verified by MediSync.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="relative max-w-xl mx-auto"
+          >
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input 
+              type="text" 
+              placeholder="Search by name or specialization..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-full border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-lg transition-shadow bg-white"
+            />
+          </motion.div>
+        </div>
+
+        {/* Directory Grid */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {filteredDoctors.map((doc, idx) => (
+                <motion.div
+                  key={doc._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2, delay: idx * 0.05 }}
+                  whileHover={{ scale: 1.03, y: -5 }}
+                  onClick={() => setSelectedDoctor(doc)}
+                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl cursor-pointer transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                      {doc.fullName?.charAt(0).toUpperCase()}
+                    </div>
+                    {doc.averageRating > 0 && (
+                      <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200/50">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-bold text-amber-600">{doc.averageRating}</span>
+                        <span className="text-xs text-amber-600/70">({doc.ratingCount})</span>
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-1 line-clamp-1">{doc.fullName}</h3>
+                  <p className="text-blue-600 font-medium text-sm mb-4">{doc.specialization || 'General Practitioner'}</p>
+                  
+                  <div className="space-y-2 text-sm text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 opacity-70" />
+                      <span className="line-clamp-1">
+                        {doc.hospitals?.length > 0 ? doc.hospitals[0].name : 'Private Practice'}
+                        {doc.hospitals?.length > 1 && ` +${doc.hospitals.length - 1} more`}
+                      </span>
+                    </div>
+                    {doc.clinicAddress && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 opacity-70" />
+                        <span className="line-clamp-1">{doc.clinicAddress}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+        
+        {!loading && filteredDoctors.length === 0 && (
+          <div className="text-center py-20 text-slate-500">
+            <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p className="text-lg">No doctors found matching "{search}"</p>
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {selectedDoctor && (
+          <DoctorProfileModal 
+            doctor={selectedDoctor} 
+            onClose={() => setSelectedDoctor(null)} 
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default DoctorDirectory;

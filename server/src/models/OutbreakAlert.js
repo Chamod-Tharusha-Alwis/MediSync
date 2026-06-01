@@ -25,6 +25,11 @@ const outbreakAlertSchema = new mongoose.Schema({
   },
   message: {
     type: String
+  },
+  feedbackStatus: {
+    type: String,
+    enum: ['unverified', 'confirmed', 'false_positive'],
+    default: 'unverified'
   }
 }, { 
   timestamps: true 

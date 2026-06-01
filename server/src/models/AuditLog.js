@@ -8,18 +8,10 @@ const auditSchema = new mongoose.Schema({
   accessedNic: String,
   ipAddress: String,
   timestamp: { type: Date, default: Date.now }
+}, {
+  capped: { size: 104857600, max: 100000 } // Capped at 100MB / 100,000 documents
 });
 
-// Capped at 100MB — no deletions allowed
 const AuditLog = mongoose.model('AuditLog', auditSchema, 'auditlogs');
-
-// Create capped collection on first run
-mongoose.connection.once('open', async () => {
-  const collections = await mongoose.connection.db.listCollections({ name: 'auditlogs' }).toArray();
-  if (collections.length === 0) {
-    await mongoose.connection.db.createCollection('auditlogs', { capped: true, size: 104857600 });
-    console.log('Capped audit collection created');
-  }
-});
 
 module.exports = AuditLog;
