@@ -144,14 +144,11 @@ exports.triggerMLDetection = async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    console.log('[DEBUG] 1. Querying MongoDB for recent consultations...');
-
     // 1. Fetch last 30 days — NO .lean() so mongoose-field-encryption decrypts 'diagnosis' automatically
     const recentConsultations = await Consultation.find({ createdAt: { $gte: thirtyDaysAgo } });
 
     if (recentConsultations.length === 0) {
       // No real data — fall back to Prophet prediction for demo
-      console.log('[Admin] No consultations found, falling back to Prophet...');
       const { data } = await axios.post(
         `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/api/ml/predict-outbreak`,
         { district: req.body?.district || 'Colombo' },
@@ -200,10 +197,6 @@ exports.triggerMLDetection = async (req, res) => {
       return item;
     });
 
-    console.log('[Admin] Sending live DB data to ML Engine:', JSON.stringify(payload, null, 2));
-
-    console.log('[DEBUG] 2. Sending data payload to ML Engine...');
-
     // Send as direct array payload to new route
     const { data } = await axios.post(
       `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
@@ -213,8 +206,6 @@ exports.triggerMLDetection = async (req, res) => {
         headers: { 'x-internal-key': generateToken() }
       }
     );
-
-    console.log('[Admin] Real-time ML result:', JSON.stringify(data, null, 2));
 
     // 5. If anomaly detected, save an OutbreakAlert record and emit Socket event
     if (data.results && Array.isArray(data.results)) {
@@ -235,7 +226,6 @@ exports.triggerMLDetection = async (req, res) => {
               status:         'Active',
               message:        `Real-time outbreak detected: ${result.disease} in ${result.district}.`
             });
-            console.log(`[Admin] ✅ OutbreakAlert saved: ${alert.disease} (${alert.severity})`);
             const io = require('../app').get?.('io');
             if (io) io.emit('outbreak_alert', alert);
           } catch (dbErr) {
@@ -245,7 +235,6 @@ exports.triggerMLDetection = async (req, res) => {
           // --- MASS EMAIL TRIGGER (own try/catch — independent of DB save) ---
           if (result.severity === 'medium' || result.severity === 'high') {
             try {
-              console.log(`[Admin] ${result.severity} risk outbreak detected! Triggering mass alert.`);
               const Patient = require('../models/Patient');
               const Doctor = require('../models/Doctor');
               const PharmacyStaff = require('../models/PharmacyStaff');
@@ -274,7 +263,6 @@ exports.triggerMLDetection = async (req, res) => {
                 result.severity,
                 Math.round(((result.latest_actual - result.baseline) / (result.baseline || 1)) * 100)
               );
-              console.log(`[Admin] ✅ Mass alert sent to ${allEmails.length} users. Success: ${emailResult.success}`);
             } catch (emailErr) {
               console.error('[Admin] Mass email trigger failed:', emailErr.message);
             }
@@ -291,7 +279,6 @@ exports.triggerMLDetection = async (req, res) => {
                 sentAt: new Date()
               });
               await broadcast.save();
-              console.log('[Admin] ✅ BroadcastMessage saved');
             } catch (broadcastErr) {
               console.error('[Admin] Broadcast save failed:', broadcastErr.message);
             }

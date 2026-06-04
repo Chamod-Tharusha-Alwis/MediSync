@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, CheckCircle, Info, AlertTriangle, Pill } from 'lucide-react';
+import { Bell, Check, X, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io as socketIO } from 'socket.io-client';
 import api from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,7 +24,22 @@ const NotificationBell = () => {
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000); // Poll every 60s
-    return () => clearInterval(interval);
+
+    // Real-time Socket.io listener
+    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
+    const socket = socketIO(serverUrl, {
+      auth: { token: localStorage.getItem('token') },
+    });
+
+    socket.on('notification', (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, []);
 
   const markAsRead = async (id, e) => {
@@ -55,6 +71,8 @@ const NotificationBell = () => {
       case 'appointment_confirmed': return <CheckCircle className="w-4 h-4 text-blue-400" />;
       case 'outbreak_alert': return <AlertTriangle className="w-4 h-4 text-rose-400" />;
       case 'low_stock': return <AlertTriangle className="w-4 h-4 text-amber-400" />;
+      case 'lab_test_approved': return <CheckCircle className="w-4 h-4 text-teal-400" />;
+      case 'lab_report_ready': return <FlaskConical className="w-4 h-4 text-emerald-400" />;
       default: return <Info className="w-4 h-4 text-slate-400" />;
     }
   };

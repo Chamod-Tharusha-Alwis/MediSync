@@ -3,6 +3,7 @@ const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
 
 const patientSchema = new mongoose.Schema({
   nic: { type: String, required: true, unique: true },
+  patientNic_bi: { type: String }, // blind index for NIC
   fullName: { type: String, required: true },
   dateOfBirth: Date,
   gender: { type: String, enum: ['Male', 'Female', 'Other'] },

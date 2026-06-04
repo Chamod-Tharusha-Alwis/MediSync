@@ -67,6 +67,9 @@ exports.registerDoctor = async (req, res) => {
 
     return res.status(201).json({ message: "Registered", data: { doctorId } });
   } catch (err) {
+    if (err.code === 11000 || (err.message && err.message.includes('11000'))) {
+      return res.status(400).json({ error: "Email or License already exists" });
+    }
     return res.status(500).json({ error: "Registration failed", details: err.message });
   }
 };
@@ -83,15 +86,19 @@ exports.registerPatient = async (req, res) => {
     if (existing) return res.status(400).json({ error: 'Email or NIC already registered' });
 
     const hashedPassword = await hashPassword(password);
+    const patientNic_bi = crypto.createHash('sha256').update(nic.trim()).digest('hex');
 
     const patient = new Patient({
-      fullName, email, password: hashedPassword, nic, dateOfBirth, gender, contactInfo, riskLevel: 'low', riskScore: 0
+      fullName, email, password: hashedPassword, nic, patientNic_bi, dateOfBirth, gender, contactInfo, riskLevel: 'low', riskScore: 0
     });
     
     await patient.save();
 
     return res.status(201).json({ message: "Patient registered", data: { id: patient._id } });
   } catch (err) {
+    if (err.code === 11000 || (err.message && err.message.includes('11000'))) {
+      return res.status(400).json({ error: "Email or NIC already exists" });
+    }
     return res.status(500).json({ error: "Registration failed", details: err.message });
   }
 };
@@ -117,6 +124,9 @@ exports.registerPharmacyStaff = async (req, res) => {
 
     return res.status(201).json({ message: "Pharmacy staff registered", data: { id: staff._id } });
   } catch (err) {
+    if (err.code === 11000 || (err.message && err.message.includes('11000'))) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
     return res.status(500).json({ error: "Registration failed", details: err.message });
   }
 };

@@ -114,19 +114,19 @@ const Dispense = () => {
           <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Patient Name</p>
-              <p className="text-white font-semibold">{patientInfo.fullName || 'N/A'}</p>
+              <p className="text-white font-semibold break-all overflow-hidden">{patientInfo.fullName || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Contact</p>
-              <p className="text-slate-300">{patientInfo.contactInfo || 'N/A'}</p>
+              <p className="text-slate-300 break-all overflow-hidden">{patientInfo.contactInfo || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Blood Group</p>
-              <p className="text-red-400 font-bold">{patientInfo.bloodGroup || 'N/A'}</p>
+              <p className="text-red-400 font-bold break-all overflow-hidden">{patientInfo.bloodGroup || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Date of Birth</p>
-              <p className="text-slate-300">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-slate-300 break-all overflow-hidden">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
             </div>
           </div>
         </div>

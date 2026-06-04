@@ -87,6 +87,9 @@ exports.registerPatient = async (req, res) => {
 
     res.status(201).json({ message: 'Patient registered successfully', data: { accessToken, role: 'patient', name: fullName, nic } });
   } catch (error) {
+    if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
+      return res.status(400).json({ error: 'NIC or Email already registered' });
+    }
     res.status(500).json({ error: 'Registration failed', details: error.message });
   }
 };
@@ -201,7 +204,6 @@ exports.getTimeline = async (req, res) => {
 
     const targetNic = (req.user.nic || req.user.sub || req.params.nic || '').trim().toUpperCase();
     const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
-    console.log(`[Timeline] querying patientNic=${targetNic} via Hash=${targetHash}`);
 
     const [myPrescriptions, myConsultations, myLabTests, myRatings] = await Promise.all([
       Prescription.find({ patientNic_bi: targetHash })
@@ -217,14 +219,12 @@ exports.getTimeline = async (req, res) => {
         .sort({ createdAt: -1 }),
 
       LabTest.find({ patientNic_bi: targetHash })
-        .populate('doctorId', 'fullName specialization')
+        .populate('referredBy', 'fullName specialization')
         .populate('hospitalId', 'name')
         .sort({ orderedAt: -1 }),
 
       ConsultationRating.find({ patientNic: targetNic })
     ]);
-
-    console.log(`[DEBUG BLIND INDEX] Found ${myConsultations.length} consultations, ${myPrescriptions.length} prescriptions, ${myLabTests.length} lab tests, ${myRatings.length} ratings.`);
 
     const consultations = myConsultations;
     const prescriptions = myPrescriptions;
@@ -295,7 +295,6 @@ exports.getTimeline = async (req, res) => {
 
     timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    console.log(`[Timeline] returning ${timeline.length} consolidated events`);
     res.json({ data: timeline });
   } catch (error) {
     console.error('[Timeline] ERROR:', error.message, error.stack);

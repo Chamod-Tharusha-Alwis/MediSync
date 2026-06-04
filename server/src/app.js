@@ -35,8 +35,12 @@ async function initializeVault() {
   const vault = nodeVault({
     apiVersion: 'v1',
     endpoint: 'http://127.0.0.1:8200',
-    token: 'myroot',
+    token: process.env.VAULT_TOKEN,
   });
+
+  if (!process.env.VAULT_TOKEN) {
+    throw new Error('FATAL: VAULT_TOKEN environment variable is not defined.');
+  }
 
   try {
     // Write the dev key into Vault (idempotent – safe on every restart).
@@ -94,14 +98,22 @@ async function startServer() {
   // ── Step 3: Connect to MongoDB ────────────────────────────────────────────
   await connectDB();
 
+  // ── Step 3.1: Initialize Redis OTP store (non-blocking) ───────────────────
+  const { initRedis } = require('./config/redis');
+  await initRedis();
+
   // ── Step 3.5: Auto-seed Super Admin ───────────────────────────────────────
   const bcrypt = require('bcryptjs');
   const Admin = require('./models/Admin');
   const adminEmail = 'superadmin@medisync.com';
   const existingAdmin = await Admin.findOne({ email: adminEmail });
   if (!existingAdmin) {
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      throw new Error('FATAL: ADMIN_PASSWORD environment variable is not defined.');
+    }
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Admin123!', salt);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
     await Admin.create({
       fullName: 'Super Administrator',
       name: 'SuperAdmin',
@@ -122,6 +134,7 @@ async function startServer() {
   const httpServer = http.createServer(app);
 
   // Socket.IO – real-time outbreak alerts & broadcasts
+  const jwt = require('jsonwebtoken');
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -130,9 +143,36 @@ async function startServer() {
   });
   app.set('io', io);
 
+  // Map userId → socketId for targeted real-time pushes
+  io.userSocketMap = new Map();
+
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
+
+    // Attempt JWT authentication (graceful – unauthenticated sockets still connect)
+    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId || decoded.id;
+        if (userId) {
+          io.userSocketMap.set(userId.toString(), socket.id);
+          console.log(`[Socket] Mapped user ${userId} → ${socket.id}`);
+        }
+      } catch (err) {
+        console.warn('[Socket] Invalid JWT on connection:', err.message);
+      }
+    }
+
     socket.on('disconnect', () => {
+      // Remove any mapping that pointed to this socket
+      for (const [uid, sid] of io.userSocketMap.entries()) {
+        if (sid === socket.id) {
+          io.userSocketMap.delete(uid);
+          console.log(`[Socket] Unmapped user ${uid}`);
+          break;
+        }
+      }
       console.log('Client disconnected:', socket.id);
     });
   });

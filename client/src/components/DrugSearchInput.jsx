@@ -115,7 +115,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
             setQuery(e.target.value);
             setInteractionWarning(null); // Clear warning on typing
           }}
-          onFocus={() => query.trim() && setResults(results) && setIsOpen(true)}
+          onFocus={() => { if (query.trim() && results.length > 0) setIsOpen(true); }}
           placeholder="Search medication name or generic..."
           className="w-full pl-10 pr-4 py-2.5 glass-input text-sm text-slate-100 placeholder-slate-500"
         />

@@ -371,9 +371,7 @@ const AdminDashboard = () => {
       reconnectionDelay: 3000,
     });
 
-    socket.on('connect', () => {
-      console.log('[Admin] Socket.IO connected:', socket.id);
-    });
+    socket.on('connect', () => {});
 
     socket.on('outbreak_alert', (data) => {
       toast.error(

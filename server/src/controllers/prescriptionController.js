@@ -53,22 +53,21 @@ exports.issuePrescription = async (req, res) => {
         }
 
         const patientDOB = patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A';
-
-        console.log(`[DEBUG] PDF GENERATION STARTED`);
-        console.log(`[DEBUG] PATIENT NIC FETCHED: ${patient.nic}`);
         
         // Generate secure password-locked PDF (password is patient's NIC)
         const pdfBuffer = await generateLockedPrescription(rx, patient.fullName, patient.nic, patientDOB, doctorName, hospitalName);
         
-        console.log(`[DEBUG] PDF BUFFER CREATED - SIZE: ${pdfBuffer ? pdfBuffer.length : 0} bytes`);
-        console.log(`[DEBUG] SENDING EMAIL TO ${patient.email}`);
-        
+        const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-owner-key-12345678';
+        const securePassword = crypto.createHmac('sha256', masterKey)
+          .update(patient.nic)
+          .digest('hex')
+          .substring(0, 8)
+          .toUpperCase();
+
         // Send email with secure PDF attached
-        const emailResult = await emailService.sendPrescriptionEmail(patient.email, patient.fullName, pdfBuffer);
+        const emailResult = await emailService.sendPrescriptionEmail(patient.email, patient.fullName, pdfBuffer, securePassword);
         
-        if (emailResult && emailResult.success) {
-          console.log(`[DEBUG] EMAIL SENT SUCCESSFULLY`);
-        } else {
+        if (!(emailResult && emailResult.success)) {
           console.error(`[DEBUG] ERROR IN PDF/EMAIL PIPELINE - ${emailResult ? emailResult.error : 'Unknown Email Failure'}`);
         }
       } catch (pdfErr) {

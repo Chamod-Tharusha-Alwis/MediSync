@@ -15,7 +15,11 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const Admin = require('../src/models/Admin');
 
 const EMAIL    = process.argv[2] || 'admin@medisync.com';
-const PASSWORD = process.argv[3] || 'Admin123!';
+const PASSWORD = process.argv[3];
+if (!PASSWORD) {
+  console.error('FATAL: Admin password must be provided as the second argument.');
+  process.exit(1);
+}
 
 const run = async () => {
   try {

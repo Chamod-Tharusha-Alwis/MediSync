@@ -45,4 +45,31 @@ const upload = multer({
   },
 });
 
-module.exports = { cloudinary, upload };
+// ── Signed URL Generation ───────────────────────────────────────────────────
+/**
+ * Generate a time-limited signed URL for an authenticated Cloudinary asset.
+ *
+ * Authenticated assets are NOT publicly accessible. This function creates a
+ * temporary signed URL that expires after a configurable duration.
+ *
+ * @param {string} publicId      — The Cloudinary public_id of the asset
+ * @param {object} [options]     — Override options
+ * @param {string} [options.resource_type='raw']  — 'raw' for PDFs, 'image' for images
+ * @param {string} [options.type='authenticated'] — Cloudinary delivery type
+ * @param {number} [options.expires_at]           — Unix timestamp for expiry (default: now + 5 min)
+ * @returns {string} Signed URL
+ */
+function generateSignedUrl(publicId, options = {}) {
+  const defaultExpiry = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
+
+  return cloudinary.url(publicId, {
+    resource_type: options.resource_type || 'raw',
+    type:          options.type || 'authenticated',
+    sign_url:      true,
+    expires_at:    options.expires_at || defaultExpiry,
+    secure:        true,
+  });
+}
+
+module.exports = { cloudinary, upload, generateSignedUrl };
+

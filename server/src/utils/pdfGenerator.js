@@ -1,5 +1,6 @@
 const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
 const { encryptPDF } = require('@pdfsmaller/pdf-encrypt-lite');
+const crypto = require('crypto');
 
 // Add the encrypt method to the PDFDocument prototype.
 PDFDocument.prototype.encrypt = function(options) {
@@ -283,7 +284,7 @@ exports.generateLockedPrescription = async (
 
   page.drawLine({ start: { x: 50, y: 80 }, end: { x: width - 50, y: 80 }, thickness: 0.8, color: BORDER });
   page.drawText(
-    'This document is password-protected. Use your NIC number as the password to open it.',
+    'This document is password-protected. Use the secure 8-character PDF Key sent to your email to open it.',
     { x: 50, y: 62, size: 8, font: fontRegular, color: LIGHT }
   );
   page.drawText('Powered by MediSync Digital Health Initiative — Sri Lanka', {
@@ -305,12 +306,19 @@ exports.generateLockedPrescription = async (
   }
 
   // ════════════════════════════════════════════════════════════════════════
-  // 6. ENCRYPT with patient NIC as user password
+  // 6. ENCRYPT with secure 8-character hash password
   // ════════════════════════════════════════════════════════════════════════
 
+  const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-owner-key-12345678';
+  const securePassword = crypto.createHmac('sha256', masterKey)
+    .update(patientNIC)
+    .digest('hex')
+    .substring(0, 8)
+    .toUpperCase();
+
   pdfDoc.encrypt({
-    userPassword: patientNIC,
-    ownerPassword: process.env.ENCRYPTION_KEY || 'default-owner-key-12345678',
+    userPassword: securePassword,
+    ownerPassword: masterKey,
   });
 
   const pdfBytes = await pdfDoc.save();

@@ -19,7 +19,10 @@ const getHourStrings = () => {
  * Generate HMAC token for a given hour string.
  */
 const generateTokenForHour = (hourStr) => {
-  const secret = process.env.INTERNAL_API_KEY || 'medisync-internal-secret-2024';
+  const secret = process.env.INTERNAL_API_KEY;
+  if (!secret) {
+    throw new Error('FATAL: INTERNAL_API_KEY environment variable is not defined.');
+  }
   return crypto
     .createHmac('sha256', secret)
     .update(hourStr)

@@ -23,6 +23,19 @@ const LabTestSchema = new Schema(
       index:    true,
     },
 
+    // ── Consultation references ───────────────────────────────────────────────
+    consultationId: {
+      type:     Schema.Types.ObjectId,
+      ref:      'Consultation',
+      default:  null,
+      index:    true,
+    },
+    consultationRef: {
+      type:     String,        // human-readable ID, e.g. CON-XXXXXX
+      default:  null,
+      index:    true,
+    },
+
     // ── Patient identifiers ───────────────────────────────────────────────────
     patientNic: {
       type:     String,        // stored encrypted by mongoose-field-encryption
@@ -44,12 +57,12 @@ const LabTestSchema = new Schema(
     hospitalId: {
       type:     Schema.Types.ObjectId,
       ref:      'Hospital',
-      required: true,
+      default:  null,
     },
     acceptedBy: {
       type:     Schema.Types.ObjectId,
       ref:      'User',        // hospital admin / lab technician
-      required: true,
+      default:  null,
     },
 
     // ── Referring doctor (optional) ───────────────────────────────────────────
@@ -85,10 +98,10 @@ const LabTestSchema = new Schema(
     },
 
     // ── Status lifecycle ──────────────────────────────────────────────────────
-    // pending → sample_collected → processing → report_ready → delivered
+    // pending → Approved → sample_collected → processing → report_ready → delivered
     status: {
       type:    String,
-      enum:    ['pending', 'sample_collected', 'processing', 'report_ready', 'delivered'],
+      enum:    ['pending', 'Approved', 'sample_collected', 'processing', 'report_ready', 'delivered'],
       default: 'pending',
     },
     statusHistory: [
@@ -100,10 +113,21 @@ const LabTestSchema = new Schema(
       },
     ],
 
+    // ── Report ID — generated when a hospital approves the test ───────────────
+    reportId: {
+      type:    String,
+      unique:  true,
+      sparse:  true,          // allows multiple null values
+    },
+
     // ── PDF report ────────────────────────────────────────────────────────────
     reportPath: {
       type:    String,
-      default: null,          // server-side path to NIC-encrypted PDF
+      default: null,          // Cloudinary secure_url for the encrypted PDF
+    },
+    reportPublicId: {
+      type:    String,
+      default: null,          // Cloudinary public_id for signed URL generation
     },
     reportUploadedAt: {
       type:    Date,
@@ -112,6 +136,16 @@ const LabTestSchema = new Schema(
     reportOriginalName: {
       type:    String,
       default: null,
+    },
+
+    // ── Envelope encryption fields (for secure PDF storage) ──────────────────
+    encryptedFileKey: {
+      type:    String,
+      default: null,          // AES-256-GCM file key, encrypted with Vault master key
+    },
+    fileIV: {
+      type:    String,
+      default: null,          // 12-byte GCM IV stored as hex
     },
   },
   {

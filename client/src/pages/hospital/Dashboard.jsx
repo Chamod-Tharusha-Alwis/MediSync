@@ -6,7 +6,7 @@ import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
-import TestManagement from './TestManagement';
+import LabManagement from './LabManagement';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 
 // Sub-components
@@ -277,7 +277,7 @@ const HospitalDashboard = () => {
           <Routes>
             <Route path="/dashboard" element={<Overview stats={stats} />} />
             <Route path="/dashboard/doctors" element={<DoctorRoster />} />
-            <Route path="/dashboard/tests" element={<TestManagement />} />
+            <Route path="/dashboard/tests" element={<LabManagement />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/hospital/dashboard" replace />} />
           </Routes>

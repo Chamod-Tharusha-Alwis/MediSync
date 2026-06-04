@@ -215,6 +215,28 @@ const HistoryCard = ({ event, onRate }) => {
   const details = event.data || {};
   const rawType = event.type || 'consultation';
 
+  const handleDownloadLabReport = async (reportId) => {
+    if (!reportId) return toast.error('No report ID found');
+    setDownloading(true);
+    try {
+      const response = await api.get(`/lab/patient/download-report/${reportId}`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LabReport-${reportId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Lab report downloaded successfully.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to download report');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   // Treat OTC prescriptions as their own display type
   const isOTC = rawType === 'prescription' && details.isOTC;
   const type  = isOTC ? 'otc' : rawType;
@@ -466,50 +488,60 @@ const HistoryCard = ({ event, onRate }) => {
 
                     {/* Lab tests */}
                     {labTests.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="label-caps text-slate-400 text-xs font-bold tracking-wider uppercase">Lab Tests & Results</p>
-                        {labTests.map((labDoc, idx) => (
-                          <div key={idx} className="space-y-2">
-                            {(labDoc.tests || [labDoc]).map((t, i) => {
-                              // t could be a string if it's the old format, or an object if it's the new LabTest schema
-                              const isString = typeof t === 'string';
-                              const name = isString ? t : (t.testName || t.name || 'Lab Test');
-                              const isCompleted = !isString && t.status === 'completed';
-                              const isAbnormal = !isString && t.isAbnormal;
+                      <div>
+                        <p className="label-caps mb-2 text-slate-400 text-xs font-bold tracking-wider uppercase">Recommended Lab Tests</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {labTests.map((labDoc, idx) => {
+                            const isString = typeof labDoc === 'string';
+                            const name = isString ? labDoc : (labDoc.testName || labDoc.name || 'Lab Test');
+                            const status = isString ? 'Pending' : (labDoc.status || 'Pending');
+                            const reportId = !isString ? labDoc.reportId : null;
 
-                              return (
-                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-900/50 border border-white/5 gap-2">
+                            const getStatusColor = (s) => {
+                              if (!s) return 'bg-slate-800/50 text-slate-500 border-slate-700/50';
+                              const sl = s.toLowerCase();
+                              if (sl === 'pending') return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                              if (sl === 'approved') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                              if (sl === 'completed' || sl === 'report_ready') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                              return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                            };
+
+                            // Format status for display (capitalize first letter)
+                            const displayStatus = status.charAt(0).toUpperCase() + status.slice(1);
+
+                            return (
+                              <div key={idx} className="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-white/5">
+                                <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-2">
-                                    <FlaskConical className={`w-4 h-4 ${isAbnormal ? 'text-rose-400' : 'text-purple-400'}`} />
+                                    <FlaskConical className="w-4 h-4 text-purple-400 flex-shrink-0" />
                                     <span className="text-sm font-semibold text-slate-200">{name}</span>
                                   </div>
-                                  
-                                  {!isString && isCompleted ? (
-                                    <div className="flex items-center gap-3">
-                                      <span className={`text-sm font-bold ${isAbnormal ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                        {t.resultValue} {t.unit}
-                                      </span>
-                                      {t.referenceRange && (
-                                        <span className="text-xs text-slate-500">
-                                          (Ref: {t.referenceRange})
-                                        </span>
-                                      )}
-                                      {isAbnormal && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wider">
-                                          Abnormal
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs font-semibold text-slate-500 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                                      {!isString ? (t.status === 'ordered' ? 'Pending' : t.status) : 'Ordered'}
-                                    </span>
-                                  )}
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded border tracking-wider uppercase flex-shrink-0 ${getStatusColor(status)}`}>
+                                    {displayStatus}
+                                  </span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        ))}
+                                
+                                {reportId && (
+                                  <div className="text-xs text-slate-400 font-mono mb-2">
+                                    ID: {reportId}
+                                  </div>
+                                )}
+
+                                {!isString && (status === 'Completed' || status === 'report_ready') && reportId && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadLabReport(reportId); }}
+                                    disabled={downloading}
+                                    className="mt-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 w-full disabled:opacity-50"
+                                  >
+                                    {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                    Download Report
+                                  </motion.button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
@@ -608,12 +640,10 @@ const PatientHistory = () => {
     const u = localStorage.getItem('user');
     if (u) { try { nic = JSON.parse(u).nic; } catch {} }
   }
-
   const { data, isLoading, isError, error } = useQuery({
     queryKey:  ['patientHistory', nic],
     queryFn:   async () => {
       const r = await api.get(`/patient/${nic}/timeline`);
-      console.log("HISTORY DATA:", r.data);
       return r.data.data || r.data;
     },
     enabled:   !!nic,

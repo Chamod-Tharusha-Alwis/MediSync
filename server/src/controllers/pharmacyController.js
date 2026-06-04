@@ -37,6 +37,9 @@ exports.registerPharmacy = async (req, res) => {
 
     res.status(201).json({ message: 'Pharmacy registered successfully', data: { pharmacyId: pharmacy._id } });
   } catch (error) {
+    if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
+      return res.status(400).json({ error: 'Pharmacy registration number or admin email already exists' });
+    }
     res.status(500).json({ error: 'Registration failed', details: error.message });
   }
 };
@@ -200,8 +203,8 @@ exports.getPendingPrescriptions = async (req, res) => {
       isOTC: { $ne: true },           // Only doctor-issued prescriptions
       expiresAt: { $gt: new Date() }
     }).populate('doctorId', 'fullName').populate('hospitalId', 'name');
-    // Fetch the patient profile to display on frontend
-    const patientUser = await Patient.findOne({ nic: nic.trim().toUpperCase() }).select('fullName email contactInfo dateOfBirth bloodGroup');
+    // Fetch the patient profile to display on frontend (do NOT use .lean() or restrict .select() so decryption works)
+    const patientUser = await Patient.findOne({ nic: nic.trim().toUpperCase() });
     if (patientUser && typeof patientUser.decryptFieldsSync === 'function') {
       patientUser.decryptFieldsSync();
     }
@@ -416,6 +419,13 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       dispensedAt: { $gte: since }
     }).select('items dispensedAt');
 
+    if (dispensings.length === 0) {
+      return res.status(200).json({ 
+          message: "Not enough dispensing data to generate ML predictions.",
+          alerts: [] 
+      });
+    }
+
     // 4. Build drugTrends: { "Paracetamol": [ {date, count}, ... ] }
     const rawCounts = {}; // { drugName: { dateStr: count } }
 
@@ -611,7 +621,6 @@ exports.dispenseOTC = async (req, res) => {
 
     await otcDoc.save();
 
-    console.log(`[OTC] Dispensed ${medications.length} med(s) for NIC ${patientNic} by ${staff.fullName}`);
     res.status(201).json({
       message: 'OTC dispensation recorded successfully.',
       data: { prescriptionId: otcDoc.prescriptionId, medicationCount: medications.length },

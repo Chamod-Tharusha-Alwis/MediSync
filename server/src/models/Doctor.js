@@ -7,7 +7,7 @@ const doctorSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   specialization: String,
-  licenseNo: { type: String, required: true, unique: true },
+  licenseNo: { type: String, required: true },
   hospitals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' }],
   role: { type: String, default: 'doctor' },
   loginType: { type: String, enum: ['personal', 'hospital'] },

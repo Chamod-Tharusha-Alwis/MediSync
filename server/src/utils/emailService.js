@@ -234,7 +234,7 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
   }
 };
 
-exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer) => {
+exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, securePassword) => {
   if (!patientEmail) {
     console.error('[EMAIL ABORTED] sendPrescriptionEmail called with no email address.');
     return { success: false, error: 'No email address provided' };
@@ -257,7 +257,7 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer) => 
           <p style="font-size: 16px; color: #333333;">Hello ${patientName || 'Patient'},</p>
           <p style="font-size: 16px; color: #333333; line-height: 1.5;">
             Your recent E-Prescription is attached. To ensure your medical privacy, the PDF is locked.
-            Please enter your <strong>National Identity Card (NIC) number</strong> to open it.
+            Please enter your secure 8-character PDF Key: <strong style="font-family: monospace; font-size: 18px; color: #0D3B66; letter-spacing: 1px;">${securePassword || 'N/A'}</strong> to open it.
           </p>
           <p style="font-size: 14px; color: #555555; margin-top: 20px;">
             If you have any questions or did not receive a consultation, please contact your healthcare provider.
@@ -465,6 +465,33 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
     return { success: true, messageId: info.messageId };
   } catch (err) {
     console.error(`[DISPENSE EMAIL SMTP ERROR] ${patientEmail}: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERIC sendEmail — used by labController for custom HTML emails
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a generic email with custom subject and HTML body.
+ * @param {{ to: string, subject: string, html?: string, text?: string }} options
+ */
+exports.sendEmail = async ({ to, subject, html, text }) => {
+  const mailOptions = {
+    from: `"MediSync" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+  };
+  if (html) mailOptions.html = html;
+  if (text) mailOptions.text = text;
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] Sent → ${to} | Subject: "${subject}" | ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error(`[EMAIL SMTP ERROR] ${to}: ${err.message}`);
     return { success: false, error: err.message };
   }
 };

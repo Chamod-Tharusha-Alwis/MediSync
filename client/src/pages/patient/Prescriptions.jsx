@@ -191,7 +191,6 @@ const PatientPrescriptions = () => {
     queryKey: ['patientPrescriptions', nic],
     queryFn:  async () => {
       const res = await api.get(`/patient/${nic}/prescriptions`);
-      console.log("PRESCRIPTIONS DATA:", res.data);
       return res.data.data || res.data;
     },
     enabled:   !!nic,

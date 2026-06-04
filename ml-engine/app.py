@@ -123,8 +123,10 @@ def verify_internal_token(token):
     if not token:
         return False
     # Shared secret
-    secret = os.environ.get('INTERNAL_API_KEY', 'medisync-internal-secret-2024').encode('utf-8')
-    
+    api_key = os.environ.get('INTERNAL_API_KEY')
+    if not api_key:
+        return False
+    secret = api_key.encode('utf-8')
     # Get current and previous hour strings in UTC
     now_utc = datetime.now(timezone.utc)
     current_hour_str = now_utc.strftime('%Y-%m-%dT%H').encode('utf-8')
@@ -301,6 +303,7 @@ else:
 
 
 @app.route('/api/admin/outbreak/trigger', methods=['POST'])
+@require_internal_auth
 def predict_outbreak():
     try:
         raw_data = request.get_json()
@@ -653,10 +656,8 @@ def outbreak_feedback():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.1', port=5001, debug=True)
-
 @app.route('/lab/encrypt-pdf', methods=['POST'])
+@require_internal_auth
 def encrypt_pdf():
     """
     Receives a plain PDF and a password (patient NIC).
@@ -681,7 +682,7 @@ def encrypt_pdf():
 
         # Encrypt with patient NIC as user password
         # owner_pwd=None means owner and user password are the same
-        writer.encrypt(user_password=password, owner_pwd=None, use_128bit=True)
+        writer.encrypt(user_password=password, owner_password=None, use_128bit=True)
 
         output = io.BytesIO()
         writer.write(output)
@@ -699,6 +700,7 @@ def encrypt_pdf():
 
 
 @app.route('/lab/decrypt-pdf', methods=['POST'])
+@require_internal_auth
 def decrypt_pdf():
     """
     Receives a password-encrypted PDF and the password (patient NIC).
@@ -736,3 +738,7 @@ def decrypt_pdf():
     except Exception as e:
         print(f'[Lab] decrypt_pdf error: {e}')
         return jsonify({'error': str(e)}), 500
+
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5001, debug=True)

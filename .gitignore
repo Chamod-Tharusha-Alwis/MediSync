@@ -1,18 +1,28 @@
-# Node
+# Node dependency directories
 node_modules/
-npm-debug.log
 
-# Python
-__pycache__/
-venv/
-env/
-*.pyc
-
-# Environment Variables (CRITICAL: Do not upload your MongoDB URIs or JWT secrets!)
+# Local environment variable configuration files
 .env
+client/.env
+server/.env
 
-# OS Files
+# Temporary test/E2E artifacts
+temp-patient.json
+client/tests/temp-patient.json
+
+# Log files
+*.log
+npm-debug.log*
+
+# OS metadata files
 .DS_Store
 Thumbs.db
 
+# Backend uploads directory
+server/uploads/
+
+# Python caching and virtual environments
+__pycache__/
+.venv/
+venv/
 ml-engine/data/*.csv

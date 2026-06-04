@@ -10,28 +10,42 @@ exports.getDoctors = async (req, res) => {
       .populate('hospitals', 'name district address')
       .lean();
 
-    const enrichedDoctors = await Promise.all(doctors.map(async (doc) => {
-      const ratings = await ConsultationRating.aggregate([
-        { $match: { doctorId: doc._id } },
-        { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
-      ]);
-      
-      const recentReviews = await ConsultationRating.find({ doctorId: doc._id, comment: { $exists: true, $ne: '' } })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select('rating comment createdAt')
-        .lean();
+    const doctorIds = doctors.map(d => d._id);
 
-      if (ratings.length > 0) {
-        doc.averageRating = Number(ratings[0].avgRating.toFixed(1));
-        doc.ratingCount = ratings[0].count;
+    const ratings = await ConsultationRating.aggregate([
+      { $match: { doctorId: { $in: doctorIds } } },
+      { $group: { _id: '$doctorId', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    const ratingsMap = ratings.reduce((acc, curr) => {
+      acc[curr._id.toString()] = curr;
+      return acc;
+    }, {});
+
+    const allRecentReviews = await ConsultationRating.find({ doctorId: { $in: doctorIds }, comment: { $exists: true, $ne: '' } })
+      .sort({ createdAt: -1 })
+      .select('doctorId rating comment createdAt')
+      .lean();
+
+    const reviewsMap = {};
+    allRecentReviews.forEach(review => {
+      const dId = review.doctorId.toString();
+      if (!reviewsMap[dId]) reviewsMap[dId] = [];
+      if (reviewsMap[dId].length < 5) reviewsMap[dId].push(review);
+    });
+
+    const enrichedDoctors = doctors.map(doc => {
+      const dId = doc._id.toString();
+      const r = ratingsMap[dId];
+      if (r) {
+        doc.averageRating = Number(r.avgRating.toFixed(1));
+        doc.ratingCount = r.count;
       } else {
         doc.averageRating = 0;
         doc.ratingCount = 0;
       }
-      doc.recentReviews = recentReviews;
+      doc.recentReviews = reviewsMap[dId] || [];
       return doc;
-    }));
+    });
 
     res.json({ data: enrichedDoctors });
   } catch (error) {

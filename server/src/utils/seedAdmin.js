@@ -19,8 +19,12 @@ async function seedAdmin() {
     }
 
     console.log('Creating new Super Admin...');
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      throw new Error('FATAL: ADMIN_PASSWORD environment variable is not defined.');
+    }
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Admin123!', salt);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
     const admin = new Admin({
       fullName: 'Super Administrator',

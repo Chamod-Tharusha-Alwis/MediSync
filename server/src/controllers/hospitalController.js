@@ -42,6 +42,9 @@ exports.registerHospital = async (req, res) => {
     res.status(201).json({ message: 'Hospital registered successfully', data: { hospitalId: hospital._id } });
   } catch (error) {
     console.error('registerHospital error:', error);
+    if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
+      return res.status(400).json({ error: 'Hospital email or Registration Number already exists' });
+    }
     res.status(500).json({ error: 'Registration failed', details: error.message });
   }
 };

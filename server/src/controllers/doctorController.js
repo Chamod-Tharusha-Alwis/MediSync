@@ -7,6 +7,7 @@ const Consultation = require('../models/Consultation');
 const ConsultationRating = require('../models/ConsultationRating');
 const { generateLockedPrescription } = require('../utils/pdfGenerator');
 const emailService = require('../utils/emailService');
+const { sendEmail } = require('../utils/email');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -113,7 +114,7 @@ exports.createConsultation = async (req, res) => {
       patientNic, symptoms, icdCode, icdDescription,
       diagnosis, notes, clinicalNotes, isFollowUpRequired,
       followUpDate, followUpNotes, loginType, 
-      sessionHospitalId, prescriptions = [], tests = []
+      sessionHospitalId, prescriptions = [], labTests = [], orderedTests = []
     } = req.body
 
     // Validate patient exists
@@ -216,27 +217,41 @@ exports.createConsultation = async (req, res) => {
       }
     }
     
-    // Create test orders if provided
+    // ── Create LabTest documents ─────────────────────────────────────────────
+    // The frontend sends two fields:
+    //   labTests:     ['CBC', 'Lipid Panel']           (plain strings)
+    //   orderedTests: [{ testName:'CBC' }, …]          (objects)
+    // We merge / deduplicate and create one LabTest per unique test name.
     const createdTests = []
-    for (const testData of tests) {
-      try {
-        const TestOrder = require('../models/TestOrder')
-        const testDoc = await TestOrder.create({
+    const mergedTestNames = [
+      ...labTests.map(t => (typeof t === 'string' ? t : t.testName)).filter(Boolean),
+      ...orderedTests.map(t => (typeof t === 'string' ? t : t.testName)).filter(Boolean),
+    ];
+    const uniqueTestNames = [...new Set(mergedTestNames)];
+
+    if (uniqueTestNames.length > 0) {
+      const LabTest = require('../models/LabTest')
+      const testPromises = uniqueTestNames.map(name =>
+        LabTest.create({
           consultationId: consultation._id,
-          patientNic,
-          doctorId: req.user.id,
-          hospitalId: sessionHospitalId || null,
-          testName: testData.testName,
-          testCategory: testData.testCategory || 'other',
-          urgency: testData.urgency || 'routine',
-          instructions: testData.instructions || '',
-          isSurgeryRelated: testData.isSurgeryRelated || false,
-          surgeryNotes: testData.surgeryNotes || '',
+          consultationRef: generatedId,
+          patientNic: patientNic,
+          patientNic_bi: hashedNic,
+          patientId: patient._id,
+          referredBy: req.user.id,
+          testName: name.trim(),
+          testCategory: 'Other',
+          urgency: 'routine',
+          notes: '',
+          status: 'pending',
         })
-        createdTests.push(testDoc)
+      );
+      try {
+        const results = await Promise.all(testPromises);
+        createdTests.push(...results);
       } catch (testErr) {
-        console.error('Test order creation error:', testErr.message)
-        // Don't fail consultation over test order error
+        console.error('❌ LabTest creation error:', testErr.message);
+        // Don't fail the consultation over a test order error
       }
     }
     
@@ -246,12 +261,6 @@ exports.createConsultation = async (req, res) => {
     if (createdPrescriptions.length > 0) {
       try {
         patient.decryptFieldsSync();
-
-        console.log(`[DEBUG] PDF GENERATION STARTED`);
-        console.log(`[DEBUG] PATIENT NIC: ${patient.nic}`);
-        console.log(`[DEBUG] PATIENT EMAIL: ${patient.email || 'MISSING'}`);
-        console.log(`[DEBUG] PRESCRIPTION COUNT: ${createdPrescriptions.length}`);
-        console.log(`[DEBUG] WORKSPACE/LOGIN TYPE: ${loginType || 'personal'}`);
 
         if (!patient.email) {
           console.error('[EMAIL ABORTED] Patient has no email address on file.');
@@ -264,7 +273,6 @@ exports.createConsultation = async (req, res) => {
 
           // ── CRITICAL: Log decrypted field values to confirm they are plain-text
           const rxForPDF = createdPrescriptions.map(rx => {
-            console.log(`[DEBUG] RX FOR PDF — Drug: "${rx.drugName}" | Dosage: "${rx.dosage}" | Freq: "${rx.frequency}"`);
             return {
               drugName:     rx.drugName,
               dosage:       rx.dosage,
@@ -291,18 +299,21 @@ exports.createConsultation = async (req, res) => {
             generatedId
           );
 
-          console.log(`[DEBUG] PDF BUFFER SIZE: ${pdfBuffer ? pdfBuffer.length : 0} bytes`);
-          console.log(`[DEBUG] SENDING EMAIL TO: ${patient.email}`);
+          const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-owner-key-12345678';
+          const securePassword = crypto.createHmac('sha256', masterKey)
+            .update(patient.nic)
+            .digest('hex')
+            .substring(0, 8)
+            .toUpperCase();
 
           const emailResult = await emailService.sendPrescriptionEmail(
             patient.email,
             patient.fullName,
-            pdfBuffer
+            pdfBuffer,
+            securePassword
           );
 
-          if (emailResult && emailResult.success) {
-            console.log(`[DEBUG] EMAIL SENT SUCCESSFULLY — MessageID: ${emailResult.messageId}`);
-          } else {
+          if (!(emailResult && emailResult.success)) {
             console.error(`[DEBUG] EMAIL PIPELINE FAILURE: ${emailResult ? emailResult.error : 'Unknown'}`);
           }
         }
@@ -322,7 +333,7 @@ exports.createConsultation = async (req, res) => {
         date: new Date().toISOString().split('T')[0]
       }, {
         headers: { 'x-internal-key': generateToken() }
-      }).catch(e => console.log('ML ingest error (non-critical):', e.message)),
+      }).catch(e => console.error('ML ingest error (non-critical):', e.message)),
       axios.post(process.env.ML_ENGINE_URL + '/patient-risk', {
         age: patient.dateOfBirth ? 
           Math.floor((Date.now()-new Date(patient.dateOfBirth))/(365.25*24*3600*1000)) : 30,
@@ -331,8 +342,58 @@ exports.createConsultation = async (req, res) => {
         activePrescriptionsCount: createdPrescriptions.length
       }, {
         headers: { 'x-internal-key': generateToken() }
-      }).catch(e => console.log('ML risk error (non-critical):', e.message))
+      }).catch(e => console.error('ML risk error (non-critical):', e.message))
     ])
+    
+    // Fetch patient's email address using their ID
+    try {
+      const patientRecord = await Patient.findById(patient._id);
+      const patientEmail = patientRecord ? patientRecord.email : null;
+
+      if (patientEmail) {
+        const rxForEmail = createdPrescriptions.map(rx => {
+          return `- ${rx.drugName} (${rx.dosage} | ${rx.frequency} | ${rx.durationDays} days | Instructions: ${rx.instructions})`;
+        }).join('<br/>');
+
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #0F172A; padding: 24px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 0.5px;">MediSync</h1>
+              <p style="color: #94A3B8; margin: 4px 0 0; font-size: 13px;">E-Prescription & Consultation Released</p>
+            </div>
+            <div style="padding: 32px 24px; background-color: #ffffff;">
+              <p style="font-size: 16px; color: #1E293B; margin-top: 0;">Hello ${patientRecord.fullName || 'Patient'},</p>
+              <p style="font-size: 15px; color: #475569; line-height: 1.5;">
+                Your E-Prescription has been finalized and released by your consulting doctor.
+              </p>
+              
+              <div style="margin: 24px 0; padding: 20px; background-color: #F8FAFC; border-left: 4px solid #0F172A; border-radius: 6px;">
+                <p style="margin: 0 0 12px 0; font-size: 15px; color: #1E293B;"><strong>Confirmed Diagnosis:</strong> <span style="color: #0284C7; font-weight: 600;">${diagnosis || 'N/A'}</span></p>
+                <p style="margin: 0 0 8px 0; font-size: 15px; color: #1E293B; font-weight: bold;">Prescribed Medications:</p>
+                <div style="font-size: 14px; color: #475569; line-height: 1.6;">
+                  ${rxForEmail ? rxForEmail : 'None prescribed'}
+                </div>
+              </div>
+              
+              <p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 0;">
+                Please log in to your <strong>Patient Portal</strong> to view the full E-Prescription and access your secure medical files.
+              </p>
+            </div>
+            <div style="background-color: #F1F5F9; padding: 16px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+              <p style="font-size: 12px; color: #64748B; margin: 0;">This is an automated notification from the MediSync Platform. Do not reply to this email.</p>
+            </div>
+          </div>
+        `;
+
+        await sendEmail({
+          to: patientEmail,
+          subject: `MediSync: E-Prescription & Consultation Summary (${generatedId})`,
+          html: emailHtml
+        });
+      }
+    } catch (emailErr) {
+      console.error('[sendEmail] Detailed release email send failed:', emailErr.message);
+    }
     
     res.status(201).json({
       message: 'Consultation created successfully',
@@ -412,17 +473,35 @@ exports.predictDisease = async (req, res) => {
   try {
     const { symptoms } = req.body;
     const { generateToken } = require('../utils/internalAuth');
+
+    const mlUrl = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
+
     const mlRes = await axios.post(
-      `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/api/ml/predict-disease`,
+      `${mlUrl}/api/ml/predict-disease`,
       { symptoms },
       {
-        headers: { 'x-internal-key': generateToken() }
+        headers: { 'x-internal-key': generateToken() },
+        timeout: 10000, // 10-second timeout
       }
     );
-    res.json(mlRes.data);
+    return res.json(mlRes.data);
   } catch (error) {
-    console.error('Error forwarding to ML engine:', error.message);
-    res.status(500).json({ error: 'Failed to query ML Engine', details: error.message });
+    console.error('⚠️  ML Engine unavailable — returning fallback predictions:', error.message);
+    if (error.response) {
+      console.error('ML Engine Response:', error.response.data);
+    }
+
+    // ── Graceful fallback so the frontend wizard keeps working ─────────────
+    return res.status(200).json({
+      predictions: [
+        { disease: 'General Infection',       probability: 0.75, specialist: 'General Physician' },
+        { disease: 'Viral Fever',             probability: 0.60, specialist: 'General Physician' },
+        { disease: 'Allergic Reaction',       probability: 0.45, specialist: 'Immunologist' },
+        { disease: 'Stress-Related Disorder', probability: 0.30, specialist: 'Psychiatrist' },
+      ],
+      fallback: true,
+      note: 'ML engine was unreachable; these are generic suggestions. Please use clinical judgement.',
+    });
   }
 };
 

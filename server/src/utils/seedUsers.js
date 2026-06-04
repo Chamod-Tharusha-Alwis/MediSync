@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient');
 const Pharmacy = require('../models/Pharmacy');
@@ -9,6 +10,7 @@ const Hospital = require('../models/Hospital');
 const Admin = require('../models/Admin');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/medisync';
+const nicHash = (nic) => crypto.createHash('sha256').update(nic.trim()).digest('hex');
 
 const seedUsers = async () => {
   try {
@@ -43,24 +45,34 @@ const seedUsers = async () => {
     console.log('\n--- Patient Seed ---');
     try {
       const patNIC = '981234567V';
-      const tempPat = new Patient({ nic: patNIC, fullName: 'dummy', password: 'dummy' });
+      const patEmail = 'patient@example.com';
+      const tempPat = new Patient({ nic: patNIC, fullName: 'dummy', password: 'dummy', email: patEmail });
       tempPat.encryptFieldsSync();
       const existingPat = await Patient.findOne({ nic: tempPat.nic });
       if (!existingPat) {
-        await new Patient({
+        const doc = await new Patient({
           nic: patNIC,
           fullName: 'John Doe',
           password: hashedPassword,
           dateOfBirth: new Date('1990-01-01'),
           gender: 'Male',
           district: 'Colombo',
-          contactInfo: '0771234567'
+          contactInfo: '0771234567',
+          email: patEmail
         }).save();
+        
+        // Inject the blind-index that the labController queries against
+        await Patient.collection.updateOne(
+          { _id: doc._id },
+          { $set: { nic_bi: nicHash(patNIC) } }
+        );
+        
         console.log(`✅ Patient created!`);
       } else {
         console.log(`ℹ️  Patient already exists!`);
       }
       console.log(`   NIC     : ${patNIC}`);
+      console.log(`   Email   : ${patEmail}`);
       console.log(`   Password: password123`);
     } catch (e) {
       console.log('⚠️  Patient seed skipped:', e.message);
