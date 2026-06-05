@@ -46,7 +46,13 @@ const pharmacySchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  profilePicture: { type: String, default: '' },
+  description: { type: String, default: '' },
+  googleMapsUrl: { type: String, default: '' },
+  pickupLocationAddress: { type: String, default: '' },
+  averageRating: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Pharmacy', pharmacySchema);

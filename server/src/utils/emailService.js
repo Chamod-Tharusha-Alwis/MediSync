@@ -1,41 +1,59 @@
 const nodemailer = require('nodemailer');
 
 /**
- * Gmail SMTP Configuration
- * IMPORTANT: EMAIL_PASS must be a Gmail App Password (16 chars), NOT your account password.
- * How to get an App Password:
- *   1. Go to myaccount.google.com/security
- *   2. Enable 2-Step Verification
- *   3. Search for "App passwords" → Create one for "Mail"
- *   4. Copy the 16-character code and set it as EMAIL_PASS in .env
+ * Enterprise/Production SMTP Configuration
+ * Supports transactional email providers (e.g. SendGrid, Resend, Amazon SES)
  */
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // TLS (STARTTLS), not SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certs in dev
-  }
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT || 465,
+    secure: true,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    },
+    connectionTimeout: 2000, // 2 seconds max to connect
+    greetingTimeout: 2000,   // 2 seconds max to wait for greeting
+    socketTimeout: 3000      // 3 seconds max idle time
 });
 
+const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'noreply@medisync.lk';
+
 // Verify on startup and log result
-transporter.verify((error) => {
-  if (error) {
-    console.warn(`⚠️  Email service not configured: ${error.message}`);
-    console.warn('   Emails will be skipped. Set EMAIL_USER and EMAIL_PASS in .env');
-  } else {
-    console.log(`✅  Email service configured: ${process.env.EMAIL_USER}`);
+if (process.env.SMTP_HOST) {
+  transporter.verify((error) => {
+    if (error) {
+      console.warn(`⚠️  Email service not configured properly: ${error.message}`);
+    } else {
+      console.log(`✅  Email service configured: ${process.env.SMTP_USER}`);
+    }
+  });
+} else {
+  console.log('ℹ️  SMTP Not Configured. Emails will be mocked and printed to the console.');
+}
+
+/**
+ * Internal helper to send email or print a mock representation if SMTP is not configured.
+ */
+const sendMail = async (options) => {
+  if (!process.env.SMTP_HOST) {
+    console.log('\n=======================================');
+    console.log('✉️  MOCK EMAIL SENT');
+    console.log('To:      ', options.to || options.bcc || 'N/A');
+    console.log('Subject: ', options.subject);
+    if (options.attachments) {
+      console.log('Attachments: ', options.attachments.map(a => a.filename).join(', '));
+    }
+    console.log('=======================================\n');
+    return { messageId: `mock-id-${Date.now()}` };
   }
-});
+  return await transporter.sendMail(options);
+};
 
 
 exports.sendOTPEmail = async (to, name, otp) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to,
     subject: "MediSync — Your Secure Login OTP",
     html: `
@@ -58,7 +76,7 @@ exports.sendOTPEmail = async (to, name, otp) => {
     `
   };
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -67,7 +85,7 @@ exports.sendOTPEmail = async (to, name, otp) => {
 
 exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospitalName) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to,
     subject: "MediSync — Your Hospital Account Access",
     html: `
@@ -91,7 +109,7 @@ exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospita
     `
   };
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -100,7 +118,7 @@ exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospita
 
 exports.sendWelcomeEmail = async (to, name, role) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to,
     subject: "Welcome to MediSync",
     html: `
@@ -122,7 +140,7 @@ exports.sendWelcomeEmail = async (to, name, role) => {
     `
   };
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -131,7 +149,7 @@ exports.sendWelcomeEmail = async (to, name, role) => {
 
 exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to,
     subject: "MediSync — Follow-up Reminder",
     html: `
@@ -152,7 +170,7 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
     `
   };
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -163,7 +181,7 @@ exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
   if (!emailList || emailList.length === 0) return;
   
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     subject: `⚠ MediSync Public Health Alert — ${district}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ffcdd2; border-radius: 8px; overflow: hidden;">
@@ -185,7 +203,7 @@ exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
   };
 
   const promises = emailList.map(email => {
-    return transporter.sendMail({ ...mailOptions, to: email });
+    return sendMail({ ...mailOptions, to: email });
   });
 
   try {
@@ -201,7 +219,7 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
   
   // Use a generic to address, and put everyone in BCC for privacy
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to: 'no-reply@medisync.lk',
     bcc: emailArray,
     subject: `🚨 CRITICAL: ${riskLevel} Risk ${disease} Outbreak Detected`,
@@ -226,7 +244,7 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     console.error("Failed to send mass outbreak alert", err);
@@ -245,7 +263,7 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, sec
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to: patientEmail,
     subject: "MediSync — Your Secure E-Prescription",
     html: `
@@ -278,7 +296,7 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, sec
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     console.log(`[EMAIL SUCCESS] Message ID: ${info.messageId} → ${patientEmail}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -306,7 +324,7 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to: patientEmail,
     subject: `MediSync — Appointment Reminder: ${formattedDate}`,
     html: `
@@ -368,7 +386,7 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     console.log(`[REMINDER EMAIL] Sent → ${patientEmail} | MessageID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -398,7 +416,7 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: fromAddress,
     to: patientEmail,
     subject: `MediSync — Your Medication Has Been Dispensed`,
     html: `
@@ -460,7 +478,7 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     console.log(`[DISPENSE EMAIL] Sent → ${patientEmail} | MessageID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -479,7 +497,7 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
  */
 exports.sendEmail = async ({ to, subject, html, text }) => {
   const mailOptions = {
-    from: `"MediSync" <${process.env.EMAIL_USER}>`,
+    from: process.env.EMAIL_FROM_ADDRESS || 'noreply@medisync.lk',
     to,
     subject,
   };
@@ -487,7 +505,7 @@ exports.sendEmail = async ({ to, subject, html, text }) => {
   if (text) mailOptions.text = text;
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     console.log(`[EMAIL] Sent → ${to} | Subject: "${subject}" | ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {

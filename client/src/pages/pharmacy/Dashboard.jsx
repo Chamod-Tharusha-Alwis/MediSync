@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
   Package, Clock, Search, CheckCircle, Pill, ShoppingBag,
   Plus, Trash2, Loader2, Users, BarChart3, UserCircle, Shield, Mail,
-  TrendingUp, AlertTriangle, RefreshCw, Activity, X
+  TrendingUp, AlertTriangle, RefreshCw, Activity, X, Settings, Camera
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
@@ -919,6 +919,130 @@ const StaffManagement = () => {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   TAB: Settings (Profile pic and biography)
+   ══════════════════════════════════════════════════════════════════════════════ */
+const PharmacySettings = () => {
+  const [profile, setProfile] = useState({ fullName: '', email: '', role: '', description: '', profilePicture: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
+
+  useEffect(() => {
+    api.get('/pharmacy/staff/me')
+      .then(res => {
+        setProfile(res.data.data || {});
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error('Failed to load profile');
+        setLoading(false);
+      });
+  }, []);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploadingPic(true);
+    const toastId = toast.loading('Uploading profile logo...');
+    try {
+      const res = await api.post('/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setProfile(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
+      toast.update(toastId, { render: 'Profile picture updated!', type: 'success', isLoading: false, autoClose: 3000 });
+    } catch (err) {
+      toast.update(toastId, { render: err.response?.data?.error || 'Failed to upload picture', type: 'error', isLoading: false, autoClose: 3000 });
+    } finally {
+      setUploadingPic(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.put('/users/profile', { description: profile.description });
+      toast.success('Profile settings updated successfully');
+    } catch (err) {
+      toast.error('Failed to update settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-slate-400">Loading settings...</p>
+      </div>
+    );
+  }
+
+  return (
+    <PageTransition className="p-4 md:p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white tracking-tight">Pharmacy Settings</h1>
+        <p className="text-slate-400 mt-1">Configure your pharmacy profile and description.</p>
+      </div>
+      <div className="glass-panel p-6 rounded-xl max-w-2xl">
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* Logo Upload */}
+          <div className="flex items-center gap-6 mb-6 pb-6 border-b border-slate-700/50">
+            <div className="relative group w-24 h-24 rounded-2xl overflow-hidden bg-slate-800/80 border border-slate-700 flex items-center justify-center text-white text-xl font-bold">
+              {profile.profilePicture ? (
+                <img src={profile.profilePicture} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                profile.fullName?.charAt(0) || 'P'
+              )}
+              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
+                <Camera className="w-6 h-6 text-emerald-400" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoUpload} 
+                  className="hidden" 
+                  disabled={uploadingPic} 
+                />
+              </label>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold text-sm">Pharmacy Profile Picture</h4>
+              <p className="text-slate-500 text-xs mt-1">Visible to patients browsing directories. Max size 2MB.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label>
+            <input type="text" value={profile.fullName || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
+            <input type="email" value={profile.email || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Role</label>
+            <input type="text" value={profile.role?.replace('_', ' ').toUpperCase() || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Pharmacy Biography / Description</label>
+            <textarea value={profile.description || ''} onChange={e => setProfile({...profile, description: e.target.value})} rows={4} placeholder="Tell patients about your pharmacy, operating hours, and location specifics..." className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white resize-none focus:border-emerald-500 outline-none" />
+          </div>
+          <div className="pt-4">
+            <button type="submit" disabled={saving} className="glass-button bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2 rounded-xl font-bold transition-all">
+              {saving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </PageTransition>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════════════════
    ROOT: PharmacyDashboard — Shell with Sidebar + Routes
    ══════════════════════════════════════════════════════════════════════════════ */
 export default function PharmacyDashboard() {
@@ -934,6 +1058,7 @@ export default function PharmacyDashboard() {
       { label: 'Analytics',   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
       { label: 'Staff',       path: '/pharmacy/dashboard/staff',     icon: Users }
     ] : []),
+    { label: 'Settings',    path: '/pharmacy/dashboard/settings',  icon: Settings },
   ];
 
   const userName = localStorage.getItem('userName') || 'Pharmacy Staff';
@@ -961,6 +1086,7 @@ export default function PharmacyDashboard() {
                 <Route path="/dashboard/staff"          element={<StaffManagement />} />
               </>
             )}
+            <Route path="/dashboard/settings"       element={<PharmacySettings />} />
             <Route path="*" element={<Navigate to="/pharmacy/dashboard/dispense" replace />} />
           </Routes>
         </main>

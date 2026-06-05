@@ -26,7 +26,7 @@ The platform solves three critical problems in the Sri Lankan healthcare system:
 | OTP Store | Redis 7 (with in-memory fallback) | Persistent OTP storage surviving server restarts |
 | File Storage | Cloudinary (Authenticated) | Signed-URL-gated medical document storage |
 | Real-time | Socket.IO | Live outbreak alerts and broadcast notifications |
-| Email | Nodemailer + Gmail SMTP | 9 branded HTML email templates |
+| Email | Nodemailer + Enterprise SMTP | Generic SMTP transactional email dispatch with 10 branded HTML templates |
 
 ---
 
@@ -119,6 +119,28 @@ The Super Admin has a unified command centre with:
 | **Broadcast System** | Send priority messages to specific roles/districts via Socket.IO |
 | **Analytics** | Patient registration growth, top doctors, dispensing rates, top drugs |
 | **Data Export** | JSON export of consultations, prescriptions, and lab tests |
+
+### 2.6 Public Directories, Profile Settings & 5-Star Reviews
+
+MediSync provides public search rosters for Doctors, Hospitals, and Pharmacies, making it easy for citizens to find healthcare providers. It includes an interactive review feedback loop:
+
+1. **Provider Customization Settings & Location Details:** Doctors, Hospital Admins, and Pharmacy Admins can modify their description profiles, specialty information, clinical hours, and upload photos/logos directly to Cloudinary. They can also register their `googleMapsUrl` and `pickupLocationAddress` to guide patients to their facilities.
+2. **Affiliated Roster Mapping:** Enrolling doctors dynamically associates them with hospital records. Public rosters display these linkages automatically (e.g., matching doctors with clinics and districts).
+3. **Interactive 5-Star Reviews & Consultation Lock-in:** Logged-in patients can submit star ratings (1 to 5) and written feedback comment text on any provider's public profile modal. Additionally, the patient history timeline (`History.jsx`) features a unified `RateConsultationModal` to rate the Doctor, Hospital, and Pharmacy involved in a specific consultation. This modal checks for existing submissions by `consultationId` to lock editing and prevent duplicate rating submissions.
+4. **Google Maps Iframe Embeds & Pickup Indicators:** Provider profile modals dynamically parse Google Maps links into secure embed URLs via a `getEmbedMapUrl` utility, rendering an interactive map iframe. Prescription pickup locations are highlighted with distinct emerald-colored map-pin icons.
+5. **Automated Score Aggregation:** Submitting a review recalculates the average rating score and total count for that provider in the database, ensuring directory cards render updated status stars instantly without on-the-fly computation.
+6. **SelectRole Navigation:** The `SelectRole.jsx` screen mounts the fixed `PublicNavbar` with appropriate container padding, letting portal visitors seamlessly transition back to the public search directories.
+7. **Batch N+1 Prevention & Denormalization:** The system aggregates reviews using bulk `$in` queries. To eliminate runtime name decryption overhead, patient names are decrypted once at review creation and stored in a plaintext `reviewerName` field on the review itself.
+
+### 2.7 HIPAA-Compliant Help Desk & Support Ticketing
+
+The system includes a zero-trust support desk that enables patients to communicate securely with platform administrators:
+
+1. **Ticket Initiation:** Patients submit inquiries (specifying a subject and description) via `/patient/dashboard/support`. Tickets are saved with an initial status of `'Open'`.
+2. **Administrative Support Roster:** System Administrators manage queries in `/admin/dashboard/support`.
+3. **Zero-Trust Identity Decryption:** To maintain strict HIPAA compliance, patient full names are stored encrypted in the database. During administrative review, the name is decrypted in-memory using `decryptFieldsSync()` so admins can address the patient personally without leaking plaintext identities into system logs.
+4. **Resolution Response:** Admins submit replies which automatically close the ticket (`'Closed'`) and log the timestamp.
+5. **SMTP-Gated Transactional Email:** Closing a ticket automatically triggers a branded SMTP email notification containing the ticket details and admin response, delivered securely to the patient's inbox.
 
 ---
 
@@ -222,7 +244,7 @@ Backend → ML Engine communication uses **HMAC-SHA256 time-rotating tokens**:
 
 ## 4. Email Notification System
 
-MediSync sends **9 types of branded HTML emails** throughout the patient journey:
+MediSync sends **10 types of branded HTML emails** throughout the patient journey:
 
 | Email Type | Trigger | Recipient |
 |---|---|---|
@@ -235,6 +257,7 @@ MediSync sends **9 types of branded HTML emails** throughout the patient journey
 | Dispense Notification | Pharmacy dispenses medication | Patient |
 | Follow-up Reminder | 2 days before scheduled follow-up | Patient |
 | Outbreak Alert | ML detects disease anomaly | All healthcare workers in district |
+| Support Response | Administrator replies to support inquiry | Patient |
 
 ---
 
@@ -278,6 +301,8 @@ Five cron jobs run continuously:
 
 ## 7. Test Coverage
 
+### 7.1 Integration Testing (Backend API)
+
 ```
 Test Suites:  1 passed, 1 total
 Tests:        24 passed, 24 total
@@ -290,6 +315,42 @@ The lab module has 24 automated integration tests covering:
 - Status lifecycle transitions
 - Report upload and download
 - Public status check
+
+### 7.2 E2E Testing (Playwright Frontend & Backend Integration)
+
+An automated, serial E2E test suite consisting of 18 comprehensive tests has been created at [medisync-live.spec.js](file:///c:/Users/chamo/Desktop/Final%20project/medisync/client/tests/medisync-live.spec.js) to validate frontend user interfaces and complete backend integration under real browser behaviors.
+
+#### E2E Refactoring & Stability Outcomes
+To eliminate random timeouts, race conditions, and selector fragility, the entire E2E test suite has been refactored for **100% stable sequential execution in serial mode**:
+- **Robust Doctor Workspace Selector**: Replaced simple checks with a robust 3-second `try-catch` visibility waiter for the "Personal Clinic" workspace button (`button:has-text("Personal Clinic")`), degrading gracefully if already selected in the local storage session.
+- **Concurrency Request Wrapping**: Wrapped crucial UI interactions in `Promise.all` alongside network response checkers. This eliminates race conditions by guaranteeing the backend resolves requests before the test suite proceeds. Target interactions include symptom disease prediction (`/api/doctor/predict-disease`), lab OTP verification (`/api/lab/hospital/verify-fetch-tests`), technician fetches, raw PDF file uploads (`/upload-report`), pharmacist dispense confirmations (`/api/pharmacy/dispense`), and administrative searches.
+- **Brittle Selectors & Regex Fixes**: Fixed fragile selectors such as matching input placeholders using case-insensitive partial checks (`input[placeholder*="Dengue" i]`) and resolved invalid regex text selectors (`text=/System normal|.../i`).
+
+#### Patient Sidebar Props & Real-time Alert Bell Validation
+During E2E verification, a critical frontend-backend rendering mismatch was discovered and patched:
+- **Sidebar Integration Bug**: The patient portal (`client/src/pages/patient/Dashboard.jsx`) was mounting the `<Sidebar />` component without passing `userName` and `userRole` props. This caused the user profile badge to remain hidden, which in turn hid the nested `<NotificationBell />` component and blocked testing of real-time alerts.
+- **Resolution**: Patched `Dashboard.jsx` to pass `userName={data?.patient?.fullName}` and `userRole="Patient"` to `<Sidebar />`. This restored the user badge and the notification bell, allowing the Playwright test suite to successfully find and click the bell, validating Socket.IO real-time alert broadcasts.
+
+#### Test Scope Covered by the 18 Sequential Tests:
+- **Auth & Access Verification:**
+  - Duplicate Patient Onboarding Blocks (NIC/Email registration reject validation).
+  - Multi-Role RBAC Enforcement (Patient block on doctor endpoints).
+  - Session Revocation Checks (JWT logout invalidation validated at API level).
+- **Clinical & Diagnostic Intel:**
+  - Patient lookup, consent OTP, vital entry, and symptom ML diagnostic checkouts.
+  - Multi-drug prescribing with real-time drug interaction warning banners.
+- **Laboratory Status Lifecycles:**
+  - Consent OTP approvals, lab technician report searching, status updates, and encrypted PDF report uploads.
+  - OTP-gated Doctor lab report retrieval, decrypting and streaming PDFs.
+- **Smart Pharmacy Dispensing:**
+  - NIC-based prescription lookups and direct dispensing.
+  - Brand/Medication alternative substitutions (dispensing alternative medications with detail tracking).
+  - Double fulfillment prevention checks (API level 400 error blocks).
+  - Expired prescription rejection (database expiration checks and button blocks).
+- **Administrative & Surveillance Controls:**
+  - Super Admin audit log filtering by role.
+  - District/Role-specific Socket.IO broadcast deliveries to patient notification bells.
+  - On-demand outbreak trigger executions (ML Z-score surveillance checks).
 
 ---
 

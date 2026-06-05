@@ -443,7 +443,7 @@ const NewConsultation = () => {
                             <FiFileText className="text-teal-400" /> Clinical Notes
                           </label>
                           <textarea
-                            value={clinicalNotes}
+                            value={clinicalNotes || ""}
                             onChange={e => setClinicalNotes(e.target.value)}
                             rows={5}
                             placeholder="Detailed observation notes…"
@@ -458,7 +458,7 @@ const NewConsultation = () => {
                           </label>
                           <div className="flex gap-2 mb-3">
                             <input
-                              type="text" value={testInput}
+                              type="text" value={testInput || ""}
                               onChange={e => setTestInput(e.target.value)}
                               onKeyDown={e => e.key === 'Enter' && addTest()}
                               placeholder="e.g. Full Blood Count"
@@ -604,7 +604,7 @@ const NewConsultation = () => {
                           <div className="relative">
                             <input
                               type="text"
-                              value={icdSearchQuery}
+                              value={icdSearchQuery || ""}
                               onChange={e => setIcdSearchQuery(e.target.value)}
                               placeholder="Search diagnosis or ICD-10 code (e.g. Hypertension)..."
                               className={`${inp} pl-10`}
@@ -645,7 +645,7 @@ const NewConsultation = () => {
                           <label className="block text-xs font-semibold text-slate-400 mb-2">Manual Diagnosis (If unlisted)</label>
                           <input
                             type="text"
-                            value={manualDiagnosis}
+                            value={manualDiagnosis || ""}
                             onChange={e => {
                               setManualDiagnosis(e.target.value);
                               if (e.target.value.trim()) {
@@ -660,13 +660,13 @@ const NewConsultation = () => {
 
                         <div className="flex gap-3">
                           <input
-                            type="text" value={selectedDiagnosis}
+                            type="text" value={selectedDiagnosis || ""}
                             onChange={e => setSelectedDiagnosis(e.target.value)}
                             placeholder="Diagnosis name"
                             className={`${inp} flex-1`}
                           />
                           <input
-                            type="text" value={selectedIcd}
+                            type="text" value={selectedIcd || ""}
                             onChange={e => setSelectedIcd(e.target.value)}
                             placeholder="ICD Code"
                             className={`${inp} w-32 uppercase`}
@@ -754,21 +754,21 @@ const NewConsultation = () => {
                                 >
                                   <td className="px-4 py-3 font-bold text-white">{rx.name}</td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.dosage} onChange={e => updatePrescription(idx,'dosage',e.target.value)}
+                                    <input value={rx.dosage || ""} onChange={e => updatePrescription(idx,'dosage',e.target.value)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
-                                    <select value={rx.frequency} onChange={e => updatePrescription(idx,'frequency',e.target.value)}
+                                    <select value={rx.frequency || "OD"} onChange={e => updatePrescription(idx,'frequency',e.target.value)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs appearance-none">
                                       {['OD','BD','TDS','QID','SOS'].map(f => <option key={f}>{f}</option>)}
                                     </select>
                                   </td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.duration} onChange={e => updatePrescription(idx,'duration',e.target.value)}
+                                    <input value={rx.duration || ""} onChange={e => updatePrescription(idx,'duration',e.target.value)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.instructions} onChange={e => updatePrescription(idx,'instructions',e.target.value)}
+                                    <input value={rx.instructions || ""} onChange={e => updatePrescription(idx,'instructions',e.target.value)}
                                       className="w-full min-w-[140px] glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
@@ -805,7 +805,7 @@ const NewConsultation = () => {
                             <input
                               id="lab-test-input"
                               type="text"
-                              value={labTestInput}
+                              value={labTestInput || ""}
                               onChange={e => handleLabInput(e.target.value)}
                               onKeyDown={e => {
                                 if (e.key === 'Enter') { e.preventDefault(); addLabTest(); }
@@ -896,7 +896,7 @@ const NewConsultation = () => {
                         <input
                           type="date"
                           id="follow-up-date"
-                          value={followUpDate}
+                          value={followUpDate || ""}
                           onChange={e => setFollowUpDate(e.target.value)}
                           min={new Date().toISOString().split('T')[0]}
                           className="glass-input py-2.5 px-4 text-sm w-full max-w-xs"

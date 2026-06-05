@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import RateConsultationModal from './RateConsultationModal';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar, Star, X, ChevronDown, ChevronUp,
+  Calendar, Star, ChevronDown, ChevronUp,
   Stethoscope, FileText, Package, FlaskConical,
   User, Building2, Pill, Download, ShoppingBag, Loader2,
 } from 'lucide-react';
@@ -94,7 +95,7 @@ const downloadPdf = async (prescriptionId, setDownloading) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('E-Prescription downloaded. Open it with your NIC as the password.');
+    toast.success('E-Prescription downloaded. Check your registered email for your secure PDF password.');
   } catch (err) {
     toast.error(err.response?.data?.error || err.message || 'Download failed');
   } finally {
@@ -124,87 +125,6 @@ const LabTestTags = ({ tests, tc, limit = 4 }) => {
         </span>
       )}
     </div>
-  );
-};
-
-/* ─── Rating modal ────────────────────────────────────────────────────────── */
-const RatingModal = ({ show, onClose, consultationId, onRated }) => {
-  const [rating,      setRating]      = useState(0);
-  const [hoveredStar, setHoveredStar] = useState(0);
-  const [submitting,  setSubmitting]  = useState(false);
-
-  if (!show) return null;
-
-  const handleSubmit = async () => {
-    if (rating === 0) return toast.error('Please select a rating');
-    setSubmitting(true);
-    try {
-      await api.post(`/patient/consultation/${consultationId}/rate`, { rating });
-      toast.success('Thank you for your feedback!');
-      onRated(consultationId, rating);
-      onClose();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to submit rating');
-    } finally { setSubmitting(false); }
-  };
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
-        <div className="absolute inset-0 bg-[#040814]/80 backdrop-blur-md" onClick={onClose} />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1,    y: 0  }}
-          exit={{   opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          className="relative w-full max-w-sm glass-card-premium border border-white/5 rounded-2xl shadow-2xl p-8 z-10 overflow-hidden neumorphic-flat"
-        >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
-          <div className="absolute -top-12 -right-12 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
-
-          <button onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
-            <X className="w-4 h-4" />
-          </button>
-
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-white tracking-tight">Rate Your Visit</h3>
-            <p className="text-slate-400 text-sm mt-1.5">How was your consultation experience?</p>
-          </div>
-
-          <div className="flex justify-center gap-2 mb-8">
-            {[1, 2, 3, 4, 5].map(star => (
-              <button key={star}
-                onMouseEnter={() => setHoveredStar(star)}
-                onMouseLeave={() => setHoveredStar(0)}
-                onClick={() => setRating(star)}
-                className="transition-transform duration-200 hover:scale-110 p-1"
-              >
-                <Star className={`w-9 h-9 transition-all duration-200 ${
-                  star <= (hoveredStar || rating)
-                    ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
-                    : 'text-slate-700'
-                }`} />
-              </button>
-            ))}
-          </div>
-
-          {rating > 0 && (
-            <p className="text-center text-sm font-bold text-amber-400 mb-6 font-mono tracking-wide uppercase bg-amber-500/5 py-1.5 rounded-lg border border-amber-500/10">
-              {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
-            </p>
-          )}
-
-          <button onClick={handleSubmit} disabled={rating === 0 || submitting}
-            className="w-full py-3 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-[0_4px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_4px_20px_rgba(245,158,11,0.4)] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed">
-            {submitting ? 'Submitting…' : 'Submit Rating'}
-          </button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
   );
 };
 
@@ -527,7 +447,7 @@ const HistoryCard = ({ event, onRate }) => {
                                   </div>
                                 )}
 
-                                {!isString && (status === 'Completed' || status === 'report_ready') && reportId && (
+                                {!isString && (status.toLowerCase() === 'approved' || status.toLowerCase() === 'report_ready' || status.toLowerCase() === 'completed') && reportId && (
                                   <motion.button
                                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                     onClick={(e) => { e.stopPropagation(); handleDownloadLabReport(reportId); }}
@@ -583,29 +503,25 @@ const HistoryCard = ({ event, onRate }) => {
                         </motion.button>
                       )}
 
-                      {/* Rate consultation button or Display Rating */}
-                      {!details.rating ? (
+                                            {/* Rate/View consultation ratings button */}
+                      {(!details.reviews || details.reviews.length === 0) ? (
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                          onClick={e => { e.stopPropagation(); onRate(details._id); }}
+                          onClick={e => { e.stopPropagation(); onRate(details); }}
                           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-all duration-200"
                         >
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
                           Rate Consultation
                         </motion.button>
                       ) : (
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                          <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`w-3.5 h-3.5 ${i < details.rating.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-600'}`} />
-                            ))}
-                          </div>
-                          {details.rating.comment && (
-                            <span className="text-xs text-slate-400 italic border-l border-slate-700 pl-2 ml-1">
-                              "{details.rating.comment}"
-                            </span>
-                          )}
-                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+                          onClick={e => { e.stopPropagation(); onRate(details); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 text-xs font-bold hover:bg-slate-800/80 transition-all duration-200"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          View Ratings
+                        </motion.button>
                       )}
                     </div>
                   </>
@@ -632,7 +548,7 @@ const SummaryChip = ({ icon: Icon, label, count, color }) => (
 /* ─── Main Page ───────────────────────────────────────────────────────────── */
 const PatientHistory = () => {
   const [timeline,    setTimeline]    = useState([]);
-  const [ratingModal, setRatingModal] = useState({ show: false, consultationId: null });
+  const [ratingModal, setRatingModal] = useState({ show: false, consultation: null });
   const [filter,      setFilter]      = useState('all');
 
   let nic = localStorage.getItem('nic');
@@ -653,9 +569,9 @@ const PatientHistory = () => {
 
   useEffect(() => { if (data) setTimeline(Array.isArray(data) ? data : []); }, [data]);
 
-  const handleRated = (consultationId, rating) =>
+  const handleRated = (consultationId, newReviews) =>
     setTimeline(prev => prev.map(item =>
-      item.data?._id === consultationId ? { ...item, data: { ...item.data, rating } } : item
+      item.data?._id === consultationId ? { ...item, data: { ...item.data, reviews: [...(item.data.reviews || []), ...newReviews] } } : item
     ));
 
   /* Filtered feed — OTC filter maps to prescription events, prescription filter maps to consultations with nested prescriptions */
@@ -791,7 +707,7 @@ const PatientHistory = () => {
                 key={event.data?._id || index}
                 event={event}
                 index={index}
-                onRate={(id) => setRatingModal({ show: true, consultationId: id })}
+                onRate={(consultation) => setRatingModal({ show: true, consultation })}
               />
             ))}
           </motion.div>
@@ -807,10 +723,10 @@ const PatientHistory = () => {
       )}
 
       {/* Rating modal */}
-      <RatingModal
+      <RateConsultationModal
         show={ratingModal.show}
-        consultationId={ratingModal.consultationId}
-        onClose={() => setRatingModal({ show: false, consultationId: null })}
+        consultation={ratingModal.consultation}
+        onClose={() => setRatingModal({ show: false, consultation: null })}
         onRated={handleRated}
       />
     </PageTransition>

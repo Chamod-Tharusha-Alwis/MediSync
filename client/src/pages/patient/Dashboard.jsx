@@ -3,7 +3,7 @@ import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, HeartPulse, FileText, Pill, User, Clock,
-  Calendar, FlaskConical, Stethoscope,
+  Calendar, FlaskConical, Stethoscope, LifeBuoy
 } from 'lucide-react';
 // Calendar kept for the Follow-up card below
 import api from '../../api/axiosInstance';
@@ -11,6 +11,7 @@ import Sidebar from '../../components/common/Sidebar';
 import PageTransition from '../../components/common/PageTransition';
 import PatientHistory from './History';
 import PatientProfile from './Profile';
+import PatientSupport from './Support';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ const Overview = ({ data }) => {
   }
 
   const activeRxs = prescriptions.filter(
-    p => (p.status === 'pending' || p.status === 'issued') && new Date(p.expiresAt) > new Date()
+    p => (p.status === 'pending' || p.status === 'ready_for_pickup') && new Date(p.expiresAt) > new Date()
   );
 
   // ── Nearest future follow-up across all consultations ──────────────────────
@@ -409,13 +410,14 @@ export default function PatientDashboard() {
     { label: 'Overview',        path: '/patient/dashboard',        icon: LayoutDashboard, end: true },
     { label: 'Medical History', path: '/patient/dashboard/history', icon: FileText },
     { label: 'My Profile',      path: '/patient/dashboard/profile', icon: User },
+    { label: 'Support',         path: '/patient/dashboard/support', icon: LifeBuoy },
   ];
 
   return (
     <div className="patient-theme flex flex-col min-h-screen bg-[#0b1120]">
       <ActiveOutbreakBanner />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar menuItems={menuItems} title="Patient Portal" themePrefix="patient" />
+        <Sidebar menuItems={menuItems} title="Patient Portal" themePrefix="patient" userName={data?.patient?.fullName} userRole="Patient" />
 
         <main className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-y-auto">
           {isLoading ? (
@@ -443,6 +445,7 @@ export default function PatientDashboard() {
               {/* Redirect legacy /prescriptions URL to the unified Medical History page */}
               <Route path="/dashboard/prescriptions" element={<Navigate to="/patient/dashboard/history" replace />} />
               <Route path="/dashboard/profile"      element={<PatientProfile />} />
+              <Route path="/dashboard/support"      element={<PatientSupport />} />
               <Route path="*"                       element={<Navigate to="/patient/dashboard" replace />} />
             </Routes>
           )}

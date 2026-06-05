@@ -11,6 +11,12 @@ const hospitalSchema = new mongoose.Schema({
   emergencyHotline: { type: String, default: '' },
   contactPhone: { type: String, default: '' },
   website: { type: String, default: '' },
+  profilePicture: { type: String, default: '' },
+  description: { type: String, default: '' },
+  googleMapsUrl: { type: String, default: '' },
+  pickupLocationAddress: { type: String, default: '' },
+  averageRating: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Hospital', hospitalSchema);

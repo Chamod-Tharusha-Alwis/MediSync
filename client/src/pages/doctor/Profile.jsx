@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
   FiUser, FiSave, FiPhone, FiMail, FiMapPin,
-  FiAward, FiEdit3, FiCheck, FiLoader,
+  FiAward, FiEdit3, FiCheck, FiLoader, FiCamera,
 } from 'react-icons/fi';
 import { LayoutDashboard, Users, Stethoscope, BadgeCheck, Building2, Star } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
@@ -52,10 +52,12 @@ const DoctorProfile = () => {
     contactNumber: '',
     personalEmail: '',
     clinicAddress: '',
+    description:   '',
   });
   const [dirty,   setDirty]     = useState(false);
   const [saving,  setSaving]    = useState(false);
   const [saved,   setSaved]     = useState(false);   // brief "saved" indicator
+  const [uploadingPic, setUploadingPic] = useState(false);
 
   /* ── Load profile on mount ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -69,10 +71,32 @@ const DoctorProfile = () => {
           contactNumber:  d.contactNumber || d.contactInfo || '',
           personalEmail:  d.personalEmail || d.email        || '',
           clinicAddress:  d.clinicAddress || '',
+          description:    d.description   || '',
         });
       })
       .catch(() => toast.error('Failed to load profile'));
   }, []);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploadingPic(true);
+    const toastId = toast.loading('Uploading profile picture...');
+    try {
+      const res = await axios.post('/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setProfile(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
+      toast.success('Profile picture updated!', { id: toastId });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to upload picture', { id: toastId });
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   /* ── Field change ──────────────────────────────────────────────────────── */
   const handleChange = (field, val) => {
@@ -95,7 +119,10 @@ const DoctorProfile = () => {
         personalEmail:  form.personalEmail,
         clinicAddress:  form.clinicAddress,
       });
-      setProfile(res.data.data);
+      await axios.put('/users/profile', {
+        description: form.description
+      });
+      setProfile({ ...res.data.data, description: form.description });
       setDirty(false);
       setSaved(true);
       toast.success('Profile updated successfully!');
@@ -157,20 +184,43 @@ const DoctorProfile = () => {
               className="glass-card rounded-2xl border border-white/6 p-6 flex items-center gap-6"
             >
               {/* Avatar circle */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="relative flex-shrink-0 w-20 h-20 rounded-2xl
-                  bg-gradient-to-br from-emerald-500 to-teal-600
-                  flex items-center justify-center text-white text-2xl font-bold
-                  shadow-lg shadow-emerald-500/25 ring-4 ring-emerald-500/20"
-              >
-                {avatarText}
+              <div className="relative flex-shrink-0 group">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="relative w-20 h-20 rounded-2xl overflow-hidden
+                    bg-gradient-to-br from-emerald-500 to-teal-600
+                    flex items-center justify-center text-white text-2xl font-bold
+                    shadow-lg shadow-emerald-500/25 ring-4 ring-emerald-500/20"
+                >
+                  {profile.profilePicture ? (
+                    <img 
+                      src={profile.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    avatarText
+                  )}
+                  
+                  {/* Photo Overlay */}
+                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
+                    <FiCamera className="w-6 h-6 text-white" />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handlePhotoUpload} 
+                      className="hidden" 
+                      disabled={uploadingPic}
+                    />
+                  </label>
+                </motion.div>
+                
                 {/* Verified dot */}
                 <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-emerald-400 rounded-full
-                  flex items-center justify-center border-2 border-slate-900">
+                  flex items-center justify-center border-2 border-slate-900 z-10">
                   <FiCheck className="w-3 h-3 text-slate-900" strokeWidth={3} />
                 </span>
-              </motion.div>
+              </div>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -267,6 +317,18 @@ const DoctorProfile = () => {
                   value={form.clinicAddress}
                   onChange={e => handleChange('clinicAddress', e.target.value)}
                   placeholder="No. 12, Galle Road, Colombo 03, Sri Lanka"
+                  className="glass-input w-full text-sm resize-none"
+                />
+              </Field>
+
+              {/* Professional Description */}
+              <Field label="Professional Biography" icon={FiEdit3}>
+                <textarea
+                  id="profile-description"
+                  rows={4}
+                  value={form.description}
+                  onChange={e => handleChange('description', e.target.value)}
+                  placeholder="Tell patients about your medical background, expertise, and care philosophy..."
                   className="glass-input w-full text-sm resize-none"
                 />
               </Field>

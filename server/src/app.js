@@ -213,6 +213,9 @@ async function startServer() {
   app.use('/api/prescription',         require('./routes/prescriptionRoutes'));
   app.use('/api/lab',                  require('./routes/labRoutes'));
   app.use('/api/notifications',        require('./routes/notificationRoutes'));
+  app.use('/api/users',                require('./routes/userRoutes'));
+  app.use('/api/reviews',              require('./routes/reviewRoutes'));
+  app.use('/api/support',              require('./routes/supportRoutes'));
 
   // 404 handler
   app.use((req, res) => {

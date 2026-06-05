@@ -23,7 +23,12 @@ const doctorSchema = new mongoose.Schema({
     mustChangePassword: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true }
   }],
-  passwordChangedAt: Date
+  passwordChangedAt: Date,
+  profilePicture: { type: String, default: '' },
+  description: { type: String, default: '' },
+  googleMapsUrl: { type: String, default: '' },
+  averageRating: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 doctorSchema.plugin(fieldEncryption, {

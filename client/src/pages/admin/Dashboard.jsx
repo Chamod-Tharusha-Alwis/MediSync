@@ -17,6 +17,7 @@ import BanManagement from './BanManagement';
 import PatientReports from './PatientReports';
 import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import SupportTicketsRoster from './SupportTicketsRoster';
 
 // Helper for formatting time
 const timeAgo = (dateString) => {
@@ -416,6 +417,7 @@ const AdminDashboard = () => {
     { label: 'Audit Log', path: '/admin/dashboard/audit', icon: ScrollText },
     { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
     { label: 'Patient Reports', path: '/admin/dashboard/reports', icon: ClipboardList },
+    { label: 'Support Tickets', path: '/admin/dashboard/support', icon: ClipboardList },
     { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
   ];
 
@@ -440,6 +442,7 @@ const AdminDashboard = () => {
             <Route path="/dashboard/audit" element={<AuditLog />} />
             <Route path="/dashboard/bans" element={<BanManagement />} />
             <Route path="/dashboard/reports" element={<PatientReports />} />
+            <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
             <Route path="/dashboard/admins" element={<ManageAdmins />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>

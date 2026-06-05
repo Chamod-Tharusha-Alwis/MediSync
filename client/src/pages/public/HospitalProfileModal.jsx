@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, Star, MapPin, Building2, MessageSquare, Quote, BookOpen } from 'lucide-react';
+import { X, Star, MapPin, MessageSquare, Quote, BookOpen, Phone, Globe, PhoneCall } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 
@@ -24,8 +24,8 @@ const getEmbedMapUrl = (url) => {
   return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 };
 
-const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
-  const [doctor, setDoctor] = useState(initialDoctor);
+const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
+  const [hospital, setHospital] = useState(initialHospital);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [rating, setRating] = useState(5);
@@ -44,14 +44,14 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const res = await api.get(`/reviews/${doctor._id}`);
+      const res = await api.get(`/reviews/${hospital._id}`);
       setReviews(res.data.data || []);
     } catch (err) {
       console.error('Failed to fetch reviews', err);
     } finally {
       setLoadingReviews(false);
     }
-  }, [doctor._id]);
+  }, [hospital._id]);
 
   useEffect(() => {
     fetchReviews();
@@ -63,8 +63,8 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
     setSubmitting(true);
     try {
       const res = await api.post('/reviews', {
-        targetId: doctor._id,
-        targetModel: 'Doctor',
+        targetId: hospital._id,
+        targetModel: 'Hospital',
         rating,
         comment: comment.trim()
       });
@@ -73,9 +73,9 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
       setRating(5);
       await fetchReviews();
       
-      // Update local doctor average rating & count
+      // Update local hospital average rating & count
       if (res.data.stats) {
-        setDoctor(prev => ({
+        setHospital(prev => ({
           ...prev,
           averageRating: res.data.stats.averageRating,
           ratingCount: res.data.stats.ratingCount
@@ -109,7 +109,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white relative">
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 text-white relative">
           <button 
             onClick={onClose}
             className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-colors"
@@ -118,22 +118,24 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
           </button>
           
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-white/20 border-2 border-white/40 flex items-center justify-center text-4xl font-bold backdrop-blur-md shadow-inner">
-              {doctor.profilePicture ? (
-                <img src={doctor.profilePicture} alt={doctor.fullName} className="w-full h-full object-cover" />
+            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/20 border-2 border-white/40 flex items-center justify-center text-4xl font-bold backdrop-blur-md shadow-inner">
+              {hospital.profilePicture ? (
+                <img src={hospital.profilePicture} alt={hospital.name} className="w-full h-full object-cover" />
               ) : (
-                doctor.fullName?.charAt(0).toUpperCase()
+                hospital.name?.charAt(0).toUpperCase()
               )}
             </div>
             <div>
-              <h2 className="text-3xl font-bold mb-1">{doctor.fullName}</h2>
-              <p className="text-blue-100 font-medium text-lg">{doctor.specialization || 'General Practitioner'}</p>
+              <h2 className="text-3xl font-bold mb-1">{hospital.name}</h2>
+              <span className="inline-block px-3 py-1 bg-white/10 text-white rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                {hospital.type}
+              </span>
               
-              <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">{doctor.averageRating > 0 ? doctor.averageRating : 'New'}</span>
-                  {doctor.ratingCount > 0 && <span className="text-white/60 text-sm">({doctor.ratingCount})</span>}
+                  <span className="font-bold">{hospital.averageRating > 0 ? hospital.averageRating : 'New'}</span>
+                  {hospital.ratingCount > 0 && <span className="text-white/60 text-sm">({hospital.ratingCount})</span>}
                 </div>
               </div>
             </div>
@@ -144,25 +146,25 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
         <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-slate-50">
           
           {/* Biography/Description */}
-          {doctor.description && (
+          {hospital.description && (
             <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-blue-500" /> Biography
+                <BookOpen className="w-4 h-4 text-indigo-500" /> Facility Profile
               </h3>
-              <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-line">{doctor.description}</p>
+              <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-line">{hospital.description}</p>
             </section>
           )}
 
-          {/* Clinic Location Map */}
-          {doctor.googleMapsUrl && (
+          {/* Location Map */}
+          {hospital.googleMapsUrl && (
             <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-rose-500" /> Clinic Location Map
+                <MapPin className="w-4 h-4 text-rose-500" /> Location Map
               </h3>
               <div className="w-full h-64 rounded-2xl overflow-hidden border border-slate-200">
                 <iframe
-                  title="Clinic Location"
-                  src={getEmbedMapUrl(doctor.googleMapsUrl)}
+                  title="Hospital Location"
+                  src={getEmbedMapUrl(hospital.googleMapsUrl)}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -174,36 +176,46 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
             </section>
           )}
 
-          {/* Practice Info */}
+          {/* Contact Details */}
           <section className="grid sm:grid-cols-2 gap-6">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Private Practice
+                <MapPin className="w-4 h-4" /> Location
               </h3>
-              <p className="text-slate-700 font-medium">{doctor.clinicAddress || 'Contact directly for clinic details.'}</p>
-              {doctor.contactNumber && (
-                <p className="text-blue-600 mt-2 font-medium">{doctor.contactNumber}</p>
+              <p className="text-slate-700 font-medium">{hospital.address || 'Colombo, Sri Lanka'}</p>
+              <p className="text-slate-500 text-xs mt-1">District: {hospital.district || 'Unknown'}</p>
+              {hospital.pickupLocationAddress && (
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-start gap-2.5">
+                  <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-bold text-emerald-600 block uppercase tracking-wider">Prescription Pickup Location</span>
+                    <span className="text-sm text-slate-700 font-medium">{hospital.pickupLocationAddress}</span>
+                  </div>
+                </div>
               )}
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <Building2 className="w-4 h-4" /> Hospital Affiliations
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Contact Info
               </h3>
-              {doctor.hospitals?.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {doctor.hospitals.map(h => (
-                    <div key={h._id || h} className="flex items-start gap-2 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="mt-0.5"><Building2 className="w-4 h-4 text-indigo-400" /></div>
-                      <div>
-                        <p className="font-bold text-slate-700 text-sm">{h.name || 'Hospital'}</p>
-                        <p className="text-xs text-slate-500">{h.district || ''}</p>
-                      </div>
-                    </div>
-                  ))}
+              {hospital.contactPhone && (
+                <div className="flex items-center gap-2 text-slate-700 text-sm font-medium">
+                  <Phone className="w-4 h-4 text-indigo-400" />
+                  <span>{hospital.contactPhone}</span>
                 </div>
-              ) : (
-                <p className="text-slate-500 italic text-sm">No affiliated public hospitals listed.</p>
+              )}
+              {hospital.emergencyHotline && (
+                <div className="flex items-center gap-2 text-rose-600 text-sm font-bold">
+                  <PhoneCall className="w-4 h-4" />
+                  <span>Hotline: {hospital.emergencyHotline}</span>
+                </div>
+              )}
+              {hospital.website && (
+                <div className="flex items-center gap-2 text-indigo-600 text-sm font-medium">
+                  <Globe className="w-4 h-4 text-indigo-400" />
+                  <a href={hospital.website.startsWith('http') ? hospital.website : `https://${hospital.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{hospital.website}</a>
+                </div>
               )}
             </div>
           </section>
@@ -212,7 +224,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
           {isPatient && (
             <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-500" /> Write a Review
+                <Star className="w-4 h-4 text-amber-500" /> Rate this Facility
               </h3>
               <form onSubmit={handleReviewSubmit} className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -235,15 +247,15 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
                     rows={3}
                     value={comment}
                     onChange={e => setComment(e.target.value)}
-                    placeholder="Share your experience with this medical specialist..."
+                    placeholder="Share your experience at this healthcare facility..."
                     required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-800 focus:border-blue-500 focus:outline-none resize-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none resize-none transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={submitting || !comment.trim()}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 text-sm flex items-center gap-2 shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 text-sm flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.2)]"
                 >
                   {submitting ? 'Submitting...' : 'Submit Review'}
                 </button>
@@ -286,7 +298,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
             ) : (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
                 <Star className="w-10 h-10 mx-auto text-slate-200 mb-3" />
-                <p className="text-sm">No text reviews available yet.</p>
+                <p className="text-sm">No reviews available yet.</p>
               </div>
             )}
           </section>
@@ -296,4 +308,4 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
   );
 };
 
-export default DoctorProfileModal;
+export default HospitalProfileModal;

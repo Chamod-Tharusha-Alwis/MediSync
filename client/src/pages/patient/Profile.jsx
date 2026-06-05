@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Shield, Phone, Heart, Lock, Save, Loader2,
-  AlertCircle, Stethoscope, Weight, Ruler, X, Plus,
+  AlertCircle, Stethoscope, Weight, Ruler, X, Plus, Camera,
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -93,6 +93,28 @@ const PatientProfile = () => {
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
+  const [uploadingPic, setUploadingPic] = useState(false);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploadingPic(true);
+    const toastId = toast.loading('Uploading profile picture...');
+    try {
+      const res = await api.post('/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setPatient(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
+      toast.update(toastId, { render: 'Profile picture updated!', type: 'success', isLoading: false, autoClose: 3000 });
+    } catch (err) {
+      toast.update(toastId, { render: err.response?.data?.error || 'Failed to upload picture', type: 'error', isLoading: false, autoClose: 3000 });
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   /* ── Editable form state ── */
   const [form, setForm] = useState({
@@ -238,8 +260,24 @@ const PatientProfile = () => {
         </div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
           {/* Avatar */}
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex items-center justify-center text-3xl font-black text-pink-400 select-none">
-            {patient.fullName?.charAt(0) || '?'}
+          <div className="relative group w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex items-center justify-center text-3xl font-black text-pink-400 select-none">
+            {patient.profilePicture ? (
+              <img src={patient.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              patient.fullName?.charAt(0) || '?'
+            )}
+            
+            {/* Camera overlay */}
+            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
+              <Camera className="w-6 h-6 text-pink-400" />
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handlePhotoUpload} 
+                className="hidden" 
+                disabled={uploadingPic} 
+              />
+            </label>
           </div>
 
           <div className="flex-1">

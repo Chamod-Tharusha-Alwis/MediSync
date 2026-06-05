@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Phone, ShieldCheck, Pill } from 'lucide-react';
+import { Search, MapPin, Phone, ShieldCheck, Pill, Star } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import PublicNavbar from '../../components/common/PublicNavbar';
+import PharmacyProfileModal from './PharmacyProfileModal';
 
 const PharmacyDirectory = () => {
   const [pharmacies, setPharmacies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedPharmacy, setSelectedPharmacy] = useState(null);
 
   useEffect(() => {
     const fetchPharmacies = async () => {
@@ -29,6 +32,7 @@ const PharmacyDirectory = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pt-24 pb-12">
+      <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header & Search */}
@@ -83,20 +87,34 @@ const PharmacyDirectory = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
                   whileHover={{ scale: 1.03, y: -5 }}
-                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow flex flex-col relative overflow-hidden"
+                  onClick={() => setSelectedPharmacy(pharm)}
+                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow flex flex-col relative overflow-hidden cursor-pointer"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl -z-10 translate-x-10 -translate-y-10" />
                   
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md">
-                      <Pill className="w-7 h-7" />
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md">
+                      {pharm.profilePicture ? (
+                        <img src={pharm.profilePicture} alt={pharm.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Pill className="w-7 h-7" />
+                      )}
                     </div>
-                    {pharm.isActive && (
-                      <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full border border-emerald-200/50 text-xs font-bold shadow-sm">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        E-Prescription Ready
-                      </div>
-                    )}
+                    <div className="flex flex-col items-end gap-2">
+                      {pharm.isActive && (
+                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full border border-emerald-200/50 text-xs font-bold shadow-sm">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          E-Prescription Ready
+                        </div>
+                      )}
+                      {pharm.averageRating > 0 && (
+                        <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold text-amber-600">{pharm.averageRating}</span>
+                          <span className="text-[10px] text-amber-600/70">({pharm.ratingCount})</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <h3 className="text-xl font-bold text-slate-800 mb-1 line-clamp-1">{pharm.name}</h3>
@@ -132,6 +150,15 @@ const PharmacyDirectory = () => {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedPharmacy && (
+          <PharmacyProfileModal 
+            pharmacy={selectedPharmacy} 
+            onClose={() => setSelectedPharmacy(null)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

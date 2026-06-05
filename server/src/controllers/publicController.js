@@ -1,7 +1,7 @@
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Pharmacy = require('../models/Pharmacy');
-const ConsultationRating = require('../models/ConsultationRating');
+const Review = require('../models/Review');
 
 exports.getDoctors = async (req, res) => {
   try {
@@ -12,37 +12,34 @@ exports.getDoctors = async (req, res) => {
 
     const doctorIds = doctors.map(d => d._id);
 
-    const ratings = await ConsultationRating.aggregate([
-      { $match: { doctorId: { $in: doctorIds } } },
-      { $group: { _id: '$doctorId', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
-    ]);
-    const ratingsMap = ratings.reduce((acc, curr) => {
-      acc[curr._id.toString()] = curr;
-      return acc;
-    }, {});
-
-    const allRecentReviews = await ConsultationRating.find({ doctorId: { $in: doctorIds }, comment: { $exists: true, $ne: '' } })
+    const allRecentReviews = await Review.find({ 
+      targetId: { $in: doctorIds }, 
+      targetModel: 'Doctor', 
+      comment: { $exists: true, $ne: '' } 
+    })
       .sort({ createdAt: -1 })
-      .select('doctorId rating comment createdAt')
+      .select('targetId rating comment createdAt reviewerName')
       .lean();
 
     const reviewsMap = {};
     allRecentReviews.forEach(review => {
-      const dId = review.doctorId.toString();
+      const dId = review.targetId.toString();
       if (!reviewsMap[dId]) reviewsMap[dId] = [];
-      if (reviewsMap[dId].length < 5) reviewsMap[dId].push(review);
+      if (reviewsMap[dId].length < 5) {
+        reviewsMap[dId].push({
+          _id: review._id,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          reviewerName: review.reviewerName
+        });
+      }
     });
 
     const enrichedDoctors = doctors.map(doc => {
       const dId = doc._id.toString();
-      const r = ratingsMap[dId];
-      if (r) {
-        doc.averageRating = Number(r.avgRating.toFixed(1));
-        doc.ratingCount = r.count;
-      } else {
-        doc.averageRating = 0;
-        doc.ratingCount = 0;
-      }
+      doc.averageRating = doc.averageRating || 0;
+      doc.ratingCount = doc.ratingCount || 0;
       doc.recentReviews = reviewsMap[dId] || [];
       return doc;
     });

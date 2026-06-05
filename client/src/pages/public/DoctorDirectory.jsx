@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Star, Building2, MapPin } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import DoctorProfileModal from './DoctorProfileModal';
+import PublicNavbar from '../../components/common/PublicNavbar';
 
 const DoctorDirectory = () => {
   const [doctors, setDoctors] = useState([]);
@@ -31,6 +32,7 @@ const DoctorDirectory = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pt-24 pb-12">
+      <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header & Search */}
@@ -89,8 +91,12 @@ const DoctorDirectory = () => {
                   className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl cursor-pointer transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-2xl font-bold shadow-md">
-                      {doc.fullName?.charAt(0).toUpperCase()}
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                      {doc.profilePicture ? (
+                        <img src={doc.profilePicture} alt={doc.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        doc.fullName?.charAt(0).toUpperCase()
+                      )}
                     </div>
                     {doc.averageRating > 0 && (
                       <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200/50">

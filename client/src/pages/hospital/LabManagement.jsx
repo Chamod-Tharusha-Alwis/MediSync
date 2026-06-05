@@ -12,10 +12,11 @@ import PageTransition from '../../components/common/PageTransition';
 // ── Status badge colours ─────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   pending:          { color: 'amber',   label: 'Pending',          icon: Clock },
+  Approved:         { color: 'blue',    label: 'Approved',         icon: ClipboardCheck },
   sample_collected: { color: 'blue',    label: 'Sample Collected', icon: ClipboardCheck },
   processing:       { color: 'purple',  label: 'Processing',       icon: Loader2 },
   report_ready:     { color: 'emerald', label: 'Report Ready',     icon: CheckCircle },
-  delivered:        { color: 'teal',    label: 'Delivered',         icon: CheckCircle },
+  delivered:        { color: 'teal',    label: 'Delivered',        icon: CheckCircle },
 };
 
 const StatusBadge = ({ status }) => {
@@ -288,6 +289,16 @@ const RegisterNewTest = () => {
                 {loading ? 'Verifying...' : 'Verify & View Tests'}
               </button>
               <p className="text-xs text-slate-500 mt-3 text-center">Ask the patient for the 6-digit OTP they received via email.</p>
+              <div className="flex justify-center mt-3">
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : 'Resend OTP'}
+                </button>
+              </div>
             </form>
           ) : (
             <div className="glass-panel p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">

@@ -40,26 +40,40 @@ medisync/
 │       │   └── common/
 │       │       ├── Sidebar.jsx        # Role-based navigation sidebar
 │       │       ├── NotificationBell.jsx # Real-time notification bell
-│       │       └── ActiveOutbreakBanner.jsx # Real-time outbreak banner
+│       │       ├── ActiveOutbreakBanner.jsx # Real-time outbreak banner
+│       │       └── PublicNavbar.jsx   # Public navigation header with routing pills
 │       └── pages/
 │           ├── Home.jsx            # Landing page
 │           ├── Login.jsx           # Universal login
-│           ├── SelectRole.jsx      # Role selection screen
+│           ├── SelectRole.jsx      # Role selection screen with PublicNavbar navigation header
 │           ├── admin/
-│           │   └── Dashboard.jsx   # Super Admin dashboard
+│           │   ├── Dashboard.jsx   # Super Admin dashboard
+│           │   └── SupportTicketsRoster.jsx # HIPAA support ticketing response center
 │           ├── auth/
 │           │   └── Register.jsx    # Multi-role registration form
 │           ├── doctor/
 │           │   ├── Dashboard.jsx   # Doctor dashboard
-│           │   └── NewConsultation.jsx # Multi-step AI consultation wizard
+│           │   ├── NewConsultation.jsx # Multi-step AI consultation wizard
+│           │   └── Profile.jsx     # Profile photo & biography settings
 │           ├── hospital/
-│           │   ├── Dashboard.jsx   # Hospital admin dashboard
-│           │   └── LabManagement.jsx # Lab approval + assistant uploads
+│           │   └── Dashboard.jsx   # Hospital admin dashboard & profile settings
 │           ├── patient/
 │           │   ├── Dashboard.jsx   # Patient portal dashboard
-│           │   └── History.jsx     # Medical timeline with decrypted downloads
-│           └── pharmacy/
-│               └── Dashboard.jsx   # Dispensation and ML analytics dashboard
+│           │   ├── History.jsx     # Medical timeline with decrypted downloads & unified multi-rating modal
+│           │   ├── Profile.jsx     # Patient profile picture upload panel
+│           │   ├── RateConsultationModal.jsx # Unified Doctor, Hospital, & Pharmacy rating modal
+│           │   └── Support.jsx     # Help & Support ticket submission client
+│           ├── pharmacy/
+│           │   └── Dashboard.jsx   # Dispensation, restock analytics & settings
+│           └── public/
+│               ├── DoctorDirectory.jsx # Public doctor search and rating panel
+│               ├── DoctorProfileModal.jsx # Doctor detail modal + review submissions
+│               ├── HospitalDirectory.jsx # Public hospital search and reviews panel
+│               ├── HospitalProfileModal.jsx # Hospital detail modal + rating submissions
+│               ├── PharmacyDirectory.jsx # Public pharmacy search and reviews panel
+│               └── PharmacyProfileModal.jsx # Pharmacy detail modal + rating submissions
+│   └── tests/
+│       └── medisync-live.spec.js   # 18 E2E tests for clinical workflows and RBAC
 │
 ├── server/                         # ── Node.js + Express 5 Backend ──
 │   ├── src/
@@ -69,9 +83,9 @@ medisync/
 │   │   │   └── redis.js            # Redis OTP store + in-memory fallback
 │   │   ├── middleware/
 │   │   │   └── auth.js             # JWT verification + RBAC + Audit logger
-│   │   ├── models/                 # Mongoose Schemas (Patient, Consultation, LabTest, etc.)
-│   │   ├── controllers/            # Express controllers (auth, doctor, lab, pharmacy, etc.)
-│   │   ├── routes/                 # Express route mappings
+│   │   ├── models/                 # Mongoose Schemas (Patient, Review, SupportTicket, etc.)
+│   │   ├── controllers/            # Express controllers (auth, review, support, user, etc.)
+│   │   ├── routes/                 # Express route mappings (reviewRoutes, supportRoutes, userRoutes)
 │   │   └── utils/                  # Cloudinary, email, PDF generation, cron jobs
 │   └── tests/
 │       └── lab.test.js             # 24 integration tests for lab lifecycle
@@ -151,6 +165,9 @@ The Express server bootstraps as follows:
 - **`labController.js`**: Implements the OTP-gated Lab Test Approval Workflow, processes PDF reports using in-memory envelope encryption (AES-256-GCM + Vault unwrapping), and streams decrypted PDFs to patients/doctors.
 - **`pharmacyController.js`**: Handles prescription verification, double-dispense prevention, alternative drug substitution logic, and inventory depletion tracking.
 - **`adminController.js`**: Provides Super Admin aggregates, audit logs search, district broadcast delivery, and temporary/permanent user suspensions (Ban notice).
+- **`reviewController.js`**: Manages patient rating submissions (1-5 stars) and feedback comments for Doctors, Hospitals, and Pharmacies, triggering automated aggregate score updates.
+- **`supportController.js`**: Facilitates patient support ticket creation and administrative resolutions, utilizing secure, in-memory identity decryption and dispatching SMTP email response alerts.
+- **`userController.js`**: Facilitates user profile customizations, including description edits and Multer/Cloudinary-backed profile picture and logo uploads.
 
 
 ---
@@ -168,9 +185,13 @@ Enforces authorization using the `ProtectedRoute` component. Restricts access to
 - **Hospital Lab Dashboard**: Consists of two modules:
   1. *Approval Flow*: Requests NIC -> triggers patient OTP -> verifies OTP and fetches pending doctor-ordered tests -> patient consent approval.
   2. *Lab Assistant Upload*: Fetches approved tests strictly by `reportId` -> updates status -> performs drag-and-drop report upload.
-- **Patient Timeline**: Rendered in `History.jsx` using a timeline layout. Integrates dynamic colored status badges for lab tests and E-Prescription/Lab Report PDF download buttons.
+- **Patient Portal Dashboard**: Rendered in `Dashboard.jsx`. Displays patient overview stats (active prescriptions, nearest upcoming follow-ups). Connects to `<Sidebar />` by explicitly passing `userName` and `userRole` props, resolving a critical rendering bug. This ensures the user profile badge and the real-time `<NotificationBell />` are correctly rendered and visible to the patient.
+- **Patient Timeline**: Rendered in `History.jsx` using a timeline layout. Integrates dynamic colored status badges for lab tests, E-Prescription/Lab Report PDF download buttons, and a "Rate Consultation" button that triggers a unified multi-entity rating flow.
 - **Pharmacy Dashboard**: Provides tabs for NIC search dispensing, dispensing logs, manual OTC logs, depletion charts, and restock analytics.
-
+- **Public Directories & 5-Star Reviews**: An open roster for searching doctors, hospitals, and pharmacies. Integrated with a `PublicNavbar` for seamless navigation. Clicking directory cards triggers interactive modals (`DoctorProfileModal`, `HospitalProfileModal`, `PharmacyProfileModal`) displaying profile images, biographies, Google Maps iframe location embeds, specific pickup locations with map-pin icons, and a list of customer reviews. Logged-in patients can submit star ratings (1-5) and feedback comments, which immediately trigger aggregate rating recalculations on the target profile.
+- **Patient Help & Support Interface**: Located at `/patient/dashboard/support`, it enables patients to create support inquiries and view historical logs of open or resolved tickets. Resolved tickets display the administrator's reply in a dedicated response card.
+- **Admin Support Tickets Console**: Accessible at `/admin/dashboard/support`, this console lists all user support requests. Administrators can view details, decrypt the patient's full name in-memory, and submit a resolution reply which closes the ticket and triggers an SMTP-based response notification to the patient.
+- **Profile & Settings Management**: Built into Doctor, Patient, Hospital, and Pharmacy portals. Enables real-time profile picture uploads, facility descriptions, clinic hours, and operating details settings which auto-sync with public-facing directory rosters.
 
 ---
 
@@ -273,7 +294,8 @@ This lifecycle guarantees in-memory encryption before data ever touches Cloudina
 ### 7.2 Special Collections
 - **`AuditLog.js`**: MongoDB Capped collection restricted to 100MB, serving as a read-only, tamper-proof HIPAA audit trail.
 - **`OTPSession.js`**: TTL index auto-deleting verification codes after 600 seconds.
-
+- **Review.js**: Stores 5-star ratings and written feedback comments for Doctors, Hospitals, and Pharmacies. Associates reviews with a specific `consultationId` to lock down reviews and prevent duplicate rating submissions. Denormalizes the patient's name into `reviewerName` to avoid runtime N+1 decryption queries.
+- **`SupportTicket.js`**: Stores patient support inquiries with ticket status, message details, and administrative replies. Links to the encrypted `Patient` schema, maintaining zero-trust data separation via in-memory name decryption.
 
 ---
 

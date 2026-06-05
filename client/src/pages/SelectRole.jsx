@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HeartPulse, Stethoscope, Building2, Pill, ShieldAlert } from 'lucide-react';
+import PublicNavbar from '../components/common/PublicNavbar';
 
 const roles = [
   {
@@ -84,7 +85,8 @@ const SelectRole = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col items-center justify-center p-6 sm:p-12">
+    <div className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col items-center justify-center pt-28 pb-12 px-6 sm:px-12">
+      <PublicNavbar />
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
 

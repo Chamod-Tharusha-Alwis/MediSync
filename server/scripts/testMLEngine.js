@@ -1,6 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Color formatting utilities for console
 const colors = {

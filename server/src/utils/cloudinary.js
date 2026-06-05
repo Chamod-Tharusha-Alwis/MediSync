@@ -71,5 +71,29 @@ function generateSignedUrl(publicId, options = {}) {
   });
 }
 
-module.exports = { cloudinary, upload, generateSignedUrl };
+// Cloudinary storage for profile pictures with automatic face-detection crop
+const profilePicStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'medisync/profile-pics',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    transformation: [{ width: 256, height: 256, crop: 'fill', gravity: 'face', quality: 'auto' }],
+  },
+});
+
+const uploadProfilePic = multer({
+  storage: profilePicStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid image type. Only JPG, JPEG, and PNG are allowed.'), false);
+    }
+  },
+});
+
+module.exports = { cloudinary, upload, generateSignedUrl, uploadProfilePic };
 

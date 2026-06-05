@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Building2, MapPin, Phone, Globe, PhoneCall } from 'lucide-react';
+import { Search, Building2, MapPin, Phone, Globe, PhoneCall, Star } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import PublicNavbar from '../../components/common/PublicNavbar';
+import HospitalProfileModal from './HospitalProfileModal';
 
 const HospitalDirectory = () => {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedHospital, setSelectedHospital] = useState(null);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -29,6 +32,7 @@ const HospitalDirectory = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pt-24 pb-12">
+      <PublicNavbar />
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header & Search */}
@@ -83,15 +87,29 @@ const HospitalDirectory = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
                   whileHover={{ scale: 1.03, y: -5 }}
-                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow flex flex-col"
+                  onClick={() => setSelectedHospital(hospital)}
+                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow flex flex-col cursor-pointer"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md">
-                      <Building2 className="w-7 h-7" />
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md">
+                      {hospital.profilePicture ? (
+                        <img src={hospital.profilePicture} alt={hospital.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="w-7 h-7" />
+                      )}
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${hospital.type === 'government' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {hospital.type}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${hospital.type === 'government' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {hospital.type}
+                      </span>
+                      {hospital.averageRating > 0 && (
+                        <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold text-amber-600">{hospital.averageRating}</span>
+                          <span className="text-[10px] text-amber-600/70">({hospital.ratingCount})</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <h3 className="text-xl font-bold text-slate-800 mb-1 line-clamp-1">{hospital.name}</h3>
@@ -133,6 +151,15 @@ const HospitalDirectory = () => {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedHospital && (
+          <HospitalProfileModal 
+            hospital={selectedHospital} 
+            onClose={() => setSelectedHospital(null)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

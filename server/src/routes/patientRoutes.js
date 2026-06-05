@@ -6,8 +6,9 @@ const rateLimit = require('express-rate-limit');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
-  message: { error: 'Too many login attempts. Try again later.' }
+  max: process.env.NODE_ENV === 'development' ? 10000 : 1000,
+  message: { error: 'Too many login attempts. Try again later.' },
+  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
 });
 
 // Auth routes

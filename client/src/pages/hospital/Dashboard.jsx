@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, Users, FileText, Settings, ActivitySquare, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, ActivitySquare, FlaskConical, Camera } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import Sidebar from '../../components/common/Sidebar';
 import StatCard from '../../components/common/StatCard';
@@ -124,9 +124,10 @@ const DoctorRoster = () => {
 };
 
 const SettingsPage = () => {
-  const [profile, setProfile] = useState({ name: '', email: '', district: '', address: '', emergencyHotline: '' });
+  const [profile, setProfile] = useState({ name: '', email: '', district: '', address: '', emergencyHotline: '', description: '', profilePicture: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
 
   useEffect(() => {
     api.get('/hospital/profile').then(res => {
@@ -135,11 +136,33 @@ const SettingsPage = () => {
     });
   }, []);
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploadingPic(true);
+    const toastId = toast.loading('Uploading hospital logo...');
+    try {
+      const res = await api.post('/users/upload-profile-pic', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setProfile(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
+      toast.update(toastId, { render: 'Hospital logo updated!', type: 'success', isLoading: false, autoClose: 3000 });
+    } catch (err) {
+      toast.update(toastId, { render: err.response?.data?.error || 'Failed to upload logo', type: 'error', isLoading: false, autoClose: 3000 });
+    } finally {
+      setUploadingPic(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       await api.put('/hospital/settings', profile);
+      await api.put('/users/profile', { description: profile.description });
       toast.success('Settings updated successfully');
     } catch (err) {
       toast.error('Failed to update settings');
@@ -158,6 +181,31 @@ const SettingsPage = () => {
       </div>
       <div className="glass-panel p-6 rounded-xl max-w-2xl">
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Logo / Profile Picture Upload */}
+          <div className="flex items-center gap-6 mb-6 pb-6 border-b border-slate-700/50">
+            <div className="relative group w-24 h-24 rounded-2xl overflow-hidden bg-slate-800/80 border border-slate-700 flex items-center justify-center text-white text-xl font-bold">
+              {profile.profilePicture ? (
+                <img src={profile.profilePicture} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                profile.name?.charAt(0) || 'H'
+              )}
+              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
+                <Camera className="w-6 h-6 text-purple-400" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoUpload} 
+                  className="hidden" 
+                  disabled={uploadingPic} 
+                />
+              </label>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold text-sm">Hospital Logo</h4>
+              <p className="text-slate-500 text-xs mt-1">PNG, JPG or JPEG. Max size 2MB.</p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Hospital Name</label>
             <input type="text" value={profile.name || ''} onChange={e => setProfile({...profile, name: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white" />
@@ -175,6 +223,10 @@ const SettingsPage = () => {
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Address</label>
             <input type="text" value={profile.address || ''} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Facility Description / Biography</label>
+            <textarea value={profile.description || ''} onChange={e => setProfile({...profile, description: e.target.value})} rows={4} placeholder="Describe your hospital facilities, specialities, and general information..." className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white resize-none" />
           </div>
           <div className="pt-4">
             <button type="submit" disabled={saving} className="glass-button primary-gradient px-8 py-2">
