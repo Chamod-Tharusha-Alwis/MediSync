@@ -21,6 +21,9 @@
 
 ```
 medisync/
+├── .github/
+│   └── workflows/
+│       └── playwright.yml          # GitHub Actions CI/CD E2E test workflow
 ├── package.json                    # Root orchestrator (concurrently runs all services)
 ├── docker-compose.yml              # Vault + Redis + ML Engine containers
 ├── PROJECT_REVIEW.md               # Business/Academic documentation
@@ -306,4 +309,23 @@ This lifecycle guarantees in-memory encryption before data ever touches Cloudina
 2. **Envelope Cryptography**: Ensures files stored on Cloudinary cannot be viewed by unauthorized staff or Cloudinary administrators. Keys are wrapped in HashiCorp Vault.
 3. **HMAC Rotating Service Token**: Hour-rotating SHA-256 signatures for Node ↔ Python engine secure internal routing.
 4. **JWT Session Validation**: Cross-checks JWTs against a Mongo-backed `SessionToken` table to enable immediate global user logouts.
+
+---
+
+## 9. DevOps & Codebase Health
+
+### 9.1 CI/CD Pipeline (`.github/workflows/playwright.yml`)
+The repository contains an automated GitHub Actions pipeline that triggers on any push to the `main` branch:
+- **Service Containers**: Runs MongoDB (v6.0) and Redis (v7.0) services in isolated containers.
+- **Node & Python Setup**: Automatically sets up Node.js and Python, installing all dependencies concurrently.
+- **HashiCorp Vault Dev Instance**: Runs a Vault development server in the background, matching the Node server's key resolution.
+- **Playwright Test Runner**: Installs browsers and runs the 18 sequential E2E integration tests, outputting automated reports and error trace artifacts.
+
+### 9.2 Codebase Refactor & Duplicate Deletion
+To maintain high codebase health, redundant component duplicates and unused utilities were permanently deleted:
+- Deleted `client/src/components/PageTransition.jsx` (consolidated into `client/src/components/common/PageTransition.jsx`).
+- Deleted `client/src/components/Sidebar.jsx` (consolidated into `client/src/components/common/Sidebar.jsx`).
+- Deleted `client/src/components/StatCard.jsx` (consolidated into `client/src/components/common/StatCard.jsx`).
+- Deleted `client/src/components/LoadingSkeleton.jsx` (unused visual component).
+- Cleaned debug console tracer prints, keeping only critical errors and startup confirmations.
 

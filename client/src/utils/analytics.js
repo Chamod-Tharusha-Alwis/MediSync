@@ -13,21 +13,17 @@ const GA_MEASUREMENT_ID =
 // testMode: true prevents data from being sent during local development when
 // the placeholder ID is still in use.
 export function initGA() {
-  const isPlaceholder = GA_MEASUREMENT_ID === 'G-XXXXXXXXXX';
+  const isPlaceholder = GA_MEASUREMENT_ID === 'G-XXXXXXXXXX' || !GA_MEASUREMENT_ID;
+
+  if (isPlaceholder) {
+    return;
+  }
 
   ReactGA.initialize(GA_MEASUREMENT_ID, {
-    testMode: isPlaceholder,            // silent in dev until real ID is set
     gaOptions: {
       cookieFlags: 'SameSite=None;Secure',
     },
   });
-
-  if (isPlaceholder) {
-    console.warn(
-      '[Analytics] GA4 is running in test mode. ' +
-      'Replace G-XXXXXXXXXX with your real Measurement ID in .env → REACT_APP_GA_MEASUREMENT_ID'
-    );
-  }
 }
 
 // ─── usePageTracking hook ──────────────────────────────────────────────────────
@@ -35,10 +31,16 @@ export function initGA() {
 // It fires a "pageview" event every time the URL pathname changes, giving you
 // automatic telemetry for every role-based dashboard route, e.g.:
 //   /doctor/dashboard, /patient/history, /pharmacy/prescriptions …
+// It silently skips if GA is not configured or in placeholder mode.
 export function usePageTracking() {
   const location = useLocation();
 
   useEffect(() => {
+    const isPlaceholder = GA_MEASUREMENT_ID === 'G-XXXXXXXXXX' || !GA_MEASUREMENT_ID;
+    if (isPlaceholder) {
+      return;
+    }
+
     ReactGA.send({
       hitType: 'pageview',
       page: location.pathname + location.search,

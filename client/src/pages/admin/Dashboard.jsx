@@ -365,44 +365,50 @@ const AdminDashboard = () => {
 
   // Socket.IO real-time integration
   useEffect(() => {
-    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
-    const socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
-    });
+    let socket;
+    const timer = setTimeout(() => {
+      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
+      socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+      });
 
-    socket.on('connect', () => {});
+      socket.on('connect', () => {});
 
-    socket.on('outbreak_alert', (data) => {
-      toast.error(
-        <div>
-          <p className="font-bold text-sm">🚨 Outbreak Alert</p>
-          <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
-          {data?.district && <p className="text-xs mt-0.5">District: {data.district}</p>}
-        </div>,
-        { autoClose: 10000, position: 'top-right' }
-      );
-      // Also update the alert list
-      setActiveAlerts(prev => [data, ...prev]);
-    });
+      socket.on('outbreak_alert', (data) => {
+        toast.error(
+          <div>
+            <p className="font-bold text-sm">🚨 Outbreak Alert</p>
+            <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
+            {data?.district && <p className="text-xs mt-0.5">District: {data.district}</p>}
+          </div>,
+          { autoClose: 10000, position: 'top-right' }
+        );
+        // Also update the alert list
+        setActiveAlerts(prev => [data, ...prev]);
+      });
 
-    socket.on('broadcast_message', (data) => {
-      toast.info(
-        <div>
-          <p className="font-bold text-sm">📢 Broadcast</p>
-          <p className="text-xs mt-1">{data?.message || 'A new system broadcast has been sent.'}</p>
-        </div>,
-        { autoClose: 8000, position: 'top-right' }
-      );
-    });
+      socket.on('broadcast_message', (data) => {
+        toast.info(
+          <div>
+            <p className="font-bold text-sm">📢 Broadcast</p>
+            <p className="text-xs mt-1">{data?.message || 'A new system broadcast has been sent.'}</p>
+          </div>,
+          { autoClose: 8000, position: 'top-right' }
+        );
+      });
 
-    socket.on('connect_error', (err) => {
-      console.warn('[Admin] Socket.IO connection error:', err.message);
-    });
+      socket.on('connect_error', (err) => {
+        console.warn('[Admin] Socket.IO connection error:', err.message);
+      });
+    }, 500);
 
     return () => {
-      socket.disconnect();
+      clearTimeout(timer);
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, []);
 

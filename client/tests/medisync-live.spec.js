@@ -88,6 +88,34 @@ test.describe('MediSync E2E Live User Journeys', () => {
     if (process.env.MONGO_URI) {
       await mongoose.connect(process.env.MONGO_URI);
       console.log('E2E Test Suite successfully connected to MongoDB.');
+
+      // Pre-test cleanup of any stale E2E patients or data from previous runs
+      try {
+        console.log('Running pre-test database cleanup...');
+        const stalePatients = await Patient.find({
+          $or: [
+            { email: { $regex: '@medisync\\.local$' } },
+            { nic: { $regex: '^888777' } }
+          ]
+        });
+        if (stalePatients.length > 0) {
+          const patientIds = stalePatients.map(p => p._id);
+          const patientNicBis = stalePatients.map(p => p.patientNic_bi || nicHash(p.nic));
+          console.log(`Cleaning up stale E2E Patient IDs: ${patientIds.join(', ')}`);
+          await Promise.all([
+            Patient.deleteMany({ _id: { $in: patientIds } }),
+            Prescription.deleteMany({ patientId: { $in: patientIds } }),
+            LabTest.deleteMany({ patientNic_bi: { $in: patientNicBis } }),
+            Consultation.deleteMany({ patientId: { $in: patientIds } }),
+            Review.deleteMany({ reviewerId: { $in: patientIds } }),
+            Notification.deleteMany({ userId: { $in: patientIds } })
+          ]);
+        }
+        await BroadcastMessage.deleteMany({ message: { $regex: 'Broadcast Maintenance Alert' } });
+        console.log('Pre-test database cleanup completed.');
+      } catch (dbErr) {
+        console.error('Error during pre-test database cleanup:', dbErr);
+      }
     } else {
       console.warn('MONGO_URI not defined in environment. Database-level tests may fail.');
     }

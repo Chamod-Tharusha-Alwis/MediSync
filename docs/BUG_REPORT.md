@@ -28,7 +28,11 @@ The following table details the bugs, performance bottlenecks, and security leak
 
 ## E2E Playwright Security & Integration Testing Validations
 
-To ensure all security patches, access guards, and pharmacy billing/dispensing rules remain operational, an enterprise E2E integration test suite has been established at [medisync-live.spec.js](file:///c:/Users/chamo/Desktop/Final%20project/medisync/client/tests/medisync-live.spec.js). The test suite has been refactored for 100% stable sequential execution in serial mode by incorporating try-catch workspace selectors, wrapping API calls in `Promise.all` alongside network response expectations, and resolving selector mismatch points. It performs automated checks on:
+To ensure all security patches, access guards, and pharmacy billing/dispensing rules remain operational, an enterprise E2E integration test suite has been established at [medisync-live.spec.js](file:///c:/Users/chamo/Desktop/Final%20project/medisync/client/tests/medisync-live.spec.js). The test suite has been refactored for 100% stable sequential execution in serial mode by incorporating try-catch workspace selectors, wrapping API calls in `Promise.all` alongside network response expectations, and resolving selector mismatch points. 
+
+This test suite is executed automatically in the GitHub Actions CI/CD pipeline (`.github/workflows/playwright.yml`) on every push to the `main` branch, spinning up MongoDB and Redis container services alongside a HashiCorp Vault instance to guarantee code health and security standard enforcement before code merges.
+
+The test suite performs automated checks on:
 
 1. **Role-Based Access Control (RBAC):** Attempts to access the doctor dashboard (`/doctor/dashboard`) as a logged-in patient, asserting redirect actions and the complete absence of clinical wizard controls.
 2. **Session Revocation Validation:** Performs patient logout, extracts the JWT token, and makes a direct backend API request with the discarded token, validating that the server returns a `401 Unauthorized` response.
@@ -41,4 +45,4 @@ To ensure all security patches, access guards, and pharmacy billing/dispensing r
 
 ---
 
-*Note: No `useEffect` memory leaks were found in the current React components. All `useEffect` hooks relying on asynchronous fetch functions correctly utilize `useCallback` to memoize the function reference, which complies with React 18 ESLint exhaustive-deps rules.*
+*Note: No `useEffect` memory leaks were found in the current React components. All `useEffect` hooks relying on asynchronous fetch functions correctly utilize `useCallback` to memoize the function reference, which complies with React 18 ESLint exhaustive-deps rules. The development warning regarding `REACT_APP_GA_MEASUREMENT_ID` was silenced by removing the local warning logs in the analytics module, maintaining clean logs.*

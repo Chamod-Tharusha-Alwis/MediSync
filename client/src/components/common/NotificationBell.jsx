@@ -26,19 +26,31 @@ const NotificationBell = () => {
     const interval = setInterval(fetchNotifications, 60000); // Poll every 60s
 
     // Real-time Socket.io listener
-    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
-    const socket = socketIO(serverUrl, {
-      auth: { token: localStorage.getItem('token') },
-    });
+    let socket;
+    const timer = setTimeout(() => {
+      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
+      const token = localStorage.getItem('token');
+      if (token) {
+        socket = socketIO(serverUrl, {
+          auth: { token },
+          transports: ['websocket', 'polling'],
+          reconnectionAttempts: 5,
+          reconnectionDelay: 3000,
+        });
 
-    socket.on('notification', (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
-    });
+        socket.on('notification', (notification) => {
+          setNotifications((prev) => [notification, ...prev]);
+          setUnreadCount((prev) => prev + 1);
+        });
+      }
+    }, 500);
 
     return () => {
       clearInterval(interval);
-      socket.disconnect();
+      clearTimeout(timer);
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, []);
 

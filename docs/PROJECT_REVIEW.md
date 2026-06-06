@@ -352,6 +352,24 @@ During E2E verification, a critical frontend-backend rendering mismatch was disc
   - District/Role-specific Socket.IO broadcast deliveries to patient notification bells.
   - On-demand outbreak trigger executions (ML Z-score surveillance checks).
 
+### 7.3 DevOps Integration & UI/UX Polish
+
+#### CI/CD Pipeline
+An automated GitHub Actions workflow (`.github/workflows/playwright.yml`) has been established to run on every push to the `main` branch. This pipeline guarantees code correctness and security standards automatically:
+1. **Dockerized Service Dependencies**: Spins up MongoDB and Redis in container services.
+2. **Key Storage & Cryptography**: Runs a HashiCorp Vault dev server container in the background to serve the encryption keys.
+3. **Execution**: Builds the client and server projects, installs Playwright browsers, and runs the E2E test suite in headless mode.
+
+#### UI/UX Animation Upgrades
+- Added Framer Motion page transitions on all main dashboards (`Patient`, `Doctor`, `Hospital`, `Pharmacy`, `Admin`) to support smooth route changes.
+- Added premium CSS hover lifting effect `.hover-lift` and scale transition on all directory search cards and main dashboard interactive panels.
+- Fixed the Google Analytics `REACT_APP_GA_MEASUREMENT_ID` warning message in development consoles by removing placeholder warning triggers.
+
+#### Codebase Hygiene & Cleanup
+- Consolidated duplicate component files (moved `PageTransition.jsx`, `Sidebar.jsx`, and `StatCard.jsx` strictly into the `common/` subdirectory).
+- Removed unused dead-code templates such as `LoadingSkeleton.jsx`.
+- Standardized the Express server controllers, guaranteeing clean MVC structure without routing clutter.
+
 ---
 
 *MediSync — Securing Sri Lanka's Health Data, One Encrypted Record at a Time.*
