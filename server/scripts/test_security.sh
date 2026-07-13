@@ -23,7 +23,7 @@ echo "------------------------------------------------"
 # 1. Log in as Admin to grab JWT token
 RESPONSE=$(curl -s -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@medisync.com", "password": "SecureCiAdminPassword2026!"}')
+  -d '{"email": "superadmin@medisync.com", "password": "SecureCiAdminPassword2026!"}')
 
 TOKEN=$(echo $RESPONSE | node -e "const data = JSON.parse(require('fs').readFileSync(0)); console.log(data?.data?.accessToken || '');")
 

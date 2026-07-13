@@ -88,6 +88,6 @@ jobs:
         if: failure()
         run: |
           echo "=== NODE SERVER LOGS ==="
-          cat server/server.log || true
+          cat ./server/server.log || true # Added ./server/ prefix
           echo "=== ML ENGINE LOGS ==="
-          cat ml-engine/ml_engine.log || true
+          cat ./ml-engine/ml_engine.log || true # Added ./ml-engine/ prefix
