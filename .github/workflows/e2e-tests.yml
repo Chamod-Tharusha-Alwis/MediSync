@@ -70,6 +70,7 @@ jobs:
           MONGO_URI: "mongodb://localhost:27017/medisync_test"
           VAULT_TOKEN: "myroot"
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+          ADMIN_PASSWORD: "SecureCiAdminPassword2026!"
           NODE_ENV: "test"
           TEST_MODE: "true"
           REDIS_HOST: "localhost"
