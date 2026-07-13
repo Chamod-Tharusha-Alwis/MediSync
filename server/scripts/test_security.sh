@@ -60,6 +60,11 @@ else
   echo "❌ FAIL: Flask ML Engine returned $STATUS instead of 403."
   exit 1
 fi
+# Kill the background Node server from Test 1 so port 5000 is completely free
+killall node || true
+sleep 2 # Give the OS a moment to fully release the port
+
+# ... [Your existing Test 3 code continues here] ...
 
 echo ""
 echo "------------------------------------------------"
