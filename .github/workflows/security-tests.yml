@@ -108,5 +108,4 @@ jobs:
 
       - name: Dump Server Logs on Failure
         if: failure()
-        working-directory: ./server
-        run: cat server.log
+        run: cat server/server.log || true
