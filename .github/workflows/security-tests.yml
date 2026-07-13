@@ -42,49 +42,26 @@ jobs:
           python-version: '3.11'
 
       - name: Install ML Engine Dependencies
-        run: |
-          cd ml-engine
-          pip install -r requirements.txt
+        working-directory: ./ml-engine
+        run: pip install -r requirements.txt
 
       - name: Start ML Engine (Background)
-        run: |
-          cd ml-engine
-          python app.py &
+        working-directory: ./ml-engine
         env:
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-
-      - name: Run Security Tests
-        run: |
-          chmod +x server/scripts/test_security.sh
-          timeout 30 ./server/scripts/test_security.sh
+        run: python app.py > ml_engine.log 2>&1 &
 
       - name: Install Server Dependencies
         working-directory: ./server
         run: npm ci
 
-      - name: Install ML Engine Dependencies
-        working-directory: ./ml-engine
-        run: pip install -r requirements.txt
-
       - name: Bootstrap Vault Keys
         run: |
-          curl -H "X-Vault-Token: myroot" \
-               -H "Content-Type: application/json" \
-               -d '{"data": {"activeVersion": 1, "versions": {"1": "my-secret-key-v1-32-bytes-long!!!"}}}' \
-               http://127.0.0.1:8200/v1/secret/data/medisync/keys
-
-      - name: Bootstrap Vault Keys
-        run: |
+          sleep 2
           curl -H "X-Vault-Token: myroot" \
                -H "Content-Type: application/json" \
                -d '{"data": {"activeVersion": 1, "versions": {"1": "12345678901234567890123456789012"}}}' \
                http://127.0.0.1:8200/v1/secret/data/medisync/keys
-
-      - name: Start ML Engine
-        working-directory: ./ml-engine
-        env:
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-        run: python app.py > ml_engine.log 2>&1 &
 
       - name: Start Node Server
         working-directory: ./server
@@ -92,6 +69,8 @@ jobs:
           PORT: 5000
           MONGO_URI: "mongodb://localhost:27017/medisync_test"
           VAULT_TOKEN: "myroot"
+          VAULT_ADDR: "http://127.0.0.1:8200"
+          ENCRYPTION_KEY: "12345678901234567890123456789012"
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
           ADMIN_PASSWORD: "SecureCiAdminPassword2026!"
           NODE_ENV: "production"
@@ -100,14 +79,15 @@ jobs:
           JWT_SECRET: "dummy-secret-for-ci-tests"
         run: node src/app.js > server.log 2>&1 &
 
-      - name: Make Security Test Script Executable
-        working-directory: ./server
-        run: chmod +x scripts/test_security.sh
-
       - name: Run Security Tests
-        working-directory: ./server
-        run: timeout 30 ./scripts/test_security.sh
+        run: |
+          chmod +x server/scripts/test_security.sh
+          timeout 30 ./server/scripts/test_security.sh
 
-      - name: Dump Server Logs on Failure
+      - name: Dump Logs on Failure
         if: failure()
-        run: cat server/server.log || true
+        run: |
+          echo "=== NODE SERVER LOGS ==="
+          cat server/server.log || true
+          echo "=== ML ENGINE LOGS ==="
+          cat ml-engine/ml_engine.log || true

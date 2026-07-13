@@ -69,6 +69,8 @@ jobs:
           PORT: 5005
           MONGO_URI: "mongodb://localhost:27017/medisync_test"
           VAULT_TOKEN: "myroot"
+          VAULT_ADDR: "http://127.0.0.1:8200"
+          ENCRYPTION_KEY: "12345678901234567890123456789012"
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
           ADMIN_PASSWORD: "SecureCiAdminPassword2026!" 
           JWT_SECRET: "dummy-secret-for-ci-tests"      
