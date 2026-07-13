@@ -70,12 +70,12 @@ jobs:
           MONGO_URI: "mongodb://localhost:27017/medisync_test"
           VAULT_TOKEN: "myroot"
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+          ADMIN_PASSWORD: "SecureCiAdminPassword2026!" 
+          JWT_SECRET: "dummy-secret-for-ci-tests"      
           NODE_ENV: "test"
           TEST_MODE: "true"
           REDIS_HOST: "localhost"
           REDIS_PORT: 6379
-          ADMIN_PASSWORD: "SecureCiAdminPassword2026!"
-          JWT_SECRET: "dummy-secret-for-ci-tests"
         run: npm start > server.log 2>&1 &
 
       - name: Install Client Dependencies
