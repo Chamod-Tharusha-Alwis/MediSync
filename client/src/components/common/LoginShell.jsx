@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ActiveOutbreakBanner from './ActiveOutbreakBanner';
+import GlassCard from './GlassCard';
 
 const LoginShell = ({
   title,
@@ -67,7 +68,7 @@ const LoginShell = ({
             </div>
           )}
 
-          <div className="glass-card-premium p-8 overflow-hidden relative">
+          <GlassCard className="p-8">
             {/* Top border highlight */}
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${style.border}`} />
 
@@ -90,7 +91,7 @@ const LoginShell = ({
             <form onSubmit={onSubmit} className="space-y-5">
               {children}
             </form>
-          </div>
+          </GlassCard>
         </motion.div>
       </div>
 

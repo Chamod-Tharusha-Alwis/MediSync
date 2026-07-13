@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import NotificationToast from './components/common/NotificationToast';
 import PrivateRoute from './components/auth/PrivateRoute';
 import BanNotice from './components/BanNotice';
@@ -16,6 +17,7 @@ import DoctorDirectory from './pages/public/DoctorDirectory';
 import HospitalDirectory from './pages/public/HospitalDirectory';
 import PharmacyDirectory from './pages/public/PharmacyDirectory';
 import StyleGuide from './pages/dev/StyleGuide';
+import AnimatedBackground from './components/common/AnimatedBackground';
 
 // Dashboards
 import SelectRole from './pages/SelectRole';
@@ -37,14 +39,17 @@ function AppRoutes() {
   // Fires ReactGA.send({ hitType: 'pageview', page: location.pathname }) on
   // every navigation event — covers all role-based dashboards automatically.
   usePageTracking();
+  const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#0b1120] text-slate-200">
+    <div className="relative min-h-screen text-slate-200 overflow-x-hidden">
+      <AnimatedBackground />
       <NotificationToast />
       <BanNotice />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
         <Route path="/select-role" element={<SelectRole />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dev/style-guide" element={<StyleGuide />} />
@@ -93,7 +98,8 @@ function AppRoutes() {
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/select-role" replace />} />
-      </Routes>
+        </Routes>
+      </AnimatePresence>
     </div>
   );
 }

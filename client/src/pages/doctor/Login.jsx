@@ -93,45 +93,15 @@ const DoctorLogin = () => {
           <label className="text-xs font-semibold uppercase text-slate-500 ml-1">
             {loginType === 'hospital' ? 'Hospital Org Email' : 'Personal Email'}
           </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="glass-input block w-full pl-10 pr-3 py-2.5 text-xs"
-              placeholder={loginType === 'hospital' ? "org.doctor@hospital.lk" : "doctor@medisync.local"}
-            />
-          </div>
+          <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase text-slate-500 ml-1">Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="glass-input block w-full pl-10 pr-3 py-2.5 text-xs"
-              placeholder="••••••••"
-            />
-          </div>
+          <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="glass-button w-full flex justify-center items-center py-2.5 px-4 text-xs font-bold disabled:opacity-70 mt-2"
-        >
-          {loading ? (
-            <><Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" /> Authenticating...</>
-          ) : (
-            'Sign In'
-          )}
-        </button>
+        <GlassButton type="submit" isLoading={loading} className="w-full mt-4">Sign In</GlassButton>
 
         <div className="mt-4 text-center">
           <button

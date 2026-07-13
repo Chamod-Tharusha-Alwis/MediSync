@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.15.2",
     "cloudinary": "^1.41.3",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
@@ -29,6 +30,7 @@
     "react-toastify": "^11.1.0",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^3.6.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

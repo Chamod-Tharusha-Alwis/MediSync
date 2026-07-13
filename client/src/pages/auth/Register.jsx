@@ -4,6 +4,9 @@ import { UserPlus, Mail, Lock, User, Key, Building, Loader2, Calendar, Phone, Ch
 import { motion } from 'framer-motion';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
+import GlassCard from '../../components/common/GlassCard';
+import GlassInput from '../../components/common/GlassInput';
+import GlassButton from '../../components/common/GlassButton';
 
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
@@ -135,7 +138,7 @@ const Register = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg z-10 relative"
       >
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl p-8">
+        <GlassCard className="p-8">
           
           {/* Header */}
           <div className="flex flex-col items-center mb-6">
@@ -204,50 +207,17 @@ const Register = () => {
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                    <input 
-                      type="text" 
-                      name="fullName" 
-                      required 
-                      value={formData.fullName} 
-                      onChange={handleChange} 
-                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                      placeholder="John Doe" 
-                    />
-                  </div>
+                  <GlassInput type="text" name="fullName" required icon={User} value={formData.fullName} onChange={handleChange} placeholder="John Doe" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                    <input 
-                      type="email" 
-                      name="email" 
-                      required 
-                      value={formData.email} 
-                      onChange={handleChange} 
-                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                      placeholder="you@example.com" 
-                    />
-                  </div>
+                  <GlassInput type="email" name="email" required icon={Mail} value={formData.email} onChange={handleChange} placeholder="you@example.com" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                    <input 
-                      type="password" 
-                      name="password" 
-                      required 
-                      value={formData.password} 
-                      onChange={handleChange} 
-                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                      placeholder="••••••••" 
-                    />
-                  </div>
+                  <GlassInput type="password" name="password" required icon={Lock} value={formData.password} onChange={handleChange} placeholder="••••••••" />
                   {/* Password strength meter */}
                   {formData.password && (
                     <div className="pt-1.5 select-none">
@@ -264,30 +234,13 @@ const Register = () => {
 
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>Confirm Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                    <input 
-                      type="password" 
-                      name="confirmPassword" 
-                      required 
-                      value={formData.confirmPassword} 
-                      onChange={handleChange} 
-                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                      placeholder="••••••••" 
-                    />
-                  </div>
+                  <GlassInput type="password" name="confirmPassword" required icon={Lock} value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                     <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
                   )}
                 </div>
 
-                <button 
-                  type="button" 
-                  onClick={() => { if (validateStep1()) setStep(2); }}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 mt-6"
-                >
-                  Continue <ChevronRight className="w-4 h-4" />
-                </button>
+                <GlassButton type="button" onClick={() => { if (validateStep1()) setStep(2); }} className="w-full mt-6 flex justify-center items-center gap-1">Continue <ChevronRight className="w-4 h-4" /></GlassButton>
               </div>
             )}
 
@@ -298,49 +251,17 @@ const Register = () => {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className={labelClass}>National ID (NIC) *</label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                        <input 
-                          type="text" 
-                          name="nic" 
-                          required 
-                          value={formData.nic} 
-                          onChange={handleChange} 
-                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                          placeholder="199012345678" 
-                        />
-                      </div>
+                      <GlassInput type="text" name="nic" required icon={Key} value={formData.nic} onChange={handleChange} placeholder="199012345678" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className={labelClass}>Date of Birth</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 pointer-events-none" />
-                          <input 
-                            type="date" 
-                            name="dateOfBirth" 
-                            required 
-                            value={formData.dateOfBirth} 
-                            onChange={handleChange} 
-                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                          />
-                        </div>
+                        <GlassInput type="date" name="dateOfBirth" required icon={Calendar} value={formData.dateOfBirth} onChange={handleChange} />
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className={labelClass}>Contact No</label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                          <input 
-                            type="text" 
-                            name="contactInfo" 
-                            required 
-                            value={formData.contactInfo} 
-                            onChange={handleChange} 
-                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                            placeholder="+94..." 
-                          />
-                        </div>
+                        <GlassInput type="text" name="contactInfo" required icon={Phone} value={formData.contactInfo} onChange={handleChange} placeholder="+94..." />
                       </div>
                     </div>
                   </>
@@ -350,33 +271,11 @@ const Register = () => {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className={labelClass}>Medical License No *</label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                        <input 
-                          type="text" 
-                          name="licenseNo" 
-                          required 
-                          value={formData.licenseNo} 
-                          onChange={handleChange} 
-                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                          placeholder="SLMC-12345" 
-                        />
-                      </div>
+                      <GlassInput type="text" name="licenseNo" required icon={Key} value={formData.licenseNo} onChange={handleChange} placeholder="SLMC-12345" />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className={labelClass}>Specialization *</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                        <input 
-                          type="text" 
-                          name="specialization" 
-                          required 
-                          value={formData.specialization} 
-                          onChange={handleChange} 
-                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                          placeholder="Cardiologist" 
-                        />
-                      </div>
+                      <GlassInput type="text" name="specialization" required icon={User} value={formData.specialization} onChange={handleChange} placeholder="Cardiologist" />
                     </div>
                   </>
                 )}
@@ -384,40 +283,16 @@ const Register = () => {
                 {role === 'pharmacist' && (
                   <div className="flex flex-col gap-1.5">
                     <label className={labelClass}>Pharmacy Reference ID *</label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
-                      <input 
-                        type="text" 
-                        name="pharmacyId" 
-                        required 
-                        value={formData.pharmacyId} 
-                        onChange={handleChange} 
-                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-                      />
-                    </div>
+                    <GlassInput type="text" name="pharmacyId" required icon={Building} value={formData.pharmacyId} onChange={handleChange} />
                     <p className="text-[10px] text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
                   </div>
                 )}
 
                 <div className="flex gap-3 pt-6 border-t border-white/5">
-                  <button 
-                    type="button" 
-                    onClick={() => setStep(1)}
-                    className="flex-1 py-2.5 border border-white/5 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1"
-                  >
-                    <ChevronLeft className="w-4 h-4" /> Back
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-1.5"
-                  >
-                    {loading ? (
-                      <><Loader2 className="animate-spin h-4 w-4" /> Finalizing...</>
-                    ) : (
-                      <><ShieldCheck className="w-4 h-4" /> Create Account</>
-                    )}
-                  </button>
+                  <GlassButton variant="secondary" type="button" onClick={() => setStep(1)} className="flex-1 flex justify-center items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</GlassButton>
+                  <GlassButton type="submit" isLoading={loading} className="flex-1 flex justify-center items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4" /> Create Account
+                  </GlassButton>
                 </div>
               </div>
             )}
@@ -433,7 +308,7 @@ const Register = () => {
             </div>
           </form>
 
-        </div>
+        </GlassCard>
       </motion.div>
     </div>
   );

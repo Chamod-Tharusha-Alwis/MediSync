@@ -55,36 +55,12 @@ const AdminLogin = () => {
     >
       <div className="space-y-1">
         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">Admin Email</label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none select-none">
-            <Mail className="h-4 w-4 text-slate-500" />
-          </div>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="glass-input pl-10 text-xs"
-            placeholder="admin@medisync.local"
-          />
-        </div>
+        <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
       </div>
 
       <div className="space-y-1">
         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">Password Key</label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none select-none">
-            <Lock className="h-4 w-4 text-slate-500" />
-          </div>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="glass-input pl-10 text-xs"
-            placeholder="••••••••"
-          />
-        </div>
+        <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
       </div>
 
       <button
