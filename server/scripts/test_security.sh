@@ -20,31 +20,28 @@ echo "Flask server is ready!"
 echo "------------------------------------------------"
 echo "TEST 1: OTP Rate Limiting Rejection (429)"
 echo "------------------------------------------------"
-# 1. Register a dummy hospital to ensure the user exists in DB and grab JWT token
-TOKEN=$(curl -s -X POST http://localhost:5000/api/hospital/register \
+# 1. Log in as Admin to grab JWT token
+TOKEN=$(curl -s -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "sysadmin@medisync.com", "password": "Password123!", "name": "Dummy Hospital", "hospitalRegNo": "H9999", "contactInfo": "0000000000"}' | node -pe "JSON.parse(require('fs').readFileSync(0)).data.accessToken")
+  -d '{"email": "admin@medisync.com", "password": "SecureCiAdminPassword2026!"}' | node -pe "JSON.parse(require('fs').readFileSync(0)).data.accessToken")
 
 # 2. Generate OTP request (now it will succeed and create an OTPSession)
-curl -s -X POST http://localhost:5000/api/hospital/request-otp \
+curl -s -X POST http://localhost:5000/api/auth/send-otp \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"nic": "123456"}' > /dev/null
+  -d '{"email": "admin@medisync.com", "purpose": "password-reset"}' > /dev/null
 
 # 3. Attempt 6 incorrect OTPs
 for i in {1..5}; do
-  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/lab/hospital/verify-fetch-tests \
+  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $TOKEN" \
-    -d '{"nic": "123456", "otp": "000000"}'
+    -d '{"email": "admin@medisync.com", "otp": "000000", "newPassword": "Password123!"}'
 done
 echo ""
 
 # The 6th attempt should be blocked with 429
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/lab/hospital/verify-fetch-tests \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"nic": "123456", "otp": "000000"}')
+  -d '{"email": "admin@medisync.com", "otp": "000000", "newPassword": "Password123!"}')
 
 if [ "$STATUS" -eq 429 ]; then
   echo "✅ PASS: OTP Rate Limiter successfully rejected request with 429."

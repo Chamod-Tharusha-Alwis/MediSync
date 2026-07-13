@@ -61,7 +61,7 @@ jobs:
 
       - name: Install Server Dependencies
         working-directory: ./server
-        run: npm ci
+        run: npm install
 
       - name: Start Node Server (Test Mode)
         working-directory: ./server
@@ -82,7 +82,7 @@ jobs:
 
       - name: Install Client Dependencies
         working-directory: ./client
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright Browsers
         working-directory: ./client

@@ -53,7 +53,7 @@ jobs:
 
       - name: Install Server Dependencies
         working-directory: ./server
-        run: npm ci
+        run: npm install
 
       - name: Bootstrap Vault Keys
         run: |
