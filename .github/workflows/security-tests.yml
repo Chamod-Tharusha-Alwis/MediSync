@@ -66,7 +66,8 @@ jobs:
       - name: Create .env file
         working-directory: ./server
         run: |
-          echo "JWT_SECRET=dummy-secret-for-ci-tests" >> .env
+          echo "JWT_SECRET=dummy-secret-for-ci-tests" > .env
+          echo "JWT_REFRESH_SECRET=dummy-refresh-secret-for-ci-tests" >> .env
           echo "ADMIN_PASSWORD=SecureCiAdminPassword2026!" >> .env
           echo "INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}" >> .env
           echo "PORT=5000" >> .env
