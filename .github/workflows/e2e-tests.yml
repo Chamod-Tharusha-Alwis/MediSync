@@ -97,8 +97,8 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          npx wait-on -t 30000 http://localhost:5005/api/public/stats
-          npx wait-on -t 60000 http://localhost:3000
+          npx wait-on -t 30000 tcp:5005
+          npx wait-on -t 60000 tcp:3000
 
       - name: Dump Logs on Failure
         if: failure()

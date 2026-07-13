@@ -17,16 +17,20 @@ while ! curl -s http://localhost:5001/health > /dev/null; do
 done
 echo "Flask server is ready!"
 
-echo ""
 echo "------------------------------------------------"
 echo "TEST 1: OTP Rate Limiting Rejection (429)"
 echo "------------------------------------------------"
-# Generate OTP request first
+# 1. Register a dummy hospital to ensure the user exists in DB
+curl -s -X POST http://localhost:5000/api/hospital/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "sysadmin@medisync.com", "password": "Password123!", "name": "Dummy Hospital", "hospitalRegNo": "H9999", "contactInfo": "0000000000"}' > /dev/null
+
+# 2. Generate OTP request (now it will succeed and create an OTPSession)
 curl -s -X POST http://localhost:5000/api/auth/send-otp \
   -H "Content-Type: application/json" \
   -d '{"email": "sysadmin@medisync.com", "purpose": "password-reset"}' > /dev/null
 
-# Attempt 6 incorrect OTPs
+# 3. Attempt 6 incorrect OTPs
 for i in {1..5}; do
   curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
     -H "Content-Type: application/json" \
