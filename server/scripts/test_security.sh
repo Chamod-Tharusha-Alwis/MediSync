@@ -12,7 +12,7 @@ echo "Node server is ready!"
 
 # Wait for Flask server to be ready
 echo "Waiting for Flask ML Engine on port 5001..."
-while ! curl -s http://localhost:5001/health > /dev/null; do
+while ! curl -s http://localhost:5001/model-status > /dev/null; do
   sleep 1
 done
 echo "Flask server is ready!"
@@ -61,7 +61,7 @@ echo ""
 echo "------------------------------------------------"
 echo "TEST 2: ML-Engine HMAC Verification (403)"
 echo "------------------------------------------------"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5001/predict \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5001/api/ml/predict-disease \
   -H "Content-Type: application/json" \
   -d '{"symptoms": ["headache"]}')
 
