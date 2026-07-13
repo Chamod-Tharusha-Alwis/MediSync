@@ -21,9 +21,16 @@ echo "------------------------------------------------"
 echo "TEST 1: OTP Rate Limiting Rejection (429)"
 echo "------------------------------------------------"
 # 1. Log in as Admin to grab JWT token
-TOKEN=$(curl -s -X POST http://localhost:5000/api/auth/login \
+RESPONSE=$(curl -s -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@medisync.com", "password": "SecureCiAdminPassword2026!"}' | node -pe "JSON.parse(require('fs').readFileSync(0)).data.accessToken")
+  -d '{"email": "admin@medisync.com", "password": "SecureCiAdminPassword2026!"}')
+
+TOKEN=$(echo $RESPONSE | node -e "const data = JSON.parse(require('fs').readFileSync(0)); console.log(data?.data?.accessToken || '');")
+
+if [ -z "$TOKEN" ]; then
+  echo "❌ FAIL: Login failed! Response was: $RESPONSE"
+  exit 1
+fi
 
 # 2. Generate OTP request (now it will succeed and create an OTPSession)
 curl -s -X POST http://localhost:5000/api/auth/send-otp \
