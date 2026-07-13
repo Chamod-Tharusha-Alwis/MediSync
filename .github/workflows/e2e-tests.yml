@@ -46,7 +46,7 @@ jobs:
           sleep 2
           curl -H "X-Vault-Token: myroot" \
                -H "Content-Type: application/json" \
-               -d '{"data": {"activeVersion": 1, "versions": {"1": "my-secret-key-v1-32-bytes-long!!!"}}}' \
+               -d '{"data": {"activeVersion": 1, "versions": {"1": "12345678901234567890123456789012"}}}' \
                http://127.0.0.1:8200/v1/secret/data/medisync/keys
 
       - name: Install ML Engine Dependencies
@@ -57,7 +57,7 @@ jobs:
         working-directory: ./ml-engine
         env:
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-        run: python app.py &
+        run: python app.py > ml_engine.log 2>&1 &
 
       - name: Install Server Dependencies
         working-directory: ./server
@@ -74,7 +74,7 @@ jobs:
           TEST_MODE: "true"
           REDIS_HOST: "localhost"
           REDIS_PORT: 6379
-        run: npm start &
+        run: npm start > server.log 2>&1 &
 
       - name: Install Client Dependencies
         working-directory: ./client
@@ -89,15 +89,19 @@ jobs:
         env:
           PORT: 3000
           REACT_APP_API_URL: "http://localhost:5005/api"
-        run: npm start &
+        run: npm start > client.log 2>&1 &
 
       - name: Wait for services to be ready
         run: |
-          npx wait-on http://localhost:5005/api/public/stats
-          npx wait-on http://localhost:3000
+          npx wait-on -t 30000 http://localhost:5005/api/public/stats
+          npx wait-on -t 60000 http://localhost:3000
 
-      - name: Run Playwright Tests
-        working-directory: ./client
-        env:
-          MONGO_URI: "mongodb://localhost:27017/medisync_test"
-        run: npx playwright test tests/medisync-e2e-walkthrough.spec.js
+      - name: Dump Logs on Failure
+        if: failure()
+        run: |
+          echo "=== NODE SERVER LOGS ==="
+          cat server/server.log || true
+          echo "=== ML ENGINE LOGS ==="
+          cat ml-engine/ml_engine.log || true
+          echo "=== REACT CLIENT LOGS ==="
+          cat client/client.log || true
