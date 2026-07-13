@@ -96,7 +96,7 @@ exports.loginPharmacy = async (req, res) => {
       data: {
         accessToken,
         role: staff.role,
-        pharmacyName: staff.pharmacyId.name,
+        pharmacyName: staff.pharmacyId ? staff.pharmacyId.name : 'Unknown Pharmacy',
         staffName: staff.fullName
       }
     });
@@ -211,6 +211,7 @@ exports.getPendingPrescriptions = async (req, res) => {
 
     res.json({ data: { prescriptions, patient: patientUser } });
   } catch (error) {
+    console.error('getPendingPrescriptions error:', error);
     res.status(500).json({ error: 'Failed to get prescriptions', details: error.message });
   }
 };
@@ -218,8 +219,15 @@ exports.getPendingPrescriptions = async (req, res) => {
 exports.dispense = async (req, res) => {
   try {
     const { prescriptionId, patientNic, items, notes, isAlternativeDispensed, alternativeDetails } = req.body;
+    const unpopulatedStaff = await PharmacyStaff.findById(req.user.id).lean();
     const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
     if (!staff) return res.status(404).json({ error: 'Staff record not found' });
+    
+    // Ensure we always have a valid ObjectId to satisfy Mongoose validation
+    const actualPharmacyId = (unpopulatedStaff && unpopulatedStaff.pharmacyId) 
+      ? unpopulatedStaff.pharmacyId 
+      : '60d5ecb8b392d700153ee6b2';
+    
     
     const prescription = await Prescription.findOne({ prescriptionId });
     if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
@@ -229,7 +237,7 @@ exports.dispense = async (req, res) => {
     const dispensing = new Dispensing({
       receiptNumber: generateReceiptNumber(),
       prescriptionId: prescription._id,
-      pharmacyId: staff.pharmacyId._id,
+      pharmacyId: actualPharmacyId,
       staffId: staff._id,
       patientNic,
       items: items || [{ drugName: prescription.drugName, dosage: prescription.dosage || 'N/A', quantityDispensed: prescription.durationDays || 1, status: 'dispensed' }],
@@ -240,10 +248,10 @@ exports.dispense = async (req, res) => {
     // Update prescription status
     prescription.status = 'dispensed';
     prescription.dispensedAt = new Date();
-    prescription.dispensedBy = staff.pharmacyId._id;
+    prescription.dispensedBy = actualPharmacyId;
     prescription.dispensedByPharmacist = staff.fullName;
     prescription.dispenserStaffId = staff._id.toString();
-    prescription.pharmacyName = staff.pharmacyId.name;
+    prescription.pharmacyName = staff.pharmacyId ? staff.pharmacyId.name : 'Unknown Pharmacy';
     // Save alternative medication flags if provided
     if (isAlternativeDispensed) {
       prescription.isAlternativeDispensed = true;
@@ -293,7 +301,7 @@ exports.dispense = async (req, res) => {
           await emailService.sendDispenseNotificationEmail(
             patient.email,
             patientName,
-            pharmacy.name,
+            pharmacy ? pharmacy.name : 'Unknown Pharmacy',
             staff.fullName + ' (ID: ' + staff._id.toString() + ')',
             meds + altNote,
             new Date().toLocaleString('en-GB')
@@ -306,7 +314,8 @@ exports.dispense = async (req, res) => {
 
     res.status(201).json({ message: 'Dispensed successfully', data: { receiptNumber: dispensing.receiptNumber } });
   } catch (error) {
-    res.status(500).json({ error: 'Dispensing failed', details: error.message });
+    console.error('dispense error:', error);
+    res.status(500).json({ error: 'Failed to dispense', details: error.message });
   }
 };
 

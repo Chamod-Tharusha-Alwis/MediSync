@@ -1,8 +1,8 @@
 // test_api.js — node test_api.js
 const http = require('http');
 
-const BASE = 'http://localhost:5000';
-const ML   = 'http://localhost:5001';
+const BASE = 'http://127.0.0.1:5005';
+const ML   = 'http://127.0.0.1:5001';
 
 let doctorToken = '';
 let adminToken  = '';
@@ -47,10 +47,14 @@ function log(name, res, expectStatus) {
   results.push({ name, pass, status: res.status, expected: expectStatus });
   console.log(`${icon} ${name}: ${res.status} ${pass ? 'PASS' : 'FAIL'}`);
   if (!pass) {
-    const body = typeof res.body === 'object' 
-      ? JSON.stringify(res.body) 
-      : String(res.body);
-    console.log(`   → ${body.slice(0, 300)}`);
+    if (res.status === 0) {
+      console.log(`   → Error: ${res.error}`);
+    } else {
+      const body = typeof res.body === 'object' 
+        ? JSON.stringify(res.body) 
+        : String(res.body);
+      console.log(`   → ${body.slice(0, 300)}`);
+    }
   }
   return res;
 }
@@ -66,21 +70,21 @@ async function run() {
 
   // ── ML Engine ────────────────────────────────
   console.log('── ML Engine ──');
-  const mlStatus = await req('GET', ML + '/model-status');
+  const mlStatus = await req('GET', ML + '/model-status', null, { 'x-internal-key': 'medisync-secure-key-123' });
   log('ML model-status', mlStatus, 200);
   if (mlStatus.body?.status) {
     console.log(`   → Status: ${mlStatus.body.status}, DataPoints: ${mlStatus.body.dataPoints}`);
   }
   
   const mlPredict = await req('POST', ML + '/api/ml/predict-disease',
-    { symptoms: ['Fever', 'Headache', 'Joint Pain', 'Rash'] });
+    { symptoms: ['Fever', 'Headache', 'Joint Pain', 'Rash'] }, { 'x-internal-key': 'medisync-secure-key-123' });
   log('ML predict-disease', mlPredict, 200);
   if (mlPredict.body?.suggestions?.length > 0) {
     console.log(`   → Top: ${mlPredict.body.suggestions[0].disease} (${mlPredict.body.suggestions[0].confidence_percent}%)`);
   }
 
   const mlInteract = await req('POST', ML + '/api/ml/check-interactions',
-    { drugs: ['Warfarin', 'Aspirin'] });
+    { drugs: ['Warfarin', 'Aspirin'] }, { 'x-internal-key': 'medisync-secure-key-123' });
   log('ML check-interactions', mlInteract, 200);
   if (mlInteract.body?.hasInteraction !== undefined) {
     console.log(`   → hasInteraction: ${mlInteract.body.hasInteraction}`);

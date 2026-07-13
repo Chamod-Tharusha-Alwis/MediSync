@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const prescriptionSchema = new mongoose.Schema({
   prescriptionId: { type: String, unique: true },
@@ -44,6 +44,7 @@ const prescriptionSchema = new mongoose.Schema({
   // Alternative medication tracking
   isAlternativeDispensed: { type: Boolean, default: false },
   alternativeDetails:     { type: String, default: '' },
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
 // Auto-generate prescriptionId before saving if not set
@@ -58,11 +59,8 @@ prescriptionSchema.pre('save', async function() {
   }
 });
 
-prescriptionSchema.plugin(fieldEncryption, {
-  fields: ['patientNic', 'drugName', 'dosage'],
-  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
-  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
-  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
+prescriptionSchema.plugin(versionedEncryption, {
+  fields: ['patientNic', 'drugName', 'dosage']
 });
 
 module.exports = mongoose.model('Prescription', prescriptionSchema);

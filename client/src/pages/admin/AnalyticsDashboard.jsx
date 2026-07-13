@@ -45,7 +45,7 @@ const AnalyticsDashboard = () => {
   return (
     <PageTransition className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Analytics Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">Analytics Dashboard</h1>
         <p className="text-slate-400 mt-1">High-level platform metrics and performance data.</p>
       </div>
 

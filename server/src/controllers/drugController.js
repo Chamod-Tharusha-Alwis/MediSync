@@ -143,6 +143,8 @@ exports.checkInteraction = async (req, res) => {
       };
     });
 
+    console.log("RESOLVED DRUGS:", resolvedDrugs);
+
     // Step 2: Check every pair using generic names
     const warnings = [];
     for (let i = 0; i < resolvedDrugs.length; i++) {

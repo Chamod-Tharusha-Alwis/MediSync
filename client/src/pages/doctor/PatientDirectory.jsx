@@ -201,7 +201,7 @@ export default function PatientDirectory() {
           </div>
 
           {/* Time Filter Toggle Group */}
-          <div className="flex bg-slate-900/60 border border-white/5 rounded-xl p-1 shrink-0 overflow-x-auto custom-scrollbar">
+          <div className="flex glass-card rounded-xl p-1 shrink-0 overflow-x-auto custom-scrollbar">
             {['1h', '3h', '6h', '12h', '24h', 'All Time'].map((tf) => (
               <button
                 key={tf}
@@ -401,7 +401,7 @@ export default function PatientDirectory() {
                     {selected.prescriptions?.length > 0 ? (
                       <div className="space-y-3">
                         {selected.prescriptions.map((rx, idx) => (
-                          <div key={idx} className="flex justify-between items-center p-3 bg-slate-900/60 border border-white/5 rounded-xl text-sm">
+                          <div key={idx} className="flex justify-between items-center p-3 glass-card rounded-xl text-sm">
                             <div>
                               <p className="font-bold text-white">{rx.drugName}</p>
                               <p className="text-xs text-slate-400 mt-0.5">

@@ -11,7 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../api/axiosInstance';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
-import Sidebar from '../../components/common/Sidebar';
+import AppShell from '../../components/ui/AppShell';
+import Skeleton from '../../components/ui/Skeleton';
 
 // ─── Workspace Selector ──────────────────────────────────────────────────────
 const WorkspaceSelector = ({ onSelect }) => (
@@ -179,10 +180,14 @@ export default function DoctorDashboard() {
 
 
   return (
-    <div className="flex bg-[#080d1a] min-h-screen text-slate-200 font-sans">
-      <Sidebar menuItems={menuItems} title="Doctor Portal" themePrefix="doctor" userName={`Dr. ${doctorName}`} userRole="Verified Doctor" />
-
-      <main className="flex-1 lg:ml-64 p-6 lg:p-10 transition-all duration-300 space-y-8">
+    <div className="doctor-theme">
+      <AppShell
+        role="doctor"
+        userName={`Dr. ${doctorName}`}
+        userRole="Verified Doctor"
+        menuItems={menuItems}
+      >
+        <div className="space-y-8">
         
         {/* ── Dashboard Header ── */}
         <div className="flex flex-wrap justify-between items-center gap-4">
@@ -224,7 +229,10 @@ export default function DoctorDashboard() {
         {loadingStats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 h-24 animate-pulse" />
+              <div key={i} className="bg-slate-900/40 border border-white/5 rounded-2xl p-5 h-24 flex flex-col gap-2 justify-center">
+                <Skeleton.Line width="w-1/2" height="h-3" />
+                <Skeleton.Line width="w-1/3" height="h-4" />
+              </div>
             ))}
           </div>
         )}
@@ -416,7 +424,8 @@ export default function DoctorDashboard() {
           </motion.div>
         )}
 
-      </main>
+        </div>
+      </AppShell>
     </div>
   );
 }

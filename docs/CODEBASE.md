@@ -329,3 +329,9 @@ To maintain high codebase health, redundant component duplicates and unused util
 - Deleted `client/src/components/LoadingSkeleton.jsx` (unused visual component).
 - Cleaned debug console tracer prints, keeping only critical errors and startup confirmations.
 
+
+
+## Security Hardening (Phase 2)
+- **Custom Versioned Encryption:** Replaced mongoose-field-encryption with server/src/utils/versionedEncryption.js to enable zero-downtime AES key rotation mapped to Vault versions.
+- **Fail-Closed Vault & Redis:** Systems now gracefully crash in production if Vault or Redis are disconnected, eliminating the use of insecure ephemeral fallbacks.
+- **OTP & Timing Attack Mitigations:** Enforced strict NODE_ENV guarding on all 123456 OTP backdoors and replaced generic string comparisons with crypto.timingSafeEqual() across internal HMAC validations.

@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiCheckCircle, FiMapPin, FiHash } from 'react-icons/fi';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle, MapPin, Hash, ShieldCheck, Building, Loader2 } from 'lucide-react';
 import axios from '../../api/axiosInstance';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DISTRICTS = ['Colombo','Gampaha','Kalutara','Kandy','Matale','Nuwara Eliya','Galle','Matara','Hambantota','Jaffna','Kurunegala','Puttalam','Anuradhapura','Polonnaruwa','Badulla','Ratnapura','Kegalle','Trincomalee','Batticaloa','Ampara'];
-const inputCls = "w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 transition-all backdrop-blur-sm";
-const labelCls = "block text-sm font-semibold text-white/90 mb-1";
+
+const checkPasswordStrength = (pass) => {
+  if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-855' };
+  let score = 0;
+  if (pass.length >= 8) score++;
+  if (/[A-Z]/.test(pass)) score++;
+  if (/[0-9]/.test(pass)) score++;
+  if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+  if (score === 1) return { score: 25, text: 'Weak', color: 'bg-rose-500' };
+  if (score === 2) return { score: 50, text: 'Moderate', color: 'bg-amber-500' };
+  if (score === 3) return { score: 75, text: 'Good', color: 'bg-blue-500' };
+  if (score === 4) return { score: 100, text: 'Strong', color: 'bg-emerald-500' };
+  return { score: 10, text: 'Very Weak', color: 'bg-rose-600' };
+};
+
+const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase select-none";
 
 export default function HospitalRegister() {
   const navigate = useNavigate();
@@ -15,7 +30,11 @@ export default function HospitalRegister() {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showCPw, setShowCPw] = useState(false);
-  const [form, setForm] = useState({ name:'', type:'private', district:'', address:'', regNo:'', email:'', password:'', confirmPassword:'' });
+  const [form, setForm] = useState({ 
+    name: '', type: 'private', district: '', address: '', regNo: '', 
+    email: '', password: '', confirmPassword: '' 
+  });
+  
   const set = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -23,114 +42,235 @@ export default function HospitalRegister() {
     if (form.password !== form.confirmPassword) { toast.error('Passwords do not match'); return; }
     setLoading(true);
     try {
-      await axios.post('/hospital/register', { name:form.name, type:form.type, district:form.district, address:form.address, regNo:form.regNo, email:form.email, password:form.password });
+      await axios.post('/hospital/register', { 
+        name: form.name, 
+        type: form.type, 
+        district: form.district, 
+        address: form.address, 
+        regNo: form.regNo, 
+        email: form.email, 
+        password: form.password 
+      });
       setStep(3);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally { setLoading(false); }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #3d0c6e 0%, #6b21a8 50%, #a855f7 100%)' }}>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(4)].map((_,i) => (
-          <motion.div key={i} className="absolute rounded-full opacity-5" style={{ width:`${200+i*80}px`, height:`${200+i*80}px`, background:'white', left:`${i*22}%`, bottom:`${i*15}%` }}
-            animate={{ y:[0,-25,0] }} transition={{ duration:6+i, repeat:Infinity, ease:'easeInOut', delay:i*0.8 }} />
-        ))}
-      </div>
-      <div className="relative z-10 w-full max-w-2xl mx-4 my-8">
-        <motion.div initial={{ opacity:0, y:-20 }} animate={{ opacity:1, y:0 }} className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm mb-6 transition-colors"><FiArrowLeft /> Back to Home</Link>
-          <div className="text-5xl mb-4">🏥</div>
-          <h1 className="text-3xl font-bold text-white">Hospital Registration</h1>
-          <p className="text-white/60 mt-2">Onboard your hospital to the MediSync platform</p>
-        </motion.div>
+  const strength = checkPasswordStrength(form.password);
 
+  return (
+    <div className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col items-center justify-center p-4 relative overflow-hidden pt-20 pb-20">
+      {/* Background orbs */}
+      <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-lg mx-4">
+        {/* Header */}
+        <div className="text-center mb-6 select-none">
+          <Link to="/" className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider mb-5 transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
+          </Link>
+          <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+            <Building className="w-7 h-7 text-indigo-400" />
+          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Hospital Registration</h1>
+          <p className="text-slate-400 text-xs mt-1.5 font-medium">Onboard your hospital to the MediSync network platform</p>
+        </div>
+
+        {/* Step Indicator */}
         {step < 3 && (
-          <div className="flex items-center justify-center gap-3 mb-8">
-            {[1,2].map(s => (
-              <React.Fragment key={s}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step>=s?'bg-white text-purple-800':'bg-white/15 text-white/50'}`}>{s}</div>
-                {s<2 && <div className={`w-16 h-0.5 ${step>s?'bg-white':'bg-white/20'}`} />}
-              </React.Fragment>
-            ))}
+          <div className="flex items-center justify-between mb-8 px-8 select-none">
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
+                step === 1 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450'
+              }`}>
+                {step > 1 ? '✓' : '1'}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Hospital</span>
+            </div>
+            <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
+                step === 2 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                  : 'bg-slate-950/40 border-white/5 text-slate-555'
+              }`}>
+                2
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Admin Account</span>
+            </div>
           </div>
         )}
 
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div key="s1" initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl space-y-5">
-              <h2 className="text-xl font-bold text-white">Hospital Information</h2>
-              <div><label className={labelCls}>Hospital Name *</label>
-                <div className="relative"><FiHash className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
-                  <input type="text" value={form.name} onChange={set('name')} className={inputCls} placeholder="e.g. National Hospital" required /></div></div>
-              <div><label className={labelCls}>Registration Number *</label>
-                <div className="relative"><FiHash className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
-                  <input type="text" value={form.regNo} onChange={set('regNo')} className={inputCls} placeholder="e.g. HOSP-2024-001" required /></div></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className={labelCls}>Type *</label>
-                  <select value={form.type} onChange={set('type')} className={inputCls.replace('pl-10','pl-4')}>
-                    <option value="private" className="text-gray-800">Private</option>
-                    <option value="government" className="text-gray-800">Government</option></select></div>
-                <div><label className={labelCls}>District *</label>
-                  <div className="relative"><FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 z-10" />
-                    <select value={form.district} onChange={set('district')} required className={inputCls}>
-                      <option value="" className="text-gray-800">Select</option>
-                      {DISTRICTS.map(d => <option key={d} value={d} className="text-gray-800">{d}</option>)}</select></div></div>
+            <motion.div key="step1"
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
+              className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl space-y-4">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">Hospital Information</h2>
+              
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Hospital Name *</label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input type="text" value={form.name} onChange={set('name')} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="e.g. National Hospital Colombo" required />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Registration Number *</label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input type="text" value={form.regNo} onChange={set('regNo')} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="e.g. HOSP-2026-99" required />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelCls}>Facility Type *</label>
+                    <select value={form.type} onChange={set('type')} 
+                      className="block w-full px-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                      <option value="private" className="bg-slate-900">Private</option>
+                      <option value="government" className="bg-slate-900">Government</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5 select-none">
+                    <label className={labelCls}>District *</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 z-10" />
+                      <select value={form.district} onChange={set('district')} required 
+                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <option value="" className="bg-slate-900">Select</option>
+                        {DISTRICTS.map(d => <option key={d} value={d} className="bg-slate-900">{d}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Address</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <textarea value={form.address} onChange={set('address')} rows={2}
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all"
+                      placeholder="Full facility address" />
+                  </div>
+                </div>
               </div>
-              <div><label className={labelCls}>Address</label>
-                <div className="relative"><FiMapPin className="absolute left-3 top-3 text-white/50" />
-                  <textarea value={form.address} onChange={set('address')} rows={2}
-                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none"
-                    placeholder="Full address" /></div></div>
-              <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
-                onClick={() => { if(!form.name||!form.regNo||!form.district){toast.error('Name, RegNo & District required');return;} setStep(2); }}
-                className="w-full bg-white text-purple-800 py-3 rounded-xl font-bold shadow-lg hover:bg-white/90 transition-all">Next →</motion.button>
+
+              <button 
+                onClick={() => {
+                  if (!form.name || !form.regNo || !form.district) { toast.error('Name, RegNo & District required'); return; }
+                  setStep(2);
+                }}
+                className="w-full mt-6 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+              >
+                Continue Step 2 →
+              </button>
             </motion.div>
           )}
 
           {step === 2 && (
-            <motion.form key="s2" onSubmit={handleSubmit}
-              initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl space-y-5">
-              <h2 className="text-xl font-bold text-white">Admin Login Credentials</h2>
-              <div><label className={labelCls}>Admin Email *</label>
-                <div className="relative"><FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
-                  <input type="email" value={form.email} onChange={set('email')} className={inputCls} placeholder="admin@hospital.com" required /></div></div>
-              <div><label className={labelCls}>Password *</label>
-                <div className="relative"><FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
-                  <input type={showPw?'text':'password'} value={form.password} onChange={set('password')} className={`${inputCls} pr-12`} placeholder="Secure password" required />
-                  <button type="button" onClick={()=>setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">{showPw?<FiEyeOff/>:<FiEye/>}</button></div></div>
-              <div><label className={labelCls}>Confirm Password *</label>
-                <div className="relative"><FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
-                  <input type={showCPw?'text':'password'} value={form.confirmPassword} onChange={set('confirmPassword')} className={`${inputCls} pr-12`} placeholder="Repeat password" required />
-                  <button type="button" onClick={()=>setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">{showCPw?<FiEyeOff/>:<FiEye/>}</button></div></div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={()=>setStep(1)} className="flex-1 py-3 rounded-xl font-bold border border-white/30 text-white hover:bg-white/10 transition-all">← Back</button>
-                <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }} type="submit" disabled={loading}
-                  className="flex-1 bg-white text-purple-800 py-3 rounded-xl font-bold shadow-lg hover:bg-white/90 flex items-center justify-center transition-all">
-                  {loading?<div className="w-5 h-5 border-2 border-purple-800/30 border-t-purple-800 rounded-full animate-spin"/>:'Register Hospital'}</motion.button>
+            <motion.form key="step2" onSubmit={handleSubmit}
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
+              className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl space-y-4">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">Admin Login Credentials</h2>
+              
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Admin Email *</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <input type="email" value={form.email} onChange={set('email')} 
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                    placeholder="admin@hospital.com" required />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Password *</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <input type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} 
+                    className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" 
+                    placeholder="Secure password" required />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-355">
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {form.password && (
+                  <div className="pt-1 select-none">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
+                      <span>Strength</span>
+                      <span className="text-slate-355">{strength.text}</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
+                      <div className={`h-full transition-all duration-350 ${strength.color}`} style={{ width: `${strength.score}%` }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Confirm Password *</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-555" />
+                  <input type={showCPw ? 'text' : 'password'} value={form.confirmPassword} onChange={set('confirmPassword')} 
+                    className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" 
+                    placeholder="Repeat password" required />
+                  <button type="button" onClick={() => setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-355">
+                    {showCPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {form.confirmPassword && form.password !== form.confirmPassword && (
+                  <p className="text-[10px] text-rose-455 font-bold select-none mt-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-6 border-t border-white/5">
+                <button type="button" onClick={() => setStep(1)} className="flex-1 py-2.5 rounded-xl border border-white/5 text-slate-400 hover:text-white text-xs font-bold transition-all">← Back</button>
+                <button type="submit" disabled={loading}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register Hospital'}
+                </button>
               </div>
             </motion.form>
           )}
 
           {step === 3 && (
-            <motion.div key="s3" initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-10 shadow-2xl text-center">
-              <motion.div initial={{ scale:0 }} animate={{ scale:1 }} transition={{ type:'spring', delay:0.2 }}>
-                <FiCheckCircle className="w-20 h-20 text-green-400 mx-auto mb-6" /></motion.div>
-              <h2 className="text-3xl font-bold text-white mb-3">Hospital Registered!</h2>
-              <p className="text-white/70 mb-8">Your hospital is now on MediSync. Use your admin email and password to log in.</p>
-              <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }} onClick={()=>navigate('/')}
-                className="bg-white text-purple-800 px-10 py-3 rounded-xl font-bold shadow-lg hover:bg-white/90 transition-all">Back to Home</motion.button>
+            <motion.div key="step3"
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-10 shadow-2xl text-center select-none space-y-5">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/25 mx-auto">
+                <ShieldCheck className="w-8 h-8 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gradient-purple tracking-tight">Hospital Onboarded!</h2>
+                <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+                  Your medical facility administration workspace has been successfully registered on MediSync.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/hospital/login')}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+              >
+                Go to Login Portal
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {step < 3 && (
-          <p className="text-center text-white/50 text-sm mt-6">
-            Already registered? <Link to="/" className="text-white font-semibold hover:underline">Go to Home</Link>
+          <p className="text-center text-slate-500 text-xs mt-6 select-none">
+            Already registered? <Link to="/hospital/login" className="text-white font-semibold hover:underline">Sign in here</Link>
           </p>
         )}
       </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, User, Building2, Pill, ShieldCheck, Lock } from 'lucide-react';
+import { Star, User, Building2, Pill, ShieldCheck, Lock } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
+import Modal from '../../components/ui/Modal';
 
 const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   const [ratings, setRatings] = useState({
@@ -11,6 +11,12 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
     Pharmacy: { rating: 0, comment: '', isSubmitted: false }
   });
   
+  const [hoverRating, setHoverRating] = useState({
+    Doctor: 0,
+    Hospital: 0,
+    Pharmacy: 0
+  });
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -43,11 +49,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   if (!show || !consultation) return null;
 
   const doctor = consultation.doctorId || {};
-  
-  // Hospital can be either hospitalId or sessionHospitalId or both
   const hospital = consultation.hospitalId || consultation.sessionHospitalId || null;
-
-  // Find pharmacy if prescription was dispensed
   const dispensedPrescription = (consultation.prescriptions || []).find(p => p.status === 'dispensed');
   const pharmacy = dispensedPrescription ? (dispensedPrescription.dispensedBy || { name: dispensedPrescription.pharmacyName }) : null;
 
@@ -63,12 +65,11 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
     if (ratings[entity].isSubmitted) return;
     setRatings(prev => ({
       ...prev,
-      [entity]: { ...prev[entity], comment: value }
+      [entity]: { ...prev[entity], comment: value.slice(0, 500) } // hard limit to 500 chars
     }));
   };
 
   const handleSubmit = async () => {
-    // Determine which entities need review submission (rating > 0 and not yet submitted)
     const submissions = [];
     
     if (doctor._id && ratings.Doctor.rating > 0 && !ratings.Doctor.isSubmitted) {
@@ -104,7 +105,6 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
 
     setSubmitting(true);
     try {
-      // Execute all submissions in parallel
       const promises = submissions.map(sub => 
         api.post('/reviews', {
           ...sub,
@@ -115,7 +115,6 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
       const results = await Promise.all(promises);
       toast.success('Your feedback has been submitted successfully.');
 
-      // Extract new reviews from responses
       const newReviews = results.map(res => res.data.data);
       
       if (onRated) {
@@ -136,8 +135,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
     return sl === 'approved' || sl === 'completed' || sl === 'report_ready';
   });
 
-  // Check if everything involved is already submitted
-  const hasDoctor = true; // ALWAYS show the Doctor rating section
+  const hasDoctor = true;
   const hasHospital = !!hospital && hasApprovedOrCompletedLabs;
   const hasPharmacy = !!dispensedPrescription && !!pharmacy;
 
@@ -149,6 +147,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   const renderRatingSection = (title, entityName, displayName, subtitle, icon, iconColor, themeGlow) => {
     const Icon = icon;
     const { rating, comment, isSubmitted } = ratings[entityName];
+    const currentActiveRating = hoverRating[entityName] || rating;
 
     return (
       <div className="relative p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 overflow-hidden group">
@@ -177,10 +176,12 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
                   type="button"
                   disabled={isSubmitted}
                   onClick={() => handleStarClick(entityName, star)}
-                  className={`transition-all duration-200 ${isSubmitted ? 'cursor-default' : 'hover:scale-110'}`}
+                  onMouseEnter={() => !isSubmitted && setHoverRating(prev => ({ ...prev, [entityName]: star }))}
+                  onMouseLeave={() => !isSubmitted && setHoverRating(prev => ({ ...prev, [entityName]: 0 }))}
+                  className={`transition-all duration-200 ${isSubmitted ? 'cursor-default' : 'hover:scale-110 active:scale-95'}`}
                 >
-                  <Star className={`w-6 h-6 ${
-                    star <= rating
+                  <Star className={`w-6 h-6 transition-colors duration-150 ${
+                    star <= currentActiveRating
                       ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]'
                       : 'text-slate-700'
                   }`} />
@@ -194,10 +195,16 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
                 rows={2}
                 disabled={isSubmitted}
                 value={comment}
+                maxLength={500}
                 onChange={e => handleCommentChange(entityName, e.target.value)}
                 placeholder={`Tell us about your experience with this ${title.toLowerCase()}...`}
-                className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:border-blue-500 focus:outline-none resize-none transition-colors disabled:opacity-75 disabled:text-slate-400"
+                className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/10 focus:outline-none resize-none transition-all disabled:opacity-75 disabled:text-slate-400"
               />
+              {!isSubmitted && (
+                <div className="flex justify-end text-[10px] text-slate-500 mt-1 select-none font-mono">
+                  {comment.length} / 500 characters
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -206,103 +213,71 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-[#040814]/75 backdrop-blur-md"
-        />
+    <Modal
+      isOpen={show}
+      onClose={onClose}
+      title="Rate Consultation"
+      size="md"
+    >
+      <div className="flex flex-col gap-6">
+        <p className="text-slate-400 text-sm leading-relaxed">
+          Provide secure, confidential feedback on your recent healthcare experience. Your feedback is helpful in maintaining our clinical quality standards.
+        </p>
 
-        {/* Modal body */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          className="relative w-full max-w-lg bg-[#0b1329]/90 border border-white/5 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
-        >
-          {/* Top colored line indicator */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar">
+          {hasDoctor && renderRatingSection(
+            'Doctor', 
+            'Doctor', 
+            doctor.fullName || 'Consulting Doctor', 
+            doctor.specialization || 'Medical Specialist', 
+            User, 
+            'text-blue-400', 
+            'from-blue-500 to-cyan-500'
+          )}
 
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {hasHospital && renderRatingSection(
+            'Hospital', 
+            'Hospital', 
+            hospital.name, 
+            hospital.district || 'Clinical Facility', 
+            Building2, 
+            'text-purple-400', 
+            'from-purple-500 to-pink-500'
+          )}
 
-          {/* Header */}
-          <div className="p-8 pb-4">
-            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              Rate Consultation
-            </h3>
-            <p className="text-slate-400 text-sm mt-1">
-              Provide secure, HIPAA-compliant feedback on your healthcare providers.
-            </p>
+          {hasPharmacy && renderRatingSection(
+            'Pharmacy', 
+            'Pharmacy', 
+            pharmacy.name, 
+            'Dispensed Location', 
+            Pill, 
+            'text-emerald-400', 
+            'from-emerald-500 to-teal-500'
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium select-none">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <span>HIPAA Compliant & Encrypted</span>
           </div>
-
-          {/* Roster Items */}
-          <div className="p-8 pt-0 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
-            {hasDoctor && renderRatingSection(
-              'Doctor', 
-              'Doctor', 
-              doctor.fullName || 'Consulting Doctor', 
-              doctor.specialization || 'Medical Specialist', 
-              User, 
-              'text-blue-400', 
-              'from-blue-500 to-cyan-500'
-            )}
-
-            {hasHospital && renderRatingSection(
-              'Hospital', 
-              'Hospital', 
-              hospital.name, 
-              hospital.district || 'Clinical Facility', 
-              Building2, 
-              'text-purple-400', 
-              'from-purple-500 to-pink-500'
-            )}
-
-            {hasPharmacy && renderRatingSection(
-              'Pharmacy', 
-              'Pharmacy', 
-              pharmacy.name, 
-              'Dispensed Location', 
-              Pill, 
-              'text-emerald-400', 
-              'from-emerald-500 to-teal-500'
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="p-8 pt-4 border-t border-slate-900 bg-slate-950/20 flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span>Feedback is encrypted & confidential</span>
-            </div>
-            
-            {allSubmitted ? (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 text-slate-400 text-xs font-bold border border-slate-700/50">
-                <Lock className="w-3.5 h-3.5" /> Reviews Locked
-              </span>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
-              >
-                {submitting ? 'Submitting...' : 'Submit Ratings'}
-              </button>
-            )}
-          </div>
-        </motion.div>
+          
+          {allSubmitted ? (
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800/80 text-slate-400 text-xs font-bold border border-slate-700/50">
+              <Lock className="w-3.5 h-3.5" /> Reviews Locked
+            </span>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 shadow-[0_4px_12px_rgba(20,184,166,0.2)]"
+            >
+              {submitting ? 'Submitting...' : 'Submit Ratings'}
+            </button>
+          )}
+        </div>
       </div>
-    </AnimatePresence>
+    </Modal>
   );
 };
 

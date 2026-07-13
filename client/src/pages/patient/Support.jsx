@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, FileText, CheckCircle, Clock, Loader2, MessageSquare, AlertCircle, LifeBuoy } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Send, FileText, CheckCircle, Clock, Loader2, MessageSquare, LifeBuoy } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
+import StatusBadge from '../../components/ui/StatusBadge';
+import EmptyState from '../../components/ui/EmptyState';
 
 const PatientSupport = () => {
   const [tickets, setTickets] = useState([]);
@@ -122,9 +124,10 @@ const PatientSupport = () => {
                   <h4 className="text-white font-bold text-lg">{selectedTicket.subject}</h4>
                   <p className="text-slate-500 text-xs mt-1">Submitted on {new Date(selectedTicket.createdAt).toLocaleString()}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedTicket.status === 'Open' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' : 'bg-slate-700/50 text-slate-400 border border-slate-600/30'}`}>
-                  {selectedTicket.status}
-                </span>
+                <StatusBadge
+                  status={selectedTicket.status === 'Open' ? 'pending' : 'completed'}
+                  customText={selectedTicket.status}
+                />
               </div>
               
               <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 mb-4">
@@ -172,9 +175,10 @@ const PatientSupport = () => {
                     }`}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ticket.status === 'Open' ? 'bg-pink-500/20 text-pink-400' : 'bg-slate-800 text-slate-500'}`}>
-                        {ticket.status}
-                      </span>
+                      <StatusBadge
+                        status={ticket.status === 'Open' ? 'pending' : 'completed'}
+                        customText={ticket.status}
+                      />
                       <span className="text-[10px] text-slate-500 font-medium">
                         {new Date(ticket.createdAt).toLocaleDateString()}
                       </span>
@@ -184,10 +188,11 @@ const PatientSupport = () => {
                   </button>
                 ))
               ) : (
-                <div className="text-center py-12 text-slate-600">
-                  <AlertCircle className="w-10 h-10 mx-auto opacity-30 mb-3" />
-                  <p className="text-sm font-medium">No previous inquiries</p>
-                </div>
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No Inquiries Yet"
+                  description="Submit a support ticket on the left if you need assistance."
+                />
               )}
             </div>
           </div>

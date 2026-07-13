@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Send, MessageSquare, Users, MapPin, Loader2, CheckCircle } from 'lucide-react';
+import { Send, MessageSquare, Users, MapPin, Loader2, CheckCircle, Bell, Info, Pill, FlaskConical, AlertTriangle } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import Modal from '../../components/ui/Modal';
 
 const SRI_LANKA_DISTRICTS = [
   'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
@@ -37,7 +37,7 @@ const Broadcast = () => {
       setMessage('');
       setTargetRole('all');
       setTargetDistrict('');
-      refetchBroadcasts(); // refresh the history table
+      refetchBroadcasts();
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to send')
   });
@@ -56,80 +56,84 @@ const Broadcast = () => {
     });
   };
 
+  const getPreviewIcon = () => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('outbreak') || lowerTitle.includes('dengue') || lowerTitle.includes('alert')) {
+      return <AlertTriangle className="w-4 h-4 text-rose-400" />;
+    }
+    if (lowerTitle.includes('medicine') || lowerTitle.includes('pill') || lowerTitle.includes('pharmacy')) {
+      return <Pill className="w-4 h-4 text-emerald-400" />;
+    }
+    if (lowerTitle.includes('lab') || lowerTitle.includes('test') || lowerTitle.includes('report')) {
+      return <FlaskConical className="w-4 h-4 text-teal-400" />;
+    }
+    return <Info className="w-4 h-4 text-slate-400" />;
+  };
+
+  const roles = [
+    { value: 'all', label: 'All Users' },
+    { value: 'doctor', label: 'Doctors' },
+    { value: 'patient', label: 'Patients' },
+    { value: 'pharmacist', label: 'Pharmacists' },
+    { value: 'health_officer', label: 'Health Officers' }
+  ];
+
   return (
-    <PageTransition className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Broadcast Center</h1>
-        <p className="text-slate-400 mt-1">Send targeted alerts and announcements to platform users.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Broadcast Center</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Dispatch targeted alerts and real-time announcements to connected users.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Composer */}
-        <div className="lg:col-span-2">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-6 border border-slate-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-indigo-500/20 rounded-lg">
-                <MessageSquare className="w-5 h-5 text-indigo-400" />
-              </div>
-              <h3 className="text-lg font-bold text-white">Compose Message</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Composer Form Area */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-5">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
+              <MessageSquare className="w-4.5 h-4.5 text-indigo-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Compose Announcement</h3>
             </div>
 
-            <div className="space-y-5">
-              {/* Title */}
-              <div>
-                <label className="text-sm font-medium text-slate-300 mb-2 block">Alert Title</label>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-500 select-none">Alert Title</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Dengue Outbreak Warning"
-                  className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                  placeholder="e.g. Dengue Outbreak Surveillance"
+                  className="glass-input text-xs"
+                  required
                 />
               </div>
 
-              {/* Message */}
-              <div>
-                <label className="text-sm font-medium text-slate-300 mb-2 block">
-                  Message Body
-                  <span className={`ml-2 text-xs ${message.length > 450 ? 'text-amber-400' : 'text-slate-500'}`}>
-                    {message.length}/500
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between select-none">
+                  <label className="text-xs font-semibold uppercase text-slate-500">Message Body</label>
+                  <span className={`text-[10px] font-mono font-bold ${message.length > 450 ? 'text-rose-400 animate-pulse' : 'text-slate-600'}`}>
+                    {message.length} / 500
                   </span>
-                </label>
+                </div>
                 <textarea
                   value={message}
                   onChange={(e) => { if (e.target.value.length <= 500) setMessage(e.target.value); }}
-                  placeholder="Write your alert message here..."
-                  rows={5}
-                  className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent resize-none"
+                  placeholder="Write outbreak alert message detail..."
+                  rows={4}
+                  className="glass-input text-xs resize-none"
+                  required
                 />
               </div>
 
-              {/* Target Selectors */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-300 mb-2 block flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" /> Target Role
-                  </label>
-                  <select
-                    value={targetRole}
-                    onChange={(e) => setTargetRole(e.target.value)}
-                    className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  >
-                    <option value="all">All Users</option>
-                    <option value="doctor">Doctors Only</option>
-                    <option value="patient">Patients Only</option>
-                    <option value="pharmacist">Pharmacists Only</option>
-                    <option value="health_officer">Health Officers</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-300 mb-2 block flex items-center gap-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {/* District Selector */}
+                <div className="flex flex-col gap-1.5 select-none">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5" /> Target District
-                  </label>
+                  </span>
                   <select
                     value={targetDistrict}
                     onChange={(e) => setTargetDistrict(e.target.value)}
-                    className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="glass-input text-xs"
                   >
                     <option value="">All Districts (Nationwide)</option>
                     {SRI_LANKA_DISTRICTS.map(d => (
@@ -137,68 +141,89 @@ const Broadcast = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Role selection chips */}
+                <div className="flex flex-col gap-1.5 select-none">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" /> Target Audience
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {roles.map(r => (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => setTargetRole(r.value)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
+                          targetRole === r.value
+                            ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                            : 'bg-slate-950/20 border-white/5 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Send Button */}
               <button
                 onClick={handleSend}
                 disabled={sendMutation.isPending || !title.trim() || !message.trim()}
-                className={`w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-sm font-bold transition-all ${
+                className={`w-full py-3 mt-4 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 text-white ${
                   sendMutation.isSuccess
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-lg shadow-indigo-500/20'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    ? 'bg-emerald-600'
+                    : 'bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40'
+                }`}
               >
                 {sendMutation.isSuccess ? (
-                  <><CheckCircle className="w-5 h-5" /> Message Sent!</>
+                  <><CheckCircle className="w-4 h-4" /> Broadcast Dispatched!</>
                 ) : sendMutation.isPending ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Distributing...</>
                 ) : (
-                  <><Send className="w-5 h-5" /> Send Broadcast</>
+                  <><Send className="w-4 h-4" /> Dispatch Broadcast</>
                 )}
               </button>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Broadcast History section */}
-          <div className="glass-panel rounded-xl p-6 border border-slate-700/50 mt-6">
-            <h3 className="font-bold text-white mb-4">Sent Broadcasts</h3>
-            
+          {/* Sent Broadcasts History list */}
+          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+            <div className="p-4 bg-slate-900/60 border-b border-white/5 select-none">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Broadcast History</h3>
+            </div>
             {broadcasts.length === 0 ? (
-              <p className="text-slate-400 text-center py-6 text-sm">No broadcasts sent yet</p>
+              <p className="text-slate-500 text-xs text-center py-6 select-none font-semibold">No announcements sent yet</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse">
-                  <thead className="bg-slate-800 border-b border-slate-700 text-slate-300">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                     <tr>
-                      <th className="px-3 py-2 font-medium text-xs">Title</th>
-                      <th className="px-3 py-2 font-medium text-xs">Target Role</th>
-                      <th className="px-3 py-2 font-medium text-xs">District</th>
-                      <th className="px-3 py-2 font-medium text-xs">Sent At</th>
-                      <th className="px-3 py-2 font-medium text-xs">Actions</th>
+                      <th className="px-5 py-3">Title</th>
+                      <th className="px-5 py-3">Target</th>
+                      <th className="px-5 py-3">Location</th>
+                      <th className="px-5 py-3">Sent At</th>
+                      <th className="px-5 py-3 text-right">Details</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-white/5 text-xs text-slate-200">
                     {broadcasts.map((b, i) => (
-                      <tr key={b._id || i} className="border-b border-slate-800 hover:bg-slate-800/30">
-                        <td className="px-3 py-2 font-medium text-white">{b.title || 'Untitled Alert'}</td>
-                        <td className="px-3 py-2">
-                          <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs font-bold capitalize">
+                      <tr key={b._id || i} className="hover:bg-white/[0.01] transition-colors">
+                        <td className="px-5 py-3 font-bold text-white">{b.title || 'Untitled'}</td>
+                        <td className="px-5 py-3">
+                          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[10px] font-bold capitalize select-none">
                             {b.targetRole || 'All'}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-slate-400">
-                          {b.targetDistrict || b.district || 'Nationwide'}
-                        </td>
-                        <td className="px-3 py-2 text-slate-400">
+                        <td className="px-5 py-3 text-slate-400 font-semibold">{b.targetDistrict || b.district || 'Nationwide'}</td>
+                        <td className="px-5 py-3 text-slate-500 font-mono text-[10px]">
                           {b.sentAt || b.createdAt 
                             ? new Date(b.sentAt || b.createdAt).toLocaleString('en-GB')
                             : 'N/A'}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-5 py-3 text-right">
                           <button
                             onClick={() => setViewMessage(b)}
-                            className="text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium"
+                            className="text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider text-[10px] select-none"
                           >
                             View
                           </button>
@@ -212,64 +237,70 @@ const Broadcast = () => {
           </div>
         </div>
 
-        {/* Preview Panel */}
+        {/* Live Preview Panel (NotificationBell Popup styling) */}
         <div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-panel rounded-xl p-6 border border-slate-700/50 sticky top-6">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Live Preview</h3>
+          <div className="glass-card p-6 rounded-2xl border border-white/5 sticky top-6 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider select-none border-b border-white/5 pb-2">
+              NotificationBell Preview
+            </h3>
 
             {title || message ? (
-              <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/30">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-1.5 bg-red-500/20 rounded-lg shrink-0 mt-0.5">
-                    <MessageSquare className="w-4 h-4 text-red-400" />
+              <div className="w-80 mx-auto glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl bg-slate-900/90 text-left">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-700/50 bg-slate-800/80 select-none">
+                  <h4 className="text-[11px] font-black text-white uppercase tracking-wider">Notifications (Live)</h4>
+                  <span className="text-[10px] text-indigo-400 font-bold">1 unread</span>
+                </div>
+                <div className="p-3.5 flex gap-3 bg-blue-500/5">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center shrink-0 select-none">
+                    {getPreviewIcon()}
                   </div>
-                  <div>
-                    <h4 className="text-white font-bold text-sm">{title || 'Alert Title'}</h4>
-                    <p className="text-slate-400 text-xs mt-0.5">
-                      To: {targetRole === 'all' ? 'All Users' : targetRole} • {targetDistrict || 'Nationwide'}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-200 font-bold text-xs truncate">{title || 'Broadcast Title'}</p>
+                    <p className="text-slate-400 text-[11px] mt-1 leading-normal break-words">{message || 'Announcement message content body...'}</p>
+                    <p className="text-[9px] text-slate-500 mt-2 font-mono select-none">To: {targetRole.toUpperCase()} • {targetDistrict || 'NATIONWIDE'}</p>
                   </div>
                 </div>
-                <p className="text-slate-300 text-sm leading-relaxed">{message || 'Message content...'}</p>
-                <p className="text-xs text-slate-500 mt-3 pt-3 border-t border-slate-700/50">
-                  {new Date().toLocaleString()}
-                </p>
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Start typing to see preview</p>
+              <div className="text-center py-10 text-slate-500 select-none">
+                <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                <p className="text-xs font-medium">Compose an announcement to populate live notification bell simulation.</p>
               </div>
             )}
 
-            <div className="mt-6 space-y-2 text-xs text-slate-500">
-              <p>• Messages are sent via email to registered patients in the target district.</p>
-              <p>• Real-time Socket.IO notifications will be pushed to connected clients.</p>
-              <p>• All broadcasts are logged in the audit trail.</p>
+            <div className="text-[10px] text-slate-500 leading-normal space-y-1.5 select-none pt-4 border-t border-white/5">
+              <p>• Dispatched signals write records to patient databases.</p>
+              <p>• Live push relays will transmit to active socket connections.</p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
       
       {/* View Message Modal */}
-      {viewMessage && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="glass-panel rounded-xl border border-slate-700/50 p-6 max-w-lg w-full mx-4 shadow-2xl">
-            <h3 className="font-bold text-lg text-white mb-2">{viewMessage.title || 'Broadcast Alert'}</h3>
-            <p className="text-slate-300 text-sm mb-5 leading-relaxed bg-slate-800/50 p-4 rounded-lg">{viewMessage.message}</p>
-            <div className="flex gap-4 text-xs text-slate-400 mb-6 border-t border-slate-700/50 pt-4">
-              <span>Target: <span className="text-white">{viewMessage.targetRole || 'All'}</span></span>
-              <span>District: <span className="text-white">{viewMessage.targetDistrict || viewMessage.district || 'Nationwide'}</span></span>
+      <Modal
+        isOpen={!!viewMessage}
+        onClose={() => setViewMessage(null)}
+        title={viewMessage?.title || 'Broadcast Details'}
+        size="sm"
+      >
+        {viewMessage && (
+          <div className="space-y-4 select-none">
+            <p className="text-slate-300 text-xs leading-relaxed bg-slate-950/40 p-4 rounded-xl border border-white/5 font-medium">
+              {viewMessage.message}
+            </p>
+            <div className="flex gap-4 text-[10px] font-bold text-slate-500 border-t border-white/5 pt-3">
+              <span>Audience: <span className="text-slate-300 uppercase">{viewMessage.targetRole || 'All'}</span></span>
+              <span>District: <span className="text-slate-300">{viewMessage.targetDistrict || viewMessage.district || 'Nationwide'}</span></span>
             </div>
             <button
               onClick={() => setViewMessage(null)}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-white/5"
             >
               Close
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </PageTransition>
   );
 };

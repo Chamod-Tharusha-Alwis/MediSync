@@ -299,7 +299,8 @@ exports.createConsultation = async (req, res) => {
             generatedId
           );
 
-          const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-owner-key-12345678';
+          const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+          if (!masterKey) throw new Error('FATAL: No encryption key available for PDF password generation');
           const securePassword = crypto.createHmac('sha256', masterKey)
             .update(patient.nic)
             .digest('hex')

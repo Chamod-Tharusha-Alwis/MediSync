@@ -83,13 +83,14 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
         const res = await axios.post('/drugs/interactions', {
           drugs: [selectedDrug.name, ...currentDrugNames]
         });
+        console.log("INTERACTION CHECK RESPONSE:", res.data);
         if (res.data.data?.hasInteraction) {
           const warnings = res.data.data.warnings
-            .map(w => `${w.drug1} + ${w.drug2} [${w.severity?.toUpperCase()}]: ${w.message}`)
-            .join(' | ');
-          setInteractionWarning(warnings);
+            .map(w => w.description)
+            .join(" | ");
+          setInteractionWarning(`⚠️ DRUG INTERACTION: ${warnings}`);
         }
-      } catch {
+      } catch (error) {
         // Silently ignore network failures
       }
     }

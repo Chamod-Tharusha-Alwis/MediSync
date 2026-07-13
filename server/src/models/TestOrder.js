@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const testOrderSchema = new mongoose.Schema({
   consultationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Consultation', required: true },
@@ -28,18 +28,15 @@ const testOrderSchema = new mongoose.Schema({
   resultCloudinaryId: { type: String },
   resultNotes: { type: String },
   reportedBy: { type: String },
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
 // Index for fast patient lookups sorted by date
 testOrderSchema.index({ patientNic: 1, orderedAt: -1 });
 
 // Field-level encryption on sensitive clinical data
-testOrderSchema.plugin(fieldEncryption, {
-  fields: ['patientNic', 'resultNotes'],
-  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
-  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
-  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
-  saltGenerator: (secret) => secret.slice(0, 16)
+testOrderSchema.plugin(versionedEncryption, {
+  fields: ['patientNic', 'resultNotes']
 });
 
 module.exports = mongoose.model('TestOrder', testOrderSchema);

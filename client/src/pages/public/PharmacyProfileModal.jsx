@@ -31,6 +31,7 @@ const PharmacyProfileModal = ({ pharmacy: initialPharmacy, onClose }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('about'); // 'about', 'reviews', 'location'
 
   const isPatient = localStorage.getItem('role') === 'patient';
 
@@ -73,7 +74,6 @@ const PharmacyProfileModal = ({ pharmacy: initialPharmacy, onClose }) => {
       setRating(5);
       await fetchReviews();
       
-      // Update local pharmacy average rating & count
       if (res.data.stats) {
         setPharmacy(prev => ({
           ...prev,
@@ -89,211 +89,233 @@ const PharmacyProfileModal = ({ pharmacy: initialPharmacy, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 select-none">
       {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
       />
 
       {/* Modal Content */}
       <motion.div 
-        initial={{ opacity: 0, y: 100 }}
+        initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 100 }}
-        transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-        className="relative w-full max-w-2xl bg-white sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+        className="relative w-full max-w-2xl bg-slate-900 border border-white/5 sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-white relative">
+        {/* Top Header Panel */}
+        <div className="bg-slate-950/50 p-6 border-b border-white/5 relative">
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-colors"
+            className="absolute top-5 right-5 p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors border border-white/5"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
           
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/20 border-2 border-white/40 flex items-center justify-center text-4xl font-bold backdrop-blur-md shadow-inner">
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-400 border border-white/10 flex items-center justify-center text-white text-3xl font-black shadow-lg">
               {pharmacy.profilePicture ? (
                 <img src={pharmacy.profilePicture} alt={pharmacy.name} className="w-full h-full object-cover" />
               ) : (
                 pharmacy.name?.charAt(0).toUpperCase()
               )}
             </div>
-            <div>
-              <h2 className="text-3xl font-bold mb-1">{pharmacy.name}</h2>
-              {pharmacy.isActive && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/15 text-white rounded-full text-xs font-bold shadow-sm">
-                  <ShieldCheck className="w-3.5 h-3.5" /> E-Prescription Ready
-                </span>
-              )}
-              
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold">{pharmacy.averageRating > 0 ? pharmacy.averageRating : 'New'}</span>
-                  {pharmacy.ratingCount > 0 && <span className="text-white/60 text-sm">({pharmacy.ratingCount})</span>}
-                </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold text-white mb-1 leading-tight">{pharmacy.name}</h2>
+              <div className="flex items-center gap-2">
+                {pharmacy.isActive && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/15 border border-emerald-500/25 text-emerald-450 rounded-full text-[9px] font-black shadow-sm">
+                    <ShieldCheck className="w-3.5 h-3.5" /> E-Prescription Ready
+                  </span>
+                )}
+                {pharmacy.averageRating > 0 && (
+                  <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-bold text-amber-450">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span>{pharmacy.averageRating}</span>
+                    {pharmacy.ratingCount > 0 && <span className="opacity-60"> ({pharmacy.ratingCount})</span>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Scrollable Body */}
-        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-slate-50">
+        {/* Tab Selection Row */}
+        <div className="flex border-b border-white/5 bg-slate-950/20 px-6 select-none">
+          {[
+            { id: 'about', label: 'Pharmacy Profile' },
+            { id: 'reviews', label: 'Patient Feedback' },
+            { id: 'location', label: 'Map Location' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-3.5 px-4 font-bold text-xs border-b-2 transition-all ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-white'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scrollable Body Content */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-6 bg-slate-900/30 text-left">
           
-          {/* Biography/Description */}
-          {pharmacy.description && (
-            <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-amber-500" /> Pharmacy Profile
-              </h3>
-              <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-line">{pharmacy.description}</p>
-            </section>
-          )}
+          {/* TAB: About & Practice */}
+          {activeTab === 'about' && (
+            <div className="space-y-6">
+              {pharmacy.description && (
+                <div className="glass-panel p-5 rounded-xl border border-white/5">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-emerald-450" /> Pharmacy Profile
+                  </h3>
+                  <p className="text-slate-300 text-xs leading-relaxed font-medium whitespace-pre-line">
+                    {pharmacy.description}
+                  </p>
+                </div>
+              )}
 
-          {/* Location Map */}
-          {pharmacy.googleMapsUrl && (
-            <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-rose-500" /> Location Map
-              </h3>
-              <div className="w-full h-64 rounded-2xl overflow-hidden border border-slate-200">
-                <iframe
-                  title="Pharmacy Location"
-                  src={getEmbedMapUrl(pharmacy.googleMapsUrl)}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="glass-panel p-4 rounded-xl border border-white/5">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-450" /> Geographic Info
+                  </h3>
+                  <p className="text-white text-xs font-bold leading-tight">{pharmacy.address || 'Sri Lanka'}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">District: {pharmacy.district || 'Unknown'}</p>
+                  
+                  {pharmacy.pickupLocationAddress && (
+                    <div className="mt-3 pt-3 border-t border-white/5">
+                      <span className="text-[9px] font-black text-emerald-450 block uppercase tracking-wider">Pickup Location</span>
+                      <span className="text-slate-300 text-xs mt-0.5 block leading-normal">{pharmacy.pickupLocationAddress}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="glass-panel p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                    Contact Info
+                  </h3>
+                  {pharmacy.phone ? (
+                    <div className="flex items-center gap-2 text-slate-350 text-xs font-bold">
+                      <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{pharmacy.phone}</span>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 italic text-xs">No phone number listed.</p>
+                  )}
+                </div>
               </div>
-            </section>
+            </div>
           )}
 
-          {/* Contact Details */}
-          <section className="grid sm:grid-cols-2 gap-6">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Location
-              </h3>
-              <p className="text-slate-700 font-medium">{pharmacy.address || 'Sri Lanka'}</p>
-              <p className="text-slate-500 text-xs mt-1">District: {pharmacy.district || 'Unknown'}</p>
-              {pharmacy.pickupLocationAddress && (
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-start gap-2.5">
-                  <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-xs font-bold text-emerald-600 block uppercase tracking-wider">Prescription Pickup Location</span>
-                    <span className="text-sm text-slate-700 font-medium">{pharmacy.pickupLocationAddress}</span>
-                  </div>
+          {/* TAB: Reviews */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              {isPatient && (
+                <div className="glass-panel p-5 rounded-xl border border-white/5">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                    Rate this Pharmacy
+                  </h3>
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400 text-xs font-bold uppercase">Rating:</span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRating(star)}
+                            className="hover:scale-105 transition-transform"
+                          >
+                            <Star className={`w-5 h-5 ${star <= rating ? 'fill-amber-450 text-amber-455' : 'text-slate-700'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <textarea
+                        rows={3}
+                        value={comment}
+                        onChange={e => setComment(e.target.value)}
+                        placeholder="Detail your dispensing experience at this pharmacy..."
+                        required
+                        className="w-full bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:border-emerald-500 focus:outline-none resize-none transition-colors"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submitting || !comment.trim()}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      {submitting ? 'Submitting...' : 'Submit Feedback'}
+                    </button>
+                  </form>
                 </div>
               )}
-            </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                Contact Phone
-              </h3>
-              {pharmacy.phone ? (
-                <div className="flex items-center gap-2 text-slate-700 text-sm font-medium">
-                  <Phone className="w-4 h-4 text-amber-500" />
-                  <span>{pharmacy.phone}</span>
-                </div>
-              ) : (
-                <p className="text-slate-500 italic text-sm">No phone number listed.</p>
-              )}
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" /> Recent Reviews List
+                </h3>
+                
+                {loadingReviews ? (
+                  <p className="text-slate-500 text-xs py-4">Loading testimonials...</p>
+                ) : reviews.length > 0 ? (
+                  reviews.map((review) => (
+                    <div key={review._id} className="p-4 rounded-xl border border-white/5 bg-slate-950/20 relative">
+                      <Quote className="absolute top-4 right-4 w-6 h-6 text-white/[0.02] rotate-180 select-none" />
+                      <div className="flex gap-0.5 mb-2">
+                        {[...Array(5)].map((_, j) => (
+                          <Star key={j} className={`w-3.5 h-3.5 ${j < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-800'}`} />
+                        ))}
+                      </div>
+                      <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
+                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-550 font-bold">
+                        <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
+                        <span className="font-mono">{new Date(review.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-xs italic">No patient testimonials logged yet.</p>
+                )}
+              </div>
             </div>
-          </section>
+          )}
 
-          {/* Write a Review Section */}
-          {isPatient && (
-            <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-500" /> Rate this Pharmacy
+          {/* TAB: Location Map */}
+          {activeTab === 'location' && (
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-rose-400" /> Interactive Map Frame
               </h3>
-              <form onSubmit={handleReviewSubmit} className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600 text-sm font-semibold">Your Rating:</span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        className="hover:scale-110 transition-transform"
-                      >
-                        <Star className={`w-6 h-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <textarea
-                    rows={3}
-                    value={comment}
-                    onChange={e => setComment(e.target.value)}
-                    placeholder="Share your experience at this pharmacy..."
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-800 focus:border-amber-500 focus:outline-none resize-none transition-colors"
+              {pharmacy.googleMapsUrl ? (
+                <div className="w-full h-64 rounded-xl overflow-hidden border border-white/5 shadow-2xl relative bg-slate-950/40">
+                  <iframe
+                    title="Pharmacy Location"
+                    src={getEmbedMapUrl(pharmacy.googleMapsUrl)}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) grayscale(10%)' }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={submitting || !comment.trim()}
-                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 text-sm flex items-center gap-2 shadow-[0_4px_12px_rgba(245,158,11,0.2)]"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Review'}
-                </button>
-              </form>
-            </section>
+              ) : (
+                <p className="text-slate-500 text-xs italic">No geographic location mapped for this pharmacy profile.</p>
+              )}
+            </div>
           )}
 
-          {/* Patient Reviews List */}
-          <section>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" /> Patient Feedback
-            </h3>
-            
-            {loadingReviews ? (
-              <div className="text-center py-6 text-slate-400 text-sm">Loading reviews...</div>
-            ) : reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.map((review, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    key={review._id} 
-                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative"
-                  >
-                    <Quote className="absolute top-4 right-4 w-8 h-8 text-slate-100 rotate-180" />
-                    <div className="flex gap-1 mb-2">
-                      {[...Array(5)].map((_, j) => (
-                        <Star key={j} className={`w-4 h-4 ${j < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                      ))}
-                    </div>
-                    <p className="text-slate-700 italic relative z-10 leading-relaxed text-sm">"{review.comment}"</p>
-                    <div className="flex justify-between items-center mt-3 text-xs text-slate-400 font-medium">
-                      <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
-                      <span>{new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
-                <Star className="w-10 h-10 mx-auto text-slate-200 mb-3" />
-                <p className="text-sm">No reviews available yet.</p>
-              </div>
-            )}
-          </section>
         </div>
       </motion.div>
     </div>

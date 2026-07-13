@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert, ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp } from 'lucide-react';
+import {
+  LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert,
+  ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp,
+  Settings, Loader2
+} from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../../api/axiosInstance';
-import Sidebar from '../../components/common/Sidebar';
+import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
@@ -19,7 +23,6 @@ import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SupportTicketsRoster from './SupportTicketsRoster';
 
-// Helper for formatting time
 const timeAgo = (dateString) => {
   if (!dateString) return '';
   const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -31,7 +34,9 @@ const timeAgo = (dateString) => {
   return `${Math.floor(hours / 24)}d ago`;
 };
 
-// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Manage Registered Hospitals
+// ─────────────────────────────────────────────────────────────────────────────
 const ManageHospitals = () => {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,41 +49,56 @@ const ManageHospitals = () => {
   }, []);
 
   return (
-    <PageTransition className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Registered Hospitals</h1>
-        <p className="text-slate-400 mt-1">Manage hospital workspaces across the platform.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Registered Hospitals</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Verify workspace registration codes and manage active hospital nodes.</p>
       </div>
-      <div className="glass-panel rounded-xl overflow-hidden">
-        {loading ? <div className="p-8 text-center text-slate-400">Loading hospitals...</div> : (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-300">
-              <tr>
-                <th className="px-6 py-4 font-medium">Hospital Name</th>
-                <th className="px-6 py-4 font-medium">Reg No</th>
-                <th className="px-6 py-4 font-medium">District</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hospitals.map(h => (
-                <tr key={h._id} className="border-b border-slate-800 hover:bg-slate-800/30">
-                  <td className="px-6 py-4 text-white font-medium">{h.fullName}</td>
-                  <td className="px-6 py-4 text-slate-400">{h.regNo}</td>
-                  <td className="px-6 py-4 text-slate-300">{h.district}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">ACTIVE</span>
-                  </td>
+
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+        {loading ? (
+          <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
+        ) : hospitals.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Hospital Name</th>
+                  <th className="px-6 py-4">Registration No</th>
+                  <th className="px-6 py-4">District</th>
+                  <th className="px-6 py-4 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm text-slate-200">
+                {hospitals.map(h => (
+                  <tr key={h._id} className="hover:bg-white/[0.01] transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">{h.fullName}</td>
+                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{h.regNo}</td>
+                    <td className="px-6 py-4 text-slate-300 font-semibold">{h.district}</td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-12 text-center text-slate-500 select-none">
+            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold">No registered hospital workspaces found.</p>
+          </div>
         )}
       </div>
     </PageTransition>
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Manage Users
+// ─────────────────────────────────────────────────────────────────────────────
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
@@ -111,13 +131,17 @@ const ManageUsers = () => {
   };
 
   return (
-    <PageTransition className="p-6">
-      <div className="flex justify-between items-end mb-8">
+    <PageTransition className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">User Management</h1>
-          <p className="text-slate-400 mt-1">Global access control and account oversight.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">User Management</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Global access control and operational oversight across roles.</p>
         </div>
-        <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1); }} className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+        <select
+          value={roleFilter}
+          onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
+          className="glass-input text-xs w-48 sm:w-auto"
+        >
           <option value="">All Roles</option>
           <option value="doctor">Doctors</option>
           <option value="patient">Patients</option>
@@ -125,44 +149,69 @@ const ManageUsers = () => {
         </select>
       </div>
 
-      <div className="glass-panel rounded-xl overflow-hidden">
-        {loading ? <div className="p-8 text-center text-slate-400">Loading users...</div> : (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-300">
-              <tr>
-                <th className="px-6 py-4 font-medium">User Name</th>
-                <th className="px-6 py-4 font-medium">Email</th>
-                <th className="px-6 py-4 font-medium">Role</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u._id} className="border-b border-slate-800 hover:bg-slate-800/30">
-                  <td className="px-6 py-4 text-white font-medium">{u.fullName}</td>
-                  <td className="px-6 py-4 text-slate-400 text-sm">{u.email || u.nic}</td>
-                  <td className="px-6 py-4 text-slate-300 capitalize">{u.role?.replace('_', ' ')}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${u.isActive !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {u.isActive !== false ? 'ACTIVE' : 'BLOCKED'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => handleToggle(u._id, u.role)} className={`text-sm ${u.isActive !== false ? 'text-red-400 hover:text-red-300' : 'text-emerald-400 hover:text-emerald-300'}`}>
-                      {u.isActive !== false ? 'Block Access' : 'Unblock Access'}
-                    </button>
-                  </td>
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+        {loading ? (
+          <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
+        ) : users.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">User Name</th>
+                  <th className="px-6 py-4">Credential / ID</th>
+                  <th className="px-6 py-4">System Role</th>
+                  <th className="px-6 py-4">Access Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm text-slate-200">
+                {users.map(u => (
+                  <tr key={u._id} className="hover:bg-white/[0.01] transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">{u.fullName}</td>
+                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{u.email || u.nic}</td>
+                    <td className="px-6 py-4 capitalize font-semibold text-slate-300">{u.role?.replace('_', ' ')}</td>
+                    <td className="px-6 py-4">
+                      {u.isActive !== false ? (
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase select-none">
+                          Blocked
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleToggle(u._id, u.role)}
+                        className={`text-xs font-bold transition-all px-3 py-1.5 rounded-lg border ${
+                          u.isActive !== false
+                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
+                        }`}
+                      >
+                        {u.isActive !== false ? 'Block Access' : 'Unblock Access'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-12 text-center text-slate-500 select-none">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold">No registered users found matching filter.</p>
+          </div>
         )}
       </div>
     </PageTransition>
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Alert settings (Z-score sensitivity)
+// ─────────────────────────────────────────────────────────────────────────────
 const AlertSettings = () => {
   const [sensitivity, setSensitivity] = useState(2.0);
   const [alerts, setAlerts] = useState([]);
@@ -174,7 +223,6 @@ const AlertSettings = () => {
 
   const handleSave = () => {
     setSaving(true);
-    // Simulate API call to save settings
     setTimeout(() => {
       toast.success(`ML Sensitivity updated to ${sensitivity} (Z-Score)`);
       setSaving(false);
@@ -182,50 +230,60 @@ const AlertSettings = () => {
   };
 
   return (
-    <PageTransition className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">ML Alert Configuration</h1>
-        <p className="text-slate-400 mt-1">Configure outbreak detection sensitivity.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">ML Alert Configuration</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Fine-tune epidemiological anomaly detection engines and sensitivity thresholds.</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-xl">
-          <h3 className="text-lg font-semibold text-white mb-4">Anomaly Threshold (Z-Score)</h3>
-          <p className="text-sm text-slate-400 mb-6">Lower values increase sensitivity (more alerts), higher values reduce false positives.</p>
-          <input 
-            type="range" min="1" max="5" step="0.1" 
-            value={sensitivity} 
-            onChange={e => setSensitivity(parseFloat(e.target.value))} 
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" 
-          />
-          <div className="flex justify-between text-xs text-slate-500 mt-2">
-            <span>High Sensitivity (1.0)</span>
-            <span className="text-blue-400 font-bold text-sm">Current: {sensitivity}</span>
-            <span>Low Sensitivity (5.0)</span>
+        <div className="glass-card p-6 rounded-2xl space-y-5 border border-white/5">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
+            <Settings className="w-4 h-4 text-slate-400" /> Outbreak Threshold sensitivity
+          </h3>
+          <p className="text-xs text-slate-400 leading-normal select-none">Adjusting the Z-Score warning threshold updates regional disease spike trigger alerts.</p>
+          
+          <div className="space-y-3 pt-3 select-none">
+            <input 
+              type="range" min="1" max="5" step="0.1" 
+              value={sensitivity} 
+              onChange={e => setSensitivity(parseFloat(e.target.value))} 
+              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400" 
+            />
+            <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+              <span>High Alert (1.0)</span>
+              <span className="text-slate-300 font-mono text-xs font-black">Z = {sensitivity}</span>
+              <span>Low Alert (5.0)</span>
+            </div>
           </div>
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="mt-6 glass-button primary-gradient px-6 py-2 w-full flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 border border-white/5 mt-4"
           >
-            {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : null}
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
             Save Configuration
           </button>
         </div>
 
-        <div className="glass-panel p-6 rounded-xl">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Alerts Log</h3>
+        <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
+            <ShieldAlert className="w-4.5 h-4.5 text-red-400 animate-pulse-subtle" /> Active Surveillance Signals
+          </h3>
           {alerts.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
               {alerts.map(a => (
-                <div key={a._id} className="bg-red-900/10 border border-red-500/30 p-3 rounded-lg">
-                  <p className="text-red-400 font-medium text-sm">{a.message}</p>
-                  <p className="text-slate-500 text-xs mt-1">Status: {a.status} | Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
+                <div key={a._id} className="bg-red-500/[0.02] border border-red-500/10 p-3 rounded-xl flex items-start gap-3">
+                  <AlertSquareIcon className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="text-slate-200 font-semibold">{a.message}</p>
+                    <p className="text-slate-500 mt-1 font-mono text-[10px]">Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-             <p className="text-slate-400 text-sm">No recent alerts recorded in the system.</p>
+             <p className="text-slate-500 text-xs py-8 text-center select-none font-semibold">No recent anomalies flagged by system.</p>
           )}
         </div>
       </div>
@@ -233,104 +291,112 @@ const AlertSettings = () => {
   );
 };
 
+const AlertSquareIcon = ShieldAlert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Overview Stats & Geo Maps
+// ─────────────────────────────────────────────────────────────────────────────
 const Overview = ({ stats, geo, activeAlerts }) => (
-  <PageTransition className="p-6">
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold text-white tracking-tight">Super Admin Dashboard</h1>
-      <p className="text-slate-400 mt-1">Platform-wide overview and ML outbreak detection engine.</p>
+  <PageTransition className="space-y-6">
+    <div className="mb-6">
+      <h1 className="text-3xl font-extrabold text-white tracking-tight">Super Admin Command</h1>
+      <p className="text-slate-400 mt-1 text-sm font-medium">Platform surveillance logs, operational nodes, and regional health outbreaks map.</p>
     </div>
 
-    {/* ML Alert Banner */}
+    {/* ML Active Outbreak Alert Header */}
     {activeAlerts && activeAlerts.length > 0 && (
-      <div className="mb-8 bg-red-900/20 border border-red-500/50 rounded-xl p-4 flex items-start gap-4 animate-pulse">
-        <ShieldAlert className="w-8 h-8 text-red-500 shrink-0" />
+      <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 flex items-start gap-4 animate-pulse-subtle select-none">
+        <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+          <ShieldAlert className="w-5 h-5 text-red-400" />
+        </div>
         <div>
-          <h3 className="text-red-400 font-bold text-lg">Active Outbreak Alert</h3>
-          <p className="text-red-300 text-sm">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
+          <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">Active System Outbreak Alert</h3>
+          <p className="text-slate-200 text-xs font-semibold mt-1">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
         </div>
       </div>
     )}
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    {/* Metric Cards Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 select-none">
       <StatCard 
         icon={Building2} 
         title="Registered Hospitals" 
         value={stats?.totalHospitals || 0} 
-        gradient="from-blue-500 to-indigo-400"
+        gradient="from-slate-700/80 to-slate-700/50"
         delay={0.1}
       />
       <StatCard 
         icon={Users} 
-        title="Total Doctors" 
+        title="Total Practitioners" 
         value={stats?.totalDoctors || 0} 
-        gradient="from-cyan-500 to-blue-400"
+        gradient="from-slate-700/80 to-slate-700/50"
         delay={0.2}
       />
       <StatCard 
         icon={Users} 
-        title="Registered Patients" 
+        title="Total Registered Patients" 
         value={stats?.totalPatients || 0} 
-        gradient="from-purple-500 to-fuchsia-400"
+        gradient="from-slate-700/80 to-slate-700/50"
         delay={0.3}
       />
       <StatCard 
         icon={ClipboardList} 
-        title="Total Consultations" 
+        title="Total Fulfillments" 
         value={stats?.totalConsultations || 0} 
-        gradient="from-emerald-500 to-teal-400"
+        gradient="from-slate-700/80 to-slate-700/50"
         delay={0.4}
       />
     </div>
 
-    <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="glass-panel p-6 rounded-xl border-blue-500/20">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <ActivitySquare className="w-5 h-5 text-blue-400" />
-          Recent Platform Activity
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+      {/* Activity Logs */}
+      <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
+          <ActivitySquare className="w-4.5 h-4.5 text-slate-400" />
+          Recent Platform Audit Feed
         </h3>
-        <p className="text-slate-400 text-sm mb-4">Monitoring real-time events from all connected hospitals.</p>
+        <p className="text-slate-500 text-xs select-none">Live auditing telemetry logs ingested from distributed workspaces.</p>
         
-        <div className="space-y-3 h-64 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-3.5 h-72 overflow-y-auto pr-2 custom-scrollbar">
           {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
             stats.recentAuditLogs.map((log) => {
-              // Extract action color
               const actionLower = (log.action || '').toLowerCase();
-              let badgeColor = 'bg-slate-700 text-slate-300';
-              if (actionLower.includes('login')) badgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-              if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-              if (actionLower.includes('delete') || actionLower.includes('block')) badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
+              let badgeColor = 'bg-slate-800 text-slate-400 border border-slate-700/50';
+              if (actionLower.includes('login')) badgeColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+              if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+              if (actionLower.includes('delete') || actionLower.includes('block')) badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
 
               return (
-                <div key={log._id} className="bg-slate-800/50 p-3.5 rounded-lg border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
-                  <div className="flex justify-between items-start mb-1.5">
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${badgeColor}`}>
+                <div key={log._id} className="bg-slate-950/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                  <div className="flex justify-between items-start mb-2 select-none">
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
                       {log.action}
                     </span>
-                    <span className="text-xs text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-slate-300 leading-snug">
-                    <span className="font-semibold text-white">{log.actorRole?.replace('_', ' ')}</span> ({log.actorId}) accessed system.
+                  <p className="text-xs text-slate-300 font-medium">
+                    <span className="text-white font-bold">{log.actorRole?.replace('_', ' ')}</span> ({log.actorId}) modified node.
                   </p>
                 </div>
               );
             })
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500">
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 select-none">
               <ScrollText className="w-8 h-8 mb-2 opacity-30" />
-              <p className="text-sm">No recent activity found.</p>
+              <p className="text-xs">No active event logging recorded.</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="glass-panel p-6 rounded-xl border-blue-500/20">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-blue-400" />
-          Geographic Distribution
+      {/* Geospatial Map */}
+      <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
+          <MapPin className="w-4.5 h-4.5 text-slate-400" />
+          Surveillance Geospatial Node
         </h3>
-        <p className="text-slate-400 text-sm">Patient and hospital density mapping.</p>
-        {/* Geo map placeholder */}
-        <div className="mt-4 h-64 w-full rounded-lg flex items-center justify-center">
+        <p className="text-slate-500 text-xs select-none">Geographic mapping overlay of active health anomalies.</p>
+        <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
           <GeographicMap hospitals={geo?.hospitals || []} alerts={activeAlerts || []} />
         </div>
       </div>
@@ -338,6 +404,9 @@ const Overview = ({ stats, geo, activeAlerts }) => (
   </PageTransition>
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT PORTAL ROUTER
+// ─────────────────────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [geo, setGeo] = useState(null);
@@ -374,8 +443,6 @@ const AdminDashboard = () => {
         reconnectionDelay: 3000,
       });
 
-      socket.on('connect', () => {});
-
       socket.on('outbreak_alert', (data) => {
         toast.error(
           <div>
@@ -385,7 +452,6 @@ const AdminDashboard = () => {
           </div>,
           { autoClose: 10000, position: 'top-right' }
         );
-        // Also update the alert list
         setActiveAlerts(prev => [data, ...prev]);
       });
 
@@ -397,10 +463,6 @@ const AdminDashboard = () => {
           </div>,
           { autoClose: 8000, position: 'top-right' }
         );
-      });
-
-      socket.on('connect_error', (err) => {
-        console.warn('[Admin] Socket.IO connection error:', err.message);
       });
     }, 500);
 
@@ -427,33 +489,40 @@ const AdminDashboard = () => {
     { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
   ];
 
+  const userName = localStorage.getItem('userName') || 'Admin User';
+  const rawRole = localStorage.getItem('role') || 'admin';
+  const displayRole = rawRole === 'admin' ? 'Super Administrator' : rawRole.replace('_', ' ').toUpperCase();
+
   return (
-    <div className="admin-theme flex min-h-screen bg-[#0b1120]">
-      <Sidebar menuItems={menuItems} title="System Admin" themePrefix="admin" />
-      
-      <main className="flex-1 ml-64 p-4">
-        {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : (
-          <Routes>
-            <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
-            <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
-            <Route path="/dashboard/hospitals" element={<ManageHospitals />} />
-            <Route path="/dashboard/users" element={<ManageUsers />} />
-            <Route path="/dashboard/alerts" element={<AlertSettings />} />
-            <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
-            <Route path="/dashboard/broadcast" element={<Broadcast />} />
-            <Route path="/dashboard/audit" element={<AuditLog />} />
-            <Route path="/dashboard/bans" element={<BanManagement />} />
-            <Route path="/dashboard/reports" element={<PatientReports />} />
-            <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
-            <Route path="/dashboard/admins" element={<ManageAdmins />} />
-            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-          </Routes>
-        )}
-      </main>
+    <div className="admin-theme">
+      <AppShell
+        role="admin"
+        userName={userName}
+        userRole={displayRole}
+        menuItems={menuItems}
+      >
+        <div className="mt-4">
+          {loading ? (
+            <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
+          ) : (
+            <Routes>
+              <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
+              <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/dashboard/hospitals" element={<ManageHospitals />} />
+              <Route path="/dashboard/users" element={<ManageUsers />} />
+              <Route path="/dashboard/alerts" element={<AlertSettings />} />
+              <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
+              <Route path="/dashboard/broadcast" element={<Broadcast />} />
+              <Route path="/dashboard/audit" element={<AuditLog />} />
+              <Route path="/dashboard/bans" element={<BanManagement />} />
+              <Route path="/dashboard/reports" element={<PatientReports />} />
+              <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
+              <Route path="/dashboard/admins" element={<ManageAdmins />} />
+              <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+            </Routes>
+          )}
+        </div>
+      </AppShell>
     </div>
   );
 };

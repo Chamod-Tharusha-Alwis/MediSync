@@ -309,7 +309,8 @@ exports.generateLockedPrescription = async (
   // 6. ENCRYPT with secure 8-character hash password
   // ════════════════════════════════════════════════════════════════════════
 
-  const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'default-owner-key-12345678';
+  const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+  if (!masterKey) throw new Error('FATAL: No encryption key available for PDF password generation');
   const securePassword = crypto.createHmac('sha256', masterKey)
     .update(patientNIC)
     .digest('hex')

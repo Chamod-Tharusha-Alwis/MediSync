@@ -15,6 +15,7 @@ import Home from './pages/Home';
 import DoctorDirectory from './pages/public/DoctorDirectory';
 import HospitalDirectory from './pages/public/HospitalDirectory';
 import PharmacyDirectory from './pages/public/PharmacyDirectory';
+import StyleGuide from './pages/dev/StyleGuide';
 
 // Dashboards
 import SelectRole from './pages/SelectRole';
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/select-role" element={<SelectRole />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/dev/style-guide" element={<StyleGuide />} />
         
         {/* Public Directories */}
         <Route path="/doctors" element={<DoctorDirectory />} />

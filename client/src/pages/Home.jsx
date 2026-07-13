@@ -1,63 +1,51 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowRight } from 'react-icons/fi';
+import { HeartPulse, Stethoscope, Building2, Pill, ArrowRight, Activity } from 'lucide-react';
+import PublicNavbar from '../components/common/PublicNavbar';
 
-// Reusable Animated Timeline Step using Framer Motion's whileInView
 const AnimatedTimelineStep = ({ step, index, isEven, currentIcon }) => {
   return (
-    <div className={`relative w-full flex flex-col md:flex-row items-center py-16 ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-      
+    <div className={`relative w-full flex flex-col md:flex-row items-center py-12 ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
       {/* Central Timeline Line */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-100 via-cyan-100 to-transparent hidden md:block -translate-x-1/2 rounded-full opacity-50"></div>
+      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500/20 via-indigo-500/20 to-transparent hidden md:block -translate-x-1/2 opacity-50" />
 
       {/* Content Block */}
-      <motion.div 
-        className={`md:w-1/2 w-full flex ${isEven ? 'justify-end md:pr-20' : 'justify-start md:pl-20'}`}
-        initial={{ opacity: 0, x: isEven ? -50 : 50, rotate: isEven ? -2 : 2 }}
-        whileInView={{ opacity: 1, x: 0, rotate: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
+      <motion.div
+        className={`md:w-1/2 w-full flex ${isEven ? 'justify-end md:pr-16' : 'justify-start md:pl-16'}`}
+        initial={{ opacity: 0, x: isEven ? -40 : 40 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="bg-white p-8 rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.07)] border border-slate-50 relative w-full max-w-lg group hover:shadow-2xl transition-shadow duration-500 z-10">
-          
+        <div className="glass-panel p-6 rounded-2xl border border-white/5 relative w-full max-w-lg group hover:border-indigo-500/20 transition-all duration-300">
           {/* Floating Desktop Number Badge */}
-          <motion.div 
-            className={`absolute top-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-full items-center justify-center text-2xl font-black shadow-xl hidden md:flex ${isEven ? '-right-8' : '-left-8'}`}
-            whileHover={{ scale: 1.1, rotate: 360 }}
-            transition={{ duration: 0.6 }}
-          >
-            {index + 1}
-          </motion.div>
-
-          {/* Mobile Number Badge */}
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-400 text-white rounded-full flex items-center justify-center text-xl font-bold mb-6 md:hidden shadow-lg">
+          <div className={`absolute top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700/50 text-white rounded-full items-center justify-center text-lg font-black shadow-xl hidden md:flex ${isEven ? '-right-6' : '-left-6'}`}>
             {index + 1}
           </div>
 
-          <p className="text-slate-700 text-lg leading-relaxed font-medium">{step}</p>
+          {/* Mobile Number Badge */}
+          <div className="w-10 h-10 bg-slate-900 border border-slate-700/50 text-white rounded-full flex items-center justify-center text-base font-bold mb-4 md:hidden shadow-lg select-none">
+            {index + 1}
+          </div>
+
+          <p className="text-slate-300 text-sm leading-relaxed font-medium">{step}</p>
         </div>
       </motion.div>
 
-      {/* Visual Abstract Block */}
-      <motion.div 
-        className={`md:w-1/2 hidden md:flex w-full items-center ${isEven ? 'justify-start md:pl-20' : 'justify-end md:pr-20'}`}
-        initial={{ opacity: 0, scale: 0.5, y: 50 }}
-        whileInView={{ opacity: 1, scale: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 1, delay: 0.2, type: "spring" }}
+      {/* Visual Abstract Icon Block */}
+      <motion.div
+        className={`md:w-1/2 hidden md:flex w-full items-center ${isEven ? 'justify-start md:pl-16' : 'justify-end md:pr-16'}`}
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6, delay: 0.1 }}
       >
-        <motion.div 
-          className="w-48 h-48 rounded-[3rem] bg-gradient-to-tr from-blue-50 to-cyan-50 flex items-center justify-center text-7xl shadow-inner border-2 border-white relative overflow-hidden"
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {/* Decorative background glow */}
-          <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full"></div>
-          <span className="relative z-10 drop-shadow-md">{currentIcon}</span>
-        </motion.div>
+        <div className="w-28 h-28 rounded-2xl bg-slate-950/40 flex items-center justify-center text-4xl shadow-inner border border-white/5 relative overflow-hidden select-none">
+          <div className="absolute inset-0 bg-indigo-500/5 blur-xl rounded-full" />
+          <span className="relative z-10">{currentIcon}</span>
+        </div>
       </motion.div>
-
     </div>
   );
 };
@@ -67,52 +55,52 @@ const Home = () => {
   const navigate = useNavigate();
 
   const roles = [
-    { id: 'Doctor', icon: '🩺', path: '/doctor/login' },
-    { id: 'Pharmacist', icon: '💊', path: '/pharmacy/login' },
-    { id: 'Patient', icon: '👤', path: '/patient/login' },
-    { id: 'Public Health', icon: '📊', path: '/admin/login' },
-    { id: 'Admin', icon: '🏥', path: '/admin/login' }
+    { id: 'Doctor', icon: <Stethoscope className="w-6 h-6" />, label: 'Doctor', path: '/doctor/login', color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/20' },
+    { id: 'Pharmacist', icon: <Pill className="w-6 h-6" />, label: 'Pharmacist', path: '/pharmacy/login', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    { id: 'Patient', icon: <HeartPulse className="w-6 h-6" />, label: 'Patient', path: '/patient/login', color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+    { id: 'Public Health', icon: <Activity className="w-6 h-6" />, label: 'Public Health', path: '/admin/login', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+    { id: 'Admin', icon: <Building2 className="w-6 h-6" />, label: 'Admin', path: '/admin/login', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' }
   ];
 
   const roleGuides = {
     'Doctor': {
-      title: 'Unified Clinical Access',
+      title: 'Unified Clinical Workspace',
       steps: [
-        'Log in with your universal MediSync Doctor ID at any affiliated hospital seamlessly.',
-        'Query a patient using their National Identity Card (NIC) to instantly access their complete longitudinal health record.',
-        'Issue e-prescriptions with mandatory dosage fields and automatic drug-allergy cross-referencing to ensure patient safety.'
+        'Log in with your universal MediSync Doctor credentials to access all affiliated hospitals seamlessly.',
+        'Lookup patient files by entering their National Identity Card (NIC) to review historical records instantly.',
+        'Draft and issue e-prescriptions with safety limits, diagnostic annotations, and digital signature records.'
       ]
     },
     'Pharmacist': {
-      title: 'Secure Dispensing Validation',
+      title: 'Secure Prescription Terminal',
       steps: [
-        'Search via the patient NIC to retrieve all pending, unexpired prescriptions securely.',
-        'Review the medication details and mark line items as dispensed in real-time.',
-        'The central database updates immediately, locking the record to prevent duplicate dispensing across any other pharmacy.'
+        'Verify patient identity via National Identity Card (NIC) lookup to retrieve active prescriptions.',
+        'View complete instruction guides, configure substitute brands, and mark medication as dispensed.',
+        'Prevent double-dispensing through global real-time synchronization updates across all pharmacies.'
       ]
     },
     'Patient': {
-      title: 'Your Health, In Your Hands',
+      title: 'Personal Patient Dashboard',
       steps: [
-        'Securely log into your read-only web dashboard using your National Identity Card (NIC).',
-        'View your complete medical timeline, including past diagnoses and consultation history.',
-        'Track your active prescriptions and medication instructions from a single, unified interface.'
+        'Access your longitudinal health dashboard securely using your National Identity Card (NIC).',
+        'Review doctor notes, medical histories, diagnosis records, and lab check statuses.',
+        'Retrieve active prescription QR/barcodes and trace dispensation status on the timeline.'
       ]
     },
     'Public Health': {
-      title: 'AI-Driven Outbreak Surveillance',
+      title: 'Active Epidemiological Surveillance',
       steps: [
-        'Access the real-time outbreak monitoring dashboard displaying geographic heat maps.',
-        'The Python AI engine continuously analyses anonymised prescription data against historical baselines.',
-        'Receive immediate WebSocket push notifications when a statistically significant anomaly (e.g., a localized dengue spike) is detected.'
+        'Monitor regional health logs and telemetry via automated ML outbreak scanners.',
+        'Analyze anomaly signals and compute disease vector Z-Scores compared to baseline averages.',
+        'Receive early threat notifications and dispatch regional alerts to notify clinical networks.'
       ]
     },
     'Admin': {
-      title: 'Institutional Management',
+      title: 'Healthcare System Command Center',
       steps: [
-        'Register your healthcare facility and efficiently manage doctor-to-hospital affiliations.',
-        'Access high-level, anonymised analytics on facility-level consultation volumes.',
-        'Monitor e-prescription issuance rates and system audit logs for absolute compliance.'
+        'Add hospital workspaces, manage medical practitioner profiles, and verify affiliations.',
+        'Audit complete workspace transactions and query masked patient metadata securely.',
+        'Deploy custom target broadcast notifications and manage access suspensions.'
       ]
     }
   };
@@ -120,153 +108,122 @@ const Home = () => {
   const stepIcons = ['🚀', '🔍', '🛡️', '📈', '⚡'];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-cyan-200 selection:text-cyan-900 overflow-x-hidden">
-      
+    <div className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col pt-18 overflow-x-hidden">
+      <PublicNavbar />
+
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e3a8a] text-white pt-32 pb-40 overflow-hidden">
-        {/* Animated Background Orbs */}
-        <motion.div 
-          className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-blue-600/20 blur-[120px]"
-          animate={{ x: [0, 100, 0], y: [0, 50, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div 
-          className="absolute bottom-[-20%] right-[-10%] w-[30rem] h-[30rem] rounded-full bg-cyan-400/20 blur-[100px]"
-          animate={{ x: [0, -100, 0], y: [0, -50, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
+      <section className="relative pt-24 pb-36 overflow-hidden flex-shrink-0">
+        {/* Dynamic Glow Orbs */}
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[450px] h-[450px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none" />
 
-        <div className="absolute top-6 right-6 z-50 flex gap-4 md:gap-8 bg-white/5 px-6 py-3 rounded-full backdrop-blur-md border border-white/10">
-          <button onClick={() => navigate('/doctors')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Doctors</button>
-          <button onClick={() => navigate('/hospitals')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Hospitals</button>
-          <button onClick={() => navigate('/pharmacies')} className="text-sm font-semibold hover:text-cyan-400 transition-colors">Pharmacies</button>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-6 flex flex-col items-center text-center z-10">
+        <div className="relative max-w-7xl mx-auto px-6 text-center z-10 flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col items-center"
           >
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 shadow-lg">
-              <span className="flex h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
-              <span className="text-sm font-semibold tracking-wide text-cyan-50">Sri Lanka's Next-Gen Healthcare Ecosystem</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-white/5 mb-8 select-none">
+              <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
+              <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">Sri Lanka's Next-Gen Digital Healthcare</span>
             </div>
+            
             <h1 className="text-5xl md:text-8xl font-black tracking-tight mb-8 leading-[1.1]">
-              Synchronizing Care.<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+              Synchronizing Care.<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-teal-400">
                 Saving Lives.
               </span>
             </h1>
-            <p className="text-xl md:text-2xl font-light max-w-3xl mx-auto mb-12 text-slate-300 leading-relaxed">
-              MediSync connects public and private hospitals, empowering doctors, protecting patients, and predicting outbreaks before they happen.
+
+            <p className="text-lg md:text-xl font-medium max-w-3xl mx-auto mb-10 text-slate-400 leading-relaxed">
+              MediSync connects public healthcare channels, doctors, labs, and pharmacies into one secure, unified medical telemetry network.
             </p>
-            <div className="flex justify-center mb-12">
+
+            <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => navigate('/select-role')}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold shadow-lg hover:shadow-cyan-500/20 transition-all hover:scale-105"
+                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all hover:scale-103"
               >
                 Access Login Portals
+              </button>
+              <button
+                onClick={() => navigate('/register?role=patient')}
+                className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 rounded-full font-bold text-sm transition-all hover:scale-103"
+              >
+                Register as Patient
               </button>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Interactive Flow Section */}
-      <section className="py-20 px-6 max-w-7xl mx-auto -mt-32 relative z-20">
-        <motion.div 
-          className="bg-white/90 backdrop-blur-xl rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/50 p-6 md:p-16"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 text-slate-900 tracking-tight">How MediSync Works</h2>
-            <p className="text-xl text-slate-500 max-w-2xl mx-auto">
-              Select your role below to discover your tailored workflow experience.
+      {/* Role Navigation Portal Cards Grid */}
+      <section className="py-16 px-6 max-w-7xl mx-auto w-full z-20">
+        <div className="glass-card rounded-[2.5rem] border border-white/5 p-8 md:p-14 space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Interactive Workflows</h2>
+            <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+              Select your system profile role below to preview integration workflows and enter respective clinical zones.
             </p>
           </div>
 
-          {/* Framer Motion Shared Layout Pills */}
-          <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-24 bg-slate-100/50 p-2 rounded-[2rem] max-w-fit mx-auto border border-slate-200/50">
-            {roles.map((role) => (
+          {/* Interactive Role Tabs Selector */}
+          <div className="flex flex-wrap justify-center gap-2 bg-slate-950/40 p-2 rounded-2xl border border-white/5 max-w-fit mx-auto select-none">
+            {roles.map(r => (
               <button
-                key={role.id}
-                onClick={() => setActiveRole(role.id)}
-                className={`relative flex items-center gap-3 px-6 py-3.5 md:px-8 md:py-4 rounded-full font-bold transition-colors duration-300 text-lg z-10 ${
-                  activeRole === role.id ? 'text-white' : 'text-slate-600 hover:text-slate-900'
+                key={r.id}
+                onClick={() => setActiveRole(r.id)}
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs transition-all ${
+                  activeRole === r.id
+                    ? 'bg-slate-800 border border-slate-700/50 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {activeRole === role.id && (
-                  <motion.div
-                    layoutId="active-pill"
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-lg shadow-blue-500/30"
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  />
-                )}
-                <span className="relative z-10 text-2xl">{role.icon}</span>
-                <span className="relative z-10">{role.id}</span>
+                <span className={activeRole === r.id ? r.color : 'text-slate-500'}>{r.icon}</span>
+                <span>{r.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Dynamic Content Area with AnimatePresence */}
+          {/* Staggered Workflow Preview */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeRole}
-              initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="relative max-w-6xl mx-auto"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-12"
             >
-              {/* Title for the selected role */}
-              <div className="text-center mb-20">
-                <motion.div 
-                  className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-50 text-blue-600 text-5xl mb-6 shadow-inner"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                >
-                  {roles.find(r => r.id === activeRole)?.icon}
-                </motion.div>
-                <h3 className="text-4xl font-extrabold text-slate-800 tracking-tight">
-                  {roleGuides[activeRole].title}
-                </h3>
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white tracking-tight">{roleGuides[activeRole].title}</h3>
               </div>
 
-              {/* Staggered Timeline Steps */}
-              <div className="relative mb-16">
-                {roleGuides[activeRole].steps.map((step, index) => (
-                  <AnimatedTimelineStep 
-                    key={index} 
-                    step={step} 
-                    index={index} 
-                    isEven={index % 2 === 0}
-                    currentIcon={stepIcons[index % stepIcons.length]}
+              <div className="space-y-6">
+                {roleGuides[activeRole].steps.map((step, idx) => (
+                  <AnimatedTimelineStep
+                    key={idx}
+                    step={step}
+                    index={idx}
+                    isEven={idx % 2 === 0}
+                    currentIcon={stepIcons[idx % stepIcons.length]}
                   />
                 ))}
               </div>
 
-              {/* Login Button */}
-              <div className="flex justify-center pb-12">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate(roles.find(r => r.id === activeRole)?.path || '/')}
-                  className="group relative flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold text-xl shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_20px_50px_-10px_rgba(79,70,229,0.7)] transition-all duration-300 overflow-hidden"
+              <div className="flex justify-center pt-6">
+                <button
+                  onClick={() => navigate(roles.find(r => r.id === activeRole).path)}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(37,99,235,0.15)] flex items-center gap-1.5"
                 >
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out rounded-full"></div>
-                  <span className="relative z-10">Proceed to {activeRole} Portal</span>
-                  <FiArrowRight className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
+                  Proceed to {activeRole} Portal <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
-
             </motion.div>
           </AnimatePresence>
-          
-        </motion.div>
+        </div>
       </section>
-
     </div>
   );
 };

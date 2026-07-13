@@ -88,3 +88,9 @@ This module covers platform supervision, audit logs, outbreak detection, and mes
 | **ADM-05** | Real-time Outbreak Broadcast (Socket.io) | 1. Log in as Admin and Doctor on separate devices.<br>2. Trigger a manual outbreak from the Admin panel. | The Doctor dashboard receives and renders an outbreak toast notification instantly. | [✋ Manual] |
 
 ---
+
+
+### Core Security & Hardening Tests
+1. **OTP Rate Limiting Rejection:** Intentionally enter an incorrect OTP 6 times in under 15 minutes and assert the system returns a 429 Too Many Requests error.
+2. **Vault Fail-Closed Assertion:** Remove the VAULT_TOKEN in a production environment and start the Node.js server. Assert the process exits immediately with a fatal crash.
+3. **ML Engine HMAC Verification:** Manually dispatch an HTTP request to the Python ML Engine lacking the x-internal-key and assert a 403 Forbidden rejection.

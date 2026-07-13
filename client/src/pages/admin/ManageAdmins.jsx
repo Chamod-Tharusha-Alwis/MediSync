@@ -50,7 +50,7 @@ const ManageAdmins = () => {
     <PageTransition className="p-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Admin Management</h1>
+          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">Admin Management</h1>
           <p className="text-slate-400 mt-1">Super admin: Manage platform administrator accounts</p>
         </div>
         <button

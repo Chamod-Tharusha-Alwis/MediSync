@@ -18,15 +18,8 @@ exports.submitReview = async (req, res) => {
       return res.status(400).json({ error: 'Invalid targetModel' });
     }
 
-    // Retrieve and decrypt patient's name
-    const patient = await Patient.findById(reviewerId);
-    let reviewerName = 'Anonymous Patient';
-    if (patient) {
-      if (typeof patient.decryptFieldsSync === 'function') {
-        try { patient.decryptFieldsSync(); } catch (_) {}
-      }
-      reviewerName = patient.fullName || 'Anonymous Patient';
-    }
+    // Do not decrypt or store patient name to protect PII
+    let reviewerName = 'Verified Patient';
 
     // Save the review
     const review = new Review({

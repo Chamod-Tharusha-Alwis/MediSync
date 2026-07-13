@@ -43,21 +43,34 @@ async function initializeVault() {
   }
 
   try {
-    // Write the dev key into Vault (idempotent – safe on every restart).
-    await vault.write('secret/data/medisync', {
-      data: {
-        AES_ENCRYPTION_KEY:
-          process.env.ENCRYPTION_KEY || 'your-fallback-32-byte-secret-key-here',
-      },
-    });
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('FATAL: ENCRYPTION_KEY environment variable is not set.');
+    }
 
-    // Read the key back from Vault.
-    const secret = await vault.read('secret/data/medisync');
+    // Ensure the new versioned keys structure exists
+    let keysSecret;
+    try {
+      keysSecret = await vault.read('secret/data/medisync/keys');
+    } catch (e) {
+      // Doesn't exist, create it using the primary ENCRYPTION_KEY as version 1
+      await vault.write('secret/data/medisync/keys', {
+        data: {
+          activeVersion: 1,
+          versions: {
+            "1": process.env.ENCRYPTION_KEY
+          }
+        }
+      });
+      keysSecret = await vault.read('secret/data/medisync/keys');
+    }
 
-    // Publish the key globally so every model sees it when require()'d below.
-    global.ENCRYPTION_KEY = secret.data.data.AES_ENCRYPTION_KEY;
+    // Publish the keys globally so every model sees it when require()'d below.
+    global.ENCRYPTION_KEYS = keysSecret.data.data.versions;
+    global.ACTIVE_KEY_VERSION = keysSecret.data.data.activeVersion;
+    // Keep ENCRYPTION_KEY for backward compatibility if any script still relies on it directly
+    global.ENCRYPTION_KEY = global.ENCRYPTION_KEYS[global.ACTIVE_KEY_VERSION];
 
-    console.log('[Vault] Successfully retrieved AES encryption key.');
+    console.log(`[Vault] Successfully retrieved AES encryption keys (Active version: ${global.ACTIVE_KEY_VERSION}).`);
   } catch (err) {
     // Vault is offline or misconfigured – degrade gracefully.
     console.error('');
@@ -70,6 +83,14 @@ async function initializeVault() {
     console.error('[Vault] Error details:', err.message);
 
     global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+    global.ENCRYPTION_KEYS = { "1": process.env.ENCRYPTION_KEY };
+    global.ACTIVE_KEY_VERSION = 1;
+
+    // Fail-closed enforcement for Vault in production.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[FATAL] Vault is required in production environments.');
+      process.exit(1);
+    }
 
     if (!global.ENCRYPTION_KEY) {
       throw new Error(

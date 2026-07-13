@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Star, Building2, MapPin } from 'lucide-react';
+import { Search, Star, Building2, MapPin, ArrowRight } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import DoctorProfileModal from './DoctorProfileModal';
 import PublicNavbar from '../../components/common/PublicNavbar';
+import PageTransition from '../../components/common/PageTransition';
 
 const DoctorDirectory = () => {
   const [doctors, setDoctors] = useState([]);
@@ -15,7 +16,7 @@ const DoctorDirectory = () => {
     const fetchDoctors = async () => {
       try {
         const res = await api.get('/public/doctors');
-        setDoctors(res.data.data);
+        setDoctors(res.data.data || []);
       } catch (err) {
         console.error('Failed to fetch doctors', err);
       } finally {
@@ -31,98 +32,105 @@ const DoctorDirectory = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pt-24 pb-12">
+    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 pt-28 pb-12 px-6">
       <PublicNavbar />
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header & Search */}
-        <div className="text-center mb-12">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4"
-          >
-            Find a Specialist
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-lg text-slate-500 mb-8 max-w-2xl mx-auto"
-          >
-            Browse our network of top-rated healthcare professionals verified by MediSync.
-          </motion.p>
+        <div className="text-center max-w-2xl mx-auto space-y-4">
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
+            Verify Specialist Affiliations
+          </h1>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Search and verify certified medical practitioners, specialists, and hospital credentials across our medical network.
+          </p>
           
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative max-w-xl mx-auto"
-          >
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <div className="relative max-w-lg mx-auto pt-2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-4.5 h-4.5 select-none" />
             <input 
               type="text" 
-              placeholder="Search by name or specialization..."
+              placeholder="Search doctor name or specialty..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-full border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-lg transition-shadow bg-white"
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-white/5 bg-slate-900/60 text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-lg"
             />
-          </motion.div>
+          </div>
         </div>
 
         {/* Directory Grid */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 animate-pulse select-none">
+                <div className="flex justify-between items-start">
+                  <div className="w-14 h-14 rounded-full bg-slate-800" />
+                  <div className="w-16 h-6 rounded bg-slate-800" />
+                </div>
+                <div className="h-4 bg-slate-800 rounded w-2/3" />
+                <div className="h-3 bg-slate-800 rounded w-1/2" />
+                <div className="space-y-2 pt-2">
+                  <div className="h-3 bg-slate-850 rounded w-5/6" />
+                  <div className="h-3 bg-slate-850 rounded w-4/5" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
             <AnimatePresence>
               {filteredDoctors.map((doc, idx) => (
                 <motion.div
                   key={doc._id}
                   layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2, delay: idx * 0.05 }}
-                  whileHover={{ scale: 1.03, y: -5 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, delay: idx * 0.03 }}
                   onClick={() => setSelectedDoctor(doc)}
-                  className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl cursor-pointer transition-shadow"
+                  className="glass-panel p-6 rounded-2xl border border-white/5 hover:border-blue-500/20 transition-all duration-300 cursor-pointer flex flex-col justify-between h-full group"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-2xl font-bold shadow-md">
-                      {doc.profilePicture ? (
-                        <img src={doc.profilePicture} alt={doc.fullName} className="w-full h-full object-cover" />
-                      ) : (
-                        doc.fullName?.charAt(0).toUpperCase()
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl font-black shadow-md border border-white/10 select-none">
+                        {doc.profilePicture ? (
+                          <img src={doc.profilePicture} alt={doc.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                          doc.fullName?.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      {doc.averageRating > 0 && (
+                        <div className="flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 select-none">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold text-amber-400">{doc.averageRating}</span>
+                          <span className="text-[10px] text-amber-400/60">({doc.ratingCount})</span>
+                        </div>
                       )}
                     </div>
-                    {doc.averageRating > 0 && (
-                      <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200/50">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        <span className="text-sm font-bold text-amber-600">{doc.averageRating}</span>
-                        <span className="text-xs text-amber-600/70">({doc.ratingCount})</span>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-1 line-clamp-1">{doc.fullName}</h3>
-                  <p className="text-blue-600 font-medium text-sm mb-4">{doc.specialization || 'General Practitioner'}</p>
-                  
-                  <div className="space-y-2 text-sm text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 opacity-70" />
-                      <span className="line-clamp-1">
-                        {doc.hospitals?.length > 0 ? doc.hospitals[0].name : 'Private Practice'}
-                        {doc.hospitals?.length > 1 && ` +${doc.hospitals.length - 1} more`}
-                      </span>
-                    </div>
-                    {doc.clinicAddress && (
+                    
+                    <h3 className="text-base font-bold text-white mb-1 group-hover:text-blue-400 transition-colors line-clamp-1">
+                      {doc.fullName}
+                    </h3>
+                    <p className="text-blue-400 font-bold text-xs mb-4">{doc.specialization || 'General Practitioner'}</p>
+                    
+                    <div className="space-y-2.5 text-xs text-slate-400 border-t border-white/5 pt-3 select-none">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 opacity-70" />
-                        <span className="line-clamp-1">{doc.clinicAddress}</span>
+                        <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+                        <span className="line-clamp-1">
+                          {doc.hospitals?.length > 0 ? doc.hospitals[0].name : 'Private Practice'}
+                          {doc.hospitals?.length > 1 && ` +${doc.hospitals.length - 1} affiliated`}
+                        </span>
                       </div>
-                    )}
+                      {doc.clinicAddress && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span className="line-clamp-1">{doc.clinicAddress}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-white/5 flex justify-end items-center select-none text-[10px] uppercase font-bold tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors gap-1">
+                    View Credentials <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </motion.div>
               ))}
@@ -131,9 +139,9 @@ const DoctorDirectory = () => {
         )}
         
         {!loading && filteredDoctors.length === 0 && (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20 text-slate-500 select-none">
             <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="text-lg">No doctors found matching "{search}"</p>
+            <p className="text-sm font-semibold">No doctors found matching "{search}"</p>
           </div>
         )}
       </div>
@@ -146,7 +154,7 @@ const DoctorDirectory = () => {
           />
         )}
       </AnimatePresence>
-    </div>
+    </PageTransition>
   );
 };
 

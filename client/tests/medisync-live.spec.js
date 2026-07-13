@@ -223,11 +223,14 @@ test.describe('MediSync E2E Live User Journeys', () => {
     // Fill registration details
     await page.fill('input[name="fullName"]', 'E2E Test Patient');
     await page.fill('input[name="email"]', patientEmail);
+    await page.fill('input[name="password"]', testPassword);
+    await page.fill('input[name="confirmPassword"]', testPassword);
+    
+    await page.locator('button', { hasText: /Continue/i }).click();
+
     await page.fill('input[name="nic"]', patientNic);
     await page.fill('input[name="dateOfBirth"]', '1998-05-15');
     await page.fill('input[name="contactInfo"]', '0771234567');
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirmPassword"]', testPassword);
 
     // Submit registration
     await page.locator('button[type="submit"]:visible').first().click();
@@ -463,11 +466,14 @@ test.describe('MediSync E2E Live User Journeys', () => {
     // Fill registration with already existing details
     await page.fill('input[name="fullName"]', 'Duplicate E2E Test Patient');
     await page.fill('input[name="email"]', patientEmail);
+    await page.fill('input[name="password"]', testPassword);
+    await page.fill('input[name="confirmPassword"]', testPassword);
+
+    await page.locator('button', { hasText: /Continue/i }).click();
+
     await page.fill('input[name="nic"]', patientNic);
     await page.fill('input[name="dateOfBirth"]', '1998-05-15');
     await page.fill('input[name="contactInfo"]', '0771234567');
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirmPassword"]', testPassword);
 
     await page.locator('button[type="submit"]:visible').first().click();
 

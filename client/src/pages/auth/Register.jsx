@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Key, Building, Loader2, Calendar, Phone } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Key, Building, Loader2, Calendar, Phone, ChevronRight, ChevronLeft, Check, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
+
+const checkPasswordStrength = (pass) => {
+  if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
+  let score = 0;
+  if (pass.length >= 8) score++;
+  if (/[A-Z]/.test(pass)) score++;
+  if (/[0-9]/.test(pass)) score++;
+  if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+  if (score === 1) return { score: 25, text: 'Weak', color: 'bg-rose-500' };
+  if (score === 2) return { score: 50, text: 'Moderate', color: 'bg-amber-500' };
+  if (score === 3) return { score: 75, text: 'Good', color: 'bg-blue-500' };
+  if (score === 4) return { score: 100, text: 'Strong', color: 'bg-emerald-500' };
+  return { score: 10, text: 'Very Weak', color: 'bg-rose-600' };
+};
 
 const Register = () => {
   const navigate = useNavigate();
@@ -12,6 +27,8 @@ const Register = () => {
   const initialRole = searchParams.get('role') || 'patient';
 
   const [role, setRole] = useState(initialRole);
+  const [step, setStep] = useState(1); // 1 = Credentials, 2 = Profile Metadata
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -70,6 +87,14 @@ const Register = () => {
     }
   };
 
+  const validateStep1 = () => {
+    if (!formData.fullName.trim()) { toast.error('Full Name is required'); return false; }
+    if (!formData.email.trim() || !formData.email.includes('@')) { toast.error('Valid Email Address is required'); return false; }
+    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters'); return false; }
+    if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return false; }
+    return true;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -85,7 +110,6 @@ const Register = () => {
       await axiosInstance.post(url, payload);
       
       toast.success('Registration successful! Please login.');
-      // Navigate to respective login
       navigate(`/${role === 'pharmacist' ? 'pharmacy' : role}/login`);
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Registration failed. Please try again.';
@@ -96,155 +120,314 @@ const Register = () => {
     }
   };
 
+  const strength = checkPasswordStrength(formData.password);
+
+  const labelClass = 'text-xs font-semibold uppercase text-slate-500 ml-1 select-none';
+
   return (
     <div className="min-h-screen bg-[#0b1120] flex items-center justify-center p-4 relative overflow-hidden pt-20 pb-20">
-      {/* Background elements */}
-      <motion.div 
-        animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" 
-      />
-      <motion.div 
-        animate={{ scale: [1, 1.5, 1], rotate: [0, -90, 0] }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-        className="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" 
-      />
+      {/* Background orbs */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
 
       <motion.div 
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg z-10 relative"
       >
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-8">
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl p-8">
           
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-indigo-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/30 mb-4 shadow-[0_0_15px_rgba(79,70,229,0.2)]">
-              <UserPlus className="w-8 h-8 text-indigo-400" />
+          {/* Header */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20 mb-4 shadow-[0_0_15px_rgba(79,70,229,0.1)] select-none">
+              <UserPlus className="w-7 h-7 text-indigo-400" />
             </div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Create Account</h2>
-            <p className="text-slate-400 text-sm mt-2">Join the MediSync ecosystem</p>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
+            <p className="text-slate-400 text-xs mt-1.5 font-medium">Join the secure MediSync healthcare network</p>
           </div>
 
-          <div className="flex gap-2 mb-6 bg-slate-800/50 p-1.5 rounded-xl border border-slate-700/50">
-            {['patient', 'doctor', 'pharmacist'].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg capitalize transition-all ${
-                  role === r 
-                    ? 'bg-indigo-600 text-white shadow-lg' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+          {/* Stepper Progress bar */}
+          <div className="flex items-center justify-between mb-8 px-8 select-none">
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
+                step === 1 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450'
+              }`}>
+                {step > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
+            </div>
+            <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
+                step === 2 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                  : 'bg-slate-950/40 border-white/5 text-slate-550'
+              }`}>
+                2
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Specifications</span>
+            </div>
           </div>
 
-          {error && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
-              {error}
-            </motion.div>
+          {/* Role selector tab buttons (Locked once in step 2 to avoid validation issues) */}
+          {step === 1 && (
+            <div className="flex gap-2 mb-6 bg-slate-950/40 p-1.5 rounded-xl border border-white/5 select-none">
+              {['patient', 'doctor', 'pharmacist'].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg capitalize transition-all ${
+                    role === r 
+                      ? 'bg-indigo-600 text-white shadow-lg border border-indigo-500/30' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-300 ml-1">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                <input type="text" name="fullName" required value={formData.fullName} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" placeholder="John Doe" />
-              </div>
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-center">
+              {error}
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                <input type="email" name="email" required value={formData.email} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" placeholder="you@example.com" />
-              </div>
-            </div>
-
-            {role === 'patient' && (
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-slate-300 ml-1">National ID (NIC)</label>
-                  <div className="relative">
-                    <Key className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                    <input type="text" name="nic" required value={formData.nic} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="199012345678" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-300 ml-1">Date of Birth</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                      <input type="date" name="dateOfBirth" required value={formData.dateOfBirth} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-300 ml-1">Contact No</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                      <input type="text" name="contactInfo" required value={formData.contactInfo} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="+94..." />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {role === 'doctor' && (
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-slate-300 ml-1">Medical License No</label>
-                  <div className="relative">
-                    <Key className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                    <input type="text" name="licenseNo" required value={formData.licenseNo} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="SLMC-12345" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-slate-300 ml-1">Specialization</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                    <input type="text" name="specialization" required value={formData.specialization} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Cardiologist" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {role === 'pharmacist' && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-300 ml-1">Pharmacy Reference ID</label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                  <input type="text" name="pharmacyId" required value={formData.pharmacyId} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" />
-                </div>
-                <p className="text-xs text-slate-500 ml-1 mt-1">Obtain your Pharmacy ID from your administrator</p>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                <input type="password" name="password" required value={formData.password} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="••••••••" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-300 ml-1">Confirm Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                <input type="password" name="confirmPassword" required value={formData.confirmPassword} onChange={handleChange} className="block w-full pl-10 pr-3 py-3 border border-slate-700 bg-slate-800/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="••••••••" />
-              </div>
-            </div>
-
-            <button type="submit" disabled={loading} className="w-full flex justify-center items-center py-3 px-4 border border-indigo-600/50 rounded-xl shadow-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-[#0b1120] transition-all disabled:opacity-70 mt-6">
-              {loading ? <><Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" /> Creating Account...</> : 'Register'}
-            </button>
+          <form onSubmit={handleRegister} className="space-y-4">
             
-            <div className="mt-4 text-center">
-              <button type="button" onClick={() => navigate(`/${role === 'pharmacist' ? 'pharmacy' : role}/login`)} className="text-sm text-slate-400 hover:text-white transition-colors">
+            {/* STEP 1: Account credentials */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelClass}>Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input 
+                      type="text" 
+                      name="fullName" 
+                      required 
+                      value={formData.fullName} 
+                      onChange={handleChange} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="John Doe" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelClass}>Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input 
+                      type="email" 
+                      name="email" 
+                      required 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="you@example.com" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelClass}>Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input 
+                      type="password" 
+                      name="password" 
+                      required 
+                      value={formData.password} 
+                      onChange={handleChange} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="••••••••" 
+                    />
+                  </div>
+                  {/* Password strength meter */}
+                  {formData.password && (
+                    <div className="pt-1.5 select-none">
+                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
+                        <span>Strength</span>
+                        <span className="text-slate-350">{strength.text}</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-350 ${strength.color}`} style={{ width: `${strength.score}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelClass}>Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <input 
+                      type="password" 
+                      name="confirmPassword" 
+                      required 
+                      value={formData.confirmPassword} 
+                      onChange={handleChange} 
+                      className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      placeholder="••••••••" 
+                    />
+                  </div>
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
+                  )}
+                </div>
+
+                <button 
+                  type="button" 
+                  onClick={() => { if (validateStep1()) setStep(2); }}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 mt-6"
+                >
+                  Continue <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: Role Profile Metadata details */}
+            {step === 2 && (
+              <div className="space-y-4">
+                {role === 'patient' && (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={labelClass}>National ID (NIC) *</label>
+                      <div className="relative">
+                        <Key className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                        <input 
+                          type="text" 
+                          name="nic" 
+                          required 
+                          value={formData.nic} 
+                          onChange={handleChange} 
+                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                          placeholder="199012345678" 
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className={labelClass}>Date of Birth</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 pointer-events-none" />
+                          <input 
+                            type="date" 
+                            name="dateOfBirth" 
+                            required 
+                            value={formData.dateOfBirth} 
+                            onChange={handleChange} 
+                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className={labelClass}>Contact No</label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                          <input 
+                            type="text" 
+                            name="contactInfo" 
+                            required 
+                            value={formData.contactInfo} 
+                            onChange={handleChange} 
+                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                            placeholder="+94..." 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'doctor' && (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={labelClass}>Medical License No *</label>
+                      <div className="relative">
+                        <Key className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                        <input 
+                          type="text" 
+                          name="licenseNo" 
+                          required 
+                          value={formData.licenseNo} 
+                          onChange={handleChange} 
+                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                          placeholder="SLMC-12345" 
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={labelClass}>Specialization *</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                        <input 
+                          type="text" 
+                          name="specialization" 
+                          required 
+                          value={formData.specialization} 
+                          onChange={handleChange} 
+                          className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                          placeholder="Cardiologist" 
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'pharmacist' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>Pharmacy Reference ID *</label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                      <input 
+                        type="text" 
+                        name="pharmacyId" 
+                        required 
+                        value={formData.pharmacyId} 
+                        onChange={handleChange} 
+                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-6 border-t border-white/5">
+                  <button 
+                    type="button" 
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-2.5 border border-white/5 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Back
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-1.5"
+                  >
+                    {loading ? (
+                      <><Loader2 className="animate-spin h-4 w-4" /> Finalizing...</>
+                    ) : (
+                      <><ShieldCheck className="w-4 h-4" /> Create Account</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 text-center select-none border-t border-white/5 pt-4">
+              <button 
+                type="button" 
+                onClick={() => navigate(`/${role === 'pharmacist' ? 'pharmacy' : role}/login`)} 
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
                 Already have an account? Sign in here
               </button>
             </div>

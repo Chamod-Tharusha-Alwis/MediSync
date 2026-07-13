@@ -556,7 +556,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('application/pdf');
       expect(res.headers['content-disposition']).toContain('attachment');
-      expect(res.headers['content-disposition']).toContain(`${createdLabTestId}_encrypted_report.pdf`);
+      expect(res.headers['content-disposition']).toContain(`${createdLabTestId}_report.pdf`);
 
       // Verify we received actual binary PDF data
       expect(res.body).toBeInstanceOf(Buffer);

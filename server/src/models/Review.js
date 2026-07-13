@@ -8,7 +8,7 @@ const reviewSchema = new mongoose.Schema({
   },
   reviewerName: {
     type: String,
-    default: 'Anonymous'
+    default: 'Verified Patient'
   },
   targetId: {
     type: mongoose.Schema.Types.ObjectId,

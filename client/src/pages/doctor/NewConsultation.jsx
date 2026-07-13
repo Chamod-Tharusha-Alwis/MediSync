@@ -7,7 +7,7 @@ import {
   FiUser, FiActivity, FiFileText, FiPlus, FiTrash2,
   FiSave, FiSearch, FiChevronRight, FiChevronLeft, FiCheck
 } from 'react-icons/fi';
-import Sidebar from '../../components/common/Sidebar';
+import AppShell from '../../components/ui/AppShell';
 import PageTransition from '../../components/common/PageTransition';
 import SymptomTagInput from '../../components/SymptomTagInput';
 import DrugSearchInput from '../../components/DrugSearchInput';
@@ -314,11 +314,16 @@ const NewConsultation = () => {
   const inp = 'glass-input w-full text-sm';
 
   /* ══════════════════════════════════════════════════════════════════════════ */
-  return (
-    <div className="flex bg-[#080d1a] min-h-screen text-slate-200">
-      <Sidebar menuItems={menuItems} title="Doctor Portal" themePrefix="doctor" />
+  const doctorName = localStorage.getItem('userName') || 'Doctor';
 
-      <main className="flex-1 lg:ml-64 p-6 lg:p-10 transition-all duration-300">
+  return (
+    <div className="doctor-theme">
+      <AppShell
+        role="doctor"
+        userName={`Dr. ${doctorName}`}
+        userRole="Verified Doctor"
+        menuItems={menuItems}
+      >
         <PageTransition>
           {/* ── Page header ── */}
           <div className="mb-8 flex justify-between items-center">
@@ -529,6 +534,7 @@ const NewConsultation = () => {
                           </span>
                           AI Diagnosis Engine
                         </h3>
+                        {console.log("RENDER BUTTON: symptoms.length =", symptoms.length, "loading =", loading)}
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                           onClick={getDiagnosisSuggestions}
@@ -941,7 +947,7 @@ const NewConsultation = () => {
             </div>
           </div>
         </PageTransition>
-      </main>
+      </AppShell>
     </div>
   );
 };

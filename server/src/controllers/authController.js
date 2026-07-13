@@ -12,6 +12,7 @@ const OTPSession = require('../models/OTPSession');
 const Admin = require('../models/Admin');
 const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
+const { incrementAttempts, getAttempts } = require('../config/redis');
 
 // Helper: createSession
 const createSession = async (userId, userModel, token, req) => {
@@ -99,6 +100,7 @@ exports.registerPatient = async (req, res) => {
     if (err.code === 11000 || (err.message && err.message.includes('11000'))) {
       return res.status(400).json({ error: "Email or NIC already exists" });
     }
+    console.error("REGISTRATION ERROR:", err);
     return res.status(500).json({ error: "Registration failed", details: err.message });
   }
 };
@@ -117,7 +119,7 @@ exports.registerPharmacyStaff = async (req, res) => {
     const hashedPassword = await hashPassword(password);
 
     const staff = new PharmacyStaff({
-      fullName, email, password: hashedPassword, pharmacyId, role: role || 'pharmacist'
+      fullName, email, password: hashedPassword, pharmacyId, role: role || 'pharmacist', mustChangePassword: false
     });
     
     await staff.save();
@@ -222,6 +224,11 @@ exports.verifyLoginOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
     
+    const attempts = await getAttempts('auth:' + userId);
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     const otpRecord = await OTPSession.findOne({
       userId,
       purpose: 'login',
@@ -232,7 +239,10 @@ exports.verifyLoginOTP = async (req, res) => {
     if (!otpRecord) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
     const isMatch = await bcrypt.compare(otp.toString(), otpRecord.otp);
-    if (!isMatch) return res.status(400).json({ error: 'Incorrect OTP' });
+    if (!isMatch) {
+      await incrementAttempts('auth:' + userId);
+      return res.status(400).json({ error: 'Incorrect OTP' });
+    }
 
     otpRecord.used = true;
     await otpRecord.save();
@@ -416,6 +426,11 @@ exports.resetPassword = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    const attempts = await getAttempts('reset:' + user._id);
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     const otpRecord = await OTPSession.findOne({
       userId: user._id,
       purpose: 'password-reset',
@@ -426,7 +441,10 @@ exports.resetPassword = async (req, res) => {
     if (!otpRecord) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
     const isMatch = await bcrypt.compare(otp.toString(), otpRecord.otp);
-    if (!isMatch) return res.status(400).json({ error: 'Incorrect OTP' });
+    if (!isMatch) {
+      await incrementAttempts('reset:' + user._id);
+      return res.status(400).json({ error: 'Incorrect OTP' });
+    }
 
     const strength = validatePasswordStrength(newPassword);
     if (!strength.valid || strength.score < 3) {

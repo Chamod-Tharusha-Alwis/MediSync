@@ -290,7 +290,7 @@ const PatientPrescriptions = () => {
 
       {/* ── Page header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">My Prescriptions</h1>
+        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">My Prescriptions</h1>
         <p className="text-slate-400 mt-1">
           Track all your medications and download your E-Prescriptions.
         </p>

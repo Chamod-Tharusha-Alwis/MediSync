@@ -68,9 +68,13 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
   };
 
   const addSymptom = (symptom) => {
+    console.log(`addSymptom called with: "${symptom}"`);
     if (selectedSymptoms.length >= 15) return;
     if (symptom.trim() && !selectedSymptoms.includes(symptom)) {
+      console.log(`Adding symptom: "${symptom}". Current symptoms:`, selectedSymptoms);
       onChange([...selectedSymptoms, symptom]);
+    } else {
+      console.log(`Skipping symptom "${symptom}". Already included?`, selectedSymptoms.includes(symptom));
     }
     setInputValue('');
     setIsOpen(false);
@@ -91,7 +95,8 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
       setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
     } else if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const val = inputValue.trim();
+      const val = e.target.value.trim();
+      console.log(`Enter key pressed. e.target.value: "${val}", inputValue state: "${inputValue}"`);
       if (val) {
         if (isOpen && focusedIndex >= 0 && suggestions[focusedIndex]) {
           addSymptom(suggestions[focusedIndex]);
@@ -100,6 +105,8 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
           const match = allSymptoms.find(s => s.toLowerCase() === val.toLowerCase());
           addSymptom(match || val);
         }
+      } else {
+        console.log(`Enter pressed but val is empty!`);
       }
     } else if (e.key === 'Backspace' && !inputValue && selectedSymptoms.length > 0) {
       removeSymptom(selectedSymptoms[selectedSymptoms.length - 1]);
@@ -134,6 +141,7 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
 
         <input
           ref={inputRef}
+          data-testid="symptom-input"
           type="text"
           value={inputValue}
           onChange={handleInputChange}

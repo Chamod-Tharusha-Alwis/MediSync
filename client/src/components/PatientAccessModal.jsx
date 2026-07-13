@@ -68,15 +68,32 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
-    if (value && index < 5) inputRefs.current[index + 1]?.focus();
-    // Auto-submit when all 6 digits filled
-    if (index === 5 && value) {
-      const filled = [...newOtp.slice(0, 5), value.slice(-1)];
-      if (filled.every(d => d !== '')) verifyOTP(filled.join(''));
+    
+    // Handle paste / bulk fill
+    if (value.length > 1) {
+      const pasted = value.slice(0, 6).split('');
+      setOtp(prev => {
+        const newOtp = [...prev];
+        for (let i = 0; i < pasted.length; i++) {
+          if (index + i < 6) newOtp[index + i] = pasted[i];
+        }
+        if (newOtp.every(d => d !== '')) setTimeout(() => verifyOTP(newOtp.join('')), 0);
+        return newOtp;
+      });
+      const nextFocus = Math.min(index + pasted.length, 5);
+      inputRefs.current[nextFocus]?.focus();
+      return;
     }
+
+    setOtp(prev => {
+      const newOtp = [...prev];
+      newOtp[index] = value.slice(-1);
+      if (index === 5 && value && newOtp.every(d => d !== '')) {
+        setTimeout(() => verifyOTP(newOtp.join('')), 0);
+      }
+      return newOtp;
+    });
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index, e) => {
@@ -132,7 +149,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 60, opacity: 0 }}
           transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-          className="bg-[#0d1829] border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          className="glass-modal w-full max-w-md overflow-hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/60">
@@ -197,12 +214,11 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                       ref={el => inputRefs.current[i] = el}
                       type="text"
                       inputMode="numeric"
-                      maxLength={1}
                       value={digit}
                       onChange={e => handleOtpChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
-                      className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border bg-slate-800/60 text-white outline-none transition-all
-                        ${digit ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 focus:border-blue-400'}`}
+                      className={`glass-input w-12 h-14 text-center text-2xl font-bold rounded-xl border outline-none transition-all
+                        ${digit ? 'border-blue-500 bg-blue-500/10 glow-teal' : 'border-white/10 focus:border-blue-400'}`}
                     />
                   ))}
                 </div>
@@ -214,7 +230,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                 <button
                   onClick={() => verifyOTP()}
                   disabled={loading || otp.some(d => !d)}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className="glass-button w-full py-3 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   Verify Access

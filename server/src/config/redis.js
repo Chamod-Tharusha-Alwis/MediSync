@@ -38,8 +38,13 @@ async function initRedis() {
 
     redisClient.on('error', (err) => {
       if (redisAvailable) {
-        console.warn('[Redis] Connection lost — falling back to in-memory store:', err.message);
-        redisAvailable = false;
+        if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+          console.error('FATAL: [Redis] Connection lost in production:', err.message);
+          process.exit(1);
+        } else {
+          console.warn('[Redis] Connection lost — falling back to in-memory store:', err.message);
+          redisAvailable = false;
+        }
       }
     });
 
@@ -51,6 +56,10 @@ async function initRedis() {
     await redisClient.connect();
     redisAvailable = true;
   } catch (err) {
+    if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+      console.error('FATAL: [Redis] Connection failed in production environment:', err.message);
+      process.exit(1);
+    }
     console.warn('');
     console.warn('╔══════════════════════════════════════════════════════════════╗');
     console.warn('║  ⚠️  [Redis] Not available — using in-memory OTP store.      ║');
@@ -81,8 +90,13 @@ async function setOtp(key, data, ttlSec = 600) {
       await redisClient.setEx(fullKey, ttlSec, JSON.stringify(data));
       return;
     } catch (err) {
+      if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+        throw new Error(`[Redis] setOtp failed in production: ${err.message}`);
+      }
       console.warn('[Redis] setOtp failed, falling back to memory:', err.message);
     }
+  } else if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+    throw new Error('[Redis] setOtp failed in production: Redis not available');
   }
 
   // In-memory fallback
@@ -102,8 +116,13 @@ async function getOtp(key) {
       const raw = await redisClient.get(fullKey);
       return raw ? JSON.parse(raw) : null;
     } catch (err) {
+      if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+        throw new Error(`[Redis] getOtp failed in production: ${err.message}`);
+      }
       console.warn('[Redis] getOtp failed, falling back to memory:', err.message);
     }
+  } else if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+    throw new Error('[Redis] getOtp failed in production: Redis not available');
   }
 
   // In-memory fallback
@@ -128,12 +147,60 @@ async function deleteOtp(key) {
       await redisClient.del(fullKey);
       return;
     } catch (err) {
+      if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+        throw new Error(`[Redis] deleteOtp failed in production: ${err.message}`);
+      }
       console.warn('[Redis] deleteOtp failed, falling back to memory:', err.message);
     }
+  } else if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
+    throw new Error('[Redis] deleteOtp failed in production: Redis not available');
   }
 
   // In-memory fallback
   memoryStore.delete(fullKey);
+}
+
+/**
+ * Increment failed attempts counter with a TTL.
+ */
+async function incrementAttempts(key, ttlSec = 900) {
+  const fullKey = 'medisync:otp-attempts:' + key;
+  if (redisAvailable && redisClient) {
+    try {
+      const current = await redisClient.incr(fullKey);
+      if (current === 1) await redisClient.expire(fullKey, ttlSec);
+      return current;
+    } catch (err) {
+      console.warn('[Redis] incrementAttempts failed:', err.message);
+    }
+  }
+  // In-memory fallback
+  const entry = memoryStore.get(fullKey) || { data: 0, expiresAt: Date.now() + ttlSec * 1000 };
+  entry.data += 1;
+  memoryStore.set(fullKey, entry);
+  return entry.data;
+}
+
+/**
+ * Get current failed attempts.
+ */
+async function getAttempts(key) {
+  const fullKey = 'medisync:otp-attempts:' + key;
+  if (redisAvailable && redisClient) {
+    try {
+      const raw = await redisClient.get(fullKey);
+      return raw ? parseInt(raw, 10) : 0;
+    } catch (err) {
+      console.warn('[Redis] getAttempts failed:', err.message);
+    }
+  }
+  const entry = memoryStore.get(fullKey);
+  if (!entry) return 0;
+  if (Date.now() > entry.expiresAt) {
+    memoryStore.delete(fullKey);
+    return 0;
+  }
+  return entry.data;
 }
 
 module.exports = {
@@ -141,7 +208,7 @@ module.exports = {
   setOtp,
   getOtp,
   deleteOtp,
-  // Exposed for testing
-  _memoryStore: memoryStore,
+  incrementAttempts,
+  getAttempts,
   isRedisAvailable: () => redisAvailable,
 };

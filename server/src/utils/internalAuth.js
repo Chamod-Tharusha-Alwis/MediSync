@@ -43,11 +43,22 @@ const generateToken = () => {
 const verifyToken = (token) => {
   if (!token) return false;
   const { currentStr, prevStr } = getHourStrings();
-  
+
   const expectedCurrent = generateTokenForHour(currentStr);
   const expectedPrev = generateTokenForHour(prevStr);
 
-  return token === expectedCurrent || token === expectedPrev;
+  // Constant-time comparison to prevent timing attacks
+  try {
+    const tokenBuf = Buffer.from(token, 'utf-8');
+    const currentBuf = Buffer.from(expectedCurrent, 'utf-8');
+    const prevBuf = Buffer.from(expectedPrev, 'utf-8');
+    return (
+      (tokenBuf.length === currentBuf.length && crypto.timingSafeEqual(tokenBuf, currentBuf)) ||
+      (tokenBuf.length === prevBuf.length && crypto.timingSafeEqual(tokenBuf, prevBuf))
+    );
+  } catch {
+    return false;
+  }
 };
 
 module.exports = {

@@ -10,6 +10,9 @@ import {
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
+import StatusBadge from '../../components/ui/StatusBadge';
+import OtpInput from '../../components/ui/OtpInput';
+import Modal from '../../components/ui/Modal';
 
 /* ─── Framer Motion stagger variants ─────────────────────────────────────── */
 const feedVariants = {
@@ -132,6 +135,11 @@ const LabTestTags = ({ tests, tc, limit = 4 }) => {
 const HistoryCard = ({ event, onRate }) => {
   const [expanded,    setExpanded]    = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [targetReportId, setTargetReportId] = useState(null);
+
   const details = event.data || {};
   const rawType = event.type || 'consultation';
 
@@ -155,6 +163,29 @@ const HistoryCard = ({ event, onRate }) => {
     } finally {
       setDownloading(false);
     }
+  };
+
+  const triggerDownloadReport = (reportId) => {
+    setTargetReportId(reportId);
+    setShowOtpModal(true);
+  };
+
+  const handleOtpVerify = async (code) => {
+    setShowOtpModal(false);
+    setIsDownloading(true);
+    setDownloadProgress(10);
+    
+    const interval = setInterval(() => {
+      setDownloadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          handleDownloadLabReport(targetReportId);
+          setIsDownloading(false);
+          return 0;
+        }
+        return prev + 15;
+      });
+    }, 150);
   };
 
   // Treat OTC prescriptions as their own display type
@@ -337,15 +368,7 @@ const HistoryCard = ({ event, onRate }) => {
                               : [{ name: p.drugName, dosage: p.dosage, frequency: p.frequency }];
 
                             const isDispensed = p.status === 'dispensed';
-                            const statusPill = isDispensed ? (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full border border-slate-700 bg-slate-800 text-slate-400 tracking-wider uppercase ml-2">
-                                Dispensed
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/12 text-emerald-400 tracking-wider uppercase ml-2">
-                                Ready For Pickup
-                              </span>
-                            );
+                            const statusPill = <StatusBadge status={p.status} className="ml-2" />;
 
                             return (
                               <div key={pIdx} className="col-span-1 md:col-span-2 space-y-1.5">
@@ -417,18 +440,6 @@ const HistoryCard = ({ event, onRate }) => {
                             const status = isString ? 'Pending' : (labDoc.status || 'Pending');
                             const reportId = !isString ? labDoc.reportId : null;
 
-                            const getStatusColor = (s) => {
-                              if (!s) return 'bg-slate-800/50 text-slate-500 border-slate-700/50';
-                              const sl = s.toLowerCase();
-                              if (sl === 'pending') return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-                              if (sl === 'approved') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-                              if (sl === 'completed' || sl === 'report_ready') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-                              return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-                            };
-
-                            // Format status for display (capitalize first letter)
-                            const displayStatus = status.charAt(0).toUpperCase() + status.slice(1);
-
                             return (
                               <div key={idx} className="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-white/5">
                                 <div className="flex justify-between items-start mb-2">
@@ -436,9 +447,7 @@ const HistoryCard = ({ event, onRate }) => {
                                     <FlaskConical className="w-4 h-4 text-purple-400 flex-shrink-0" />
                                     <span className="text-sm font-semibold text-slate-200">{name}</span>
                                   </div>
-                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded border tracking-wider uppercase flex-shrink-0 ${getStatusColor(status)}`}>
-                                    {displayStatus}
-                                  </span>
+                                  <StatusBadge status={status} />
                                 </div>
                                 
                                 {reportId && (
@@ -450,11 +459,11 @@ const HistoryCard = ({ event, onRate }) => {
                                 {!isString && (status.toLowerCase() === 'approved' || status.toLowerCase() === 'report_ready' || status.toLowerCase() === 'completed') && reportId && (
                                   <motion.button
                                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                    onClick={(e) => { e.stopPropagation(); handleDownloadLabReport(reportId); }}
-                                    disabled={downloading}
+                                    onClick={(e) => { e.stopPropagation(); triggerDownloadReport(reportId); }}
+                                    disabled={downloading || isDownloading}
                                     className="mt-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 w-full disabled:opacity-50"
                                   >
-                                    {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                    {downloading || isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                                     Download Report
                                   </motion.button>
                                 )}
@@ -532,6 +541,41 @@ const HistoryCard = ({ event, onRate }) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* OTP Verification Modal */}
+      <Modal
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        title="Secure Verification Required"
+        size="sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <p className="text-sm text-slate-300">
+            To download your secure medical report, verify your identity using the 6-digit OTP code sent to your registered contact.
+          </p>
+          <OtpInput
+            onSubmit={handleOtpVerify}
+            onResend={() => toast.info('A new OTP code has been generated and sent.')}
+            initialSeconds={120}
+          />
+        </div>
+      </Modal>
+
+      {/* Download Progress Indicator */}
+      {isDownloading && (
+        <div className="fixed bottom-6 right-6 z-50 glass-card p-4 border border-teal-500/30 flex flex-col gap-2 w-64 shadow-2xl">
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-bold text-slate-200">Downloading Report...</span>
+            <span className="font-mono text-teal-400 font-bold">{downloadProgress}%</span>
+          </div>
+          <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-white/5">
+            <div
+              className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full transition-all duration-150"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

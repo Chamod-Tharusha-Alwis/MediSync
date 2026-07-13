@@ -53,7 +53,7 @@ const PatientReports = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Patient Reports</h1>
+          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">Patient Reports</h1>
           <p className="text-slate-400 mt-1">Review complaints submitted by patients against healthcare providers</p>
         </div>
         <button onClick={fetchReports} className="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">

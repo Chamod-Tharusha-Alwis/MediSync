@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const consultationSchema = new mongoose.Schema({
   consultationId: { type: String, unique: true },
@@ -23,13 +23,11 @@ const consultationSchema = new mongoose.Schema({
   riskScore: Number,
   loginType: { type: String, enum: ['personal', 'hospital'] },
   sessionHospitalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' },
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
-consultationSchema.plugin(fieldEncryption, {
-  fields: ['patientNic', 'diagnosis', 'notes'],
-  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
-  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
-  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
+consultationSchema.plugin(versionedEncryption, {
+  fields: ['patientNic', 'diagnosis', 'notes']
 });
 
 module.exports = mongoose.model('Consultation', consultationSchema);

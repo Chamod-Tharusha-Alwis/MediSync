@@ -48,13 +48,18 @@ exports.getPatientTests = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const tests = await TestOrder.find({ patientNic: nic })
-      .populate('doctorId', 'fullName specialization')
-      .populate('hospitalId', 'name district')
-      .sort({ orderedAt: -1 });
+    const crypto = require('crypto');
+    const LabTest = require('../models/LabTest');
+    const patientNic_bi = crypto.createHash('sha256').update(nic.trim()).digest('hex');
+
+    const tests = await LabTest.find({ patientNic_bi })
+      .sort({ createdAt: -1 });
+
+    console.log(`[DEBUG] getPatientTests for NIC ${nic}. Hash: ${patientNic_bi}. Found: ${tests.length} tests`);
 
     return res.json({ data: tests });
   } catch (error) {
+    console.error(`[DEBUG] getPatientTests ERROR:`, error);
     return res.status(500).json({ error: 'Failed to fetch tests', details: error.message });
   }
 };

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const patientSchema = new mongoose.Schema({
   nic: { type: String, required: true, unique: true },
@@ -36,16 +36,13 @@ const patientSchema = new mongoose.Schema({
   riskLevel: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
   height: { type: Number, default: null },   // centimetres
   weight: { type: Number, default: null },   // kilograms
-  profilePicture: { type: String, default: '' }
+  profilePicture: { type: String, default: '' },
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
 // AES-256 field-level encryption on sensitive clinical fields (NOT nic - it's used as a lookup key)
-patientSchema.plugin(fieldEncryption, {
-  fields: ['fullName', 'contactInfo', 'allergies'],
-  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
-  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
-  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
-  saltGenerator: (secret) => secret.slice(0, 16)
+patientSchema.plugin(versionedEncryption, {
+  fields: ['fullName', 'contactInfo', 'allergies']
 });
 
 module.exports = mongoose.model('Patient', patientSchema);

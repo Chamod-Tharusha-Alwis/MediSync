@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 // Calendar kept for the Follow-up card below
 import api from '../../api/axiosInstance';
-import Sidebar from '../../components/common/Sidebar';
+import AppShell from '../../components/ui/AppShell';
+import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
 import PatientHistory from './History';
 import PatientProfile from './Profile';
@@ -82,7 +83,7 @@ const Overview = ({ data }) => {
 
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">
           Welcome back, {patient.fullName.split(' ')[0]}
         </h1>
         <p className="text-slate-400 mt-1">Here is an overview of your health status.</p>
@@ -95,7 +96,7 @@ const Overview = ({ data }) => {
             key={id}
             id={id}
             onClick={action}
-            className="group flex flex-col items-center gap-2.5 p-5 rounded-2xl border border-white/8 hover:-translate-y-1 hover:border-white/15 transition-all duration-300 cursor-pointer"
+            className="glass-card hover-lift group flex flex-col items-center gap-2.5 p-5 cursor-pointer"
             style={{ background: 'rgba(15,23,42,0.58)', backdropFilter: 'blur(16px)' }}
           >
             <div
@@ -414,43 +415,44 @@ export default function PatientDashboard() {
   ];
 
   return (
-    <div className="patient-theme flex flex-col min-h-screen bg-[#0b1120]">
+    <div className="patient-theme">
       <ActiveOutbreakBanner />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar menuItems={menuItems} title="Patient Portal" themePrefix="patient" userName={data?.patient?.fullName} userRole="Patient" />
-
-        <main className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      <AppShell
+        role="patient"
+        userName={data?.patient?.fullName}
+        userRole="Patient"
+        menuItems={menuItems}
+      >
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton.Card />
+            <Skeleton.Card />
+          </div>
+        ) : isError ? (
+          <div className="flex h-[60vh] items-center justify-center p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md w-full text-center">
+              <p className="text-red-400 font-semibold mb-2">Failed to load your records</p>
+              <p className="text-red-500/70 text-sm mb-6">
+                {error?.response?.data?.error || error?.message || 'Unknown error'}
+              </p>
+              <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition-colors text-sm font-medium">
+                Retry
+              </button>
             </div>
-          ) : isError ? (
-            <div className="flex h-full items-center justify-center p-4">
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md w-full text-center">
-                <p className="text-red-400 font-semibold mb-2">Failed to load your records</p>
-                <p className="text-red-500/70 text-sm mb-6">
-                  {error?.response?.data?.error || error?.message || 'Unknown error'}
-                </p>
-                <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition-colors text-sm font-medium">
-                  Retry
-                </button>
-              </div>
-            </div>
-          ) : !data ? (
-            <div className="text-center p-8 text-slate-500 mt-20">No data found</div>
-          ) : (
-            <Routes>
-              <Route path="/dashboard"              element={<Overview data={data} />} />
-              <Route path="/dashboard/history"      element={<PatientHistory />} />
-              {/* Redirect legacy /prescriptions URL to the unified Medical History page */}
-              <Route path="/dashboard/prescriptions" element={<Navigate to="/patient/dashboard/history" replace />} />
-              <Route path="/dashboard/profile"      element={<PatientProfile />} />
-              <Route path="/dashboard/support"      element={<PatientSupport />} />
-              <Route path="*"                       element={<Navigate to="/patient/dashboard" replace />} />
-            </Routes>
-          )}
-        </main>
-      </div>
+          </div>
+        ) : !data ? (
+          <div className="text-center p-8 text-slate-500 mt-20">No data found</div>
+        ) : (
+          <Routes>
+            <Route path="/dashboard"              element={<Overview data={data} />} />
+            <Route path="/dashboard/history"      element={<PatientHistory />} />
+            <Route path="/dashboard/prescriptions" element={<Navigate to="/patient/dashboard/history" replace />} />
+            <Route path="/dashboard/profile"      element={<PatientProfile />} />
+            <Route path="/dashboard/support"      element={<PatientSupport />} />
+            <Route path="*"                       element={<Navigate to="/patient/dashboard" replace />} />
+          </Routes>
+        )}
+      </AppShell>
     </div>
   );
 }

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Activity, Zap, AlertTriangle, CheckCircle, Loader2,
-  TrendingUp, MapPin, ShieldAlert, Radio, Cpu
+  Activity, Zap, AlertTriangle, Loader2,
+  TrendingUp, MapPin, ShieldAlert, Radio
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 
-/* ─── Severity colour helpers ─────────────────────────────────────────────── */
 const sevConfig = {
   Critical: { text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/30',    glow: 'shadow-[0_0_20px_rgba(239,68,68,0.18)]',  dot: 'bg-red-500'    },
   High:     { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30', glow: 'shadow-[0_0_16px_rgba(249,115,22,0.14)]', dot: 'bg-orange-500' },
@@ -17,35 +17,30 @@ const sevConfig = {
 };
 const getSev = (s) => sevConfig[s] || sevConfig.Low;
 
-/* ─── Animated pulse ring dot ─────────────────────────────────────────────── */
 const PulseRing = ({ color = 'bg-red-500' }) => (
-  <span className="relative flex h-3 w-3 flex-shrink-0">
+  <span className="relative flex h-3 w-3 flex-shrink-0 select-none">
     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${color} opacity-60`} />
     <span className={`relative inline-flex h-3 w-3 rounded-full ${color}`} />
   </span>
 );
 
-/* ─── KPI stat tile ───────────────────────────────────────────────────────── */
 const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg, glowBg, delay = 0, pulse = false }) => (
   <motion.div
-    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-    className={`glass-card-premium neumorphic-flat rounded-2xl p-6 border ${accentBorder} transition-all duration-300 relative overflow-hidden group hover:${accentBorder}`}
+    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.4 }}
+    className={`glass-card rounded-2xl p-5 border ${accentBorder} transition-all duration-300 relative overflow-hidden group`}
   >
-    <div className={`absolute -top-8 -right-8 w-28 h-28 ${glowBg} rounded-full blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-500`} aria-hidden="true" />
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`p-2.5 ${accentBg} rounded-xl border ${accentBorder}`}>
-        <Icon className={`w-5 h-5 ${accentText} ${pulse ? 'animate-pulse' : ''}`} />
+    <div className={`absolute -top-8 -right-8 w-24 h-24 ${glowBg} rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity`} />
+    <div className="flex items-center gap-3 mb-3 select-none">
+      <div className={`p-2 ${accentBg} rounded-xl border ${accentBorder}`}>
+        <Icon className={`w-4 h-4 ${accentText} ${pulse ? 'animate-pulse' : ''}`} />
       </div>
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</h3>
+      <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</h3>
     </div>
-    <p className={`text-3xl font-black ${accentText} tracking-tight`}>{value}</p>
+    <p className={`text-2xl font-black ${accentText} tracking-tight font-mono`}>{value}</p>
   </motion.div>
 );
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   Main OutbreakMonitor
-   ══════════════════════════════════════════════════════════════════════════════ */
 const OutbreakMonitor = () => {
   const [modelStatus, setModelStatus] = useState(null);
   const [alerts,      setAlerts]      = useState([]);
@@ -55,7 +50,6 @@ const OutbreakMonitor = () => {
   const [countdown,   setCountdown]   = useState('');
   const [error,       setError]       = useState(null);
 
-  /* Countdown to next 6-hour automated scan */
   useEffect(() => {
     const tick = () => {
       const now  = new Date();
@@ -124,71 +118,69 @@ const OutbreakMonitor = () => {
     } catch (err) { toast.error(err.response?.data?.error || 'Verification failed'); }
   };
 
-  /* Loading screen */
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#080d1a]">
-      <div className="flex flex-col items-center gap-5">
-        <div className="relative w-14 h-14">
-          <div className="absolute inset-0 border-2 border-red-500/20 rounded-full animate-ping" />
-          <div className="absolute inset-0 border-2 border-t-red-400 rounded-full animate-spin" />
-          <Cpu className="absolute inset-0 m-auto w-6 h-6 text-red-400" />
-        </div>
-        <p className="text-slate-400 font-semibold tracking-widest uppercase text-xs animate-pulse">
-          Initializing Command Center…
-        </p>
+    <div className="flex h-64 items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider animate-pulse">Initializing Command Center…</p>
       </div>
     </div>
   );
 
   const activeCount = alerts.filter(a => a.status === 'Active').length;
 
-  /* ══════════════════════════════════════════════════════════════════════════ */
-  return (
-    <PageTransition className="p-6 lg:p-10 bg-[#080d1a] min-h-screen text-slate-200">
+  // Prepare chart data from ML results
+  const chartData = mlResult?.results?.map(item => {
+    // Calculate mathematically correct Z-score if not present
+    const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
+    return {
+      name: `${item.disease} (${item.district})`,
+      zScore: parseFloat(zScore.toFixed(2)),
+      latest: item.latest_actual,
+      baseline: item.baseline
+    };
+  }) || [];
 
-      {/* ── Page header ─────────────────────────────────────────────────── */}
-      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+  return (
+    <PageTransition className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2.5 mb-2">
+          <div className="flex items-center gap-2 mb-1 select-none">
             <PulseRing color="bg-red-500" />
-            <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Live Surveillance</span>
+            <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Surveillance Feed</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-400 to-amber-400">
-              Outbreak Command
-            </span>
-            <span className="text-white"> Center</span>
-          </h1>
-          <p className="text-slate-500 mt-1.5 text-sm">Real-time epidemiological ML engine surveillance feed.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Outbreak Monitor</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Real-time epidemiological ML anomaly surveillance center.</p>
         </div>
 
-        {/* Auto-scan countdown */}
-        <div className="flex items-center gap-3 px-5 py-3 glass-card-premium rounded-2xl border border-red-500/15 shadow-[0_0_20px_rgba(239,68,68,0.06)]">
+        {/* Countdown */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl select-none shadow-[0_0_15px_rgba(239,68,68,0.05)]">
           <Radio className="w-4 h-4 text-red-400 animate-pulse" />
-          <div>
-            <p className="label-caps">Next Auto-Scan</p>
-            <p className="text-lg font-black text-red-400 font-mono tracking-wider">{countdown}</p>
+          <div className="text-left">
+            <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Next Automated Scan</span>
+            <span className="text-sm font-mono font-black text-red-400 tracking-wider">{countdown}</span>
           </div>
         </div>
       </div>
 
-      {/* ── KPI tiles ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatTile
-          icon={Activity} label="Surveillance Engine" value="ACTIVE"
+          icon={Activity} label="ML Outbreak Node" value="SURVEILLANCE"
           accentText="text-emerald-400" accentBg="bg-emerald-500/10"
           accentBorder="border-emerald-500/20" glowBg="bg-emerald-500/20"
           delay={0} pulse
         />
         <StatTile
-          icon={TrendingUp} label="Encrypted Ingests"
+          icon={TrendingUp} label="Clinical Telemetry Data Points"
           value={(modelStatus?.dataPoints || 15420).toLocaleString()}
           accentText="text-blue-400" accentBg="bg-blue-500/10"
           accentBorder="border-blue-500/20" glowBg="bg-blue-500/20"
           delay={0.08}
         />
         <StatTile
-          icon={ShieldAlert} label="Active Alerts" value={activeCount}
+          icon={ShieldAlert} label="Active Outbreak Alerts" value={activeCount}
           accentText={activeCount > 0 ? 'text-red-400' : 'text-emerald-400'}
           accentBg={activeCount > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}
           accentBorder={activeCount > 0 ? 'border-red-500/20' : 'border-emerald-500/20'}
@@ -197,303 +189,217 @@ const OutbreakMonitor = () => {
         />
       </div>
 
-      {/* ── On-demand detection panel ─────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="glass-card-premium rounded-3xl p-7 lg:p-9 border border-white/5 mb-8 neumorphic-flat relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-7 relative z-10">
-          <div className="max-w-2xl">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2.5 mb-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              On-Demand Threat Detection
+      {/* On-Demand Trigger Frame */}
+      <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="max-w-xl">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
+              <Zap className="w-4 h-4 text-amber-400 animate-pulse-subtle" /> On-Demand Surveillance Scan
             </h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Scans all encrypted clinical summaries from MongoDB, constructs real-time
-              district statistics, and executes anomalous outbreak verification algorithms.
+            <p className="text-xs text-slate-400 leading-relaxed mt-1.5">
+              Force-triggers the ML anomaly engine, querying patient summaries to compute district-level Z-Scores and log potential outbreaks.
             </p>
           </div>
-
-          {/* Premium CTA button */}
-          <motion.button
-            whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(99,102,241,0.35)' }}
-            whileTap={{ scale: 0.97 }}
+          <button
             onClick={handleRunDetection}
             disabled={detecting}
-            className="
-              self-start lg:self-center relative overflow-hidden
-              flex items-center gap-2.5 px-9 py-4
-              rounded-2xl text-sm font-black text-white
-              bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600
-              shadow-[0_4px_30px_rgba(99,102,241,0.25)]
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-all duration-300
-            "
+            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-40 shrink-0 flex items-center gap-1.5 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
           >
-            <span className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" aria-hidden="true" />
-            {detecting
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
-              : <><Activity className="w-4 h-4" /> Initialize Scan</>}
-          </motion.button>
+            {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
+            {detecting ? 'Scanning Telemetry...' : 'Force System Scan'}
+          </button>
         </div>
 
-        {/* Scan animation */}
-        <AnimatePresence>
-          {detecting && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-7 overflow-hidden"
-            >
-              <div className="p-10 rounded-2xl border border-blue-500/10 bg-slate-950/40 text-center flex flex-col items-center gap-4">
-                <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 border-2 border-blue-500/15 rounded-full animate-ping" />
-                  <div className="absolute inset-0 border-2 border-t-blue-400 rounded-full animate-spin" />
-                  <div className="absolute inset-3 border border-indigo-500/20 rounded-full" />
-                  <Activity className="absolute inset-0 m-auto w-5 h-5 text-blue-400" />
-                </div>
-                <p className="text-sm font-bold text-blue-300 font-mono tracking-widest uppercase animate-pulse">
-                  Running Anomalous Outbreak Analysis
-                </p>
-                <p className="text-xs text-slate-600 font-mono">
-                  Fetching MongoDB collections • Running Z-Score calculations • Validating thresholds
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {detecting && (
+          <div className="p-8 bg-slate-950/40 rounded-xl border border-white/5 text-center flex flex-col items-center gap-2 select-none">
+            <Loader2 className="w-6 h-6 animate-spin text-red-400" />
+            <p className="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">Running Epidemic Threat Assessment...</p>
+          </div>
+        )}
 
-        {/* Error banner */}
-        <AnimatePresence>
-          {error && !detecting && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="mt-7 glass-card-premium rounded-2xl p-6 bg-red-500/10 border border-red-500/30 flex items-start gap-4 shadow-[0_0_30px_rgba(239,68,68,0.14)]"
-            >
-              <AlertTriangle className="w-6 h-6 text-red-400 shrink-0 mt-0.5 animate-pulse" />
-              <div>
-                <p className="text-sm font-black text-red-300 tracking-wide uppercase">Engine Failure</p>
-                <p className="text-sm text-red-400/90 mt-1.5 leading-relaxed font-mono">
-                  {error}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && !detecting && (
+          <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+            <div className="text-xs">
+              <p className="text-red-400 font-bold">Surveillance Scan Failed</p>
+              <p className="text-slate-400 mt-1 font-mono">{error}</p>
+            </div>
+          </div>
+        )}
 
-        {/* Result banner */}
-        <AnimatePresence>
-          {mlResult && !detecting && mlResult.results && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="mt-7"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Scanner Output</h4>
-                <span className="text-xs text-slate-600 font-mono">
-                  📊 Heuristics Node ({mlResult.consultations_analysed} scanned)
-                </span>
-              </div>
+        {/* Recharts Z-Score Bar Chart Output with Dotted Warning Threshold Line */}
+        {mlResult && !detecting && chartData.length > 0 && (
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <div className="flex justify-between items-center select-none">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Computed Z-Scores by Disease Vector</h4>
+              <span className="text-[10px] font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {mlResult.results.map((item, idx) => {
-                  const isHigh = item.severity === 'high';
-                  const isMedium = item.severity === 'medium';
-                  const isAnomaly = item.anomaly;
+            <div className="h-64 w-full bg-slate-950/40 rounded-xl border border-white/5 p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '11px' }}
+                    itemStyle={{ color: '#ef4444', fontSize: '11px' }}
+                  />
+                  <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning Limit (Z = 2.0)', fill: '#ef4444', fontSize: 9, position: 'top' }} />
+                  <Bar dataKey="zScore" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <rect
+                        key={`bar-${index}`}
+                        fill={entry.zScore >= 2.0 ? 'rgba(239, 68, 68, 0.75)' : 'rgba(59, 130, 246, 0.6)'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-                  let borderClass = 'border-white/5';
-                  let bgClass = 'bg-slate-950/50';
-                  let textClass = 'text-emerald-400';
-                  let badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            {/* Results Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              {mlResult.results.map((item, idx) => {
+                const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
+                const isAnomaly = item.anomaly;
+                const spikePct = item.baseline ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : 0;
+                
+                return (
+                  <div
+                    key={`${item.disease}-${idx}`}
+                    className={`p-4 rounded-xl border flex flex-col justify-between ${
+                      isAnomaly
+                        ? 'bg-red-500/[0.02] border-red-500/20'
+                        : 'bg-slate-950/20 border-white/5'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-2 select-none">
+                        <span className="text-white font-bold text-sm truncate">{item.disease}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          isAnomaly ? 'bg-red-500/15 border border-red-500/25 text-red-400' : 'bg-slate-800 border border-slate-700 text-slate-400'
+                        }`}>
+                          {item.severity}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {item.district}
+                      </p>
+                    </div>
 
-                  if (isHigh) {
-                    borderClass = 'border-red-500';
-                    bgClass = 'bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.5)]';
-                    textClass = 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]';
-                    badgeClass = 'bg-red-500/20 text-red-300 border-red-500/40';
-                  } else if (isMedium) {
-                    borderClass = 'border-amber-500/30';
-                    bgClass = 'bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.1)]';
-                    textClass = 'text-amber-400';
-                    badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-                  }
-
-                  const spikePct = item.baseline ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : 0;
-
-                  return (
-                    <motion.div
-                      key={`${item.disease}-${idx}`}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className={`rounded-2xl p-5 border ${borderClass} ${bgClass} flex flex-col justify-between`}
-                    >
+                    <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-end select-none">
                       <div>
-                        <div className="flex justify-between items-start mb-3">
-                          <h5 className={`font-bold text-lg ${isHigh ? 'text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]' : 'text-white'}`}>{item.disease}</h5>
-                          <span className={`inline-block text-[10px] uppercase font-black px-2.5 py-0.5 rounded border ${badgeClass} ${isAnomaly ? 'animate-pulse' : ''}`}>
-                            {item.severity}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-400 mb-1 flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5" /> {item.district}
-                        </p>
+                        <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
+                        <span className={`text-sm font-mono font-bold ${isAnomaly ? 'text-red-400' : 'text-slate-300'}`}>
+                          {zScore.toFixed(2)}
+                        </span>
                       </div>
-                      
-                      <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-end">
-                        <div>
-                          <p className="label-caps mb-0.5">Recent vs Baseline</p>
-                          <p className="text-xs text-slate-300 font-mono">
-                            {item.latest_actual} vs {item.baseline}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`font-black text-lg ${textClass}`}>
-                            +{Math.round(spikePct)}%
-                          </p>
-                        </div>
+                      <div className="text-right">
+                        <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Deviation</span>
+                        <span className={`text-sm font-mono font-bold ${isAnomaly ? 'text-red-400' : 'text-emerald-400'}`}>
+                          +{Math.round(spikePct)}%
+                        </span>
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
-              {mlResult.results.length === 0 && (
-                <div className="p-8 bg-slate-950/50 rounded-2xl border border-white/5 text-center">
-                  <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
-                  <p className="text-sm text-emerald-300 font-bold">No data points required scanning.</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* ── Alert log table ───────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="glass-card-premium rounded-3xl overflow-hidden border border-white/5 neumorphic-flat"
-      >
-        <div className="p-6 border-b border-white/5 bg-slate-950/10 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2.5">
-            <Activity className="w-5 h-5 text-red-400 animate-pulse" />
-            Epidemic Surveillance Logs
+      {/* Surveillance log table */}
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+        <div className="p-4 bg-slate-900/60 border-b border-white/5 flex justify-between items-center select-none">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Activity className="w-4 h-4 text-red-400 animate-pulse" /> Outbreak Surveillance Logs
           </h3>
-          <span className="text-xs text-slate-400 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-white/5 font-semibold">
-            {alerts.length} signals registered
-          </span>
+          <span className="text-[10px] font-mono font-bold text-red-400">{alerts.length} alerts</span>
         </div>
 
         {alerts.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead className="bg-slate-950/40 border-b border-white/5">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  {['Disease Vector', 'Location', 'Severity', 'Verification', 'Date Registered'].map(h => (
-                    <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">{h}</th>
-                  ))}
+                  <th className="px-6 py-4">Disease Vector</th>
+                  <th className="px-6 py-4">Location</th>
+                  <th className="px-6 py-4">Severity</th>
+                  <th className="px-6 py-4">Audit Verification</th>
+                  <th className="px-6 py-4 text-right">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-900/30">
-                {alerts.map((alert, i) => {
-                  const sev    = getSev(alert.severity);
+              <tbody className="divide-y divide-white/5 text-sm text-slate-200">
+                {alerts.map((alert) => {
+                  const sev = getSev(alert.severity);
                   const isLive = alert.status === 'Active' && (!alert.feedbackStatus || alert.feedbackStatus === 'unverified');
                   const isCrit = alert.severity === 'Critical' || alert.severity === 'High';
                   return (
-                    <motion.tr
-                      key={alert._id}
-                      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className={`transition-colors ${isLive && isCrit ? 'hover:bg-red-500/5' : 'hover:bg-slate-900/15'}`}
-                    >
-                      {/* Disease */}
+                    <tr key={alert._id} className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           {isLive && <PulseRing color={isCrit ? 'bg-red-500' : 'bg-amber-500'} />}
                           <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
                             {alert.disease || 'Unknown'}
                           </span>
                         </div>
                       </td>
-
-                      {/* Location */}
-                      <td className="px-6 py-4 text-slate-400">
-                        <span className="inline-flex items-center gap-1.5">
+                      <td className="px-6 py-4 text-slate-400 font-semibold">
+                        <span className="inline-flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-600" />
                           {alert.location || alert.district || 'N/A'}
                         </span>
                       </td>
-
-                      {/* Severity — glowing badge for critical/high */}
                       <td className="px-6 py-4">
-                        <span className={`
-                          inline-flex items-center gap-1.5 text-[10px] uppercase font-black
-                          px-3 py-1.5 rounded-full border
-                          ${sev.text} ${sev.bg} ${sev.border}
-                          ${isCrit ? sev.glow : ''}
-                          ${isCrit && isLive ? 'animate-pulse' : ''}
-                        `}>
-                          {isCrit && <AlertTriangle className="w-3 h-3" />}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${sev.text} ${sev.bg} ${sev.border}`}>
                           {alert.severity || 'Moderate'}
                         </span>
                       </td>
-
-                      {/* Verification */}
                       <td className="px-6 py-4">
                         {alert.feedbackStatus === 'confirmed' ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
-                            <CheckCircle className="w-3.5 h-3.5" /> Confirmed
+                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl select-none">
+                            Confirmed
                           </span>
                         ) : alert.feedbackStatus === 'false_positive' ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-xl">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold bg-slate-800 border border-slate-700 px-3 py-1 rounded-xl select-none">
                             False Alarm
                           </span>
                         ) : (
                           <div className="flex gap-2">
-                            {/* Verify — distinct premium hover */}
-                            <motion.button
-                              whileHover={{ scale: 1.06, boxShadow: '0 0 18px rgba(16,185,129,0.28)' }}
-                              whileTap={{ scale: 0.95 }}
+                            <button
                               onClick={() => handleVerifyAlert(alert._id, 'confirmed')}
-                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition-all border border-emerald-500/40 shadow-md"
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg border border-emerald-500/25 transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                             >
-                              ✓ Verify
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.06, boxShadow: '0 0 18px rgba(239,68,68,0.20)' }}
-                              whileTap={{ scale: 0.95 }}
+                              Confirm
+                            </button>
+                            <button
                               onClick={() => handleVerifyAlert(alert._id, 'false_positive')}
-                              className="px-3.5 py-1.5 bg-slate-800 hover:bg-red-900/60 text-slate-300 hover:text-red-300 text-xs font-black rounded-xl transition-all border border-slate-700 hover:border-red-500/30 shadow-md"
+                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg border border-white/5 transition-all"
                             >
-                              ✗ False Alarm
-                            </motion.button>
+                              False Alarm
+                            </button>
                           </div>
                         )}
                       </td>
-
-                      {/* Date */}
-                      <td className="px-6 py-4 text-slate-500 text-xs font-mono">
+                      <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right select-none">
                         {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : 'N/A'}
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="p-20 text-center">
-            <Activity className="w-12 h-12 mx-auto mb-4 text-slate-800 animate-pulse" />
-            <p className="text-slate-600 text-sm font-semibold tracking-wide">
-              Surveillance feeds clear — no outbreak telemetry recorded.
-            </p>
+          <div className="p-12 text-center text-slate-500 select-none">
+            <Activity className="w-12 h-12 mx-auto mb-3 opacity-30 animate-pulse" />
+            <p className="text-sm font-semibold">Surveillance logs clear. No threat events registered.</p>
           </div>
         )}
-      </motion.div>
+      </div>
     </PageTransition>
   );
 };

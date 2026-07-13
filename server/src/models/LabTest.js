@@ -1,6 +1,6 @@
 // server/src/models/LabTest.js
 const mongoose  = require('mongoose');
-const encrypt   = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const { Schema } = mongoose;
 
@@ -61,7 +61,7 @@ const LabTestSchema = new Schema(
     },
     acceptedBy: {
       type:     Schema.Types.ObjectId,
-      ref:      'User',        // hospital admin / lab technician
+      ref:      'Hospital',        // hospital admin / lab technician
       default:  null,
     },
 
@@ -147,6 +147,7 @@ const LabTestSchema = new Schema(
       type:    String,
       default: null,          // 12-byte GCM IV stored as hex
     },
+    keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
   },
   {
     timestamps: true,         // createdAt, updatedAt
@@ -155,9 +156,8 @@ const LabTestSchema = new Schema(
 
 // ─── Encrypt PII fields at rest ───────────────────────────────────────────────
 // patientNic_bi is intentionally NOT in this list — it's a hash, not PII
-LabTestSchema.plugin(encrypt, {
-  fields:    ['patientNic', 'patientName', 'patientEmail'],
-  secret:    process.env.ENCRYPTION_KEY,
+LabTestSchema.plugin(versionedEncryption, {
+  fields:    ['patientNic', 'patientName', 'patientEmail']
 });
 
 // ─── Model ────────────────────────────────────────────────────────────────────

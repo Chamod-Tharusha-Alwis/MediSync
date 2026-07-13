@@ -20,7 +20,11 @@ const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
 
 // Shared secret key for internal service authentication
 const getSecretKey = () => {
-  return process.env.INTERNAL_API_KEY || 'medisync-internal-secret-2024';
+  if (!process.env.INTERNAL_API_KEY) {
+    console.error('FATAL: INTERNAL_API_KEY environment variable is not set.');
+    process.exit(1);
+  }
+  return process.env.INTERNAL_API_KEY;
 };
 
 // Generates the HMAC authentication token using the current UTC hour

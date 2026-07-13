@@ -4,30 +4,35 @@ import { toast } from 'react-toastify';
 import {
   Package, Clock, Search, CheckCircle, Pill, ShoppingBag,
   Plus, Trash2, Loader2, Users, BarChart3, UserCircle, Shield, Mail,
-  TrendingUp, AlertTriangle, RefreshCw, Activity, X, Settings, Camera
+  AlertTriangle, RefreshCw, Activity, X, Settings, Camera,
+  Key, Printer, Save
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
-import Sidebar from '../../components/common/Sidebar';
+import AppShell from '../../components/ui/AppShell';
+import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
+import Modal from '../../components/ui/Modal';
 
-/* ─── Helper: read role stored by pharmacy login ─────────────────────────── */
+const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
+
 function getPharmacyRole() {
-  // pharmacy/Login.jsx stores the role directly: localStorage.setItem('role', role)
   return localStorage.getItem('role') || null;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: Dispense (Fulfill doctor prescription)
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Dispense Medication
+// ─────────────────────────────────────────────────────────────────────────────
 const Dispense = () => {
   const [nic, setNic] = useState('');
   const [prescriptions, setPrescriptions] = useState([]);
   const [patientInfo, setPatientInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dispensing, setDispensing] = useState(false);
-  // Alternative dispense modal state
-  const [altModal, setAltModal] = useState(null); // null | { rx }
+  
+  // Alternative dispense modal states
+  const [showDispenseModal, setShowDispenseModal] = useState(false);
+  const [selectedRx, setSelectedRx] = useState(null);
   const [isAlt, setIsAlt] = useState(false);
   const [altDetails, setAltDetails] = useState('');
 
@@ -56,23 +61,24 @@ const Dispense = () => {
   const openDispenseModal = (rx) => {
     setIsAlt(false);
     setAltDetails('');
-    setAltModal(rx);
+    setSelectedRx(rx);
+    setShowDispenseModal(true);
   };
 
   const confirmDispense = async () => {
-    if (!altModal) return;
+    if (!selectedRx) return;
     if (isAlt && !altDetails.trim()) return toast.error('Please describe the alternative medication dispensed.');
     setDispensing(true);
     try {
       await api.post('/pharmacy/dispense', {
-        prescriptionId: altModal.prescriptionId,
-        patientNic: altModal.patientNic,
+        prescriptionId: selectedRx.prescriptionId,
+        patientNic: selectedRx.patientNic,
         isAlternativeDispensed: isAlt,
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
       });
       toast.success('Prescription dispensed! Patient notification email sent.');
-      setPrescriptions(prev => prev.filter(p => p._id !== altModal._id));
-      setAltModal(null);
+      setPrescriptions(prev => prev.filter(p => p.prescriptionId !== selectedRx.prescriptionId));
+      setShowDispenseModal(false);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to dispense');
     } finally {
@@ -81,91 +87,99 @@ const Dispense = () => {
   };
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Dispense Medication</h1>
-        <p className="text-slate-400 mt-1">Search and fulfill patient e-prescriptions.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Dispense Medication</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Verify patient NIC, fetch e-prescriptions, and log clinical dispensations.</p>
       </div>
 
-      <div className="glass-panel p-6 rounded-2xl mb-8 max-w-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 opacity-5">
-          <Search className="w-32 h-32 text-emerald-500" />
+      <div className="glass-panel p-6 rounded-2xl border border-white/5 max-w-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-[0.02] pointer-events-none">
+          <Search className="w-32 h-32 text-teal-400" />
         </div>
-        <form onSubmit={handleSearch} className="relative z-10 flex gap-4">
+        <form onSubmit={handleSearch} className="relative z-10 flex gap-3">
           <div className="flex-1">
             <input
-              type="text" value={nic} onChange={(e) => setNic(e.target.value)}
+              type="text"
+              value={nic}
+              onChange={(e) => setNic(e.target.value)}
               placeholder="Enter Patient NIC (e.g. 981234567V)"
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-6 py-4 text-white text-lg focus:border-emerald-500 outline-none uppercase placeholder:normal-case placeholder:text-slate-500"
+              className="glass-input py-3.5 px-4 text-base uppercase"
             />
           </div>
-          <button type="submit" disabled={loading}
-            className="glass-button bg-emerald-600 hover:bg-emerald-500 text-white px-8 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            {loading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Search className="w-5 h-5 mr-2" />Find</>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="glass-button text-xs py-3 px-6 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 text-white shrink-0 disabled:opacity-40"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            Retrieve
           </button>
         </form>
       </div>
 
       {patientInfo && (
-        <div className="glass-panel p-6 rounded-2xl mb-8 flex flex-col md:flex-row gap-6 items-center border border-emerald-500/20 bg-emerald-500/5">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-600/20 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
-            <UserCircle className="w-8 h-8 text-emerald-400" />
+        <div className="glass-panel p-5 rounded-xl border border-teal-500/10 flex flex-col md:flex-row gap-5 items-center bg-teal-500/5 select-none">
+          <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
+            <UserCircle className="w-6 h-6 text-teal-400" />
           </div>
-          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full text-xs font-semibold">
             <div>
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Patient Name</p>
-              <p className="text-white font-semibold break-all overflow-hidden">{patientInfo.fullName || 'N/A'}</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">Patient Name</p>
+              <p className="text-slate-200 text-sm truncate">{patientInfo.fullName || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Contact</p>
-              <p className="text-slate-300 break-all overflow-hidden">{patientInfo.contactInfo || 'N/A'}</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">Contact No</p>
+              <p className="text-slate-200 text-sm truncate">{patientInfo.contactInfo || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Blood Group</p>
-              <p className="text-red-400 font-bold break-all overflow-hidden">{patientInfo.bloodGroup || 'N/A'}</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">Blood Group</p>
+              <p className="text-red-400 text-sm">{patientInfo.bloodGroup || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Date of Birth</p>
-              <p className="text-slate-300 break-all overflow-hidden">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">Date of Birth</p>
+              <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
             </div>
           </div>
         </div>
       )}
 
       {prescriptions.length > 0 && (
-        <div className="glass-panel rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800/50 bg-slate-800/30 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white flex items-center">
-              <Pill className="w-5 h-5 mr-2 text-emerald-400" />
-              Active Prescriptions for <span className="ml-2 px-2 py-1 bg-slate-700 rounded text-emerald-400 font-mono text-sm">{nic}</span>
+        <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+          <div className="p-5 bg-slate-900/60 border-b border-white/5 flex justify-between items-center select-none">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for NIC: {nic}
             </h2>
-            <span className="text-sm text-slate-400">{prescriptions.length} items found</span>
+            <span className="text-xs font-mono font-bold text-teal-400">{prescriptions.length} items</span>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {prescriptions.map((rx, index) => {
+            {prescriptions.map((rx) => {
               const mainDrug = rx.medications && rx.medications.length > 0 ? rx.medications[0] : null;
               return (
-                <div key={rx._id} className="bg-slate-800/40 border border-slate-700 p-5 rounded-xl flex flex-col justify-between hover:bg-slate-800/60 transition-colors"
-                  style={{ animationDelay: `${index * 100}ms` }}>
+                <div key={rx._id} className="bg-slate-950/40 border border-white/5 p-5 rounded-2xl flex flex-col justify-between hover:border-teal-500/20 transition-all">
                   <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-xl font-bold text-white">{mainDrug?.name || rx.drugName || 'Unknown Drug'}</h3>
-                      <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded">#{rx.prescriptionId?.split('-')[1] || rx.prescriptionId}</span>
+                    <div className="flex justify-between items-start mb-3 gap-2">
+                      <h3 className="text-base font-bold text-white truncate">{mainDrug?.name || rx.drugName || 'Medication'}</h3>
+                      <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-mono font-bold rounded">
+                        #{rx.prescriptionId?.split('-')[1] || rx.prescriptionId}
+                      </span>
                     </div>
                     {mainDrug && (
-                      <div className="space-y-1 mb-4 text-sm text-slate-300">
-                        <p><span className="text-slate-500 w-20 inline-block">Dosage:</span> {mainDrug.dosage}</p>
-                        <p><span className="text-slate-500 w-20 inline-block">Freq:</span> {mainDrug.frequency}</p>
-                        <p><span className="text-slate-500 w-20 inline-block">Duration:</span> {mainDrug.durationDays} Days</p>
+                      <div className="space-y-1.5 mb-4 text-xs text-slate-300 font-semibold pt-1">
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Dosage:</span> {mainDrug.dosage}</p>
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Frequency:</span> {mainDrug.frequency}</p>
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Duration:</span> {mainDrug.durationDays} Days</p>
                       </div>
                     )}
-                    <p className="text-sm text-slate-400 mb-4 border-t border-slate-700/50 pt-3">
-                      Prescribed by <span className="text-slate-300">Dr. {rx.doctorId?.fullName || 'Unknown'}</span>
+                    <p className="text-xs text-slate-500 mb-4 border-t border-white/5 pt-3 select-none">
+                      Referred by <span className="text-slate-300 font-bold">Dr. {rx.doctorId?.fullName || 'Practitioner'}</span>
                     </p>
                   </div>
-                  <button onClick={() => openDispenseModal(rx)} disabled={dispensing}
-                    className="w-full py-3 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg font-bold transition-all flex items-center justify-center gap-2">
-                    <CheckCircle className="w-5 h-5" /> Dispense Now
+                  <button
+                    onClick={() => openDispenseModal(rx)}
+                    className="w-full py-2.5 bg-teal-600/10 border border-teal-500/25 hover:bg-teal-600 text-teal-400 hover:text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Dispense Medication
                   </button>
                 </div>
               );
@@ -174,72 +188,74 @@ const Dispense = () => {
         </div>
       )}
 
-      {/* ── Alternative Dispense Modal ─────────────────────────────────────── */}
-      {altModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg">Confirm Dispensing</h3>
-                <p className="text-slate-400 text-sm">{altModal.medications?.[0]?.name || altModal.drugName}</p>
-              </div>
+      {/* Alternative Dispense Modal */}
+      <Modal
+        isOpen={showDispenseModal}
+        onClose={() => setShowDispenseModal(false)}
+        title="Dispense Verification Approval"
+        size="sm"
+      >
+        {selectedRx && (
+          <div className="space-y-5">
+            <div className="text-center md:text-left select-none">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Medication Name</span>
+              <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
             </div>
 
-            {/* Alternative checkbox */}
-            <label className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer mb-4 hover:bg-amber-500/10 transition-colors">
+            {/* Alternative Toggle Box */}
+            <label className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10 transition-all select-none">
               <input
-                type="checkbox" checked={isAlt} onChange={e => setIsAlt(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-amber-400 flex-shrink-0"
+                type="checkbox"
+                checked={isAlt}
+                onChange={e => setIsAlt(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-amber-400 shrink-0"
               />
-              <div>
-                <p className="text-amber-300 font-semibold text-sm">Dispense Alternative / Brand Substitute</p>
-                <p className="text-slate-500 text-xs mt-0.5">Check if dispensing a different drug or brand than originally prescribed.</p>
+              <div className="min-w-0">
+                <p className="text-amber-400 font-bold text-xs">Dispense Brand Substitute / Alternative</p>
+                <p className="text-slate-500 text-[10px] mt-1 leading-normal">Select if dispensing a generic alternative different from prescription.</p>
               </div>
             </label>
 
             {isAlt && (
-              <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Alternative Drug / Brand Given *
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelClass}>Substitution Justification Notes *</label>
                 <input
                   type="text"
                   value={altDetails}
                   onChange={e => setAltDetails(e.target.value)}
-                  placeholder="e.g. Calpol 500mg (generic substitute for Panadol)"
+                  placeholder="e.g. Calpol 500mg instead of Panadol"
+                  className="glass-input text-xs"
                   autoFocus
-                  className="w-full bg-slate-800/50 border border-amber-500/40 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-400 outline-none placeholder:text-slate-600 transition-colors"
                 />
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-3 border-t border-white/5">
               <button
-                onClick={() => setAltModal(null)}
-                className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 font-bold transition-all"
-              >Cancel</button>
+                onClick={() => setShowDispenseModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-white/5 text-slate-400 hover:text-white text-xs font-bold transition-all"
+              >
+                Cancel
+              </button>
               <button
                 onClick={confirmDispense}
                 disabled={dispensing || (isAlt && !altDetails.trim())}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
               >
-                {dispensing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                Confirm Dispense
+                {dispensing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                Dispense Now
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </PageTransition>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: Dispensing History
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Dispensing History Log
+// ─────────────────────────────────────────────────────────────────────────────
 const History = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -249,56 +265,55 @@ const History = () => {
       setHistory(res.data.data || []);
       setLoading(false);
     }).catch(() => {
-      toast.error('Failed to load history');
+      toast.error('Failed to load history logs');
       setLoading(false);
     });
   }, []);
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Dispensing History</h1>
-        <p className="text-slate-400 mt-1">Review recently fulfilled prescriptions.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Dispensing History</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Review medication logs and patient receipts issued from this facility.</p>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-slate-400">Loading history...</p>
-          </div>
+          <div className="p-8"><Skeleton.Card /></div>
         ) : history.length > 0 ? (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-300">
-              <tr>
-                <th className="px-6 py-4 font-medium">Receipt No</th>
-                <th className="px-6 py-4 font-medium">Patient NIC</th>
-                <th className="px-6 py-4 font-medium">Medication(s)</th>
-                <th className="px-6 py-4 font-medium">Dispensed By</th>
-                <th className="px-6 py-4 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map(record => {
-                const drugLabel = record.prescriptionId?.medications?.length > 0
-                  ? record.prescriptionId.medications.map(m => m.name).join(', ')
-                  : (record.items?.[0]?.drugName || record.prescriptionId?.drugName || '—');
-                return (
-                  <tr key={record._id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4 text-white font-mono text-sm">{record.receiptNumber || '—'}</td>
-                    <td className="px-6 py-4 text-slate-300 font-mono text-sm">{record.patientNic || '—'}</td>
-                    <td className="px-6 py-4 text-slate-300 text-sm max-w-[180px] truncate" title={drugLabel}>{drugLabel}</td>
-                    <td className="px-6 py-4 text-slate-400">{record.staffId?.fullName || '—'}</td>
-                    <td className="px-6 py-4 text-slate-500 text-sm">{new Date(record.createdAt).toLocaleString()}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Receipt Number</th>
+                  <th className="px-6 py-4">Patient NIC</th>
+                  <th className="px-6 py-4">Medications</th>
+                  <th className="px-6 py-4">Dispensed By</th>
+                  <th className="px-6 py-4 text-right">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm text-slate-200">
+                {history.map(record => {
+                  const drugLabel = record.prescriptionId?.medications?.length > 0
+                    ? record.prescriptionId.medications.map(m => m.name).join(', ')
+                    : (record.items?.[0]?.drugName || record.prescriptionId?.drugName || '—');
+                  return (
+                    <tr key={record._id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-white text-xs">{record.receiptNumber || '—'}</td>
+                      <td className="px-6 py-4 font-mono text-slate-300 text-xs">{record.patientNic || '—'}</td>
+                      <td className="px-6 py-4 text-slate-300 text-xs font-medium max-w-[200px] truncate" title={drugLabel}>{drugLabel}</td>
+                      <td className="px-6 py-4 text-slate-400 font-bold">{record.staffId?.fullName || '—'}</td>
+                      <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right">{new Date(record.createdAt).toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="p-12 text-center text-slate-500">
-            <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>No dispensing history found.</p>
+          <div className="p-12 text-center text-slate-500 select-none">
+            <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold">No dispensing events found in system logs.</p>
           </div>
         )}
       </div>
@@ -306,10 +321,10 @@ const History = () => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: Manual OTC Dispensing
-   ══════════════════════════════════════════════════════════════════════════════ */
-const emptyMed = () => ({ name: '', dosage: '', frequency: '' });
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Manual OTC Dispensing (Checkout shopping cart & invoice print)
+// ─────────────────────────────────────────────────────────────────────────────
+const emptyMed = () => ({ name: '', dosage: '', frequency: '', qty: 1, price: 150 });
 
 const ManualDispenseOTC = () => {
   const [patientNic, setPatientNic] = useState('');
@@ -318,9 +333,14 @@ const ManualDispenseOTC = () => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [lastReceipt, setLastReceipt] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const updateMed = (index, field, value) =>
     setMedications(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+
+  const totalSum = useMemo(() => {
+    return medications.reduce((acc, m) => acc + (m.qty || 1) * (m.price || 0), 0);
+  }, [medications]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -335,9 +355,17 @@ const ManualDispenseOTC = () => {
         medications: validMeds,
         notes: notes.trim(),
       });
-      toast.success(`OTC dispensation recorded! (${validMeds.length} medication${validMeds.length > 1 ? 's' : ''})`);
-      setLastReceipt(res.data.data);
-      setPatientNic(''); setConsultationRef(''); setMedications([emptyMed()]); setNotes('');
+      toast.success(`OTC dispensation recorded successfully.`);
+      setLastReceipt({
+        ...res.data.data,
+        medications: validMeds,
+        total: totalSum
+      });
+      setShowReceiptModal(true);
+      setPatientNic('');
+      setConsultationRef('');
+      setMedications([emptyMed()]);
+      setNotes('');
     } catch (err) {
       toast.error(err.response?.data?.error || 'OTC dispensing failed');
     } finally {
@@ -346,120 +374,208 @@ const ManualDispenseOTC = () => {
   };
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Manual OTC Dispense</h1>
-        <p className="text-slate-400 mt-1">Record direct over-the-counter dispensation without a doctor's prescription.</p>
+    <PageTransition className="space-y-6">
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Manual OTC Checkout</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Record direct over-the-counter checkouts and generate simulated receipts.</p>
+        </div>
       </div>
 
-      {lastReceipt && (
-        <div className="glass-panel rounded-2xl p-5 mb-8 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-            <div>
-              <p className="text-emerald-300 font-bold">Dispensation Recorded Successfully</p>
-              <p className="text-slate-400 text-sm mt-0.5">{lastReceipt.medicationCount} medication(s) saved to patient record.</p>
+      <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-6 items-start">
+        {/* Left Form Area */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="glass-card p-6 rounded-2xl space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Patient NIC *</label>
+              <input
+                type="text"
+                value={patientNic}
+                onChange={e => setPatientNic(e.target.value)}
+                placeholder="e.g. 981234567V"
+                className="glass-input text-sm uppercase"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Consultation Reference (optional)</label>
+              <input
+                type="text"
+                value={consultationRef}
+                onChange={e => setConsultationRef(e.target.value)}
+                placeholder="e.g. CON-842918"
+                className="glass-input text-sm uppercase"
+              />
             </div>
           </div>
-          <button onClick={() => setLastReceipt(null)} className="text-slate-500 hover:text-white text-xs underline">Dismiss</button>
-        </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-        <div className="glass-panel p-6 rounded-2xl">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Patient NIC</label>
-          <input type="text" value={patientNic} onChange={e => setPatientNic(e.target.value)}
-            placeholder="e.g. 981234567V or 200012345678"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-5 py-3.5 text-white text-base focus:border-emerald-500 outline-none uppercase placeholder:normal-case placeholder:text-slate-500 transition-colors mb-5" />
+          <div className="glass-card p-6 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3 select-none">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Medications Shopping Cart</label>
+              <button
+                type="button"
+                onClick={() => setMedications(prev => [...prev, emptyMed()])}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-bold hover:bg-teal-500/20 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Drug
+              </button>
+            </div>
 
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Consultation Ref (Optional)</label>
-          <input type="text" value={consultationRef} onChange={e => setConsultationRef(e.target.value)}
-            placeholder="e.g. CON-XXXXXX"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-5 py-3.5 text-white text-base focus:border-emerald-500 outline-none uppercase placeholder:normal-case placeholder:text-slate-500 transition-colors" />
-        </div>
-
-        <div className="glass-panel p-6 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Medications</label>
-            <button type="button" onClick={() => setMedications(prev => [...prev, emptyMed()])}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-600/30 transition-all">
-              <Plus className="w-3.5 h-3.5" /> Add Drug
-            </button>
-          </div>
-          <div className="space-y-3">
-            {/* Drug auto-suggest datalist */}
             <datalist id="drug-suggestions">
               {[
                 'Paracetamol 500mg','Panadol 500mg','Calpol 500mg',
                 'Amoxicillin 250mg','Amoxicillin 500mg','Amoxiclav 625mg',
-                'Ibuprofen 200mg','Ibuprofen 400mg','Brufen 400mg',
+                'Ibuprofen 200mg','Ibuprofen 400mg',
                 'Cetirizine 10mg','Piriton 4mg','Loratadine 10mg',
-                'Metformin 500mg','Metformin 1000mg','Glibenclamide 5mg',
-                'Amlodipine 5mg','Amlodipine 10mg','Atenolol 50mg',
-                'Omeprazole 20mg','Pantoprazole 40mg','Ranitidine 150mg',
-                'Azithromycin 250mg','Azithromycin 500mg',
-                'Ciprofloxacin 500mg','Doxycycline 100mg',
-                'Prednisolone 5mg','Betamethasone 0.5mg',
-                'Salbutamol Inhaler','Beclometasone Inhaler',
-                'Atorvastatin 10mg','Atorvastatin 40mg','Simvastatin 20mg',
-                'Clopidogrel 75mg','Aspirin 75mg','Aspirin 300mg',
-                'Diazepam 5mg','Alprazolam 0.5mg',
-                'Vitamin C 500mg','Vitamin D3 1000IU','Zinc Sulphate 20mg',
-                'Folic Acid 5mg','Ferrous Sulphate 200mg',
-                'Metronidazole 400mg','Fluconazole 150mg',
-                'Benzac AC 2.5% Gel','Clindamycin Gel 1%',
-                'Hyoscine Butylbromide 10mg','Domperidone 10mg','Ondansetron 4mg',
-                'Tramadol 50mg','Codeine Phosphate 30mg',
-              ].map(drug => <option key={drug} value={drug} />)}
+                'Metformin 500mg','Amlodipine 5mg','Omeprazole 20mg'
+              ].map(d => <option key={d} value={d} />)}
             </datalist>
 
-            {medications.map((med, idx) => (
-              <div key={idx} className="flex items-start gap-3 bg-slate-800/40 rounded-xl p-3 border border-slate-700/50">
-                <span className="text-slate-500 text-xs font-mono font-bold pt-3.5 w-5 text-center flex-shrink-0">{idx + 1}</span>
-                <div className="grid grid-cols-3 gap-2 flex-1">
-                  <input
-                    type="text"
-                    list="drug-suggestions"
-                    value={med.name}
-                    onChange={e => updateMed(idx, 'name', e.target.value)}
-                    placeholder="Drug name* (start typing to search)"
-                    className="col-span-3 bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm focus:border-emerald-500 outline-none placeholder:text-slate-600 transition-colors" />
-                  <input type="text" value={med.dosage} onChange={e => updateMed(idx, 'dosage', e.target.value)}
-                    placeholder="Dosage (e.g. 500mg)"
-                    className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm focus:border-emerald-500 outline-none placeholder:text-slate-600 transition-colors" />
-                  <input type="text" value={med.frequency} onChange={e => updateMed(idx, 'frequency', e.target.value)}
-                    placeholder="Frequency"
-                    className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm focus:border-emerald-500 outline-none placeholder:text-slate-600 transition-colors" />
-                  <button type="button" onClick={() => { if (medications.length > 1) setMedications(prev => prev.filter((_, i) => i !== idx)); }}
-                    disabled={medications.length === 1}
-                    className="flex items-center justify-center rounded-lg border border-red-500/20 text-red-500/40 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+            <div className="space-y-3">
+              {medications.map((med, idx) => (
+                <div key={idx} className="flex gap-3 bg-slate-950/30 rounded-xl p-4 border border-white/5 relative items-center">
+                  <span className="text-slate-500 text-xs font-mono font-bold w-5 shrink-0 text-center">{idx + 1}</span>
+                  <div className="grid grid-cols-12 gap-3 flex-1">
+                    <input
+                      type="text"
+                      list="drug-suggestions"
+                      value={med.name}
+                      onChange={e => updateMed(idx, 'name', e.target.value)}
+                      placeholder="Medication name* (select or type)"
+                      className="col-span-12 sm:col-span-5 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={med.dosage}
+                      onChange={e => updateMed(idx, 'dosage', e.target.value)}
+                      placeholder="Dosage (500mg)"
+                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      value={med.qty}
+                      onChange={e => updateMed(idx, 'qty', parseInt(e.target.value) || 1)}
+                      placeholder="Qty"
+                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none font-mono"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={med.price}
+                      onChange={e => updateMed(idx, 'price', parseFloat(e.target.value) || 0)}
+                      placeholder="Price"
+                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { if (medications.length > 1) setMedications(prev => prev.filter((_, i) => i !== idx)); }}
+                      disabled={medications.length === 1}
+                      className="col-span-12 sm:col-span-1 py-2 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20 rounded-lg disabled:opacity-20"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Notes <span className="text-slate-600 normal-case font-medium">(optional)</span></label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            placeholder="Any additional notes for this dispensation..."
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-5 py-3.5 text-white text-sm focus:border-emerald-500 outline-none placeholder:text-slate-500 resize-none transition-colors" />
+        {/* Right billing summary panel */}
+        <div className="space-y-6">
+          <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4 select-none">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">Billing Summary</h4>
+            <div className="space-y-2 text-xs font-semibold text-slate-300">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span className="font-mono text-slate-200">LKR {totalSum.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax (Govt 2.5%):</span>
+                <span className="font-mono text-slate-200">LKR {(totalSum * 0.025).toFixed(2)}</span>
+              </div>
+              <div className="h-px bg-white/5 my-2" />
+              <div className="flex justify-between text-white text-sm font-bold">
+                <span>Total Bill:</span>
+                <span className="font-mono text-teal-400">LKR {(totalSum * 1.025).toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
+              Fulfill & Issue Receipt
+            </button>
+          </div>
         </div>
-
-        <button type="submit" disabled={submitting}
-          className="w-full py-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_30px_rgba(20,184,166,0.45)] transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 text-base tracking-wide">
-          {submitting ? <><Loader2 className="w-5 h-5 animate-spin" />Recording...</> : <><ShoppingBag className="w-5 h-5" />Record OTC Dispensation</>}
-        </button>
       </form>
+
+      {/* Simulated printable receipt invoice modal */}
+      <Modal
+        isOpen={showReceiptModal}
+        onClose={() => setShowReceiptModal(false)}
+        title="Dispensed OTC Receipt"
+        size="sm"
+      >
+        {lastReceipt && (
+          <div className="space-y-5 select-none text-xs">
+            <div className="text-center py-2 border-b border-dashed border-white/10">
+              <p className="text-white font-black text-sm uppercase">MEDISYNC PHARMACY</p>
+              <p className="text-slate-500 mt-0.5">Automated Dispensation Network</p>
+            </div>
+            
+            <div className="space-y-1 font-mono text-slate-400">
+              <p>Receipt ID: {lastReceipt.receiptNumber || 'OTC-82194'}</p>
+              <p>Patient NIC: {lastReceipt.patientNic}</p>
+              <p>Issued: {new Date().toLocaleString()}</p>
+            </div>
+
+            <div className="h-px bg-white/5" />
+
+            <div className="space-y-2">
+              <p className="font-bold text-white uppercase tracking-wider text-[10px] text-slate-500">Items Checkout</p>
+              {lastReceipt.medications?.map((m, i) => (
+                <div key={i} className="flex justify-between font-mono text-slate-300">
+                  <span>{m.name} x{m.qty}</span>
+                  <span>LKR {(m.qty * m.price).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-dashed border-white/10 pt-3 space-y-1.5 font-mono text-slate-300">
+              <div className="flex justify-between font-bold text-white text-sm">
+                <span>TOTAL PAID:</span>
+                <span>LKR {(lastReceipt.total * 1.025).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-3 border-t border-white/5">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 border border-white/5"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print simulated Invoice
+              </button>
+              <button
+                onClick={() => setShowReceiptModal(false)}
+                className="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </PageTransition>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: 24-Hour Restock Analytics (local aggregation, no ML)
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Restock Leaderboard Analytics
+// ─────────────────────────────────────────────────────────────────────────────
 const RestockAnalytics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -489,133 +605,109 @@ const RestockAnalytics = () => {
     [leaderboard]);
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8 flex items-start justify-between">
+    <PageTransition className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-violet-400" />
-            24-Hour Restock Analytics
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-indigo-400 animate-pulse-subtle" />
+            Restock Depletion Analytics
           </h1>
-          <p className="text-slate-400 mt-1">
-            Top {leaderboard.length} fastest-depleting medications at{' '}
-            <span className="text-violet-400 font-semibold">{meta.pharmacyName || 'your pharmacy'}</span>
-            {' '}in the last 24 hours.
-          </p>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Fastest-depleting medications at {meta.pharmacyName || 'your pharmacy'} in the last 24 hours.</p>
         </div>
-        <button onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition-all">
-          <RefreshCw className="w-4 h-4" /> Refresh
+        <button
+          onClick={fetchData}
+          className="glass-button text-xs py-2 px-4 flex items-center gap-1.5"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
       </div>
 
-      {/* Summary cards */}
       {!loading && !error && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="glass-panel p-5 rounded-xl border border-violet-500/20">
-            <p className="text-2xl font-bold text-white">{meta.drugsAnalyzed || 0}</p>
-            <p className="text-xs text-slate-400 mt-1">Drugs Dispensed (24h)</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="glass-panel p-5 rounded-2xl border border-white/5">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Active Inventory Analyzed</span>
+            <span className="text-2xl font-black text-white mt-1 block font-mono">{meta.drugsAnalyzed || 0}</span>
           </div>
-          <div className="glass-panel p-5 rounded-xl border border-red-500/20">
-            <p className="text-2xl font-bold text-red-400">{leaderboard.filter(r => r.isCritical).length}</p>
-            <p className="text-xs text-slate-400 mt-1">Below Reorder Level</p>
+          <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
+            <span className="text-[10px] text-red-400/80 uppercase font-bold tracking-wider">Critical Inventory Alerts</span>
+            <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{leaderboard.filter(r => r.isCritical).length}</span>
           </div>
-          <div className="glass-panel p-5 rounded-xl border border-emerald-500/20">
-            <p className="text-2xl font-bold text-emerald-400">
+          <div className="glass-panel p-5 rounded-2xl border border-teal-500/10">
+            <span className="text-[10px] text-teal-400/80 uppercase font-bold tracking-wider">Total Dispensed Units</span>
+            <span className="text-2xl font-black text-teal-400 mt-1 block font-mono">
               {leaderboard.reduce((sum, r) => sum + r.totalDispensed24h, 0)}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">Total Units Dispensed</p>
+            </span>
           </div>
         </div>
       )}
 
-      {loading && (
-        <div className="glass-panel rounded-2xl p-12 text-center">
-          <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Aggregating 24-hour dispensing data...</p>
-        </div>
-      )}
+      {loading && <Skeleton.Card />}
 
       {error && (
-        <div className="glass-panel rounded-2xl p-8 border border-red-500/30 bg-red-500/5 text-center">
-          <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-          <p className="text-red-400 font-semibold">Failed to load analytics.</p>
-          <button onClick={fetchData} className="mt-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30 transition">Retry</button>
+        <div className="glass-panel rounded-2xl p-8 border border-red-500/20 bg-red-500/5 text-center space-y-4 select-none">
+          <AlertTriangle className="w-10 h-10 text-red-400 mx-auto" />
+          <p className="text-red-400 font-bold">Failed to load analytics dashboard.</p>
+          <button onClick={fetchData} className="glass-button text-xs py-2 px-6 mx-auto">Retry</button>
         </div>
       )}
 
       {!loading && !error && leaderboard.length === 0 && (
-        <div className="glass-panel rounded-2xl p-12 text-center border border-violet-500/20 bg-violet-500/5">
-          <Activity className="w-12 h-12 text-violet-400 mx-auto mb-4 opacity-50" />
-          <p className="text-violet-400 font-semibold text-lg">No dispensing in the last 24 hours</p>
-          <p className="text-slate-400 text-sm mt-2">Analytics will appear after the first dispense event of the day.</p>
+        <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 select-none">
+          <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-50" />
+          <p className="text-slate-400 font-semibold text-lg">No dispensing logs in the last 24 hours</p>
         </div>
       )}
 
       {!loading && !error && leaderboard.length > 0 && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-700/50">
-          <div className="px-6 py-4 bg-slate-800/60 border-b border-slate-700 flex items-center gap-3">
-            <TrendingUp className="w-5 h-5 text-violet-400" />
-            <span className="text-white font-semibold">Depletion Leaderboard</span>
-            <span className="ml-auto text-xs text-slate-500">Since {new Date(meta.since).toLocaleString()}</span>
-          </div>
+        <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-800/40 text-slate-400 text-xs uppercase tracking-wider">
+            <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3 w-12">#</th>
-                <th className="px-6 py-3">Drug Name</th>
-                <th className="px-6 py-3 text-center">Dispensed (24h)</th>
-                <th className="px-6 py-3 text-center">Current Stock</th>
-                <th className="px-6 py-3 min-w-[160px]">Depletion Rate</th>
-                <th className="px-6 py-3 text-center">Status</th>
+                <th className="px-6 py-4">Rank</th>
+                <th className="px-6 py-4">Medication Name</th>
+                <th className="px-6 py-4 text-center">Dispensed (24h)</th>
+                <th className="px-6 py-4 text-center">Current Stock</th>
+                <th className="px-6 py-4">Depletion Level</th>
+                <th className="px-6 py-4 text-right">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-white/5 text-sm text-slate-200">
               {leaderboard.map((row) => {
                 const barWidth = Math.round((row.totalDispensed24h / maxDispensed) * 100);
                 const isLow = row.isCritical;
                 const stockDisplay = row.currentStock !== null ? `${row.currentStock} ${row.unit}` : '—';
                 return (
-                  <tr key={row.rank}
-                    className={`border-b border-slate-800/70 transition-colors ${isLow ? 'bg-red-500/5 hover:bg-red-500/10' : 'hover:bg-slate-800/30'}`}>
-                    <td className="px-6 py-4">
-                      <span className={`text-lg font-bold ${row.rank <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
-                        {row.rank <= 3 ? ['🥇','🥈','🥉'][row.rank - 1] : `#${row.rank}`}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-white font-semibold">{row.drugName}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-violet-300 font-bold text-lg">{row.totalDispensed24h}</span>
-                      <span className="text-slate-500 text-xs ml-1">{row.unit}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`font-semibold ${isLow ? 'text-red-400' : 'text-slate-300'}`}>{stockDisplay}</span>
+                  <tr key={row.rank} className={isLow ? 'bg-red-500/[0.02] hover:bg-red-500/[0.04]' : 'hover:bg-white/[0.01]'}>
+                    <td className="px-6 py-4 font-bold text-slate-400">#{row.rank}</td>
+                    <td className="px-6 py-4 font-bold text-white">{row.drugName}</td>
+                    <td className="px-6 py-4 text-center font-mono font-bold text-indigo-400">{row.totalDispensed24h}</td>
+                    <td className="px-6 py-4 text-center font-mono font-semibold">
+                      <span className={isLow ? 'text-red-400' : 'text-slate-300'}>{stockDisplay}</span>
                       {row.reorderLevel !== null && (
-                        <p className="text-xs text-slate-600 mt-0.5">Reorder @ {row.reorderLevel}</p>
+                        <span className="text-[10px] text-slate-600 block font-normal">Reorder @ {row.reorderLevel}</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-slate-700/60 rounded-full h-2 overflow-hidden">
+                        <div className="flex-1 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
                           <div
-                            className={`h-2 rounded-full transition-all duration-700 ${isLow ? 'bg-gradient-to-r from-red-500 to-red-400' : 'bg-gradient-to-r from-violet-600 to-violet-400'}`}
+                            className={`h-full rounded-full transition-all ${isLow ? 'bg-red-400' : 'bg-indigo-400'}`}
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
-                        <span className="text-xs text-slate-400 w-10 text-right flex-shrink-0">
+                        <span className="text-xs text-slate-400 w-10 text-right font-mono font-semibold">
                           {row.percentDepleted !== null ? `${row.percentDepleted}%` : '—'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-right">
                       {isLow ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/30">
-                          <AlertTriangle className="w-3 h-3" /> Critical
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase select-none">
+                          Critical
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                          <CheckCircle className="w-3 h-3" /> OK
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold uppercase select-none">
+                          Stable
                         </span>
                       )}
                     </td>
@@ -630,9 +722,9 @@ const RestockAnalytics = () => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: District Restock Alerts (ML-powered)
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: District Restock Alerts (ML Predictor)
+// ─────────────────────────────────────────────────────────────────────────────
 const RestockPredictor = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -656,67 +748,74 @@ const RestockPredictor = () => {
   const district = data?.district || '';
 
   const getStatusStyles = (status) => {
-    if (status === 'Critical') return { border: 'border-red-500/40', bg: 'bg-red-500/10', badge: 'bg-red-500/20 text-red-400 border border-red-500/30', icon: '🚨', trend: 'text-red-400' };
-    return { border: 'border-amber-500/40', bg: 'bg-amber-500/10', badge: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', icon: '⚠️', trend: 'text-amber-400' };
+    if (status === 'Critical') return { border: 'border-red-500/20', bg: 'bg-red-500/[0.02]', badge: 'bg-red-500/10 text-red-400 border-red-500/20', icon: '🚨', trend: 'text-red-400' };
+    return { border: 'border-amber-500/20', bg: 'bg-amber-500/[0.02]', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: '⚠️', trend: 'text-amber-400' };
   };
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8 flex items-start justify-between">
+    <PageTransition className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">District Restock Alerts</h1>
-          <p className="text-slate-400 mt-1">Automated ML analysis of dispensing trends in <span className="text-emerald-400 font-semibold">{district || 'your district'}</span>.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">District Restock Alerts</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">ML demand analysis mapping regional pharmacy trends in {district || 'your district'}.</p>
         </div>
-        <button onClick={fetchAlerts} className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition-all">
-          <Package className="w-4 h-4" /> Refresh
+        <button onClick={fetchAlerts} className="glass-button text-xs py-2 px-4 flex items-center gap-1.5">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
       </div>
 
       {!isLoading && !isError && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-bold text-white">{data?.drugsAnalyzed || 0}</p><p className="text-xs text-slate-400 mt-1">Drugs Analysed</p></div>
-          <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-bold text-red-400">{alerts.filter(a => a.status === 'Critical').length}</p><p className="text-xs text-slate-400 mt-1">Critical Alerts</p></div>
-          <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-bold text-amber-400">{alerts.filter(a => a.status === 'Warning').length}</p><p className="text-xs text-slate-400 mt-1">Warnings</p></div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="glass-panel p-5 rounded-2xl border border-white/5">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Medicines Analyzed</span>
+            <span className="text-2xl font-black text-white mt-1 block font-mono">{data?.drugsAnalyzed || 0}</span>
+          </div>
+          <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
+            <span className="text-[10px] text-red-400/80 uppercase font-bold tracking-wider">Critical ML Alerts</span>
+            <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Critical').length}</span>
+          </div>
+          <div className="glass-panel p-5 rounded-2xl border border-amber-500/10">
+            <span className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">Warnings Issued</span>
+            <span className="text-2xl font-black text-amber-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Warning').length}</span>
+          </div>
         </div>
       )}
 
-      {isLoading && (
-        <div className="glass-panel rounded-2xl p-12 text-center">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Running ML demand analysis across district dispensing data...</p>
-        </div>
-      )}
+      {isLoading && <Skeleton.Card />}
+      
       {isError && (
-        <div className="glass-panel rounded-2xl p-8 border border-red-500/30 bg-red-500/5 text-center">
-          <p className="text-red-400 font-semibold">Failed to load restock alerts.</p>
-          <p className="text-slate-500 text-sm mt-2">Ensure the backend and ML engine are running.</p>
-          <button onClick={fetchAlerts} className="mt-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30 transition">Retry</button>
+        <div className="glass-panel rounded-2xl p-8 border border-red-500/25 bg-red-500/5 text-center space-y-4 select-none">
+          <AlertTriangle className="w-10 h-10 text-red-400 mx-auto" />
+          <p className="text-red-400 font-bold">Failed to connect to ML restock engine.</p>
+          <button onClick={fetchAlerts} className="glass-button text-xs py-2.5 px-6 mx-auto">Retry Engine</button>
         </div>
       )}
+
       {!isLoading && !isError && alerts.length === 0 && (
-        <div className="glass-panel rounded-2xl p-12 text-center border border-emerald-500/20 bg-emerald-500/5">
-          <p className="text-4xl mb-4">✅</p>
-          <p className="text-emerald-400 font-semibold text-lg">All stock levels are stable</p>
-          <p className="text-slate-400 text-sm mt-2">No significant demand spikes detected in {district} over the last 14 days.</p>
+        <div className="glass-panel rounded-2xl p-12 text-center border border-teal-500/10 bg-teal-500/5 select-none">
+          <CheckCircle className="w-10 h-10 text-teal-400 mx-auto mb-4" />
+          <p className="text-teal-400 font-bold text-lg">Inventory levels are stable</p>
+          <p className="text-slate-400 text-xs mt-1">No significant regional demand spikes detected in {district} over the past 14 days.</p>
         </div>
       )}
+
       {alerts.length > 0 && (
         <div className="space-y-4">
           {alerts.map((alert, idx) => {
             const styles = getStatusStyles(alert.status);
             return (
-              <div key={idx} className={`rounded-2xl border p-6 ${styles.border} ${styles.bg} flex items-start gap-5 transition-all`}>
-                <span className="text-3xl shrink-0">{styles.icon}</span>
+              <div key={idx} className={`rounded-2xl border p-5 ${styles.border} ${styles.bg} flex items-start gap-4 hover:border-white/10 transition-all`}>
+                <span className="text-2xl shrink-0 select-none">{styles.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1 flex-wrap">
-                    <h3 className="text-lg font-bold text-white">{alert.drugName}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${styles.badge}`}>{alert.status}</span>
-                    <span className={`text-sm font-bold ${styles.trend}`}>{alert.trend}</span>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="text-base font-bold text-white truncate">{alert.drugName}</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${styles.badge}`}>{alert.status}</span>
+                    <span className={`text-xs font-mono font-bold ${styles.trend}`}>{alert.trend}</span>
                   </div>
-                  <p className="text-slate-300 text-sm">{alert.message}</p>
-                  <div className="mt-3 flex gap-6 text-xs text-slate-500">
-                    <span>Baseline avg: <span className="text-slate-400 font-medium">{alert.baselineDailyAvg} units/day</span></span>
-                    <span>Recent avg: <span className="text-slate-400 font-medium">{alert.recentDailyAvg} units/day</span></span>
+                  <p className="text-slate-300 text-xs leading-relaxed">{alert.message}</p>
+                  <div className="mt-3 flex gap-6 text-[10px] text-slate-500 border-t border-white/5 pt-2 select-none">
+                    <span>Baseline: <span className="text-slate-400 font-bold">{alert.baselineDailyAvg} units/day</span></span>
+                    <span>Recent demand: <span className="text-slate-400 font-bold">{alert.recentDailyAvg} units/day</span></span>
                   </div>
                 </div>
               </div>
@@ -728,9 +827,9 @@ const RestockPredictor = () => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: Staff Management (pharmacy_admin only)
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Staff Management (pharmacy_admin only)
+// ─────────────────────────────────────────────────────────────────────────────
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -745,7 +844,7 @@ const StaffManagement = () => {
       const res = await api.get('/pharmacy/staff');
       setStaff(res.data.data || []);
     } catch {
-      toast.error('Failed to load staff list');
+      toast.error('Failed to load staff roster');
     } finally {
       setLoading(false);
     }
@@ -759,7 +858,7 @@ const StaffManagement = () => {
     setSubmitting(true);
     try {
       await api.post('/pharmacy/staff', form);
-      toast.success(`Staff member added! A temporary password has been sent to ${form.email}.`);
+      toast.success(`Staff member added! Temporary credential sent to ${form.email}.`);
       setForm({ name: '', email: '', role: 'pharmacist' });
       setShowForm(false);
       fetchStaff();
@@ -774,143 +873,155 @@ const StaffManagement = () => {
     setTogglingId(id);
     try {
       await api.put(`/pharmacy/staff/${id}/toggle`);
-      toast.success(`Account ${currentStatus ? 'deactivated' : 'activated'}`);
+      toast.success(`Account ${currentStatus ? 'deactivated' : 'activated'} successfully.`);
       setStaff(prev => prev.map(s => s._id === id ? { ...s, isActive: !s.isActive } : s));
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to toggle status');
+      toast.error('Failed to toggle staff status');
     } finally {
       setTogglingId(null);
     }
   };
 
   const roleColors = {
-    pharmacy_admin: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    pharmacist: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    assistant: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+    pharmacy_admin: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    pharmacist: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+    assistant: 'bg-slate-800 text-slate-400 border-slate-700',
   };
 
   return (
-    <PageTransition className="p-4 md:p-8">
-      <div className="mb-8 flex items-start justify-between">
+    <PageTransition className="space-y-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <Users className="w-8 h-8 text-amber-400" />
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+            <Users className="w-8 h-8 text-teal-400" />
             Staff Management
           </h1>
-          <p className="text-slate-400 mt-1">Manage pharmacy team members and their access levels.</p>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Manage pharmacy assistant accounts and operational privileges.</p>
         </div>
-        <button onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+        <button
+          onClick={() => setShowForm(v => !v)}
+          className="glass-button text-xs py-2.5 px-5 flex items-center gap-1.5"
+        >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Cancel' : 'Add Staff'}
+          {showForm ? 'Cancel' : 'Add Team Member'}
         </button>
       </div>
 
-      {/* Add Staff Form */}
       {showForm && (
-        <div className="glass-panel p-6 rounded-2xl mb-8 border border-amber-500/20 bg-amber-500/5 max-w-lg">
-          <h3 className="text-white font-bold mb-5 flex items-center gap-2"><UserCircle className="w-5 h-5 text-amber-400" /> New Team Member</h3>
+        <div className="glass-panel p-6 rounded-2xl mb-8 border border-teal-500/20 bg-teal-500/5 max-w-lg">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2 select-none">
+            <UserCircle className="w-5 h-5 text-teal-400" /> Register Team Member
+          </h3>
           <form onSubmit={handleAdd} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
-              <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Full Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Dr. Jane Smith"
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none placeholder:text-slate-600 transition-colors" />
+                className="glass-input text-xs"
+                required
+              />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
-              <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Email Address</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="pharmacist@example.com"
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none placeholder:text-slate-600 transition-colors" />
+                className="glass-input text-xs"
+                required
+              />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Role</label>
-              <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none transition-colors">
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Role Privileges</label>
+              <select
+                value={form.role}
+                onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                className="glass-input text-xs"
+              >
                 <option value="pharmacist">Pharmacist</option>
                 <option value="assistant">Assistant</option>
                 <option value="pharmacy_admin">Admin</option>
               </select>
             </div>
-            <div className="flex items-center gap-2 pt-1 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 select-none">
               <Mail className="w-3.5 h-3.5" />
-              A temporary password will be emailed to the new staff member.
+              Temporary authentication credentials will be dispatched to the email.
             </div>
-            <button type="submit" disabled={submitting}
-              className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Adding...</> : <><Plus className="w-4 h-4" />Add & Send Invite</>}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-40"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {submitting ? 'Registering...' : 'Add Team Member'}
             </button>
           </form>
         </div>
       )}
 
-      {/* Staff Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-slate-400">Loading staff...</p>
-          </div>
+          <div className="p-8"><Skeleton.Card /></div>
         ) : staff.length > 0 ? (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {staff.map(member => (
-                <tr key={member._id} className="border-b border-slate-800 hover:bg-slate-800/20 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                        {member.fullName?.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-white font-medium">{member.fullName}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-slate-400 text-sm">{member.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${roleColors[member.role] || roleColors.assistant}`}>
-                      <Shield className="w-3 h-3" />
-                      {member.role?.replace('pharmacy_', '').replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {member.isActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-bold border border-emerald-500/25">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-700/50 text-slate-500 text-xs font-bold border border-slate-600/30">
-                        Inactive
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button
-                      onClick={() => handleToggle(member._id, member.isActive)}
-                      disabled={togglingId === member._id}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
-                        member.isActive
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
-                      }`}>
-                      {togglingId === member._id ? <Loader2 className="w-3 h-3 animate-spin" /> : (member.isActive ? 'Deactivate' : 'Activate')}
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Staff Name</th>
+                  <th className="px-6 py-4">Corporate Email</th>
+                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm text-slate-200">
+                {staff.map(member => (
+                  <tr key={member._id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">{member.fullName}</td>
+                    <td className="px-6 py-4 text-slate-400 text-xs font-mono">{member.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${roleColors[member.role] || roleColors.assistant}`}>
+                        <Shield className="w-3 h-3" />
+                        {member.role?.replace('pharmacy_', '').replace('_', ' ').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {member.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-500 text-xs font-bold">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleToggle(member._id, member.isActive)}
+                        disabled={togglingId === member._id}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 border ${
+                          member.isActive
+                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
+                        }`}
+                      >
+                        {togglingId === member._id ? <Loader2 className="w-3 h-3 animate-spin" /> : (member.isActive ? 'Deactivate' : 'Activate')}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="p-12 text-center text-slate-500">
-            <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>No staff members found. Add your first team member above.</p>
+          <div className="p-12 text-center text-slate-500 select-none">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold">No registered staff found.</p>
           </div>
         )}
       </div>
@@ -918,14 +1029,22 @@ const StaffManagement = () => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   TAB: Settings (Profile pic and biography)
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB: Pharmacy Settings & credential rotation
+// ─────────────────────────────────────────────────────────────────────────────
 const PharmacySettings = () => {
-  const [profile, setProfile] = useState({ fullName: '', email: '', role: '', description: '', profilePicture: '' });
+  const [profile, setProfile] = useState({ fullName: '', email: '', role: '', description: '', profilePicture: '', pharmacyId: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Password rotation states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [rotatingPassword, setRotatingPassword] = useState(false);
 
   useEffect(() => {
     api.get('/pharmacy/staff/me')
@@ -939,24 +1058,28 @@ const PharmacySettings = () => {
       });
   }, []);
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files[0];
+  const handlePhotoUpload = async (file) => {
     if (!file) return;
     const formData = new FormData();
     formData.append('image', file);
 
     setUploadingPic(true);
-    const toastId = toast.loading('Uploading profile logo...');
+    setUploadProgress(15);
     try {
       const res = await api.post('/users/upload-profile-pic', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(progress);
+        }
       });
       setProfile(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
-      toast.update(toastId, { render: 'Profile picture updated!', type: 'success', isLoading: false, autoClose: 3000 });
+      toast.success('Logo updated successfully!');
     } catch (err) {
-      toast.update(toastId, { render: err.response?.data?.error || 'Failed to upload picture', type: 'error', isLoading: false, autoClose: 3000 });
+      toast.error('Failed to upload brand picture.');
     } finally {
       setUploadingPic(false);
+      setUploadProgress(0);
     }
   };
 
@@ -973,78 +1096,207 @@ const PharmacySettings = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-8 text-center">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-slate-400">Loading settings...</p>
-      </div>
-    );
-  }
+  const handlePasswordRotate = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      return toast.error('New credentials do not match.');
+    }
+    setRotatingPassword(true);
+    try {
+      await api.post('/auth/change-password', { currentPassword, newPassword });
+      toast.success('Credentials rotated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to rotate credentials');
+    } finally {
+      setRotatingPassword(false);
+    }
+  };
+
+  if (loading) return <div className="p-8"><Skeleton.Card /></div>;
 
   return (
-    <PageTransition className="p-4 md:p-8">
+    <PageTransition className="space-y-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Pharmacy Settings</h1>
-        <p className="text-slate-400 mt-1">Configure your pharmacy profile and description.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Pharmacy Settings</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Update facility profiles, rotate passwords, and manage API keys.</p>
       </div>
-      <div className="glass-panel p-6 rounded-xl max-w-2xl">
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Logo Upload */}
-          <div className="flex items-center gap-6 mb-6 pb-6 border-b border-slate-700/50">
-            <div className="relative group w-24 h-24 rounded-2xl overflow-hidden bg-slate-800/80 border border-slate-700 flex items-center justify-center text-white text-xl font-bold">
-              {profile.profilePicture ? (
-                <img src={profile.profilePicture} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                profile.fullName?.charAt(0) || 'P'
-              )}
-              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
-                <Camera className="w-6 h-6 text-emerald-400" />
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handlePhotoUpload} 
-                  className="hidden" 
-                  disabled={uploadingPic} 
-                />
-              </label>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold text-sm">Pharmacy Profile Picture</h4>
-              <p className="text-slate-500 text-xs mt-1">Visible to patients browsing directories. Max size 2MB.</p>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label>
-            <input type="text" value={profile.fullName || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Settings Forms */}
+        <div className="lg:col-span-2 space-y-8">
+          <form onSubmit={handleSave} className="glass-card p-6 rounded-2xl space-y-6">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
+              <Settings className="w-4 h-4 text-teal-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Facility Settings</h3>
+            </div>
+
+            {/* Logo Upload dropzone */}
+            <div className="flex items-center gap-6 pb-6 border-b border-white/5">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handlePhotoUpload(file); }}
+                className={`relative group w-20 h-20 rounded-2xl overflow-hidden border-2 bg-gradient-to-br from-teal-500/10 to-teal-500/25 flex items-center justify-center text-white text-xl font-bold transition-all duration-300 ${
+                  isDragging ? 'border-dashed border-teal-400 bg-teal-500/20 scale-105 shadow-lg' : 'border-white/10'
+                }`}
+              >
+                {profile.profilePicture ? (
+                  <img src={profile.profilePicture} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  profile.fullName?.charAt(0) || 'P'
+                )}
+
+                {!uploadingPic && (
+                  <label className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none text-[9px] font-bold text-slate-300 leading-tight">
+                    <Camera className="w-4.5 h-4.5 text-teal-400 mb-1" />
+                    Drag & Drop
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => { const file = e.target.files[0]; if (file) handlePhotoUpload(file); }} 
+                      className="hidden" 
+                      disabled={uploadingPic} 
+                    />
+                  </label>
+                )}
+
+                {uploadingPic && (
+                  <div className="absolute inset-0 bg-[#020817]/95 flex flex-col items-center justify-center p-2 text-center rounded-2xl select-none">
+                    <Loader2 className="w-4 h-4 text-teal-400 animate-spin mb-1" />
+                    <span className="text-[9px] font-bold text-slate-300 font-mono">{uploadProgress}%</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-sm">Pharmacy Logo</h4>
+                <p className="text-slate-500 text-xs mt-1">Recommended: 256x256px JPG or PNG. Max size 2MB.</p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-500 select-none">User Full Name</label>
+                <input type="text" value={profile.fullName || ''} disabled className="glass-input text-xs text-slate-500 cursor-not-allowed" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-500 select-none">Email Address</label>
+                <input type="email" value={profile.email || ''} disabled className="glass-input text-xs text-slate-500 cursor-not-allowed" />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase text-slate-500 select-none">Biographical Summary</label>
+              <textarea value={profile.description || ''} onChange={e => setProfile({...profile, description: e.target.value})} rows={3} placeholder="Describe facility, operating details..." className="glass-input text-sm resize-none" />
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-white/5">
+              <button type="submit" disabled={saving} className="glass-button text-xs py-2.5 px-6">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
+
+          {/* Password Rotation Card */}
+          <form onSubmit={handlePasswordRotate} className="glass-card p-6 rounded-2xl space-y-6">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
+              <Key className="w-4 h-4 text-teal-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Rotate Credentials</h3>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-400">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  className="glass-input text-sm"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-400">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="glass-input text-sm"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase text-slate-400">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="glass-input text-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-white/5">
+              <button
+                type="submit"
+                disabled={rotatingPassword}
+                className="glass-button text-xs py-2.5 px-6"
+              >
+                {rotatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                {rotatingPassword ? 'Updating...' : 'Rotate Password'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* API Credentials Sidebar Card */}
+        <div className="space-y-6">
+          <div className="glass-card rounded-2xl p-6 border border-white/5 space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
+              <Key className="w-4.5 h-4.5 text-teal-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">OAuth API Credentials</h3>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed select-none">
+              Link internal Inventory Systems using authenticated API integration client tokens.
+            </p>
+            <div className="space-y-4">
+              {[
+                { label: 'Pharmacy Client ID', value: `PHARM-${profile.pharmacyId || '8b2c89'}` },
+                { label: 'Sandbox Integration Secret', value: 'sk_sandbox_mock_credential_67890' },
+                { label: 'Inventory Sync Webhook', value: 'https://api.medisync.io/v1/pharmacy/sync' }
+              ].map(cred => (
+                <div key={cred.label} className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-500">{cred.label}</span>
+                  <div className="flex items-center gap-2 bg-slate-950/40 border border-white/5 px-3 py-2 rounded-xl">
+                    <span className="font-mono text-[11px] text-slate-300 select-all truncate flex-1">{cred.value}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(cred.value);
+                        toast.success(`${cred.label} copied!`);
+                      }}
+                      className="text-[10px] text-teal-400 hover:text-teal-300 font-bold shrink-0 uppercase tracking-wider"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
-            <input type="email" value={profile.email || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Role</label>
-            <input type="text" value={profile.role?.replace('_', ' ').toUpperCase() || ''} disabled className="w-full bg-slate-800/30 border border-slate-800 rounded-lg px-4 py-2 text-slate-500 cursor-not-allowed" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Pharmacy Biography / Description</label>
-            <textarea value={profile.description || ''} onChange={e => setProfile({...profile, description: e.target.value})} rows={4} placeholder="Tell patients about your pharmacy, operating hours, and location specifics..." className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white resize-none focus:border-emerald-500 outline-none" />
-          </div>
-          <div className="pt-4">
-            <button type="submit" disabled={saving} className="glass-button bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2 rounded-xl font-bold transition-all">
-              {saving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </PageTransition>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   ROOT: PharmacyDashboard — Shell with Sidebar + Routes
-   ══════════════════════════════════════════════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────────────────────
+// PHARMACY PORTAL MAIN ROUTER
+// ─────────────────────────────────────────────────────────────────────────────
 export default function PharmacyDashboard() {
   const role = getPharmacyRole();
   const isAdmin = role === 'pharmacy_admin';
@@ -1068,11 +1320,15 @@ export default function PharmacyDashboard() {
                       rawRole.replace('_', ' ');
 
   return (
-    <div className="pharmacy-theme flex flex-col min-h-screen bg-[#0b1120]">
-      <ActiveOutbreakBanner />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar menuItems={menuItems} title="Pharmacy Portal" themePrefix="pharmacy" userName={userName} userRole={displayRole} />
-        <main className="flex-1 lg:ml-64 p-4 overflow-y-auto">
+    <div className="pharmacy-theme">
+      <AppShell
+        role="pharmacy"
+        userName={userName}
+        userRole={displayRole}
+        menuItems={menuItems}
+      >
+        <ActiveOutbreakBanner />
+        <div className="mt-4">
           <Routes>
             <Route path="/dashboard"                element={<Navigate to="/pharmacy/dashboard/dispense" replace />} />
             <Route path="/dashboard/dispense"       element={<Dispense />} />
@@ -1089,8 +1345,8 @@ export default function PharmacyDashboard() {
             <Route path="/dashboard/settings"       element={<PharmacySettings />} />
             <Route path="*" element={<Navigate to="/pharmacy/dashboard/dispense" replace />} />
           </Routes>
-        </main>
-      </div>
+        </div>
+      </AppShell>
     </div>
   );
 }

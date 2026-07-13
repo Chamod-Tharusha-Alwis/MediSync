@@ -67,7 +67,9 @@ api.interceptors.response.use(
     // Don't try to refresh on login/refresh endpoints themselves
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
                            originalRequest.url?.includes('/auth/refresh') ||
-                           originalRequest.url?.includes('/patient/login');
+                           originalRequest.url?.includes('/patient/login') ||
+                           originalRequest.url?.includes('/verify-access') ||
+                           originalRequest.url?.includes('/verify-otp');
 
     // ─── BACKGROUND ALERT REQUESTS — never log out on these ──────────────────
     // The alert banner polls silently; a 401/403 here must not destroy the session.
@@ -76,7 +78,10 @@ api.interceptors.response.use(
     if (status === 401) {
       if (isAuthEndpoint) {
         // If it's a login failure, clear any stale tokens just in case
-        localStorage.clear();
+        // DO NOT clear for /verify-access, as that is used WHILE logged in
+        if (!originalRequest.url?.includes('/verify-access')) {
+           localStorage.clear();
+        }
         return Promise.reject(error);
       }
 

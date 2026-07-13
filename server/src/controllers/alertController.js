@@ -3,11 +3,12 @@ const Consultation = require('../models/Consultation');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const emailService = require('../utils/emailService');
+const { verifyToken } = require('../utils/internalAuth');
 
 exports.triggerAlert = async (req, res) => {
   try {
     const internalKey = req.headers['x-internal-key'];
-    if (internalKey !== process.env.INTERNAL_API_KEY) {
+    if (!verifyToken(internalKey)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -50,7 +51,8 @@ exports.broadcastAlert = async (req, res) => {
     }
 
     // Send emails to all patients in a district
-    const patients = await Patient.find({ district: district === 'Nationwide' ? { $exists: true } : district }).select('email fullName');
+    const query = district === 'Nationwide' ? {} : { district };
+    const patients = await Patient.find(query).select('email fullName');
     const emailList = patients.filter(p => p.email).map(p => p.email);
 
     if (emailList.length > 0) {
@@ -68,6 +70,29 @@ exports.broadcastAlert = async (req, res) => {
       sentAt: new Date()
     });
     await newBroadcast.save();
+
+    // Create Notification records for all targeted patients so it shows up in their bell
+    const Notification = require('../models/Notification');
+    const notifs = patients.map(p => ({
+      userId: p._id,
+      role: 'patient',
+      message: message,
+      type: 'outbreak_alert',
+      createdAt: new Date()
+    }));
+    if (notifs.length > 0) {
+      await Notification.insertMany(notifs);
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('notification', {
+        type: 'outbreak_alert',
+        message: message,
+        read: false,
+        createdAt: new Date()
+      });
+    }
 
     res.json({ 
       message: `Broadcasted alert to ${emailList.length} recipients in ${district}`,

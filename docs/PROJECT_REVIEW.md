@@ -373,3 +373,10 @@ An automated GitHub Actions workflow (`.github/workflows/playwright.yml`) has be
 ---
 
 *MediSync — Securing Sri Lanka's Health Data, One Encrypted Record at a Time.*
+
+
+## 4. Post-Audit Security Hardening
+The MediSync platform has undergone a strict defensive security hardening phase addressing initial design vulnerabilities:
+- **Cryptographic Independence:** Upgraded from static, single-key encryption to a dynamic Vault-driven multi-key architecture supporting zero-downtime re-encryption sweeps.
+- **Authentication Integrity:** Eliminated all insecure fallback tokens and default passwords from controllers and the Python ML Engine.
+- **Rate Limiting:** Guarded all SMS/Email OTP flows against credential stuffing through strict Redis 15-minute rate limiters.

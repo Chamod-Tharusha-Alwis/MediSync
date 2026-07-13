@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const fieldEncryption = require('mongoose-field-encryption').fieldEncryption;
+const versionedEncryption = require('../utils/versionedEncryption');
 
 const doctorSchema = new mongoose.Schema({
   doctorId: { type: String, unique: true }, // auto-generated universal ID
@@ -28,15 +28,12 @@ const doctorSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   googleMapsUrl: { type: String, default: '' },
   averageRating: { type: Number, default: 0 },
-  ratingCount: { type: Number, default: 0 }
+  ratingCount: { type: Number, default: 0 },
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
-doctorSchema.plugin(fieldEncryption, {
-  fields: ['licenseNo'],
-  // global.ENCRYPTION_KEY is set by initializeVault() before this module is require()'d.
-  // process.env.ENCRYPTION_KEY is the fallback for isolated test environments.
-  secret: global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
-  saltGenerator: (secret) => secret.slice(0, 16)
+doctorSchema.plugin(versionedEncryption, {
+  fields: ['licenseNo']
 });
 
 module.exports = mongoose.model('Doctor', doctorSchema);

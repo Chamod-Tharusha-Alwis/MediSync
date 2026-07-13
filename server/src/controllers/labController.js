@@ -15,7 +15,7 @@ const Doctor       = require('../models/Doctor');
 const Hospital     = require('../models/Hospital');
 const Notification = require('../models/Notification');
 const { sendEmail } = require('../utils/emailService');
-const { setOtp, getOtp, deleteOtp } = require('../config/redis');
+const { setOtp, getOtp, deleteOtp, incrementAttempts, getAttempts } = require('../config/redis');
 const { generateSignedUrl }         = require('../utils/cloudinary');
 
 const ML_ENGINE  = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
@@ -164,8 +164,14 @@ exports.acceptLabTest = async (req, res) => {
       return res.status(400).json({ message: 'Patient consent OTP is required' });
     }
 
+    const attempts = await getAttempts(OTP_NS_HOSPITAL + hash);
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hash);
-    if (otp !== '123456') {
+    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
+    if (!isTestBypass) {
       if (!storedOtp) {
         return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
       }
@@ -174,6 +180,7 @@ exports.acceptLabTest = async (req, res) => {
         return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
       }
       if (storedOtp.otp !== otp) {
+        await incrementAttempts(OTP_NS_HOSPITAL + hash);
         return res.status(401).json({ message: 'Invalid OTP' });
       }
       // OTP valid — consume it (one-time use)
@@ -325,8 +332,14 @@ exports.verifyOtpAndFetchTests = async (req, res) => {
     const hashedNic = crypto.createHash('sha256').update(cleanNic).digest('hex');
 
     // ── OTP Verification ──────────────────────────────────────────────────────
+    const attempts = await getAttempts(OTP_NS_HOSPITAL + hashedNic);
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hashedNic);
-    if (otp !== '123456') {
+    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
+    if (!isTestBypass) {
       if (!storedOtp) {
         return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
       }
@@ -335,6 +348,7 @@ exports.verifyOtpAndFetchTests = async (req, res) => {
         return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
       }
       if (storedOtp.otp !== otp) {
+        await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
         return res.status(401).json({ message: 'Invalid OTP' });
       }
     }
@@ -382,8 +396,14 @@ exports.approveTest = async (req, res) => {
     const hashedNic = crypto.createHash('sha256').update(cleanNic).digest('hex');
 
     // ── OTP Verification ──────────────────────────────────────────────────────
+    const attempts = await getAttempts(OTP_NS_HOSPITAL + hashedNic);
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hashedNic);
-    if (otp !== '123456') {
+    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
+    if (!isTestBypass) {
       if (!storedOtp) {
         return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
       }
@@ -392,6 +412,7 @@ exports.approveTest = async (req, res) => {
         return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
       }
       if (storedOtp.otp !== otp) {
+        await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
         return res.status(401).json({ message: 'Invalid OTP' });
       }
       // OTP valid — consume it
@@ -630,7 +651,7 @@ exports.uploadReport = async (req, res) => {
     const cloudinaryResult = await uploadPromise;
 
     // ── Step 3: Encrypt the file key with the Vault master key ──────────────
-    const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+    const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[global.ACTIVE_KEY_VERSION] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
     const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32); // ensure 32 bytes
     const cbcIV        = crypto.randomBytes(16);
     const keyCipher    = crypto.createCipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
@@ -784,7 +805,8 @@ exports.patientDownloadReport = async (req, res) => {
     // ── Envelope decryption (if this report was uploaded with the new flow) ──
     if (labTest.encryptedFileKey && labTest.fileIV) {
       // Decrypt the per-file AES key using Vault master key
-      const masterKey    = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+      const version = labTest.keyVersion || 1;
+      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
       const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
       
       const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
@@ -850,7 +872,8 @@ exports.patientDownloadReportByReportId = async (req, res) => {
     // ── Envelope decryption (if this report was uploaded with the new flow) ──
     if (labTest.encryptedFileKey && labTest.fileIV) {
       // Decrypt the per-file AES key using Vault master key
-      const masterKey    = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+      const version = labTest.keyVersion || 1;
+      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
       const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
       
       const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
@@ -967,6 +990,11 @@ exports.doctorDownloadReport = async (req, res) => {
 
     if (!otp) return res.status(400).json({ message: 'OTP is required' });
 
+    const attempts = await getAttempts(OTP_NS_DOCTOR + String(userId));
+    if (attempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
     // Verify OTP via Redis store
     const stored = await getOtp(OTP_NS_DOCTOR + String(userId));
     if (!stored) {
@@ -979,8 +1007,10 @@ exports.doctorDownloadReport = async (req, res) => {
       await deleteOtp(OTP_NS_DOCTOR + String(userId));
       return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
     }
-    if (otp !== '123456') {
+    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
+    if (!isTestBypass) {
       if (stored.otp !== otp) {
+        await incrementAttempts(OTP_NS_DOCTOR + String(userId));
         return res.status(401).json({ message: 'Invalid OTP' });
       }
     }
@@ -1004,7 +1034,8 @@ exports.doctorDownloadReport = async (req, res) => {
 
     // ── Envelope decryption (new uploads) ────────────────────────────────────
     if (labTest.encryptedFileKey && labTest.fileIV) {
-      const masterKey    = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+      const version = labTest.keyVersion || 1;
+      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
       const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
       
       const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
