@@ -54,7 +54,9 @@ jobs:
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
 
       - name: Run Security Tests
-        run: ./server/scripts/test_security.sh
+        run: |
+          chmod +x server/scripts/test_security.sh
+          timeout 30 ./server/scripts/test_security.sh
 
       - name: Install Server Dependencies
         working-directory: ./server
