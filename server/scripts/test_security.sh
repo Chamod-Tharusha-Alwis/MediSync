@@ -32,26 +32,27 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 
-OTP_URL="http://localhost:5000/api/auth/verify-otp"
-RATE_LIMITED=false
-for i in {1..6}; do
-  # Capture the HTTP response code
-  CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $OTP_URL \
-       -H "Content-Type: application/json" \
-       -d '{"userId": "123", "otp": "000000"}')
-  
-  echo -n "$CODE"
-  
-  if [ "$CODE" == "429" ]; then
-    RATE_LIMITED=true
-    break
-  fi
+# 2. Generate OTP request (now it will succeed and create an OTPSession)
+curl -s -X POST http://localhost:5000/api/auth/send-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "superadmin@medisync.com", "purpose": "password-reset"}' > /dev/null
+
+# 3. Attempt 6 incorrect OTPs
+for i in {1..5}; do
+  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
+    -H "Content-Type: application/json" \
+    -d '{"email": "superadmin@medisync.com", "otp": "000000", "newPassword": "Password123!"}'
 done
 
-if [ "$RATE_LIMITED" = true ]; then
+# The 6th attempt should be blocked with 429
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "superadmin@medisync.com", "otp": "000000", "newPassword": "Password123!"}')
+
+if [ "$STATUS" == "429" ]; then
   echo -e "\n✅ PASS: OTP Rate Limiter successfully rejected request with 429."
 else
-  echo -e "\n❌ FAIL: OTP Rate Limiter returned $CODE instead of 429."
+  echo -e "\n❌ FAIL: OTP Rate Limiter returned $STATUS instead of 429."
   exit 1
 fi
 

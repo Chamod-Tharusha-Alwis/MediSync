@@ -286,6 +286,14 @@ exports.sendOTP = async (req, res) => {
       user = await PharmacyStaff.findOne({ email });
       model = 'PharmacyStaff';
     }
+    if (!user) {
+      user = await Hospital.findOne({ email });
+      model = 'Hospital';
+    }
+    if (!user) {
+      user = await Admin.findOne({ email });
+      model = 'Admin';
+    }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -423,6 +431,7 @@ exports.resetPassword = async (req, res) => {
     if (!user) user = await Patient.findOne({ 'contactInfo.email': email });
     if (!user) user = await PharmacyStaff.findOne({ email });
     if (!user) user = await Hospital.findOne({ email });
+    if (!user) user = await Admin.findOne({ email });
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
