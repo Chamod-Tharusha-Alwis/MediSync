@@ -38,21 +38,24 @@ curl -s -X POST http://localhost:5000/api/auth/send-otp \
   -d '{"email": "superadmin@medisync.com", "purpose": "password-reset"}' > /dev/null
 
 # 3. Attempt 6 incorrect OTPs
-for i in {1..5}; do
-  curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
+RATE_LIMITED=false
+for i in {1..6}; do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
     -H "Content-Type: application/json" \
-    -d '{"email": "superadmin@medisync.com", "otp": "000000", "newPassword": "Password123!"}'
+    -d '{"email": "superadmin@medisync.com", "otp": "000000", "newPassword": "Password123!"}')
+  
+  echo -n "$CODE"
+  
+  if [ "$CODE" == "429" ]; then
+    RATE_LIMITED=true
+    break
+  fi
 done
 
-# The 6th attempt should be blocked with 429
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/auth/reset-password \
-  -H "Content-Type: application/json" \
-  -d '{"email": "superadmin@medisync.com", "otp": "000000", "newPassword": "Password123!"}')
-
-if [ "$STATUS" == "429" ]; then
+if [ "$RATE_LIMITED" == true ]; then
   echo -e "\n✅ PASS: OTP Rate Limiter successfully rejected request with 429."
 else
-  echo -e "\n❌ FAIL: OTP Rate Limiter returned $STATUS instead of 429."
+  echo -e "\n❌ FAIL: OTP Rate Limiter did not return 429. Last code: $CODE"
   exit 1
 fi
 
