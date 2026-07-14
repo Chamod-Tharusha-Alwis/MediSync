@@ -7,7 +7,7 @@ const otpSessionSchema = new mongoose.Schema({
   },
   userModel: {
     type: String,
-    enum: ['Doctor', 'Patient', 'PharmacyStaff'],
+    enum: ['Doctor', 'Patient', 'PharmacyStaff', 'Hospital', 'Admin'],
     required: true
   },
   otp: {
