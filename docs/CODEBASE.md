@@ -335,3 +335,8 @@ To maintain high codebase health, redundant component duplicates and unused util
 - **Custom Versioned Encryption:** Replaced mongoose-field-encryption with server/src/utils/versionedEncryption.js to enable zero-downtime AES key rotation mapped to Vault versions.
 - **Fail-Closed Vault & Redis:** Systems now gracefully crash in production if Vault or Redis are disconnected, eliminating the use of insecure ephemeral fallbacks.
 - **OTP & Timing Attack Mitigations:** Enforced strict NODE_ENV guarding on all 123456 OTP backdoors and replaced generic string comparisons with crypto.timingSafeEqual() across internal HMAC validations.
+
+## Recent Updates (July 2026)
+- **CI/CD Integration:** Implemented fully automated GitHub Actions pipelines (`e2e-tests.yml`, `security-tests.yml`).
+- **Vault Secrets:** Fully integrated HashiCorp Vault for dynamic secret injection, with secure `.env` fallbacks for CI environments.
+- **Security Hardening:** Removed hardcoded backdoors, enforced OTP rate limiting, and updated Mongoose enums to properly validate all roles.

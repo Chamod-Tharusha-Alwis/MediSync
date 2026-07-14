@@ -95,3 +95,8 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 
 ## Security Hardening Note (Phase 2)
 The recent backend security hardening (which included strict HMAC timing-safe validation, Redis rate-limiting, and Vault-backed key rotation) was executed purely on the server and ML engine layers. These structural improvements operate invisibly to the client application and do not alter the UI/UX flows, Glassmorphic component library, or page layouts defined in this document.
+
+## Upcoming Phase: Premium Glassmorphic UI/UX
+- **Framer Motion:** Will be integrated for fluid page transitions, spring animations, and micro-interactions on hover.
+- **Tailwind CSS:** Will be heavily utilized for modern glassmorphism (translucent backgrounds, background blurs, subtle borders).
+- **Aesthetic Goals:** Transitioning the current interface into a highly dynamic, responsive, and visually stunning premium web application.

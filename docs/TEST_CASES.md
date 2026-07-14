@@ -94,3 +94,6 @@ This module covers platform supervision, audit logs, outbreak detection, and mes
 1. **OTP Rate Limiting Rejection:** Intentionally enter an incorrect OTP 6 times in under 15 minutes and assert the system returns a 429 Too Many Requests error.
 2. **Vault Fail-Closed Assertion:** Remove the VAULT_TOKEN in a production environment and start the Node.js server. Assert the process exits immediately with a fatal crash.
 3. **ML Engine HMAC Verification:** Manually dispatch an HTTP request to the Python ML Engine lacking the x-internal-key and assert a 403 Forbidden rejection.
+
+| **AUT-08** | OTP Rate Limiting Enforcement | 1. Generate an OTP request for an Admin.<br>2. Submit 5 incorrect OTPs to `/api/auth/reset-password`.<br>3. Submit a 6th incorrect OTP. | The 6th attempt is blocked with status `429 Too Many Requests`. | [🔄 Automated (CI/CD)] |
+| **AUT-09** | ML Engine HMAC Authentication | 1. Ping ML Engine `/predict` without an `X-Internal-Token`.<br>2. Ping with an invalid token.<br>3. Ping with a valid HMAC token. | Unauthenticated/invalid requests blocked with `403 Forbidden`. Valid requests accepted. | [🔄 Automated (CI/CD)] |

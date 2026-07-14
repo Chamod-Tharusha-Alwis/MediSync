@@ -32,3 +32,8 @@ This document outlines the defensive security hardening applied to the MediSync 
 - **Schema Key Versioning**: Upgraded all 6 sensitive models (`Patient`, `Consultation`, `Prescription`, `LabTest`, `Doctor`, `TestOrder`) to incorporate a `keyVersion` attribute.
 - **Vault Multi-Key Initialization**: Updated `app.js` to initialize Vault by securely fetching and organizing a multi-key map (`activeVersion` and `versions`) from `secret/data/medisync/keys`.
 - **Zero-Downtime Key Rotation**: Created a background migration script (`server/scripts/rotateKeys.js`) to iterate over aging documents, decrypt them using historical keys, and natively re-encrypt them with the active key—while safely preserving original DB `updatedAt` timestamps.
+
+## 5. Automated CI/CD Security Validation
+- **GitHub Actions:** Added `security-tests.yml` to automatically spin up the Node Server, MongoDB, Redis, and ML Engine in a headless environment.
+- **OTP Rate Limit Testing:** An automated bash script (`test_security.sh`) generates a live OTP session and intentionally spams incorrect attempts to mathematically verify that the Redis 429 rate limiter activates exactly on the 6th attempt.
+- **HMAC Enforcement Testing:** The pipeline mathematically verifies that the ML Engine properly rejects unauthenticated traffic and validates rotating HMAC signatures.

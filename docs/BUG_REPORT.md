@@ -55,3 +55,7 @@ The test suite performs automated checks on:
 ---
 
 *Note: No `useEffect` memory leaks were found in the current React components. All `useEffect` hooks relying on asynchronous fetch functions correctly utilize `useCallback` to memoize the function reference, which complies with React 18 ESLint exhaustive-deps rules. The development warning regarding `REACT_APP_GA_MEASUREMENT_ID` was silenced by removing the local warning logs in the analytics module, maintaining clean logs.*
+
+| **SEC-06** | Critical | `server/src/controllers/authController.js` | **Admin Model Exclusion:** The `sendOTP` and `resetPassword` endpoints excluded the `Admin` model, causing 404 errors for super admins. | Add `Admin` and `Hospital` model fallbacks. | **Fixed:** Added model fallbacks to support OTP generation for all roles. |
+| **SEC-07** | Critical | `server/src/models/OTPSession.js` | **Mongoose Enum Crash:** The `userModel` enum was missing `Admin` and `Hospital`, causing silent 500 errors during OTP generation. | Add missing roles to the enum array. | **Fixed:** Updated schema enum to `['Doctor', 'Patient', 'PharmacyStaff', 'Hospital', 'Admin']`. |
+| **SEC-08** | Critical | `ml-engine/app.py` | **ML Engine Backdoor:** Hardcoded fallback token (`medisync-secure-key-123`) in `verify_internal_token`. | Remove backdoor and enforce HMAC validation. | **Fixed:** Implemented strict time-windowed HMAC validation using `_INTERNAL_API_KEY`. |
