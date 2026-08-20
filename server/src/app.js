@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 // ---------------------------------------------------------------------------
 // ONLY third-party / Node built-ins at the top level.
@@ -300,19 +300,28 @@ async function startServer() {
   const axios = require('axios');
   const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
   
+  let mlIsReady = null; // null = unknown startup state
+  
   const checkMLEngine = async () => {
     try {
       const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 2000 });
       if (resp.status === 200) {
-        console.log('[Server] ML Engine is online and ready.');
+        if (mlIsReady !== true) {
+          console.log('[Server] ML Engine is online and ready.');
+          mlIsReady = true;
+        }
       }
     } catch (err) {
-      console.warn(`[Server] Warning: ML Engine is currently unreachable at ${mlEngineUrl}. Ensure it is deployed and starting up.`);
+      if (mlIsReady !== false) {
+        console.warn(`[Server] Warning: ML Engine is currently unreachable at ${mlEngineUrl}. Ensure it is deployed and starting up.`);
+        mlIsReady = false;
+      }
     }
   };
   
-  // Do not block startup; check in background
+  // Run immediately, then check every 30 seconds
   checkMLEngine();
+  setInterval(checkMLEngine, 30000);
 
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
