@@ -33,7 +33,7 @@ except ImportError:
     print("Warning: prophet not installed. Outbreak prediction will return mock/dummy data.")
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://127.0.0.1:3000"])
+CORS(app, supports_credentials=True, origins=[os.environ.get('CLIENT_URL', 'http://localhost:3000'), "http://127.0.0.1:3000"])
 
 # Load data into memory
 data_dir = os.path.join(os.path.dirname(__file__), 'data')
@@ -956,4 +956,5 @@ def health_check():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5001, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
