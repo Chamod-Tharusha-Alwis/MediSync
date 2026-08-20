@@ -16,14 +16,13 @@ import GeographicMap from '../../components/common/GeographicMap';
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
 import Broadcast from './Broadcast';
-import AuditLog from './AuditLog';
+import SessionMonitor from './SessionMonitor';
 import BanManagement from './BanManagement';
 import UserManagement from './UserManagement';
 
 import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SupportTicketsRoster from './SupportTicketsRoster';
-import OnlineNow from './OnlineNow';
 
 const timeAgo = (dateString) => {
   if (!dateString) return '';
@@ -604,11 +603,10 @@ const AdminDashboard = () => {
     { label: 'ML Alerts', path: '/admin/dashboard/alerts', icon: ShieldAlert },
     { label: 'Outbreak Monitor', path: '/admin/dashboard/outbreak', icon: Activity },
     { label: 'Broadcast', path: '/admin/dashboard/broadcast', icon: Radio },
-    { label: 'Audit Log', path: '/admin/dashboard/audit', icon: ScrollText },
+    { label: 'Session Monitor', path: '/admin/dashboard/sessions', icon: Monitor },
     { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
     { label: 'Support Tickets', path: '/admin/dashboard/support', icon: ClipboardList },
     { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
-    { label: 'Online Now', path: '/admin/dashboard/online', icon: Monitor },
   ];
 
   const userName = localStorage.getItem('userName') || 'Admin User';
@@ -635,11 +633,10 @@ const AdminDashboard = () => {
               <Route path="/dashboard/alerts" element={<AlertSettings />} />
               <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
               <Route path="/dashboard/broadcast" element={<Broadcast />} />
-              <Route path="/dashboard/audit" element={<AuditLog />} />
+              <Route path="/dashboard/sessions" element={<SessionMonitor />} />
               <Route path="/dashboard/bans" element={<BanManagement />} />
               <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
               <Route path="/dashboard/admins" element={<ManageAdmins />} />
-              <Route path="/dashboard/online" element={<OnlineNow />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           )}

@@ -69,19 +69,19 @@ exports.getActiveSessions = async (req, res) => {
     });
 
     const [doctors, patients, pharmacists, hospitals, admins] = await Promise.all([
-      Doctor.find({ _id: { $in: userIds.Doctor } }).select('fullName role').lean(),
-      Patient.find({ _id: { $in: userIds.Patient } }).select('fullName').lean(),
+      Doctor.find({ _id: { $in: userIds.Doctor } }).select('fullName role doctorId licenseNo').lean(),
+      Patient.find({ _id: { $in: userIds.Patient } }).select('fullName nic').lean(),
       PharmacyStaff.find({ _id: { $in: userIds.PharmacyStaff } }).select('fullName role').lean(),
-      Hospital.find({ _id: { $in: userIds.Hospital } }).select('name').lean(),
+      Hospital.find({ _id: { $in: userIds.Hospital } }).select('name regNo').lean(),
       Admin.find({ _id: { $in: userIds.Admin } }).select('fullName role').lean()
     ]);
 
     const userMap = {};
-    doctors.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'doctor' });
-    patients.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: 'patient' });
-    pharmacists.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'pharmacist' });
-    hospitals.forEach(u => userMap[u._id.toString()] = { fullName: u.name, role: 'hospital_admin' });
-    admins.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'admin' });
+    doctors.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'doctor', identifier: u.licenseNo || u.doctorId || '—' });
+    patients.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: 'patient', identifier: u.nic || '—' });
+    pharmacists.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'pharmacist', identifier: '—' });
+    hospitals.forEach(u => userMap[u._id.toString()] = { fullName: u.name, role: 'hospital_admin', identifier: u.regNo || '—' });
+    admins.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'admin', identifier: '—' });
 
     // Check trusted status
     const fingerprints = sessions.filter(s => s.deviceFingerprint).map(s => ({ userId: s.userId, fp: s.deviceFingerprint }));
@@ -92,13 +92,14 @@ exports.getActiveSessions = async (req, res) => {
     const trustedSet = new Set(trustedDevices.map(d => `${d.userId}_${d.deviceFingerprint}`));
 
     const enriched = sessions.map(s => {
-      const user = userMap[s.userId?.toString()] || { fullName: 'Unknown', role: 'unknown' };
+      const user = userMap[s.userId?.toString()] || { fullName: 'Unknown', role: 'unknown', identifier: '—' };
       const isTrusted = trustedSet.has(`${s.userId}_${s.deviceFingerprint}`);
       return {
         _id: s._id,
         userId: s.userId,
         fullName: user.fullName,
         role: user.role,
+        identifier: user.identifier,
         deviceModel: s.deviceModel || 'Unknown',
         deviceFingerprint: s.deviceFingerprint,
         loginTime: s.createdAt,
@@ -121,6 +122,17 @@ exports.forceLogout = async (req, res) => {
 
     session.isValid = false;
     await session.save();
+
+    // Emit real-time notification to the target user's browser
+    const io = req.app.get('io');
+    if (io && session.userId) {
+      const targetSocketId = io.userSocketMap?.get(session.userId.toString());
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('force_logout', {
+          message: 'Your session was terminated by an administrator.'
+        });
+      }
+    }
 
     res.json({ message: 'Session terminated', data: { sessionId: session._id } });
   } catch (err) {

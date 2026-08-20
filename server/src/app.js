@@ -163,6 +163,7 @@ async function startServer() {
 
   // ── Step 5: Build the Express app ────────────────────────────────────────
   const app = express();
+  app.set('trust proxy', true);
   const httpServer = http.createServer(app);
 
   // Socket.IO – real-time outbreak alerts & broadcasts

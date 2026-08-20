@@ -399,7 +399,9 @@ To maintain high codebase health, redundant component duplicates and unused util
 
 ### 5. Authentication, Audit & Scoping (August 2026 Sprint Complete)
 - **Standalone Password Reset Flow**: Transitioned from one-click magic links to a robust Standalone Reset Flow. `POST /api/auth/reset-password-recovery` generates tokens verified on the new frontend `ResetPassword.jsx` page to securely update passwords, immediately invalidating all prior active sessions.
-- **Admin Audit Log & User Management**: Deployed the Admin `UserManagement.jsx` interface, allowing Super Admins to monitor active sessions, manually force global logouts, and trigger password recovery emails directly.
+  - **Admin Audit Log & User Management**: Deployed the Admin `UserManagement.jsx` interface, allowing Super Admins to monitor active sessions, manually force global logouts, and trigger password recovery emails directly.
+  - **Unified Session Monitor**: Combined Audit Logging and real-time active session surveillance (`OnlineNow.jsx`) into a unified `SessionMonitor.jsx` tabbed component.
+  - **Intelligent Login Notifications**: Wrote a multi-role email dispatcher in `authController.js` and `emailService.js` to dispatch security notifications capturing login ID, IP, and device model across personal and hospital workspace logins.
 - **Real-Time Geolocation via IP-API**: Removed the offline `geoip-lite` dependency and integrated real-time IP lookup via `ip-api.com` to inject accurate City/Country data into Anomaly Detection security emails.
 - **Explicit Disease Scoping Strategy (Option B)**: Scaled the Symptom Checker and Diagnosis engine to natively leverage the full 71,744+ ICD-10 database (`medisync.db` SQLite). The 41-disease JSONs (`symptom_map.json` and `disease_medications.json`) were permanently deleted. The ML Engine's TF-IDF logic was refactored to use the 71k disease names directly for fuzzy semantic matching, acting as the single source of truth across both the symptom checker and the Outbreak Map.
 

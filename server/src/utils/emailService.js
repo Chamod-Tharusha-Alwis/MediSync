@@ -619,3 +619,43 @@ exports.sendEmail = async ({ to, subject, html, text }) => {
     return { success: false, error: err.message };
   }
 };
+// -----------------------------------------------------------------------------
+// LOGIN NOTIFICATION EMAIL
+// -----------------------------------------------------------------------------
+exports.sendLoginNotificationEmail = async (to, name, idField, role, device, networkInfo, loginType, hospitalName) => {
+  const isHospital = loginType === 'Hospital Login';
+  const workspaceStr = isHospital && hospitalName ? "<li><strong>Workspace:</strong> " + hospitalName + "</li>" : "";
+  const mailOptions = {
+    from: fromAddress,
+    to: to,
+    subject: "MediSync - " + (isHospital ? "Hospital" : "New") + " Login Notification",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: ${isHospital ? '#1976D2' : '#2E7D32'}; padding: 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">${isHospital ? 'Hospital Login' : 'Individual Login'}</h1>
+        </div>
+        <div style="padding: 30px; background-color: #ffffff;">
+          <p>Hello ${name},</p>
+          <p>A new login was detected on your MediSync <strong>${role}</strong> account.</p>
+          <ul style="list-style: none; padding-left: 0; line-height: 1.6;">
+            <li><strong>Identifier:</strong> ${idField}</li>
+            ${workspaceStr}
+            <li><strong>Device:</strong> ${device || 'Unknown Device'}</li>
+            <li><strong>Network Provider:</strong> ${networkInfo?.isp || 'Unknown ISP'}</li>
+            <li><strong>Country:</strong> ${networkInfo?.country || 'Unknown Country'}</li>
+            <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+            <li><small style="color: #777;">Nearest network hub: ${networkInfo?.city || 'Unknown'}, ${networkInfo?.region || 'Unknown'}</small></li>
+          </ul>
+          <p style="margin-top: 20px; color: #555; font-size: 0.9em;">If this wasn't you, please contact support immediately and change your password.</p>
+        </div>
+      </div>
+    `
+  };
+  try {
+    await sendMail(mailOptions);
+    return { success: true };
+  } catch (err) {
+    console.error('Error sending login notification email:', err.message);
+    return { success: false, error: err.message };
+  }
+};

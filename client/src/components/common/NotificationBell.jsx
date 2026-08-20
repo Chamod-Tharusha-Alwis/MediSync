@@ -41,6 +41,12 @@ const NotificationBell = () => {
           setNotifications((prev) => [notification, ...prev]);
           setUnreadCount((prev) => prev + 1);
         });
+
+        socket.on('force_logout', (data) => {
+          alert(data?.message || 'Your session was terminated by an administrator.');
+          localStorage.clear();
+          window.location.href = '/select-role';
+        });
       }
     }, 500);
 

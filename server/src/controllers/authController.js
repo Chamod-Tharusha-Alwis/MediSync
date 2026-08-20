@@ -14,6 +14,7 @@ const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
 const { incrementAttempts, getAttempts } = require('../config/redis');
 const { parseDeviceModel } = require('../utils/deviceParser');
+const { resolveLocation } = require('../utils/ipLookup');
 const TrustedDevice = require('../models/TrustedDevice');
 const AuditLog = require('../models/AuditLog');
 const axios = require('axios');
@@ -222,10 +223,22 @@ exports.login = async (req, res) => {
     const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
     await createSession(user._id, modelName, accessToken, req);
-
     // Track last login
     user.lastLoginAt = new Date();
     await user.save();
+
+    // -- LOGIN NOTIFICATION EMAIL --
+    try {
+      const emailToSend = modelName === 'Patient' ? user.contactInfo?.email || user.email : user.email;
+      const idField = user.doctorId || user.nic || user.regNo || user.email;
+      const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
+      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+      const networkInfo = await resolveLocation(ip);
+      await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+    } catch(e) {
+      console.error('Failed to send login notification:', e.message);
+    }
+
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -305,16 +318,8 @@ exports.verifyLoginOTP = async (req, res) => {
       const existingTrusted = await TrustedDevice.findOne({ userId: user._id, deviceFingerprint: fp });
       if (!existingTrusted) {
         // Log Anomaly
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        let location = 'Unknown Location';
-        try {
-          const { data } = await axios.get(`http://ip-api.com/json/${ip}`);
-          if (data && data.status === 'success') {
-            location = `${data.city || 'Unknown City'}, ${data.regionName || 'Unknown Region'}, ${data.country || 'Unknown Country'}`;
-          }
-        } catch (e) {
-          console.error("IP lookup failed", e.message);
-        }
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+          const networkInfo = await resolveLocation(ip);
         
         const deviceModel = parseDeviceModel(req.headers['user-agent']);
         
@@ -327,7 +332,8 @@ exports.verifyLoginOTP = async (req, res) => {
         
         try {
           const emailToSend = modelName === 'Patient' ? user.contactInfo.email : user.email;
-          await emailService.sendAnomalyEmail(emailToSend, deviceModel, location);
+          const locStr = networkInfo ? `${networkInfo.city}, ${networkInfo.region}, ${networkInfo.country}` : 'Unknown Location';
+            await emailService.sendAnomalyEmail(emailToSend, deviceModel, locStr);
         } catch(e) {
           console.error("Failed to send anomaly email", e);
         }
@@ -348,10 +354,22 @@ exports.verifyLoginOTP = async (req, res) => {
         { upsert: true, new: true }
       );
     }
-    
     // Track last login
     user.lastLoginAt = new Date();
     await user.save();
+
+    // -- LOGIN NOTIFICATION EMAIL --
+    try {
+      const emailToSend = modelName === 'Patient' ? user.contactInfo?.email || user.email : user.email;
+      const idField = user.doctorId || user.nic || user.regNo || user.email;
+      const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
+      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+      const networkInfo = await resolveLocation(ip);
+      await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+    } catch(e) {
+      console.error('Failed to send login notification:', e.message);
+    }
+
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -431,12 +449,24 @@ exports.setLoginType = async (req, res) => {
       
       const doctor = await Doctor.findById(req.user.id);
       const orgLogin = doctor.orgLogins.find(org => org.hospitalId.toString() === hospitalId);
-      
       if (!orgLogin || !orgLogin.isActive) {
         return res.status(403).json({ error: 'You are not active at this hospital' });
       }
       
       const hospital = await Hospital.findById(hospitalId);
+
+      // -- HOSPITAL WORKSPACE NOTIFICATION EMAIL --
+      try {
+        if (orgLogin.orgEmail) {
+          const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
+          const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+      const networkInfo = await resolveLocation(ip);
+          await emailService.sendLoginNotificationEmail(orgLogin.orgEmail, doctor.fullName, doctor.doctorId, 'doctor', deviceModel, networkInfo, 'Hospital Login', hospital ? hospital.name : 'Unknown Hospital');
+        }
+      } catch(e) {
+        console.error('Failed to send hospital login notification:', e.message);
+      }
+
       return res.status(200).json({ data: { loginType, hospitalId, hospitalName: hospital ? hospital.name : 'Hospital' }, message: "Workspace set" });
     }
     
