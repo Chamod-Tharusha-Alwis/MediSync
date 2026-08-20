@@ -45,7 +45,7 @@ async function initializeVault() {
 
   const vault = nodeVault({
     apiVersion: 'v1',
-    endpoint: 'http://127.0.0.1:8200',
+    endpoint: process.env.VAULT_URL || 'http://127.0.0.1:8200',
     token: process.env.VAULT_TOKEN,
   });
 
@@ -296,22 +296,23 @@ async function startServer() {
     res.status(err.status || err.statusCode || 500).json({ error: 'Internal server error', details: err.message });
   });
 
-  // ── Step 7: Wait for ML Engine to be ready ──────────────────────────────
+  // ── Step 7: Background ML Engine check (non-blocking) ───────────────────
   const axios = require('axios');
   const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
-  console.log('[Server] Waiting for ML Engine to initialize...');
-  let mlReady = false;
-  while (!mlReady) {
+  
+  const checkMLEngine = async () => {
     try {
       const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 2000 });
       if (resp.status === 200) {
-        mlReady = true;
-        console.log('[Server] ML Engine is fully ready.');
+        console.log('[Server] ML Engine is online and ready.');
       }
     } catch (err) {
-      await new Promise(r => setTimeout(r, 1000));
+      console.warn(`[Server] Warning: ML Engine is currently unreachable at ${mlEngineUrl}. Ensure it is deployed and starting up.`);
     }
-  }
+  };
+  
+  // Do not block startup; check in background
+  checkMLEngine();
 
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
