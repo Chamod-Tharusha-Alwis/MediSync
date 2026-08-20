@@ -16,7 +16,9 @@ const hospitalSchema = new mongoose.Schema({
   googleMapsUrl: { type: String, default: '' },
   pickupLocationAddress: { type: String, default: '' },
   averageRating: { type: Number, default: 0 },
-  ratingCount: { type: Number, default: 0 }
+  ratingCount: { type: Number, default: 0 },
+  lastLoginAt: { type: Date },
+  lastSignOutAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Hospital', hospitalSchema);

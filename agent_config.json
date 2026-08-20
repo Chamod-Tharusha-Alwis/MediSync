@@ -1,0 +1,7 @@
+{
+  "agent_settings": {
+    "override_default_model": true,
+    "target_model": "gemini-3.5-flash-cyber",
+    "framework": "codemender-security-v1"
+  }
+}

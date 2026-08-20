@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
   LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert,
   ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp,
-  Settings, Loader2
+  Settings, Loader2, Monitor
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../../api/axiosInstance';
@@ -18,10 +18,12 @@ import OutbreakMonitor from './OutbreakMonitor';
 import Broadcast from './Broadcast';
 import AuditLog from './AuditLog';
 import BanManagement from './BanManagement';
-import PatientReports from './PatientReports';
+import UserManagement from './UserManagement';
+
 import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SupportTicketsRoster from './SupportTicketsRoster';
+import OnlineNow from './OnlineNow';
 
 const timeAgo = (dateString) => {
   if (!dateString) return '';
@@ -49,13 +51,7 @@ const ManageHospitals = () => {
   }, []);
 
   return (
-    <PageTransition className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Registered Hospitals</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Verify workspace registration codes and manage active hospital nodes.</p>
-      </div>
-
-      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+    <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
         {loading ? (
           <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
         ) : hospitals.length > 0 ? (
@@ -91,8 +87,59 @@ const ManageHospitals = () => {
             <p className="text-sm font-semibold">No registered hospital workspaces found.</p>
           </div>
         )}
+    </div>
+  );
+};
+
+const UserAuditModal = ({ userId, onClose }) => {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    api.get(`/admin/audit-logs?actorId=${userId}&limit=100`)
+      .then(res => setLogs(res.data.data || []))
+      .catch(() => toast.error('Failed to load audit logs'))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  if (!userId) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        <div className="p-5 border-b border-white/5 flex justify-between items-center bg-slate-900/80">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <ScrollText className="w-5 h-5 text-slate-400" />
+            User Audit Trail
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors text-2xl leading-none">&times;</button>
+        </div>
+        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
+          {loading ? (
+            <div className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
+          ) : logs.length > 0 ? (
+            <div className="space-y-3">
+              {logs.map(log => (
+                <div key={log._id} className="p-3 bg-slate-950/40 rounded-xl border border-white/5">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-xs font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">{log.action}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 font-mono">
+                    <span className="text-slate-500">Device:</span> {log.deviceModel || 'Unknown'} <br />
+                    <span className="text-slate-500">Target:</span> {log.targetEntity || log.accessedNic || 'System'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-slate-500 text-sm">No audit logs found for this user.</div>
+          )}
+        </div>
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
@@ -100,10 +147,12 @@ const ManageHospitals = () => {
 // SUB-COMPONENT: Manage Users
 // ─────────────────────────────────────────────────────────────────────────────
 const ManageUsers = () => {
+  const [viewTab, setViewTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [auditUserId, setAuditUserId] = useState(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -137,18 +186,39 @@ const ManageUsers = () => {
           <h1 className="text-3xl font-extrabold text-white tracking-tight">User Management</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Global access control and operational oversight across roles.</p>
         </div>
-        <select
-          value={roleFilter}
-          onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
-          className="glass-input text-xs w-48 sm:w-auto"
-        >
-          <option value="">All Roles</option>
-          <option value="doctor">Doctors</option>
-          <option value="patient">Patients</option>
-          <option value="pharmacist">Pharmacists</option>
-        </select>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex bg-slate-900/60 p-1 rounded-lg border border-white/5">
+            <button
+              onClick={() => setViewTab('users')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${viewTab === 'users' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Users
+            </button>
+            <button
+              onClick={() => setViewTab('hospitals')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${viewTab === 'hospitals' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Hospitals
+            </button>
+          </div>
+          {viewTab === 'users' && (
+            <select
+              value={roleFilter}
+              onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
+              className="glass-input text-xs w-48 sm:w-auto"
+            >
+              <option value="">All Roles</option>
+              <option value="doctor">Doctors</option>
+              <option value="patient">Patients</option>
+              <option value="pharmacist">Pharmacists</option>
+            </select>
+          )}
+        </div>
       </div>
 
+      {viewTab === 'hospitals' ? (
+        <ManageHospitals />
+      ) : (
       <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
         {loading ? (
           <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
@@ -160,6 +230,10 @@ const ManageUsers = () => {
                   <th className="px-6 py-4">User Name</th>
                   <th className="px-6 py-4">Credential / ID</th>
                   <th className="px-6 py-4">System Role</th>
+                  <th className="px-6 py-4">Last Active</th>
+                  <th className="px-6 py-4">Device Model</th>
+                  <th className="px-6 py-4">Last Login</th>
+                  <th className="px-6 py-4">Last Sign-Out</th>
                   <th className="px-6 py-4">Access Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -170,6 +244,21 @@ const ManageUsers = () => {
                     <td className="px-6 py-4 font-bold text-white">{u.fullName}</td>
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{u.email || u.nic}</td>
                     <td className="px-6 py-4 capitalize font-semibold text-slate-300">{u.role?.replace('_', ' ')}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${u.isValid && u.lastAccess && (new Date() - new Date(u.lastAccess)) < 30 * 60 * 1000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
+                        <span className="text-slate-400 text-xs">{timeAgo(u.lastAccess) || 'Never'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-xs text-slate-300 truncate max-w-[140px]" title={u.deviceInfo}>{u.deviceModel || 'Unknown'}</div>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-400">
+                      {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-400">
+                      {u.lastSignOutAt ? new Date(u.lastSignOutAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (u.isValid === false ? 'Session expired' : '—')}
+                    </td>
                     <td className="px-6 py-4">
                       {u.isActive !== false ? (
                         <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
@@ -182,16 +271,24 @@ const ManageUsers = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleToggle(u._id, u.role)}
-                        className={`text-xs font-bold transition-all px-3 py-1.5 rounded-lg border ${
-                          u.isActive !== false
-                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
-                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
-                        }`}
-                      >
-                        {u.isActive !== false ? 'Block Access' : 'Unblock Access'}
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setAuditUserId(u._id)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
+                        >
+                          Audit
+                        </button>
+                        <button
+                          onClick={() => handleToggle(u._id, u.role)}
+                          className={`text-[10px] font-bold transition-all px-3 py-1.5 rounded-lg border ${
+                            u.isActive !== false
+                              ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
+                              : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
+                          }`}
+                        >
+                          {u.isActive !== false ? 'Block' : 'Unblock'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -205,6 +302,8 @@ const ManageUsers = () => {
           </div>
         )}
       </div>
+      )}
+      {auditUserId && <UserAuditModal userId={auditUserId} onClose={() => setAuditUserId(null)} />}
     </PageTransition>
   );
 };
@@ -360,11 +459,31 @@ const Overview = ({ stats, geo, activeAlerts }) => (
         <div className="space-y-3.5 h-72 overflow-y-auto pr-2 custom-scrollbar">
           {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
             stats.recentAuditLogs.map((log) => {
+              const ACTION_MAP = {
+                login: 'Logged into the system',
+                register: 'Registered a new account',
+                create_patient: 'Registered a new patient',
+                update_patient: 'Updated patient profile',
+                create_consultation: 'Created a new consultation',
+                order_test: 'Ordered a new lab test',
+                update_test: 'Updated lab test results',
+                dispense_medication: 'Dispensed medication',
+                trigger_outbreak: 'Triggered an outbreak alert',
+                approve_outbreak: 'Approved an outbreak alert',
+                resolve_outbreak: 'Resolved an outbreak alert',
+                ban_user: 'Suspended a user',
+                lift_ban: 'Lifted user suspension'
+              };
+
               const actionLower = (log.action || '').toLowerCase();
               let badgeColor = 'bg-slate-800 text-slate-400 border border-slate-700/50';
               if (actionLower.includes('login')) badgeColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
               if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-              if (actionLower.includes('delete') || actionLower.includes('block')) badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
+              if (actionLower.includes('delete') || actionLower.includes('block') || actionLower.includes('ban')) badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
+
+              const humanAction = ACTION_MAP[actionLower] || log.action;
+              const actorName = log.actorName || log.actorId;
+              const targetEntity = log.targetEntity || log.accessedNic || 'system node';
 
               return (
                 <div key={log._id} className="bg-slate-950/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
@@ -375,7 +494,10 @@ const Overview = ({ stats, geo, activeAlerts }) => (
                     <span className="text-[10px] text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
                   </div>
                   <p className="text-xs text-slate-300 font-medium">
-                    <span className="text-white font-bold">{log.actorRole?.replace('_', ' ')}</span> ({log.actorId}) modified node.
+                    <span className="text-white font-bold">{actorName}</span> 
+                    <span className="text-slate-500 ml-1 text-[10px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
+                    <br/>
+                    <span className="text-slate-400 mt-1 inline-block">{humanAction} regarding <span className="text-blue-400 font-semibold">{targetEntity}</span>.</span>
                   </p>
                 </div>
               );
@@ -477,16 +599,16 @@ const AdminDashboard = () => {
   const menuItems = [
     { label: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard, end: true },
     { label: 'Analytics', path: '/admin/dashboard/analytics', icon: TrendingUp },
-    { label: 'Hospitals', path: '/admin/dashboard/hospitals', icon: Building2 },
     { label: 'Users', path: '/admin/dashboard/users', icon: Users },
+    { label: 'Identity & Devices', path: '/admin/dashboard/identity', icon: ShieldAlert },
     { label: 'ML Alerts', path: '/admin/dashboard/alerts', icon: ShieldAlert },
     { label: 'Outbreak Monitor', path: '/admin/dashboard/outbreak', icon: Activity },
     { label: 'Broadcast', path: '/admin/dashboard/broadcast', icon: Radio },
     { label: 'Audit Log', path: '/admin/dashboard/audit', icon: ScrollText },
     { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
-    { label: 'Patient Reports', path: '/admin/dashboard/reports', icon: ClipboardList },
     { label: 'Support Tickets', path: '/admin/dashboard/support', icon: ClipboardList },
     { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
+    { label: 'Online Now', path: '/admin/dashboard/online', icon: Monitor },
   ];
 
   const userName = localStorage.getItem('userName') || 'Admin User';
@@ -508,16 +630,16 @@ const AdminDashboard = () => {
             <Routes>
               <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
               <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
-              <Route path="/dashboard/hospitals" element={<ManageHospitals />} />
               <Route path="/dashboard/users" element={<ManageUsers />} />
+              <Route path="/dashboard/identity" element={<UserManagement />} />
               <Route path="/dashboard/alerts" element={<AlertSettings />} />
               <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
               <Route path="/dashboard/broadcast" element={<Broadcast />} />
               <Route path="/dashboard/audit" element={<AuditLog />} />
               <Route path="/dashboard/bans" element={<BanManagement />} />
-              <Route path="/dashboard/reports" element={<PatientReports />} />
               <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
               <Route path="/dashboard/admins" element={<ManageAdmins />} />
+              <Route path="/dashboard/online" element={<OnlineNow />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           )}

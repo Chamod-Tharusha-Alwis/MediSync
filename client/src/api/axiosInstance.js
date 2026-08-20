@@ -1,13 +1,16 @@
 import axios from 'axios';
+import { getDeviceFingerprint, getHardwareModel } from '../utils/deviceFingerprint';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5005/api';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5005/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
 // Request interceptor — attach auth + optional patient-access token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -16,6 +19,13 @@ api.interceptors.request.use(
     if (config._patientAccessToken) {
       config.headers['x-patient-access'] = config._patientAccessToken;
     }
+
+    const fp = await getDeviceFingerprint();
+    if (fp) config.headers['X-Device-Fingerprint'] = fp;
+
+    const hwModel = await getHardwareModel();
+    if (hwModel) config.headers['X-Hardware-Model'] = hwModel;
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -95,7 +105,7 @@ api.interceptors.response.use(
 
         try {
           const { data } = await axios.post(
-            'http://localhost:5005/api/auth/refresh',
+            `${API_BASE_URL}/auth/refresh`,
             {},
             { withCredentials: true }
           );

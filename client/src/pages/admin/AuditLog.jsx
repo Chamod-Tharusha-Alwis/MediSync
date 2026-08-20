@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 
-import { ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Globe, Lock, Loader2 } from 'lucide-react';
+import { ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Smartphone, Lock, Loader2, Search, User, Activity } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
@@ -32,6 +32,7 @@ const AuditLog = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -40,6 +41,7 @@ const AuditLog = () => {
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
       if (roleFilter) url += `&actorRole=${roleFilter}`;
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
 
       const res = await api.get(url);
       setLogs(res.data.data || []);
@@ -49,7 +51,7 @@ const AuditLog = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, startDate, endDate, roleFilter]);
+  }, [page, startDate, endDate, roleFilter, searchTerm]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -103,8 +105,20 @@ const AuditLog = () => {
               className="glass-input text-xs"
             />
           </div>
+          <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <Search className="w-3.5 h-3.5" /> Search User ID / NIC
+            </span>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+              className="glass-input text-xs"
+            />
+          </div>
           <button
-            onClick={() => { setStartDate(''); setEndDate(''); setRoleFilter(''); setPage(1); }}
+            onClick={() => { setStartDate(''); setEndDate(''); setRoleFilter(''); setSearchTerm(''); setPage(1); }}
             className="glass-button text-xs py-2.5 px-5 select-none shrink-0"
           >
             Clear Filters
@@ -146,11 +160,11 @@ const AuditLog = () => {
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Timestamp</th>
-                  <th className="px-6 py-4">Actor ID</th>
-                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4">Actor</th>
+                  <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Logged Action</th>
                   <th className="px-6 py-4">Accessed Patient NIC</th>
-                  <th className="px-6 py-4 text-right">IP Address</th>
+                  <th className="px-6 py-4 text-right">Device</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -161,16 +175,30 @@ const AuditLog = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 select-none">
-                          {(log.actorRole || '?').charAt(0).toUpperCase()}
+                        <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 select-none shrink-0">
+                          <User className="w-3 h-3 text-slate-400" />
                         </div>
-                        <span className="text-white font-bold">{log.actorId || 'system'}</span>
+                        <div className="flex flex-col">
+                          <span className="text-white font-bold text-xs">{log.actorName || log.actorId || 'System'}</span>
+                          {log.actorNic && <span className="text-[10px] text-slate-500 font-mono">{log.actorNic}</span>}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider select-none">
-                        {log.actorRole || log.role || 'system'}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider select-none">
+                          {log.actorRole || log.role || 'system'}
+                        </span>
+                        {log.isOnline ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <Activity className="w-2.5 h-2.5" /> Online
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                            Offline
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>
@@ -186,10 +214,10 @@ const AuditLog = () => {
                         <span className="text-slate-600">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right">
+                    <td className="px-6 py-4 text-slate-400 text-xs text-right">
                       <span className="inline-flex items-center gap-1">
-                        <Globe className="w-3.5 h-3.5 opacity-40 shrink-0" />
-                        {log.ipAddress || log.ip || '—'}
+                        <Smartphone className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                        {log.deviceModel || '—'}
                       </span>
                     </td>
                   </tr>

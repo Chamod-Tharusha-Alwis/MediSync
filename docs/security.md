@@ -16,7 +16,9 @@ This document outlines the defensive security hardening applied to the MediSync 
 - **Hardcoded Key Eradication**: Removed the insecure `default-owner-key-12345678` fallback key from multiple files (`doctorController.js`, `prescriptionController.js`, `pdfGenerator.js`). These endpoints now strictly enforce the use of `global.ENCRYPTION_KEY`.
 - **Model Consistency**: Standardized `LabTest.js` to utilize the injected `global.ENCRYPTION_KEY` instead of redefining or falling back to local secrets.
 
-## 4. Authentication & Authorization (OTP Bypass & Rate Limiting)
+## 4. Authentication & Authorization (Strong Passwords, OTP Bypass & Rate Limiting)
+- **Strong Password Enforcement**: Test accounts now use strong passwords (`MediSync#2026!Pass`) instead of weak `password123`.
+- **Password Hashing**: `seedUsers.js` updated to hash strong passwords with bcrypt.
 - **Bypass Guarding**: The universal test OTP (`123456`) was discovered in multiple controllers (`labController.js`, `patientController.js`). This bypass has been strictly guarded and will only function when `process.env.NODE_ENV === 'test'` and `process.env.TEST_MODE === 'true'`.
 - **Cryptographic Randomness**: The patient registration OTP generator was upgraded from a static string to a secure, cryptographically random 6-digit number using `crypto.randomInt()`.
 - **Brute-Force Protection**: Introduced a Redis-backed rate limiter (`incrementAttempts` and `getAttempts`) in `redis.js`. The `labController.js` OTP verification endpoints now enforce a strict maximum of 5 failed attempts per 15-minute window to protect against automated credential stuffing.
@@ -37,3 +39,35 @@ This document outlines the defensive security hardening applied to the MediSync 
 - **GitHub Actions:** Added `security-tests.yml` to automatically spin up the Node Server, MongoDB, Redis, and ML Engine in a headless environment.
 - **OTP Rate Limit Testing:** An automated bash script (`test_security.sh`) generates a live OTP session and intentionally spams incorrect attempts to mathematically verify that the Redis 429 rate limiter activates exactly on the 6th attempt.
 - **HMAC Enforcement Testing:** The pipeline mathematically verifies that the ML Engine properly rejects unauthenticated traffic and validates rotating HMAC signatures.
+
+## 8. Express 5 Input Sanitization Compatibility
+- **In-Place Sanitization**: `express-mongo-sanitize` crashes on Express 5 because it tries to reassign `req.query` wholesale, which is a read-only getter in Express 5. Replaced with custom `sanitizeInPlace()` middleware that recursively walks `req.query`, `req.body`, and `req.params`, removing/replacing keys starting with `$` or containing dots.
+- **In-Place Mutation**: This approach mutates object properties in-place rather than wholesale reassignment.
+- **Payload Limits**: Request body size limited to 1MB via `express.json({ limit: '1mb' })` to prevent DoS.
+
+## 9. In-Memory Token Management
+- **In-Memory Access Tokens**: JWT access tokens are now stored exclusively in React state/context (in-memory), NOT in `localStorage` or `sessionStorage`. This eliminates XSS token theft risk (previously flagged as C4 in security audit).
+- **HTTP-Only Cookies**: Refresh tokens remain in `httpOnly` cookies.
+- **Patient Access Session**: `PatientAccessContext` provides in-memory doctor→patient access sessions with `usePatientAccess()` hook.
+- **Clear Session on Exit**: Session is cleared on dashboard return (React state reset), no browser storage involved.
+
+## 10. Doctor Login Type Split Security
+- **Scoped Hospital Access**: Hospital Login doctors are scoped to their affiliated hospital's patient tests.
+- **Independent Personal Login**: Personal Login doctors operate independently.
+- **Login Type Tracking**: Login type is stored as `loginType` field on `Doctor` model.
+- **Admin Managed Registration**: Hospital-login accounts are created by hospital admins, preventing self-registration abuse.
+
+## 11. Mock Email OTP Visibility (Development Only)
+- **Mock OTP Terminal Output**: In development mode, mock email now logs the full email body including the 6-digit OTP to terminal.
+- **Environment Checks**: This is gated behind `NODE_ENV !== 'production'` checks.
+- **Real SMTP in Production**: Production email uses real SMTP transport.
+
+## 12. Clinical Document Encryption & PDPA Compliance (July 2026)
+- **True Document Encryption:** While standard `pdf-lib` does not support file encryption (`.encrypt()` is a no-op), MediSync implements real AES-256 PDF encryption via `@pdfsmaller/pdf-encrypt-lite`.
+- **Deterministic Key Derivation:** To ensure patients can open their records without storing plaintext passwords in the database, document passwords are dynamically generated via HMAC-SHA256:
+  $$\text{Password} = \text{HMAC-SHA256}(\text{ENCRYPTION\_KEYS.master}, \text{patientNIC}).\text{substring}(0, 8).\text{toUpperCase()}$$
+- **Zero-Storage Exposure:** Passwords are generated on-the-fly during PDF export and never logged or stored in database tables or server memory.
+
+## 13. Express 5 Query Sanitization Hardening
+- **Read-Only Request Object Compatibility:** Express 5 treats `req.query` as a read-only getter property, causing standard NoSQL injection sanitizers (which attempt to reassign `req.query = cleanQuery`) to crash with runtime `TypeError` exceptions.
+- **In-Place Recursive Mutation:** Implemented custom `sanitizeInPlace` middleware that recursively traverses and sanitizes object properties in-place without violating Express 5 object immutability rules.

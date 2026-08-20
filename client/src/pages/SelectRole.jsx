@@ -21,7 +21,7 @@ const roles = [
     title: 'Doctor Workspace',
     description: 'Record patient consultations, view clinical timelines, and issue e-prescriptions.',
     icon: Stethoscope,
-    route: '/doctor/login',
+    route: '/doctor/select-role',
     color: 'text-teal-400',
     border: 'hover:border-teal-500/30 hover:shadow-teal-500/5',
     glow: 'bg-teal-500/10'

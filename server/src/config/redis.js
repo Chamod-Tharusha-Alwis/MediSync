@@ -203,6 +203,42 @@ async function getAttempts(key) {
   return entry.data;
 }
 
+/**
+ * Generic Cache Setter
+ */
+async function setCache(key, data, ttlSec = 300) {
+  if (redisAvailable && redisClient) {
+    try {
+      await redisClient.setEx(key, ttlSec, JSON.stringify(data));
+      return;
+    } catch (err) {
+      console.warn('[Redis] setCache failed, falling back to memory:', err.message);
+    }
+  }
+  memoryStore.set(key, { data, expiresAt: Date.now() + ttlSec * 1000 });
+}
+
+/**
+ * Generic Cache Getter
+ */
+async function getCache(key) {
+  if (redisAvailable && redisClient) {
+    try {
+      const raw = await redisClient.get(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      console.warn('[Redis] getCache failed, falling back to memory:', err.message);
+    }
+  }
+  const entry = memoryStore.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    memoryStore.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
 module.exports = {
   initRedis,
   setOtp,
@@ -210,5 +246,7 @@ module.exports = {
   deleteOtp,
   incrementAttempts,
   getAttempts,
+  setCache,
+  getCache,
   isRedisAvailable: () => redisAvailable,
 };

@@ -115,42 +115,92 @@ exports.getDoctors = async (req, res) => {
 
 exports.addDoctor = async (req, res) => {
   try {
-    const { doctorId, email, orgEmail } = req.body;
+    const { doctorId, email, orgEmail, fullName, specialization, licenseNo, personalEmail } = req.body;
     const hospitalId = req.user.id;
 
-    if (!doctorId && !email) return res.status(400).json({ error: 'Provide doctorId (e.g. DR-XXXXXXXX) or email' });
+    if (!doctorId && !email && !personalEmail) {
+      return res.status(400).json({ error: 'Provide doctorId, email, or personalEmail' });
+    }
 
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: 'Hospital not found' });
 
     let doctor = null;
     if (doctorId) {
-      // Search by doctorId — a plain-text field, not encrypted
       doctor = await Doctor.findOne({ doctorId });
     }
-    if (!doctor && email) doctor = await Doctor.findOne({ email });
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found in system. Please verify the Doctor ID or email.' });
-
-    const alreadyLinked = doctor.orgLogins && doctor.orgLogins.some(org => org.hospitalId.toString() === hospitalId);
-    if (alreadyLinked) return res.status(400).json({ error: 'Doctor already linked' });
+    const searchEmail = email || personalEmail;
+    if (!doctor && searchEmail) {
+      doctor = await Doctor.findOne({ $or: [{ email: searchEmail }, { personalEmail: searchEmail }] });
+    }
 
     const tempPassword = generateTempPassword();
     const hashedTemp = await hashPassword(tempPassword);
+
+    if (!doctor) {
+      // If doctor does not exist, provision a new Hospital Doctor account
+      if (!fullName || !searchEmail) {
+        return res.status(400).json({ error: 'To create a new hospital doctor, fullName and personalEmail are required.' });
+      }
+
+      const newDoctorId = "DR-" + require('uuid').v4().slice(0, 8).toUpperCase();
+      const targetPersonalEmail = personalEmail || searchEmail;
+      const assignedOrgEmail = orgEmail || searchEmail;
+
+      doctor = new Doctor({
+        doctorId: newDoctorId,
+        fullName,
+        email: assignedOrgEmail,
+        personalEmail: targetPersonalEmail,
+        password: hashedTemp,
+        licenseNo: licenseNo || `SLMC-${Math.floor(10000 + Math.random() * 90000)}`,
+        specialization: specialization || 'General Practice',
+        role: 'doctor',
+        loginType: 'hospital',
+        hospitals: [hospitalId],
+        orgLogins: [{
+          hospitalId,
+          orgEmail: assignedOrgEmail,
+          tempPassword: hashedTemp,
+          mustChangePassword: true,
+          isActive: true
+        }]
+      });
+
+      await doctor.save();
+
+      try {
+        await emailService.sendTempPasswordEmail(targetPersonalEmail, doctor.fullName, tempPassword, `${process.env.CLIENT_URL}/doctor/login`, hospital.name);
+      } catch (emailErr) {
+        console.error('Email send failed:', emailErr.message);
+      }
+
+      return res.status(201).json({
+        data: { doctorId: doctor._id, fullName: doctor.fullName, orgEmail: assignedOrgEmail, personalEmail: targetPersonalEmail, hospitalName: hospital.name },
+        message: 'New hospital doctor created and temporary password sent to personal email',
+      });
+    }
+
+    // Existing doctor link
+    const alreadyLinked = doctor.orgLogins && doctor.orgLogins.some(org => org.hospitalId.toString() === hospitalId);
+    if (alreadyLinked) return res.status(400).json({ error: 'Doctor already linked to this hospital' });
+
     const assignedOrgEmail = orgEmail || doctor.email;
+    const targetEmail = doctor.personalEmail || doctor.email || assignedOrgEmail;
 
     doctor.orgLogins.push({ hospitalId, orgEmail: assignedOrgEmail, tempPassword: hashedTemp, mustChangePassword: true, isActive: true });
     if (!doctor.hospitals.some(h => h.toString() === hospitalId)) doctor.hospitals.push(hospitalId);
     await doctor.save();
 
     try {
-      await emailService.sendTempPasswordEmail(assignedOrgEmail, doctor.fullName, tempPassword, `${process.env.CLIENT_URL}/doctor/login`, hospital.name);
+      await emailService.sendTempPasswordEmail(targetEmail, doctor.fullName, tempPassword, `${process.env.CLIENT_URL}/doctor/login`, hospital.name);
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
     }
 
     res.status(201).json({
       data: { doctorId: doctor._id, fullName: doctor.fullName, orgEmail: assignedOrgEmail, hospitalName: hospital.name },
-      message: 'Doctor linked and email sent',
+      message: 'Doctor linked and temporary password sent to email',
     });
   } catch (error) {
     res.status(500).json({ error: 'Error linking doctor', details: error.message });
@@ -278,5 +328,45 @@ exports.getHospitalStaff = async (req, res) => {
   } catch (error) {
     console.error('getHospitalStaff error:', error);
     res.status(500).json({ error: 'Failed to fetch hospital staff', details: error.message });
+  }
+};
+
+exports.getHospitalPatientHistory = async (req, res) => {
+  try {
+    const hospitalId = req.user.id;
+    const { nic } = req.params;
+    const normalizedNic = (nic || '').trim().toUpperCase();
+
+    // Verify patient has consultation history at this hospital
+    const consultations = await Consultation.find({
+      sessionHospitalId: hospitalId,
+      patientNic: normalizedNic
+    }).sort({ createdAt: -1 });
+
+    if (!consultations || consultations.length === 0) {
+      return res.status(404).json({ error: 'No patient history found for this hospital.' });
+    }
+
+    const consultationIds = consultations.map(c => c._id);
+    const prescriptions = await Prescription.find({ consultationId: { $in: consultationIds } });
+
+    // Decrypt prescriptions
+    prescriptions.forEach(p => {
+      if (typeof p.decryptFieldsSync === 'function') {
+        try { p.decryptFieldsSync(); } catch (e) {}
+      }
+    });
+
+    res.json({
+      data: {
+        nic: normalizedNic,
+        consultations,
+        prescriptions
+      },
+      message: 'Hospital patient history fetched successfully'
+    });
+  } catch (error) {
+    console.error('getHospitalPatientHistory error:', error);
+    res.status(500).json({ error: 'Failed to fetch hospital patient history', details: error.message });
   }
 };

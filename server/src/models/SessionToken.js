@@ -16,8 +16,15 @@ const sessionTokenSchema = new mongoose.Schema({
   deviceInfo: {
     type: String
   },
-  ipAddress: {
+  deviceFingerprint: {
     type: String
+  },
+  deviceModel: {
+    type: String
+  },
+  isTrusted: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,
@@ -30,6 +37,12 @@ const sessionTokenSchema = new mongoose.Schema({
   isValid: {
     type: Boolean,
     default: true
+  },
+  expiredAt: {
+    type: Date
+  },
+  logoutAt: {
+    type: Date
   }
 });
 

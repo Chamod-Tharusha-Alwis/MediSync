@@ -1,4 +1,7 @@
 const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
+const Hospital = require('../models/Hospital');
+const Pharmacy = require('../models/Pharmacy');
 const Prescription = require('../models/Prescription');
 const Consultation = require('../models/Consultation');
 const LabTest = require('../models/LabTest');
@@ -11,6 +14,8 @@ const SessionToken = require('../models/SessionToken');
 const { hashPassword, validatePasswordStrength } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const { incrementAttempts, getAttempts } = require('../config/redis');
+const { parseDeviceModel } = require('../utils/deviceParser');
+
 
 exports.registerPatient = async (req, res) => {
   try {
@@ -42,8 +47,8 @@ exports.registerPatient = async (req, res) => {
     }
 
     const strength = validatePasswordStrength(password);
-    if (!strength.valid || strength.score < 2) {
-      return res.status(400).json({ error: 'Password is too weak' });
+    if (!strength.valid || strength.score < 3) {
+      return res.status(400).json({ error: 'Password is too weak. Must meet complexity requirements.' });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -76,7 +81,8 @@ exports.registerPatient = async (req, res) => {
       userModel: 'Patient',
       tokenHash,
       deviceInfo: req.headers['user-agent'] || 'Unknown Device',
-      ipAddress: req.ip || req.connection.remoteAddress,
+      deviceFingerprint: req.headers['x-device-fingerprint'] || null,
+      deviceModel: parseDeviceModel(req.headers['user-agent']),
       isValid: true,
       lastUsed: new Date()
     });
@@ -115,10 +121,14 @@ exports.loginPatient = async (req, res) => {
       userModel: 'Patient',
       tokenHash,
       deviceInfo: req.headers['user-agent'] || 'Unknown Device',
-      ipAddress: req.ip || req.connection.remoteAddress,
+      deviceFingerprint: req.headers['x-device-fingerprint'] || null,
+      deviceModel: parseDeviceModel(req.headers['user-agent']),
       isValid: true,
       lastUsed: new Date()
     });
+
+    patient.lastLoginAt = new Date();
+    await patient.save();
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -314,16 +324,21 @@ exports.getTimeline = async (req, res) => {
 
 exports.getPrescriptions = async (req, res) => {
   try {
-    const targetNic = (req.user.nic || req.user.sub || req.params.nic || '').trim().toUpperCase();
+    const targetNic = (req.params.nic || req.user.nic || req.user.sub || '').trim().toUpperCase();
     
     // Authorization check
-    if (req.user.role === 'patient' && req.user.sub.toUpperCase() !== targetNic) {
+    if (req.user.role === 'patient' && req.user.sub && req.user.sub.toUpperCase() !== targetNic) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
     const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
     
-    const myPrescriptions = await Prescription.find({ nicHash: targetHash })
+    const myPrescriptions = await Prescription.find({
+      $or: [
+        { nicHash: targetHash },
+        { patientNic_bi: targetHash }
+      ]
+    })
       .populate('doctorId', 'fullName specialization')
       .populate('hospitalId', 'name')
       .populate('dispensedBy', 'name')
@@ -468,8 +483,7 @@ exports.verifyPatientAccess = async (req, res) => {
 
     if (!otpRecord) return res.status(401).json({ error: 'Invalid or expired OTP' });
 
-    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-    console.log(`[DEBUG verifyPatientAccess] NODE_ENV: '${process.env.NODE_ENV}', TEST_MODE: '${process.env.TEST_MODE}', otp: '${otp}', isTestBypass: ${isTestBypass}`);
+    const isTestBypass = (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && otp === '123456';
     
     if (isTestBypass) {
       // test bypass consumes the OTP without failing

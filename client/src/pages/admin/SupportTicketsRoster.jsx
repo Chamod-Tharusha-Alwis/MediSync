@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion} from 'framer-motion';
 import { toast } from 'react-toastify';
-import { MessageSquare, Calendar, Mail, FileText, CheckCircle, Clock, Send, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Calendar, Mail, FileText, CheckCircle, Send, ShieldCheck, HelpCircle } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 

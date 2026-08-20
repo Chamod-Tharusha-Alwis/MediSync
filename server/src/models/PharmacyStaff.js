@@ -38,7 +38,10 @@ const pharmacyStaffSchema = new mongoose.Schema({
   tempPassword: {
     type: String
   },
-  lastLogin: {
+  lastLoginAt: {
+    type: Date
+  },
+  lastSignOutAt: {
     type: Date
   },
   createdBy: {

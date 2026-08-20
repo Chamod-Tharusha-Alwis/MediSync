@@ -5,6 +5,7 @@ node_modules/
 .env
 client/.env
 server/.env
+ml-engine/.env
 
 # Temporary test/E2E artifacts
 temp-patient.json

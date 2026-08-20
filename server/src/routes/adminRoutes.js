@@ -19,6 +19,8 @@ router.get('/audit',      protect(['admin', 'super_admin']), adminController.get
 
 // ─── ML Engine ───────────────────────────────────────────────────────────────
 router.post('/outbreak/trigger', protect(['admin', 'super_admin', 'health_officer']), adminController.triggerMLDetection);
+router.put('/outbreak/:id/approve', protect(['admin', 'super_admin', 'health_officer']), adminController.approveAlert);
+router.put('/outbreak/:id/resolve', protect(['admin', 'super_admin', 'health_officer']), adminController.resolveAlert);
 router.get('/ml-status', protect(['admin', 'super_admin']), adminController.getMLStatus);
 
 // ─── Ban management ──────────────────────────────────────────────────────────
@@ -33,6 +35,12 @@ router.post('/admins', protect(['admin', 'super_admin']), adminController.addAdm
 // ─── Patient reports ─────────────────────────────────────────────────────────
 router.get('/reports', protect(['admin', 'super_admin']), adminController.getPatientReports);
 router.put('/reports/:id/review', protect(['admin', 'super_admin']), adminController.reviewReport);
+
+// ─── Users & Devices ──────────────────────────────────────────────────────────
+router.get('/users/search', protect(['admin', 'super_admin']), adminController.searchUsers);
+router.get('/users/:id/devices', protect(['admin', 'super_admin']), adminController.getUserDevices);
+router.delete('/users/:id/devices/:deviceId', protect(['admin', 'super_admin']), adminController.removeUserDevice);
+router.post('/users/:id/recovery', protect(['admin', 'super_admin']), adminController.generateRecoveryToken);
 
 // ─── Broadcasts ──────────────────────────────────────────────────────────────
 router.get('/broadcasts', protect(['admin', 'super_admin']), adminController.getBroadcasts);

@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const SessionToken = require('../models/SessionToken');
 const AuditLog = require('../models/AuditLog');
 const BanRecord = require('../models/BanRecord');
+const { parseDeviceModel } = require('../utils/deviceParser');
 
 const protect = (allowedRoles = []) => async (req, res, next) => {
   try {
@@ -16,7 +17,7 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
     // Verify JWT
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     } catch (err) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -80,7 +81,7 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
         actorRole: decoded.role || 'unknown',
         action: `${req.method} ${req.originalUrl || req.path}`,
         accessedNic: accessedNic,
-        ipAddress: req.ip || req.connection.remoteAddress
+        deviceModel: parseDeviceModel(req.headers['user-agent'])
       });
     } catch (auditErr) {
       console.error('Failed to write audit log:', auditErr);

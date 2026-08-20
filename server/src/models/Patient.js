@@ -37,7 +37,9 @@ const patientSchema = new mongoose.Schema({
   height: { type: Number, default: null },   // centimetres
   weight: { type: Number, default: null },   // kilograms
   profilePicture: { type: String, default: '' },
-  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 },
+  lastLoginAt: { type: Date },
+  lastSignOutAt: { type: Date }
 }, { timestamps: true });
 
 // AES-256 field-level encryption on sensitive clinical fields (NOT nic - it's used as a lookup key)

@@ -105,7 +105,7 @@ exports.broadcastAlert = async (req, res) => {
 
 exports.getActiveAlerts = async (req, res) => {
   try {
-    const alerts = await OutbreakAlert.find({ status: 'Active' }).sort({ createdAt: -1 });
+    const alerts = await OutbreakAlert.find({ status: { $in: ['Active', 'Pending'] } }).sort({ createdAt: -1 });
     res.json({ data: alerts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });

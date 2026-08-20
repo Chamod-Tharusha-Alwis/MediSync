@@ -26,6 +26,7 @@ router.get('/staff', hospAuth, hospitalController.getHospitalStaff);
 router.put('/doctors/:doctorId/status', hospAuth, hospitalController.toggleDoctorStatus);
 
 router.get('/patients', hospAuth, hospitalController.getPatients);
+router.get('/patients/:nic/history', hospAuth, hospitalController.getHospitalPatientHistory);
 router.put('/patients/update-records', hospAuth, hospitalController.updatePatientRecords);
 
 module.exports = router;

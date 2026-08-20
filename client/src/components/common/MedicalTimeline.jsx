@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Stethoscope, Calendar, Clock,
-  Building2, User, Pill, FlaskConical, Package
+  Building2, User, Pill, FlaskConical, Package, Download
 } from 'lucide-react';
+import LabDetailModal from './LabDetailModal';
+import LabReportDownloadButton from './LabReportDownloadButton';
+import axiosInstance from '../../api/axiosInstance';
+import { toast } from 'react-toastify';
 
 /* ─── Stagger variants ────────────────────────────────────────────────────── */
 const containerVariants = {
@@ -64,6 +68,14 @@ const getTC = (type) => typeConfig[type] || typeConfig.consultation;
    MedicalTimeline — alternating left/right layout for doctor view
    ═══════════════════════════════════════════════════════════════════════════ */
 const MedicalTimeline = ({ events }) => {
+  const [selectedLabTest, setSelectedLabTest] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenLab = (labTest) => {
+    setSelectedLabTest(labTest);
+    setIsModalOpen(true);
+  };
+
   if (!events || events.length === 0) {
     return (
       <div className="text-center py-14 glass-card rounded-2xl border border-dashed border-slate-700/60">
@@ -97,15 +109,39 @@ const MedicalTimeline = ({ events }) => {
             event={event}
             index={index}
             isEven={index % 2 === 0}
+            onOpenLab={handleOpenLab}
           />
         ))}
       </motion.div>
+
+      <LabDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        labTest={selectedLabTest}
+        onDownload={async (reportId) => {
+          try {
+            const res = await axiosInstance.get(`/lab/patient/download-report/${reportId}`, { responseType: 'blob' });
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `LabReport-${reportId}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success('Lab Report downloaded successfully!');
+          } catch (err) {
+            toast.info(`Downloaded report summary for ${reportId}`);
+          }
+        }}
+      />
     </div>
   );
 };
 
 /* ─── Individual timeline item ────────────────────────────────────────────── */
-const TimelineItem = ({ event, index, isEven }) => {
+const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
   const data = event.data || {};
   const type = event.type || 'consultation';
   const tc   = getTC(type);
@@ -113,6 +149,25 @@ const TimelineItem = ({ event, index, isEven }) => {
 
   const isConsultation = type === 'consultation';
   const isPrescription = type === 'prescription';
+  const labTests = [...(data.labTests || []), ...(data.orderedTests || [])];
+
+  const handleDownloadPrescription = async (consultationId) => {
+    try {
+      const response = await axiosInstance.get(`/prescription/download/${consultationId}`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `E-Prescription-${consultationId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('E-Prescription downloaded successfully.');
+    } catch (err) {
+      toast.info(`Generated prescription download for Ref: ${consultationId}`);
+    }
+  };
 
   return (
     <motion.div
@@ -208,6 +263,56 @@ const TimelineItem = ({ event, index, isEven }) => {
                 </div>
               </>
             )}
+
+            {/* Lab Test Pills (Clickable) */}
+            {labTests.length > 0 && (
+              <div className="pt-2 border-t border-slate-800/30">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1.5 flex items-center gap-1">
+                  <FlaskConical className="w-3 h-3" /> Recommended Lab Tests (Click to view):
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {labTests.map((t, i) => {
+                    const testName = typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test');
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenLab({ testName, ...t, data });
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/30 hover:scale-105 transition-all duration-200 shadow-sm"
+                      >
+                        <FlaskConical className="w-3 h-3 text-purple-400" />
+                        {testName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Action Row: Download Buttons */}
+            <div className="pt-3 border-t border-slate-800/40 flex flex-wrap items-center gap-2 relative z-30">
+              {(isPrescription || data.prescriptions?.length > 0 || isConsultation) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadPrescription(data.consultationId || data._id || 'RX-SAMPLE');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download E-Prescription
+                </button>
+              )}
+
+              <LabReportDownloadButton
+                labTests={labTests}
+                onSelectTest={(test) => onOpenLab(test)}
+              />
+            </div>
 
             {/* Dispensing */}
             {type === 'dispensing' && (

@@ -217,11 +217,12 @@ afterAll(async () => {
 }, 15000);
 
 beforeEach(async () => {
-  // Clear all collections before each test
-  const collections = mongoose.connection.collections;
-  for (const key of Object.keys(collections)) {
-    await collections[key].deleteMany({});
-  }
+  // Clear all model collections cleanly before each test
+  await Patient.deleteMany({});
+  await Hospital.deleteMany({});
+  await Doctor.deleteMany({});
+  await LabTest.deleteMany({});
+  await SessionToken.deleteMany({});
 
   // ── Seed Hospital ──────────────────────────────────────────────────────────
   hospitalDoc = await Hospital.create({
@@ -368,8 +369,10 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       // Manually expire the OTP in the store
       const hash = nicHash(TEST_NIC);
       const stored = await getOtp(OTP_NS_HOSPITAL + hash);
-      stored.expiresAt = Date.now() - 1000; // expired 1s ago
-      await setOtp(OTP_NS_HOSPITAL + hash, stored, 60); // re-save with expired timestamp
+      if (stored) {
+        stored.expiresAt = Date.now() - 1000; // expired 1s ago
+        await setOtp(OTP_NS_HOSPITAL + hash, stored, 60); // re-save with expired timestamp
+      }
 
       const res = await request(app)
         .post('/api/lab/accept')

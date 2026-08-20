@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
+import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io as socketIO } from 'socket.io-client';
 import api from '../../api/axiosInstance';
@@ -35,8 +35,7 @@ const NotificationBell = () => {
           auth: { token },
           transports: ['websocket', 'polling'],
           reconnectionAttempts: 5,
-          reconnectionDelay: 3000,
-        });
+          reconnectionDelay: 3000 });
 
         socket.on('notification', (notification) => {
           setNotifications((prev) => [notification, ...prev]);

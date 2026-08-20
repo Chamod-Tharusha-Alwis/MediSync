@@ -3,18 +3,25 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-"scripts": {
-    "start:redis": "docker run -d --name medisync-redis -p 6379:6379 redis || docker start medisync-redis",
+  "scripts": {
+    "prestart": "docker rm -f medisync-redis dev-vault",
+    "start:redis": "docker run -d --name medisync-redis -p 6379:6379 redis",
     "start:vault": "docker run --rm --cap-add=IPC_LOCK --name=dev-vault -p 8200:8200 -e \"VAULT_DEV_ROOT_TOKEN_ID=myroot\" hashicorp/vault",
     "start:server": "npx wait-on http://127.0.0.1:8200/v1/sys/health && cd server && npm start",
     "start:client": "cd client && npm start",
     "start:ml": "cd ml-engine && ..\\.venv\\Scripts\\python app.py",
-    "start": "concurrently \"npm run start:redis\" \"npm run start:vault\" \"npm run start:server\" \"npm run start:client\" \"npm run start:ml\""
+    "start": "concurrently --kill-others-on-fail \"npm run start:redis\" \"npm run start:vault\" \"npm run start:server\" \"npm run start:client\" \"npm run start:ml\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.9.1",
+    "sri-lanka-province-district-city": "^1.0.0"
   }
 }

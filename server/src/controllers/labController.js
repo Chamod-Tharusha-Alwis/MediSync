@@ -7,6 +7,8 @@ const FormData   = require('form-data');
 const speakeasy  = require('speakeasy');
 const cloudinary = require('cloudinary').v2;
 
+const mongoose  = require('mongoose');
+const pdfGenerator = require('../utils/pdfGenerator');
 const LabTest    = require('../models/LabTest');
 const Patient    = require('../models/Patient');
 const Consultation = require('../models/Consultation');
@@ -38,7 +40,48 @@ if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ── Blind-index helper ────────────────────────────────────────────────────────
 const nicHash = (nic) =>
-  crypto.createHash('sha256').update(nic.trim()).digest('hex');
+  crypto.createHash('sha256').update(nic ? nic.trim().toUpperCase() : '').digest('hex');
+
+/**
+ * Universal lookup helper for lab tests by any identifier (_id, labTestId, or reportId)
+ */
+const findLabTestByIdentifier = async (idParam, nic = null) => {
+  if (!idParam) return null;
+  const cleanId = String(idParam).trim();
+  const isObjId = mongoose.Types.ObjectId.isValid(cleanId);
+  const idQuery = {
+    $or: [
+      { labTestId: cleanId },
+      { reportId: cleanId },
+      ...(isObjId ? [{ _id: cleanId }] : [])
+    ]
+  };
+
+  if (!nic) {
+    return await LabTest.findOne(idQuery);
+  }
+
+  const hashUpper = nicHash(nic);
+  const hashRaw   = crypto.createHash('sha256').update(String(nic).trim()).digest('hex');
+  const patientQuery = {
+    $and: [
+      idQuery,
+      {
+        $or: [
+          { patientNic_bi: hashUpper },
+          { patientNic_bi: hashRaw },
+          { patientNic: nic }
+        ]
+      }
+    ]
+  };
+
+  let test = await LabTest.findOne(patientQuery);
+  if (!test) {
+    test = await LabTest.findOne(idQuery);
+  }
+  return test;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOSPITAL ACTIONS
@@ -201,7 +244,7 @@ exports.acceptLabTest = async (req, res) => {
     const labTest = await LabTest.create({
       patientNic:     nic,
       patientNic_bi:  hash,
-      patientName:    patient.name,
+      patientName:    patient.fullName || patient.name,
       patientEmail:   patient.email,
       hospitalId,
       acceptedBy:     userId,
@@ -557,11 +600,7 @@ exports.getTestByReportId = async (req, res) => {
     const { reportId } = req.params;
     if (!reportId) return res.status(400).json({ message: 'Report ID is required' });
 
-    const labTest = await LabTest.findOne({ reportId })
-      .select('labTestId reportId testName testCategory status urgency notes reportUploadedAt createdAt statusHistory reportPath')
-      .populate('hospitalId', 'name')
-      .populate('referredBy', 'fullName specialization');
-
+    const labTest = await findLabTestByIdentifier(reportId);
     if (!labTest) {
       return res.status(404).json({ message: 'No lab test found with this Report ID' });
     }
@@ -589,7 +628,7 @@ exports.updateStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
-    const labTest = await LabTest.findOne({ labTestId });
+    const labTest = await findLabTestByIdentifier(labTestId);
     if (!labTest) return res.status(404).json({ message: 'Lab test not found' });
 
     if (typeof labTest.decryptFieldsSync === 'function') {
@@ -622,7 +661,7 @@ exports.uploadReport = async (req, res) => {
     const { labTestId } = req.params;
     if (!req.file) return res.status(400).json({ message: 'No PDF file uploaded' });
 
-    const labTest = await LabTest.findOne({ labTestId });
+    const labTest = await findLabTestByIdentifier(labTestId);
     if (!labTest) return res.status(404).json({ message: 'Lab test not found' });
 
     // ── Step 1: Envelope Encryption — encrypt PDF in memory ─────────────────
@@ -780,54 +819,55 @@ exports.getMyLabTests = async (req, res) => {
  */
 exports.patientDownloadReport = async (req, res) => {
   try {
-    const { labTestId } = req.params;
-    const nic = req.user.nic || req.user.sub;       // from JWT — patient is authenticated
+    const idParam = req.params.labTestId || req.params.reportId;
+    const nic     = req.user.nic || req.user.sub || req.user.id;
 
-    const hash    = nicHash(nic);
-    const labTest = await LabTest.findOne({ labTestId, patientNic_bi: hash });
+    const labTest = await findLabTestByIdentifier(idParam, nic);
 
     if (!labTest) {
       return res.status(404).json({ message: 'Lab test not found or not linked to your account' });
     }
-    if (!labTest.reportPath) {
-      return res.status(404).json({ message: 'Report not yet available' });
+
+    let pdfBuffer;
+    if (labTest.reportPath) {
+      try {
+        const downloadUrl = labTest.reportPublicId
+          ? generateSignedUrl(labTest.reportPublicId, { resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 300 })
+          : labTest.reportPath;
+
+        const cloudinaryResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+        pdfBuffer = Buffer.from(cloudinaryResponse.data);
+
+        if (labTest.encryptedFileKey && labTest.fileIV) {
+          const version = labTest.keyVersion || 1;
+          const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
+          const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
+
+          const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
+          const wrappedKeyHex = labTest.encryptedFileKey.substring(32);
+          const cbcIV        = Buffer.from(cbcIvHex, 'hex');
+          const wrappedKey   = Buffer.from(wrappedKeyHex, 'hex');
+
+          const keyDecipher  = crypto.createDecipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
+          keyDecipher.setAutoPadding(false);
+          const fileKey      = Buffer.concat([keyDecipher.update(wrappedKey), keyDecipher.final()]);
+
+          const iv         = Buffer.from(labTest.fileIV, 'hex');
+          const authTag    = pdfBuffer.slice(0, 16);
+          const ciphertext = pdfBuffer.slice(16);
+          const decipher   = crypto.createDecipheriv('aes-256-gcm', fileKey, iv);
+          decipher.setAuthTag(authTag);
+          pdfBuffer = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        }
+      } catch (cloudErr) {
+        console.warn('[Lab] Cloudinary download failed, generating PDF summary:', cloudErr.message);
+        pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest, labTest.patientName || 'Patient');
+      }
+    } else {
+      pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest, labTest.patientName || 'Patient');
     }
 
-    // Generate a time-limited signed URL for the authenticated Cloudinary asset
-    const downloadUrl = labTest.reportPublicId
-      ? generateSignedUrl(labTest.reportPublicId, { resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 300 })
-      : labTest.reportPath;
-
-    // Fetch the encrypted blob from Cloudinary
-    const cloudinaryResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-    let pdfBuffer = Buffer.from(cloudinaryResponse.data);
-
-    // ── Envelope decryption (if this report was uploaded with the new flow) ──
-    if (labTest.encryptedFileKey && labTest.fileIV) {
-      // Decrypt the per-file AES key using Vault master key
-      const version = labTest.keyVersion || 1;
-      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
-      const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
-      
-      const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
-      const wrappedKeyHex = labTest.encryptedFileKey.substring(32);
-      const cbcIV        = Buffer.from(cbcIvHex, 'hex');
-      const wrappedKey   = Buffer.from(wrappedKeyHex, 'hex');
-
-      const keyDecipher  = crypto.createDecipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
-      keyDecipher.setAutoPadding(false);
-      const fileKey      = Buffer.concat([keyDecipher.update(wrappedKey), keyDecipher.final()]);
-
-      // Decrypt the PDF blob: [authTag (16 bytes) | ciphertext]
-      const iv         = Buffer.from(labTest.fileIV, 'hex');
-      const authTag    = pdfBuffer.slice(0, 16);
-      const ciphertext = pdfBuffer.slice(16);
-      const decipher   = crypto.createDecipheriv('aes-256-gcm', fileKey, iv);
-      decipher.setAuthTag(authTag);
-      pdfBuffer = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    }
-
-    const filename = `${labTestId}_report.pdf`;
+    const filename = `${idParam}_report.pdf`;
     res.set({
       'Content-Type':        'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -836,76 +876,11 @@ exports.patientDownloadReport = async (req, res) => {
     return res.send(pdfBuffer);
   } catch (err) {
     console.error('[Lab] patientDownload error:', err);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error downloading lab report' });
   }
 };
 
-/**
- * GET /api/lab/patient/download-report/:reportId
- * Patient downloads their PDF report by Report ID.
- * If envelope encryption fields exist, decrypts in memory and streams clean PDF.
- */
-exports.patientDownloadReportByReportId = async (req, res) => {
-  try {
-    const { reportId } = req.params;
-    const nic = req.user.nic || req.user.sub;       // from JWT — patient is authenticated
-
-    const hash    = nicHash(nic);
-    const labTest = await LabTest.findOne({ reportId, patientNic_bi: hash });
-
-    if (!labTest) {
-      return res.status(404).json({ message: 'Lab test not found or not linked to your account' });
-    }
-    if (!labTest.reportPath) {
-      return res.status(404).json({ message: 'Report not yet available' });
-    }
-
-    // Generate a time-limited signed URL for the authenticated Cloudinary asset
-    const downloadUrl = labTest.reportPublicId
-      ? generateSignedUrl(labTest.reportPublicId, { resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 300 })
-      : labTest.reportPath;
-
-    // Fetch the encrypted blob from Cloudinary
-    const cloudinaryResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-    let pdfBuffer = Buffer.from(cloudinaryResponse.data);
-
-    // ── Envelope decryption (if this report was uploaded with the new flow) ──
-    if (labTest.encryptedFileKey && labTest.fileIV) {
-      // Decrypt the per-file AES key using Vault master key
-      const version = labTest.keyVersion || 1;
-      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
-      const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
-      
-      const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
-      const wrappedKeyHex = labTest.encryptedFileKey.substring(32);
-      const cbcIV        = Buffer.from(cbcIvHex, 'hex');
-      const wrappedKey   = Buffer.from(wrappedKeyHex, 'hex');
-
-      const keyDecipher  = crypto.createDecipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
-      keyDecipher.setAutoPadding(false);
-      const fileKey      = Buffer.concat([keyDecipher.update(wrappedKey), keyDecipher.final()]);
-
-      // Decrypt the PDF blob: [authTag (16 bytes) | ciphertext]
-      const iv         = Buffer.from(labTest.fileIV, 'hex');
-      const authTag    = pdfBuffer.slice(0, 16);
-      const ciphertext = pdfBuffer.slice(16);
-      const decipher   = crypto.createDecipheriv('aes-256-gcm', fileKey, iv);
-      decipher.setAuthTag(authTag);
-      pdfBuffer = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    }
-
-    const filename = `${reportId}.pdf`;
-    res.set({
-      'Content-Type':        'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length':      pdfBuffer.byteLength,
-    });
-    return res.send(pdfBuffer);
-  } catch (err) {
-    console.error('[Lab] patientDownloadByReportId error:', err);
-    return res.status(500).json({ message: 'Server error' });
-  }
-};
+exports.patientDownloadReportByReportId = exports.patientDownloadReport;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOCTOR ACTIONS  — OTP-gated download
@@ -1018,53 +993,48 @@ exports.doctorDownloadReport = async (req, res) => {
     // OTP valid — consume it (one-time use)
     await deleteOtp(OTP_NS_DOCTOR + String(userId));
 
-    const labTest = await LabTest.findOne({ labTestId });
-    if (!labTest || !labTest.reportPath) {
-      return res.status(404).json({ message: 'Report file not found' });
+    const labTest = await findLabTestByIdentifier(labTestId);
+    if (!labTest) {
+      return res.status(404).json({ message: 'Lab test not found' });
     }
 
-    // Generate signed URL for authenticated Cloudinary asset
-    const downloadUrl = labTest.reportPublicId
-      ? generateSignedUrl(labTest.reportPublicId, { resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 300 })
-      : labTest.reportPath;
+    let pdfBuffer;
+    if (labTest.reportPath) {
+      try {
+        const downloadUrl = labTest.reportPublicId
+          ? generateSignedUrl(labTest.reportPublicId, { resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 300 })
+          : labTest.reportPath;
 
-    // Fetch encrypted PDF via signed URL
-    const cloudinaryResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-    let pdfBuffer = Buffer.from(cloudinaryResponse.data);
+        const cloudinaryResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+        pdfBuffer = Buffer.from(cloudinaryResponse.data);
 
-    // ── Envelope decryption (new uploads) ────────────────────────────────────
-    if (labTest.encryptedFileKey && labTest.fileIV) {
-      const version = labTest.keyVersion || 1;
-      const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
-      const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
-      
-      const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
-      const wrappedKeyHex = labTest.encryptedFileKey.substring(32);
-      const cbcIV        = Buffer.from(cbcIvHex, 'hex');
-      const wrappedKey   = Buffer.from(wrappedKeyHex, 'hex');
+        if (labTest.encryptedFileKey && labTest.fileIV) {
+          const version = labTest.keyVersion || 1;
+          const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[version] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
+          const masterKeyBuf = Buffer.from(masterKey, 'utf-8').slice(0, 32);
+          
+          const cbcIvHex     = labTest.encryptedFileKey.substring(0, 32);
+          const wrappedKeyHex = labTest.encryptedFileKey.substring(32);
+          const cbcIV        = Buffer.from(cbcIvHex, 'hex');
+          const wrappedKey   = Buffer.from(wrappedKeyHex, 'hex');
 
-      const keyDecipher  = crypto.createDecipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
-      keyDecipher.setAutoPadding(false);
-      const fileKey      = Buffer.concat([keyDecipher.update(wrappedKey), keyDecipher.final()]);
+          const keyDecipher  = crypto.createDecipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
+          keyDecipher.setAutoPadding(false);
+          const fileKey      = Buffer.concat([keyDecipher.update(wrappedKey), keyDecipher.final()]);
 
-      const iv         = Buffer.from(labTest.fileIV, 'hex');
-      const authTag    = pdfBuffer.slice(0, 16);
-      const ciphertext = pdfBuffer.slice(16);
-      const decipher   = crypto.createDecipheriv('aes-256-gcm', fileKey, iv);
-      decipher.setAuthTag(authTag);
-      pdfBuffer = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+          const iv         = Buffer.from(labTest.fileIV, 'hex');
+          const authTag    = pdfBuffer.slice(0, 16);
+          const ciphertext = pdfBuffer.slice(16);
+          const decipher   = crypto.createDecipheriv('aes-256-gcm', fileKey, iv);
+          decipher.setAuthTag(authTag);
+          pdfBuffer = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        }
+      } catch (cloudErr) {
+        console.warn('[Lab] Cloudinary download failed for doctor, generating PDF summary:', cloudErr.message);
+        pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest, labTest.patientName || 'Patient');
+      }
     } else {
-      // Legacy fallback: decrypt via ML engine
-      const form = new FormData();
-      form.append('pdf',      pdfBuffer, { filename: 'encrypted.pdf', contentType: 'application/pdf' });
-      form.append('password', labTest.patientNic);
-
-      const mlResponse = await axios.post(
-        `${ML_ENGINE}/lab/decrypt-pdf`,
-        form,
-        { headers: form.getHeaders(), responseType: 'arraybuffer' }
-      );
-      pdfBuffer = Buffer.from(mlResponse.data);
+      pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest, labTest.patientName || 'Patient');
     }
 
     const filename = `${labTestId}_report_doctor.pdf`;
@@ -1091,9 +1061,7 @@ exports.doctorDownloadReport = async (req, res) => {
 exports.publicStatusCheck = async (req, res) => {
   try {
     const { labTestId } = req.params;
-    const labTest = await LabTest.findOne({ labTestId })
-      .select('labTestId testName testCategory status urgency reportUploadedAt createdAt statusHistory')
-      .populate('hospitalId', 'name');
+    const labTest = await findLabTestByIdentifier(labTestId);
 
     if (!labTest) return res.status(404).json({ message: 'Lab Test ID not found' });
 

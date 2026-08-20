@@ -104,7 +104,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
   };
 
   return (
-    <div className="relative w-full" ref={wrapperRef}>
+    <div className="relative z-30 w-full" ref={wrapperRef}>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <FiSearch className="text-slate-500" />
@@ -119,6 +119,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
           onFocus={() => { if (query.trim() && results.length > 0) setIsOpen(true); }}
           placeholder="Search medication name or generic..."
           className="w-full pl-10 pr-4 py-2.5 glass-input text-sm text-slate-100 placeholder-slate-500"
+          autoComplete="off"
         />
         {isLoading && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -142,12 +143,12 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
       </AnimatePresence>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+        <div className="absolute top-full left-0 right-0 z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
           {results.map((drug) => (
             <div
               key={drug._id}
               onClick={() => handleSelect(drug)}
-              className="p-3 border-b border-white/5 last:border-0 hover:bg-slate-800/40 cursor-pointer transition-colors"
+              className="p-3 border-b border-white/5 last:border-0 hover:bg-slate-800/60 cursor-pointer transition-colors"
             >
               <div className="flex justify-between items-start">
                 <div>

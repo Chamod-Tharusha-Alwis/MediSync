@@ -1,4 +1,10 @@
 require('dotenv').config();
+
+// Ensure global encryption keys are available for Mongoose versionedEncryption plugin
+global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '7c3f9a2e8b1d4f6a5c0d9e8b7a6f5c4d';
+global.ENCRYPTION_KEYS = { "1": global.ENCRYPTION_KEY };
+global.ACTIVE_KEY_VERSION = 1;
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -11,20 +17,21 @@ const Admin = require('../models/Admin');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/medisync';
 const nicHash = (nic) => crypto.createHash('sha256').update(nic.trim()).digest('hex');
+const TEST_PASSWORD = process.env.SEED_TEST_PASSWORD || 'MediSync#2026!Pass';
 
 const seedUsers = async () => {
   try {
     await mongoose.connect(MONGO_URI);
     console.log('Connected to MongoDB');
 
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
 
     // ── 1. DOCTOR ──────────────────────────────────────────────────────────────
     console.log('\n--- Doctor Seed ---');
     const docEmail = 'doctor@example.com';
-    const existingDoc = await Doctor.findOne({ email: docEmail });
+    let existingDoc = await Doctor.findOne({ email: docEmail });
     if (!existingDoc) {
-      await new Doctor({
+      existingDoc = await new Doctor({
         doctorId: 'DR-102945',
         fullName: 'Dr. A. Silva',
         email: docEmail,
@@ -36,46 +43,41 @@ const seedUsers = async () => {
       }).save();
       console.log(`✅ Doctor created!`);
     } else {
-      console.log(`ℹ️  Doctor already exists!`);
+      existingDoc.password = hashedPassword;
+      await existingDoc.save();
+      console.log(`ℹ️ Doctor updated with new password!`);
     }
     console.log(`   Email   : ${docEmail}`);
-    console.log(`   Password: password123`);
 
     // ── 2. PATIENT ─────────────────────────────────────────────────────────────
     console.log('\n--- Patient Seed ---');
     try {
       const patNIC = '981234567V';
-      const patEmail = 'patient@example.com';
-      const tempPat = new Patient({ nic: patNIC, fullName: 'dummy', password: 'dummy', email: patEmail });
-      tempPat.encryptFieldsSync();
-      const existingPat = await Patient.findOne({ nic: tempPat.nic });
-      if (!existingPat) {
-        const doc = await new Patient({
-          nic: patNIC,
-          fullName: 'John Doe',
-          password: hashedPassword,
-          dateOfBirth: new Date('1990-01-01'),
-          gender: 'Male',
-          district: 'Colombo',
-          contactInfo: '0771234567',
-          email: patEmail
-        }).save();
-        
-        // Inject the blind-index that the labController queries against
-        await Patient.collection.updateOne(
-          { _id: doc._id },
-          { $set: { nic_bi: nicHash(patNIC) } }
-        );
-        
-        console.log(`✅ Patient created!`);
-      } else {
-        console.log(`ℹ️  Patient already exists!`);
-      }
+      const patEmail = 'codmobilechamod2025@gmail.com';
+
+      // Clean up any existing records for this email or NIC to avoid index conflicts
+      await Patient.deleteMany({ $or: [{ email: patEmail }, { nic: patNIC }] });
+
+      const doc = await new Patient({
+        nic: patNIC,
+        fullName: 'John Doe',
+        password: hashedPassword,
+        dateOfBirth: new Date('1990-01-01'),
+        gender: 'Male',
+        district: 'Colombo',
+        contactInfo: '0771234567',
+        email: patEmail
+      }).save();
+      
+      await Patient.collection.updateOne(
+        { _id: doc._id },
+        { $set: { patientNic_bi: nicHash(patNIC) } }
+      );
+      console.log(`✅ Patient created!`);
       console.log(`   NIC     : ${patNIC}`);
       console.log(`   Email   : ${patEmail}`);
-      console.log(`   Password: password123`);
     } catch (e) {
-      console.log('⚠️  Patient seed skipped:', e.message);
+      console.error('⚠️ Patient seed error:', e.message);
     }
 
     // ── 3. HOSPITAL ────────────────────────────────────────────────────────────
@@ -83,7 +85,7 @@ const seedUsers = async () => {
     try {
       const hospEmail = 'admin@generalhospital.com';
       const hospRegNo = 'HOSP-2024-001';
-      const existingHosp = await Hospital.findOne({ email: hospEmail });
+      let existingHosp = await Hospital.findOne({ email: hospEmail });
       if (!existingHosp) {
         await new Hospital({
           name: 'General Hospital Colombo',
@@ -96,26 +98,29 @@ const seedUsers = async () => {
         }).save();
         console.log(`✅ Hospital created!`);
       } else {
-        console.log(`ℹ️  Hospital already exists!`);
+        existingHosp.password = hashedPassword;
+        await existingHosp.save();
+        console.log(`ℹ️ Hospital updated with new password!`);
       }
       console.log(`   Email   : ${hospEmail}`);
-      console.log(`   Password: password123`);
-      console.log(`   Login at: http://localhost:3000/hospital/login`);
     } catch (e) {
-      console.log('⚠️  Hospital seed skipped:', e.message);
+      console.log('⚠️ Hospital seed error:', e.message);
     }
 
     // ── 4. PHARMACY ────────────────────────────────────────────────────────────
     console.log('\n--- Pharmacy Seed ---');
     try {
       const pharmEmail = 'admin@pharmacy.com';
-      const existingStaff = await PharmacyStaff.findOne({ email: pharmEmail });
+      let existingStaff = await PharmacyStaff.findOne({ email: pharmEmail });
       if (!existingStaff) {
-        const newPharmacy = await new Pharmacy({
-          name: 'HealthCare Pharmacy',
-          district: 'Colombo',
-          regNo: 'PH-1001'
-        }).save();
+        let newPharmacy = await Pharmacy.findOne({ regNo: 'PH-1001' });
+        if (!newPharmacy) {
+          newPharmacy = await new Pharmacy({
+            name: 'HealthCare Pharmacy',
+            district: 'Colombo',
+            regNo: 'PH-1001'
+          }).save();
+        }
         await new PharmacyStaff({
           pharmacyId: newPharmacy._id,
           fullName: 'Admin Pharmacist',
@@ -126,19 +131,20 @@ const seedUsers = async () => {
         }).save();
         console.log(`✅ Pharmacy Admin created!`);
       } else {
-        console.log(`ℹ️  Pharmacy Admin already exists!`);
+        existingStaff.password = hashedPassword;
+        await existingStaff.save();
+        console.log(`ℹ️ Pharmacy Admin updated with new password!`);
       }
       console.log(`   Email   : ${pharmEmail}`);
-      console.log(`   Password: password123`);
     } catch (e) {
-      console.log('⚠️  Pharmacy seed skipped:', e.message);
+      console.log('⚠️ Pharmacy seed error:', e.message);
     }
 
     // ── 5. SUPER ADMIN ─────────────────────────────────────────────────────────
     console.log('\n--- Super Admin Seed ---');
     try {
       const adminEmail = 'superadmin@medisync.com';
-      const existingAdmin = await Admin.findOne({ email: adminEmail });
+      let existingAdmin = await Admin.findOne({ email: adminEmail });
       if (!existingAdmin) {
         await new Admin({
           fullName: 'Super Admin',
@@ -148,24 +154,16 @@ const seedUsers = async () => {
         }).save();
         console.log(`✅ Super Admin created!`);
       } else {
-        console.log(`ℹ️  Super Admin already exists!`);
+        existingAdmin.password = hashedPassword;
+        await existingAdmin.save();
+        console.log(`ℹ️ Super Admin updated with new password!`);
       }
       console.log(`   Email   : ${adminEmail}`);
-      console.log(`   Password: password123`);
     } catch (e) {
-      console.log('⚠️  Admin seed skipped:', e.message);
+      console.log('⚠️ Admin seed error:', e.message);
     }
 
-    console.log('\n✅ Seed completed! All test accounts use password: password123\n');
-    console.log('════════════════════════════════════════════════════');
-    console.log('  LOGIN CREDENTIALS SUMMARY');
-    console.log('════════════════════════════════════════════════════');
-    console.log('  Doctor   → doctor@example.com       / password123');
-    console.log('  Patient  → NIC: 981234567V          / password123');
-    console.log('  Hospital → admin@generalhospital.com/ password123');
-    console.log('  Pharmacy → admin@pharmacy.com       / password123');
-    console.log('  Admin    → superadmin@medisync.com  / password123');
-    console.log('════════════════════════════════════════════════════\n');
+    console.log('\n✅ Seed execution completed successfully!\n');
 
   } catch (error) {
     console.error('Fatal seed error:', error);

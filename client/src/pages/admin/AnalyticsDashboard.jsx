@@ -36,7 +36,6 @@ const AnalyticsDashboard = () => {
     return <div className="text-red-400 p-6">Failed to load analytics data.</div>;
   }
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
   const pieData = [
     { name: 'Issued', value: data.dispensingStats.issuedCount },
     { name: 'Dispensed', value: data.dispensingStats.dispensedCount }

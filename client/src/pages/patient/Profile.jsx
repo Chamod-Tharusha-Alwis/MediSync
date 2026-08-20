@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Shield, Phone, Heart, Lock, Save, Loader2,
-  AlertCircle, Stethoscope, Weight, Ruler, X, Plus, Camera,
+  AlertCircle, Stethoscope, Weight, Ruler, X, Plus, Camera, Smartphone
 } from 'lucide-react';
+import TrustedDevices from '../../components/TrustedDevices';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
@@ -22,6 +23,7 @@ const TABS = [
   { key: 'edit',      label: 'Edit Profile',      icon: User },
   { key: 'emergency', label: 'Emergency Contact',  icon: Phone },
   { key: 'security',  label: 'Security',           icon: Lock },
+  { key: 'devices',   label: 'My Devices',         icon: Smartphone },
 ];
 
 /* ─── Blood group options ─────────────────────────────────────────────────── */
@@ -692,6 +694,26 @@ const PatientProfile = () => {
               </div>
             </div>
           </motion.form>
+        )}
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════════
+            TAB: Devices
+            ══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'devices' && (
+          <motion.div
+            key="devices"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+            className="glass-panel rounded-2xl p-6"
+          >
+            <h3 className="text-lg font-bold text-white mb-1">My Trusted Devices</h3>
+            <p className="text-slate-500 text-xs mb-6">Devices verified via OTP. Remove a device to revoke its trusted status and terminate active sessions from it.</p>
+            
+            <TrustedDevices />
+          </motion.div>
         )}
       </AnimatePresence>
     </PageTransition>

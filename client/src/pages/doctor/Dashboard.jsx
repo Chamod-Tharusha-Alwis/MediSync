@@ -13,6 +13,7 @@ import api from '../../api/axiosInstance';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
+import { usePatientAccess } from '../../context/PatientAccessContext';
 
 // ─── Workspace Selector ──────────────────────────────────────────────────────
 const WorkspaceSelector = ({ onSelect }) => (
@@ -110,12 +111,9 @@ const MedicalTimeline = ({ history }) => {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DoctorDashboard() {
+  const { activeSession, clearPatientSession } = usePatientAccess();
   const navigate = useNavigate();
   const [workspace, setWorkspace] = useState(() => localStorage.getItem('workspaceMode') || null);
-  const [nic, setNic] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [patient, setPatient] = useState(null);
-  const [searchError, setSearchError] = useState('');
 
   // Real stats from backend
   const [stats, setStats] = useState(null);
@@ -125,6 +123,9 @@ export default function DoctorDashboard() {
   const doctorName = localStorage.getItem('userName') || 'Doctor';
 
   useEffect(() => {
+    // Navigating back to main dashboard clears patient access session per requirement
+    clearPatientSession();
+
     const fetchStats = async () => {
       try {
         const res = await api.get('/doctor/stats');
@@ -136,27 +137,8 @@ export default function DoctorDashboard() {
       }
     };
     fetchStats();
-  }, []);
+  }, [clearPatientSession]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!nic.trim()) return;
-    setIsSearching(true);
-    setPatient(null);
-    setSearchError('');
-    try {
-      const res = await api.get(`/patient/${nic.trim()}`);
-      const data = res.data.data || res.data;
-      if (!data) throw new Error('Not found');
-      setPatient(data);
-    } catch (err) {
-      const msg = err.response?.data?.error || 'No patient record found for this NIC.';
-      setSearchError(msg);
-      toast.error(msg);
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
 
 
@@ -174,7 +156,6 @@ export default function DoctorDashboard() {
   const menuItems = [
     { label: 'Dashboard',         path: '/doctor/dashboard',        icon: LayoutDashboard, end: true },
     { label: 'New Consultation',  path: '/doctor/consultation/new', icon: Plus },
-    { label: 'Patient Directory', path: '/doctor/patients',          icon: Users },
     ...(_dashIsPersonal ? [{ label: 'My Profile', path: '/doctor/profile', icon: FiUser }] : []),
   ];
 
@@ -217,6 +198,26 @@ export default function DoctorDashboard() {
 
         <ActiveOutbreakBanner />
 
+        {activeSession && (
+          <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 backdrop-blur-md flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div>
+                <p className="text-white font-semibold text-sm">Active Patient Access Session</p>
+                <p className="text-slate-400 text-xs">Viewing Patient: <span className="text-teal-300 font-bold">{activeSession.patientName}</span> (NIC: {activeSession.nic})</p>
+              </div>
+            </div>
+            <button
+              onClick={clearPatientSession}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-white/10 transition-all"
+            >
+              Clear Session
+            </button>
+          </div>
+        )}
+
         {/* ── Stats Row ──────────────────────────────────────── */}
         {!loadingStats && stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -237,192 +238,34 @@ export default function DoctorDashboard() {
           </div>
         )}
 
-        {/* ── Patient Search ─────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto relative z-20">
-          <form onSubmit={handleSearch} className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              {isSearching
-                ? <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
-                : <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
-              }
+        {/* ── New Consultation CTA ───────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-3xl p-1 relative overflow-hidden shadow-2xl shadow-blue-900/20"
+        >
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+          <div className="bg-slate-900/90 backdrop-blur-xl rounded-[22px] p-8 lg:p-12 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10">
+            <div className="text-left flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold uppercase tracking-wider mb-4">
+                <ShieldAlert size={14} /> Secure Access
+              </div>
+              <h2 className="text-3xl font-extrabold text-white mb-3">Start New Consultation</h2>
+              <p className="text-slate-400 text-base max-w-xl leading-relaxed">
+                Patient records are protected by OTP verification. Begin a new consultation to securely authenticate and access the patient's medical history, AI diagnosis, and e-prescription tools.
+              </p>
             </div>
-            <input
-              type="text"
-              placeholder="Search Patient by NIC (e.g., 200312345699)"
-              className="block w-full pl-12 pr-36 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-base focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 outline-none transition-all backdrop-blur-md"
-              value={nic}
-              onChange={(e) => { setNic(e.target.value); setSearchError(''); }}
-            />
-            <button
-              type="submit"
-              className="absolute inset-y-2 right-2 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition-colors flex items-center gap-2 text-sm"
-              disabled={isSearching}
-            >
-              {isSearching ? 'Scanning...' : 'Find Record'}
-            </button>
-          </form>
-          {searchError && (
-            <p className="mt-2 text-sm text-red-400 text-center">{searchError}</p>
-          )}
+            <div className="shrink-0 w-full md:w-auto flex flex-col gap-3">
+              <button
+                onClick={() => navigate('/doctor/consultation/new')}
+                className="w-full md:w-auto bg-blue-500 hover:bg-blue-400 text-white px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/30 hover:-translate-y-1"
+              >
+                <Plus size={20} />
+                Initialize Session
+              </button>
+            </div>
+          </div>
         </motion.div>
-
-        {/* ── Patient Content ────────────────────────────────── */}
-        <AnimatePresence>
-          {patient && !isSearching && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-            >
-              {/* Left: Profile + History */}
-              <div className="lg:col-span-4 space-y-5">
-                {/* Profile Card */}
-                <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-                  <div className="flex justify-between items-start mb-5">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl font-bold text-blue-300">
-                      {(patient.fullName || 'P').charAt(0)}
-                    </div>
-                    <div className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${
-                      (patient.riskLevel || 'low') === 'high'
-                        ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                        : (patient.riskLevel || 'low') === 'medium'
-                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                        : 'bg-green-500/10 border-green-500/30 text-green-400'
-                    }`}>
-                      <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                      {patient.riskLevel || 'Low'} Risk
-                    </div>
-                  </div>
-                  <h2 className="text-xl font-bold text-white mb-1">{patient.fullName}</h2>
-                  <p className="text-slate-400 text-sm mb-5 flex gap-2 flex-wrap">
-                    {patient.gender && <span>{patient.gender}</span>}
-                    {patient.bloodGroup && <span>• <span className="text-red-400 font-semibold">{patient.bloodGroup}</span></span>}
-                    {patient.dateOfBirth && <span>• {new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()} yrs</span>}
-                  </p>
-
-                  {patient.allergies?.length > 0 && (
-                    <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/20">
-                      <div className="flex items-center gap-2 text-orange-300 font-semibold mb-2 text-sm">
-                        <ShieldAlert size={15} /> Known Allergies
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {patient.allergies.map(alg => (
-                          <span key={alg} className="bg-orange-500/20 text-orange-200 px-2.5 py-1 rounded-md text-xs font-bold border border-orange-500/30">
-                            {alg}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {patient.chronicConditions?.length > 0 && (
-                    <div className="mt-3 bg-purple-500/10 rounded-xl p-4 border border-purple-500/20">
-                      <div className="flex items-center gap-2 text-purple-300 font-semibold mb-2 text-sm">
-                        <Activity size={15} /> Chronic Conditions
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {patient.chronicConditions.map(c => (
-                          <span key={c} className="bg-purple-500/20 text-purple-200 px-2.5 py-1 rounded-md text-xs font-bold border border-purple-500/30">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* History */}
-                <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-6">
-                  <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <Clock size={17} className="text-slate-400" /> Medical History
-                  </h3>
-                  <MedicalTimeline history={patient.consultationHistory || []} />
-                </div>
-              </div>
-
-              {/* Right: Quick Consultation Start */}
-              <div className="lg:col-span-8">
-                <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-8 h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
-                    <h2 className="text-xl font-bold text-white">Start New Consultation</h2>
-                    <span className="text-sm text-slate-400">
-                      {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-
-                  <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6">
-                    <div className="w-20 h-20 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                      <Stethoscope size={36} />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold text-white">Patient Found</h3>
-                      <p className="text-slate-400 text-sm mt-1">
-                        Use the <strong className="text-blue-400">New Consultation</strong> page for a full clinical assessment with symptom AI and e-prescription tools.
-                      </p>
-                    </div>
-                    <div className="flex gap-3 flex-wrap justify-center">
-                      <button
-                        onClick={() => navigate('/doctor/consultation/new')}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
-                      >
-                        <Plus size={18} /> New Consultation
-                      </button>
-                      <button
-                        onClick={() => navigate(`/doctor/patients/${patient.nic}`)}
-                        className="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all"
-                      >
-                        <FileText size={18} /> Full Records
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Recent Consultations from Stats */}
-                  {stats?.recentConsultations?.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-white/10">
-                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <TrendingUp size={14} /> Recent Consultations
-                      </h4>
-                      <div className="space-y-2">
-                        {stats.recentConsultations.slice(0, 3).map((c, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm px-3 py-2.5 bg-white/5 rounded-xl border border-white/5">
-                            <span className="text-white font-medium">{c.diagnosis || c.icdCode || 'Consultation'}</span>
-                            <span className="text-slate-500 text-xs">{new Date(c.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Empty state */}
-        {!patient && !isSearching && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-24 gap-4 text-center"
-          >
-            <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500">
-              <Search size={36} />
-            </div>
-            <h3 className="text-xl font-bold text-slate-300">Search for a patient</h3>
-            <p className="text-slate-500 max-w-sm text-sm">
-              Enter a patient's NIC number above to instantly retrieve their medical history, allergies, and active prescriptions.
-            </p>
-            <button
-              onClick={() => navigate('/doctor/consultation/new')}
-              className="mt-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-            >
-              <Plus size={16} /> Or start a new consultation
-            </button>
-          </motion.div>
-        )}
 
         </div>
       </AppShell>

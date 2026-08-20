@@ -14,6 +14,9 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import OtpInput from '../../components/ui/OtpInput';
 import Modal from '../../components/ui/Modal';
 
+import LabDetailModal from '../../components/common/LabDetailModal';
+import LabReportDownloadButton from '../../components/common/LabReportDownloadButton';
+
 /* ─── Framer Motion stagger variants ─────────────────────────────────────── */
 const feedVariants = {
   hidden: {},
@@ -107,20 +110,22 @@ const downloadPdf = async (prescriptionId, setDownloading) => {
 };
 
 /* ─── Lab Test Tags — colored pill chips ─────────────────────────────────── */
-const LabTestTags = ({ tests, tc, limit = 4 }) => {
+const LabTestTags = ({ tests, tc, limit = 4, onSelectLab }) => {
   if (!tests || tests.length === 0) return null;
   const visible = tests.slice(0, limit);
   const overflow = tests.length - limit;
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {visible.map((t, i) => (
-        <span
+        <button
           key={i}
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide ${tc.labTagBg}`}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSelectLab && onSelectLab(t); }}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide cursor-pointer hover:scale-105 transition-all ${tc.labTagBg}`}
         >
           <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />
           {typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test')}
-        </span>
+        </button>
       ))}
       {overflow > 0 && (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-slate-600 bg-slate-800/60 text-slate-400 text-[10px] font-bold">
@@ -139,11 +144,17 @@ const HistoryCard = ({ event, onRate }) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [targetReportId, setTargetReportId] = useState(null);
+  const [selectedLabTest, setSelectedLabTest] = useState(null);
+  const [isLabModalOpen, setIsLabModalOpen] = useState(false);
 
   const details = event.data || {};
   const rawType = event.type || 'consultation';
 
-  const handleDownloadLabReport = async (reportId) => {
+  const handleDownloadLabReport = async (testItem) => {
+    const reportId = typeof testItem === 'string'
+      ? testItem
+      : (testItem?.reportId || testItem?.labTestId || testItem?._id || testItem?.data?.reportId);
+
     if (!reportId) return toast.error('No report ID found');
     setDownloading(true);
     try {
@@ -190,6 +201,7 @@ const HistoryCard = ({ event, onRate }) => {
 
   // Treat OTC prescriptions as their own display type
   const isOTC = rawType === 'prescription' && details.isOTC;
+  const isConsultation = rawType === 'consultation';
   const type  = isOTC ? 'otc' : rawType;
   const tc    = getTC(type);
   const { Icon } = tc;
@@ -276,7 +288,12 @@ const HistoryCard = ({ event, onRate }) => {
               </div>
 
               {/* Lab Test Tags (always visible) */}
-              <LabTestTags tests={labTests} tc={tc} limit={4} />
+              <LabTestTags
+                tests={labTests}
+                tc={tc}
+                limit={4}
+                onSelectLab={(l) => { setSelectedLabTest(l); setIsLabModalOpen(true); }}
+              />
 
               {/* Follow-up indicator */}
               {details.followUpDate && new Date(details.followUpDate) > new Date() && (
@@ -495,24 +512,35 @@ const HistoryCard = ({ event, onRate }) => {
                     )}
 
                     {/* ── Action row: PDF download + Rate button ── */}
-                    <div className="pt-2 border-t border-slate-900/60 flex flex-wrap justify-between items-center gap-3">
-                      {/* PDF Download — passes consultationId to backend */}
-                      {details.prescriptions && details.prescriptions.length > 0 && (
-                        <motion.button
-                          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                          onClick={e => { e.stopPropagation(); downloadPdf(details.consultationId, setDownloading); }}
-                          disabled={downloading}
-                          className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
-                        >
-                          {downloading
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : <Download className="w-3.5 h-3.5" />
-                          }
-                          {downloading ? 'Downloading…' : 'Download E-Prescription (PDF) 🔒'}
-                        </motion.button>
-                      )}
+                    <div className="pt-2 border-t border-slate-900/60 flex flex-wrap justify-between items-center gap-3 relative z-30">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* PDF E-Prescription Download */}
+                        {((details.prescriptions && details.prescriptions.length > 0) || isConsultation) && (
+                          <motion.button
+                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                            onClick={e => { e.stopPropagation(); downloadPdf(details.consultationId || details._id, setDownloading); }}
+                            disabled={downloading}
+                            className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
+                          >
+                            {downloading
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Download className="w-3.5 h-3.5" />
+                            }
+                            {downloading ? 'Downloading…' : 'Download E-Prescription (PDF) 🔒'}
+                          </motion.button>
+                        )}
 
-                                            {/* Rate/View consultation ratings button */}
+                        {/* Lab Report Download Button with zero/single/multiple test conditional logic */}
+                        <LabReportDownloadButton
+                          labTests={labTests}
+                          onSelectTest={(t) => {
+                            setSelectedLabTest(t);
+                            setIsLabModalOpen(true);
+                          }}
+                        />
+                      </div>
+
+                      {/* Rate/View consultation ratings button */}
                       {(!details.reviews || details.reviews.length === 0) ? (
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
@@ -541,6 +569,14 @@ const HistoryCard = ({ event, onRate }) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Lab Details Modal */}
+      <LabDetailModal
+        isOpen={isLabModalOpen}
+        onClose={() => setIsLabModalOpen(false)}
+        labTest={selectedLabTest}
+        onDownload={(reportId) => handleDownloadLabReport(reportId)}
+      />
 
       {/* OTP Verification Modal */}
       <Modal

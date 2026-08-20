@@ -80,9 +80,11 @@ const LAB_TEST_SUGGESTIONS = [
 
 /* ─── Wizard step metadata ──────────────────────────────────────────────────── */
 const STEPS = [
-  { id: 1, label: 'Patient & Symptoms', short: 'Patient', icon: FiUser },
-  { id: 2, label: 'ML Prediction',      short: 'AI Diag', icon: FiActivity },
-  { id: 3, label: 'E-Prescription',     short: 'Rx',      icon: FiFileText },
+  { id: 1, label: 'Identify Patient', short: 'Patient', icon: FiUser },
+  { id: 2, label: 'Medical History',  short: 'History', icon: FiFileText },
+  { id: 3, label: 'Symptoms',         short: 'Symptoms',icon: FiActivity },
+  { id: 4, label: 'AI Diagnosis',     short: 'AI Diag', icon: FiActivity },
+  { id: 5, label: 'Rx & Labs',        short: 'Rx/Labs', icon: FiFileText },
 ];
 
 /* ─── Slide animation variants ─────────────────────────────────────────────── */
@@ -159,6 +161,28 @@ const NewConsultation = () => {
   const [loading, setLoading] = useState(false);
   const [showOtpModal,       setShowOtpModal]       = useState(false);
   const [patientAccessToken, setPatientAccessToken] = useState('');
+  const [medicalHistory, setMedicalHistory] = useState([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  const fetchMedicalHistory = async () => {
+    setIsHistoryLoading(true);
+    try {
+      const res = await axios.get(`/patient/${patientNic}/timeline`, {
+        headers: { 'x-patient-access': patientAccessToken }
+      });
+      setMedicalHistory(res.data.data || []);
+    } catch (err) {
+      toast.error('Failed to load medical history');
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (step === 2 && patientAccessToken && medicalHistory.length === 0) {
+      fetchMedicalHistory();
+    }
+  }, [step, patientAccessToken]);
 
   /* ── Form state ── */
   const [patientNic,         setPatientNic]        = useState('');
@@ -205,7 +229,7 @@ const NewConsultation = () => {
   const menuItems = [
     { label: 'Dashboard',         path: '/doctor/dashboard',        icon: LayoutDashboard, end: true },
     { label: 'New Consultation',  path: '/doctor/consultation/new', icon: FiPlus },
-    { label: 'Patient Directory', path: '/doctor/patients',          icon: Users },
+    
     ...(isPersonalMode ? [{ label: 'My Profile', path: '/doctor/profile', icon: FiUser }] : []),
   ];
 
@@ -227,6 +251,7 @@ const NewConsultation = () => {
   const handleOtpSuccess = (token) => {
     setPatientAccessToken(token);
     setShowOtpModal(false);
+    goTo(2);
   };
 
   const getDiagnosisSuggestions = async () => {
@@ -336,7 +361,7 @@ const NewConsultation = () => {
             {step > 1 && (
               <motion.button
                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                onClick={() => goTo(1)}
+                onClick={() => goTo(step - 1)}
                 className="text-teal-400 text-sm px-4 py-2 glass-card rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition-all"
               >
                 ↩ Change Patient
@@ -411,102 +436,223 @@ const NewConsultation = () => {
                       />
                     )}
 
-                    {/* Symptoms & notes revealed once patient is loaded */}
-                    {patientData && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35 }}
-                        className="grid lg:grid-cols-2 gap-6"
-                      >
-                        {/* Patient context banner */}
-                        <div className="lg:col-span-2 glass-card rounded-2xl p-5 border border-white/5 flex flex-wrap gap-6 relative overflow-hidden">
-                          <div className="absolute -top-8 -right-8 w-32 h-32 bg-teal-500/10 rounded-full blur-2xl" aria-hidden="true" />
-                          {[
-                            { label: 'Patient',            value: `${patientData.fullName} (${patientData.age ?? '—'}y)`,       color: 'text-white'   },
-                            { label: 'Blood Group',        value: patientData.bloodGroup || 'N/A',                               color: 'text-red-400' },
-                            { label: 'Allergies',          value: patientData.allergies?.join(', ') || 'None',                  color: 'text-orange-400' },
-                            { label: 'Chronic Conditions', value: patientData.chronicConditions?.join(', ') || 'None',          color: 'text-purple-400' },
-                          ].map(({ label, value, color }) => (
-                            <div key={label}>
-                              <p className="label-caps mb-1">{label}</p>
-                              <p className={`font-bold ${color}`}>{value}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Symptoms */}
-                        <div className="glass-card rounded-2xl p-6 border border-white/5">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-4">
-                            <FiActivity className="text-teal-400" /> Presenting Symptoms
-                          </label>
-                          <SymptomTagInput selectedSymptoms={symptoms} onChange={setSymptoms} />
-                        </div>
-
-                        {/* Clinical notes */}
-                        <div className="glass-card rounded-2xl p-6 border border-white/5">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-4">
-                            <FiFileText className="text-teal-400" /> Clinical Notes
-                          </label>
-                          <textarea
-                            value={clinicalNotes || ""}
-                            onChange={e => setClinicalNotes(e.target.value)}
-                            rows={5}
-                            placeholder="Detailed observation notes…"
-                            className={`${inp} resize-none`}
-                          />
-                        </div>
-
-                        {/* Lab tests */}
-                        <div className="lg:col-span-2 glass-card rounded-2xl p-6 border border-white/5">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-4">
-                            <FlaskConical className="w-4 h-4 text-purple-400" /> Order Lab Tests
-                          </label>
-                          <div className="flex gap-2 mb-3">
-                            <input
-                              type="text" value={testInput || ""}
-                              onChange={e => setTestInput(e.target.value)}
-                              onKeyDown={e => e.key === 'Enter' && addTest()}
-                              placeholder="e.g. Full Blood Count"
-                              className={inp}
-                            />
-                            <motion.button
-                              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                              onClick={addTest}
-                              className="px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-colors"
-                            >Add</motion.button>
-                          </div>
-                          {orderedTests.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {orderedTests.map((t, i) => (
-                                <span key={`${t}-${i}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 rounded-lg text-xs font-semibold">
-                                  {t}
-                                  <button onClick={() => removeTest(i)} className="hover:text-red-400 transition-colors"><FiTrash2 size={12} /></button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Continue */}
-                    {patientData && (
-                      <div className="flex justify-end pt-4 border-t border-white/5">
-                        <motion.button
-                          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                          onClick={() => goTo(2)}
-                          disabled={!patientAccessToken}
-                          className="glass-button px-8 py-3 flex items-center gap-2 disabled:opacity-50"
-                        >
-                          Continue to AI Diagnosis <FiChevronRight />
-                        </motion.button>
-                      </div>
-                    )}
                   </motion.div>
                 )}
 
-                {/* ─────────────── STEP 2: ML Prediction ─────────────────── */}
+                
+                {/* ─────────────── STEP 2: Medical History ─────────────── */}
                 {step === 2 && (
+                  <motion.div key="s2" custom={dir} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    className="space-y-6"
+                  >
+                    <div className="glass-card rounded-2xl p-6 border border-white/5">
+                      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <FiFileText className="text-teal-400" /> Patient Clinical Overview
+                      </h2>
+                      
+                      {patientData && (
+                        <div className="grid md:grid-cols-2 gap-4 mb-6">
+                          <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Basic Info</p>
+                            <p className="text-lg font-bold text-white">{patientData.fullName}</p>
+                            <p className="text-sm text-slate-400">
+                              Age: {patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : (patientData.age || '—')} yrs | Blood: <span className="text-red-400 font-semibold">{patientData.bloodGroup || 'Unknown'}</span>
+                            </p>
+                          </div>
+                          
+                          <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/20">
+                            <p className="text-xs text-orange-500/70 font-bold uppercase tracking-wider mb-1">Known Allergies</p>
+                            <p className="text-orange-400 font-semibold text-sm">
+                              {patientData.allergies?.length > 0 ? patientData.allergies.join(', ') : 'No known allergies'}
+                            </p>
+                          </div>
+                          
+                          <div className="bg-purple-500/10 p-4 rounded-xl border border-purple-500/20 md:col-span-2">
+                            <p className="text-xs text-purple-500/70 font-bold uppercase tracking-wider mb-1">Chronic Conditions</p>
+                            <p className="text-purple-400 font-semibold text-sm">
+                              {patientData.chronicConditions?.length > 0 ? patientData.chronicConditions.join(', ') : 'None reported'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {!isHistoryLoading && medicalHistory.length > 0 && (
+                        <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 mb-6">
+                          <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">Recent / Active Medications</p>
+                          {(() => {
+                            const recentMeds = medicalHistory
+                              .filter(h => h.type === 'consultation' && h.data?.prescriptions?.length > 0)
+                              .flatMap(h => h.data.prescriptions)
+                              .slice(0, 8); // Top 8 recent meds
+                            
+                            if (recentMeds.length === 0) {
+                              return <p className="text-blue-400 font-semibold text-sm mt-1">No recent medications found.</p>;
+                            }
+                            return (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {recentMeds.map((med, i) => (
+                                  <span key={i} className="text-xs font-semibold bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded border border-blue-500/30">
+                                    {med.name} {med.dosage ? `(${med.dosage})` : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      <h3 className="text-base font-bold text-white mb-3 mt-6 border-b border-white/10 pb-2">Past Consultations & Labs</h3>
+
+                      {isHistoryLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                          <div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-400 rounded-full animate-spin mb-4" />
+                          <p className="text-slate-400 text-sm">Loading historical records...</p>
+                        </div>
+                      ) : medicalHistory.length === 0 ? (
+                        <div className="py-12 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10">
+                          <FiFileText className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                          <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                            No past medical history found for this patient.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                          {medicalHistory.map((item, i) => (
+                            <details key={i} className="group bg-slate-900/50 rounded-xl border border-white/5 overflow-hidden open:bg-slate-900/80 transition-colors">
+                              <summary className="cursor-pointer p-4 flex items-center justify-between font-semibold text-slate-200 select-none">
+                                <div className="flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+                                    {item.type === 'consultation' ? <FiActivity /> : <FiFileText />}
+                                  </span>
+                                  <div>
+                                    <p className="text-white">{item.type === 'consultation' ? 'Consultation' : 'Lab/Prescription'}</p>
+                                    <p className="text-xs text-slate-400 font-normal">{new Date(item.date).toLocaleDateString()} {item.data?.hospitalId?.name ? `• ${item.data.hospitalId.name}` : ''}</p>
+                                  </div>
+                                </div>
+                                <span className="text-slate-500 group-open:rotate-90 transition-transform">
+                                  <FiChevronRight />
+                                </span>
+                              </summary>
+                              
+                              <div className="p-4 pt-0 text-sm border-t border-white/5 mt-2">
+                                {item.type === 'consultation' && (
+                                  <div className="space-y-4 pt-4">
+                                    {item.data.diagnosis && (
+                                      <div>
+                                        <p className="text-xs text-slate-500 mb-1">Diagnosis</p>
+                                        <p className="text-emerald-400 font-semibold">{item.data.diagnosis} {item.data.icdCode ? `(${item.data.icdCode})` : ''}</p>
+                                      </div>
+                                    )}
+                                    {item.data.symptoms?.length > 0 && (
+                                      <div>
+                                        <p className="text-xs text-slate-500 mb-1">Symptoms</p>
+                                        <p className="text-slate-300">{item.data.symptoms.join(', ')}</p>
+                                      </div>
+                                    )}
+                                    {item.data.clinicalNotes && (
+                                      <div>
+                                        <p className="text-xs text-slate-500 mb-1">Clinical Notes</p>
+                                        <p className="text-slate-300 italic">"{item.data.clinicalNotes}"</p>
+                                      </div>
+                                    )}
+                                    {item.data.prescriptions?.length > 0 && (
+                                      <div>
+                                        <p className="text-xs text-slate-500 mb-1">Prescribed Drugs</p>
+                                        <ul className="list-disc list-inside text-slate-300">
+                                          {item.data.prescriptions.map((rx, idx) => (
+                                            <li key={idx}>{rx.name} - {rx.dosage} ({rx.frequency})</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {item.data.labTests?.length > 0 && (
+                                      <div>
+                                        <p className="text-xs text-slate-500 mb-1">Lab Tests</p>
+                                        <ul className="list-disc list-inside text-slate-300">
+                                          {item.data.labTests.map((t, idx) => (
+                                            <li key={idx}>{t}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                      <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => goTo(1)}
+                        className="glass-button-ghost px-6 py-3 flex items-center gap-2"
+                      >
+                        <FiChevronLeft /> Change Patient
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => goTo(3)}
+                        className="glass-button px-8 py-3 flex items-center gap-2"
+                      >
+                        Proceed to Symptoms <FiChevronRight />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ─────────────── STEP 3: Symptoms ─────────────── */}
+                {step === 3 && (
+                  <motion.div key="s3" custom={dir} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    className="space-y-6"
+                  >
+                    <div className="grid lg:grid-cols-2 gap-6">
+                      <div className="glass-card rounded-2xl p-6 border border-white/5">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-4">
+                          <FiActivity className="text-teal-400" /> Presenting Symptoms
+                        </label>
+                        <SymptomTagInput selectedSymptoms={symptoms} onChange={setSymptoms} />
+                      </div>
+
+                      <div className="glass-card rounded-2xl p-6 border border-white/5">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-4">
+                          <FiFileText className="text-teal-400" /> Clinical Notes
+                        </label>
+                        <textarea
+                          value={clinicalNotes || ""}
+                          onChange={e => setClinicalNotes(e.target.value)}
+                          rows={5}
+                          placeholder="Detailed observation notes…"
+                          className={`${inp} resize-none`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                      <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => goTo(2)}
+                        className="glass-button-ghost px-6 py-3 flex items-center gap-2"
+                      >
+                        <FiChevronLeft /> Back
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => goTo(4)}
+                        className="glass-button px-8 py-3 flex items-center gap-2"
+                      >
+                        Continue to AI Diagnosis <FiChevronRight />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+{/* ─────────────── STEP 4: ML Prediction ─────────────────── */}
+                {step === 4 && (
                   <motion.div key="s2" custom={dir} variants={slideVariants}
                     initial="enter" animate="center" exit="exit"
                     className="space-y-8"
@@ -685,14 +831,14 @@ const NewConsultation = () => {
                     <div className="flex justify-between items-center pt-4 border-t border-white/5">
                       <motion.button
                         whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => goTo(1)}
+                        onClick={() => goTo(step - 1)}
                         className="glass-button-ghost px-6 py-3 flex items-center gap-2"
                       >
                         <FiChevronLeft /> Back
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => goTo(3)}
+                        onClick={() => goTo(5)}
                         disabled={!selectedDiagnosis && !manualDiagnosis}
                         className="glass-button px-8 py-3 flex items-center gap-2 disabled:opacity-50"
                       >
@@ -702,8 +848,8 @@ const NewConsultation = () => {
                   </motion.div>
                 )}
 
-                {/* ─────────────── STEP 3: E-Prescription ─────────────────── */}
-                {step === 3 && (
+                {/* ─────────────── STEP 5: E-Prescription ─────────────────── */}
+                {step === 5 && (
                   <motion.div key="s3" custom={dir} variants={slideVariants}
                     initial="enter" animate="center" exit="exit"
                     className="space-y-6"

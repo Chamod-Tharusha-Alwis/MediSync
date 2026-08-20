@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import {
   FiUser, FiSave, FiPhone, FiMail, FiMapPin,
-  FiAward, FiEdit3, FiCamera,
+  FiAward, FiEdit3, FiCamera, FiPlus,
 } from 'react-icons/fi';
 import {
   LayoutDashboard, Users, Stethoscope, BadgeCheck,
@@ -13,6 +13,7 @@ import PageTransition from '../../components/common/PageTransition';
 import axios from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
+import TrustedDevices from '../../components/TrustedDevices';
 
 const initials = (name = '') =>
   name
@@ -63,14 +64,10 @@ const DoctorProfile = () => {
   const [uploadSigProgress, setUploadSigProgress] = useState(0);
   const [isDraggingSig, setIsDraggingSig] = useState(false);
 
-  const workspaceMode = localStorage.getItem('workspaceMode') || 'personal';
-  const isPersonalMode = workspaceMode !== 'hospital';
-
   const MENU_ITEMS = [
     { label: 'Dashboard', path: '/doctor/dashboard', icon: LayoutDashboard, end: true },
-    { label: 'New Consultation', path: '/doctor/consultation/new', icon: Stethoscope },
-    { label: 'Patient Directory', path: '/doctor/patients', icon: Users },
-    ...(isPersonalMode ? [{ label: 'My Profile', path: '/doctor/profile', icon: FiUser }] : []),
+    { label: 'New Consultation', path: '/doctor/consultation/new', icon: FiPlus },
+    { label: 'My Profile', path: '/doctor/profile', icon: FiUser },
   ];
 
   useEffect(() => {
@@ -308,10 +305,23 @@ const DoctorProfile = () => {
 
             {/* Profile Editing Details */}
             <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
-              <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
-                <FiEdit3 className="w-4 h-4 text-teal-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Practice Information</h3>
+              <div className="flex items-center justify-between pb-3 border-b border-white/5 select-none">
+                <div className="flex items-center gap-2">
+                  <FiEdit3 className="w-4 h-4 text-teal-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Practice Information</h3>
+                </div>
+                {profile.loginType === 'hospital' && (
+                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+                    Managed by Hospital Admin
+                  </span>
+                )}
               </div>
+
+              {profile.loginType === 'hospital' && (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed">
+                  Notice: Your account was created by a hospital administrator. Professional identity details (name, specialization, license) are locked. You can update your account password in the Credential Security section below.
+                </div>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-5">
                 <Field label="Full Name" icon={FiUser}>
@@ -319,7 +329,8 @@ const DoctorProfile = () => {
                     type="text"
                     value={form.fullName}
                     onChange={e => handleChange('fullName', e.target.value)}
-                    className="glass-input text-sm"
+                    className={`glass-input text-sm ${profile.loginType === 'hospital' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    disabled={profile.loginType === 'hospital'}
                     required
                   />
                 </Field>
@@ -328,7 +339,8 @@ const DoctorProfile = () => {
                     type="text"
                     value={form.specialization}
                     onChange={e => handleChange('specialization', e.target.value)}
-                    className="glass-input text-sm"
+                    className={`glass-input text-sm ${profile.loginType === 'hospital' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    disabled={profile.loginType === 'hospital'}
                   />
                 </Field>
               </div>
@@ -541,6 +553,13 @@ const DoctorProfile = () => {
                 )}
               </div>
             )}
+
+            {/* ─── My Devices ─────────────────────────────────────────────── */}
+            <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4 mt-6">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider select-none">My Trusted Devices</h3>
+              <p className="text-slate-500 text-xs select-none">Devices verified via OTP. Remove a device to revoke its trusted status and terminate active sessions from it.</p>
+              <TrustedDevices />
+            </div>
 
           </div>
         </PageTransition>

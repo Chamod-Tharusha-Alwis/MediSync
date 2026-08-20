@@ -13,16 +13,36 @@ const Admin = require('../models/Admin');
 const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
 const { incrementAttempts, getAttempts } = require('../config/redis');
+const { parseDeviceModel } = require('../utils/deviceParser');
+const TrustedDevice = require('../models/TrustedDevice');
+const AuditLog = require('../models/AuditLog');
+const axios = require('axios');
 
 // Helper: createSession
-const createSession = async (userId, userModel, token, req) => {
+const createSession = async (userId, userModel, token, req, opts = {}) => {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const ua = req.headers['user-agent'] || 'Unknown Device';
+  const fingerprint = req.headers['x-device-fingerprint'] || null;
+  
+  // Check if this device is trusted
+  let isTrusted = false;
+  if (fingerprint) {
+    const trusted = await TrustedDevice.findOne({ userId, deviceFingerprint: fingerprint, isRevoked: false });
+    if (trusted) {
+      isTrusted = true;
+      trusted.lastSeenAt = new Date();
+      await trusted.save();
+    }
+  }
+
   await SessionToken.create({
     userId,
     userModel,
     tokenHash,
-    deviceInfo: req.headers['user-agent'] || 'Unknown Device',
-    ipAddress: req.ip || req.connection.remoteAddress,
+    deviceInfo: ua,
+    deviceFingerprint: fingerprint,
+    deviceModel: parseDeviceModel(ua),
+    isTrusted: opts.isTrusted || isTrusted,
     isValid: true,
     lastUsed: new Date()
   });
@@ -171,7 +191,7 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     if (user.twoFactorEnabled) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = crypto.randomInt(100000, 1000000).toString();
       const hashedOtp = await bcrypt.hash(otp, 10);
       
       const expiresAt = new Date();
@@ -202,6 +222,10 @@ exports.login = async (req, res) => {
     const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
     await createSession(user._id, modelName, accessToken, req);
+
+    // Track last login
+    user.lastLoginAt = new Date();
+    await user.save();
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -247,13 +271,87 @@ exports.verifyLoginOTP = async (req, res) => {
     otpRecord.used = true;
     await otpRecord.save();
 
-    const doctor = await Doctor.findById(userId);
-    if (!doctor) return res.status(404).json({ error: 'User not found' });
+    let user;
+    let modelName = otpRecord.userModel;
 
-    const accessToken = jwt.sign({ id: doctor._id, role: doctor.role, sub: doctor.doctorId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: doctor._id, role: doctor.role, sub: doctor.doctorId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    if (modelName === 'Doctor') user = await Doctor.findById(userId);
+    else if (modelName === 'Patient') user = await Patient.findById(userId);
+    else if (modelName === 'PharmacyStaff') user = await PharmacyStaff.findById(userId);
+    else if (modelName === 'Hospital') user = await Hospital.findById(userId);
+    else if (modelName === 'Admin') user = await Admin.findById(userId);
 
-    await createSession(doctor._id, 'Doctor', accessToken, req);
+    if (!user) {
+      user = await Doctor.findById(userId); if (user) modelName = 'Doctor';
+      if (!user) { user = await Patient.findById(userId); if (user) modelName = 'Patient'; }
+      if (!user) { user = await PharmacyStaff.findById(userId); if (user) modelName = 'PharmacyStaff'; }
+      if (!user) { user = await Hospital.findById(userId); if (user) modelName = 'Hospital'; }
+      if (!user) { user = await Admin.findById(userId); if (user) modelName = 'Admin'; }
+    }
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const actualRole = user.role || (modelName === 'Hospital' ? 'hospital_admin' : 'user');
+    const subId = user.doctorId || user.nic || user._id;
+    const name = user.fullName || user.name || 'User';
+
+    const accessToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+
+    await createSession(user._id, modelName, accessToken, req);
+
+    // Mark device as trusted after OTP verification
+    const fp = req.headers['x-device-fingerprint'];
+    if (fp) {
+      const existingTrusted = await TrustedDevice.findOne({ userId: user._id, deviceFingerprint: fp });
+      if (!existingTrusted) {
+        // Log Anomaly
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        let location = 'Unknown Location';
+        try {
+          const { data } = await axios.get(`http://ip-api.com/json/${ip}`);
+          if (data && data.status === 'success') {
+            location = `${data.city || 'Unknown City'}, ${data.regionName || 'Unknown Region'}, ${data.country || 'Unknown Country'}`;
+          }
+        } catch (e) {
+          console.error("IP lookup failed", e.message);
+        }
+        
+        const deviceModel = parseDeviceModel(req.headers['user-agent']);
+        
+        await AuditLog.create({
+          actorId: user._id,
+          actorRole: actualRole,
+          action: 'Untrusted Login Attempt',
+          deviceModel: deviceModel
+        });
+        
+        try {
+          const emailToSend = modelName === 'Patient' ? user.contactInfo.email : user.email;
+          await emailService.sendAnomalyEmail(emailToSend, deviceModel, location);
+        } catch(e) {
+          console.error("Failed to send anomaly email", e);
+        }
+      }
+
+      await TrustedDevice.findOneAndUpdate(
+        { userId: user._id, deviceFingerprint: fp },
+        {
+          userId: user._id,
+          userModel: modelName,
+          deviceFingerprint: fp,
+          deviceModel: parseDeviceModel(req.headers['user-agent']),
+          deviceInfo: req.headers['user-agent'] || 'Unknown Device',
+          trustedAt: new Date(),
+          lastSeenAt: new Date(),
+          isRevoked: false
+        },
+        { upsert: true, new: true }
+      );
+    }
+    
+    // Track last login
+    user.lastLoginAt = new Date();
+    await user.save();
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -263,7 +361,7 @@ exports.verifyLoginOTP = async (req, res) => {
     });
 
     return res.status(200).json({ 
-      data: { accessToken, role: doctor.role, doctorId: doctor.doctorId, name: doctor.fullName },
+      data: { accessToken, role: actualRole, subId, name },
       message: "Login successful"
     });
 
@@ -297,7 +395,7 @@ exports.sendOTP = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
     
     const expiresAt = new Date();
@@ -396,7 +494,7 @@ exports.forgotPassword = async (req, res) => {
     // Always return success to prevent email enumeration
     if (!user) return res.status(200).json({ message: "If that email exists, an OTP was sent" });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
     
     const expiresAt = new Date();
@@ -476,6 +574,52 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+exports.resetPasswordRecovery = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    const RecoveryToken = require('../models/RecoveryToken');
+    const recoveryToken = await RecoveryToken.findOne({
+      token,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!recoveryToken) {
+      return res.status(400).json({ error: 'Invalid or expired recovery token' });
+    }
+
+    const strength = validatePasswordStrength(newPassword);
+    if (!strength.valid || strength.score < 3) {
+      return res.status(400).json({ error: 'New password is too weak.' });
+    }
+
+    let user;
+    if (recoveryToken.userModel === 'Doctor') user = await Doctor.findById(recoveryToken.userId);
+    else if (recoveryToken.userModel === 'Patient') user = await Patient.findById(recoveryToken.userId);
+    else if (recoveryToken.userModel === 'PharmacyStaff') user = await PharmacyStaff.findById(recoveryToken.userId);
+    else if (recoveryToken.userModel === 'Hospital') user = await Hospital.findById(recoveryToken.userId);
+    else if (recoveryToken.userModel === 'Admin') user = await Admin.findById(recoveryToken.userId);
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    if (user.passwordChangedAt !== undefined) user.passwordChangedAt = new Date();
+    await user.save();
+
+    await RecoveryToken.deleteOne({ _id: recoveryToken._id });
+    await invalidateAllSessions(user._id);
+
+    return res.status(200).json({ message: "Password reset successful" });
+  } catch (err) {
+    return res.status(500).json({ error: "Reset failed", details: err.message });
+  }
+};
+
 exports.enable2FA = async (req, res) => {
   try {
     const secret = speakeasy.generateSecret({ name: 'MediSync', issuer: 'MediSync' });
@@ -486,10 +630,12 @@ exports.enable2FA = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
+    const hashedSecret = await bcrypt.hash(secret.base32, 10);
+
     await OTPSession.create({
       userId: req.user.id,
       userModel: 'Doctor',
-      otp: secret.base32, // Storing temporarily for verification
+      otp: hashedSecret, // Hashed for security
       expiresAt,
       purpose: '2fa-setup'
     });
@@ -532,12 +678,44 @@ exports.logout = async (req, res) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      await SessionToken.updateOne({ tokenHash }, { $set: { isValid: false } });
+      await SessionToken.updateOne({ tokenHash }, { $set: { isValid: false, logoutAt: new Date() } });
+
+      // Track last sign-out on user model
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+        if (decoded.id) {
+          const models = [Doctor, Patient, PharmacyStaff, Hospital, Admin];
+          for (const Model of models) {
+            const u = await Model.findById(decoded.id);
+            if (u) {
+              u.lastSignOutAt = new Date();
+              await u.save();
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        // Token might be expired, still clear session
+      }
     }
     res.clearCookie('refreshToken');
     return res.status(200).json({ message: "Logged out" });
   } catch (err) {
     return res.status(500).json({ error: "Logout failed", details: err.message });
+  }
+};
+
+exports.heartbeat = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      await SessionToken.updateOne({ tokenHash, isValid: true }, { $set: { lastUsed: new Date() } });
+    }
+    return res.status(200).json({ message: "Heartbeat received" });
+  } catch (err) {
+    return res.status(500).json({ error: "Heartbeat failed", details: err.message });
   }
 };
 

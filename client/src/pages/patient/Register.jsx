@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, Phone, Calendar, MapPin, ArrowLeft, CheckCircle, ShieldCheck, HeartPulse, Loader2 } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Phone, Calendar, MapPin, ArrowLeft, CheckCircle, ShieldCheck, HeartPulse} from 'lucide-react';
 import axios from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';

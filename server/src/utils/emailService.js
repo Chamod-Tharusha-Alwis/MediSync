@@ -1,46 +1,72 @@
 const nodemailer = require('nodemailer');
 
-/**
- * Enterprise/Production SMTP Configuration
- * Supports transactional email providers (e.g. SendGrid, Resend, Amazon SES)
- */
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT || 465,
+const provider = process.env.EMAIL_PROVIDER || 'gmail';
+
+let transportConfig;
+let fromAddress;
+
+if (provider === 'gmail') {
+  transportConfig = {
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000
+  };
+  fromAddress = `"MediSync System" <${process.env.EMAIL_USER}>`;
+} else if (provider === 'resend') {
+  transportConfig = {
+    host: process.env.RESEND_SMTP_HOST,
+    port: process.env.RESEND_SMTP_PORT || 465,
     secure: true,
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+      user: process.env.RESEND_SMTP_USER,
+      pass: process.env.RESEND_SMTP_PASS
     },
-    connectionTimeout: 2000, // 2 seconds max to connect
-    greetingTimeout: 2000,   // 2 seconds max to wait for greeting
-    socketTimeout: 3000      // 3 seconds max idle time
-});
-
-const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'noreply@medisync.lk';
-
-// Verify on startup and log result
-if (process.env.SMTP_HOST) {
-  transporter.verify((error) => {
-    if (error) {
-      console.warn(`⚠️  Email service not configured properly: ${error.message}`);
-    } else {
-      console.log(`✅  Email service configured: ${process.env.SMTP_USER}`);
-    }
-  });
-} else {
-  console.log('ℹ️  SMTP Not Configured. Emails will be mocked and printed to the console.');
+    connectionTimeout: 2000,
+    greetingTimeout: 2000,
+    socketTimeout: 3000
+  };
+  fromAddress = process.env.RESEND_FROM_ADDRESS || 'noreply@medisync.lk';
 }
 
+const transporter = nodemailer.createTransport(transportConfig);
+
+// Verify on startup and log result
+transporter.verify((error) => {
+  if (error) {
+    console.warn(`⚠️  Email service (${provider}) not configured properly: ${error.message}`);
+  } else {
+    console.log(`✅  Email service configured via ${provider} for user: ${transportConfig.auth.user}`);
+  }
+});
+
 /**
- * Internal helper to send email or print a mock representation if SMTP is not configured.
+ * Internal helper to send email
  */
 const sendMail = async (options) => {
-  if (!process.env.SMTP_HOST) {
+  if (!process.env.EMAIL_PROVIDER) {
     console.log('\n=======================================');
     console.log('✉️  MOCK EMAIL SENT');
     console.log('To:      ', options.to || options.bcc || 'N/A');
     console.log('Subject: ', options.subject);
+
+    const plainText = (options.text || (options.html ? options.html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ') : ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const otpMatch = plainText.match(/\b\d{6}\b/);
+    if (otpMatch) {
+      console.log('🔑 OTP CODE: ', otpMatch[0]);
+    }
+
+    if (plainText) {
+      console.log('Body:    ', plainText.slice(0, 300));
+    }
+
     if (options.attachments) {
       console.log('Attachments: ', options.attachments.map(a => a.filename).join(', '));
     }
@@ -230,7 +256,7 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
         </div>
         <div style="padding: 30px; background-color: #fff8f8;">
           <p style="font-size: 16px; color: #333333; line-height: 1.5;">
-            A <strong>${riskLevel} Risk</strong> outbreak of <strong>${disease}</strong> has been detected in <strong>${district}</strong> (+${spikePct}% spike).
+            A <strong>${riskLevel} Risk</strong> outbreak of <strong>${disease}</strong> has been detected in <strong>${district}</strong>${spikePct ? (typeof spikePct === 'number' ? ` (+${spikePct}% spike).` : '.') : '.'}
           </p>
           <p style="font-size: 16px; color: #333333; line-height: 1.5; font-weight: bold;">
             Please take immediate precautions.
@@ -490,6 +516,86 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERIC sendEmail — used by labController for custom HTML emails
 // ─────────────────────────────────────────────────────────────────────────────
+
+exports.sendAnomalyEmail = async (email, deviceModel, location) => {
+  const mailOptions = {
+    from: fromAddress,
+    to: email,
+    subject: "MediSync — Untrusted Login Attempt Detected",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: #D32F2F; padding: 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">Security Alert</h1>
+        </div>
+        <div style="padding: 30px; background-color: #ffffff;">
+          <p>We detected a login attempt from an unrecognized device.</p>
+          <p><strong>Device:</strong> ${deviceModel || 'Unknown Device'}</p>
+          <p><strong>Approximate Location:</strong> ${location || 'Unknown'}</p>
+          <p>If this was you, you can ignore this email. If not, please change your password immediately.</p>
+        </div>
+      </div>
+    `
+  };
+  try {
+    await sendMail(mailOptions);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
+
+exports.sendRecoveryEmail = async (email, link, purpose) => {
+  const mailOptions = {
+    from: fromAddress,
+    to: email,
+    subject: `MediSync — Account Recovery: ${purpose}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: #0D3B66; padding: 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">Account Recovery</h1>
+        </div>
+        <div style="padding: 30px; background-color: #ffffff;">
+          <p>You requested account recovery for: <strong>${purpose}</strong></p>
+          <p>Please click the link below to proceed:</p>
+          <a href="${link}" style="background-color: #3B82F6; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Recover Account</a>
+          <p style="margin-top: 20px; font-size: 12px; color: #777777;">This link will expire shortly. If you did not request this, please ignore this email.</p>
+        </div>
+      </div>
+    `
+  };
+  try {
+    await sendMail(mailOptions);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
+
+exports.sendDeviceRemovedEmail = async (email, deviceModel) => {
+  const mailOptions = {
+    from: fromAddress,
+    to: email,
+    subject: "MediSync — Trusted Device Removed",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: #0D3B66; padding: 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0;">Device Removed</h1>
+        </div>
+        <div style="padding: 30px; background-color: #ffffff;">
+          <p>A device was recently removed from your trusted devices list.</p>
+          <p><strong>Device:</strong> ${deviceModel || 'Unknown Device'}</p>
+          <p>If you did not perform this action, please contact support and change your password.</p>
+        </div>
+      </div>
+    `
+  };
+  try {
+    await sendMail(mailOptions);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
 
 /**
  * Send a generic email with custom subject and HTML body.

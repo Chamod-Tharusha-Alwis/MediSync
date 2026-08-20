@@ -17,6 +17,9 @@ router.post('/check-interaction',  protect(['doctor', 'pharmacist', 'pharmacy_ad
 router.post('/recommendations', protect(['doctor']), drugController.recommendDrugs);
 router.post('/recommend',       protect(['doctor']), drugController.recommendDrugs);  // alias
 
+// Returns AI-suggested medications for a disease/ICD code
+router.get('/suggestions', protect(['doctor']), drugController.getMedicationSuggestions);
+
 // Returns all valid symptom names from the ML symptom_map.json
 router.get('/symptoms', protect(['doctor']), drugController.getSymptoms);
 

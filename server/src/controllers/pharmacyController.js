@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken');
 const { hashPassword, generateTempPassword, validatePasswordStrength } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const { generateReceiptNumber } = require('../utils/generateReceiptNumber');
+const { parseDeviceModel } = require('../utils/deviceParser');
+
 
 exports.registerPharmacy = async (req, res) => {
   try {
@@ -63,7 +65,7 @@ exports.loginPharmacy = async (req, res) => {
     const accessToken = jwt.sign(
       { id: staff._id, role: staff.role },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '15m' }
     );
 
     // ── Persist session so protect() middleware can validate this token ──────
@@ -73,10 +75,14 @@ exports.loginPharmacy = async (req, res) => {
       userModel:  'PharmacyStaff',
       tokenHash,
       deviceInfo: req.headers['user-agent'] || 'Unknown Device',
-      ipAddress:  req.ip || req.connection?.remoteAddress,
+      deviceFingerprint: req.headers['x-device-fingerprint'] || null,
+      deviceModel: parseDeviceModel(req.headers['user-agent']),
       isValid:    true,
       lastUsed:   new Date()
     });
+
+    staff.lastLoginAt = new Date();
+    await staff.save();
 
     // ── Set refresh token cookie so the Axios interceptor can silently renew ─
     const refreshToken = jwt.sign(
@@ -87,7 +93,7 @@ exports.loginPharmacy = async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

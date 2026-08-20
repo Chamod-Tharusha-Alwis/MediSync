@@ -15,6 +15,7 @@ const initCronJobs = () => {
   const Consultation = require('../models/Consultation');
   const Patient      = require('../models/Patient');
   const OTPSession   = require('../models/OTPSession');
+  const SessionToken = require('../models/SessionToken');
   const emailService = require('./emailService');
   // ─────────────────────────────────────────────────────────────────────────
   // Job 1 — Expire prescriptions (every hour)
@@ -253,80 +254,56 @@ const initCronJobs = () => {
 
       // Persist alert and broadcast if anomaly detected
       if (mlResult.anomaly) {
-        // --- DB SAVE (own try/catch so email still fires if this fails) ---
         try {
           const severityMap = { 'Normal': 'Low', 'Low': 'Low', 'Medium': 'Moderate', 'High': 'High' };
           const mappedSeverity = severityMap[mlResult.risk_level] || (mlResult.spike_percentage >= 600 ? 'Critical' : 'High');
-
-          await OutbreakAlert.create({
-            disease:        mlResult.disease || 'Unknown',
-            location:       mlResult.district || 'Nationwide',
-            affectedCount:  mlResult.last_7_days_count || 0,
-            severity:       mappedSeverity,
-            status:         'Active',
-            message:        `[Auto] Outbreak: ${mlResult.disease} in ${mlResult.district}. Spike: +${mlResult.spike_percentage}%`
+          
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          
+          // Duplicate suppression
+          const existingAlert = await OutbreakAlert.findOne({
+            disease: mlResult.disease,
+            location: mlResult.district,
+            status: { $in: ['Pending', 'Active'] },
+            createdAt: { $gte: twentyFourHoursAgo }
           });
-          console.log(`[Cron] ✅ Outbreak alert saved: ${mlResult.disease} in ${mlResult.district}`);
+          
+          if (!existingAlert) {
+            const alert = await OutbreakAlert.create({
+              disease:        mlResult.disease || 'Unknown',
+              location:       mlResult.district || 'Nationwide',
+              affectedCount:  mlResult.last_7_days_count || 0,
+              severity:       mappedSeverity,
+              status:         'Pending',
+              message:        `[Auto] Outbreak: ${mlResult.disease} in ${mlResult.district}. Spike: +${mlResult.spike_percentage}%`
+            });
+            console.log(`[Cron] ✅ Outbreak alert saved as Pending: ${mlResult.disease} in ${mlResult.district}`);
+            const io = require('../app').get?.('io');
+            if (io) io.emit('outbreak_alert_pending', alert);
+          } else {
+            console.log(`[Cron] ℹ️ Outbreak alert suppressed (already exists): ${mlResult.disease} in ${mlResult.district}`);
+          }
         } catch (dbErr) {
           console.error('[Cron] Alert DB save failed:', dbErr.message);
-        }
-
-        // --- MASS EMAIL TRIGGER (own try/catch — independent of DB save) ---
-        if (mlResult.risk_level === 'Medium' || mlResult.risk_level === 'High') {
-          try {
-            console.log(`[Cron] ${mlResult.risk_level} risk outbreak detected! Triggering mass alert.`);
-            const Patient = require('../models/Patient');
-            const Doctor = require('../models/Doctor');
-            const PharmacyStaff = require('../models/PharmacyStaff');
-            const Hospital = require('../models/Hospital');
-            const emailService = require('./emailService');
-
-            const [patients, doctors, pharmacists, hospitals] = await Promise.all([
-              Patient.find({}).select('email contactInfo'),
-              Doctor.find({}).select('email'),
-              PharmacyStaff.find({}).select('email'),
-              Hospital.find({}).select('email')
-            ]);
-
-            const allEmails = [
-              ...patients.map(p => p.email || p.contactInfo?.email),
-              ...doctors.map(d => d.email),
-              ...pharmacists.map(p => p.email),
-              ...hospitals.map(h => h.email)
-            ].filter(e => e);
-
-            await emailService.sendMassOutbreakAlert(
-              allEmails,
-              mlResult.disease,
-              mlResult.district,
-              mlResult.risk_level,
-              mlResult.spike_percentage
-            );
-            console.log(`[Cron] ✅ Mass alert sent to ${allEmails.length} users`);
-          } catch (emailErr) {
-            console.error('[Cron] Mass email trigger failed:', emailErr.message);
-          }
-
-          // --- BROADCAST RECORD (own try/catch) ---
-          try {
-            const BroadcastMessage = require('../models/BroadcastMessage');
-            const broadcast = new BroadcastMessage({
-              title: `CRITICAL OUTBREAK ALERT`,
-              message: `A ${mlResult.risk_level} risk outbreak of ${mlResult.disease} has been detected in ${mlResult.district} (+${mlResult.spike_percentage}% spike). Please take immediate precautions.`,
-              targetRole: 'all',
-              targetDistrict: mlResult.district,
-              sentBy: null,
-              sentAt: new Date()
-            });
-            await broadcast.save();
-            console.log('[Cron] ✅ BroadcastMessage saved');
-          } catch (broadcastErr) {
-            console.error('[Cron] Broadcast save failed:', broadcastErr.message);
-          }
         }
       }
     } catch (err) {
       console.error('[Cron] Daily outbreak detection error:', err.message);
+    }
+  });
+  // Job 6: Session Expiry — mark inactive sessions as expired (every 15 min)
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const result = await SessionToken.updateMany(
+        { isValid: true, lastUsed: { $lt: fifteenMinAgo } },
+        { $set: { isValid: false, logoutAt: new Date(), expiredAt: new Date() } }
+      );
+      if (result.modifiedCount > 0) {
+        console.log(`[Cron] Expired ${result.modifiedCount} inactive sessions`);
+      }
+    } catch (err) {
+      console.error('[Cron] Session expiry error:', err.message);
     }
   });
 };

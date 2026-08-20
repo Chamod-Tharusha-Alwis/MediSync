@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, Stethoscope, Loader2 } from 'lucide-react';
+import { Mail, Lock, Stethoscope} from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import LoginShell from '../../components/common/LoginShell';

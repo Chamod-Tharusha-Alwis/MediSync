@@ -20,8 +20,20 @@ const outbreakAlertSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['Active', 'Resolved'], 
-    default: 'Active' 
+    enum: ['Pending', 'Active', 'Resolved', 'Dismissed'], 
+    default: 'Pending' 
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Doctor'
+  },
+  approvedAt: {
+    type: Date
+  },
+  emailScope: {
+    type: String,
+    enum: ['none', 'district', 'national'],
+    default: 'none'
   },
   message: {
     type: String

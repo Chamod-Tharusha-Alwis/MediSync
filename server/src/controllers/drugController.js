@@ -1,25 +1,75 @@
 const Drug = require('../models/Drug');
-const { interactions, icd10, symptomMap } = require('../utils/loadDatasets');
+const { interactions, icd10, symptomMap, diseaseMedications } = require('../utils/loadDatasets');
 
 const COMMON_DRUGS = [
-  { name: 'Paracetamol', genericName: 'Acetaminophen', category: 'Analgesic', commonDosages: ['500mg', '1000mg'] },
-  { name: 'Amoxicillin', genericName: 'Amoxicillin', category: 'Antibiotic', commonDosages: ['250mg', '500mg'] },
-  { name: 'Ibuprofen', genericName: 'Ibuprofen', category: 'NSAID', commonDosages: ['200mg', '400mg'] },
-  { name: 'Omeprazole', genericName: 'Omeprazole', category: 'PPI', commonDosages: ['20mg', '40mg'] },
-  { name: 'Metformin', genericName: 'Metformin', category: 'Antidiabetic', commonDosages: ['500mg', '850mg'] },
-  { name: 'Atorvastatin', genericName: 'Atorvastatin', category: 'Statin', commonDosages: ['10mg', '20mg'] },
-  { name: 'Amlodipine', genericName: 'Amlodipine', category: 'Calcium Channel Blocker', commonDosages: ['5mg', '10mg'] },
+  { name: 'Fluconazole', genericName: 'Fluconazole', category: 'Antifungal', commonDosages: ['150mg'] },
+  { name: 'Clotrimazole Cream', genericName: 'Clotrimazole', category: 'Topical Antifungal', commonDosages: ['1%'] },
+  { name: 'Cetirizine', genericName: 'Cetirizine', category: 'Antihistamine', commonDosages: ['10mg'] },
   { name: 'Loratadine', genericName: 'Loratadine', category: 'Antihistamine', commonDosages: ['10mg'] },
-  { name: 'Salbutamol', genericName: 'Albuterol', category: 'Bronchodilator', commonDosages: ['100mcg/dose'] },
-  { name: 'Losartan', genericName: 'Losartan', category: 'ARB', commonDosages: ['50mg', '100mg'] },
-  { name: 'Aspirin', genericName: 'Acetylsalicylic Acid', category: 'Antiplatelet', commonDosages: ['75mg', '150mg', '300mg'] },
-  { name: 'Warfarin', genericName: 'Warfarin', category: 'Anticoagulant', commonDosages: ['1mg', '2mg', '5mg'] },
+  { name: 'Omeprazole', genericName: 'Omeprazole', category: 'PPI', commonDosages: ['20mg', '40mg'] },
+  { name: 'Ranitidine', genericName: 'Ranitidine', category: 'H2 Blocker', commonDosages: ['150mg', '300mg'] },
+  { name: 'Ursodeoxycholic Acid', genericName: 'Ursodeoxycholic acid', category: 'Biliary Agent', commonDosages: ['300mg'] },
+  { name: 'Cholestyramine', genericName: 'Cholestyramine', category: 'Bile Acid Sequestrant', commonDosages: ['4g'] },
+  { name: 'Chlorpheniramine', genericName: 'Chlorpheniramine', category: 'Antihistamine', commonDosages: ['4mg'] },
+  { name: 'Prednisolone', genericName: 'Prednisolone', category: 'Corticosteroid', commonDosages: ['5mg', '20mg'] },
+  { name: 'Amoxicillin', genericName: 'Amoxicillin', category: 'Antibiotic', commonDosages: ['500mg', '1000mg'] },
+  { name: 'Tenofovir Disoproxil', genericName: 'Tenofovir disoproxil', category: 'Antiretroviral', commonDosages: ['300mg'] },
+  { name: 'Cotrimoxazole', genericName: 'Trimethoprim', category: 'Antibacterial', commonDosages: ['960mg'] },
+  { name: 'Metformin', genericName: 'Metformin', category: 'Antidiabetic', commonDosages: ['500mg', '850mg'] },
+  { name: 'Gliclazide', genericName: 'Gliclazide', category: 'Antidiabetic', commonDosages: ['80mg'] },
+  { name: 'Oral Rehydration Salts (ORS)', genericName: 'Sodium chloride', category: 'Electrolyte', commonDosages: ['1 sachet'] },
+  { name: 'Zinc Sulfate', genericName: 'Zinc sulfate', category: 'Mineral Supplement', commonDosages: ['20mg'] },
+  { name: 'Salbutamol Inhaler', genericName: 'Albuterol', category: 'Bronchodilator', commonDosages: ['100mcg/dose'] },
+  { name: 'Fluticasone Inhaler', genericName: 'Fluticasone', category: 'Corticosteroid Inhaler', commonDosages: ['110mcg'] },
+  { name: 'Amlodipine', genericName: 'Amlodipine', category: 'Calcium Channel Blocker', commonDosages: ['5mg', '10mg'] },
+  { name: 'Enalapril', genericName: 'Enalapril', category: 'ACE Inhibitor', commonDosages: ['5mg', '10mg'] },
+  { name: 'Sumatriptan', genericName: 'Sumatriptan', category: 'Antimigraine', commonDosages: ['50mg'] },
+  { name: 'Naproxen', genericName: 'Naproxen', category: 'NSAID', commonDosages: ['250mg', '500mg'] },
+  { name: 'Ibuprofen', genericName: 'Ibuprofen', category: 'NSAID', commonDosages: ['200mg', '400mg'] },
+  { name: 'Pregabalin', genericName: 'Pregabalin', category: 'Neuropathic Analgesic', commonDosages: ['75mg', '150mg'] },
+  { name: 'Mannitol', genericName: 'Mannitol', category: 'Osmotic Diuretic', commonDosages: ['20%'] },
+  { name: 'Silymarin', genericName: 'Silymarin', category: 'Hepatoprotectant', commonDosages: ['140mg'] },
+  { name: 'Artemether + Lumefantrine', genericName: 'Artemether', category: 'Antimalarial', commonDosages: ['80/480mg'] },
+  { name: 'Chloroquine', genericName: 'Chloroquine', category: 'Antimalarial', commonDosages: ['250mg', '500mg'] },
+  { name: 'Acyclovir', genericName: 'Acyclovir', category: 'Antiviral', commonDosages: ['400mg', '800mg'] },
+  { name: 'Calamine Lotion', genericName: 'Calamine', category: 'Topical Antipruritic', commonDosages: ['Topical'] },
+  { name: 'Paracetamol', genericName: 'Acetaminophen', category: 'Analgesic', commonDosages: ['500mg', '1000mg'] },
+  { name: 'Paracetamol (Low Dose)', genericName: 'Acetaminophen', category: 'Analgesic', commonDosages: ['500mg'] },
   { name: 'Ciprofloxacin', genericName: 'Ciprofloxacin', category: 'Antibiotic', commonDosages: ['250mg', '500mg'] },
+  { name: 'Ceftriaxone', genericName: 'Ceftriaxone', category: 'Cephalosporin Antibiotic', commonDosages: ['1g', '2g'] },
+  { name: 'Metoclopramide', genericName: 'Metoclopramide', category: 'Antiemetic', commonDosages: ['10mg'] },
+  { name: 'Tenofovir Alafenamide', genericName: 'Tenofovir alafenamide', category: 'Antiviral', commonDosages: ['25mg'] },
+  { name: 'Entecavir', genericName: 'Entecavir', category: 'Antiviral', commonDosages: ['0.5mg'] },
+  { name: 'Sofosbuvir + Velpatasvir', genericName: 'Sofosbuvir', category: 'Antiviral', commonDosages: ['400/100mg'] },
+  { name: 'Pegylated Interferon Alfa-2a', genericName: 'Peginterferon alfa-2a', category: 'Antiviral', commonDosages: ['180mcg'] },
+  { name: 'Ribavirin', genericName: 'Ribavirin', category: 'Antiviral', commonDosages: ['200mg', '400mg'] },
+  { name: 'Pentoxifylline', genericName: 'Pentoxifylline', category: 'Hemorheologic Agent', commonDosages: ['400mg'] },
+  { name: 'Rifampicin + Isoniazid + Pyrazinamide + Ethambutol (RHZE)', genericName: 'Rifampin', category: 'Antitubercular', commonDosages: ['FDC'] },
+  { name: 'Pyridoxine (Vitamin B6)', genericName: 'Pyridoxine', category: 'Vitamin Supplement', commonDosages: ['25mg'] },
+  { name: 'Pseudoephedrine', genericName: 'Pseudoephedrine', category: 'Decongestant', commonDosages: ['60mg'] },
+  { name: 'Amoxicillin + Clavulanate', genericName: 'Amoxicillin', category: 'Antibiotic', commonDosages: ['625mg'] },
+  { name: 'Azithromycin', genericName: 'Azithromycin', category: 'Macrolide Antibiotic', commonDosages: ['250mg', '500mg'] },
+  { name: 'Flavonoid (Micronized Purified Flavonoid Fraction)', genericName: 'Diosmin', category: 'Phlebotonic', commonDosages: ['500mg'] },
+  { name: 'Hydrocortisone Suppository', genericName: 'Hydrocortisone', category: 'Topical Steroid', commonDosages: ['25mg'] },
+  { name: 'Aspirin', genericName: 'Acetylsalicylic acid', category: 'Antiplatelet', commonDosages: ['75mg', '300mg'] },
+  { name: 'Warfarin', genericName: 'Warfarin', category: 'Anticoagulant', commonDosages: ['1mg', '2mg', '5mg'] },
   { name: 'Clopidogrel', genericName: 'Clopidogrel', category: 'Antiplatelet', commonDosages: ['75mg'] },
-  { name: 'Gabapentin', genericName: 'Gabapentin', category: 'Anticonvulsant', commonDosages: ['100mg', '300mg', '400mg'] },
-  { name: 'Prednisolone', genericName: 'Prednisolone', category: 'Corticosteroid', commonDosages: ['5mg', '25mg'] },
-  { name: 'Clindamycin', genericName: 'Clindamycin', category: 'Lincosamide Antibiotic', commonDosages: ['150mg', '300mg'] },
-  { name: 'Caffeine', genericName: 'Caffeine', category: 'Stimulant', commonDosages: ['20mg'] }
+  { name: 'Diosmin + Hesperidin', genericName: 'Diosmin', category: 'Phlebotonic', commonDosages: ['500mg'] },
+  { name: 'Levothyroxine', genericName: 'Levothyroxine', category: 'Thyroid Hormone', commonDosages: ['50mcg', '100mcg'] },
+  { name: 'Carbimazole', genericName: 'Carbimazole', category: 'Antithyroid Agent', commonDosages: ['15mg'] },
+  { name: 'Propranolol', genericName: 'Propranolol', category: 'Beta Blocker', commonDosages: ['40mg'] },
+  { name: 'Glucose Tablets', genericName: 'Dextrose', category: 'Carbohydrate', commonDosages: ['15g'] },
+  { name: 'Meloxicam', genericName: 'Meloxicam', category: 'NSAID', commonDosages: ['7.5mg', '15mg'] },
+  { name: 'Methotrexate', genericName: 'Methotrexate', category: 'DMARD', commonDosages: ['2.5mg', '10mg'] },
+  { name: 'Betahistine', genericName: 'Betahistine', category: 'Antivertigo Agent', commonDosages: ['16mg'] },
+  { name: 'Cinnarizine', genericName: 'Cinnarizine', category: 'Vestibular Suppressant', commonDosages: ['25mg'] },
+  { name: 'Benzoyl Peroxide Gel', genericName: 'Benzoyl peroxide', category: 'Topical Acne Agent', commonDosages: ['5%'] },
+  { name: 'Doxycycline', genericName: 'Doxycycline', category: 'Tetracycline Antibiotic', commonDosages: ['100mg'] },
+  { name: 'Nitrofurantoin', genericName: 'Nitrofurantoin', category: 'Urinary Antibacterial', commonDosages: ['100mg'] },
+  { name: 'Betamethasone Dipropionate Ointment', genericName: 'Betamethasone', category: 'Topical Corticosteroid', commonDosages: ['0.05%'] },
+  { name: 'Coal Tar Ointment', genericName: 'Coal tar', category: 'Keratolytic', commonDosages: ['5%'] },
+  { name: 'Mupirocin Ointment', genericName: 'Mupirocin', category: 'Topical Antibiotic', commonDosages: ['2%'] },
+  { name: 'Flucloxacillin', genericName: 'Flucloxacillin', category: 'Penicillin Antibiotic', commonDosages: ['500mg'] }
 ];
 
 exports.searchDrugs = async (req, res) => {
@@ -67,26 +117,20 @@ exports.getICDCodes = async (req, res) => {
 
 /**
  * GET /api/drugs/symptoms
- * Returns a deduplicated, sorted list of all valid symptom strings
- * read from the ML engine's symptom_map.json so the frontend can
- * provide an autocomplete that always matches what the ML expects.
+ * Legacy endpoint previously returned valid symptom strings from symptom_map.json.
+ * Since switching to the 71k database without symptom mappings, this now returns
+ * a static baseline of generic symptoms so the frontend autocomplete doesn't break.
  */
 exports.getSymptoms = async (req, res) => {
   try {
-    const symptomSet = new Set();
-    if (Array.isArray(symptomMap)) {
-      for (const disease of symptomMap) {
-        const symptoms = disease.symptoms || disease.Symptoms || [];
-        for (const s of symptoms) {
-          if (s && s.trim()) {
-            // Normalize internal whitespace (e.g. "Dischromic  Patches" → "Dischromic Patches")
-            symptomSet.add(s.trim().replace(/\s+/g, ' '));
-          }
-        }
-      }
-    }
-    const sorted = Array.from(symptomSet).sort();
-    return res.json({ data: sorted });
+    const fallbackSymptoms = [
+      'Abdominal Pain', 'Back Pain', 'Breathlessness', 'Chills', 'Chest Pain',
+      'Cough', 'Diarrhoea', 'Dizziness', 'Fatigue', 'Fever', 'Headache',
+      'High Fever', 'Itching', 'Joint Pain', 'Loss of Appetite', 'Muscle Pain',
+      'Nausea', 'Rash', 'Runny Nose', 'Skin Rash', 'Sneezing', 'Sweating',
+      'Vomiting', 'Weakness', 'Weight Loss', 'Yellow Skin', 'Yellow Urine'
+    ];
+    return res.json({ data: fallbackSymptoms });
   } catch (error) {
     return res.status(500).json({ error: 'Error fetching symptoms', details: error.message });
   }
@@ -213,5 +257,18 @@ exports.recommendDrugs = async (req, res) => {
     return res.json({ data: recommendations });
   } catch (error) {
     return res.status(500).json({ error: 'Error getting recommendations', details: error.message });
+  }
+};
+
+/**
+ * GET /api/drugs/suggestions?disease=Dengue
+ * Legacy endpoint previously used disease_medications.json.
+ * Currently disabled for 71k scale-up, safely returning an empty array.
+ */
+exports.getMedicationSuggestions = async (req, res) => {
+  try {
+    return res.json({ data: [] });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error getting medication suggestions', details: error.message });
   }
 };

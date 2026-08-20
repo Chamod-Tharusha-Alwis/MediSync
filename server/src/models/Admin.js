@@ -7,7 +7,9 @@ const adminSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role:     { type: String, default: 'admin' },
   isSuperAdmin: { type: Boolean, default: false },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  lastLoginAt: { type: Date },
+  lastSignOutAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Admin', adminSchema);

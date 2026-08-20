@@ -10,7 +10,7 @@ const doctorSchema = new mongoose.Schema({
   licenseNo: { type: String, required: true },
   hospitals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' }],
   role: { type: String, default: 'doctor' },
-  loginType: { type: String, enum: ['personal', 'hospital'] },
+  loginType: { type: String, enum: ['personal', 'hospital'], default: 'personal' },
   twoFactorEnabled: { type: Boolean, default: false },
   otpSecret: String,
   personalEmail: String,
@@ -29,7 +29,9 @@ const doctorSchema = new mongoose.Schema({
   googleMapsUrl: { type: String, default: '' },
   averageRating: { type: Number, default: 0 },
   ratingCount: { type: Number, default: 0 },
-  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
+  keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 },
+  lastLoginAt: { type: Date },
+  lastSignOutAt: { type: Date }
 }, { timestamps: true });
 
 doctorSchema.plugin(versionedEncryption, {

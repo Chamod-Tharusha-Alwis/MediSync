@@ -6,7 +6,7 @@ This document provides a page-by-page breakdown of the MediSync frontend user in
 
 ## 1. Visual Design System (Prompt 0)
 
-MediSync utilizes a cohesive design system centered around **Premium Slate Glassmorphism**:
+MediSync utilizes a cohesive design system centered around **Premium Slate Glassmorphism** built on **React 19**:
 - **Background Palette**: Deep charcoal and space slate (`#0b1120` to `#0f172a`).
 - **Surface Panels**: Translucent container cards with blur effects (`backdrop-blur-xl bg-slate-900/50 border border-white/5`).
 - **Typography**: Sleek, modern sans-serif (Inter/Outfit) with sharp weights (black, extra-bold) for headings.
@@ -30,6 +30,14 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 - **`<NotificationBell />`**: Renders a dropdown overlay showing unread broadcast messages, alert banners, and system maintenance logs.
 - **`<ActiveOutbreakBanner />`**: A glowing red ticker warning banner displayed at the top of page shells when active outbreaks (Z-score > 2.0) are triggered in the patient's district.
 
+### 2.3 Reusable Clinical Components
+- **PatientAccessModal**: OTP verification modal for doctors to gain patient record access.
+- **LabReportDownloadButton**: Conditional download button — hidden for 0 tests, direct download for 1 test, upward-opening dropdown selector for 2+ tests. Uses `position:absolute bottom-full` with `z-[9999]` to prevent card clipping.
+- **LabDetailModal**: Slide-in detail modal for viewing lab test information across timeline and history views.
+- **DiseaseCombobox**: Autocomplete combobox for ICD disease code selection.
+- **DrugSearchInput**: Debounced drug search input with `autoComplete='off'` to prevent browser overlay.
+- **SymptomTagInput**: Tag-based symptom entry with autocomplete.
+
 ---
 
 ## 3. Page-by-Page Design Specifications
@@ -44,6 +52,9 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 #### 3.1.2 Role Selection (`SelectRole.jsx`)
 - Displays 5 portal landing cards (Patient, Doctor, Pharmacist, Lab Assistant, Admin).
 - Cards are styled with dark slate panel surfaces, glass borders, and distinct hover lifting scales (`.hover-lift` transition).
+- **Doctor Sub-Choice**: When 'Doctor' is selected, a sub-choice appears:
+  - **Hospital Login**: for doctors whose accounts were created by hospital admins.
+  - **Personal Login**: for independently registered doctor accounts (existing flow).
 
 #### 3.1.3 Registration Wizards (`Register.jsx`)
 - **Global Auth Wizard**: Supports registration for patients, doctors, and pharmacists.
@@ -70,11 +81,11 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 
 #### 3.2.1 Patient Dashboard (`pages/patient/Dashboard.jsx`)
 - Renders greeting cards displaying the patient's clinical stats (Active prescriptions, upcoming follow-ups).
-- Integrates the timeline (`History.jsx`) detailing clinical histories, lab reports with download progress indicators, and a "Rate Consultation" button locking feedback to prevent double submissions.
+- Integrates the timeline (`History.jsx`) detailing clinical histories, lab reports, and a "Rate Consultation" button locking feedback to prevent double submissions. Includes `LabReportDownloadButton` integration with conditional rendering based on lab test count.
 
 #### 3.2.2 Doctor Workspace (`pages/doctor/NewConsultation.jsx`)
 - A clinical consultation stepper wizard:
-  - **Step 1**: Search patient NIC and input bypass OTP.
+  - **Step 1**: Search patient NIC and input bypass OTP via the `PatientAccessModal` (OTP verification via in-memory `PatientAccessContext`, not sessionStorage).
   - **Step 2**: Log patient vitals (weight, SpO₂, temperature) with visual ranges.
   - **Step 3**: Symptom autocomplete tags feeding the scikit-learn ML engine model to display ranked diagnosis options with confidence bars.
   - **Step 4**: Prescription selection. Triggers warnings for drug-drug interactions (e.g. Aspirin + Warfarin) and patient allergy checks.
@@ -91,12 +102,23 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 - **Audit Logs Table**: Table with timestamp tags, action scopes, and lock icons identifying masked PII data columns.
 - **Broadcast Composer**: Message form and live preview container showing exactly how notifications will render in the patient's bell.
 - **Outbreak Monitor Chart**: Recharts bar chart displaying district consultation rates and warning lines ($Z = 2.0$).
-
+- **Outbreak Heatmap**: Outbreak heatmap visualization using Leaflet.js and `lk_districts.json` TopoJSON.
 
 ## Security Hardening Note (Phase 2)
 The recent backend security hardening (which included strict HMAC timing-safe validation, Redis rate-limiting, and Vault-backed key rotation) was executed purely on the server and ML engine layers. These structural improvements operate invisibly to the client application and do not alter the UI/UX flows, Glassmorphic component library, or page layouts defined in this document.
 
-## Upcoming Phase: Premium Glassmorphic UI/UX
-- **Framer Motion:** Will be integrated for fluid page transitions, spring animations, and micro-interactions on hover.
-- **Tailwind CSS:** Will be heavily utilized for modern glassmorphism (translucent backgrounds, background blurs, subtle borders).
-- **Aesthetic Goals:** Transitioning the current interface into a highly dynamic, responsive, and visually stunning premium web application.
+## Completed Phase: Premium Glassmorphic UI/UX
+- **Framer Motion:** Integrated for fluid page transitions, spring animations, and micro-interactions on hover.
+- **Tailwind CSS 3:** Used heavily for modern glassmorphism throughout the app (translucent backgrounds, background blurs, subtle borders).
+- **Forms & Inputs:** Browser autofill prevention implemented on drug/lab inputs.
+- **Z-Index Fixes:** Search dropdown z-index issues resolved.
+- **Lab Reports:** Lab report dropdown positioning set to upward-opening to prevent UI clipping.
+
+## 7. Clinical Document & Print UI Aesthetics (July 2026 Upgrades)
+
+### 7.1 Unified E-Prescription & Lab Report Visual System
+- **Header Banner:** Clean professional Navy banner (`#0F3B66`) with crisp white typography and standardized MediSync clinical branding.
+- **Section Highlights:** Distinctive Teal (`#0D9488`) section headers for diagnostic findings and Purple (`#8033CC`) accent borders for prescribed medication containers.
+- **Metadata Cards:** Boxed label:value containers with subtle gray borders (`#E5E7EB`) for patient demographics, doctor license numbers, and hospital affiliations.
+- **Table Layout & Shading:** Alternating row shading (`#F5F7FA` and `#FFFFFF`) for scannability. Dynamic word wrapping (`wrapText`) widens the Dosage column to 165pt and automatically scales row heights, preventing text bleed across adjacent columns.
+- **Status Watermarking:** Document background features a centered 45-degree translucent watermark overlay (`DISPENSED` in red `#EF4444` or `COMPLETED` in teal `#0D9488`) to clearly communicate clinical prescription status at a glance.

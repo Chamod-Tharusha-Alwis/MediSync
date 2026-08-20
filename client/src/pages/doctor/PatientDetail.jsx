@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -15,19 +15,29 @@ import Skeleton from '../../components/ui/Skeleton';
 import StatusBadge from '../../components/ui/StatusBadge';
 import OtpInput from '../../components/ui/OtpInput';
 import Modal from '../../components/ui/Modal';
+import LabDetailModal from '../../components/common/LabDetailModal';
+
+import { usePatientAccess } from '../../context/PatientAccessContext';
 
 const DoctorPatientDetail = () => {
   const { nic } = useParams();
   const navigate = useNavigate();
+  const { getPatientToken, setPatientSession } = usePatientAccess();
+
   const [patient, setPatient] = useState(null);
   const [events, setEvents] = useState([]);
   const [tests, setTests] = useState([]);
+  const [prescriptionsList, setPrescriptionsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('history');
   
   // OTP & Access Tokens
   const [showOtp, setShowOtp] = useState(true);
   const [patientToken, setPatientToken] = useState('');
+
+  // Lab Detail Modal State
+  const [selectedLabTest, setSelectedLabTest] = useState(null);
+  const [isLabModalOpen, setIsLabModalOpen] = useState(false);
 
   // Report Download Flow
   const [showDownloadOtpModal, setShowDownloadOtpModal] = useState(false);
@@ -36,26 +46,23 @@ const DoctorPatientDetail = () => {
   const [targetLabTestId, setTargetLabTestId] = useState(null);
   const [requestingOtp, setRequestingOtp] = useState(false);
 
-  const menuItems = [
-    { label: 'Dashboard', path: '/doctor/dashboard', icon: LayoutDashboard, end: true },
-    { label: 'New Consultation', path: '/doctor/consultation/new', icon: Plus },
-    { label: 'Patient Directory', path: '/doctor/patients', icon: Users },
-  ];
-
-  const fetchRecords = async (token) => {
+  const fetchRecords = useCallback(async (token) => {
     try {
       setLoading(true);
       const headers = { 'x-patient-access': token };
       
-      const [patientRes, timelineRes, testsRes] = await Promise.all([
+      const [patientRes, timelineRes, testsRes, rxRes] = await Promise.all([
         axiosInstance.get(`/patient/${nic}`, { headers }),
         axiosInstance.get(`/patient/${nic}/timeline`, { headers }),
-        axiosInstance.get(`/tests/patient/${nic}`, { headers })
+        axiosInstance.get(`/tests/patient/${nic}`, { headers }),
+        axiosInstance.get(`/patient/${nic}/prescriptions`, { headers }).catch(() => ({ data: { data: [] } }))
       ]);
       
       setPatient(patientRes.data.data);
       setEvents(timelineRes.data.data);
       setTests(testsRes.data.data || []);
+      setPrescriptionsList(rxRes.data.data || []);
+      setPatientSession({ nic, patientName: patientRes.data.data?.fullName || nic, token });
       
     } catch (err) {
       console.error('fetchRecords failed:', err);
@@ -63,11 +70,26 @@ const DoctorPatientDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [nic, setPatientSession]);
+
+  useEffect(() => {
+    const activeToken = getPatientToken(nic);
+    if (activeToken) {
+      setShowOtp(false);
+      setPatientToken(activeToken);
+      fetchRecords(activeToken);
+    }
+  }, [nic, getPatientToken, fetchRecords]);
+
+  const menuItems = [
+    { label: 'Dashboard', path: '/doctor/dashboard', icon: LayoutDashboard, end: true },
+    { label: 'New Consultation', path: '/doctor/consultation/new', icon: Plus },
+  ];
 
   const handleOtpSuccess = (token) => {
     setShowOtp(false);
     setPatientToken(token);
+    setPatientSession({ nic, patientName: nic, token });
     fetchRecords(token);
   };
 
@@ -253,6 +275,14 @@ const DoctorPatientDetail = () => {
                   <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> Medical History</div>
                 </button>
                 <button
+                  onClick={() => setActiveTab('medications')}
+                  className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === 'medications' ? 'border-teal-500 text-teal-400' : 'border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2"><Plus className="w-4 h-4" /> Medication History ({prescriptionsList.length})</div>
+                </button>
+                <button
                   onClick={() => setActiveTab('labs')}
                   className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
                     activeTab === 'labs' ? 'border-teal-500 text-teal-400' : 'border-transparent text-slate-400 hover:text-white'
@@ -281,6 +311,45 @@ const DoctorPatientDetail = () => {
                   </motion.div>
                 )}
 
+                {activeTab === 'medications' && (
+                  <motion.div key="medications" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
+                      <h2 className="text-xl font-bold text-white mb-6">Prescription & Medication History</h2>
+                      {prescriptionsList.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500 border border-dashed border-white/5 rounded-xl">
+                          <Activity className="w-10 h-10 mx-auto mb-3 opacity-50 text-teal-400" />
+                          No previous prescriptions recorded for this patient.
+                        </div>
+                      ) : (
+                        <div className="grid gap-4">
+                          {prescriptionsList.map(rx => (
+                            <div key={rx._id} className="bg-slate-900/40 border border-white/5 rounded-xl p-5 hover:border-teal-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-white text-base">{rx.drugName || rx.medications?.[0]?.name || 'Prescription Medication'}</h3>
+                                  <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-bold uppercase">
+                                    {rx.status || 'Active'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-300">
+                                  <strong>Dosage:</strong> {rx.dosage || rx.medications?.[0]?.dosage || 'N/A'} | <strong>Frequency:</strong> {rx.frequency || rx.medications?.[0]?.frequency || 'N/A'} | <strong>Duration:</strong> {rx.durationDays ? `${rx.durationDays} Days` : 'N/A'}
+                                </p>
+                                {rx.instructions && (
+                                  <p className="text-xs text-slate-400 italic">"{rx.instructions}"</p>
+                                )}
+                              </div>
+                              <div className="text-left md:text-right border-t md:border-t-0 pt-3 md:pt-0 border-white/5">
+                                <p className="text-xs font-semibold text-slate-300">Dr. {rx.doctorId?.fullName || 'Prescribing Doctor'}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{new Date(rx.issuedAt || rx.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
                 {activeTab === 'labs' && (
                   <motion.div key="labs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
@@ -293,26 +362,36 @@ const DoctorPatientDetail = () => {
                       ) : (
                         <div className="grid gap-4 md:grid-cols-2">
                           {tests.map(test => (
-                            <div key={test._id} className="bg-slate-900/40 border border-white/5 rounded-xl p-5 hover:border-teal-500/20 transition-all">
+                            <div
+                              key={test._id}
+                              onClick={() => { setSelectedLabTest(test); setIsLabModalOpen(true); }}
+                              className="bg-slate-900/40 border border-white/5 rounded-xl p-5 hover:border-teal-500/30 cursor-pointer transition-all hover:scale-[1.01]"
+                            >
                               <div className="flex justify-between items-start mb-3">
                                 <div>
-                                  <h3 className="font-bold text-white">{test.testName}</h3>
+                                  <h3 className="font-bold text-white flex items-center gap-2">
+                                    <FlaskConical className="w-4 h-4 text-purple-400" />
+                                    {test.testName}
+                                  </h3>
                                   <p className="text-xs text-slate-400 mt-1">Ordered: {new Date(test.createdAt).toLocaleDateString()}</p>
                                 </div>
                                 <StatusBadge status={test.status} />
                               </div>
                               <p className="text-sm text-slate-300 mb-4 line-clamp-2">{test.instructions || 'No special instructions'}</p>
                               
-                              {test.status === 'report_ready' && test.labTestId && (
-                                <button 
-                                  onClick={() => handleRequestDownloadOtp(test.labTestId)}
-                                  disabled={requestingOtp || isDownloading}
-                                  className="inline-flex items-center gap-2 text-sm text-teal-400 hover:text-teal-300 font-bold underline transition-colors disabled:opacity-50"
-                                >
-                                  {requestingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                                  Authorize & Download PDF
-                                </button>
-                              )}
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-purple-400 font-semibold underline">View Test Details & Findings →</span>
+                                {test.status === 'report_ready' && test.labTestId && (
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleRequestDownloadOtp(test.labTestId); }}
+                                    disabled={requestingOtp || isDownloading}
+                                    className="inline-flex items-center gap-2 text-sm text-teal-400 hover:text-teal-300 font-bold underline transition-colors disabled:opacity-50 ml-auto"
+                                  >
+                                    {requestingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                    Authorize & Download PDF
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -323,6 +402,14 @@ const DoctorPatientDetail = () => {
               </AnimatePresence>
             </>
           )}
+
+          {/* Interactive Lab Details Modal */}
+          <LabDetailModal
+            isOpen={isLabModalOpen}
+            onClose={() => setIsLabModalOpen(false)}
+            labTest={selectedLabTest}
+            onDownload={(reportId) => handleRequestDownloadOtp(reportId || selectedLabTest?.labTestId || selectedLabTest?._id)}
+          />
 
           {/* Secure OTP Gated Download Modal */}
           <Modal

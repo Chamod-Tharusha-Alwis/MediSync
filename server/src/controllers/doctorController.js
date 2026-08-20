@@ -38,15 +38,30 @@ exports.getProfile = async (req, res) => {
 
 exports.updateDoctorProfile = async (req, res) => {
   try {
-    const { fullName, specialization, contactNumber, personalEmail, clinicAddress } = req.body;
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.user.id,
-      { $set: { fullName, specialization, contactNumber, personalEmail, clinicAddress } },
-      { returnDocument: 'after' }
-    ).select('-password -otpSecret');
-    
+    const doctor = await Doctor.findById(req.user.id);
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
-    return res.json({ message: 'Profile updated', data: doctor });
+
+    // Hospital-login doctors cannot edit profile fields directly (only password via /api/auth/change-password)
+    if (doctor.loginType === 'hospital') {
+      return res.status(403).json({
+        error: 'Hospital-login doctors cannot edit professional profile fields. Please contact your Hospital Administrator.'
+      });
+    }
+
+    const { fullName, specialization, contactNumber, personalEmail, clinicAddress } = req.body;
+    if (fullName) doctor.fullName = fullName;
+    if (specialization) doctor.specialization = specialization;
+    if (contactNumber) doctor.contactNumber = contactNumber;
+    if (personalEmail) doctor.personalEmail = personalEmail;
+    if (clinicAddress) doctor.clinicAddress = clinicAddress;
+
+    await doctor.save();
+    
+    const updated = doctor.toObject();
+    delete updated.password;
+    delete updated.otpSecret;
+
+    return res.json({ message: 'Profile updated', data: updated });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to update profile', details: error.message });
   }
@@ -238,6 +253,8 @@ exports.createConsultation = async (req, res) => {
           patientNic: patientNic,
           patientNic_bi: hashedNic,
           patientId: patient._id,
+          patientName: patient.fullName || patient.name,
+          patientEmail: patient.email,
           referredBy: req.user.id,
           testName: name.trim(),
           testCategory: 'Other',

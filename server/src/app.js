@@ -5,11 +5,12 @@ require('dotenv').config();
 // Internal requires (routes, db, cronJobs) are deferred inside startServer()
 // so they NEVER run before global.ENCRYPTION_KEY is set by initializeVault().
 // ---------------------------------------------------------------------------
-const express    = require('express');
-const helmet     = require('helmet');
-const cors       = require('cors');
-const cookieParser = require('cookie-parser');
-const rateLimit  = require('express-rate-limit');
+const express        = require('express');
+const helmet         = require('helmet');
+const cors           = require('cors');
+const cookieParser   = require('cookie-parser');
+const rateLimit      = require('express-rate-limit');
+const mongoSanitize  = require('express-mongo-sanitize');
 const http       = require('http');
 const { Server } = require('socket.io');
 const nodeVault  = require('node-vault');
@@ -32,6 +33,16 @@ const nodeVault  = require('node-vault');
  * Falls back to process.env.ENCRYPTION_KEY when Vault is unreachable.
  */
 async function initializeVault() {
+  if (process.env.VAULT_TOKEN === 'bypass') {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('[FATAL] Vault bypass is only allowed in NODE_ENV=test.');
+      process.exit(1);
+    }
+    global.ENCRYPTION_KEY = 'medisync-secure-key-123456789012';
+    console.log('[Vault] Bypassed (test mode). Using dummy key.');
+    return;
+  }
+
   const vault = nodeVault({
     apiVersion: 'v1',
     endpoint: 'http://127.0.0.1:8200',
@@ -206,8 +217,38 @@ async function startServer() {
       credentials: true,
     })
   );
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
+
+  // Express 5 compatible MongoDB operator sanitizer (mutates req.body/query/params in-place)
+  const sanitizeInPlace = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      for (let i = 0; i < obj.length; i++) {
+        if (typeof obj[i] === 'object' && obj[i] !== null) {
+          sanitizeInPlace(obj[i]);
+        }
+      }
+      return;
+    }
+    for (const key of Object.keys(obj)) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete obj[key];
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        sanitizeInPlace(obj[key]);
+        if (Object.keys(obj[key]).length === 0) {
+          delete obj[key];
+        }
+      }
+    }
+  };
+
+  app.use((req, res, next) => {
+    if (req.body) sanitizeInPlace(req.body);
+    if (req.params) sanitizeInPlace(req.params);
+    if (req.query) sanitizeInPlace(req.query);
+    next();
+  });
 
   // Rate limiting: strict in production, relaxed in development
   const authLimiter = rateLimit({
@@ -235,8 +276,8 @@ async function startServer() {
   app.use('/api/lab',                  require('./routes/labRoutes'));
   app.use('/api/notifications',        require('./routes/notificationRoutes'));
   app.use('/api/users',                require('./routes/userRoutes'));
-  app.use('/api/reviews',              require('./routes/reviewRoutes'));
   app.use('/api/support',              require('./routes/supportRoutes'));
+  app.use('/api/devices',              require('./routes/deviceRoutes'));
 
   // 404 handler
   app.use((req, res) => {
@@ -245,15 +286,38 @@ async function startServer() {
 
   // Global error handler
   app.use((err, req, res, next) => {
+    if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
+      return res.status(413).json({ error: 'Payload too large', message: 'Request entity too large' });
+    }
+    if (err.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid data format', details: err.message });
+    }
     console.error('Unhandled Error:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(err.status || err.statusCode || 500).json({ error: 'Internal server error', details: err.message });
   });
+
+  // ── Step 7: Wait for ML Engine to be ready ──────────────────────────────
+  const axios = require('axios');
+  const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+  console.log('[Server] Waiting for ML Engine to initialize...');
+  let mlReady = false;
+  while (!mlReady) {
+    try {
+      const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 2000 });
+      if (resp.status === 200) {
+        mlReady = true;
+        console.log('[Server] ML Engine is fully ready.');
+      }
+    } catch (err) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
 
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
 }
 
 startServer().catch((err) => {
-  console.error('[FATAL] Server failed to start:', err.message);
+  console.error('[FATAL] Server failed to start:', err.stack);
   process.exit(1);
 });

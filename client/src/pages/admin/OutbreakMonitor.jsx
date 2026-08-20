@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
-  TrendingUp, MapPin, ShieldAlert, Radio
+  TrendingUp, MapPin, ShieldAlert, Radio, X
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import api from '../../api/axiosInstance';
@@ -49,6 +49,9 @@ const OutbreakMonitor = () => {
   const [detecting,   setDetecting]   = useState(false);
   const [countdown,   setCountdown]   = useState('');
   const [error,       setError]       = useState(null);
+  
+  // New workflow state
+  const [approveModal, setApproveModal] = useState({ isOpen: false, alertId: null, scope: 'none' });
 
   useEffect(() => {
     const tick = () => {
@@ -116,6 +119,33 @@ const OutbreakMonitor = () => {
         : a
       ));
     } catch (err) { toast.error(err.response?.data?.error || 'Verification failed'); }
+  };
+
+  const handleApproveAlert = async () => {
+    try {
+      const res = await api.put(`/admin/outbreak/${approveModal.alertId}/approve`, { emailScope: approveModal.scope });
+      toast.success(res.data.message || 'Alert approved');
+      setAlerts(prev => prev.map(a => a._id === approveModal.alertId
+        ? { ...a, status: 'Active', emailScope: approveModal.scope }
+        : a
+      ));
+      setApproveModal({ isOpen: false, alertId: null, scope: 'none' });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Approval failed');
+    }
+  };
+
+  const handleResolveAlert = async (id, action) => {
+    try {
+      const res = await api.put(`/admin/outbreak/${id}/resolve`, { action });
+      toast.success(res.data.message || `Alert ${action}ed`);
+      setAlerts(prev => prev.map(a => a._id === id
+        ? { ...a, status: action === 'dismiss' ? 'Dismissed' : 'Resolved' }
+        : a
+      ));
+    } catch (err) {
+      toast.error(err.response?.data?.error || `Failed to ${action} alert`);
+    }
   };
 
   if (loading) return (
@@ -359,7 +389,22 @@ const OutbreakMonitor = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {alert.feedbackStatus === 'confirmed' ? (
+                        {alert.status === 'Pending' ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setApproveModal({ isOpen: true, alertId: alert._id, scope: 'none' })}
+                              className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold rounded-lg border border-amber-500/25 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleResolveAlert(alert._id, 'dismiss')}
+                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg border border-white/5 transition-all"
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                        ) : alert.feedbackStatus === 'confirmed' ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl select-none">
                             Confirmed
                           </span>
@@ -381,6 +426,12 @@ const OutbreakMonitor = () => {
                             >
                               False Alarm
                             </button>
+                            <button
+                              onClick={() => handleResolveAlert(alert._id, 'resolve')}
+                              className="px-3 py-1 bg-blue-600/50 hover:bg-blue-500 text-white text-[10px] font-bold rounded-lg border border-blue-500/25 transition-all"
+                            >
+                              Resolve
+                            </button>
                           </div>
                         )}
                       </td>
@@ -400,6 +451,68 @@ const OutbreakMonitor = () => {
           </div>
         )}
       </div>
+
+      {/* Approval Modal */}
+      {approveModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+          >
+            <button
+              onClick={() => setApproveModal({ isOpen: false, alertId: null, scope: 'none' })}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-amber-400" /> Approve Outbreak Alert
+            </h2>
+            <p className="text-sm text-slate-400 mb-6">Select the scope for email notifications. This will immediately alert users in the selected region.</p>
+            
+            <div className="space-y-3 mb-6">
+              {[
+                { id: 'none', label: 'No Emails (Dashboard Only)', desc: 'Silently mark as active.' },
+                { id: 'district', label: 'District Only', desc: 'Email patients and staff in the affected district.' },
+                { id: 'national', label: 'Nationwide', desc: 'Email all users across the country.' }
+              ].map(opt => (
+                <label key={opt.id} className={`block p-3 rounded-xl border cursor-pointer transition-all ${approveModal.scope === opt.id ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-950/50 border-white/5 hover:border-white/20'}`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="emailScope"
+                      value={opt.id}
+                      checked={approveModal.scope === opt.id}
+                      onChange={(e) => setApproveModal(prev => ({ ...prev, scope: e.target.value }))}
+                      className="w-4 h-4 accent-amber-500"
+                    />
+                    <div>
+                      <div className={`text-sm font-bold ${approveModal.scope === opt.id ? 'text-amber-400' : 'text-slate-300'}`}>{opt.label}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{opt.desc}</div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setApproveModal({ isOpen: false, alertId: null, scope: 'none' })}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApproveAlert}
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+              >
+                Confirm Approval
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </PageTransition>
   );
 };

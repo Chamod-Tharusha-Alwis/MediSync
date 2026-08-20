@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file BEFORE doing anything else
+load_dotenv()
 import json
 import sqlite3
 import hmac
@@ -54,6 +58,10 @@ def init_db():
         )
     ''')
     c.execute('''
+        CREATE INDEX IF NOT EXISTS idx_outbreak_date_dist_dis 
+        ON outbreak_tracking(date, district, disease)
+    ''')
+    c.execute('''
         CREATE TABLE IF NOT EXISTS outbreak_feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             disease TEXT,
@@ -67,12 +75,56 @@ def init_db():
 
 init_db()
 
+symptom_data = []
 try:
-    with open(os.path.join(data_dir, 'symptom_map.json'), 'r', encoding='utf-8') as f:
-        symptom_data = json.load(f)
-    print("Loaded symptom_map.json")
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute("SELECT disease_name, icd_code, avg_severity, base_danger_level FROM icd10_diseases")
+    rows = c.fetchall()
+    for row in rows:
+        d_name = row[0] or "Unknown"
+        symptom_data.append({
+            "disease": d_name,
+            "icd_code": row[1] or "",
+            "avg_severity": float(row[2] or 5.0),
+            "base_danger_level": row[3] or "Medium",
+            "symptoms": [d_name], # Use disease name as the "symptom" for TF-IDF matching
+            "description": f"71k DB Matched Condition: {d_name}",
+            "precautions": ["Consult a doctor for accurate diagnosis and treatment."]
+        })
+    conn.close()
+    print(f"Loaded {len(symptom_data)} diseases from icd10_diseases SQLite table")
 except Exception as e:
-    print("Warning: Could not load symptom_map.json:", e)
+    print("Warning: Could not load diseases from SQLite:", e)
+
+DISEASE_DANGER_MAP = {}
+if 'symptom_data' in locals() and symptom_data:
+    for item in symptom_data:
+        d_name = item.get('disease', '').strip()
+        if d_name:
+            DISEASE_DANGER_MAP[d_name.lower()] = item.get('base_danger_level', 'Medium')
+
+def get_disease_danger_level(disease_name):
+    if not disease_name:
+        return 'Medium'
+    d_clean = str(disease_name).strip()
+    if d_clean.lower() in DISEASE_DANGER_MAP:
+        return DISEASE_DANGER_MAP[d_clean.lower()]
+    try:
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("SELECT base_danger_level FROM icd10_diseases WHERE LOWER(disease_name) = ? LIMIT 1", (d_clean.lower(),))
+        row = c.fetchone()
+        if not row or not row[0]:
+            c.execute("SELECT base_danger_level FROM icd10_diseases WHERE LOWER(disease_name) LIKE ? ORDER BY CASE WHEN base_danger_level = 'High' THEN 1 WHEN base_danger_level = 'Medium' THEN 2 ELSE 3 END LIMIT 1", (f"%{d_clean.lower()}%",))
+            row = c.fetchone()
+        conn.close()
+        if row and row[0]:
+            return row[0]
+    except Exception as e:
+        pass
+    return 'Medium'
+
 
 try:
     with open(os.path.join(data_dir, 'interactions_clean.json'), 'r', encoding='utf-8') as f:
@@ -304,6 +356,84 @@ else:
     historical_df = None
 
 
+def calculate_outbreak_metrics(current_cases, baseline, disease=None, base_danger_level=None):
+    """
+    Weighted Risk & Anomaly System reconciling admin-triggered scan and real-time analysis routes:
+    - Resolves danger level ('High', 'Medium', 'Low') for the disease.
+    - Low Danger diseases (like Common Cold) require >100 cases and a >800% spike to trigger a capped 'Medium' alert.
+    - Medium Danger diseases require >30 cases and >300% spike.
+    - High Danger diseases keep strict >10 cases and >150% spike rules.
+    """
+    current_cases = int(current_cases or 0)
+    baseline = float(baseline or 0)
+    
+    danger_level = base_danger_level or get_disease_danger_level(disease)
+    
+    if baseline > 0:
+        spike_percentage = round(((current_cases - baseline) / baseline) * 100)
+    else:
+        spike_percentage = 999 if current_cases > 0 else 0
+        
+    is_anomaly = False
+    severity = 'low'
+    risk_level = 'Normal'
+    
+    if danger_level == 'Low':
+        # Low Danger: e.g. Common Cold, Allergies, Skin Rashes
+        # Requires >100 cases and >=800% spike
+        if current_cases > 100 and (spike_percentage >= 800 or (baseline == 0 and current_cases > 100)):
+            is_anomaly = True
+            # Capped Alert Level: Never allow 'high' / 'High' for Low Danger diseases
+            severity = 'medium'
+            risk_level = 'Medium'
+        elif spike_percentage >= 300 and current_cases > 50:
+            severity = 'low'
+            risk_level = 'Low'
+            
+    elif danger_level == 'Medium':
+        # Medium Danger: e.g. Gastroenteritis, General digestive/systemic
+        # Requires >30 cases and >=300% spike
+        if current_cases > 30 and (spike_percentage >= 300 or (baseline == 0 and current_cases > 30)):
+            is_anomaly = True
+            if spike_percentage >= 600 or baseline == 0:
+                severity = 'high'
+                risk_level = 'High'
+            else:
+                severity = 'medium'
+                risk_level = 'Medium'
+        elif spike_percentage >= 150 and current_cases > 15:
+            severity = 'low'
+            risk_level = 'Low'
+            
+    else:
+        # High Danger (Default/Strict): e.g. Dengue, Cholera, Malaria, TB, AIDS, Pneumonia
+        # Strict >10 cases and >=150% spike
+        if current_cases > 10 and (spike_percentage >= 150 or (baseline == 0 and current_cases > 10)):
+            is_anomaly = True
+            if spike_percentage >= 600 or baseline == 0:
+                severity = 'high'
+                risk_level = 'High'
+            elif spike_percentage >= 300:
+                severity = 'medium'
+                risk_level = 'Medium'
+            else:
+                severity = 'low'
+                risk_level = 'Low'
+        elif spike_percentage >= 100 and current_cases > 5:
+            severity = 'low'
+            risk_level = 'Low'
+            
+    return {
+        "anomaly": is_anomaly,
+        "severity": severity,
+        "risk_level": risk_level,
+        "spike_percentage": spike_percentage,
+        "latest_actual": current_cases,
+        "baseline": baseline,
+        "danger_level": danger_level
+    }
+
+
 @app.route('/api/admin/outbreak/trigger', methods=['POST'])
 @require_internal_auth
 def predict_outbreak():
@@ -325,27 +455,20 @@ def predict_outbreak():
                 
             disease = item.get('disease', 'Unknown')
             district = item.get('district', 'Unknown')
-            current_cases = int(item.get('last_7_days_count', 0))
-            baseline = int(item.get('previous_baseline_avg', 0))
+            current_cases = int(item.get('last_7_days_count', 0) or item.get('count', 0))
+            baseline = float(item.get('previous_baseline_avg', 0) or item.get('baseline', 0))
             
-            anomaly = False
-            severity = 'low'
-            
-            # Heuristic Anomaly Detection
-            if current_cases > (baseline * 1.5) and current_cases > 10:
-                anomaly = True
-                severity = 'high'
-            elif current_cases > (baseline * 1.2) and current_cases > 5:
-                anomaly = True
-                severity = 'medium'
+            metrics = calculate_outbreak_metrics(current_cases, baseline, disease=disease)
                 
             results.append({
                 "disease": disease,
                 "district": district,
-                "anomaly": anomaly,
-                "severity": severity,
-                "latest_actual": current_cases,
-                "baseline": baseline
+                "anomaly": metrics["anomaly"],
+                "severity": metrics["severity"],
+                "risk_level": metrics["risk_level"],
+                "spike_percentage": metrics["spike_percentage"],
+                "latest_actual": metrics["latest_actual"],
+                "baseline": metrics["baseline"]
             })
             
         return jsonify({"results": results})
@@ -510,53 +633,31 @@ def analyze_realtime():
             last_7_days_count    = int(record.get('last_7_days_count', 0))
             previous_baseline_avg = float(record.get('previous_baseline_avg', 0))
 
-            # Outbreak threshold: >10 cases AND >= 3× baseline (300% spike)
-            is_outbreak = (
-                last_7_days_count > 10 and
-                previous_baseline_avg > 0 and
-                last_7_days_count >= previous_baseline_avg * 3
-            )
+            metrics = calculate_outbreak_metrics(last_7_days_count, previous_baseline_avg, disease=disease)
 
-            # Also flag if baseline is 0 but recent count is high (new disease surge)
-            if not is_outbreak and previous_baseline_avg == 0 and last_7_days_count > 10:
-                is_outbreak = True
-
-            if is_outbreak:
-                if previous_baseline_avg > 0:
-                    pct = round(((last_7_days_count - previous_baseline_avg) / previous_baseline_avg) * 100)
-                else:
-                    pct = 999  # new surge with no baseline
-
+            if metrics["anomaly"]:
+                pct = metrics["spike_percentage"]
                 findings.append({
                     'anomaly': True,
                     'disease': disease,
                     'district': district,
-                    'last_7_days_count': last_7_days_count,
-                    'previous_baseline_avg': previous_baseline_avg,
+                    'last_7_days_count': metrics["latest_actual"],
+                    'previous_baseline_avg': metrics["baseline"],
                     'spike_percentage': pct,
+                    'severity': metrics["severity"],
+                    'risk_level': metrics["risk_level"],
                     'message': (
                         f"OUTBREAK DETECTED: {disease} in {district}. "
-                        f"Cases this week: {last_7_days_count} "
-                        f"(+{pct}% vs baseline of {previous_baseline_avg:.1f}/week)."
+                        f"Cases this week: {metrics['latest_actual']} "
+                        f"(+{pct}% vs baseline of {metrics['baseline']:.1f}/week)."
                     )
                 })
 
         if findings:
             # Return the most severe finding (highest spike)
-            worst = max(findings, key=lambda x: x['spike_percentage'])
+            worst = max(findings, key=lambda x: x['spike_percentage']).copy()
             worst['all_outbreaks'] = findings
-            worst['model'] = 'Real-time DB Aggregation + Threshold Analysis'
-
-            worst_spike = worst['spike_percentage']
-            if worst_spike < 150:
-                worst['risk_level'] = 'Normal'
-            elif worst_spike < 300:
-                worst['risk_level'] = 'Low'
-            elif worst_spike < 600:
-                worst['risk_level'] = 'Medium'
-            else:
-                worst['risk_level'] = 'High'
-
+            worst['model'] = 'Real-time DB Aggregation + Unified Threshold Analysis'
             return jsonify(worst)
 
         return jsonify({
@@ -740,6 +841,118 @@ def decrypt_pdf():
     except Exception as e:
         print(f'[Lab] decrypt_pdf error: {e}')
         return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/api/internal/search-diseases', methods=['GET'])
+@require_internal_auth
+def search_diseases():
+    try:
+        q = request.args.get('q', '').strip().lower()
+        if not q:
+            return jsonify({"results": []})
+            
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("SELECT disease_name FROM icd10_diseases WHERE LOWER(disease_name) LIKE ? ORDER BY CASE WHEN base_danger_level = 'High' THEN 1 WHEN base_danger_level = 'Medium' THEN 2 ELSE 3 END LIMIT 20", (f"%{q}%",))
+        rows = c.fetchall()
+        conn.close()
+        
+        results = [row[0] for row in rows]
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/internal/health-stats', methods=['GET'])
+@require_internal_auth
+def get_health_stats():
+    try:
+        range_days = request.args.get('rangeDays', 30, type=int)
+        district = request.args.get('district', 'all')
+        disease = request.args.get('disease', 'all')
+        
+        # Calculate date range
+        start_date = (datetime.now() - timedelta(days=range_days)).strftime('%Y-%m-%d')
+        
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        base_where = "date >= ?"
+        params = [start_date]
+        
+        if district != 'all':
+            base_where += " AND district = ?"
+            params.append(district)
+            
+        if disease != 'all':
+            base_where += " AND disease = ?"
+            params.append(disease)
+            
+        start_time = datetime.now()
+        
+        # 1. Total cases
+        c.execute(f"SELECT SUM(count) as total FROM outbreak_tracking WHERE {base_where}", params)
+        total_cases = c.fetchone()['total'] or 0
+        
+        # 2. Trend (group by date)
+        c.execute(f"SELECT date, SUM(count) as count FROM outbreak_tracking WHERE {base_where} GROUP BY date ORDER BY date ASC", params)
+        trend = [{"date": row['date'], "count": row['count']} for row in c.fetchall()]
+        
+        # 3. By Disease (Top 50 limit)
+        c.execute(f"SELECT disease, SUM(count) as totalCases FROM outbreak_tracking WHERE {base_where} GROUP BY disease ORDER BY totalCases DESC LIMIT 50", params)
+        by_disease = [{"disease": row['disease'], "totalCases": row['totalCases']} for row in c.fetchall()]
+        
+        # 4. By District (Total and Top disease per district using Window Functions)
+        c.execute(f"SELECT district, SUM(count) as totalCases FROM outbreak_tracking WHERE {base_where} GROUP BY district ORDER BY totalCases DESC", params)
+        district_totals = {row['district']: row['totalCases'] for row in c.fetchall()}
+        
+        c.execute(f"""
+            SELECT district, disease
+            FROM (
+                SELECT district, disease, SUM(count) as totalCases,
+                       ROW_NUMBER() OVER(PARTITION BY district ORDER BY SUM(count) DESC) as rn
+                FROM outbreak_tracking 
+                WHERE {base_where}
+                GROUP BY district, disease
+            )
+            WHERE rn = 1
+        """, params)
+        top_diseases = {row['district']: row['disease'] for row in c.fetchall()}
+        
+        by_district = []
+        for dist, total in district_totals.items():
+            if total < 5:
+                continue
+            by_district.append({
+                "district": dist,
+                "totalCases": total,
+                "topDisease": top_diseases.get(dist, "Unknown")
+            })
+            
+        print(f"[health-stats] 4 optimized SQL queries took: {(datetime.now() - start_time).total_seconds() * 1000:.2f} ms")
+        conn.close()
+        
+        return jsonify({
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+            "rangeDays": range_days,
+            "totalCases": total_cases,
+            "byDistrict": by_district,
+            "byDisease": by_disease,
+            "trend": trend
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Returns 200 once Flask has fully loaded all data and initialized models."""
+    return jsonify({'status': 'ready'}), 200
 
 
 if __name__ == '__main__':

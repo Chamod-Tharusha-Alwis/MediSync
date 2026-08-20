@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, ArrowLeft, Users, Building2, Pill } from 'lucide-react';
+import { Activity, ArrowLeft, Users, Building2, Pill, Map } from 'lucide-react';
 
 const PublicNavbar = () => {
   const location = useLocation();
@@ -12,6 +12,7 @@ const PublicNavbar = () => {
     { name: 'Doctors', path: '/doctors', icon: Users },
     { name: 'Hospitals', path: '/hospitals', icon: Building2 },
     { name: 'Pharmacies', path: '/pharmacies', icon: Pill },
+    { name: 'Public Health', path: '/public-health', icon: Map },
   ];
 
   return (

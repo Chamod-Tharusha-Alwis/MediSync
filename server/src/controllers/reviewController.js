@@ -21,6 +21,11 @@ exports.submitReview = async (req, res) => {
     // Do not decrypt or store patient name to protect PII
     let reviewerName = 'Verified Patient';
 
+    // Sanitize comment string against HTML/Script injection
+    const sanitizedComment = typeof comment === 'string' 
+      ? comment.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim() 
+      : '';
+
     // Save the review
     const review = new Review({
       reviewerId,
@@ -28,7 +33,7 @@ exports.submitReview = async (req, res) => {
       targetId,
       targetModel,
       rating,
-      comment,
+      comment: sanitizedComment,
       consultationId
     });
     await review.save();

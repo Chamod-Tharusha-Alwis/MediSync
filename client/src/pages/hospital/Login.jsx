@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Building, Loader2 } from 'lucide-react';
+import { Mail, Lock, Building} from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import LoginShell from '../../components/common/LoginShell';
