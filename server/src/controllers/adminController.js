@@ -368,10 +368,50 @@ exports.getUserAuditProfile = async (req, res) => {
     const auditLogs = await AuditLog.find({ actorId: userId }).sort({ timestamp: -1 }).limit(200).lean();
 
     // Fetch registered/trusted devices
-    const devices = await TrustedDevice.find({ userId }).sort({ lastSeenAt: -1 }).lean();
+    const trustedDevices = await TrustedDevice.find({ userId }).sort({ lastSeenAt: -1 }).lean();
+    const deviceMap = new Map();
+
+    trustedDevices.forEach(d => {
+      if (d.deviceFingerprint) {
+        deviceMap.set(d.deviceFingerprint, {
+          _id: d._id,
+          deviceLabel: d.deviceLabel || d.deviceModel || 'Known Device',
+          deviceModel: d.deviceModel || 'Unknown Device',
+          deviceFingerprint: d.deviceFingerprint,
+          isTrusted: !d.isRevoked,
+          isRevoked: d.isRevoked || false,
+          createdAt: d.trustedAt || d.createdAt,
+          lastSeenAt: d.lastSeenAt || d.updatedAt
+        });
+      }
+    });
 
     // Fetch all sessions (active + past)
     const rawSessions = await SessionToken.find({ userId }).sort({ createdAt: -1 }).limit(100).lean();
+    
+    // Also include any devices seen in sessions that don't have an explicit TrustedDevice row
+    rawSessions.forEach(s => {
+      let resolvedModel = s.deviceModel;
+      if (!resolvedModel || resolvedModel === 'Unknown' || resolvedModel === 'Android device' || resolvedModel === 'Test Device') {
+        if (s.deviceInfo) resolvedModel = parseDeviceModel(s.deviceInfo);
+      }
+
+      if (s.deviceFingerprint && !deviceMap.has(s.deviceFingerprint)) {
+        deviceMap.set(s.deviceFingerprint, {
+          _id: s._id,
+          deviceLabel: resolvedModel || 'Session Device',
+          deviceModel: resolvedModel || 'Unknown Device',
+          deviceFingerprint: s.deviceFingerprint,
+          isTrusted: s.isTrusted || false,
+          isRevoked: false,
+          createdAt: s.createdAt,
+          lastSeenAt: s.lastUsed || s.createdAt
+        });
+      }
+    });
+
+    const devices = Array.from(deviceMap.values()).sort((a, b) => new Date(b.lastSeenAt) - new Date(a.lastSeenAt));
+
     const sessions = rawSessions.map(s => {
       let resolvedModel = s.deviceModel;
       if (!resolvedModel || resolvedModel === 'Unknown' || resolvedModel === 'Android device' || resolvedModel === 'Test Device') {

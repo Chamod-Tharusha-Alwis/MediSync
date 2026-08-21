@@ -216,7 +216,7 @@ const UserAuditProfile = () => {
         </div>
 
         {/* Account Details Sub-Row */}
-        <div className="mt-5 pt-4 border-t border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+        <div className="mt-5 pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Account Created</span>
             <span className="text-slate-300 font-mono text-[11px]">{formatDate(user.createdAt)}</span>
@@ -237,7 +237,7 @@ const UserAuditProfile = () => {
       </div>
 
       {/* ── SUB-TABS NAVIGATION ────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-1">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-1">
         <button
           onClick={() => setActiveSubTab('audit')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${

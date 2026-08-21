@@ -25,18 +25,37 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
   const ua = req.headers['user-agent'] || 'Unknown Device';
   const fingerprint = req.headers['x-device-fingerprint'] || null;
   
-  // Check if this device is trusted
+  const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'] || req.body?.clientDeviceModel;
+  const parsedModel = parseDeviceModel(ua, clientHw);
+
+  // Check and register/update device in TrustedDevice collection
   let isTrusted = false;
   if (fingerprint) {
-    const trusted = await TrustedDevice.findOne({ userId, deviceFingerprint: fingerprint, isRevoked: false });
-    if (trusted) {
-      isTrusted = true;
-      trusted.lastSeenAt = new Date();
-      await trusted.save();
+    const existing = await TrustedDevice.findOne({ userId, deviceFingerprint: fingerprint });
+    if (existing) {
+      isTrusted = !existing.isRevoked;
+      existing.lastSeenAt = new Date();
+      existing.deviceModel = parsedModel;
+      await existing.save();
+    } else {
+      isTrusted = opts.isTrusted !== undefined ? opts.isTrusted : true;
+      try {
+        await TrustedDevice.create({
+          userId,
+          userModel,
+          deviceFingerprint: fingerprint,
+          deviceModel: parsedModel,
+          deviceLabel: parsedModel,
+          deviceInfo: ua,
+          trustedAt: new Date(),
+          lastSeenAt: new Date(),
+          isRevoked: false
+        });
+      } catch (e) {
+        // Ignore duplicate key collision on race condition
+      }
     }
   }
-
-  const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'] || req.body?.clientDeviceModel;
 
   await SessionToken.create({
     userId,
@@ -44,8 +63,8 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
     tokenHash,
     deviceInfo: ua,
     deviceFingerprint: fingerprint,
-    deviceModel: parseDeviceModel(ua, clientHw),
-    isTrusted: opts.isTrusted || isTrusted,
+    deviceModel: parsedModel,
+    isTrusted: opts.isTrusted !== undefined ? opts.isTrusted : isTrusted,
     isValid: true,
     lastUsed: new Date()
   });
@@ -231,14 +250,16 @@ exports.login = async (req, res) => {
 
     // -- LOGIN NOTIFICATION EMAIL --
     try {
-      const emailToSend = modelName === 'Patient' ? user.contactInfo?.email || user.email : user.email;
+      const emailToSend = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
       const idField = user.doctorId || user.nic || user.regNo || user.email;
       const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
-      await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | User: ${name}`);
+      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
     } catch(e) {
-      console.error('Failed to send login notification:', e.message);
+      console.error('[AUTH LOGIN NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);
     }
 
 
@@ -362,14 +383,16 @@ exports.verifyLoginOTP = async (req, res) => {
 
     // -- LOGIN NOTIFICATION EMAIL --
     try {
-      const emailToSend = modelName === 'Patient' ? user.contactInfo?.email || user.email : user.email;
+      const emailToSend = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
       const idField = user.doctorId || user.nic || user.regNo || user.email;
       const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
-      await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      console.log(`[AUTH LOGIN OTP NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | User: ${name}`);
+      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      console.log(`[AUTH LOGIN OTP NOTIFICATION RESULT]`, resNotification);
     } catch(e) {
-      console.error('Failed to send login notification:', e.message);
+      console.error('[AUTH LOGIN OTP NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);
     }
 
 

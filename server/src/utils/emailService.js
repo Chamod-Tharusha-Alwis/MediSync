@@ -35,21 +35,22 @@ if (provider === 'gmail') {
 
 const transporter = nodemailer.createTransport(transportConfig);
 
-// Verify on startup and log result
-transporter.verify((error) => {
-  if (error) {
-    console.warn(`⚠️  Email service (${provider}) SMTP not connected: ${error.message} (HTTPS API will be used for Resend)`);
-  } else {
-    console.log(`✅  Email service configured via ${provider} for user: ${transportConfig.auth?.user}`);
-  }
-});
+// Startup verification
+if (!resendApiKey && provider === 'resend') {
+  console.warn('⚠️  [EMAIL CONFIG WARNING] Neither RESEND_API_KEY nor RESEND_SMTP_PASS is set in environment variables! Outbound emails will fail until configured in Render dashboard.');
+}
 
 /**
  * Internal helper to send email — uses direct Resend HTTPS API when on Resend for maximum cloud delivery speed
  */
 const sendMail = async (options) => {
-  // If provider is resend and we have an API key, use Resend's direct HTTPS API (bypasses port 465 blocks on cloud hosts)
-  if (provider === 'resend' && resendApiKey) {
+  // If provider is resend, use Resend's direct HTTPS API (bypasses port 465 blocks on cloud hosts)
+  if (provider === 'resend') {
+    if (!resendApiKey) {
+      console.error('❌ [EMAIL ERROR] Cannot send email via Resend: RESEND_API_KEY or RESEND_SMTP_PASS is not set in environment variables on this host.');
+      return { success: false, error: 'RESEND_API_KEY missing in environment variables' };
+    }
+
     try {
       const fromFormatted = (options.from || fromAddress).includes('<')
         ? (options.from || fromAddress).match(/<([^>]+)>/)[1]
@@ -85,7 +86,12 @@ const sendMail = async (options) => {
       console.log(`[RESEND HTTPS SUCCESS] Email sent to ${options.to || options.bcc} | ID: ${res.data?.id}`);
       return { messageId: res.data?.id, response: `250 ${res.data?.id}`, ...res.data };
     } catch (apiErr) {
-      console.warn(`[RESEND HTTPS FAILED] Falling back to SMTP transport: ${apiErr.response?.data?.message || apiErr.message}`);
+      const errorMsg = apiErr.response?.data?.message || apiErr.message;
+      console.error(`[RESEND HTTPS ERROR] Status ${apiErr.response?.status || 'N/A'}: ${errorMsg}`);
+      if (apiErr.response?.data) {
+        console.error('[RESEND RESPONSE DATA]:', JSON.stringify(apiErr.response.data));
+      }
+      throw new Error(`Resend API Error: ${errorMsg}`);
     }
   }
 
