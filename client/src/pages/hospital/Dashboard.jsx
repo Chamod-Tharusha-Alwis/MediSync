@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   LayoutDashboard, Users, Settings, FlaskConical,
-  Camera, Server, Key, ShieldCheck, Mail, Database, Loader2, Plus, ArrowRight,
+  Camera, Key, Loader2, Plus, ArrowRight,
   TrendingUp, Save
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
@@ -491,37 +491,6 @@ const Overview = ({ stats, labStats, onNavigate }) => {
                 <span className="text-[10px] text-slate-500 mt-1 block">Prescriptions issued: {stats?.prescriptionsToday || 0}</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* System Status Indicators widget */}
-        <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Server className="w-4.5 h-4.5 text-emerald-400" /> System Status Indicators
-          </h3>
-          <div className="space-y-3.5">
-            {[
-              { label: 'Database Connectivity', desc: 'MongoDB Replica Sets status', status: 'Online', icon: Database },
-              { label: 'AES-256 HSM Cryptography', desc: 'Secure report sealing engine', status: 'Active', icon: Key },
-              { label: 'Vault Secret Managers', desc: 'Master key decryption server', status: 'Locked', icon: ShieldCheck },
-              { label: 'Email SMTP Dispatcher', desc: 'Patient notifications queue', status: 'Ready', icon: Mail }
-            ].map(sys => {
-              const Icon = sys.icon;
-              return (
-                <div key={sys.label} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/40 border border-white/5 flex items-center justify-center shrink-0">
-                    <Icon className="w-4.5 h-4.5 text-slate-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-200 truncate">{sys.label}</h4>
-                    <p className="text-[10px] text-slate-500 truncate leading-normal">{sys.desc}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full select-none">
-                    {sys.status}
-                  </span>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>

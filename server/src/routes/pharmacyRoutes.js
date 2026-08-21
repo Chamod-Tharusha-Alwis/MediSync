@@ -42,5 +42,14 @@ router.put('/inventory', pharmacyAuth, pharmacyController.updateInventoryItem);
 router.get('/analytics/restock', pharmacyAuth, pharmacyController.getRestockAnalytics);
 router.post('/predict-restock', pharmacyAuth, pharmacyController.predictRestock);
 router.get('/restock-alerts', pharmacyAuth, pharmacyController.getDistrictRestockAlerts);
+router.post('/seed-restock', pharmacyAuth, async (req, res) => {
+  try {
+    const seedRestock = require('../utils/seedRestockData');
+    const result = await seedRestock();
+    res.json({ message: 'Restock seed data generated successfully', data: result });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to seed restock data', details: err.message });
+  }
+});
 
 module.exports = router;

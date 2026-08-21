@@ -6,6 +6,7 @@ const speakeasy = require('speakeasy');
 const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient');
 const PharmacyStaff = require('../models/PharmacyStaff');
+const Pharmacy = require('../models/Pharmacy');
 const Hospital = require('../models/Hospital');
 const SessionToken = require('../models/SessionToken');
 const OTPSession = require('../models/OTPSession');
@@ -185,39 +186,119 @@ exports.registerPharmacyStaff = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
-    
+    const { email, password, role, loginType } = req.body;
+    const cleanId = (email || '').trim();
+    if (!cleanId || !password) {
+      return res.status(400).json({ error: 'Email/identifier and password are required' });
+    }
+
     let user;
     let modelName;
+    let matchingOrgLogin = null;
 
     if (role === 'doctor') {
-      user = await Doctor.findOne({ email });
+      user = await Doctor.findOne({
+        $or: [
+          { email: new RegExp('^' + cleanId + '$', 'i') },
+          { doctorId: cleanId.toUpperCase() },
+          { 'orgLogins.orgEmail': new RegExp('^' + cleanId + '$', 'i') }
+        ]
+      });
       modelName = 'Doctor';
+      if (user && user.orgLogins) {
+        matchingOrgLogin = user.orgLogins.find(
+          org => org.orgEmail && org.orgEmail.toLowerCase() === cleanId.toLowerCase()
+        );
+      }
     } else if (role === 'patient') {
-      user = await Patient.findOne({ email });
+      user = await Patient.findOne({
+        $or: [
+          { email: new RegExp('^' + cleanId + '$', 'i') },
+          { nic: cleanId.toUpperCase() },
+          { nic: cleanId }
+        ]
+      });
       modelName = 'Patient';
     } else if (role === 'pharmacist' || role === 'pharmacy_admin') {
-      user = await PharmacyStaff.findOne({ email });
+      user = await PharmacyStaff.findOne({
+        email: new RegExp('^' + cleanId + '$', 'i')
+      }).populate('pharmacyId');
       modelName = 'PharmacyStaff';
-    } else if (role === 'hospital_admin' || role === 'admin') {
-      user = await Hospital.findOne({ email });
+    } else if (role === 'hospital_admin' || role === 'hospital') {
+      user = await Hospital.findOne({
+        $or: [
+          { email: new RegExp('^' + cleanId + '$', 'i') },
+          { regNo: cleanId.toUpperCase() }
+        ]
+      });
       modelName = 'Hospital';
-      if (!user) {
-        user = await Admin.findOne({ email, role: { $in: ['admin', 'super_admin'] } });
-        modelName = 'Admin';
-      }
+    } else if (role === 'admin' || role === 'super_admin') {
+      user = await Admin.findOne({
+        email: new RegExp('^' + cleanId + '$', 'i')
+      });
+      modelName = 'Admin';
     } else {
-      // Fallback: try all
-      user = await Doctor.findOne({ email }); modelName = 'Doctor';
-      if (!user) { user = await Patient.findOne({ email }); modelName = 'Patient'; }
-      if (!user) { user = await PharmacyStaff.findOne({ email }); modelName = 'PharmacyStaff'; }
-      if (!user) { user = await Hospital.findOne({ email }); modelName = 'Hospital'; }
-      if (!user) { user = await Admin.findOne({ email }); modelName = 'Admin'; }
+      // Universal fallback across all models
+      user = await Doctor.findOne({
+        $or: [
+          { email: new RegExp('^' + cleanId + '$', 'i') },
+          { doctorId: cleanId.toUpperCase() },
+          { 'orgLogins.orgEmail': new RegExp('^' + cleanId + '$', 'i') }
+        ]
+      });
+      if (user) {
+        modelName = 'Doctor';
+        matchingOrgLogin = user.orgLogins?.find(
+          org => org.orgEmail && org.orgEmail.toLowerCase() === cleanId.toLowerCase()
+        );
+      }
+      if (!user) {
+        user = await Patient.findOne({
+          $or: [
+            { email: new RegExp('^' + cleanId + '$', 'i') },
+            { nic: cleanId.toUpperCase() },
+            { nic: cleanId }
+          ]
+        });
+        if (user) modelName = 'Patient';
+      }
+      if (!user) {
+        user = await PharmacyStaff.findOne({ email: new RegExp('^' + cleanId + '$', 'i') }).populate('pharmacyId');
+        if (user) modelName = 'PharmacyStaff';
+      }
+      if (!user) {
+        user = await Hospital.findOne({
+          $or: [
+            { email: new RegExp('^' + cleanId + '$', 'i') },
+            { regNo: cleanId.toUpperCase() }
+          ]
+        });
+        if (user) modelName = 'Hospital';
+      }
+      if (!user) {
+        user = await Admin.findOne({ email: new RegExp('^' + cleanId + '$', 'i') });
+        if (user) modelName = 'Admin';
+      }
     }
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Password validation (support orgLogin tempPassword / hospital password)
+    let isMatch = false;
+    if (matchingOrgLogin) {
+      if (matchingOrgLogin.tempPassword) {
+        isMatch = await bcrypt.compare(password, matchingOrgLogin.tempPassword);
+      }
+      if (!isMatch && matchingOrgLogin.password) {
+        isMatch = await bcrypt.compare(password, matchingOrgLogin.password);
+      }
+      if (!isMatch) {
+        isMatch = await bcrypt.compare(password, user.password);
+      }
+    } else {
+      isMatch = await bcrypt.compare(password, user.password);
+    }
+
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     if (user.twoFactorEnabled) {
@@ -236,7 +317,8 @@ exports.login = async (req, res) => {
       });
 
       try {
-        await emailService.sendOTPEmail(user.email, user.fullName || user.name || 'User', otp);
+        const destEmail = user.email || user.personalEmail;
+        await emailService.sendOTPEmail(destEmail, user.fullName || user.name || 'User', otp);
       } catch (e) {
         console.error('OTP email failed:', e.message);
       }
@@ -244,8 +326,8 @@ exports.login = async (req, res) => {
       return res.status(200).json({ data: { requiresOTP: true, userId: user._id }, message: "OTP sent to your email" });
     }
 
-    const actualRole = user.role || role;
-    const subId = user.doctorId || user.nic || user._id;
+    const actualRole = user.role || role || (modelName === 'Hospital' ? 'hospital_admin' : (modelName === 'Admin' ? 'admin' : (modelName === 'PharmacyStaff' ? user.role : 'patient')));
+    const subId = user.doctorId || user.nic || user.regNo || user._id;
     const name = user.fullName || user.name || 'User';
 
     const accessToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_SECRET, { expiresIn: '15m' });
@@ -255,6 +337,9 @@ exports.login = async (req, res) => {
     // Track last login
     user.lastLoginAt = new Date();
     await user.save();
+
+    // Check if hospital doctor first-login password change required
+    const isFirstLogin = matchingOrgLogin ? matchingOrgLogin.mustChangePassword : false;
 
     // -- LOGIN NOTIFICATION EMAIL --
     try {
@@ -280,7 +365,14 @@ exports.login = async (req, res) => {
     });
 
     return res.status(200).json({ 
-      data: { accessToken, role: actualRole, subId, name },
+      data: {
+        accessToken,
+        role: actualRole,
+        subId,
+        name,
+        isFirstLogin: isFirstLogin || false,
+        orgLogins: user.orgLogins || []
+      },
       message: "Login successful"
     });
 

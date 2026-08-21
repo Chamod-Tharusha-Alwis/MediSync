@@ -42,26 +42,29 @@ const DoctorLogin = () => {
       // 2. Handle routing based on selected type
       if (loginType === 'hospital') {
         const activeOrgs = (orgLogins || []).filter(o => o.isActive);
-        if (activeOrgs.length === 0) {
-          throw new Error('No active hospital affiliations found for this account.');
-        }
-
-        // For simplicity, we auto-select the first affiliated hospital
-        const org = activeOrgs[0];
+        const org = activeOrgs.length > 0 ? activeOrgs[0] : (orgLogins && orgLogins[0]);
         
         // 3. First login check for hospital accounts
-        if (org.isFirstLogin) {
-          navigate(`/doctor/change-org-password?orgLoginId=${org._id}`);
+        if (data.isFirstLogin || org?.mustChangePassword || org?.isFirstLogin) {
+          localStorage.setItem('loginType', 'hospital');
+          localStorage.setItem('workspaceMode', 'hospital');
+          if (org?.hospitalId) localStorage.setItem('sessionHospitalId', org.hospitalId);
+          if (org?.hospitalName) localStorage.setItem('sessionHospitalName', org.hospitalName);
+          navigate(`/doctor/change-org-password?orgLoginId=${org?._id || ''}`);
           return;
         }
 
         localStorage.setItem('loginType', 'hospital');
-        localStorage.setItem('sessionHospitalId', org.hospitalId);
-        if (org.hospitalName) {
+        localStorage.setItem('workspaceMode', 'hospital');
+        if (org?.hospitalId) {
+          localStorage.setItem('sessionHospitalId', org.hospitalId);
+        }
+        if (org?.hospitalName) {
           localStorage.setItem('sessionHospitalName', org.hospitalName);
         }
       } else {
         localStorage.setItem('loginType', 'personal');
+        localStorage.setItem('workspaceMode', 'personal');
         localStorage.removeItem('sessionHospitalId');
         localStorage.removeItem('sessionHospitalName');
       }

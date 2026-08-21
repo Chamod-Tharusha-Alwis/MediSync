@@ -113,7 +113,7 @@ const MedicalTimeline = ({ history }) => {
 export default function DoctorDashboard() {
   const { activeSession, clearPatientSession } = usePatientAccess();
   const navigate = useNavigate();
-  const [workspace, setWorkspace] = useState(() => localStorage.getItem('workspaceMode') || null);
+  const [workspace, setWorkspace] = useState(() => localStorage.getItem('workspaceMode') || localStorage.getItem('loginType') || 'personal');
 
   // Real stats from backend
   const [stats, setStats] = useState(null);
@@ -139,18 +139,7 @@ export default function DoctorDashboard() {
     fetchStats();
   }, [clearPatientSession]);
 
-
-
-
-  if (!workspace) {
-    return <WorkspaceSelector onSelect={(ws) => { 
-      setWorkspace(ws); 
-      localStorage.setItem('workspaceMode', ws); 
-      localStorage.setItem('loginType', ws === 'Personal Clinic' ? 'personal' : 'hospital'); 
-    }} />;
-  }
-
-  const _dashWsMode    = localStorage.getItem('workspaceMode') || 'personal';
+  const _dashWsMode    = workspace === 'hospital' || localStorage.getItem('workspaceMode') === 'hospital' || localStorage.getItem('loginType') === 'hospital' ? 'hospital' : 'personal';
   const _dashIsPersonal = _dashWsMode !== 'hospital';
 
   const menuItems = [

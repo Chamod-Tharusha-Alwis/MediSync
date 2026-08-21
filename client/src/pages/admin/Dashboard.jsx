@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
   LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert,
   ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp,
-  Settings, Loader2, Monitor
+  Settings, Loader2, Monitor, Server, Database, Key, ShieldCheck, Mail
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../../api/axiosInstance';
@@ -521,6 +521,37 @@ const Overview = ({ stats, geo, activeAlerts }) => (
         <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
           <GeographicMap hospitals={geo?.hospitals || []} alerts={activeAlerts || []} />
         </div>
+      </div>
+    </div>
+
+    {/* System Status Indicators (System Admin Infrastructure) */}
+    <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+      <h3 className="text-base font-bold text-white flex items-center gap-2">
+        <Server className="w-4.5 h-4.5 text-emerald-400" /> Core System Infrastructure Indicators
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+        {[
+          { label: 'Database Connectivity', desc: 'MongoDB Atlas Replica Set', status: 'Online', icon: Database },
+          { label: 'AES-256 HSM Cryptography', desc: 'Field-level encryption engine', status: 'Active', icon: Key },
+          { label: 'Vault Secret Management', desc: 'Active encryption key v1', status: 'Operational', icon: ShieldCheck },
+          { label: 'Email HTTPS Dispatcher', desc: 'Resend Cloud API (Port 443)', status: 'Connected', icon: Mail }
+        ].map(sys => {
+          const Icon = sys.icon;
+          return (
+            <div key={sys.label} className="bg-slate-950/30 p-4 rounded-xl border border-white/5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-slate-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-bold text-slate-200 truncate">{sys.label}</h4>
+                <p className="text-[10px] text-slate-500 truncate mt-0.5">{sys.desc}</p>
+              </div>
+              <span className="inline-flex items-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full select-none">
+                {sys.status}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   </PageTransition>

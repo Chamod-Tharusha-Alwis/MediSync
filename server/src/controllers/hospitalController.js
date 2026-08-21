@@ -277,7 +277,8 @@ exports.addDoctor = async (req, res) => {
       await doctor.save();
 
       try {
-        await emailService.sendTempPasswordEmail(targetPersonalEmail, doctor.fullName, tempPassword, `${process.env.CLIENT_URL}/doctor/login`, hospital.name);
+        const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
+        await emailService.sendTempPasswordEmail(targetPersonalEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name);
       } catch (emailErr) {
         console.error('Email send failed:', emailErr.message);
       }
@@ -300,7 +301,8 @@ exports.addDoctor = async (req, res) => {
     await doctor.save();
 
     try {
-      await emailService.sendTempPasswordEmail(targetEmail, doctor.fullName, tempPassword, `${process.env.CLIENT_URL}/doctor/login`, hospital.name);
+      const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
+      await emailService.sendTempPasswordEmail(targetEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name);
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
     }

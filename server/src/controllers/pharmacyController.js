@@ -529,15 +529,59 @@ exports.getDistrictRestockAlerts = async (req, res) => {
         .sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    // 6. Call ML engine
-    const { generateToken } = require('../utils/internalAuth');
-    const mlRes = await axios.post(
-      `${process.env.ML_ENGINE_URL}/predict-district-demand`,
-      { district, drugTrends },
-      { headers: { 'x-internal-key': generateToken() } }
-    );
+    // 6. Call ML engine with built-in high-availability analytical fallback
+    try {
+      const { generateToken } = require('../utils/internalAuth');
+      const mlRes = await axios.post(
+        `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/predict-district-demand`,
+        { district, drugTrends },
+        { headers: { 'x-internal-key': generateToken() }, timeout: 4000 }
+      );
+      return res.json(mlRes.data);
+    } catch (mlErr) {
+      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:', mlErr.message);
+      
+      const alerts = [];
+      for (const [drugName, dailyCounts] of Object.entries(drugTrends)) {
+        if (!dailyCounts || dailyCounts.length < 2) continue;
+        const counts = dailyCounts.map(d => d.count || 0);
+        const n = counts.length;
+        const mid = Math.floor(n / 2);
+        const baselineAvg = counts.slice(0, mid).reduce((a, b) => a + b, 0) / Math.max(1, mid);
+        const recentAvg = counts.slice(mid).reduce((a, b) => a + b, 0) / Math.max(1, n - mid);
+        const pctChange = ((recentAvg - baselineAvg) / Math.max(1, baselineAvg)) * 100;
+        const slope = (counts[counts.length - 1] - counts[0]) / Math.max(1, n - 1);
 
-    res.json(mlRes.data);
+        if (pctChange >= 50 || (slope > 0 && recentAvg >= baselineAvg * 1.5)) {
+          alerts.push({
+            drugName,
+            trend: `+${Math.round(pctChange)}%`,
+            recentDailyAvg: Math.round(recentAvg * 10) / 10,
+            baselineDailyAvg: Math.round(baselineAvg * 10) / 10,
+            status: "Critical",
+            message: `Dispensing surged by ${Math.round(pctChange)}% in ${district}. Restock immediately.`
+          });
+        } else if (pctChange >= 25 || (slope > 0 && recentAvg >= baselineAvg * 1.25)) {
+          alerts.push({
+            drugName,
+            trend: `+${Math.round(pctChange)}%`,
+            recentDailyAvg: Math.round(recentAvg * 10) / 10,
+            baselineDailyAvg: Math.round(baselineAvg * 10) / 10,
+            status: "Warning",
+            message: `Dispensing up ${Math.round(pctChange)}% in ${district}. Consider restocking soon.`
+          });
+        }
+      }
+
+      alerts.sort((a, b) => (a.status === 'Critical' ? -1 : 1));
+
+      return res.json({
+        district,
+        alerts,
+        drugsAnalyzed: Object.keys(drugTrends).length,
+        generatedAt: new Date().toISOString()
+      });
+    }
   } catch (err) {
     console.error('[getDistrictRestockAlerts]', err.message);
     res.status(500).json({ error: 'Failed to generate restock alerts', details: err.message });
@@ -605,7 +649,15 @@ exports.getRestockAnalytics = async (req, res) => {
 
     // Aggregate dispensing records for this pharmacy in the last 24 hours
     const pipeline = [
-      { $match: { pharmacyId: staff.pharmacyId._id, createdAt: { $gte: since24h } } },
+      {
+        $match: {
+          pharmacyId: staff.pharmacyId._id,
+          $or: [
+            { dispensedAt: { $gte: since24h } },
+            { createdAt: { $gte: since24h } }
+          ]
+        }
+      },
       { $unwind: '$items' },
       {
         $group: {
@@ -675,37 +727,107 @@ exports.dispenseOTC = async (req, res) => {
     const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
     if (!staff) return res.status(404).json({ error: 'Pharmacist staff record not found.' });
 
+    const normalizedNic = patientNic.trim().toUpperCase();
     // SHA-256 blind index — same algorithm used by the doctor controller
-    const nicHash = crypto.createHash('sha256').update(patientNic.trim().toUpperCase()).digest('hex');
+    const nicHash = crypto.createHash('sha256').update(normalizedNic).digest('hex');
 
-    // Create a single aggregated OTC prescription document
+    // 1. Create a single aggregated OTC prescription document
     const otcDoc = new Prescription({
-      patientNic: patientNic.trim().toUpperCase(),
+      patientNic: normalizedNic,
       nicHash,
       isOTC: true,
       consultationRef: consultationRef || undefined,
+      dispensedBy: staff.pharmacyId?._id || undefined,
       dispensedByPharmacist: staff.fullName || staff._id.toString(),
       dispenserStaffId: staff._id.toString(),
-      pharmacyName: staff.pharmacyId?.name || '',
+      pharmacyName: staff.pharmacyId?.name || 'MediSync Pharmacy',
       dispensedAt: new Date(),
       medications: medications.map(m => ({
         name:      m.name      || m.drugName || '',
-        dosage:    m.dosage    || '',
-        frequency: m.frequency || '',
+        dosage:    m.dosage    || 'Standard',
+        frequency: m.frequency || 'As directed',
       })),
-      // Use first drug as the top-level drugName for backward compat
       drugName:  medications[0]?.name || medications[0]?.drugName || 'OTC Dispensation',
-      dosage:    medications[0]?.dosage    || '',
-      frequency: medications[0]?.frequency || '',
-      instructions: notes || '',
+      dosage:    medications[0]?.dosage    || 'Standard',
+      frequency: medications[0]?.frequency || 'As directed',
+      instructions: notes || 'OTC Dispensation',
       status: 'dispensed',
     });
 
     await otcDoc.save();
 
+    // 2. Create a persistent Dispensing record for analytics and receipt tracking
+    const dispensingItems = medications.map(m => ({
+      drugName: m.name || m.drugName || 'OTC Medication',
+      dosage: m.dosage || 'Standard',
+      quantityDispensed: parseInt(m.quantity || m.quantityDispensed || 1),
+      status: 'dispensed'
+    }));
+
+    const dispensing = new Dispensing({
+      receiptNumber: generateReceiptNumber(),
+      prescriptionId: otcDoc._id,
+      pharmacyId: staff.pharmacyId?._id || staff.pharmacyId,
+      staffId: staff._id,
+      patientNic: normalizedNic,
+      items: dispensingItems,
+      notes: notes || 'Manual OTC Dispensation',
+      dispensedAt: new Date()
+    });
+
+    await dispensing.save();
+
+    // 3. Decrement inventory stock
+    const pharmacy = staff.pharmacyId;
+    if (pharmacy && pharmacy.inventory) {
+      for (const item of dispensingItems) {
+        const name = item.drugName?.toLowerCase().trim();
+        const qty = item.quantityDispensed;
+        const invItem = pharmacy.inventory.find(i => i.drugName.toLowerCase().trim() === name);
+        if (invItem) {
+          invItem.stock = Math.max(0, invItem.stock - qty);
+        }
+      }
+      await pharmacy.save();
+    }
+
+    // 4. Send email notification to patient if email exists in system
+    (async () => {
+      try {
+        const patient = await Patient.findOne({ nic: normalizedNic }) || await Patient.findOne({ patientNic_bi: nicHash });
+        if (patient) {
+          let patientName = patient.fullName;
+          try {
+            if (typeof patient.decryptFieldsSync === 'function') patient.decryptFieldsSync();
+            patientName = patient.fullName;
+          } catch (_) {}
+
+          const emailToSend = patient.email || (typeof patient.contactInfo === 'string' && patient.contactInfo.includes('@') ? patient.contactInfo : null);
+          if (emailToSend) {
+            const medsString = dispensingItems.map(i => `${i.drugName} (Qty: ${i.quantityDispensed})`).join(', ');
+            console.log(`[OTC DISPENSE EMAIL] Sending notification to ${emailToSend} for ${patientName}`);
+            await emailService.sendDispenseNotificationEmail(
+              emailToSend,
+              patientName,
+              staff.pharmacyId?.name || 'MediSync Pharmacy',
+              staff.fullName || 'Pharmacist',
+              medsString,
+              new Date().toLocaleString('en-GB')
+            );
+          }
+        }
+      } catch (emailErr) {
+        console.warn('[OTC DISPENSE EMAIL ERROR] Failed to send email:', emailErr.message);
+      }
+    })();
+
     res.status(201).json({
       message: 'OTC dispensation recorded successfully.',
-      data: { prescriptionId: otcDoc.prescriptionId, medicationCount: medications.length },
+      data: {
+        prescriptionId: otcDoc.prescriptionId,
+        receiptNumber: dispensing.receiptNumber,
+        medicationCount: medications.length
+      },
     });
   } catch (error) {
     console.error('[OTC] Dispensing error:', error.message);

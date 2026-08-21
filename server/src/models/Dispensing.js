@@ -51,6 +51,6 @@ const dispensingSchema = new mongoose.Schema({
     unique: true,
     required: true
   }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Dispensing', dispensingSchema);
