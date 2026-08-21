@@ -9,13 +9,15 @@ const authRateLimiter = rateLimit({
   max: process.env.NODE_ENV === 'production' ? 15 : 100, // Reasonable limit instead of 10000 / total skip
   message: { error: 'Too many attempts. Please try again after 15 minutes.' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: { trustProxy: false }
 });
 
 const regRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: process.env.NODE_ENV === 'production' ? 5 : 50,
-  message: { error: 'Too many registration requests from this IP.' }
+  message: { error: 'Too many registration requests from this IP.' },
+  validate: { trustProxy: false }
 });
 
 router.post('/register', regRateLimiter, authController.registerDoctor);

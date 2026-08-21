@@ -7,7 +7,8 @@ const rateLimit = require('express-rate-limit');
 const loginLimiter = rateLimit({ 
   windowMs: 15 * 60 * 1000, 
   max: process.env.NODE_ENV === 'development' ? 10000 : 10,
-  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  validate: { trustProxy: false }
 });
 
 router.post('/register', hospitalController.registerHospital);

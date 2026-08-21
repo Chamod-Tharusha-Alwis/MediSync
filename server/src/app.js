@@ -163,7 +163,7 @@ async function startServer() {
 
   // ── Step 5: Build the Express app ────────────────────────────────────────
   const app = express();
-  app.set('trust proxy', true);
+  app.set('trust proxy', 1);
   const httpServer = http.createServer(app);
 
   // Socket.IO – real-time outbreak alerts & broadcasts
@@ -262,6 +262,7 @@ async function startServer() {
     max: process.env.NODE_ENV === 'production' ? 10 : 100,
     message: { error: 'Too many requests from this IP, please try again later.' },
     skip: () => process.env.NODE_ENV !== 'production',
+    validate: { trustProxy: false }
   });
 
   // ── Step 6: Register routes ───────────────────────────────────────────────
