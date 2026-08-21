@@ -378,7 +378,7 @@ exports.getUserAuditProfile = async (req, res) => {
           deviceLabel: d.deviceLabel || d.deviceModel || 'Known Device',
           deviceModel: d.deviceModel || 'Unknown Device',
           deviceFingerprint: d.deviceFingerprint,
-          isTrusted: !d.isRevoked,
+          isTrusted: !d.isRevoked && (d.isTrusted === true),
           isRevoked: d.isRevoked || false,
           createdAt: d.trustedAt || d.createdAt,
           lastSeenAt: d.lastSeenAt || d.updatedAt
@@ -1006,19 +1006,85 @@ exports.removeUserDevice = async (req, res) => {
   }
 };
 
+// ─── NEW: GET USER RECOVERY INFO ───────────────────────────────────────────
+exports.getUserRecoveryInfo = async (req, res) => {
+  try {
+    const RecoveryToken = require('../models/RecoveryToken');
+    const { id } = req.params;
+    const roleQuery = req.query.role;
+
+    let user = null;
+    let modelName = null;
+
+    if (roleQuery === 'doctor') { user = await Doctor.findById(id); modelName = 'Doctor'; }
+    else if (roleQuery === 'patient') { user = await Patient.findById(id); modelName = 'Patient'; }
+    else if (roleQuery === 'pharmacist') { user = await PharmacyStaff.findById(id); modelName = 'PharmacyStaff'; }
+    else if (roleQuery === 'hospital_admin') { user = await Hospital.findById(id); modelName = 'Hospital'; }
+
+    if (!user) {
+      const pats = await Patient.findById(id); if (pats) { user = pats; modelName = 'Patient'; }
+      if (!user) { const docs = await Doctor.findById(id); if (docs) { user = docs; modelName = 'Doctor'; } }
+      if (!user) { const pharms = await PharmacyStaff.findById(id); if (pharms) { user = pharms; modelName = 'PharmacyStaff'; } }
+      if (!user) { const hosps = await Hospital.findById(id); if (hosps) { user = hosps; modelName = 'Hospital'; } }
+    }
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const email = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
+
+    const tokens = await RecoveryToken.find({ userId: id }).sort({ createdAt: -1 }).limit(10).lean();
+    const activeToken = tokens.find(t => !t.used && new Date(t.expiresAt) > new Date());
+
+    res.json({
+      success: true,
+      data: {
+        userId: user._id,
+        fullName: user.fullName || user.name || 'User',
+        email,
+        nic: user.nic || user.regNo || user.doctorId || '—',
+        role: user.role || (modelName === 'Hospital' ? 'hospital_admin' : (modelName ? modelName.toLowerCase() : 'user')),
+        hasActiveRecovery: !!activeToken,
+        activeToken: activeToken ? {
+          expiresAt: activeToken.expiresAt,
+          purpose: activeToken.purpose,
+          createdAt: activeToken.createdAt
+        } : null,
+        recentTokens: tokens.map(t => ({
+          _id: t._id,
+          purpose: t.purpose,
+          used: t.used,
+          createdAt: t.createdAt,
+          expiresAt: t.expiresAt
+        }))
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch recovery info', details: err.message });
+  }
+};
+
 // ─── NEW: GENERATE RECOVERY TOKEN ─────────────────────────────────────────────
 exports.generateRecoveryToken = async (req, res) => {
   try {
     const RecoveryToken = require('../models/RecoveryToken');
     const { id } = req.params;
-    const { purpose } = req.body;
+    const { purpose } = req.body || {};
+    const roleQuery = req.query.role;
     
-    let user;
-    let modelName;
-    const docs = await Doctor.findById(id); if (docs) { user = docs; modelName = 'Doctor'; }
-    if (!user) { const pats = await Patient.findById(id); if (pats) { user = pats; modelName = 'Patient'; } }
-    if (!user) { const pharms = await PharmacyStaff.findById(id); if (pharms) { user = pharms; modelName = 'PharmacyStaff'; } }
-    if (!user) { const hosps = await Hospital.findById(id); if (hosps) { user = hosps; modelName = 'Hospital'; } }
+    let user = null;
+    let modelName = null;
+
+    if (roleQuery === 'doctor') { user = await Doctor.findById(id); modelName = 'Doctor'; }
+    else if (roleQuery === 'patient') { user = await Patient.findById(id); modelName = 'Patient'; }
+    else if (roleQuery === 'pharmacist') { user = await PharmacyStaff.findById(id); modelName = 'PharmacyStaff'; }
+    else if (roleQuery === 'hospital_admin') { user = await Hospital.findById(id); modelName = 'Hospital'; }
+
+    if (!user) {
+      const pats = await Patient.findById(id); if (pats) { user = pats; modelName = 'Patient'; }
+      if (!user) { const docs = await Doctor.findById(id); if (docs) { user = docs; modelName = 'Doctor'; } }
+      if (!user) { const pharms = await PharmacyStaff.findById(id); if (pharms) { user = pharms; modelName = 'PharmacyStaff'; } }
+      if (!user) { const hosps = await Hospital.findById(id); if (hosps) { user = hosps; modelName = 'Hospital'; } }
+    }
     
     if (!user) return res.status(404).json({ error: 'User not found' });
     
@@ -1033,22 +1099,34 @@ exports.generateRecoveryToken = async (req, res) => {
       expiresAt
     });
     
-    const email = modelName === 'Patient' ? user.contactInfo?.email : user.email;
-    const link = `${process.env.CLIENT_URL}/reset-password?token=${tokenStr}`;
+    const email = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
+    const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
+    const link = `${clientUrl}/reset-password?token=${tokenStr}`;
     
     if (email) {
-      emailService.sendRecoveryEmail(email, link, purpose || 'Account Recovery').catch(e => console.error(e));
+      emailService.sendRecoveryEmail(email, link, purpose || 'Account Recovery').catch(e => console.error('[EMAIL RECOVERY ERROR]', e.message));
     }
     
-    await AuditLog.create({
-      actorId: req.user.id,
-      actorRole: req.user.role,
-      action: 'Generated Recovery Token',
-      accessedNic: user.nic || user.regNo || null,
-      deviceModel: 'Admin Action'
-    });
+    if (req.user) {
+      await AuditLog.create({
+        actorId: req.user.id || req.user._id,
+        actorRole: req.user.role || 'admin',
+        action: 'Generated Recovery Token',
+        accessedNic: user.nic || user.regNo || user.doctorId || null,
+        deviceModel: 'Admin Action'
+      });
+    }
     
-    res.json({ message: 'Recovery token generated and email sent' });
+    res.json({
+      success: true,
+      message: 'Recovery token generated and email sent',
+      data: {
+        userId: user._id,
+        token: tokenStr,
+        expiresAt,
+        emailSentTo: email
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate recovery token', details: err.message });
   }

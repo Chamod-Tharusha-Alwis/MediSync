@@ -31,14 +31,17 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
   // Check and register/update device in TrustedDevice collection
   let isTrusted = false;
   if (fingerprint) {
+    const existingCount = await TrustedDevice.countDocuments({ userId, isRevoked: false });
     const existing = await TrustedDevice.findOne({ userId, deviceFingerprint: fingerprint });
+
     if (existing) {
-      isTrusted = !existing.isRevoked;
+      isTrusted = !existing.isRevoked && (existing.isTrusted === true);
       existing.lastSeenAt = new Date();
       existing.deviceModel = parsedModel;
       await existing.save();
     } else {
-      isTrusted = opts.isTrusted !== undefined ? opts.isTrusted : true;
+      // ONLY the user's FIRST ever device is auto-trusted; any new/different device starts as UNTRUSTED (false)
+      isTrusted = opts.isTrusted !== undefined ? opts.isTrusted : (existingCount === 0);
       try {
         await TrustedDevice.create({
           userId,
@@ -47,7 +50,8 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
           deviceModel: parsedModel,
           deviceLabel: parsedModel,
           deviceInfo: ua,
-          trustedAt: new Date(),
+          isTrusted: isTrusted,
+          trustedAt: isTrusted ? new Date() : null,
           lastSeenAt: new Date(),
           isRevoked: false
         });
@@ -57,6 +61,8 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
     }
   }
 
+  const finalIsTrusted = opts.isTrusted !== undefined ? opts.isTrusted : isTrusted;
+
   await SessionToken.create({
     userId,
     userModel,
@@ -64,10 +70,12 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
     deviceInfo: ua,
     deviceFingerprint: fingerprint,
     deviceModel: parsedModel,
-    isTrusted: opts.isTrusted !== undefined ? opts.isTrusted : isTrusted,
+    isTrusted: finalIsTrusted,
     isValid: true,
     lastUsed: new Date()
   });
+
+  return { isTrusted: finalIsTrusted, parsedModel };
 };
 
 // Helper: invalidateAllSessions
@@ -243,7 +251,7 @@ exports.login = async (req, res) => {
     const accessToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-    await createSession(user._id, modelName, accessToken, req);
+    const sessionResult = await createSession(user._id, modelName, accessToken, req);
     // Track last login
     user.lastLoginAt = new Date();
     await user.save();
@@ -252,11 +260,12 @@ exports.login = async (req, res) => {
     try {
       const emailToSend = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
       const idField = user.doctorId || user.nic || user.regNo || user.email;
-      const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
+      const deviceModel = req.headers['x-hardware-model'] || sessionResult.parsedModel || parseDeviceModel(req.headers['user-agent']);
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
-      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | User: ${name}`);
-      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      const isTrusted = sessionResult.isTrusted;
+      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted);
       console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
     } catch(e) {
       console.error('[AUTH LOGIN NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);
@@ -385,11 +394,12 @@ exports.verifyLoginOTP = async (req, res) => {
     try {
       const emailToSend = user.email || (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
       const idField = user.doctorId || user.nic || user.regNo || user.email;
-      const deviceModel = req.headers['x-hardware-model'] || parseDeviceModel(req.headers['user-agent']);
+      const deviceModel = req.headers['x-hardware-model'] || sessionResult.parsedModel || parseDeviceModel(req.headers['user-agent']);
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
-      console.log(`[AUTH LOGIN OTP NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | User: ${name}`);
-      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null);
+      const isTrusted = sessionResult.isTrusted;
+      console.log(`[AUTH LOGIN OTP NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+      const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted);
       console.log(`[AUTH LOGIN OTP NOTIFICATION RESULT]`, resNotification);
     } catch(e) {
       console.error('[AUTH LOGIN OTP NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);

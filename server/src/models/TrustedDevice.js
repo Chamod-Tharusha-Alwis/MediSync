@@ -6,8 +6,9 @@ const trustedDeviceSchema = new mongoose.Schema({
   deviceFingerprint: { type: String, required: true },
   deviceModel: { type: String },
   deviceInfo: { type: String },
-  trustedAt: { type: Date, default: Date.now },
+  trustedAt: { type: Date },
   lastSeenAt: { type: Date, default: Date.now },
+  isTrusted: { type: Boolean, default: false },
   isRevoked: { type: Boolean, default: false },
   revokedAt: { type: Date },
   deviceLabel: { type: String, default: null }

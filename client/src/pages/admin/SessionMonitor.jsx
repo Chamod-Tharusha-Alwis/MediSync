@@ -215,8 +215,8 @@ const SessionMonitor = () => {
                               <ShieldCheck className="w-3 h-3" /> Trusted
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
-                              <ShieldAlert className="w-3 h-3" /> New Device
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold shadow-sm shadow-red-500/10">
+                              <ShieldAlert className="w-3 h-3 text-red-400" /> New Device (Untrusted)
                             </span>
                           )}
                         </td>

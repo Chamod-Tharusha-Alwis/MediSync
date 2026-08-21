@@ -363,6 +363,7 @@ const UserAuditProfile = () => {
                   <tr>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Device Model</th>
+                    <th className="px-6 py-4">Trust Level</th>
                     <th className="px-6 py-4">Device Fingerprint</th>
                     <th className="px-6 py-4">Login Time (Start)</th>
                     <th className="px-6 py-4">Last Active</th>
@@ -385,6 +386,17 @@ const UserAuditProfile = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-white font-semibold text-xs">{s.deviceModel}</td>
+                      <td className="px-6 py-4">
+                        {s.isTrusted ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                            <ShieldCheck className="w-3 h-3" /> Trusted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold">
+                            <ShieldAlert className="w-3 h-3 text-red-400" /> New / Untrusted
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 font-mono text-xs text-slate-400">
                         {s.deviceFingerprint ? `${s.deviceFingerprint.slice(0, 16)}...` : '—'}
                       </td>
@@ -439,13 +451,17 @@ const UserAuditProfile = () => {
                       <td className="px-6 py-4 font-bold text-white text-xs">{d.deviceLabel || 'Unnamed Device'}</td>
                       <td className="px-6 py-4 text-slate-300 text-xs">{d.deviceModel || '—'}</td>
                       <td className="px-6 py-4">
-                        {!d.isRevoked ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                            <ShieldCheck className="w-3.5 h-3.5" /> Trusted
+                        {d.isRevoked ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-xs font-bold">
+                            <ShieldAlert className="w-3.5 h-3.5" /> Revoked Device
+                          </span>
+                        ) : d.isTrusted === false ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold shadow-sm shadow-red-500/10">
+                            <ShieldAlert className="w-3.5 h-3.5 text-red-400" /> New Device — Not Yet Trusted
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
-                            <ShieldAlert className="w-3.5 h-3.5" /> Revoked
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                            <ShieldCheck className="w-3.5 h-3.5" /> Trusted Device
                           </span>
                         )}
                       </td>

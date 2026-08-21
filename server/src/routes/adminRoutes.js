@@ -42,6 +42,7 @@ router.put('/reports/:id/review', protect(['admin', 'super_admin']), adminContro
 router.get('/users/search', protect(['admin', 'super_admin']), adminController.searchUsers);
 router.get('/users/:id/devices', protect(['admin', 'super_admin']), adminController.getUserDevices);
 router.delete('/users/:id/devices/:deviceId', protect(['admin', 'super_admin']), adminController.removeUserDevice);
+router.get('/users/:id/recovery', protect(['admin', 'super_admin']), adminController.getUserRecoveryInfo);
 router.post('/users/:id/recovery', protect(['admin', 'super_admin']), adminController.generateRecoveryToken);
 
 // ─── Broadcasts ──────────────────────────────────────────────────────────────
