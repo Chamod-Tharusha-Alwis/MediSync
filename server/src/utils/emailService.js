@@ -3,7 +3,7 @@ const axios = require('axios');
 
 const provider = process.env.EMAIL_PROVIDER || 'resend';
 const resendApiKey = process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS;
-const fromAddress = process.env.RESEND_FROM_ADDRESS || '"MediSync System" <noreply@medisync.chamodtharusha.com.lk>';
+const fromAddress = process.env.RESEND_FROM_ADDRESS || 'MediSync System <onboarding@resend.dev>';
 
 let transportConfig;
 

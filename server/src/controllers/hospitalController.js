@@ -3,10 +3,39 @@ const Doctor = require('../models/Doctor');
 const Consultation = require('../models/Consultation');
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
+const SessionToken = require('../models/SessionToken');
+const TrustedDevice = require('../models/TrustedDevice');
 const { generateTempPassword, hashPassword } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const axios = require('axios');
+
+const parseDeviceModel = (ua, clientHw) => {
+  if (clientHw && clientHw !== 'Unknown' && clientHw !== '""') return clientHw.replace(/"/g, '');
+  if (!ua) return 'Unknown Device';
+  if (ua.includes('iPhone')) return 'Apple iPhone';
+  if (ua.includes('iPad')) return 'Apple iPad';
+  if (ua.includes('Macintosh')) return 'MacBook / Mac Device';
+  if (ua.includes('Windows')) return 'Windows PC (Desktop)';
+  if (ua.includes('Linux') && !ua.includes('Android')) return 'Linux Workstation';
+  return 'Unknown Device';
+};
+
+const resolveLocation = async (ip) => {
+  try {
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+      return { isp: 'Local Network', country: 'Sri Lanka', city: 'Colombo', region: 'Western' };
+    }
+    const cleanIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
+    const res = await axios.get(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp`, { timeout: 2500 });
+    if (res.data && res.data.status === 'success') {
+      return { isp: res.data.isp, country: res.data.country, city: res.data.city, region: res.data.regionName };
+    }
+  } catch (e) {}
+  return { isp: 'Internet Service Provider', country: 'Sri Lanka', city: 'Colombo', region: 'Western' };
+};
 
 exports.registerHospital = async (req, res) => {
   try {
@@ -60,6 +89,84 @@ exports.loginHospital = async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     const accessToken = jwt.sign({ id: hospital._id, role: 'hospital_admin' }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: hospital._id, role: 'hospital_admin' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
+    const ua = req.headers['user-agent'] || 'Unknown Device';
+    const fingerprint = req.headers['x-device-fingerprint'] || null;
+    const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
+    const parsedModel = parseDeviceModel(ua, clientHw);
+
+    let isTrusted = false;
+    if (fingerprint) {
+      const existingCount = await TrustedDevice.countDocuments({ userId: hospital._id, isRevoked: false });
+      const existing = await TrustedDevice.findOne({ userId: hospital._id, deviceFingerprint: fingerprint });
+      if (existing) {
+        isTrusted = !existing.isRevoked && (existing.isTrusted === true);
+        existing.lastSeenAt = new Date();
+        existing.deviceModel = parsedModel;
+        await existing.save();
+      } else {
+        isTrusted = existingCount === 0;
+        try {
+          await TrustedDevice.create({
+            userId: hospital._id,
+            userModel: 'Hospital',
+            deviceFingerprint: fingerprint,
+            deviceModel: parsedModel,
+            deviceLabel: parsedModel,
+            deviceInfo: ua,
+            isTrusted: isTrusted,
+            trustedAt: isTrusted ? new Date() : null,
+            lastSeenAt: new Date(),
+            isRevoked: false
+          });
+        } catch (e) {}
+      }
+    }
+
+    await SessionToken.create({
+      userId: hospital._id,
+      userModel: 'Hospital',
+      tokenHash,
+      deviceInfo: ua,
+      deviceFingerprint: fingerprint,
+      deviceModel: parsedModel,
+      isTrusted,
+      isValid: true,
+      lastUsed: new Date()
+    });
+
+    hospital.lastLoginAt = new Date();
+    await hospital.save();
+
+    // Login Notification Email
+    try {
+      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+      const networkInfo = await resolveLocation(ip);
+      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${hospital.email} | Role: hospital_admin | User: ${hospital.name} | isTrusted: ${isTrusted}`);
+      const resNotification = await emailService.sendLoginNotificationEmail(
+        hospital.email,
+        hospital.name,
+        hospital.regNo || hospital.email,
+        'Hospital Administrator',
+        parsedModel,
+        networkInfo,
+        'Hospital Login',
+        hospital.name,
+        isTrusted
+      );
+      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
+    } catch (e) {
+      console.error('[AUTH LOGIN NOTIFICATION ERROR] Hospital login email failed:', e.message);
+    }
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
     
     res.json({ message: 'Login successful', data: { accessToken, role: 'hospital_admin', hospitalName: hospital.name } });
   } catch (error) {

@@ -116,19 +116,89 @@ exports.loginPatient = async (req, res) => {
     const refreshToken = jwt.sign({ id: patient._id, role: 'patient', sub: patient.nic }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
     
     const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
+    const ua = req.headers['user-agent'] || 'Unknown Device';
+    const fingerprint = req.headers['x-device-fingerprint'] || null;
+    const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
+    const parsedModel = parseDeviceModel(ua, clientHw);
+
+    let isTrusted = false;
+    if (fingerprint) {
+      const TrustedDevice = require('../models/TrustedDevice');
+      const existingCount = await TrustedDevice.countDocuments({ userId: patient._id, isRevoked: false });
+      const existing = await TrustedDevice.findOne({ userId: patient._id, deviceFingerprint: fingerprint });
+      if (existing) {
+        isTrusted = !existing.isRevoked && (existing.isTrusted === true);
+        existing.lastSeenAt = new Date();
+        existing.deviceModel = parsedModel;
+        await existing.save();
+      } else {
+        isTrusted = existingCount === 0;
+        try {
+          await TrustedDevice.create({
+            userId: patient._id,
+            userModel: 'Patient',
+            deviceFingerprint: fingerprint,
+            deviceModel: parsedModel,
+            deviceLabel: parsedModel,
+            deviceInfo: ua,
+            isTrusted: isTrusted,
+            trustedAt: isTrusted ? new Date() : null,
+            lastSeenAt: new Date(),
+            isRevoked: false
+          });
+        } catch (e) {}
+      }
+    }
+
     await SessionToken.create({
       userId: patient._id,
       userModel: 'Patient',
       tokenHash,
-      deviceInfo: req.headers['user-agent'] || 'Unknown Device',
-      deviceFingerprint: req.headers['x-device-fingerprint'] || null,
-      deviceModel: parseDeviceModel(req.headers['user-agent']),
+      deviceInfo: ua,
+      deviceFingerprint: fingerprint,
+      deviceModel: parsedModel,
+      isTrusted: isTrusted,
       isValid: true,
       lastUsed: new Date()
     });
 
     patient.lastLoginAt = new Date();
     await patient.save();
+
+    // ── Send Login Notification Email ─────────────────────────────────────────
+    try {
+      const axios = require('axios');
+      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+      let networkInfo = { isp: 'Internet Service Provider', country: 'Sri Lanka', city: 'Colombo', region: 'Western' };
+      try {
+        if (ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1') {
+          const cleanIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
+          const geoRes = await axios.get(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp`, { timeout: 2500 });
+          if (geoRes.data?.status === 'success') {
+            networkInfo = { isp: geoRes.data.isp, country: geoRes.data.country, city: geoRes.data.city, region: geoRes.data.regionName };
+          }
+        }
+      } catch (e) {}
+
+      const emailToSend = patient.email || (typeof patient.contactInfo === 'string' && patient.contactInfo.includes('@') ? patient.contactInfo : null);
+      if (emailToSend) {
+        console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: patient | User: ${patient.fullName} | isTrusted: ${isTrusted}`);
+        const resNotification = await emailService.sendLoginNotificationEmail(
+          emailToSend,
+          patient.fullName,
+          patient.nic,
+          'Patient',
+          parsedModel,
+          networkInfo,
+          'Individual Login',
+          null,
+          isTrusted
+        );
+        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
+      }
+    } catch (e) {
+      console.error('[AUTH LOGIN NOTIFICATION ERROR] Patient login email failed:', e.message);
+    }
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
