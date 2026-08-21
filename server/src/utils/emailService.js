@@ -1,86 +1,73 @@
-const nodemailer = require('nodemailer');
 const axios = require('axios');
 
-const provider = process.env.EMAIL_PROVIDER || 'resend';
 const resendApiKey = process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS || process.env.RESEND_KEY || process.env.RESEND_APIKEY;
 const fromAddress = process.env.RESEND_FROM_ADDRESS || 'MediSync System <onboarding@resend.dev>';
 
-let transporter = null;
-if (provider === 'gmail') {
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 5000
-  });
-}
-
-// Startup verification
-console.log(`[EMAIL SERVICE INIT] Provider: ${provider} | Key Present: ${!!resendApiKey} | From: ${fromAddress}`);
-if (!resendApiKey && provider === 'resend') {
-  console.warn('⚠️  [EMAIL CONFIG WARNING] Neither RESEND_API_KEY nor RESEND_SMTP_PASS is set in environment variables! Outbound emails will fail until configured in Render dashboard.');
+// Startup verification log
+console.log(`[EMAIL SERVICE INIT] Mode: 100% Direct Resend HTTPS REST API (Port 443) | API Key Present: ${!!resendApiKey} | Default Sender: ${fromAddress}`);
+if (!resendApiKey) {
+  console.warn('⚠️  [EMAIL SERVICE WARNING] Neither RESEND_API_KEY nor RESEND_SMTP_PASS is set in environment variables! Outbound emails will fail until configured.');
 }
 
 /**
- * Internal helper to send email — uses direct Resend HTTPS API when on Resend for maximum cloud delivery speed
+ * sendMail — Core email dispatch function
+ * Exclusively uses Resend HTTPS REST API (https://api.resend.com/emails) over Port 443.
+ * Zero SMTP, zero nodemailer, zero port 465/587 sockets (immune to cloud host firewall blocking).
  */
 const sendMail = async (options) => {
-  // If provider is resend, use Resend's direct HTTPS API (bypasses port 465 blocks on cloud hosts)
-  if (provider === 'resend') {
-    if (!resendApiKey) {
-      console.error('❌ [EMAIL ERROR] Cannot send email via Resend: RESEND_API_KEY or RESEND_SMTP_PASS is not set in environment variables on this host.');
-      return { success: false, error: 'RESEND_API_KEY missing in environment variables' };
-    }
-
-    try {
-      const fromFormatted = (options.from || fromAddress).includes('<')
-        ? (options.from || fromAddress).match(/<([^>]+)>/)[1]
-        : (options.from || fromAddress);
-
-      const payload = {
-        from: `MediSync System <${fromFormatted}>`,
-        to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
-        html: options.html,
-        text: options.text
-      };
-
-      if (options.bcc) {
-        payload.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
-      }
-
-      if (options.attachments && options.attachments.length > 0) {
-        payload.attachments = options.attachments.map(att => ({
-          filename: att.filename,
-          content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content
-        }));
-      }
-
-      const res = await axios.post('https://api.resend.com/emails', payload, {
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
-
-      console.log(`[RESEND HTTPS SUCCESS] Email sent to ${options.to || options.bcc} | ID: ${res.data?.id}`);
-      return { messageId: res.data?.id, response: `250 ${res.data?.id}`, ...res.data };
-    } catch (apiErr) {
-      const errorMsg = apiErr.response?.data?.message || apiErr.message;
-      console.error(`[RESEND HTTPS ERROR] Status ${apiErr.response?.status || 'N/A'}: ${errorMsg}`);
-      if (apiErr.response?.data) {
-        console.error('[RESEND RESPONSE DATA]:', JSON.stringify(apiErr.response.data));
-      }
-      throw new Error(`Resend API Error: ${errorMsg}`);
-    }
+  if (!resendApiKey) {
+    const errMsg = 'RESEND_API_KEY / RESEND_SMTP_PASS environment variable is not configured on this host.';
+    console.error(`❌ [RESEND HTTPS ERROR] Cannot send email: ${errMsg}`);
+    return { success: false, error: errMsg };
   }
 
-  return await transporter.sendMail(options);
+  try {
+    const fromFormatted = (options.from || fromAddress).includes('<')
+      ? (options.from || fromAddress).match(/<([^>]+)>/)[1]
+      : (options.from || fromAddress);
+
+    const payload = {
+      from: `MediSync System <${fromFormatted}>`,
+      to: Array.isArray(options.to) ? options.to : [options.to],
+      subject: options.subject,
+      html: options.html,
+      text: options.text
+    };
+
+    if (options.bcc) {
+      payload.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
+    }
+
+    if (options.attachments && options.attachments.length > 0) {
+      payload.attachments = options.attachments.map(att => ({
+        filename: att.filename,
+        content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content
+      }));
+    }
+
+    const res = await axios.post('https://api.resend.com/emails', payload, {
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 15000
+    });
+
+    console.log(`[RESEND HTTPS SUCCESS] Email delivered → ${options.to || options.bcc} | Subject: "${options.subject}" | Message ID: ${res.data?.id}`);
+    return { success: true, messageId: res.data?.id, id: res.data?.id, ...res.data };
+  } catch (apiErr) {
+    const errorMsg = apiErr.response?.data?.message || apiErr.message;
+    console.error(`[RESEND HTTPS FAILED] Status ${apiErr.response?.status || 'N/A'}: ${errorMsg}`);
+    if (apiErr.response?.data) {
+      console.error('[RESEND RESPONSE DATA]:', JSON.stringify(apiErr.response.data));
+    }
+    throw new Error(`Resend HTTPS Error: ${errorMsg}`);
+  }
 };
 
-
+// -----------------------------------------------------------------------------
+// 1. ONE-TIME PASSWORD (OTP) EMAIL
+// -----------------------------------------------------------------------------
 exports.sendOTPEmail = async (to, name, otp) => {
   const mailOptions = {
     from: fromAddress,
@@ -107,13 +94,15 @@ exports.sendOTPEmail = async (to, name, otp) => {
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
+// -----------------------------------------------------------------------------
+// 2. TEMPORARY PASSWORD EMAIL
+// -----------------------------------------------------------------------------
 exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospitalName) => {
   const mailOptions = {
     from: fromAddress,
@@ -141,13 +130,15 @@ exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospita
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
+// -----------------------------------------------------------------------------
+// 3. WELCOME EMAIL
+// -----------------------------------------------------------------------------
 exports.sendWelcomeEmail = async (to, name, role) => {
   const mailOptions = {
     from: fromAddress,
@@ -165,7 +156,7 @@ exports.sendWelcomeEmail = async (to, name, role) => {
             <span style="display: inline-block; padding: 6px 12px; background-color: #e3f2fd; color: #1565C0; border-radius: 16px; font-size: 14px; font-weight: bold; text-transform: uppercase;">Role: ${role.replace('_', ' ')}</span>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.CLIENT_URL}" style="background-color: #3B82F6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">Access Your Portal</a>
+            <a href="${process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk'}" style="background-color: #3B82F6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">Access Your Portal</a>
           </div>
         </div>
       </div>
@@ -173,13 +164,15 @@ exports.sendWelcomeEmail = async (to, name, role) => {
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
+// -----------------------------------------------------------------------------
+// 4. FOLLOW-UP REMINDER EMAIL
+// -----------------------------------------------------------------------------
 exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
   const mailOptions = {
     from: fromAddress,
@@ -204,15 +197,17 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
+// -----------------------------------------------------------------------------
+// 5. PUBLIC HEALTH OUTBREAK ALERTS
+// -----------------------------------------------------------------------------
 exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
-  if (!emailList || emailList.length === 0) return;
+  if (!emailList || emailList.length === 0) return { success: true };
   
   const mailOptions = {
     from: fromAddress,
@@ -236,10 +231,7 @@ exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
     `
   };
 
-  const promises = emailList.map(email => {
-    return sendMail({ ...mailOptions, to: email });
-  });
-
+  const promises = emailList.map(email => sendMail({ ...mailOptions, to: email }));
   try {
     await Promise.allSettled(promises);
     return { success: true };
@@ -251,7 +243,6 @@ exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
 exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel, spikePct) => {
   if (!emailArray || emailArray.length === 0) return { success: true };
   
-  // Use a generic to address, and put everyone in BCC for privacy
   const mailOptions = {
     from: fromAddress,
     to: 'no-reply@medisync.lk',
@@ -279,22 +270,18 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
 
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
-    console.error("Failed to send mass outbreak alert", err);
     return { success: false, error: err.message };
   }
 };
 
+// -----------------------------------------------------------------------------
+// 6. E-PRESCRIPTION EMAIL
+// -----------------------------------------------------------------------------
 exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, securePassword) => {
-  if (!patientEmail) {
-    console.error('[EMAIL ABORTED] sendPrescriptionEmail called with no email address.');
-    return { success: false, error: 'No email address provided' };
-  }
-  if (!pdfBuffer || pdfBuffer.length === 0) {
-    console.error('[EMAIL ABORTED] sendPrescriptionEmail called with empty PDF buffer.');
-    return { success: false, error: 'PDF buffer is empty' };
+  if (!patientEmail || !pdfBuffer) {
+    return { success: false, error: 'Missing recipient email or PDF buffer' };
   }
 
   const mailOptions = {
@@ -312,12 +299,6 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, sec
             Your recent E-Prescription is attached. To ensure your medical privacy, the PDF is locked.
             Please enter your secure 8-character PDF Key: <strong style="font-family: monospace; font-size: 18px; color: #0D3B66; letter-spacing: 1px;">${securePassword || 'N/A'}</strong> to open it.
           </p>
-          <p style="font-size: 14px; color: #555555; margin-top: 20px;">
-            If you have any questions or did not receive a consultation, please contact your healthcare provider.
-          </p>
-        </div>
-        <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #e0e0e0;">
-          <p style="font-size: 12px; color: #777777; margin: 0;">MediSync Digital Health Platform. Securing patient health records with end-to-end security.</p>
         </div>
       </div>
     `,
@@ -332,31 +313,17 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, sec
 
   try {
     const info = await sendMail(mailOptions);
-    console.log(`[EMAIL SUCCESS] Message ID: ${info.messageId} → ${patientEmail}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error(`[SMTP ERROR]: ${err.message}`);
-    console.error('[SMTP ERROR DETAIL]:', err);
     return { success: false, error: err.message };
   }
 };
 
-/**
- * sendReminderEmail
- *
- * Sends a 2-days-ahead appointment reminder to a patient.
- * Called exclusively by the daily 8 AM cron job in cronJobs.js.
- *
- * @param {string} patientEmail   - Patient's registered email address
- * @param {string} patientName    - Decrypted patient full name
- * @param {string} formattedDate  - Human-readable appointment date (e.g. "Monday, 02 June 2026")
- * @param {string} doctorName     - Doctor's full name (without "Dr." prefix — added here)
- */
+// -----------------------------------------------------------------------------
+// 7. APPOINTMENT REMINDER EMAIL
+// -----------------------------------------------------------------------------
 exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doctorName) => {
-  if (!patientEmail) {
-    console.error('[REMINDER EMAIL ABORTED] No patient email address provided.');
-    return { success: false, error: 'No email address' };
-  }
+  if (!patientEmail) return { success: false, error: 'No email address' };
 
   const mailOptions = {
     from: fromAddress,
@@ -364,91 +331,30 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
     subject: `MediSync — Appointment Reminder: ${formattedDate}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-
-        <!-- Header -->
         <div style="background: linear-gradient(135deg, #0D3B66 0%, #1a5fa8 100%); padding: 24px 28px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; letter-spacing: 1px;">MediSync</h1>
-          <p style="color: #a8c8f0; margin: 4px 0 0; font-size: 13px;">Digital Health Platform</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px;">MediSync</h1>
         </div>
-
-        <!-- Body -->
         <div style="padding: 32px 28px; background-color: #ffffff;">
-          <p style="font-size: 16px; color: #333333; margin: 0 0 16px;">
-            Hello <strong>${patientName || 'Patient'}</strong>,
-          </p>
-          <p style="font-size: 15px; color: #444444; line-height: 1.6; margin: 0 0 24px;">
-            This is a friendly reminder that you have a scheduled consultation
-            <strong style="color: #0D3B66;">in 2 days</strong>.
-          </p>
-
-          <!-- Appointment card -->
-          <div style="background: #f0f7ff; border-left: 4px solid #1a5fa8; border-radius: 6px; padding: 20px 24px; margin-bottom: 24px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666; width: 120px;">&#128197; &nbsp;Date</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #0D3B66; font-weight: bold;">${formattedDate}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666;">&#128104;&#8205;&#9877;&#65039; &nbsp;Doctor</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #0D3B66; font-weight: bold;">Dr. ${doctorName || 'Your Medical Professional'}</td>
-              </tr>
-            </table>
-          </div>
-
-          <p style="font-size: 14px; color: #555555; line-height: 1.6; margin: 0 0 16px;">
-            Please ensure you bring any relevant medical documents and your National Identity Card (NIC).
-            If you need to reschedule, please contact your doctor's clinic as soon as possible.
-          </p>
-
-          <!-- Tip box -->
-          <div style="background: #fff8e6; border: 1px solid #f5c842; border-radius: 6px; padding: 14px 18px; margin-top: 8px;">
-            <p style="margin: 0; font-size: 13px; color: #7a5c00;">
-              &#128138; &nbsp;<strong>Tip:</strong> Your E-Prescription PDF is password-protected. Use your NIC number to open it.
-            </p>
-          </div>
+          <p style="font-size: 16px; color: #333333;">Hello <strong>${patientName || 'Patient'}</strong>,</p>
+          <p style="font-size: 15px; color: #444444;">This is a reminder that you have a scheduled consultation with <strong>Dr. ${doctorName || 'Your Doctor'}</strong> on <strong>${formattedDate}</strong>.</p>
         </div>
-
-        <!-- Footer -->
-        <div style="background-color: #f9f9f9; padding: 16px 28px; text-align: center; border-top: 1px solid #e0e0e0;">
-          <p style="font-size: 12px; color: #888888; margin: 0;">
-            This is an automated reminder from the MediSync Digital Health Platform.<br/>
-            Please do not reply to this email.
-          </p>
-        </div>
-
       </div>
-    `,
+    `
   };
 
   try {
     const info = await sendMail(mailOptions);
-    console.log(`[REMINDER EMAIL] Sent → ${patientEmail} | MessageID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error(`[REMINDER EMAIL SMTP ERROR] ${patientEmail}: ${err.message}`);
     return { success: false, error: err.message };
   }
 };
 
-/**
- * sendDispenseNotificationEmail
- *
- * Notifies a patient that their prescription has been dispensed by a pharmacy.
- * Called fire-and-forget by pharmacyController.dispense().
- * No PDF attachment — text-only notification.
- *
- * @param {string} patientEmail   - Patient's email
- * @param {string} patientName    - Decrypted patient full name
- * @param {string} pharmacyName   - Dispensing pharmacy name
- * @param {string} dispenserName  - Pharmacist's full name
- * @param {string} medications    - Comma-separated medication names
- * @param {string} dispensedAt    - Formatted date/time string
- */
+// -----------------------------------------------------------------------------
+// 8. DISPENSE NOTIFICATION EMAIL
+// -----------------------------------------------------------------------------
 exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharmacyName, dispenserName, medications, dispensedAt) => {
-  if (!patientEmail) {
-    console.warn('[DISPENSE EMAIL ABORTED] No patient email address provided.');
-    return { success: false, error: 'No email address' };
-  }
+  if (!patientEmail) return { success: false, error: 'No email address' };
 
   const mailOptions = {
     from: fromAddress,
@@ -456,76 +362,29 @@ exports.sendDispenseNotificationEmail = async (patientEmail, patientName, pharma
     subject: `MediSync — Your Medication Has Been Dispensed`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-
-        <!-- Header -->
         <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); padding: 24px 28px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; letter-spacing: 1px;">MediSync</h1>
-          <p style="color: #a7f3d0; margin: 4px 0 0; font-size: 13px;">Digital Health Platform</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px;">MediSync</h1>
         </div>
-
-        <!-- Body -->
         <div style="padding: 32px 28px; background-color: #ffffff;">
-          <p style="font-size: 16px; color: #333333; margin: 0 0 16px;">
-            Hello <strong>${patientName || 'Patient'}</strong>,
-          </p>
-          <p style="font-size: 15px; color: #444444; line-height: 1.6; margin: 0 0 24px;">
-            Your medication has been dispensed at <strong style="color: #065f46;">${pharmacyName || 'a MediSync Pharmacy'}</strong>.
-          </p>
-
-          <!-- Dispensing card -->
-          <div style="background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 6px; padding: 20px 24px; margin-bottom: 24px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666; width: 140px;">&#128138;&nbsp; Medication(s)</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #065f46; font-weight: bold;">${medications || 'See your prescription'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666;">&#127973;&nbsp; Pharmacy</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #065f46; font-weight: bold;">${pharmacyName || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666;">&#128100;&nbsp; Dispensed By</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #065f46; font-weight: bold;">${dispenserName || 'Pharmacist'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 13px; color: #666;">&#128197;&nbsp; Date &amp; Time</td>
-                <td style="padding: 6px 0; font-size: 14px; color: #065f46; font-weight: bold;">${dispensedAt || 'N/A'}</td>
-              </tr>
-            </table>
-          </div>
-
-          <p style="font-size: 14px; color: #555555; line-height: 1.6;">
-            Please follow your pharmacist's instructions for the safe use of your medication.
-            If you did not collect this medication or believe this is an error, please contact MediSync support immediately.
-          </p>
+          <p style="font-size: 16px; color: #333333;">Hello <strong>${patientName || 'Patient'}</strong>,</p>
+          <p style="font-size: 15px; color: #444444;">Your medication has been dispensed at <strong>${pharmacyName || 'a MediSync Pharmacy'}</strong> by <strong>${dispenserName || 'Pharmacist'}</strong> at ${dispensedAt}.</p>
+          <p>Medications: <strong>${medications}</strong></p>
         </div>
-
-        <!-- Footer -->
-        <div style="background-color: #f9f9f9; padding: 16px 28px; text-align: center; border-top: 1px solid #e0e0e0;">
-          <p style="font-size: 12px; color: #888888; margin: 0;">
-            This is an automated notification from the MediSync Digital Health Platform.<br/>
-            Please do not reply to this email.
-          </p>
-        </div>
-
       </div>
     `
   };
 
   try {
     const info = await sendMail(mailOptions);
-    console.log(`[DISPENSE EMAIL] Sent → ${patientEmail} | MessageID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error(`[DISPENSE EMAIL SMTP ERROR] ${patientEmail}: ${err.message}`);
     return { success: false, error: err.message };
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GENERIC sendEmail — used by labController for custom HTML emails
-// ─────────────────────────────────────────────────────────────────────────────
-
+// -----------------------------------------------------------------------------
+// 9. SECURITY ANOMALY & RECOVERY EMAILS
+// -----------------------------------------------------------------------------
 exports.sendAnomalyEmail = async (email, deviceModel, location) => {
   const mailOptions = {
     from: fromAddress,
@@ -537,17 +396,13 @@ exports.sendAnomalyEmail = async (email, deviceModel, location) => {
           <h1 style="color: #ffffff; margin: 0;">Security Alert</h1>
         </div>
         <div style="padding: 30px; background-color: #ffffff;">
-          <p>We detected a login attempt from an unrecognized device.</p>
-          <p><strong>Device:</strong> ${deviceModel || 'Unknown Device'}</p>
-          <p><strong>Approximate Location:</strong> ${location || 'Unknown'}</p>
-          <p>If this was you, you can ignore this email. If not, please change your password immediately.</p>
+          <p>We detected a login attempt from an unrecognized device: <strong>${deviceModel || 'Unknown Device'}</strong> (${location || 'Unknown Location'}).</p>
         </div>
       </div>
     `
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
@@ -566,16 +421,14 @@ exports.sendRecoveryEmail = async (email, link, purpose) => {
         </div>
         <div style="padding: 30px; background-color: #ffffff;">
           <p>You requested account recovery for: <strong>${purpose}</strong></p>
-          <p>Please click the link below to proceed:</p>
+          <p>Click the link below to proceed:</p>
           <a href="${link}" style="background-color: #3B82F6; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Recover Account</a>
-          <p style="margin-top: 20px; font-size: 12px; color: #777777;">This link will expire shortly. If you did not request this, please ignore this email.</p>
         </div>
       </div>
     `
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
@@ -593,46 +446,37 @@ exports.sendDeviceRemovedEmail = async (email, deviceModel) => {
           <h1 style="color: #ffffff; margin: 0;">Device Removed</h1>
         </div>
         <div style="padding: 30px; background-color: #ffffff;">
-          <p>A device was recently removed from your trusted devices list.</p>
-          <p><strong>Device:</strong> ${deviceModel || 'Unknown Device'}</p>
-          <p>If you did not perform this action, please contact support and change your password.</p>
+          <p>A device was removed from your trusted devices: <strong>${deviceModel || 'Unknown Device'}</strong>.</p>
         </div>
       </div>
     `
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
-/**
- * Send a generic email with custom subject and HTML body.
- * @param {{ to: string, subject: string, html?: string, text?: string }} options
- */
 exports.sendEmail = async ({ to, subject, html, text }) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM_ADDRESS || 'noreply@medisync.lk',
+    from: fromAddress,
     to,
     subject,
+    html,
+    text
   };
-  if (html) mailOptions.html = html;
-  if (text) mailOptions.text = text;
-
   try {
     const info = await sendMail(mailOptions);
-    console.log(`[EMAIL] Sent → ${to} | Subject: "${subject}" | ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error(`[EMAIL SMTP ERROR] ${to}: ${err.message}`);
     return { success: false, error: err.message };
   }
 };
+
 // -----------------------------------------------------------------------------
-// LOGIN NOTIFICATION EMAIL
+// 10. LOGIN NOTIFICATION EMAIL (TRUSTED VS UNTRUSTED SECURITY ALERT)
 // -----------------------------------------------------------------------------
 exports.sendLoginNotificationEmail = async (to, name, idField, role, device, networkInfo, loginType, hospitalName, isTrusted = true) => {
   const isHospital = loginType === 'Hospital Login';
@@ -686,10 +530,9 @@ exports.sendLoginNotificationEmail = async (to, name, idField, role, device, net
   };
   try {
     const info = await sendMail(mailOptions);
-    console.log("SMTP Response:", info);
     return { success: true, info };
   } catch (err) {
-    console.error('Error sending login notification email:', err.message);
+    console.error('[LOGIN NOTIFICATION ERROR]', err.message);
     return { success: false, error: err.message };
   }
 };
