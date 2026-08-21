@@ -50,6 +50,10 @@ const dispensingSchema = new mongoose.Schema({
     type: String,
     unique: true,
     required: true
+  },
+  isSynthetic: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

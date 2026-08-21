@@ -52,4 +52,14 @@ router.post('/seed-restock', pharmacyAuth, async (req, res) => {
   }
 });
 
+router.delete('/seed-restock', pharmacyAuth, async (req, res) => {
+  try {
+    const wipeSeedRestockData = require('../utils/wipeSeedRestockData');
+    const result = await wipeSeedRestockData();
+    res.json({ message: 'Synthetic restock seed data wiped successfully', data: result });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to wipe seed restock data', details: err.message });
+  }
+});
+
 module.exports = router;

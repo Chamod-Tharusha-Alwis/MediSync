@@ -83,7 +83,8 @@ async function seedRestock() {
           dispensedAt: dayDate,
           dispensedBy: pharmacy._id,
           pharmacyName: pharmacy.name,
-          isOTC: true
+          isOTC: true,
+          isSynthetic: true
         });
         await dummyPrescription.save();
 
@@ -99,7 +100,8 @@ async function seedRestock() {
             quantityDispensed: finalQty,
             status: 'dispensed'
           }],
-          notes: `Historical seed dispensing day -${day}`,
+          notes: `[TEST SEED DATA] Historical seed dispensing day -${day}`,
+          isSynthetic: true,
           dispensedAt: dayDate
         });
         await dispensing.save();
