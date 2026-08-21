@@ -212,6 +212,11 @@ async function startServer() {
 
   // Core middleware
   app.use(helmet());
+  app.use((req, res, next) => {
+    res.setHeader('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA, Sec-CH-UA-Mobile');
+    res.setHeader('Permissions-Policy', 'ch-ua-model=*, ch-ua-platform=*, ch-ua-platform-version=*');
+    next();
+  });
   app.use(
     cors({
       origin: process.env.CLIENT_URL || 'http://localhost:3000',

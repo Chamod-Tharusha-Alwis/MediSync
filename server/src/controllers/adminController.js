@@ -14,6 +14,7 @@ const { v4: uuid } = require('uuid');
 const { hashPassword } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const { generateToken } = require('../utils/internalAuth');
+const { parseDeviceModel } = require('../utils/deviceParser');
 const crypto = require('crypto');
 
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
@@ -134,40 +135,65 @@ exports.toggleUserStatus = async (req, res) => {
 exports.getAuditLogs = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = parseInt(req.query.limit) || 25;
     const skip = (page - 1) * limit;
     const { actorRole, actorId, startDate, endDate, search } = req.query;
 
-    let query = {};
-    if (actorRole) query.actorRole = actorRole;
-    if (actorId) query.actorId = actorId;
+    let matchQuery = { actorId: { $ne: null, $exists: true } };
+    if (actorRole) matchQuery.actorRole = actorRole;
+    if (actorId) matchQuery.actorId = actorId;
     if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
+      matchQuery.timestamp = {};
+      if (startDate) matchQuery.timestamp.$gte = new Date(startDate);
+      if (endDate) matchQuery.timestamp.$lte = new Date(endDate);
     }
 
     if (search) {
-      const [doctors, patients, pharmacies, hospitals] = await Promise.all([
-        Doctor.find({ nic: new RegExp(search, 'i') }),
-        Patient.find({ nic: new RegExp(search, 'i') }),
-        PharmacyStaff.find({ nic: new RegExp(search, 'i') }),
-        Hospital.find({ nic: new RegExp(search, 'i') })
+      const searchRegex = new RegExp(search, 'i');
+      const [doctors, patients, pharmacies, hospitals, admins] = await Promise.all([
+        Doctor.find({ $or: [{ nic: searchRegex }, { fullName: searchRegex }, { doctorId: searchRegex }, { email: searchRegex }] }),
+        Patient.find({ $or: [{ nic: searchRegex }, { email: searchRegex }] }),
+        PharmacyStaff.find({ $or: [{ nic: searchRegex }, { fullName: searchRegex }, { email: searchRegex }] }),
+        Hospital.find({ $or: [{ regNo: searchRegex }, { name: searchRegex }, { email: searchRegex }] }),
+        Admin.find({ $or: [{ email: searchRegex }, { fullName: searchRegex }, { name: searchRegex }] })
       ]);
       const matchedIds = [
         ...doctors.map(d => d._id.toString()),
         ...patients.map(p => p._id.toString()),
         ...pharmacies.map(p => p._id.toString()),
-        ...hospitals.map(h => h._id.toString())
+        ...hospitals.map(h => h._id.toString()),
+        ...admins.map(a => a._id.toString())
       ];
-      query.actorId = { $in: matchedIds };
+      matchQuery.actorId = { $in: matchedIds };
     }
 
-    let logs = await AuditLog.find(query).sort({ timestamp: -1 }).skip(skip).limit(limit).lean();
-    const total = await AuditLog.countDocuments(query);
+    // Aggregation pipeline to deduplicate to ONE row per unique actor (their latest action)
+    const countPipeline = [
+      { $match: matchQuery },
+      { $group: { _id: '$actorId' } },
+      { $count: 'total' }
+    ];
+    const countResult = await AuditLog.aggregate(countPipeline);
+    const total = countResult[0]?.total || 0;
 
-    const uniqueActorIds = [...new Set(logs.map(log => log.actorId).filter(id => id))];
-    
+    const pipeline = [
+      { $match: matchQuery },
+      { $sort: { timestamp: -1 } },
+      {
+        $group: {
+          _id: '$actorId',
+          latestLog: { $first: '$$ROOT' }
+        }
+      },
+      { $replaceRoot: { newRoot: '$latestLog' } },
+      { $sort: { timestamp: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    const logs = await AuditLog.aggregate(pipeline);
+    const uniqueActorIds = logs.map(log => log.actorId).filter(Boolean);
+
     const [docs, pats, pharms, hosps, admins, activeSessions, endedSessions] = await Promise.all([
       Doctor.find({ _id: { $in: uniqueActorIds } }),
       Patient.find({ _id: { $in: uniqueActorIds } }),
@@ -175,16 +201,18 @@ exports.getAuditLogs = async (req, res) => {
       Hospital.find({ _id: { $in: uniqueActorIds } }),
       Admin.find({ _id: { $in: uniqueActorIds } }),
       SessionToken.find({ userId: { $in: uniqueActorIds }, isValid: true }).select('userId').lean(),
-      SessionToken.find({ userId: { $in: uniqueActorIds }, isValid: false }).sort({ updatedAt: -1, logoutAt: -1 }).lean()
+      SessionToken.find({ userId: { $in: uniqueActorIds }, isValid: false }).sort({ logoutAt: -1, expiredAt: -1, createdAt: -1 }).lean()
     ]);
-    
+
     const activeUserSet = new Set(activeSessions.map(s => s.userId.toString()));
 
+    // Real logout time mapping (only actual logoutAt or expiredAt or lastSignOutAt)
     const logoutMap = {};
     endedSessions.forEach(s => {
       const uid = s.userId.toString();
       if (!logoutMap[uid]) {
-        logoutMap[uid] = s.logoutAt || s.expiredAt || s.updatedAt;
+        if (s.logoutAt) logoutMap[uid] = s.logoutAt;
+        else if (s.expiredAt) logoutMap[uid] = s.expiredAt;
       }
     });
 
@@ -196,30 +224,181 @@ exports.getAuditLogs = async (req, res) => {
     });
 
     const userMap = {};
-    docs.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.licenseNo || u.doctorId || u.email }; });
-    pats.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
-    pharms.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
-    hosps.forEach(u => { userMap[u._id.toString()] = { fullName: u.name, nic: u.regNo || u.email }; });
-    admins.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'System Admin', nic: u.email }; });
-    
-    logs = logs.map(log => {
+    docs.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.licenseNo || u.doctorId || u.email, role: 'doctor' }; });
+    pats.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email, role: 'patient' }; });
+    pharms.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email, role: u.role || 'pharmacist' }; });
+    hosps.forEach(u => { userMap[u._id.toString()] = { fullName: u.name, nic: u.regNo || u.email, role: 'hospital_admin' }; });
+    admins.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'System Admin', nic: u.email, role: 'admin' }; });
+
+    const enrichedLogs = logs.map(log => {
       const actorIdStr = (log.actorId || '').toString();
       const user = userMap[actorIdStr];
       const isOnline = activeUserSet.has(actorIdStr);
-      const logoutTime = logoutMap[actorIdStr] || null;
+      const logoutTime = isOnline ? null : (logoutMap[actorIdStr] || null);
 
       return {
-        ...log,
-        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'System Admin' : 'Unknown User'),
+        _id: log._id,
+        actorId: log.actorId,
+        actorRole: user ? user.role : log.actorRole,
+        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'MediSync System Admin' : 'Unknown User'),
         actorNic: user ? user.nic : '—',
+        action: log.action,
+        timestamp: log.timestamp,
+        deviceModel: log.deviceModel || '—',
         isOnline,
         logoutTime
       };
     });
 
-    res.json({ data: logs, pagination: { total, page, pages: Math.ceil(total / limit) } });
+    res.json({ data: enrichedLogs, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch audit logs', details: error.message });
+  }
+};
+
+// ─── NEW: getUserAuditProfile ────────────────────────────────────────────────
+exports.getUserAuditProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+    const TrustedDevice = require('../models/TrustedDevice');
+
+    // Search across all models
+    let user = null;
+
+    let doc = await Admin.findById(userId);
+    if (doc) {
+      user = {
+        _id: doc._id,
+        fullName: doc.fullName || doc.name || 'System Admin',
+        email: doc.email,
+        role: doc.role || 'admin',
+        identifier: doc.email,
+        createdAt: doc.createdAt,
+        lastLoginAt: doc.lastLoginAt,
+        lastSignOutAt: doc.lastSignOutAt
+      };
+    }
+
+    if (!user) {
+      doc = await Patient.findById(userId);
+      if (doc) {
+        user = {
+          _id: doc._id,
+          fullName: doc.fullName,
+          email: doc.email,
+          nic: doc.nic,
+          identifier: doc.nic,
+          role: 'patient',
+          gender: doc.gender,
+          district: doc.district,
+          bloodGroup: doc.bloodGroup,
+          contactInfo: doc.contactInfo,
+          riskLevel: doc.riskLevel,
+          createdAt: doc.createdAt,
+          lastLoginAt: doc.lastLoginAt,
+          lastSignOutAt: doc.lastSignOutAt
+        };
+      }
+    }
+
+    if (!user) {
+      doc = await Doctor.findById(userId);
+      if (doc) {
+        user = {
+          _id: doc._id,
+          fullName: doc.fullName,
+          email: doc.email,
+          doctorId: doc.doctorId,
+          licenseNo: doc.licenseNo,
+          identifier: doc.doctorId || doc.licenseNo,
+          role: 'doctor',
+          specialization: doc.specialization,
+          clinicAddress: doc.clinicAddress,
+          contactNumber: doc.contactNumber,
+          createdAt: doc.createdAt,
+          lastLoginAt: doc.lastLoginAt,
+          lastSignOutAt: doc.lastSignOutAt
+        };
+      }
+    }
+
+    if (!user) {
+      doc = await PharmacyStaff.findById(userId);
+      if (doc) {
+        user = {
+          _id: doc._id,
+          fullName: doc.fullName,
+          email: doc.email,
+          role: doc.role || 'pharmacist',
+          identifier: doc.email,
+          createdAt: doc.createdAt,
+          lastLoginAt: doc.lastLoginAt,
+          lastSignOutAt: doc.lastSignOutAt
+        };
+      }
+    }
+
+    if (!user) {
+      doc = await Hospital.findById(userId);
+      if (doc) {
+        user = {
+          _id: doc._id,
+          fullName: doc.name,
+          name: doc.name,
+          email: doc.email,
+          regNo: doc.regNo,
+          identifier: doc.regNo || doc.email,
+          role: 'hospital_admin',
+          type: doc.type,
+          district: doc.district,
+          createdAt: doc.createdAt,
+          lastLoginAt: doc.lastLoginAt,
+          lastSignOutAt: doc.lastSignOutAt
+        };
+      }
+    }
+
+    // Online check
+    const activeSession = await SessionToken.findOne({ userId, isValid: true }).lean();
+    const isOnline = !!activeSession;
+
+    // Fetch ALL audit history for this user
+    const auditLogs = await AuditLog.find({ actorId: userId }).sort({ timestamp: -1 }).limit(200).lean();
+
+    // Fetch registered/trusted devices
+    const devices = await TrustedDevice.find({ userId }).sort({ lastSeenAt: -1 }).lean();
+
+    // Fetch all sessions (active + past)
+    const rawSessions = await SessionToken.find({ userId }).sort({ createdAt: -1 }).limit(100).lean();
+    const sessions = rawSessions.map(s => {
+      let resolvedModel = s.deviceModel;
+      if (!resolvedModel || resolvedModel === 'Unknown' || resolvedModel === 'Android device' || resolvedModel === 'Test Device') {
+        if (s.deviceInfo) resolvedModel = parseDeviceModel(s.deviceInfo);
+      }
+      return {
+        _id: s._id,
+        deviceModel: resolvedModel || 'Unknown Device',
+        deviceFingerprint: s.deviceFingerprint || '—',
+        isTrusted: s.isTrusted || false,
+        isValid: s.isValid,
+        loginTime: s.createdAt,
+        lastUsed: s.lastUsed,
+        logoutTime: s.isValid ? null : (s.logoutAt || s.expiredAt || null)
+      };
+    });
+
+    res.json({
+      data: {
+        user: user ? { ...user, isOnline } : { _id: userId, fullName: 'Unknown User', role: 'unknown', isOnline },
+        auditLogs,
+        devices,
+        sessions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user audit profile', details: error.message });
   }
 };
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Monitor, ShieldCheck, ShieldAlert, LogOut, Loader2, RefreshCw,
-  ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Smartphone, Lock, Search, User, Activity 
+  ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Smartphone, Search, User, Activity 
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -17,11 +18,6 @@ const timeAgo = (date) => {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
-};
-
-const maskNic = (nic) => {
-  if (!nic || nic.length < 4) return '****';
-  return '•••• ' + nic.slice(-4);
 };
 
 const formatDate = (dateString) => {
@@ -57,6 +53,7 @@ const roles = [
 ];
 
 const SessionMonitor = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('online'); // 'online' | 'audit'
 
   // --- Online Now State ---
@@ -194,7 +191,7 @@ const SessionMonitor = () => {
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                     {sessions.map(s => (
-                      <tr key={s._id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => { setSearchTerm(s.identifier); setActiveTab('audit'); }}>
+                      <tr key={s._id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${s.userId}`)}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -280,6 +277,12 @@ const SessionMonitor = () => {
             </div>
           </div>
           
+          <div className="flex items-center justify-between px-1">
+            <p className="text-xs text-slate-400">
+              <span className="text-slate-300 font-bold">Unique User Activity:</span> Displaying 1 row per user with their most recent action. Click any row to view their full audit profile & history.
+            </p>
+          </div>
+          
           <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
             {loadingLogs ? (
               <div className="p-12 text-center select-none">
@@ -300,7 +303,7 @@ const SessionMonitor = () => {
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                     {logs.map((log, index) => (
-                      <tr key={log._id || index} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => { setSearchTerm(log.actorNic); setPage(1); }}>
+                      <tr key={log._id || index} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${log.actorId}`)}>
                         <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
                           {formatDate(log.timestamp || log.createdAt)}
                         </td>

@@ -23,6 +23,7 @@ import UserManagement from './UserManagement';
 import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SupportTicketsRoster from './SupportTicketsRoster';
+import UserAuditProfile from './UserAuditProfile';
 
 const timeAgo = (dateString) => {
   if (!dateString) return '';
@@ -634,6 +635,7 @@ const AdminDashboard = () => {
               <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
               <Route path="/dashboard/broadcast" element={<Broadcast />} />
               <Route path="/dashboard/sessions" element={<SessionMonitor />} />
+              <Route path="/dashboard/sessions/:userId" element={<UserAuditProfile />} />
               <Route path="/dashboard/bans" element={<BanManagement />} />
               <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
               <Route path="/dashboard/admins" element={<ManageAdmins />} />

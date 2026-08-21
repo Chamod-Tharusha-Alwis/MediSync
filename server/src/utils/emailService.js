@@ -1,9 +1,11 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
-const provider = process.env.EMAIL_PROVIDER || 'gmail';
+const provider = process.env.EMAIL_PROVIDER || 'resend';
+const resendApiKey = process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS;
+const fromAddress = process.env.RESEND_FROM_ADDRESS || '"MediSync System" <noreply@medisync.chamodtharusha.com.lk>';
 
 let transportConfig;
-let fromAddress;
 
 if (provider === 'gmail') {
   transportConfig = {
@@ -16,21 +18,19 @@ if (provider === 'gmail') {
     greetingTimeout: 5000,
     socketTimeout: 5000
   };
-  fromAddress = `"MediSync System" <${process.env.EMAIL_USER}>`;
-} else if (provider === 'resend') {
+} else {
   transportConfig = {
-    host: process.env.RESEND_SMTP_HOST,
-    port: process.env.RESEND_SMTP_PORT || 465,
+    host: process.env.RESEND_SMTP_HOST || 'smtp.resend.com',
+    port: parseInt(process.env.RESEND_SMTP_PORT || '465'),
     secure: true,
     auth: {
-      user: process.env.RESEND_SMTP_USER,
-      pass: process.env.RESEND_SMTP_PASS
+      user: process.env.RESEND_SMTP_USER || 'resend',
+      pass: resendApiKey
     },
-    connectionTimeout: 2000,
-    greetingTimeout: 2000,
-    socketTimeout: 3000
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000
   };
-  fromAddress = process.env.RESEND_FROM_ADDRESS || 'noreply@medisync.lk';
 }
 
 const transporter = nodemailer.createTransport(transportConfig);
@@ -38,41 +38,57 @@ const transporter = nodemailer.createTransport(transportConfig);
 // Verify on startup and log result
 transporter.verify((error) => {
   if (error) {
-    console.warn(`⚠️  Email service (${provider}) not configured properly: ${error.message}`);
+    console.warn(`⚠️  Email service (${provider}) SMTP not connected: ${error.message} (HTTPS API will be used for Resend)`);
   } else {
-    console.log(`✅  Email service configured via ${provider} for user: ${transportConfig.auth.user}`);
+    console.log(`✅  Email service configured via ${provider} for user: ${transportConfig.auth?.user}`);
   }
 });
 
 /**
- * Internal helper to send email
+ * Internal helper to send email — uses direct Resend HTTPS API when on Resend for maximum cloud delivery speed
  */
 const sendMail = async (options) => {
-  if (!process.env.EMAIL_PROVIDER) {
-    console.log('\n=======================================');
-    console.log('✉️  MOCK EMAIL SENT');
-    console.log('To:      ', options.to || options.bcc || 'N/A');
-    console.log('Subject: ', options.subject);
+  // If provider is resend and we have an API key, use Resend's direct HTTPS API (bypasses port 465 blocks on cloud hosts)
+  if (provider === 'resend' && resendApiKey) {
+    try {
+      const fromFormatted = (options.from || fromAddress).includes('<')
+        ? (options.from || fromAddress).match(/<([^>]+)>/)[1]
+        : (options.from || fromAddress);
 
-    const plainText = (options.text || (options.html ? options.html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ') : ''))
-      .replace(/\s+/g, ' ')
-      .trim();
+      const payload = {
+        from: `MediSync System <${fromFormatted}>`,
+        to: Array.isArray(options.to) ? options.to : [options.to],
+        subject: options.subject,
+        html: options.html,
+        text: options.text
+      };
 
-    const otpMatch = plainText.match(/\b\d{6}\b/);
-    if (otpMatch) {
-      console.log('🔑 OTP CODE: ', otpMatch[0]);
+      if (options.bcc) {
+        payload.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
+      }
+
+      if (options.attachments && options.attachments.length > 0) {
+        payload.attachments = options.attachments.map(att => ({
+          filename: att.filename,
+          content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content
+        }));
+      }
+
+      const res = await axios.post('https://api.resend.com/emails', payload, {
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      console.log(`[RESEND HTTPS SUCCESS] Email sent to ${options.to || options.bcc} | ID: ${res.data?.id}`);
+      return { messageId: res.data?.id, response: `250 ${res.data?.id}`, ...res.data };
+    } catch (apiErr) {
+      console.warn(`[RESEND HTTPS FAILED] Falling back to SMTP transport: ${apiErr.response?.data?.message || apiErr.message}`);
     }
-
-    if (plainText) {
-      console.log('Body:    ', plainText.slice(0, 300));
-    }
-
-    if (options.attachments) {
-      console.log('Attachments: ', options.attachments.map(a => a.filename).join(', '));
-    }
-    console.log('=======================================\n');
-    return { messageId: `mock-id-${Date.now()}` };
   }
+
   return await transporter.sendMail(options);
 };
 

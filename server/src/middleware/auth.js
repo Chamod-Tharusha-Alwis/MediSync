@@ -76,12 +76,13 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
       else if (req.body && req.body.nic) accessedNic = req.body.nic;
       else if (req.body && req.body.patientNic) accessedNic = req.body.patientNic;
 
+      const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
       await AuditLog.create({
         actorId: decoded.id || decoded.sub || 'unknown',
         actorRole: decoded.role || 'unknown',
         action: `${req.method} ${req.originalUrl || req.path}`,
         accessedNic: accessedNic,
-        deviceModel: parseDeviceModel(req.headers['user-agent'])
+        deviceModel: parseDeviceModel(req.headers['user-agent'], clientHw)
       });
     } catch (auditErr) {
       console.error('Failed to write audit log:', auditErr);

@@ -16,6 +16,8 @@ router.put('/users/toggle-status', protect(['admin', 'super_admin']), adminContr
 // ─── Audit logs — both canonical and alias paths ──────────────────────────────
 router.get('/audit-logs', protect(['admin', 'super_admin']), adminController.getAuditLogs);
 router.get('/audit',      protect(['admin', 'super_admin']), adminController.getAuditLogs);  // alias
+router.get('/audit-logs/profile/:userId', protect(['admin', 'super_admin']), adminController.getUserAuditProfile);
+router.get('/users/:userId/audit-profile', protect(['admin', 'super_admin']), adminController.getUserAuditProfile);
 
 // ─── ML Engine ───────────────────────────────────────────────────────────────
 router.post('/outbreak/trigger', protect(['admin', 'super_admin', 'health_officer']), adminController.triggerMLDetection);

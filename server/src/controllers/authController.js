@@ -36,13 +36,15 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
     }
   }
 
+  const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'] || req.body?.clientDeviceModel;
+
   await SessionToken.create({
     userId,
     userModel,
     tokenHash,
     deviceInfo: ua,
     deviceFingerprint: fingerprint,
-    deviceModel: parseDeviceModel(ua),
+    deviceModel: parseDeviceModel(ua, clientHw),
     isTrusted: opts.isTrusted || isTrusted,
     isValid: true,
     lastUsed: new Date()
