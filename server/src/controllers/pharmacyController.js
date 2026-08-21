@@ -49,7 +49,10 @@ exports.registerPharmacy = async (req, res) => {
 exports.loginPharmacy = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const staff = await PharmacyStaff.findOne({ email }).populate('pharmacyId');
+    const cleanEmail = (email || '').trim();
+    const staff = await PharmacyStaff.findOne({ 
+      email: new RegExp('^' + cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+    }).populate('pharmacyId');
     if (!staff || !staff.isActive) return res.status(401).json({ error: 'Invalid credentials or inactive account' });
 
     const isMatch = await bcrypt.compare(password, staff.password);
