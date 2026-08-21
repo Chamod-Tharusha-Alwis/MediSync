@@ -359,14 +359,15 @@ exports.login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.status(200).json({ 
       data: {
         accessToken,
+        refreshToken,
         role: actualRole,
         subId,
         name,
@@ -500,13 +501,13 @@ exports.verifyLoginOTP = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.status(200).json({ 
-      data: { accessToken, role: actualRole, subId, name },
+      data: { accessToken, refreshToken, role: actualRole, subId, name },
       message: "Login successful"
     });
 
@@ -878,8 +879,8 @@ exports.heartbeat = async (req, res) => {
 
 exports.refreshToken = async (req, res) => {
   try {
-    const token = req.cookies.refreshToken;
-    if (!token) return res.status(401).json({ error: 'No refresh token' });
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+    if (!token) return res.status(401).json({ error: 'No refresh token provided' });
 
     let decoded;
     try {
@@ -889,11 +890,20 @@ exports.refreshToken = async (req, res) => {
     }
 
     const accessToken = jwt.sign({ id: decoded.id, role: decoded.role, sub: decoded.sub }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const newRefreshToken = jwt.sign({ id: decoded.id, role: decoded.role, sub: decoded.sub }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    
     const pharmacyRoles = ['pharmacist', 'pharmacy_admin', 'assistant'];
     const userModel = pharmacyRoles.includes(decoded.role) ? 'PharmacyStaff' : 'User';
     await createSession(decoded.id, userModel, accessToken, req);
 
-    return res.status(200).json({ data: { accessToken }, message: "Token refreshed" });
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.status(200).json({ data: { accessToken, refreshToken: newRefreshToken }, message: "Token refreshed" });
   } catch (err) {
     return res.status(500).json({ error: "Failed to refresh token", details: err.message });
   }

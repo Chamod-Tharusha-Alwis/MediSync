@@ -74,10 +74,13 @@ api.interceptors.response.use(
     }
 
     // ─── 401 — TOKEN REFRESH FLOW ─────────────────────────────────────────────
-    // Don't try to refresh on login/refresh endpoints themselves
+    // Don't try to refresh on login/refresh/heartbeat endpoints themselves
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
                            originalRequest.url?.includes('/auth/refresh') ||
+                           originalRequest.url?.includes('/auth/heartbeat') ||
                            originalRequest.url?.includes('/patient/login') ||
+                           originalRequest.url?.includes('/hospital/login') ||
+                           originalRequest.url?.includes('/pharmacy/login') ||
                            originalRequest.url?.includes('/verify-access') ||
                            originalRequest.url?.includes('/verify-otp');
 
@@ -87,11 +90,6 @@ api.interceptors.response.use(
 
     if (status === 401) {
       if (isAuthEndpoint) {
-        // If it's a login failure, clear any stale tokens just in case
-        // DO NOT clear for /verify-access, as that is used WHILE logged in
-        if (!originalRequest.url?.includes('/verify-access')) {
-           localStorage.clear();
-        }
         return Promise.reject(error);
       }
 
@@ -104,16 +102,20 @@ api.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
+          const storedRefreshToken = localStorage.getItem('refreshToken');
           const { data } = await axios.post(
             `${API_BASE_URL}/auth/refresh`,
-            {},
+            { refreshToken: storedRefreshToken },
             { withCredentials: true }
           );
 
           const newToken = data?.data?.accessToken || data?.accessToken;
+          const newRefreshToken = data?.data?.refreshToken || data?.refreshToken;
 
           if (newToken) {
             localStorage.setItem('token', newToken);
+            localStorage.setItem('accessToken', newToken);
+            if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
             api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
             originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
             return api(originalRequest);

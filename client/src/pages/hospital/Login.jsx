@@ -27,9 +27,11 @@ const HospitalLogin = () => {
         role: 'hospital_admin'
       });
 
-      const { accessToken, role, name } = response.data.data;
+      const { accessToken, refreshToken, role, name } = response.data.data;
       
       localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', role || 'hospital_admin');
       localStorage.setItem('userRole', role || 'hospital_admin');
       if (name) localStorage.setItem('userName', name);

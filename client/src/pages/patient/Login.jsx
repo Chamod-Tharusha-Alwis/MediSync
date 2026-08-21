@@ -27,10 +27,11 @@ const PatientLogin = () => {
         role: 'patient'
       });
 
-      const { accessToken, role, subId, name } = response.data.data;
+      const { accessToken, refreshToken, role, subId, name } = response.data.data;
 
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('token', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', role || 'patient');
       localStorage.setItem('userRole', role || 'patient');
       if (subId) localStorage.setItem('nic', subId);

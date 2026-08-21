@@ -163,12 +163,12 @@ exports.loginHospital = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
     
-    res.json({ message: 'Login successful', data: { accessToken, role: 'hospital_admin', hospitalName: hospital.name } });
+    res.json({ message: 'Login successful', data: { accessToken, refreshToken, role: 'hospital_admin', hospitalName: hospital.name } });
   } catch (error) {
     res.status(500).json({ error: 'Login failed', details: error.message });
   }

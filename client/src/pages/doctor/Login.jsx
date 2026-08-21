@@ -32,9 +32,11 @@ const DoctorLogin = () => {
       });
 
       const data = response.data.data;
-      const { accessToken, role, name, orgLogins } = data;
+      const { accessToken, refreshToken, role, name, orgLogins } = data;
       
       localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', role || 'doctor');
       localStorage.setItem('userRole', role || 'doctor');
       if (name) localStorage.setItem('userName', name);

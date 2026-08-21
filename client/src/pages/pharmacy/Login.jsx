@@ -22,9 +22,11 @@ const PharmacyLogin = () => {
 
     try {
       const response = await axiosInstance.post('/pharmacy/login', { email, password });
-      const { accessToken, role, pharmacyName, staffName } = response.data.data;
+      const { accessToken, refreshToken, role, pharmacyName, staffName } = response.data.data;
       
       localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', role || 'pharmacist');
       localStorage.setItem('userRole', role || 'pharmacist');
       if (staffName) localStorage.setItem('userName', staffName);

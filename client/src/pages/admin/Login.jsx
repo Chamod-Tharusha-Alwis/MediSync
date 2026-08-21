@@ -26,9 +26,11 @@ const AdminLogin = () => {
         role: 'admin'
       });
 
-      const { accessToken, role, name } = response.data.data;
+      const { accessToken, refreshToken, role, name } = response.data.data;
       
       localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', role || 'admin');
       localStorage.setItem('userRole', role || 'admin');
       if (name) localStorage.setItem('userName', name);

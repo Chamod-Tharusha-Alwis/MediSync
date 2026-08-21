@@ -159,8 +159,8 @@ exports.loginPharmacy = async (req, res) => {
     );
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -168,6 +168,7 @@ exports.loginPharmacy = async (req, res) => {
       message: 'Login successful',
       data: {
         accessToken,
+        refreshToken,
         role: staff.role,
         pharmacyName: staff.pharmacyId ? staff.pharmacyId.name : 'Unknown Pharmacy',
         staffName: staff.fullName
