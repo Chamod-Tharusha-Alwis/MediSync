@@ -194,7 +194,7 @@ const SessionMonitor = () => {
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                     {sessions.map(s => (
-                      <tr key={s._id} className="hover:bg-white/[0.01] transition-colors">
+                      <tr key={s._id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => { setSearchTerm(s.identifier); setActiveTab('audit'); }}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -225,7 +225,7 @@ const SessionMonitor = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
-                            onClick={() => handleForceLogout(s._id, s.fullName)}
+                            onClick={(e) => { e.stopPropagation(); handleForceLogout(s._id, s.fullName); }}
                             className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
                           >
                             <LogOut className="w-3 h-3" /> Force Logout
@@ -300,7 +300,7 @@ const SessionMonitor = () => {
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                     {logs.map((log, index) => (
-                      <tr key={log._id || index} className="hover:bg-white/[0.01] transition-colors">
+                      <tr key={log._id || index} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => { setSearchTerm(log.actorNic); setPage(1); }}>
                         <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
                           {formatDate(log.timestamp || log.createdAt)}
                         </td>

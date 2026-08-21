@@ -69,11 +69,11 @@ exports.getActiveSessions = async (req, res) => {
     });
 
     const [doctors, patients, pharmacists, hospitals, admins] = await Promise.all([
-      Doctor.find({ _id: { $in: userIds.Doctor } }).select('fullName role doctorId licenseNo').lean(),
-      Patient.find({ _id: { $in: userIds.Patient } }).select('fullName nic').lean(),
-      PharmacyStaff.find({ _id: { $in: userIds.PharmacyStaff } }).select('fullName role').lean(),
-      Hospital.find({ _id: { $in: userIds.Hospital } }).select('name regNo').lean(),
-      Admin.find({ _id: { $in: userIds.Admin } }).select('fullName role').lean()
+      Doctor.find({ _id: { $in: userIds.Doctor } }).select('fullName role doctorId licenseNo'),
+      Patient.find({ _id: { $in: userIds.Patient } }).select('fullName nic'),
+      PharmacyStaff.find({ _id: { $in: userIds.PharmacyStaff } }).select('fullName role email nic'),
+      Hospital.find({ _id: { $in: userIds.Hospital } }).select('name regNo'),
+      Admin.find({ _id: { $in: userIds.Admin } }).select('fullName role email')
     ]);
 
     const userMap = {};

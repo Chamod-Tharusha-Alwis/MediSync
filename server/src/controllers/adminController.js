@@ -1,3 +1,4 @@
+const Admin = require('../models/Admin');
 const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient');
 const Hospital = require('../models/Hospital');
@@ -147,10 +148,10 @@ exports.getAuditLogs = async (req, res) => {
 
     if (search) {
       const [doctors, patients, pharmacies, hospitals] = await Promise.all([
-        Doctor.find({ nic: new RegExp(search, 'i') }).select('_id'),
-        Patient.find({ nic: new RegExp(search, 'i') }).select('_id'),
-        PharmacyStaff.find({ nic: new RegExp(search, 'i') }).select('_id'),
-        Hospital.find({ nic: new RegExp(search, 'i') }).select('_id')
+        Doctor.find({ nic: new RegExp(search, 'i') }),
+        Patient.find({ nic: new RegExp(search, 'i') }),
+        PharmacyStaff.find({ nic: new RegExp(search, 'i') }),
+        Hospital.find({ nic: new RegExp(search, 'i') })
       ]);
       const matchedIds = [
         ...doctors.map(d => d._id.toString()),
@@ -166,23 +167,26 @@ exports.getAuditLogs = async (req, res) => {
 
     const uniqueActorIds = [...new Set(logs.map(log => log.actorId).filter(id => id))];
     
-    const [docs, pats, pharms, hosps] = await Promise.all([
-      Doctor.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic'),
-      Patient.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic'),
-      PharmacyStaff.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic'),
-      Hospital.find({ _id: { $in: uniqueActorIds } }).select('_id name nic')
-    ]);
-    
-    const userMap = {};
-    [...docs, ...pats, ...pharms].forEach(u => {
-      userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic };
-    });
-    hosps.forEach(h => {
-      userMap[h._id.toString()] = { fullName: h.name, nic: h.nic };
-    });
-    
-    logs = logs.map(log => {
-      const user = userMap[log.actorId];
+    const [docs, pats, pharms, hosps, admins] = await Promise.all([
+        Doctor.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic licenseNo doctorId'),
+        Patient.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic'),
+        PharmacyStaff.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic email'),
+        Hospital.find({ _id: { $in: uniqueActorIds } }).select('_id name regNo'),
+        Admin.find({ _id: { $in: uniqueActorIds } }).select('_id fullName email')
+      ]);
+      
+      const userMap = {};
+      docs.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.licenseNo || u.doctorId }; });
+      pats.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic }; });
+      pharms.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
+      hosps.forEach(u => { userMap[u._id.toString()] = { fullName: u.name, nic: u.regNo }; });
+      admins.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'System Admin', nic: u.email }; });
+      
+      console.log('uniqueActorIds:', uniqueActorIds);
+      
+      logs = logs.map(log => {
+      const user = userMap[log.actorId.toString()];
+        console.log("lookup for", log.actorId.toString(), "got", user);
       if (user) {
         return { ...log, actorName: user.fullName, actorNic: user.nic };
       }

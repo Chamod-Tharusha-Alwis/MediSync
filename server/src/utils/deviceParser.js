@@ -32,19 +32,23 @@ function parseDeviceModel(ua) {
   const huaweiMatch = ua.match(/(?:HUAWEI|HONOR)\s?([A-Z0-9\s]+?)(?:\s*Build|\s*\))/i);
   if (huaweiMatch) return `Huawei ${huaweiMatch[1].trim()}`;
 
-  // Generic Android: try to extract model from "Build/" pattern
+  // Generic Android: try to extract model from "Build/" pattern or parenthesis end
   const androidMatch = ua.match(/Android\s([\d.]+)/);
   if (androidMatch) {
-    // Standard format: "... ; MODEL_NAME Build/..."
-    const modelMatch = ua.match(/;\s*([^;)]+?)\s*Build\//);
-    if (modelMatch) {
-      const model = modelMatch[1].trim();
-      // Skip generic/empty model strings
-      if (model && model !== 'wv' && model.length > 1) {
-        return model;
-      }
+    // 1. Try to find "Build/" token
+    const buildMatch = ua.match(/;\s*([^;)]+?)\s*Build\//i);
+    if (buildMatch) {
+      const model = buildMatch[1].trim();
+      if (model && model !== 'wv' && model.length > 1 && model.toLowerCase() !== 'linux') return model;
     }
-    // No model info available — return generic label, not the OS version
+    
+    // 2. Try the token right after "Android XX;"
+    const parenMatch = ua.match(/Android\s[\d.]+(?:;\s*\w{2}-\w{2})?;\s*([^;)]+?)\)/i);
+    if (parenMatch) {
+      const model = parenMatch[1].trim();
+      if (model && model !== 'wv' && model.length > 1 && model.toLowerCase() !== 'linux') return model;
+    }
+
     return 'Android device';
   }
 

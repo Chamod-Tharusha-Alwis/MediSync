@@ -102,8 +102,9 @@ exports.sendOTPEmail = async (to, name, otp) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -135,8 +136,9 @@ exports.sendTempPasswordEmail = async (to, name, tempPassword, loginUrl, hospita
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -166,8 +168,9 @@ exports.sendWelcomeEmail = async (to, name, role) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -196,8 +199,9 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -270,8 +274,9 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
   };
 
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     console.error("Failed to send mass outbreak alert", err);
     return { success: false, error: err.message };
@@ -537,8 +542,9 @@ exports.sendAnomalyEmail = async (email, deviceModel, location) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -564,8 +570,9 @@ exports.sendRecoveryEmail = async (email, link, purpose) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -590,8 +597,9 @@ exports.sendDeviceRemovedEmail = async (email, deviceModel) => {
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -652,8 +660,9 @@ exports.sendLoginNotificationEmail = async (to, name, idField, role, device, net
     `
   };
   try {
-    await sendMail(mailOptions);
-    return { success: true };
+    const info = await sendMail(mailOptions);
+    console.log("SMTP Response:", info);
+    return { success: true, info };
   } catch (err) {
     console.error('Error sending login notification email:', err.message);
     return { success: false, error: err.message };
