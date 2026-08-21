@@ -2,40 +2,22 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 
 const provider = process.env.EMAIL_PROVIDER || 'resend';
-const resendApiKey = process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS;
+const resendApiKey = process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS || process.env.RESEND_KEY || process.env.RESEND_APIKEY;
 const fromAddress = process.env.RESEND_FROM_ADDRESS || 'MediSync System <onboarding@resend.dev>';
 
-let transportConfig;
-
+let transporter = null;
 if (provider === 'gmail') {
-  transportConfig = {
+  transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     connectionTimeout: 5000,
     greetingTimeout: 5000,
     socketTimeout: 5000
-  };
-} else {
-  transportConfig = {
-    host: process.env.RESEND_SMTP_HOST || 'smtp.resend.com',
-    port: parseInt(process.env.RESEND_SMTP_PORT || '465'),
-    secure: true,
-    auth: {
-      user: process.env.RESEND_SMTP_USER || 'resend',
-      pass: resendApiKey
-    },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 5000
-  };
+  });
 }
 
-const transporter = nodemailer.createTransport(transportConfig);
-
 // Startup verification
+console.log(`[EMAIL SERVICE INIT] Provider: ${provider} | Key Present: ${!!resendApiKey} | From: ${fromAddress}`);
 if (!resendApiKey && provider === 'resend') {
   console.warn('⚠️  [EMAIL CONFIG WARNING] Neither RESEND_API_KEY nor RESEND_SMTP_PASS is set in environment variables! Outbound emails will fail until configured in Render dashboard.');
 }
