@@ -1,4 +1,6 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config(); // fallback
 global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 global.ENCRYPTION_KEYS = { '1': process.env.ENCRYPTION_KEY };
 global.ACTIVE_KEY_VERSION = 1;
