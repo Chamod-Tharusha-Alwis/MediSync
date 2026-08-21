@@ -294,7 +294,7 @@ const SessionMonitor = () => {
                       <th className="px-6 py-4">Actor</th>
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Logged Action</th>
-                      <th className="px-6 py-4">Accessed Patient NIC</th>
+                      <th className="px-6 py-4">Logout Time</th>
                       <th className="px-6 py-4 text-right">Device</th>
                     </tr>
                   </thead>
@@ -326,12 +326,8 @@ const SessionMonitor = () => {
                         <td className="px-6 py-4">
                           <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>{log.action || 'Unknown'}</span>
                         </td>
-                        <td className="px-6 py-4 font-mono text-xs text-slate-300">
-                          {log.accessedNic && log.accessedNic !== 'N/A' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-red-500/[0.03] border border-red-500/10 text-red-400"><Lock className="w-3 h-3 text-red-500/60" /> {maskNic(log.accessedNic)}</span>
-                          ) : (
-                            <span className="text-slate-600">—</span>
-                          )}
+                        <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
+                          {log.logoutTime ? formatDate(log.logoutTime) : '—'}
                         </td>
                         <td className="px-6 py-4 text-slate-400 text-xs text-right">
                           <span className="inline-flex items-center gap-1"><Smartphone className="w-3.5 h-3.5 opacity-40 shrink-0" />{log.deviceModel || '—'}</span>

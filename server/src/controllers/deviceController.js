@@ -5,6 +5,7 @@ const Patient = require('../models/Patient');
 const PharmacyStaff = require('../models/PharmacyStaff');
 const Hospital = require('../models/Hospital');
 const Admin = require('../models/Admin');
+const { parseDeviceModel } = require('../utils/deviceParser');
 
 // User: get my trusted devices
 exports.getMyDevices = async (req, res) => {
@@ -69,19 +70,19 @@ exports.getActiveSessions = async (req, res) => {
     });
 
     const [doctors, patients, pharmacists, hospitals, admins] = await Promise.all([
-      Doctor.find({ _id: { $in: userIds.Doctor } }).select('fullName role doctorId licenseNo'),
-      Patient.find({ _id: { $in: userIds.Patient } }).select('fullName nic'),
-      PharmacyStaff.find({ _id: { $in: userIds.PharmacyStaff } }).select('fullName role email nic'),
-      Hospital.find({ _id: { $in: userIds.Hospital } }).select('name regNo'),
-      Admin.find({ _id: { $in: userIds.Admin } }).select('fullName role email')
+      Doctor.find({ _id: { $in: userIds.Doctor } }),
+      Patient.find({ _id: { $in: userIds.Patient } }),
+      PharmacyStaff.find({ _id: { $in: userIds.PharmacyStaff } }),
+      Hospital.find({ _id: { $in: userIds.Hospital } }),
+      Admin.find({ _id: { $in: userIds.Admin } })
     ]);
 
     const userMap = {};
     doctors.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'doctor', identifier: u.licenseNo || u.doctorId || '—' });
     patients.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: 'patient', identifier: u.nic || '—' });
-    pharmacists.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'pharmacist', identifier: '—' });
-    hospitals.forEach(u => userMap[u._id.toString()] = { fullName: u.name, role: 'hospital_admin', identifier: u.regNo || '—' });
-    admins.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'admin', identifier: '—' });
+    pharmacists.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName, role: u.role || 'pharmacist', identifier: u.email || '—' });
+    hospitals.forEach(u => userMap[u._id.toString()] = { fullName: u.name, role: 'hospital_admin', identifier: u.regNo || u.email || '—' });
+    admins.forEach(u => userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'Admin', role: u.role || 'admin', identifier: u.email || '—' });
 
     // Check trusted status
     const fingerprints = sessions.filter(s => s.deviceFingerprint).map(s => ({ userId: s.userId, fp: s.deviceFingerprint }));
@@ -94,13 +95,22 @@ exports.getActiveSessions = async (req, res) => {
     const enriched = sessions.map(s => {
       const user = userMap[s.userId?.toString()] || { fullName: 'Unknown', role: 'unknown', identifier: '—' };
       const isTrusted = trustedSet.has(`${s.userId}_${s.deviceFingerprint}`);
+      
+      // Dynamic device model resolution: if deviceModel is generic/empty, re-parse from stored deviceInfo (raw UA)
+      let resolvedModel = s.deviceModel;
+      if (!resolvedModel || resolvedModel === 'Unknown' || resolvedModel === 'Android device' || resolvedModel === 'Test Device') {
+        if (s.deviceInfo) {
+          resolvedModel = parseDeviceModel(s.deviceInfo);
+        }
+      }
+
       return {
         _id: s._id,
         userId: s.userId,
         fullName: user.fullName,
         role: user.role,
         identifier: user.identifier,
-        deviceModel: s.deviceModel || 'Unknown',
+        deviceModel: resolvedModel || 'Unknown',
         deviceFingerprint: s.deviceFingerprint,
         loginTime: s.createdAt,
         lastUsed: s.lastUsed,

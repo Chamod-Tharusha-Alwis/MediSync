@@ -6,6 +6,7 @@ const PharmacyStaff = require('../models/PharmacyStaff');
 const Consultation = require('../models/Consultation');
 const Prescription = require('../models/Prescription');
 const AuditLog = require('../models/AuditLog');
+const SessionToken = require('../models/SessionToken');
 const BanRecord = require('../models/BanRecord');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
@@ -167,30 +168,53 @@ exports.getAuditLogs = async (req, res) => {
 
     const uniqueActorIds = [...new Set(logs.map(log => log.actorId).filter(id => id))];
     
-    const [docs, pats, pharms, hosps, admins] = await Promise.all([
-        Doctor.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic licenseNo doctorId'),
-        Patient.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic'),
-        PharmacyStaff.find({ _id: { $in: uniqueActorIds } }).select('_id fullName nic email'),
-        Hospital.find({ _id: { $in: uniqueActorIds } }).select('_id name regNo'),
-        Admin.find({ _id: { $in: uniqueActorIds } }).select('_id fullName email')
-      ]);
-      
-      const userMap = {};
-      docs.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.licenseNo || u.doctorId }; });
-      pats.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic }; });
-      pharms.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
-      hosps.forEach(u => { userMap[u._id.toString()] = { fullName: u.name, nic: u.regNo }; });
-      admins.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'System Admin', nic: u.email }; });
-      
-      console.log('uniqueActorIds:', uniqueActorIds);
-      
-      logs = logs.map(log => {
-      const user = userMap[log.actorId.toString()];
-        console.log("lookup for", log.actorId.toString(), "got", user);
-      if (user) {
-        return { ...log, actorName: user.fullName, actorNic: user.nic };
+    const [docs, pats, pharms, hosps, admins, activeSessions, endedSessions] = await Promise.all([
+      Doctor.find({ _id: { $in: uniqueActorIds } }),
+      Patient.find({ _id: { $in: uniqueActorIds } }),
+      PharmacyStaff.find({ _id: { $in: uniqueActorIds } }),
+      Hospital.find({ _id: { $in: uniqueActorIds } }),
+      Admin.find({ _id: { $in: uniqueActorIds } }),
+      SessionToken.find({ userId: { $in: uniqueActorIds }, isValid: true }).select('userId').lean(),
+      SessionToken.find({ userId: { $in: uniqueActorIds }, isValid: false }).sort({ updatedAt: -1, logoutAt: -1 }).lean()
+    ]);
+    
+    const activeUserSet = new Set(activeSessions.map(s => s.userId.toString()));
+
+    const logoutMap = {};
+    endedSessions.forEach(s => {
+      const uid = s.userId.toString();
+      if (!logoutMap[uid]) {
+        logoutMap[uid] = s.logoutAt || s.expiredAt || s.updatedAt;
       }
-      return log;
+    });
+
+    [...docs, ...pats, ...pharms, ...hosps, ...admins].forEach(u => {
+      const uid = u._id.toString();
+      if (!logoutMap[uid] && u.lastSignOutAt) {
+        logoutMap[uid] = u.lastSignOutAt;
+      }
+    });
+
+    const userMap = {};
+    docs.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.licenseNo || u.doctorId || u.email }; });
+    pats.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
+    pharms.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName, nic: u.nic || u.email }; });
+    hosps.forEach(u => { userMap[u._id.toString()] = { fullName: u.name, nic: u.regNo || u.email }; });
+    admins.forEach(u => { userMap[u._id.toString()] = { fullName: u.fullName || u.name || 'System Admin', nic: u.email }; });
+    
+    logs = logs.map(log => {
+      const actorIdStr = (log.actorId || '').toString();
+      const user = userMap[actorIdStr];
+      const isOnline = activeUserSet.has(actorIdStr);
+      const logoutTime = logoutMap[actorIdStr] || null;
+
+      return {
+        ...log,
+        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'System Admin' : 'Unknown User'),
+        actorNic: user ? user.nic : '—',
+        isOnline,
+        logoutTime
+      };
     });
 
     res.json({ data: logs, pagination: { total, page, pages: Math.ceil(total / limit) } });
