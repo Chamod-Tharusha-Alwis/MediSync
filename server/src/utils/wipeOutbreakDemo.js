@@ -19,7 +19,7 @@ async function wipeOutbreakDemo() {
   const delBroadcasts = await BroadcastMessage.deleteMany({
     $or: [
       { isDemoData: true },
-      { title: new RegExp('DENGUE|LEPTOSPIROSIS|CHICKENPOX', 'i') }
+      { title: new RegExp('DENGUE|LEPTOSPIROSIS|CHICKENPOX|CHOLERA|TYPHOID', 'i') }
     ]
   });
 

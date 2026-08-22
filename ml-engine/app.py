@@ -380,46 +380,39 @@ def calculate_outbreak_metrics(current_cases, baseline, disease=None, base_dange
     
     if danger_level == 'Low':
         # Low Danger: e.g. Common Cold, Allergies, Skin Rashes
-        # Requires >100 cases and >=800% spike
-        if current_cases > 100 and (spike_percentage >= 800 or (baseline == 0 and current_cases > 100)):
+        if current_cases >= 25 and spike_percentage >= 150:
             is_anomaly = True
-            # Capped Alert Level: Never allow 'high' / 'High' for Low Danger diseases
             severity = 'medium'
             risk_level = 'Medium'
-        elif spike_percentage >= 300 and current_cases > 50:
+        elif current_cases >= 10 and spike_percentage >= 50:
             severity = 'low'
             risk_level = 'Low'
             
     elif danger_level == 'Medium':
-        # Medium Danger: e.g. Gastroenteritis, General digestive/systemic
-        # Requires >30 cases and >=300% spike
-        if current_cases > 30 and (spike_percentage >= 300 or (baseline == 0 and current_cases > 30)):
+        # Medium Danger: e.g. Leptospirosis, Typhoid, Gastroenteritis
+        if current_cases >= 6 and (spike_percentage >= 100 or baseline == 0):
             is_anomaly = True
-            if spike_percentage >= 600 or baseline == 0:
-                severity = 'high'
-                risk_level = 'High'
-            else:
-                severity = 'medium'
-                risk_level = 'Medium'
-        elif spike_percentage >= 150 and current_cases > 15:
+            severity = 'high'
+            risk_level = 'High'
+        elif current_cases >= 4 and spike_percentage >= 40:
+            is_anomaly = True
+            severity = 'medium'
+            risk_level = 'Medium'
+        elif spike_percentage >= 20:
             severity = 'low'
             risk_level = 'Low'
             
     else:
-        # High Danger (Default/Strict): e.g. Dengue, Cholera, Malaria, TB, AIDS, Pneumonia
-        # Strict >10 cases and >=150% spike
-        if current_cases > 10 and (spike_percentage >= 150 or (baseline == 0 and current_cases > 10)):
+        # High Danger: e.g. Dengue, Cholera, Malaria, TB, Pneumonia
+        if current_cases >= 8 and (spike_percentage >= 100 or baseline == 0):
             is_anomaly = True
-            if spike_percentage >= 600 or baseline == 0:
-                severity = 'high'
-                risk_level = 'High'
-            elif spike_percentage >= 300:
-                severity = 'medium'
-                risk_level = 'Medium'
-            else:
-                severity = 'low'
-                risk_level = 'Low'
-        elif spike_percentage >= 100 and current_cases > 5:
+            severity = 'high'
+            risk_level = 'High'
+        elif current_cases >= 4 and spike_percentage >= 40:
+            is_anomaly = True
+            severity = 'medium'
+            risk_level = 'Medium'
+        elif spike_percentage >= 20:
             severity = 'low'
             risk_level = 'Low'
             

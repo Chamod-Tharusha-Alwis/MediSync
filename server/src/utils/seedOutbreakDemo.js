@@ -28,13 +28,23 @@ async function seedOutbreakDemo() {
 
   const tiers = [
     { tier: 'CRITICAL', disease: 'Dengue', district: 'Kandy', baselineDailyAvg: 7, todaySpikeCount: 18 },
-    { tier: 'WARNING', disease: 'Leptospirosis', district: 'Colombo', baselineDailyAvg: 4, todaySpikeCount: 7 },
+    { tier: 'CRITICAL', disease: 'Cholera', district: 'Jaffna', baselineDailyAvg: 4, todaySpikeCount: 14 },
+    { tier: 'WARNING', disease: 'Leptospirosis', district: 'Colombo', baselineDailyAvg: 5, todaySpikeCount: 9 },
+    { tier: 'WARNING', disease: 'Typhoid', district: 'Matara', baselineDailyAvg: 4, todaySpikeCount: 7 },
     { tier: 'NORMAL', disease: 'Chickenpox', district: 'Galle', baselineDailyAvg: 3, todaySpikeCount: 3 }
   ];
 
-  let summary = { CRITICAL: 0, WARNING: 0, NORMAL: 0, total: 0 };
+  let summary = {
+    CRITICAL_DENGUE_KANDY: 0,
+    CRITICAL_CHOLERA_JAFFNA: 0,
+    WARNING_LEPTOSPIROSIS_COLOMBO: 0,
+    WARNING_TYPHOID_MATARA: 0,
+    NORMAL_CHICKENPOX_GALLE: 0,
+    total: 0
+  };
 
   for (const t of tiers) {
+    const summaryKey = `${t.tier}_${t.disease.toUpperCase()}_${t.district.toUpperCase()}`;
     // 14-day historical baseline
     for (let dayOffset = 14; dayOffset >= 1; dayOffset--) {
       const dayDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
@@ -55,7 +65,7 @@ async function seedOutbreakDemo() {
           createdAt: dayDate,
           updatedAt: dayDate
         });
-        summary[t.tier]++;
+        summary[summaryKey] = (summary[summaryKey] || 0) + 1;
         summary.total++;
       }
     }
@@ -71,27 +81,29 @@ async function seedOutbreakDemo() {
         hospitalId: hospital._id,
         diagnosis: t.disease,
         district: t.district,
-        symptoms: ['Acute high fever', 'Joint pain'],
+        symptoms: ['Acute high fever', 'Joint pain', 'Vomiting'],
         isDemoData: true,
         isSynthetic: true,
         createdAt: now,
         updatedAt: now
       });
-      summary[t.tier]++;
+      summary[summaryKey] = (summary[summaryKey] || 0) + 1;
       summary.total++;
     }
   }
 
-  // Insert records individually or in batches to ensure encryption hooks run cleanly
+  // Insert records individually to ensure encryption hooks run cleanly
   for (const r of records) {
     const consultation = new Consultation(r);
     await consultation.save();
   }
 
-  console.log('✅ Outbreak Seeding Complete:');
-  console.log(`   - Critical Tier (Dengue in Kandy): ${summary.CRITICAL} cases`);
-  console.log(`   - Warning Tier (Leptospirosis in Colombo): ${summary.WARNING} cases`);
-  console.log(`   - Normal Tier (Chickenpox in Galle): ${summary.NORMAL} cases`);
+  console.log('✅ Outbreak Seeding Complete (5 Tiers):');
+  console.log(`   - Critical Tier 1 (Dengue in Kandy): ${summary.CRITICAL_DENGUE_KANDY} cases`);
+  console.log(`   - Critical Tier 2 (Cholera in Jaffna): ${summary.CRITICAL_CHOLERA_JAFFNA} cases`);
+  console.log(`   - Warning Tier 1 (Leptospirosis in Colombo): ${summary.WARNING_LEPTOSPIROSIS_COLOMBO} cases`);
+  console.log(`   - Warning Tier 2 (Typhoid in Matara): ${summary.WARNING_TYPHOID_MATARA} cases`);
+  console.log(`   - Normal Tier (Chickenpox in Galle): ${summary.NORMAL_CHICKENPOX_GALLE} cases`);
   console.log(`   - Total Cases: ${summary.total}`);
   return summary;
 }

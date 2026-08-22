@@ -89,8 +89,14 @@ const OutbreakMonitor = () => {
       const result = res.data.data || res.data;
 
       if (result.results && Array.isArray(result.results)) {
-        const riskWeight = { 'high': 3, 'medium': 2, 'low': 1 };
-        result.results.sort((a, b) => (riskWeight[b.severity] || 0) - (riskWeight[a.severity] || 0));
+        const getTierRank = (r) => {
+          const s = (r.severity || r.risk_level || '').toLowerCase();
+          if (s === 'critical' || s === 'high' || (r.anomaly && r.spike_percentage >= 100)) return 3;
+          if (s === 'warning' || s === 'medium' || s === 'moderate' || (r.anomaly && r.spike_percentage >= 40)) return 2;
+          if (r.latest_actual > 0) return 1;
+          return 0;
+        };
+        result.results.sort((a, b) => getTierRank(b) - getTierRank(a) || (b.latest_actual - a.latest_actual));
       }
 
       setMlResult(result);
@@ -296,22 +302,38 @@ const OutbreakMonitor = () => {
                 const isAnomaly = item.anomaly;
                 const spikePct = item.baseline ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : 0;
                 
+                // Determine normalized tier label
+                const s = (item.severity || item.risk_level || '').toLowerCase();
+                let tierLabel = 'NORMAL';
+                let badgeStyle = 'bg-slate-800 border border-slate-700 text-slate-400';
+                let cardStyle = 'bg-slate-950/20 border-white/5';
+                let devColor = spikePct < 0 ? 'text-slate-500' : 'text-emerald-400';
+
+                if (s === 'critical' || s === 'high' || (isAnomaly && spikePct >= 100)) {
+                  tierLabel = 'CRITICAL';
+                  badgeStyle = 'bg-red-500/15 border border-red-500/30 text-red-400 font-black tracking-wider';
+                  cardStyle = 'bg-red-500/[0.04] border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.12)]';
+                  devColor = 'text-red-400 font-bold';
+                } else if (s === 'warning' || s === 'medium' || s === 'moderate' || (isAnomaly && spikePct >= 40)) {
+                  tierLabel = 'WARNING';
+                  badgeStyle = 'bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black tracking-wider';
+                  cardStyle = 'bg-amber-500/[0.03] border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.10)]';
+                  devColor = 'text-amber-400 font-bold';
+                }
+
+                const isCritOrWarn = tierLabel === 'CRITICAL' || tierLabel === 'WARNING';
+                const formattedDev = `${spikePct > 0 ? '+' : ''}${Math.round(spikePct)}%`;
+
                 return (
                   <div
-                    key={`${item.disease}-${idx}`}
-                    className={`p-4 rounded-xl border flex flex-col justify-between ${
-                      isAnomaly
-                        ? 'bg-red-500/[0.02] border-red-500/20'
-                        : 'bg-slate-950/20 border-white/5'
-                    }`}
+                    key={`${item.disease}-${item.district}-${idx}`}
+                    className={`p-4 rounded-xl border flex flex-col justify-between transition-all duration-200 ${cardStyle}`}
                   >
                     <div>
                       <div className="flex justify-between items-start gap-2 mb-2 select-none">
                         <span className="text-white font-bold text-sm truncate">{item.disease}</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          isAnomaly ? 'bg-red-500/15 border border-red-500/25 text-red-400' : 'bg-slate-800 border border-slate-700 text-slate-400'
-                        }`}>
-                          {item.severity}
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeStyle}`}>
+                          {tierLabel}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 flex items-center gap-1">
@@ -322,14 +344,14 @@ const OutbreakMonitor = () => {
                     <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-end select-none">
                       <div>
                         <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
-                        <span className={`text-sm font-mono font-bold ${isAnomaly ? 'text-red-400' : 'text-slate-300'}`}>
+                        <span className={`text-sm font-mono font-bold ${isCritOrWarn ? (tierLabel === 'CRITICAL' ? 'text-red-400' : 'text-amber-400') : 'text-slate-300'}`}>
                           {zScore.toFixed(2)}
                         </span>
                       </div>
                       <div className="text-right">
                         <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Deviation</span>
-                        <span className={`text-sm font-mono font-bold ${isAnomaly ? 'text-red-400' : 'text-emerald-400'}`}>
-                          +{Math.round(spikePct)}%
+                        <span className={`text-sm font-mono ${devColor}`}>
+                          {formattedDev}
                         </span>
                       </div>
                     </div>
