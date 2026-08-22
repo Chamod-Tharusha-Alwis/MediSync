@@ -48,4 +48,25 @@ router.post('/users/:id/recovery', protect(['admin', 'super_admin']), adminContr
 // ─── Broadcasts ──────────────────────────────────────────────────────────────
 router.get('/broadcasts', protect(['admin', 'super_admin']), adminController.getBroadcasts);
 
+// ─── Demo Seeding & Wiping (Viva / Demo Only) ──────────────────────────────────
+router.post('/seed-outbreak-demo', protect(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const seedOutbreakDemo = require('../utils/seedOutbreakDemo');
+    const summary = await seedOutbreakDemo();
+    res.json({ message: 'Demo disease outbreak cases seeded successfully', data: summary });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to seed demo outbreak cases', details: err.message });
+  }
+});
+
+router.delete('/seed-outbreak-demo', protect(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const wipeOutbreakDemo = require('../utils/wipeOutbreakDemo');
+    const result = await wipeOutbreakDemo();
+    res.json({ message: 'Demo disease outbreak cases wiped successfully', data: result });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to wipe demo outbreak cases', details: err.message });
+  }
+});
+
 module.exports = router;
