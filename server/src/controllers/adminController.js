@@ -18,7 +18,7 @@ const { parseDeviceModel } = require('../utils/deviceParser');
 const crypto = require('crypto');
 
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
-const ML_TIMEOUT = 30000; // 30 seconds
+const ML_TIMEOUT = 90000; // 90 seconds to accommodate Render free-tier cold starts
 
 // ─── EXISTING: getSystemStats ─────────────────────────────────────────────────
 exports.getSystemStats = async (req, res) => {
@@ -506,15 +506,36 @@ exports.triggerMLDetection = async (req, res) => {
       return item;
     });
 
-    // Send as direct array payload to new route
-    const { data } = await axios.post(
-      `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
-      payload, 
-      { 
-        timeout: 30000,
-        headers: { 'x-internal-key': generateToken() }
+    // Send as direct array payload to ML engine with 90s timeout to survive Render cold start
+    let mlResponse;
+    try {
+      mlResponse = await axios.post(
+        `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
+        payload, 
+        { 
+          timeout: ML_TIMEOUT,
+          headers: { 'x-internal-key': generateToken() }
+        }
+      );
+    } catch (primaryErr) {
+      // If timed out or cold-starting (502/503/ECONNREFUSED/ECONNABORTED), retry once
+      if (primaryErr.code === 'ECONNABORTED' || primaryErr.code === 'ECONNREFUSED' || primaryErr.response?.status >= 500) {
+        console.log('[Admin] ML Engine cold-start retry in progress...');
+        await new Promise(r => setTimeout(r, 3000));
+        mlResponse = await axios.post(
+          `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
+          payload, 
+          { 
+            timeout: ML_TIMEOUT,
+            headers: { 'x-internal-key': generateToken() }
+          }
+        );
+      } else {
+        throw primaryErr;
       }
-    );
+    }
+
+    const data = mlResponse.data;
 
     // 5. If anomaly detected, save an OutbreakAlert record and emit Socket event
     if (data.results && Array.isArray(data.results)) {
@@ -556,10 +577,10 @@ exports.triggerMLDetection = async (req, res) => {
     console.error('[Admin] ML trigger error:', err.message);
     console.error('[FATAL] ML Engine API Failed:', err.response ? err.response.data : err.message);
     if (err.code === 'ECONNREFUSED') {
-      return res.status(503).json({ error: 'ML Engine is offline' });
+      return res.status(503).json({ error: 'ML Engine is starting up or offline. Please retry in 30 seconds.' });
     }
     if (err.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'ML Engine timed out' });
+      return res.status(504).json({ error: 'ML Engine cold-start timeout. Please retry in a few seconds.' });
     }
     return res.status(500).json({ error: err.response ? err.response.data.error || 'ML Engine Error' : err.message });
   }
@@ -568,10 +589,24 @@ exports.triggerMLDetection = async (req, res) => {
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
   try {
-    const { data } = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
-      timeout: ML_TIMEOUT,
-      headers: { 'x-internal-key': generateToken() }
-    });
+    let resp;
+    try {
+      resp = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
+        timeout: ML_TIMEOUT,
+        headers: { 'x-internal-key': generateToken() }
+      });
+    } catch (primaryErr) {
+      if (primaryErr.code === 'ECONNABORTED' || primaryErr.code === 'ECONNREFUSED' || primaryErr.response?.status >= 500) {
+        await new Promise(r => setTimeout(r, 2000));
+        resp = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
+          timeout: ML_TIMEOUT,
+          headers: { 'x-internal-key': generateToken() }
+        });
+      } else {
+        throw primaryErr;
+      }
+    }
+    const data = resp.data;
     return res.json({
       status: data.status || 'active',
       lastTrained: data.lastTrained || data.last_trained || null,
@@ -582,7 +617,7 @@ exports.getMLStatus = async (req, res) => {
     });
   } catch (err) {
     if (err.code === 'ECONNREFUSED' || err.code === 'ECONNABORTED') {
-      return res.status(503).json({ status: 'offline', message: 'ML engine is not reachable' });
+      return res.status(503).json({ status: 'offline', message: 'ML engine is spinning up, please retry shortly' });
     }
     return res.status(503).json({ status: 'offline', error: err.message });
   }

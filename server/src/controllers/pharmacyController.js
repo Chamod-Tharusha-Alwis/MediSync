@@ -539,7 +539,7 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       const mlRes = await axios.post(
         `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/predict-district-demand`,
         { district, drugTrends },
-        { headers: { 'x-internal-key': generateToken() }, timeout: 4000 }
+        { headers: { 'x-internal-key': generateToken() }, timeout: 60000 }
       );
       return res.json(mlRes.data);
     } catch (mlErr) {

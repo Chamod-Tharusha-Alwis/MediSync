@@ -311,7 +311,7 @@ async function startServer() {
   
   const checkMLEngine = async () => {
     try {
-      const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 2000 });
+      const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 60000 });
       if (resp.status === 200) {
         if (mlIsReady !== true) {
           console.log('[Server] ML Engine is online and ready.');
@@ -326,9 +326,9 @@ async function startServer() {
     }
   };
   
-  // Run immediately, then check every 30 seconds
+  // Run immediately on boot, then warm-ping every 5 minutes to prevent idle spin-down
   checkMLEngine();
-  setInterval(checkMLEngine, 30000);
+  setInterval(checkMLEngine, 5 * 60 * 1000);
 
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
