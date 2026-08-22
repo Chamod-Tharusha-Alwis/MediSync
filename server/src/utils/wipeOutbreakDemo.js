@@ -13,7 +13,7 @@ async function wipeOutbreakDemo() {
   console.log('🧹 [Outbreak Demo] Wiping all demo outbreak data...');
 
   const delCases = await Consultation.deleteMany({
-    $or: [{ isDemoData: true }, { isSynthetic: true }]
+    $or: [{ isDemoData: true }, { isSynthetic: true }, { consultationId: /^CON-DEMO-/ }]
   });
 
   const delBroadcasts = await BroadcastMessage.deleteMany({

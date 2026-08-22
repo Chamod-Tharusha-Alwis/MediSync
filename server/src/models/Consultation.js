@@ -23,6 +23,8 @@ const consultationSchema = new mongoose.Schema({
   riskScore: Number,
   loginType: { type: String, enum: ['personal', 'hospital'] },
   sessionHospitalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' },
+  isDemoData: { type: Boolean, default: false },
+  isSynthetic: { type: Boolean, default: false },
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 
