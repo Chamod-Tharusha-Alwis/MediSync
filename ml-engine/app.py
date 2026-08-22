@@ -76,24 +76,137 @@ def init_db():
 init_db()
 
 symptom_data = []
+
+# Load clinical disease dataset (4,920 cases, 42 disease categories with mapped symptoms)
+try:
+    dataset_path = os.path.join(data_dir, 'dataset.csv')
+    desc_path = os.path.join(data_dir, 'symptom_Description.csv')
+    prec_path = os.path.join(data_dir, 'symptom_precaution.csv')
+    sev_path = os.path.join(data_dir, 'Symptom-severity.csv')
+
+    # 1. Symptom weights / severity
+    sym_weights = {}
+    if os.path.exists(sev_path):
+        sev_df = pd.read_csv(sev_path)
+        for _, r in sev_df.iterrows():
+            sym_weights[str(r['Symptom']).strip().lower().replace('_', ' ')] = float(r.get('weight', 3))
+
+    # 2. Descriptions
+    desc_map = {}
+    if os.path.exists(desc_path):
+        desc_df = pd.read_csv(desc_path)
+        desc_map = dict(zip(desc_df['Disease'].str.strip().str.lower(), desc_df['Description'].str.strip()))
+
+    # 3. Precautions
+    prec_map = {}
+    if os.path.exists(prec_path):
+        prec_df = pd.read_csv(prec_path)
+        for _, r in prec_df.iterrows():
+            d = str(r['Disease']).strip().lower()
+            precs = [str(r[c]).strip() for c in prec_df.columns[1:] if pd.notna(r[c]) and str(r[c]).strip()]
+            prec_map[d] = precs
+
+    # 4. Standard ICD-10 Code Map for Clinical Diseases
+    icd_map = {
+        'peptic ulcer diseae': 'K27.9',
+        'gastroenteritis': 'K52.9',
+        'gerd': 'K21.9',
+        'osteoarthristis': 'M19.9',
+        'arthritis': 'M13.9',
+        'bronchial asthma': 'J45.9',
+        'pneumonia': 'J18.9',
+        'heart attack': 'I21.9',
+        'tuberculosis': 'A15.0',
+        'dengue': 'A90',
+        'malaria': 'B54',
+        'typhoid': 'A01.0',
+        'chicken pox': 'B01.9',
+        'common cold': 'J00',
+        'allergy': 'T78.4',
+        'diabetes ': 'E11.9',
+        'hypertension ': 'I10',
+        'migraine': 'G43.9',
+        'cervical spondylosis': 'M47.8',
+        'paralysis (brain hemorrhage)': 'I61.9',
+        'jaundice': 'R17',
+        'hepatitis a': 'B15.9',
+        'hepatitis b': 'B16.9',
+        'hepatitis c': 'B17.1',
+        'hepatitis d': 'B17.0',
+        'hepatitis e': 'B17.2',
+        'alcoholic hepatitis': 'K70.1',
+        'chronic cholestasis': 'K83.1',
+        'drug reaction': 'T88.7',
+        'fungal infection': 'B35.9',
+        'aids': 'B20',
+        'dimorphic hemmorhoids(piles)': 'K64.9',
+        'varicose veins': 'I83.9',
+        'hypothyroidism': 'E03.9',
+        'hyperthyroidism': 'E05.9',
+        'hypoglycemia': 'E16.2',
+        'urinary tract infection': 'N39.0',
+        'psoriasis': 'L40.9',
+        'impetigo': 'L01.0',
+        'acne': 'L70.0',
+        '(vertigo) paroymsal  positional vertigo': 'H81.1'
+    }
+
+    # 5. Aggregate unique symptoms per disease from dataset.csv
+    if os.path.exists(dataset_path):
+        df_ds = pd.read_csv(dataset_path)
+        disease_symptoms_map = {}
+        for _, row in df_ds.iterrows():
+            disease = str(row['Disease']).strip()
+            if disease not in disease_symptoms_map:
+                disease_symptoms_map[disease] = set()
+            for col in df_ds.columns[1:]:
+                sym = row[col]
+                if pd.notna(sym) and isinstance(sym, str) and sym.strip():
+                    cleaned = sym.strip().replace('_', ' ').lower()
+                    disease_symptoms_map[disease].add(cleaned)
+
+        for disease, syms in disease_symptoms_map.items():
+            d_clean = disease.strip()
+            d_lower = d_clean.lower()
+            syms_list = sorted(list(syms))
+            # Calculate average severity from symptom weights
+            weights = [sym_weights.get(s, 3.0) for s in syms_list]
+            avg_sev = float(sum(weights) / max(1, len(weights)))
+
+            symptom_data.append({
+                "disease": d_clean,
+                "icd_code": icd_map.get(d_lower, 'R69'),
+                "avg_severity": round(avg_sev, 2),
+                "base_danger_level": "High" if avg_sev >= 4.5 else ("Medium" if avg_sev >= 3.0 else "Low"),
+                "symptoms": syms_list,
+                "description": desc_map.get(d_lower, f"Clinical diagnosis profile for {d_clean}."),
+                "precautions": prec_map.get(d_lower, ["Consult a healthcare provider for comprehensive evaluation."])
+            })
+        print(f"Loaded {len(symptom_data)} clinical disease profiles with symptom mapping from dataset.csv")
+except Exception as e:
+    print("Warning: Could not load dataset.csv symptom profiles:", e)
+
+# Also load supplementary ICD-10 table if available
 try:
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute("SELECT disease_name, icd_code, avg_severity, base_danger_level FROM icd10_diseases")
     rows = c.fetchall()
+    existing_diseases = {d['disease'].lower() for d in symptom_data}
     for row in rows:
         d_name = row[0] or "Unknown"
-        symptom_data.append({
-            "disease": d_name,
-            "icd_code": row[1] or "",
-            "avg_severity": float(row[2] or 5.0),
-            "base_danger_level": row[3] or "Medium",
-            "symptoms": [d_name], # Use disease name as the "symptom" for TF-IDF matching
-            "description": f"71k DB Matched Condition: {d_name}",
-            "precautions": ["Consult a doctor for accurate diagnosis and treatment."]
-        })
+        if d_name.lower() not in existing_diseases:
+            symptom_data.append({
+                "disease": d_name,
+                "icd_code": row[1] or "",
+                "avg_severity": float(row[2] or 5.0),
+                "base_danger_level": row[3] or "Medium",
+                "symptoms": [d_name.lower()],
+                "description": f"ICD-10 Condition: {d_name}",
+                "precautions": ["Consult a doctor for accurate diagnosis and treatment."]
+            })
     conn.close()
-    print(f"Loaded {len(symptom_data)} diseases from icd10_diseases SQLite table")
+    print(f"Total active disease profiles in symptom_data: {len(symptom_data)}")
 except Exception as e:
     print("Warning: Could not load diseases from SQLite:", e)
 
@@ -139,20 +252,45 @@ tfidf_matrix = None
 disease_docs = []
 
 if SKLEARN_AVAILABLE and symptom_data:
-    # Create document for each disease by combining symptoms
-    disease_docs = [" ".join(d.get('symptoms', [])).lower() for d in symptom_data]
-    tfidf_vectorizer = TfidfVectorizer()
+    # Build rich symptom documents combining symptoms + disease name
+    disease_docs = []
+    for d in symptom_data:
+        syms_text = " ".join(d.get('symptoms', []))
+        d_name = d.get('disease', '')
+        # Weight symptoms heavily so clinical symptom queries match diseases accurately
+        doc = f"{d_name.lower()} {syms_text} {syms_text}"
+        disease_docs.append(doc)
+    tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
     tfidf_matrix = tfidf_vectorizer.fit_transform(disease_docs)
 
-# Specialist Mapping based on ICD-10 chapters
+# Specialist Mapping based on ICD-10 chapters and clinical specialties
 def get_specialist_for_disease(disease_name, icd_code):
     disease_name_lower = disease_name.lower()
     
+    # Specific Clinical Disease Rules
+    if any(k in disease_name_lower for k in ['osteoarthristis', 'arthritis', 'cervical spondylosis', 'joint']):
+        return 'Rheumatologist'
+    if any(k in disease_name_lower for k in ['peptic ulcer', 'gerd', 'gastroenteritis', 'cholestasis', 'stomach', 'acid']):
+        return 'Gastroenterologist'
+    if any(k in disease_name_lower for k in ['hepatitis', 'jaundice', 'liver', 'alcoholic hepatitis']):
+        return 'Hepatologist'
+    if any(k in disease_name_lower for k in ['asthma', 'pneumonia', 'tuberculosis', 'bronchial', 'cough', 'cold', 'tb']):
+        return 'Pulmonologist'
+    if any(k in disease_name_lower for k in ['heart attack', 'hypertension', 'cardiac', 'chest']):
+        return 'Cardiologist'
+    if any(k in disease_name_lower for k in ['diabetes', 'thyroid', 'hypoglycemia', 'endocrine']):
+        return 'Endocrinologist'
+    if any(k in disease_name_lower for k in ['dengue', 'malaria', 'typhoid', 'chicken pox', 'aids', 'infection', 'fungal']):
+        return 'Infectious Disease Specialist'
+    if any(k in disease_name_lower for k in ['migraine', 'paralysis', 'vertigo', 'brain', 'headache']):
+        return 'Neurologist'
+    if any(k in disease_name_lower for k in ['psoriasis', 'acne', 'impetigo', 'rash', 'skin', 'drug reaction']):
+        return 'Dermatologist'
+    if any(k in disease_name_lower for k in ['urinary', 'kidney', 'uti']):
+        return 'Urologist'
+
+    # Fallback by ICD-10 Chapter Code
     if icd_code.startswith(('A', 'B')):
-        if 'hepatitis' in disease_name_lower:
-            return 'Hepatologist'
-        if 'tb' in disease_name_lower or 'tuberculosis' in disease_name_lower:
-            return 'Pulmonologist'
         return 'Infectious Disease Specialist'
     if icd_code.startswith(('J')):
         return 'Pulmonologist'
@@ -168,6 +306,8 @@ def get_specialist_for_disease(disease_name, icd_code):
         return 'Neurologist'
     if icd_code.startswith(('E')):
         return 'Endocrinologist'
+    if icd_code.startswith(('N')):
+        return 'Urologist'
         
     return 'General Physician'
 
@@ -234,39 +374,54 @@ def predict_disease():
         input_vec = tfidf_vectorizer.transform([input_symptoms_str])
         similarities = cosine_similarity(input_vec, tfidf_matrix).flatten()
         
-        # Get top 5 indices
-        top_indices = similarities.argsort()[-5:][::-1]
-        
-        for idx in top_indices:
-            score = similarities[idx]
-            if score > 0.05: # Threshold
-                disease = symptom_data[idx]
-                
-                # Check for "urgent" symptoms
+        candidates = []
+        for idx, disease in enumerate(symptom_data):
+            cos_score = float(similarities[idx])
+            disease_syms = [s.lower() for s in disease.get('symptoms', [])]
+            
+            # Substring-aware matched symptom list
+            matched = []
+            for inp_s in input_symptoms_list:
+                inp_clean = inp_s.strip().lower()
+                if not inp_clean:
+                    continue
+                for d_sym in disease_syms:
+                    if inp_clean in d_sym or d_sym in inp_clean:
+                        matched.append(d_sym)
+            
+            matched = list(dict.fromkeys(matched))
+            overlap_ratio = len(matched) / max(1, len(input_symptoms_list))
+            
+            # Combined score: 65% cosine similarity + 35% symptom coverage
+            combined_score = (0.65 * cos_score) + (0.35 * overlap_ratio)
+            
+            if combined_score > 0.05 or cos_score > 0.10:
+                # Check for "urgent" condition
                 urgent = False
-                urgent_keywords = ['chest pain', 'breathlessness', 'blood', 'coma', 'paralysis']
-                if any(k in input_symptoms_str for k in urgent_keywords):
+                disease_name_l = disease.get('disease', '').lower()
+                if any(em in disease_name_l for em in ['heart attack', 'paralysis', 'pneumonia', 'aids', 'tuberculosis']):
                     urgent = True
-                if disease.get('avg_severity', 0) > 4.5:
+                elif disease.get('avg_severity', 0) >= 4.5 and len(matched) >= 2:
                     urgent = True
                     
                 specialist = get_specialist_for_disease(disease.get('disease', ''), disease.get('icd_code', ''))
                 
-                # Match count for frontend
-                matches = set(input_symptoms_list).intersection(set([s.lower() for s in disease.get('symptoms', [])]))
-                
-                predictions.append({
+                candidates.append({
                     'disease': disease.get('disease', ''),
                     'icd_code': disease.get('icd_code', ''),
-                    'confidence': round(float(score * 100), 2),  # Percentage
-                    'score': float(score),
+                    'confidence': round(float(combined_score * 100), 2),
+                    'score': float(combined_score),
+                    'cosine_sim': round(float(cos_score * 100), 2),
                     'urgent': urgent,
                     'recommendedSpecialist': specialist,
                     'severity': disease.get('avg_severity', 5),
-                    'matched_symptoms': list(matches),
+                    'matched_symptoms': matched,
                     'description': disease.get('description', ''),
                     'precautions': disease.get('precautions', [])
                 })
+        
+        candidates.sort(key=lambda x: (x['confidence'], len(x['matched_symptoms']), x['cosine_sim']), reverse=True)
+        predictions = candidates[:5]
     else:
         # Fallback to Intersection method if sklearn fails or missing
         for disease in symptom_data:

@@ -499,7 +499,7 @@ exports.predictDisease = async (req, res) => {
       { symptoms },
       {
         headers: { 'x-internal-key': generateToken() },
-        timeout: 10000, // 10-second timeout
+        timeout: 60000, // 60-second timeout for Render cold starts
       }
     );
     return res.json(mlRes.data);
