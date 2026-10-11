@@ -17,7 +17,15 @@ const Doctor       = require('../models/Doctor');
 const Hospital     = require('../models/Hospital');
 const Notification = require('../models/Notification');
 const { sendEmail } = require('../utils/emailService');
-const { setOtp, getOtp, deleteOtp, incrementAttempts, getAttempts } = require('../config/redis');
+const {
+  setOtp,
+  getOtp,
+  deleteOtp,
+  incrementAttempts,
+  getAttempts,
+  checkOtpRequestThrottle,
+  recordOtpRequestSent,
+} = require('../config/redis');
 const { generateSignedUrl }         = require('../utils/cloudinary');
 
 const ML_ENGINE  = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
@@ -162,14 +170,27 @@ exports.requestHospitalOtp = async (req, res) => {
       return res.status(404).json({ message: 'No registered patient found with this NIC' });
     }
 
+    const otpKey = OTP_NS_HOSPITAL + hashedNic;
+    const throttle = await checkOtpRequestThrottle({
+      accountKey: otpKey,
+      ipKey: req.ip,
+      attemptKey: otpKey,
+    });
+    if (!throttle.allowed) {
+      return res.status(throttle.status).json({
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+      });
+    }
+
     // Generate 6-digit OTP, valid for 10 minutes
     const otp       = speakeasy.totp({ secret: speakeasy.generateSecret().base32, digits: 6 });
     const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
 
-    await setOtp(OTP_NS_HOSPITAL + hashedNic, { otp, expiresAt }, OTP_TTL_SECONDS);
-
-    await sendEmail({
+    const emailResult = await sendEmail({
       to:      patient.email,
+      timeSensitive: true,
+      isOtp: true,
       subject: 'MediSync — Consent Required for Lab Test Registration',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
@@ -187,11 +208,41 @@ exports.requestHospitalOtp = async (req, res) => {
       `,
     });
 
-    return res.json({ 
-      message: 'Consent OTP sent to patient email', 
+    if (!emailResult?.success || !emailResult?.providerAccepted) {
+      await deleteOtp(otpKey, { clearAttempts: false });
+      const status =
+        emailResult?.errorCode === 'invalid_recipient' ||
+        emailResult?.errorCode === 'permanent_validation_failure'
+          ? 400
+          : emailResult?.errorCode === 'ambiguous_timeout'
+            ? 504
+            : emailResult?.statusCode || 503;
+      return res.status(status).json({
+        success: false,
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+        message:
+          emailResult?.error ||
+          'Unable to send consent OTP email at this time. Please try again shortly.',
+      });
+    }
+
+    await setOtp(otpKey, { otp, expiresAt }, OTP_TTL_SECONDS);
+    await recordOtpRequestSent({ accountKey: otpKey, ipKey: req.ip });
+
+    return res.json({
+      message: 'Consent OTP sent to patient email',
       expiresInMinutes: 10,
+      providerAccepted: true,
+      deliveryQueued: false,
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
+      messageId: emailResult.messageId,
       patientName: patient.name,
-      patientEmail: patient.email
+      patientEmail: patient.email,
     });
   } catch (err) {
     console.error('[Lab] requestHospitalOtp error:', err);
@@ -228,26 +279,19 @@ exports.acceptLabTest = async (req, res) => {
     }
 
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hash);
-    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-    if (!isTestBypass) {
-      if (!storedOtp) {
-        return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
-      }
-      if (Date.now() > storedOtp.expiresAt) {
-        await deleteOtp(OTP_NS_HOSPITAL + hash);
-        return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
-      }
-      if (storedOtp.otp !== otp) {
-        await incrementAttempts(OTP_NS_HOSPITAL + hash);
-        return res.status(401).json({ message: 'Invalid OTP' });
-      }
-      // OTP valid — consume it (one-time use)
-      await deleteOtp(OTP_NS_HOSPITAL + hash);
-    } else {
-      if (storedOtp) {
-        await deleteOtp(OTP_NS_HOSPITAL + hash);
-      }
+    if (!storedOtp) {
+      return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
     }
+    if (Date.now() > storedOtp.expiresAt) {
+      await deleteOtp(OTP_NS_HOSPITAL + hash, { clearAttempts: false });
+      return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+    if (storedOtp.otp !== otp) {
+      await incrementAttempts(OTP_NS_HOSPITAL + hash);
+      return res.status(401).json({ message: 'Invalid OTP' });
+    }
+    // OTP valid — consume it (one-time use)
+    await deleteOtp(OTP_NS_HOSPITAL + hash, { clearAttempts: true });
 
     // ── Resolve patient details ─────────────────────────────────────────────
     const patient = await Patient.findOne({ patientNic_bi: hash });
@@ -396,19 +440,16 @@ exports.verifyOtpAndFetchTests = async (req, res) => {
     }
 
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hashedNic);
-    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-    if (!isTestBypass) {
-      if (!storedOtp) {
-        return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
-      }
-      if (Date.now() > storedOtp.expiresAt) {
-        await deleteOtp(OTP_NS_HOSPITAL + hashedNic);
-        return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
-      }
-      if (storedOtp.otp !== otp) {
-        await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
-        return res.status(401).json({ message: 'Invalid OTP' });
-      }
+    if (!storedOtp) {
+      return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
+    }
+    if (Date.now() > storedOtp.expiresAt) {
+      await deleteOtp(OTP_NS_HOSPITAL + hashedNic, { clearAttempts: false });
+      return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+    if (String(storedOtp.otp).trim() !== String(otp).trim()) {
+      await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
+      return res.status(401).json({ message: 'Invalid OTP' });
     }
 
     // OTP is valid. We do NOT delete it here, so it can be used for approvals.
@@ -460,26 +501,19 @@ exports.approveTest = async (req, res) => {
     }
 
     const storedOtp = await getOtp(OTP_NS_HOSPITAL + hashedNic);
-    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-    if (!isTestBypass) {
-      if (!storedOtp) {
-        return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
-      }
-      if (Date.now() > storedOtp.expiresAt) {
-        await deleteOtp(OTP_NS_HOSPITAL + hashedNic);
-        return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
-      }
-      if (storedOtp.otp !== otp) {
-        await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
-        return res.status(401).json({ message: 'Invalid OTP' });
-      }
-      // OTP valid — consume it
-      await deleteOtp(OTP_NS_HOSPITAL + hashedNic);
-    } else {
-      if (storedOtp) {
-        await deleteOtp(OTP_NS_HOSPITAL + hashedNic);
-      }
+    if (!storedOtp) {
+      return res.status(401).json({ message: 'No OTP found. Please request a consent OTP first.' });
     }
+    if (Date.now() > storedOtp.expiresAt) {
+      await deleteOtp(OTP_NS_HOSPITAL + hashedNic, { clearAttempts: false });
+      return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+    if (String(storedOtp.otp).trim() !== String(otp).trim()) {
+      await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
+      return res.status(401).json({ message: 'Invalid OTP' });
+    }
+    // OTP valid — consume it
+    await deleteOtp(OTP_NS_HOSPITAL + hashedNic);
 
     // ── Find and update the lab test ──────────────────────────────────────────
     const labTest = await LabTest.findById(testId);
@@ -855,9 +889,31 @@ exports.patientRequestOtp = async (req, res) => {
       }
     }
 
+    if (!patientEmail) {
+      return res.status(400).json({ message: 'Patient email contact not found' });
+    }
+
+    const otpKey      = `${OTP_NS_PATIENT}${String(req.user.id)}:${String(labTest._id)}`;
+    const fallbackKey = `${OTP_NS_PATIENT}${String(req.user.id)}`;
+
+    if ((await getAttempts(fallbackKey)) >= 5) {
+      return res.status(429).json({
+        message: 'Too many failed OTP attempts. Please wait before requesting a new OTP.',
+        errorCode: 'otp_attempts_locked',
+      });
+    }
+
+    const throttle = await checkOtpRequestThrottle(otpKey, req.ip);
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode).json({
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason,
+      });
+    }
+
     const otp       = speakeasy.totp({ secret: speakeasy.generateSecret().base32, digits: 6 });
     const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
-    const otpKey    = `${OTP_NS_PATIENT}${String(req.user.id)}:${String(labTest._id)}`;
 
     await setOtp(
       otpKey,
@@ -874,24 +930,44 @@ exports.patientRequestOtp = async (req, res) => {
       OTP_TTL_SECONDS
     );
 
-    if (patientEmail) {
-      await sendEmail({
-        to:      patientEmail,
-        subject: `MediSync — Lab Report Download Verification Code (${labTest.reportId || labTest.labTestId})`,
-        html: `
-          <p>Dear Patient,</p>
-          <p>You requested to download your lab report <strong>${labTest.reportId || labTest.labTestId}</strong> (${labTest.testName || 'Lab Test'}).</p>
-          <p>Please enter the following 6-digit verification code to complete your download:</p>
-          <h2 style="letter-spacing:8px;font-size:32px;color:#0D9488">${otp}</h2>
-          <p>This OTP expires in <strong>10 minutes</strong> and can only be used once.</p>
-          <p>MediSync Security Team</p>
-        `,
-      }).catch((e) => console.error('[Lab] Patient OTP email error:', e.message));
+    const emailResult = await sendEmail({
+      to:      patientEmail,
+      subject: `MediSync — Lab Report Download Verification Code (${labTest.reportId || labTest.labTestId})`,
+      html: `
+        <p>Dear Patient,</p>
+        <p>You requested to download your lab report <strong>${labTest.reportId || labTest.labTestId}</strong> (${labTest.testName || 'Lab Test'}).</p>
+        <p>Please enter the following 6-digit verification code to complete your download:</p>
+        <h2 style="letter-spacing:8px;font-size:32px;color:#0D9488">${otp}</h2>
+        <p>This OTP expires in <strong>10 minutes</strong> and can only be used once.</p>
+        <p>MediSync Security Team</p>
+      `,
+      timeSensitive: true,
+      isOtp: true,
+    });
+
+    if (!emailResult || !emailResult.providerAccepted) {
+      await deleteOtp(otpKey, { clearAttempts: false });
+      return res.status(emailResult?.statusCode || 503).json({
+        message: emailResult?.errorCode === 'invalid_recipient'
+          ? 'Invalid patient email address.'
+          : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+      });
     }
+
+    await recordOtpRequestSent(otpKey, req.ip);
 
     return res.json({
       message: 'Verification OTP sent to your registered email',
       expiresInMinutes: 10,
+      providerAccepted: true,
+      deliveryQueued: Boolean(emailResult.deliveryQueued),
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
     });
   } catch (err) {
     console.error('[Lab] patientRequestOtp error:', err);
@@ -971,7 +1047,7 @@ exports.patientDownloadReport = async (req, res) => {
       }
 
       if (Date.now() > stored.expiresAt) {
-        await deleteOtp(activeKey);
+        await deleteOtp(activeKey, { clearAttempts: false });
         return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
       }
 
@@ -982,6 +1058,9 @@ exports.patientDownloadReport = async (req, res) => {
 
       // Consume OTP immediately (one-time use — prevents replay)
       await deleteOtp(activeKey);
+      if (activeKey !== primaryKey) {
+        await deleteOtp(primaryKey);
+      }
     } finally {
       inFlightOtpVerifications.delete(lockKey);
     }
@@ -1082,6 +1161,16 @@ exports.doctorRequestOtp = async (req, res) => {
       return res.status(400).json({ message: 'Report not yet available for this lab test' });
     }
 
+    const otpKey = OTP_NS_DOCTOR + String(userId);
+    const throttle = await checkOtpRequestThrottle(otpKey, req.ip);
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode).json({
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason,
+      });
+    }
+
     // Get doctor name for email
     const Doctor = require('../models/Doctor');
     const doctor = await Doctor.findById(userId);
@@ -1092,7 +1181,7 @@ exports.doctorRequestOtp = async (req, res) => {
     const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
 
     await setOtp(
-      OTP_NS_DOCTOR + String(userId),
+      otpKey,
       {
         otp,
         purpose: 'doctor-lab-download',
@@ -1105,7 +1194,7 @@ exports.doctorRequestOtp = async (req, res) => {
       OTP_TTL_SECONDS
     );
 
-    await sendEmail({
+    const emailResult = await sendEmail({
       to:      patientEmail,
       subject: `MediSync — Dr. ${doctorName} is requesting access to your lab report`,
       html: `
@@ -1116,9 +1205,34 @@ exports.doctorRequestOtp = async (req, res) => {
         <p>This OTP expires in <strong>10 minutes</strong>. Do not share it if you do not authorize access.</p>
         <p>MediSync Security Team</p>
       `,
+      timeSensitive: true,
+      isOtp: true,
     });
 
-    return res.json({ message: `OTP sent to patient's email`, expiresInMinutes: 10 });
+    if (!emailResult || !emailResult.providerAccepted) {
+      await deleteOtp(otpKey, { clearAttempts: false });
+      return res.status(emailResult?.statusCode || 503).json({
+        message: emailResult?.errorCode === 'invalid_recipient'
+          ? 'Invalid patient email address.'
+          : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+      });
+    }
+
+    await recordOtpRequestSent(otpKey, req.ip);
+
+    return res.json({
+      message: `OTP sent to patient's email`,
+      expiresInMinutes: 10,
+      providerAccepted: true,
+      deliveryQueued: Boolean(emailResult.deliveryQueued),
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
+    });
   } catch (err) {
     console.error('[Lab] doctorRequestOtp error:', err);
     return res.status(500).json({ message: 'Server error' });
@@ -1176,15 +1290,12 @@ exports.doctorDownloadReport = async (req, res) => {
         return res.status(401).json({ message: 'OTP was issued for a different lab test' });
       }
       if (Date.now() > stored.expiresAt) {
-        await deleteOtp(otpKey);
+        await deleteOtp(otpKey, { clearAttempts: false });
         return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
       }
-      const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-      if (!isTestBypass) {
-        if (String(stored.otp).trim() !== String(otp).trim()) {
-          await incrementAttempts(otpKey);
-          return res.status(401).json({ message: 'Invalid OTP' });
-        }
+      if (String(stored.otp).trim() !== String(otp).trim()) {
+        await incrementAttempts(otpKey);
+        return res.status(401).json({ message: 'Invalid OTP' });
       }
 
       // OTP valid — consume it immediately (one-time use)

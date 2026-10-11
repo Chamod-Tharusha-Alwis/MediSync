@@ -13,7 +13,13 @@ const OTPSession = require('../models/OTPSession');
 const Admin = require('../models/Admin');
 const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
-const { incrementAttempts, getAttempts } = require('../config/redis');
+const {
+  incrementAttempts,
+  getAttempts,
+  clearAttempts,
+  checkOtpRequestThrottle,
+  recordOtpRequestSent,
+} = require('../config/redis');
 const { parseDeviceModel } = require('../utils/deviceParser');
 const { resolveLocation } = require('../utils/ipLookup');
 const TrustedDevice = require('../models/TrustedDevice');
@@ -302,13 +308,45 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     if (user.twoFactorEnabled) {
+      const authOtpKey = 'auth:' + String(user._id);
+      const throttle = await checkOtpRequestThrottle(authOtpKey, req.ip, { cooldownSeconds: 0 });
+      if (!throttle.allowed) {
+        return res.status(throttle.statusCode).json({
+          error: throttle.message,
+          message: throttle.message,
+          retryAfterSeconds: throttle.retryAfterSeconds,
+          errorCode: throttle.reason,
+        });
+      }
+
+      const destEmail =
+        user.email ||
+        user.personalEmail ||
+        user.contactInfo?.email ||
+        (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
+
+      if (!destEmail) {
+        return res.status(400).json({
+          error: 'No valid email address is registered for this account.',
+          message: 'No valid email address is registered for this account.',
+          providerAccepted: false,
+          deliveryQueued: false,
+          deliveryConfirmed: false,
+        });
+      }
+
       const otp = crypto.randomInt(100000, 1000000).toString();
       const hashedOtp = await bcrypt.hash(otp, 10);
       
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-      await OTPSession.create({
+      await OTPSession.updateMany(
+        { userId: user._id, purpose: 'login', used: false },
+        { $set: { used: true } }
+      );
+
+      const otpDoc = await OTPSession.create({
         userId: user._id,
         userModel: modelName,
         otp: hashedOtp,
@@ -316,14 +354,37 @@ exports.login = async (req, res) => {
         purpose: 'login'
       });
 
-      try {
-        const destEmail = user.email || user.personalEmail;
-        await emailService.sendOTPEmail(destEmail, user.fullName || user.name || 'User', otp);
-      } catch (e) {
-        console.error('OTP email failed:', e.message);
+      const emailResult = await emailService.sendOTPEmail(destEmail, user.fullName || user.name || 'User', otp);
+      if (!emailResult || !emailResult.providerAccepted) {
+        await OTPSession.deleteOne({ _id: otpDoc._id });
+        return res.status(emailResult?.statusCode || 503).json({
+          error: emailResult?.errorCode === 'invalid_recipient'
+            ? 'Invalid recipient email address.'
+            : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+          message: emailResult?.errorCode === 'invalid_recipient'
+            ? 'Invalid recipient email address.'
+            : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+          providerAccepted: false,
+          deliveryQueued: Boolean(emailResult?.deliveryQueued),
+          deliveryConfirmed: false,
+          errorCode: emailResult?.errorCode || 'email_delivery_failed',
+        });
       }
 
-      return res.status(200).json({ data: { requiresOTP: true, userId: user._id }, message: "OTP sent to your email" });
+      await recordOtpRequestSent(authOtpKey, req.ip);
+
+      return res.status(200).json({
+        data: {
+          requiresOTP: true,
+          userId: user._id,
+          providerAccepted: true,
+          deliveryQueued: false,
+          deliveryConfirmed: false,
+          provider: emailResult.provider,
+          fallbackUsed: Boolean(emailResult.fallbackUsed),
+        },
+        message: "OTP sent to your email"
+      });
     }
 
     const actualRole = user.role || role || (modelName === 'Hospital' ? 'hospital_admin' : (modelName === 'Admin' ? 'admin' : (modelName === 'PharmacyStaff' ? user.role : 'patient')));
@@ -349,11 +410,17 @@ exports.login = async (req, res) => {
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
       const isTrusted = sessionResult.isTrusted;
-      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+      console.log(`[AUTH LOGIN NOTIFICATION] Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
       const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted);
-      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
+      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
+        provider: resNotification?.provider || null,
+        providerAccepted: Boolean(resNotification?.providerAccepted),
+        deliveryQueued: Boolean(resNotification?.deliveryQueued),
+        fallbackUsed: Boolean(resNotification?.fallbackUsed),
+        deliveryConfirmed: false,
+      });
     } catch(e) {
-      console.error('[AUTH LOGIN NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);
+      console.error('[AUTH LOGIN NOTIFICATION ERROR] Failed to send login notification:', e.message);
     }
 
 
@@ -385,10 +452,14 @@ exports.login = async (req, res) => {
 exports.verifyLoginOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
+    const authOtpKey = 'auth:' + String(userId);
     
-    const attempts = await getAttempts('auth:' + userId);
+    const attempts = await getAttempts(authOtpKey);
     if (attempts >= 5) {
-      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+      return res.status(429).json({
+        error: 'Too many failed OTP attempts. Please try again later.',
+        message: 'Too many failed OTP attempts. Please try again later.'
+      });
     }
 
     const otpRecord = await OTPSession.findOne({
@@ -398,16 +469,48 @@ exports.verifyLoginOTP = async (req, res) => {
       expiresAt: { $gt: new Date() }
     }).sort({ createdAt: -1 });
 
-    if (!otpRecord) return res.status(400).json({ error: 'Invalid or expired OTP' });
-
-    const isMatch = await bcrypt.compare(otp.toString(), otpRecord.otp);
-    if (!isMatch) {
-      await incrementAttempts('auth:' + userId);
-      return res.status(400).json({ error: 'Incorrect OTP' });
+    if (!otpRecord) {
+      await incrementAttempts(authOtpKey);
+      return res.status(400).json({ error: 'Invalid or expired OTP', message: 'Invalid or expired OTP' });
     }
 
-    otpRecord.used = true;
-    await otpRecord.save();
+    const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
+    if (persistedFailures >= 5) {
+      await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
+      return res.status(429).json({
+        error: 'Too many failed OTP attempts. Please try again later.',
+        message: 'Too many failed OTP attempts. Please try again later.'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
+    if (!isMatch) {
+      const newAttempts = await incrementAttempts(authOtpKey);
+      const nextDocFailures = persistedFailures + 1;
+      await OTPSession.collection.updateOne(
+        { _id: otpRecord._id },
+        {
+          $inc: { failedAttempts: 1 },
+          ...(newAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
+        }
+      );
+      return res.status(400).json({ error: 'Incorrect OTP', message: 'Incorrect OTP' });
+    }
+
+    // Atomically mark OTP as used (single-use under concurrent requests)
+    const claimedOtp = await OTPSession.findOneAndUpdate(
+      { _id: otpRecord._id, used: false },
+      { $set: { used: true } },
+      { returnDocument: 'after' }
+    );
+    if (!claimedOtp) {
+      return res.status(400).json({
+        error: 'This OTP has already been used. Please request a new code.',
+        message: 'This OTP has already been used. Please request a new code.'
+      });
+    }
+
+    await clearAttempts(authOtpKey);
 
     let user;
     let modelName = otpRecord.userModel;
@@ -435,17 +538,13 @@ exports.verifyLoginOTP = async (req, res) => {
     const accessToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ id: user._id, role: actualRole, sub: subId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-    await createSession(user._id, modelName, accessToken, req);
+    const sessionResult = await createSession(user._id, modelName, accessToken, req);
 
     // Mark device as trusted after OTP verification
     const fp = req.headers['x-device-fingerprint'];
     if (fp) {
       const existingTrusted = await TrustedDevice.findOne({ userId: user._id, deviceFingerprint: fp });
       if (!existingTrusted) {
-        // Log Anomaly
-        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
-          const networkInfo = await resolveLocation(ip);
-        
         const deviceModel = parseDeviceModel(req.headers['user-agent']);
         
         await AuditLog.create({
@@ -454,14 +553,6 @@ exports.verifyLoginOTP = async (req, res) => {
           action: 'Untrusted Login Attempt',
           deviceModel: deviceModel
         });
-        
-        try {
-          const emailToSend = modelName === 'Patient' ? user.contactInfo.email : user.email;
-          const locStr = networkInfo ? `${networkInfo.city}, ${networkInfo.region}, ${networkInfo.country}` : 'Unknown Location';
-            await emailService.sendAnomalyEmail(emailToSend, deviceModel, locStr);
-        } catch(e) {
-          console.error("Failed to send anomaly email", e);
-        }
       }
 
       await TrustedDevice.findOneAndUpdate(
@@ -491,11 +582,17 @@ exports.verifyLoginOTP = async (req, res) => {
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
       const networkInfo = await resolveLocation(ip);
       const isTrusted = sessionResult.isTrusted;
-      console.log(`[AUTH LOGIN OTP NOTIFICATION] Attempting send to: ${emailToSend} | Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+      console.log(`[AUTH LOGIN OTP NOTIFICATION] Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
       const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted);
-      console.log(`[AUTH LOGIN OTP NOTIFICATION RESULT]`, resNotification);
+      console.log(`[AUTH LOGIN OTP NOTIFICATION RESULT]`, {
+        provider: resNotification?.provider || null,
+        providerAccepted: Boolean(resNotification?.providerAccepted),
+        deliveryQueued: Boolean(resNotification?.deliveryQueued),
+        fallbackUsed: Boolean(resNotification?.fallbackUsed),
+        deliveryConfirmed: false,
+      });
     } catch(e) {
-      console.error('[AUTH LOGIN OTP NOTIFICATION ERROR] Failed to send login notification:', e.message, e.stack);
+      console.error('[AUTH LOGIN OTP NOTIFICATION ERROR] Failed to send login notification:', e.message);
     }
 
 
@@ -518,28 +615,68 @@ exports.verifyLoginOTP = async (req, res) => {
 
 exports.sendOTP = async (req, res) => {
   try {
-    const { email, purpose } = req.body;
+    const { email, userId, purpose } = req.body;
+    const purposeValue = purpose || 'verification';
     
-    let user = await Doctor.findOne({ email });
+    let user = null;
     let model = 'Doctor';
-    if (!user) {
-      user = await Patient.findOne({ 'contactInfo.email': email });
-      model = 'Patient';
-    }
-    if (!user) {
-      user = await PharmacyStaff.findOne({ email });
-      model = 'PharmacyStaff';
-    }
-    if (!user) {
-      user = await Hospital.findOne({ email });
-      model = 'Hospital';
-    }
-    if (!user) {
-      user = await Admin.findOne({ email });
-      model = 'Admin';
+
+    if (userId) {
+      user = await Doctor.findById(userId); if (user) model = 'Doctor';
+      if (!user) { user = await Patient.findById(userId); if (user) model = 'Patient'; }
+      if (!user) { user = await PharmacyStaff.findById(userId); if (user) model = 'PharmacyStaff'; }
+      if (!user) { user = await Hospital.findById(userId); if (user) model = 'Hospital'; }
+      if (!user) { user = await Admin.findById(userId); if (user) model = 'Admin'; }
+    } else if (email) {
+      user = await Doctor.findOne({ $or: [{ email }, { personalEmail: email }] });
+      model = 'Doctor';
+      if (!user) {
+        user = await Patient.findOne({ $or: [{ email }, { 'contactInfo.email': email }] });
+        model = 'Patient';
+      }
+      if (!user) {
+        user = await PharmacyStaff.findOne({ email });
+        model = 'PharmacyStaff';
+      }
+      if (!user) {
+        user = await Hospital.findOne({ email });
+        model = 'Hospital';
+      }
+      if (!user) {
+        user = await Admin.findOne({ email });
+        model = 'Admin';
+      }
     }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const attemptNamespace = purposeValue === 'login' ? 'auth:' : purposeValue === 'password-reset' ? 'reset:' : 'verify:';
+    const otpThrottleKey = attemptNamespace + String(user._id);
+    const throttle = await checkOtpRequestThrottle(otpThrottleKey, req.ip);
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode).json({
+        error: throttle.message,
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason,
+      });
+    }
+
+    const emailToSend =
+      user.email ||
+      user.personalEmail ||
+      user.contactInfo?.email ||
+      (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : null);
+
+    if (!emailToSend) {
+      return res.status(400).json({
+        error: 'No valid email address registered for this user.',
+        message: 'No valid email address registered for this user.',
+        providerAccepted: false,
+        deliveryQueued: false,
+        deliveryConfirmed: false,
+      });
+    }
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
@@ -547,22 +684,46 @@ exports.sendOTP = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-    await OTPSession.create({
+    await OTPSession.updateMany(
+      { userId: user._id, purpose: purposeValue, used: false },
+      { $set: { used: true } }
+    );
+
+    const otpDoc = await OTPSession.create({
       userId: user._id,
       userModel: model,
       otp: hashedOtp,
       expiresAt,
-      purpose: purpose || 'verification'
+      purpose: purposeValue
     });
 
-    try {
-      const emailToSend = model === 'Patient' ? user.contactInfo.email : user.email;
-      await emailService.sendOTPEmail(emailToSend, user.fullName || 'User', otp);
-    } catch (e) {
-      console.error('Email failed:', e.message);
+    const emailResult = await emailService.sendOTPEmail(emailToSend, user.fullName || user.name || 'User', otp);
+    if (!emailResult || !emailResult.providerAccepted) {
+      await OTPSession.deleteOne({ _id: otpDoc._id });
+      return res.status(emailResult?.statusCode || 503).json({
+        error: emailResult?.errorCode === 'invalid_recipient'
+          ? 'Invalid recipient email address.'
+          : 'Unable to deliver OTP email right now. Please try again shortly.',
+        message: emailResult?.errorCode === 'invalid_recipient'
+          ? 'Invalid recipient email address.'
+          : 'Unable to deliver OTP email right now. Please try again shortly.',
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+      });
     }
 
-    return res.status(200).json({ message: "OTP sent" });
+    await recordOtpRequestSent(otpThrottleKey, req.ip);
+
+    return res.status(200).json({
+      message: "OTP sent",
+      providerAccepted: true,
+      deliveryQueued: false,
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
+    });
   } catch (err) {
     return res.status(500).json({ error: "Failed to send OTP", details: err.message });
   }
@@ -642,15 +803,36 @@ exports.changePassword = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email || !emailService.isValidEmailAddress(email)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address.',
+        message: 'Please provide a valid email address.',
+        providerAccepted: false,
+        deliveryQueued: false,
+        deliveryConfirmed: false,
+      });
+    }
     
-    let user = await Doctor.findOne({ email });
+    let user = await Doctor.findOne({ $or: [{ email }, { personalEmail: email }] });
     let model = 'Doctor';
-    if (!user) { user = await Patient.findOne({ 'contactInfo.email': email }); model = 'Patient'; }
+    if (!user) { user = await Patient.findOne({ $or: [{ email }, { 'contactInfo.email': email }] }); model = 'Patient'; }
     if (!user) { user = await PharmacyStaff.findOne({ email }); model = 'PharmacyStaff'; }
     if (!user) { user = await Hospital.findOne({ email }); model = 'Hospital'; }
+    if (!user) { user = await Admin.findOne({ email }); model = 'Admin'; }
 
-    // Always return success to prevent email enumeration
+    // Always return success to prevent email enumeration when user does not exist
     if (!user) return res.status(200).json({ message: "If that email exists, an OTP was sent" });
+
+    const resetKey = 'reset:' + String(user._id);
+    const throttle = await checkOtpRequestThrottle(resetKey, req.ip);
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode).json({
+        error: throttle.message,
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason,
+      });
+    }
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
@@ -658,7 +840,12 @@ exports.forgotPassword = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    await OTPSession.create({
+    await OTPSession.updateMany(
+      { userId: user._id, purpose: 'password-reset', used: false },
+      { $set: { used: true } }
+    );
+
+    const otpDoc = await OTPSession.create({
       userId: user._id,
       userModel: model,
       otp: hashedOtp,
@@ -666,14 +853,35 @@ exports.forgotPassword = async (req, res) => {
       purpose: 'password-reset'
     });
 
-    try {
-      const emailToSend = model === 'Patient' ? user.contactInfo.email : user.email;
-      await emailService.sendOTPEmail(emailToSend, user.fullName || user.name || 'User', otp);
-    } catch (e) {
-      console.error('Email failed:', e.message);
+    const emailToSend =
+      user.email ||
+      user.personalEmail ||
+      user.contactInfo?.email ||
+      (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : email);
+
+    const emailResult = await emailService.sendOTPEmail(emailToSend, user.fullName || user.name || 'User', otp);
+    if (!emailResult || !emailResult.providerAccepted) {
+      await OTPSession.deleteOne({ _id: otpDoc._id });
+      return res.status(emailResult?.statusCode || 503).json({
+        error: 'Unable to deliver password recovery OTP email right now. Please try again shortly.',
+        message: 'Unable to deliver password recovery OTP email right now. Please try again shortly.',
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+      });
     }
 
-    return res.status(200).json({ message: "If that email exists, an OTP was sent" });
+    await recordOtpRequestSent(resetKey, req.ip);
+
+    return res.status(200).json({
+      message: "If that email exists, an OTP was sent",
+      providerAccepted: true,
+      deliveryQueued: false,
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
+    });
   } catch (err) {
     return res.status(500).json({ error: "Request failed", details: err.message });
   }
@@ -683,17 +891,21 @@ exports.resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     
-    let user = await Doctor.findOne({ email });
-    if (!user) user = await Patient.findOne({ 'contactInfo.email': email });
+    let user = await Doctor.findOne({ $or: [{ email }, { personalEmail: email }] });
+    if (!user) user = await Patient.findOne({ $or: [{ email }, { 'contactInfo.email': email }] });
     if (!user) user = await PharmacyStaff.findOne({ email });
     if (!user) user = await Hospital.findOne({ email });
     if (!user) user = await Admin.findOne({ email });
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const attempts = await getAttempts('reset:' + user._id);
+    const resetKey = 'reset:' + String(user._id);
+    const attempts = await getAttempts(resetKey);
     if (attempts >= 5) {
-      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+      return res.status(429).json({
+        error: 'Too many failed OTP attempts. Please try again later.',
+        message: 'Too many failed OTP attempts. Please try again later.'
+      });
     }
 
     const otpRecord = await OTPSession.findOne({
@@ -703,11 +915,31 @@ exports.resetPassword = async (req, res) => {
       expiresAt: { $gt: new Date() }
     }).sort({ createdAt: -1 });
 
-    if (!otpRecord) return res.status(400).json({ error: 'Invalid or expired OTP' });
+    if (!otpRecord) {
+      await incrementAttempts(resetKey);
+      return res.status(400).json({ error: 'Invalid or expired OTP' });
+    }
 
-    const isMatch = await bcrypt.compare(otp.toString(), otpRecord.otp);
+    const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
+    if (persistedFailures >= 5) {
+      await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
+      return res.status(429).json({
+        error: 'Too many failed OTP attempts. Please try again later.',
+        message: 'Too many failed OTP attempts. Please try again later.'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
     if (!isMatch) {
-      await incrementAttempts('reset:' + user._id);
+      const newAttempts = await incrementAttempts(resetKey);
+      const nextDocFailures = persistedFailures + 1;
+      await OTPSession.collection.updateOne(
+        { _id: otpRecord._id },
+        {
+          $inc: { failedAttempts: 1 },
+          ...(newAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
+        }
+      );
       return res.status(400).json({ error: 'Incorrect OTP' });
     }
 
@@ -716,13 +948,21 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'New password is too weak.' });
     }
 
+    const claimedOtp = await OTPSession.findOneAndUpdate(
+      { _id: otpRecord._id, used: false },
+      { $set: { used: true } },
+      { returnDocument: 'after' }
+    );
+    if (!claimedOtp) {
+      return res.status(400).json({ error: 'This OTP has already been used. Please request a new code.' });
+    }
+
+    await clearAttempts(resetKey);
+
     const hashedPassword = await hashPassword(newPassword);
     user.password = hashedPassword;
     if (user.passwordChangedAt !== undefined) user.passwordChangedAt = new Date();
     await user.save();
-
-    otpRecord.used = true;
-    await otpRecord.save();
 
     await invalidateAllSessions(user._id);
 

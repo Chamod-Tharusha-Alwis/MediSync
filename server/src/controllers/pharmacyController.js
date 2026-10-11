@@ -137,7 +137,7 @@ exports.loginPharmacy = async (req, res) => {
         }
       } catch (e) {}
 
-      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${staff.email} | Role: ${staff.role} | User: ${staff.fullName} | isTrusted: ${isTrusted}`);
+      console.log(`[AUTH LOGIN NOTIFICATION] Role: ${staff.role} | Device: ${parsedModel} | isTrusted: ${isTrusted}`);
       const resNotification = await emailService.sendLoginNotificationEmail(
         staff.email,
         staff.fullName,
@@ -149,7 +149,13 @@ exports.loginPharmacy = async (req, res) => {
         staff.pharmacyId ? staff.pharmacyId.name : null,
         isTrusted
       );
-      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
+      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
+        provider: resNotification?.provider || null,
+        providerAccepted: Boolean(resNotification?.providerAccepted),
+        deliveryQueued: Boolean(resNotification?.deliveryQueued),
+        fallbackUsed: Boolean(resNotification?.fallbackUsed),
+        deliveryConfirmed: false,
+      });
     } catch (e) {
       console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:', e.message);
     }
@@ -809,7 +815,7 @@ exports.dispenseOTC = async (req, res) => {
           const emailToSend = patient.email || (typeof patient.contactInfo === 'string' && patient.contactInfo.includes('@') ? patient.contactInfo : null);
           if (emailToSend) {
             const medsString = dispensingItems.map(i => `${i.drugName} (Qty: ${i.quantityDispensed})`).join(', ');
-            console.log(`[OTC DISPENSE EMAIL] Sending notification to ${emailToSend} for ${patientName}`);
+            console.log(`[OTC DISPENSE EMAIL] Dispatching notification (${dispensingItems.length} item(s))`);
             await emailService.sendDispenseNotificationEmail(
               emailToSend,
               patientName,

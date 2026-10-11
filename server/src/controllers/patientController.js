@@ -13,7 +13,13 @@ const crypto = require('crypto');
 const SessionToken = require('../models/SessionToken');
 const { hashPassword, validatePasswordStrength } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
-const { incrementAttempts, getAttempts } = require('../config/redis');
+const {
+  incrementAttempts,
+  getAttempts,
+  clearAttempts,
+  checkOtpRequestThrottle,
+  recordOtpRequestSent,
+} = require('../config/redis');
 const { parseDeviceModel } = require('../utils/deviceParser');
 
 
@@ -514,26 +520,29 @@ exports.requestPatientAccess = async (req, res) => {
       return res.status(200).json({ message: 'Verification sent if patient exists' });
     }
 
+    if (!patient.email) {
+      return res.status(400).json({ error: 'Patient has no registered email address for OTP verification' });
+    }
+
+    const patientAccessKey = 'patient-access:' + String(patient._id);
+    const throttle = await checkOtpRequestThrottle(patientAccessKey, req.ip);
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode).json({
+        error: throttle.message,
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason,
+      });
+    }
+
     const crypto = require('crypto');
-    const otp = crypto.randomInt(100000, 999999).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
     const OTPSession = require('../models/OTPSession');
-
-    // Check if an active OTP already exists created less than 60 seconds ago
-    const oneMinuteAgo = new Date(Date.now() - 60000);
-    const existingActiveOTP = await OTPSession.findOne({
-      userId: patient._id,
-      purpose: 'patient-access',
-      createdAt: { $gte: oneMinuteAgo }
-    });
-
-    if (existingActiveOTP && process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
-      return res.status(429).json({ error: 'Please wait 60 seconds before requesting another code.' });
-    }
 
     // Delete any existing unused OTP documents for this patient to prevent clutter
     await OTPSession.deleteMany({
@@ -551,20 +560,34 @@ exports.requestPatientAccess = async (req, res) => {
       metadata: { requesterRole, requesterName, accessNic: patientNic }
     });
 
-    // Send email to patient
-    if (patient.email) {
-      const emailService = require('../utils/emailService');
-      const requesterTitle = requesterRole === 'doctor' ? 'Dr.' : '';
-      await emailService.sendOTPEmail(
-        patient.email,
-        patient.fullName,
-        otp
-      ).catch(e => console.error('Patient access OTP email failed:', e.message));
+    const emailResult = await emailService.sendOTPEmail(
+      patient.email,
+      patient.fullName,
+      otp
+    );
+
+    if (!emailResult || !emailResult.providerAccepted) {
+      await OTPSession.deleteOne({ _id: otpSession._id });
+      return res.status(emailResult?.statusCode || 503).json({
+        error: 'Unable to deliver patient access OTP email right now. Please try again shortly.',
+        message: 'Unable to deliver patient access OTP email right now. Please try again shortly.',
+        providerAccepted: false,
+        deliveryQueued: Boolean(emailResult?.deliveryQueued),
+        deliveryConfirmed: false,
+        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+      });
     }
+
+    await recordOtpRequestSent(patientAccessKey, req.ip);
 
     return res.status(200).json({
       message: 'OTP sent to patient\'s registered contact',
-      sessionId: otpSession._id
+      sessionId: otpSession._id,
+      providerAccepted: true,
+      deliveryQueued: false,
+      deliveryConfirmed: false,
+      provider: emailResult.provider,
+      fallbackUsed: Boolean(emailResult.fallbackUsed),
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to request access', details: error.message });
@@ -578,8 +601,8 @@ exports.verifyPatientAccess = async (req, res) => {
     const OTPSession = require('../models/OTPSession');
     const jwt = require('jsonwebtoken');
 
-    const attempts = await getAttempts('patient:' + sessionId);
-    if (attempts >= 5) {
+    const sessionAttempts = await getAttempts('patient:' + sessionId);
+    if (sessionAttempts >= 5) {
       return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
     }
 
@@ -590,22 +613,46 @@ exports.verifyPatientAccess = async (req, res) => {
       expiresAt: { $gt: new Date() }
     });
 
-    if (!otpRecord) return res.status(401).json({ error: 'Invalid or expired OTP' });
-
-    const isTestBypass = (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && otp === '123456';
-    
-    if (isTestBypass) {
-      // test bypass consumes the OTP without failing
-    } else {
-      const isMatch = await bcrypt.compare(otp.toString(), otpRecord.otp);
-      if (!isMatch) {
-        await incrementAttempts('patient:' + sessionId);
-        return res.status(401).json({ error: 'Incorrect OTP' });
-      }
+    if (!otpRecord) {
+      await incrementAttempts('patient:' + sessionId);
+      return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
-    otpRecord.used = true;
-    await otpRecord.save();
+    const patientAccessKey = 'patient-access:' + String(otpRecord.userId);
+    const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
+    if ((await getAttempts(patientAccessKey)) >= 5 || persistedFailures >= 5) {
+      if (persistedFailures >= 5) {
+        await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
+      }
+      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
+    if (!isMatch) {
+      const sAttempts = await incrementAttempts('patient:' + sessionId);
+      const pAttempts = await incrementAttempts(patientAccessKey);
+      const nextDocFailures = persistedFailures + 1;
+      await OTPSession.collection.updateOne(
+        { _id: otpRecord._id },
+        {
+          $inc: { failedAttempts: 1 },
+          ...(sAttempts >= 5 || pAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
+        }
+      );
+      return res.status(401).json({ error: 'Incorrect OTP' });
+    }
+
+    const claimedOtp = await OTPSession.findOneAndUpdate(
+      { _id: otpRecord._id, used: false },
+      { $set: { used: true } },
+      { returnDocument: 'after' }
+    );
+    if (!claimedOtp) {
+      return res.status(401).json({ error: 'OTP has already been used' });
+    }
+
+    await clearAttempts('patient:' + sessionId);
+    await clearAttempts(patientAccessKey);
 
     // Issue a temporary 15-min patient-access token
     const accessToken = jwt.sign(

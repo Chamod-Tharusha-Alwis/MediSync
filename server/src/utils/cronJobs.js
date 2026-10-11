@@ -109,9 +109,11 @@ const initCronJobs = () => {
 
       console.log(`[Cron] Querying follow-ups between ${twoDaysStart.toISOString()} and ${twoDaysEnd.toISOString()}`);
 
-      // Fetch consultations in the 2-day window; populate doctorId for the name
+      // Fetch non-synthetic consultations in the 2-day window; populate doctorId for the name
       const consultations = await Consultation.find({
         followUpDate: { $gte: twoDaysStart, $lt: twoDaysEnd },
+        isDemoData: { $ne: true },
+        isSynthetic: { $ne: true },
       }).populate('doctorId', 'fullName').lean();
 
       console.log(`[Cron] Found ${consultations.length} follow-up(s) due in 2 days`);
@@ -131,14 +133,19 @@ const initCronJobs = () => {
 
           const patient = await Patient.findOne({ nic: consult.patientNic });
           if (!patient) {
-            console.warn(`[Cron] Consultation ${consult._id}: patient not found for NIC ${consult.patientNic} — skipping`);
+            console.warn(`[Cron] Consultation ${consult._id}: patient not found — skipping`);
+            skipped++;
+            continue;
+          }
+
+          if (patient.isDemoData || patient.isSynthetic || /@test\.com$/i.test(String(patient.email || ''))) {
             skipped++;
             continue;
           }
 
           // ── Email address check (patient.email is NOT encrypted) ────────
           if (!patient.email) {
-            console.warn(`[Cron] Patient ${consult.patientNic}: no email on file — skipping`);
+            console.warn(`[Cron] Consultation ${consult._id}: patient has no email on file — skipping`);
             skipped++;
             continue;
           }
@@ -158,7 +165,7 @@ const initCronJobs = () => {
 
           const doctorName = consult.doctorId?.fullName || 'Your Doctor';
 
-          // ── Send reminder — uses the new dedicated 2-day template ───────
+          // ── Send reminder — uses the dedicated 2-day template ───────────
           const result = await emailService.sendReminderEmail(
             patient.email,
             patient.fullName,
@@ -166,10 +173,10 @@ const initCronJobs = () => {
             doctorName
           );
 
-          if (result.success) {
+          if (result && result.providerAccepted) {
             sent++;
           } else {
-            console.error(`[Cron] Reminder email FAILED for ${patient.email}: ${result.error}`);
+            console.error(`[Cron] Reminder email FAILED for consultation ${consult._id}: ${result?.errorCode || result?.error}`);
             failed++;
           }
 
