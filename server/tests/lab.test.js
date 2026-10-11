@@ -550,21 +550,120 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(res.status).toBe(403);
     });
 
-    it('should serve the encrypted PDF to the authenticated patient', async () => {
+    it('should reject download requests when OTP is missing', async () => {
       const res = await request(app)
         .get(`/api/lab/patient/download/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/OTP verification is required/i);
+    });
+
+    it('should reject OTPs passed in URL query parameters (?otp=...)', async () => {
+      const getQueryRes = await request(app)
+        .get(`/api/lab/patient/download/${createdLabTestId}?otp=123456`)
+        .set('Authorization', `Bearer ${patientToken}`);
+      expect(getQueryRes.status).toBe(400);
+      expect(getQueryRes.body.message).toMatch(/must not be passed in URL query parameters/i);
+
+      const postQueryRes = await request(app)
+        .post(`/api/lab/patient/download/${createdLabTestId}?otp=123456`)
         .set('Authorization', `Bearer ${patientToken}`)
+        .send({ otp: '123456' });
+      expect(postQueryRes.status).toBe(400);
+      expect(postQueryRes.body.message).toMatch(/must not be passed in URL query parameters/i);
+    });
+
+    it('should reject invalid, expired, and replayed OTPs, enforce private/no-store cache headers, and serve the decrypted PDF only with a valid one-time OTP', async () => {
+      const otpReqRes = await request(app)
+        .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`);
+      expect(otpReqRes.status).toBe(200);
+
+      const labTestDoc = await LabTest.findOne({ labTestId: createdLabTestId });
+      const otpKey = `patient-lab:${String(patientDoc._id)}:${String(labTestDoc._id)}`;
+
+      // 1. Expired OTP check using real server-generated OTP record
+      const initialStored = await getOtp(otpKey);
+      expect(initialStored).toBeTruthy();
+      expect(initialStored.purpose).toBe('patient-lab-download');
+      expect(initialStored.patientId).toBe(String(patientDoc._id));
+      expect(initialStored.testObjectId).toBe(String(labTestDoc._id));
+
+      await setOtp(otpKey, {
+        ...initialStored,
+        expiresAt: Date.now() - 5000,
+      }, 60);
+
+      const expiredRes = await request(app)
+        .post(`/api/lab/patient/download/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({ otp: initialStored.otp });
+      expect(expiredRes.status).toBe(401);
+      expect(expiredRes.body.message).toMatch(/expired/i);
+
+      // 2. Request fresh OTP and test wrong OTP
+      await request(app)
+        .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`);
+
+      const stored = await getOtp(otpKey);
+      expect(stored).toBeTruthy();
+      expect(stored.otp).toMatch(/^\d{6}$/);
+
+      const wrongOtp = stored.otp === '000000' ? '999999' : '000000';
+      const invalidRes = await request(app)
+        .post(`/api/lab/patient/download/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({ otp: wrongOtp });
+      expect(invalidRes.status).toBe(401);
+      expect(invalidRes.body.message).toMatch(/Invalid OTP/i);
+
+      // 3. Valid OTP download succeeds with private/no-store cache control headers
+      const res = await request(app)
+        .post(`/api/lab/patient/download/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({ otp: stored.otp })
         .buffer(true);
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('application/pdf');
       expect(res.headers['content-disposition']).toContain('attachment');
       expect(res.headers['content-disposition']).toContain(`${createdLabTestId}_report.pdf`);
-
-      // Verify we received actual binary PDF data
+      expect(res.headers['cache-control']).toBe('private, no-store, no-cache, must-revalidate');
+      expect(res.headers['pragma']).toBe('no-cache');
+      expect(res.headers['expires']).toBe('0');
       expect(res.body).toBeInstanceOf(Buffer);
       expect(res.body.length).toBeGreaterThan(0);
-    }, 30000);
+
+      // 4. Replayed OTP is rejected immediately
+      const replayRes = await request(app)
+        .post(`/api/lab/patient/download/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send({ otp: stored.otp });
+      expect(replayRes.status).toBe(401);
+      expect(replayRes.body.message).toMatch(/No active OTP found|already been used/i);
+
+      // 5. Concurrent single-use OTP check: 5 simultaneous requests with a fresh OTP -> only 1 succeeds
+      await request(app)
+        .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${patientToken}`);
+      const freshStored = await getOtp(otpKey);
+      expect(freshStored).toBeTruthy();
+
+      const concurrentResults = await Promise.all(
+        Array.from({ length: 5 }, () =>
+          request(app)
+            .post(`/api/lab/patient/download/${createdLabTestId}`)
+            .set('Authorization', `Bearer ${patientToken}`)
+            .send({ otp: freshStored.otp })
+        )
+      );
+      const successes = concurrentResults.filter((r) => r.status === 200);
+      const rejections = concurrentResults.filter((r) => r.status === 401);
+      expect(successes.length).toBe(1);
+      expect(rejections.length).toBe(4);
+    }, 45000);
 
     it('should return 404 for a lab test that does not belong to the patient', async () => {
       // Create a different patient with its own nic_bi blind index
@@ -584,6 +683,11 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
         sub:  '999988887777',
         nic:  '999988887777',
       });
+
+      const otpAttempt = await request(app)
+        .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
+        .set('Authorization', `Bearer ${otherToken}`);
+      expect(otpAttempt.status).toBe(404);
 
       const res = await request(app)
         .get(`/api/lab/patient/download/${createdLabTestId}`)
@@ -605,7 +709,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       );
     });
 
-    it('should return lab test status without authentication', async () => {
+    it('should return lab test status without authentication and strip all PII/encryption fields', async () => {
       const res = await request(app)
         .get(`/api/lab/public/${createdLabTestId}/status`);
 
@@ -613,6 +717,13 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(res.body.labTestId).toBe(createdLabTestId);
       expect(res.body.testName).toBe('COVID-19 PCR');
       expect(res.body.status).toBe('pending');
+      expect(res.body.patientName).toBeUndefined();
+      expect(res.body.patientEmail).toBeUndefined();
+      expect(res.body.patientNic).toBeUndefined();
+      expect(res.body.patientNic_bi).toBeUndefined();
+      expect(res.body.reportPath).toBeUndefined();
+      expect(res.body.encryptedFileKey).toBeUndefined();
+      expect(res.body.fileIV).toBeUndefined();
     });
 
     it('should return 404 for a non-existent lab test ID', async () => {

@@ -4,7 +4,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Plus, LayoutDashboard, Users,
+  ArrowLeft, Plus, LayoutDashboard,
   Activity, FlaskConical, Download, Loader2
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
@@ -45,6 +45,7 @@ const DoctorPatientDetail = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [targetLabTestId, setTargetLabTestId] = useState(null);
   const [requestingOtp, setRequestingOtp] = useState(false);
+  const [downloadOtpError, setDownloadOtpError] = useState('');
 
   const fetchRecords = useCallback(async (token) => {
     try {
@@ -96,6 +97,7 @@ const DoctorPatientDetail = () => {
   // Doctor requests OTP to download lab report
   const handleRequestDownloadOtp = async (labTestId) => {
     setRequestingOtp(true);
+    setDownloadOtpError('');
     try {
       const headers = { 'x-patient-access': patientToken };
       await axiosInstance.post(`/lab/doctor/request-otp/${labTestId}`, {}, { headers });
@@ -111,7 +113,11 @@ const DoctorPatientDetail = () => {
 
   // Doctor submits OTP and downloads report
   const handleVerifyDownloadOtp = async (code) => {
-    setShowDownloadOtpModal(false);
+    if (!code || String(code).trim().length !== 6) {
+      setDownloadOtpError('Please enter a valid 6-digit OTP.');
+      return;
+    }
+    setDownloadOtpError('');
     setIsDownloading(true);
     setDownloadProgress(10);
     
@@ -130,11 +136,13 @@ const DoctorPatientDetail = () => {
       const headers = { 'x-patient-access': patientToken };
       const response = await axiosInstance.post(
         `/lab/doctor/download/${targetLabTestId}`, 
-        { otp: code }, 
+        { otp: String(code).trim() }, 
         { responseType: 'blob', headers }
       );
 
+      clearInterval(interval);
       setDownloadProgress(100);
+      setShowDownloadOtpModal(false);
       setTimeout(() => {
         const blob = new Blob([response.data], { type: 'application/pdf' });
         const url = window.URL.createObjectURL(blob);
@@ -154,7 +162,20 @@ const DoctorPatientDetail = () => {
       clearInterval(interval);
       setIsDownloading(false);
       setDownloadProgress(0);
-      toast.error('Invalid OTP or authorization failed.');
+      let errMsg = 'Invalid OTP or authorization failed.';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          errMsg = parsed.message || parsed.error || errMsg;
+        } catch (_) {
+          // ignore blob parse error
+        }
+      } else if (err.response?.data?.message || err.response?.data?.error) {
+        errMsg = err.response.data.message || err.response.data.error;
+      }
+      setDownloadOtpError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -424,8 +445,10 @@ const DoctorPatientDetail = () => {
               </p>
               <OtpInput
                 onSubmit={handleVerifyDownloadOtp}
-                onResend={() => toast.info('A new authorization code has been requested.')}
+                onResend={() => handleRequestDownloadOtp(targetLabTestId)}
                 initialSeconds={120}
+                loading={isDownloading}
+                error={downloadOtpError}
               />
             </div>
           </Modal>

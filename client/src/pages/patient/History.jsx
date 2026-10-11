@@ -146,57 +146,100 @@ const HistoryCard = ({ event, onRate }) => {
   const [targetReportId, setTargetReportId] = useState(null);
   const [selectedLabTest, setSelectedLabTest] = useState(null);
   const [isLabModalOpen, setIsLabModalOpen] = useState(false);
+  const [otpError, setOtpError] = useState(null);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const details = event.data || {};
   const rawType = event.type || 'consultation';
 
-  const handleDownloadLabReport = async (testItem) => {
-    const reportId = typeof testItem === 'string'
+  const resolveReportId = (testItem) =>
+    typeof testItem === 'string'
       ? testItem
       : (testItem?.reportId || testItem?.labTestId || testItem?._id || testItem?.data?.reportId);
 
-    if (!reportId) return toast.error('No report ID found');
-    setDownloading(true);
+  const parseBlobErrorMessage = async (err, fallbackMsg) => {
     try {
-      const response = await api.get(`/lab/patient/download-report/${reportId}`, { responseType: 'blob' });
+      const responseData = err?.response?.data;
+      if (responseData instanceof Blob) {
+        const text = await responseData.text();
+        const parsed = JSON.parse(text);
+        return parsed.message || parsed.error || fallbackMsg;
+      }
+      return responseData?.message || responseData?.error || fallbackMsg;
+    } catch (_) {
+      return err?.response?.data?.message || err?.response?.data?.error || fallbackMsg;
+    }
+  };
+
+  const requestReportOtp = async (reportId) => {
+    if (!reportId) return false;
+    setOtpError(null);
+    try {
+      const res = await api.post(`/lab/patient/request-otp/${reportId}`);
+      toast.info(res.data?.message || 'Verification OTP sent to your registered email.');
+      return true;
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Failed to send verification OTP.';
+      setOtpError(msg);
+      toast.error(msg);
+      return false;
+    }
+  };
+
+  const triggerDownloadReport = async (testItem) => {
+    const reportId = resolveReportId(testItem);
+    if (!reportId) {
+      toast.error('No report ID found');
+      return;
+    }
+    setIsLabModalOpen(false);
+    setTargetReportId(reportId);
+    setOtpError(null);
+    setShowOtpModal(true);
+    await requestReportOtp(reportId);
+  };
+
+  const handleOtpVerify = async (code) => {
+    if (!targetReportId || !code || String(code).trim().length < 6) {
+      setOtpError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError(null);
+    setDownloading(true);
+    setIsDownloading(true);
+    setDownloadProgress(35);
+
+    try {
+      const response = await api.post(
+        `/lab/patient/download-report/${targetReportId}`,
+        { otp: String(code).trim() },
+        { responseType: 'blob' }
+      );
+      setDownloadProgress(100);
+      setShowOtpModal(false);
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `LabReport-${reportId}.pdf`;
+      link.download = `LabReport-${targetReportId}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success('Lab report downloaded successfully.');
+      toast.success('Lab report verified and downloaded successfully.');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to download report');
+      const errorMsg = await parseBlobErrorMessage(err, 'Invalid or expired OTP. Failed to download report.');
+      setOtpError(errorMsg);
+      toast.error(errorMsg);
     } finally {
+      setOtpLoading(false);
       setDownloading(false);
+      setIsDownloading(false);
+      setDownloadProgress(0);
     }
-  };
-
-  const triggerDownloadReport = (reportId) => {
-    setTargetReportId(reportId);
-    setShowOtpModal(true);
-  };
-
-  const handleOtpVerify = async (code) => {
-    setShowOtpModal(false);
-    setIsDownloading(true);
-    setDownloadProgress(10);
-    
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          handleDownloadLabReport(targetReportId);
-          setIsDownloading(false);
-          return 0;
-        }
-        return prev + 15;
-      });
-    }, 150);
   };
 
   // Treat OTC prescriptions as their own display type
@@ -575,24 +618,30 @@ const HistoryCard = ({ event, onRate }) => {
         isOpen={isLabModalOpen}
         onClose={() => setIsLabModalOpen(false)}
         labTest={selectedLabTest}
-        onDownload={(reportId) => handleDownloadLabReport(reportId)}
+        onDownload={(reportId) => triggerDownloadReport(reportId)}
       />
 
       {/* OTP Verification Modal */}
       <Modal
         isOpen={showOtpModal}
-        onClose={() => setShowOtpModal(false)}
+        onClose={() => {
+          setShowOtpModal(false);
+          setOtpError(null);
+        }}
         title="Secure Verification Required"
         size="sm"
       >
-        <div className="flex flex-col items-center text-center gap-4">
+        <div className="flex flex-col items-center text-center gap-4" data-testid="lab-report-otp-modal">
           <p className="text-sm text-slate-300">
-            To download your secure medical report, verify your identity using the 6-digit OTP code sent to your registered contact.
+            To download your secure medical report{' '}
+            {targetReportId && <span className="font-mono font-bold text-teal-400">({targetReportId})</span>}, verify your identity using the 6-digit OTP code sent to your registered email.
           </p>
           <OtpInput
             onSubmit={handleOtpVerify}
-            onResend={() => toast.info('A new OTP code has been generated and sent.')}
-            initialSeconds={120}
+            onResend={() => requestReportOtp(targetReportId)}
+            initialSeconds={600}
+            error={otpError}
+            loading={otpLoading}
           />
         </div>
       </Modal>

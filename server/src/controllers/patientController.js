@@ -182,7 +182,7 @@ exports.loginPatient = async (req, res) => {
 
       const emailToSend = patient.email || (typeof patient.contactInfo === 'string' && patient.contactInfo.includes('@') ? patient.contactInfo : null);
       if (emailToSend) {
-        console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${emailToSend} | Role: patient | User: ${patient.fullName} | isTrusted: ${isTrusted}`);
+        console.log(`[AUTH LOGIN NOTIFICATION] Role: patient | isTrusted: ${isTrusted}`);
         const resNotification = await emailService.sendLoginNotificationEmail(
           emailToSend,
           patient.fullName,
@@ -194,7 +194,7 @@ exports.loginPatient = async (req, res) => {
           null,
           isTrusted
         );
-        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
+        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, Boolean(resNotification));
       }
     } catch (e) {
       console.error('[AUTH LOGIN NOTIFICATION ERROR] Patient login email failed:', e.message);
@@ -217,20 +217,47 @@ exports.loginPatient = async (req, res) => {
   }
 };
 
+const stripEncryptionMetadata = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const cleaned = { ...obj };
+  for (const key of Object.keys(cleaned)) {
+    if (key.startsWith('__enc_') || key === 'keyVersion' || key === 'encryptedFileKey' || key === 'fileIV' || key === 'reportPath' || key === 'reportPublicId') {
+      delete cleaned[key];
+    }
+  }
+  return cleaned;
+};
+
+const resolveAuthenticatedPatientNic = async (reqUser) => {
+  if (!reqUser) return null;
+  if (reqUser.nic) return String(reqUser.nic).trim().toUpperCase();
+  if (reqUser.id) {
+    const doc = await Patient.findById(reqUser.id).select('nic');
+    if (doc?.nic) return String(doc.nic).trim().toUpperCase();
+  }
+  if (reqUser.sub && String(reqUser.sub) !== String(reqUser.id)) {
+    return String(reqUser.sub).trim().toUpperCase();
+  }
+  return null;
+};
+
 exports.getPatient = async (req, res) => {
   try {
     const { nic } = req.params;
     const normalizedNic = nic.toUpperCase();
     
-    // Role-based access control
-    if (req.user.role === 'patient' && req.user.sub.toUpperCase() !== normalizedNic) {
-      return res.status(403).json({ error: 'Access denied to other patient profiles' });
+    // Role-based access control against authenticated patient record
+    if (req.user.role === 'patient') {
+      const authNic = await resolveAuthenticatedPatientNic(req.user);
+      if (!authNic || authNic !== normalizedNic) {
+        return res.status(403).json({ error: 'Access denied to other patient profiles' });
+      }
     }
 
     const patient = await Patient.findOne({ nic: normalizedNic }).select('-password');
     if (!patient) return res.status(404).json({ error: 'Patient not found' });
     
-    const patientObj = patient.toObject();
+    const patientObj = stripEncryptionMetadata(patient.toObject());
     
     // Mask NIC in response if not the patient themselves or doctor
     if (req.user.role !== 'patient' && req.user.role !== 'doctor') {
@@ -249,8 +276,11 @@ exports.updatePatient = async (req, res) => {
     const normalizedNic = nic.toUpperCase();
     
     // Patient can only update own profile
-    if (req.user.role === 'patient' && req.user.sub.toUpperCase() !== normalizedNic) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (req.user.role === 'patient') {
+      const authNic = await resolveAuthenticatedPatientNic(req.user);
+      if (!authNic || authNic !== normalizedNic) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     const { bloodGroup, address, district, contactInfo, emergencyContact, chronicConditions, allergies } = req.body;
@@ -266,7 +296,7 @@ exports.updatePatient = async (req, res) => {
     if (allergies) patient.allergies = allergies;
 
     await patient.save();
-    res.json({ message: 'Profile updated', data: patient });
+    res.json({ message: 'Profile updated', data: stripEncryptionMetadata(patient.toObject()) });
   } catch (error) {
     res.status(500).json({ error: 'Update failed', details: error.message });
   }
@@ -277,15 +307,18 @@ exports.getTimeline = async (req, res) => {
     // ── Primary identity: Patient._id from the JWT (never encrypted) ──────
     const patientMongoId = req.user.id;
 
-    // ── Authorization ────────────────────────────────────────────────────
-    const nicParam   = req.params.nic?.toUpperCase();
-    const nicFromJwt = req.user.sub?.toUpperCase();
-    if (req.user.role === 'patient' && nicParam && nicFromJwt && nicFromJwt !== nicParam) {
-      return res.status(403).json({ error: 'Access denied' });
+    // ── Authorization against authenticated patient record ───────────────
+    const nicParam = req.params.nic?.trim().toUpperCase();
+    let targetNic  = nicParam;
+    if (req.user.role === 'patient') {
+      const authNic = await resolveAuthenticatedPatientNic(req.user);
+      if (!authNic || (nicParam && authNic !== nicParam)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      targetNic = authNic;
     }
 
-    const targetNic = (req.user.nic || req.user.sub || req.params.nic || '').trim().toUpperCase();
-    const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
+    const targetHash = crypto.createHash('sha256').update(targetNic || '').digest('hex');
 
     const [myPrescriptions, myConsultations, myLabTests, myRatings, myReviews] = await Promise.all([
       Prescription.find({ patientNic_bi: targetHash })
@@ -341,21 +374,21 @@ exports.getTimeline = async (req, res) => {
 
     // Map through consultations and embed their matching prescriptions
     consultations.forEach(c => {
-      const cObj = c.toObject();
+      const cObj = stripEncryptionMetadata(c.toObject());
       
       cObj.prescriptions = doctorPrescriptions
         .filter(p => 
           (p.consultationId && p.consultationId.toString() === c._id.toString()) ||
           (p.consultationRef && c.consultationId && p.consultationRef === c.consultationId)
         )
-        .map(p => p.toObject());
+        .map(p => stripEncryptionMetadata(p.toObject()));
 
       cObj.labTests = labTests
         .filter(l => 
           (l.consultationId && l.consultationId.toString() === c._id.toString()) ||
           (l.consultationRef && c.consultationId && l.consultationRef === c.consultationId)
         )
-        .map(l => l.toObject());
+        .map(l => stripEncryptionMetadata(l.toObject()));
 
       const ratingObj = ratings.find(r => r.consultationId.toString() === c._id.toString());
       if (ratingObj) {
@@ -379,7 +412,7 @@ exports.getTimeline = async (req, res) => {
       timeline.push({
         type: 'prescription',
         date: p.issuedAt || p.createdAt,
-        data: p.toObject()
+        data: stripEncryptionMetadata(p.toObject())
       });
     });
 
@@ -387,18 +420,23 @@ exports.getTimeline = async (req, res) => {
 
     res.json({ data: timeline });
   } catch (error) {
-    console.error('[Timeline] ERROR:', error.message, error.stack);
+    console.error('[Timeline] ERROR:', error.message);
     res.status(500).json({ error: 'Failed to fetch timeline', details: error.message });
   }
 };
 
 exports.getPrescriptions = async (req, res) => {
   try {
-    const targetNic = (req.params.nic || req.user.nic || req.user.sub || '').trim().toUpperCase();
+    const nicParam = (req.params.nic || '').trim().toUpperCase();
+    let targetNic = nicParam;
     
-    // Authorization check
-    if (req.user.role === 'patient' && req.user.sub && req.user.sub.toUpperCase() !== targetNic) {
-      return res.status(403).json({ error: 'Access denied' });
+    // Authorization check against authenticated patient record
+    if (req.user.role === 'patient') {
+      const authNic = await resolveAuthenticatedPatientNic(req.user);
+      if (!authNic || (nicParam && authNic !== nicParam)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      targetNic = authNic;
     }
 
     const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
@@ -415,13 +453,14 @@ exports.getPrescriptions = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // Decrypt all documents
-    myPrescriptions.forEach(p => {
+    const cleanedPrescriptions = myPrescriptions.map(p => {
       if (typeof p.decryptFieldsSync === 'function') {
         try { p.decryptFieldsSync(); } catch (e) {}
       }
+      return stripEncryptionMetadata(p.toObject());
     });
 
-    res.json({ data: myPrescriptions });
+    res.json({ data: cleanedPrescriptions });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch prescriptions', details: error.message });
   }
@@ -436,22 +475,22 @@ exports.rateConsultation = async (req, res) => {
       return res.status(403).json({ error: 'Only patients can rate consultations' });
     }
 
+    const authNic = await resolveAuthenticatedPatientNic(req.user);
     const consultation = await Consultation.findById(id);
     if (!consultation) return res.status(404).json({ error: 'Consultation not found' });
 
-    // Use unencrypted patientNic for ownership check as requested
-    if (consultation.patientNic.toUpperCase() !== req.user.sub.toUpperCase()) {
+    if (!authNic || consultation.patientNic.toUpperCase() !== authNic) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const existingRating = await ConsultationRating.findOne({ consultationId: id, patientNic: req.user.sub });
+    const existingRating = await ConsultationRating.findOne({ consultationId: id, patientNic: authNic });
     if (existingRating) {
       return res.status(400).json({ error: 'You have already rated this consultation' });
     }
 
     const newRating = new ConsultationRating({
       consultationId: id,
-      patientNic: req.user.sub,
+      patientNic: authNic,
       doctorId: consultation.doctorId,
       rating,
       comment

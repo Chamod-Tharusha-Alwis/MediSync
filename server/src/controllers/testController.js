@@ -43,9 +43,24 @@ exports.getPatientTests = async (req, res) => {
   try {
     const { nic } = req.params;
 
-    // Patients can only view their own tests
-    if (req.user.role === 'patient' && req.user.sub !== nic) {
-      return res.status(403).json({ error: 'Access denied' });
+    // Patients can only view their own tests — verify against authenticated patient record
+    if (req.user.role === 'patient') {
+      const Patient = require('../models/Patient');
+      let authNic = req.user.nic || req.user.sub || null;
+      if (req.user.id) {
+        const authPatient = await Patient.findById(req.user.id);
+        if (authPatient) {
+          if (typeof authPatient.decryptFieldsSync === 'function') {
+            authPatient.decryptFieldsSync();
+          }
+          if (authPatient.nic) {
+            authNic = authPatient.nic;
+          }
+        }
+      }
+      if (!authNic || String(authNic).trim().toUpperCase() !== String(nic || '').trim().toUpperCase()) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     const crypto = require('crypto');
@@ -55,11 +70,24 @@ exports.getPatientTests = async (req, res) => {
     const tests = await LabTest.find({ patientNic_bi })
       .sort({ createdAt: -1 });
 
-    console.log(`[DEBUG] getPatientTests for NIC ${nic}. Hash: ${patientNic_bi}. Found: ${tests.length} tests`);
+    const sanitizedTests = tests.map((t) => {
+      const obj = typeof t.toObject === 'function' ? t.toObject() : { ...t };
+      delete obj.reportPath;
+      delete obj.reportPublicId;
+      delete obj.encryptedFileKey;
+      delete obj.fileIV;
+      delete obj.patientNic;
+      delete obj.patientEmail;
+      delete obj.keyVersion;
+      Object.keys(obj).forEach((k) => {
+        if (k.startsWith('__enc_')) delete obj[k];
+      });
+      return obj;
+    });
 
-    return res.json({ data: tests });
+    return res.json({ data: sanitizedTests });
   } catch (error) {
-    console.error(`[DEBUG] getPatientTests ERROR:`, error);
+    console.error('[TEST CONTROLLER] getPatientTests error:', error.message);
     return res.status(500).json({ error: 'Failed to fetch tests', details: error.message });
   }
 };

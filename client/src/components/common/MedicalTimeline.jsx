@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import LabDetailModal from './LabDetailModal';
 import LabReportDownloadButton from './LabReportDownloadButton';
+import Modal from '../ui/Modal';
+import OtpInput from '../ui/OtpInput';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 
@@ -64,16 +66,88 @@ const typeConfig = {
 };
 const getTC = (type) => typeConfig[type] || typeConfig.consultation;
 
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MedicalTimeline — alternating left/right layout for doctor view
    ═══════════════════════════════════════════════════════════════════════════ */
 const MedicalTimeline = ({ events }) => {
   const [selectedLabTest, setSelectedLabTest] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [targetReportId, setTargetReportId] = useState(null);
+  const [otpError, setOtpError] = useState(null);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleOpenLab = (labTest) => {
     setSelectedLabTest(labTest);
     setIsModalOpen(true);
+  };
+
+  const isDoctorRole = () => {
+    const role = localStorage.getItem('role') || localStorage.getItem('userRole');
+    return role === 'doctor';
+  };
+
+  const requestLabOtp = async (reportId) => {
+    if (!reportId) return;
+    setOtpError(null);
+    try {
+      const endpoint = isDoctorRole()
+        ? `/lab/doctor/request-otp/${reportId}`
+        : `/lab/patient/request-otp/${reportId}`;
+      const res = await axiosInstance.post(endpoint);
+      toast.info(res.data?.message || 'Verification OTP sent.');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Failed to request verification OTP.';
+      setOtpError(msg);
+      toast.error(msg);
+    }
+  };
+
+  const handleRequestDownload = async (reportId) => {
+    if (!reportId) return;
+    setIsModalOpen(false);
+    setTargetReportId(reportId);
+    setOtpError(null);
+    setShowOtpModal(true);
+    await requestLabOtp(reportId);
+  };
+
+  const handleVerifyDownloadOtp = async (code) => {
+    if (!targetReportId || !code) return;
+    setOtpLoading(true);
+    setOtpError(null);
+    try {
+      const endpoint = isDoctorRole()
+        ? `/lab/doctor/download/${targetReportId}`
+        : `/lab/patient/download-report/${targetReportId}`;
+      const res = await axiosInstance.post(endpoint, { otp: String(code).trim() }, { responseType: 'blob' });
+      setShowOtpModal(false);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LabReport-${targetReportId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Lab Report verified and downloaded successfully!');
+    } catch (err) {
+      let msg = 'Invalid or expired OTP. Failed to download report.';
+      try {
+        if (err.response?.data instanceof Blob) {
+          const parsed = JSON.parse(await err.response.data.text());
+          msg = parsed.message || parsed.error || msg;
+        } else if (err.response?.data?.message || err.response?.data?.error) {
+          msg = err.response.data.message || err.response.data.error;
+        }
+      } catch (_) {}
+      setOtpError(msg);
+      toast.error(msg);
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   if (!events || events.length === 0) {
@@ -118,24 +192,32 @@ const MedicalTimeline = ({ events }) => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         labTest={selectedLabTest}
-        onDownload={async (reportId) => {
-          try {
-            const res = await axiosInstance.get(`/lab/patient/download-report/${reportId}`, { responseType: 'blob' });
-            const blob = new Blob([res.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `LabReport-${reportId}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            toast.success('Lab Report downloaded successfully!');
-          } catch (err) {
-            toast.info(`Downloaded report summary for ${reportId}`);
-          }
-        }}
+        onDownload={(reportId) => handleRequestDownload(reportId)}
       />
+
+      <Modal
+        isOpen={showOtpModal}
+        onClose={() => {
+          setShowOtpModal(false);
+          setOtpError(null);
+        }}
+        title="Secure Lab Report Verification"
+        size="sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <p className="text-sm text-slate-300">
+            Enter the 6-digit verification code sent to the patient&apos;s registered email to authorize downloading report{' '}
+            <span className="font-mono font-bold text-teal-400">{targetReportId}</span>.
+          </p>
+          <OtpInput
+            onSubmit={handleVerifyDownloadOtp}
+            onResend={() => requestLabOtp(targetReportId)}
+            initialSeconds={600}
+            error={otpError}
+            loading={otpLoading}
+          />
+        </div>
+      </Modal>
     </div>
   );
 };

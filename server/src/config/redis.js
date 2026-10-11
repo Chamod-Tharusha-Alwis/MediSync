@@ -84,10 +84,12 @@ const OTP_PREFIX = 'medisync:otp:';
  */
 async function setOtp(key, data, ttlSec = 600) {
   const fullKey = OTP_PREFIX + key;
+  const attemptsKey = 'medisync:otp-attempts:' + key;
 
   if (redisAvailable && redisClient) {
     try {
       await redisClient.setEx(fullKey, ttlSec, JSON.stringify(data));
+      await redisClient.del(attemptsKey);
       return;
     } catch (err) {
       if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
@@ -101,6 +103,7 @@ async function setOtp(key, data, ttlSec = 600) {
 
   // In-memory fallback
   memoryStore.set(fullKey, { data, expiresAt: Date.now() + ttlSec * 1000 });
+  memoryStore.delete(attemptsKey);
 }
 
 /**
@@ -141,10 +144,12 @@ async function getOtp(key) {
  */
 async function deleteOtp(key) {
   const fullKey = OTP_PREFIX + key;
+  const attemptsKey = 'medisync:otp-attempts:' + key;
 
   if (redisAvailable && redisClient) {
     try {
       await redisClient.del(fullKey);
+      await redisClient.del(attemptsKey);
       return;
     } catch (err) {
       if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
@@ -158,6 +163,7 @@ async function deleteOtp(key) {
 
   // In-memory fallback
   memoryStore.delete(fullKey);
+  memoryStore.delete(attemptsKey);
 }
 
 /**

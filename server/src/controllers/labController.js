@@ -26,6 +26,7 @@ const UPLOAD_DIR = path.join(__dirname, '../../uploads/lab-reports');
 // ── OTP key prefixes (namespacing within Redis) ──────────────────────────────
 const OTP_NS_HOSPITAL = 'hospital:';  // hospital consent OTP
 const OTP_NS_DOCTOR   = 'doctor:';    // doctor report-access OTP
+const OTP_NS_PATIENT  = 'patient-lab:'; // patient report-download OTP
 const OTP_TTL_SECONDS = 600;          // 10 minutes
 
 // Cloudinary configuration
@@ -42,6 +43,21 @@ if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const nicHash = (nic) =>
   crypto.createHash('sha256').update(nic ? nic.trim().toUpperCase() : '').digest('hex');
 
+const resolveAuthenticatedPatient = async (reqUser) => {
+  let nic = reqUser?.nic || reqUser?.sub || null;
+  let patientDoc = null;
+  if (reqUser?.id && mongoose.Types.ObjectId.isValid(String(reqUser.id))) {
+    patientDoc = await Patient.findById(reqUser.id);
+    if (patientDoc && typeof patientDoc.decryptFieldsSync === 'function') {
+      try { patientDoc.decryptFieldsSync(); } catch (e) {}
+    }
+    if (!nic && patientDoc?.nic) {
+      nic = patientDoc.nic;
+    }
+  }
+  return { nic: nic || reqUser?.id, patientDoc };
+};
+
 /**
  * Universal lookup helper for lab tests by any identifier (_id, labTestId, or reportId)
  */
@@ -57,30 +73,29 @@ const findLabTestByIdentifier = async (idParam, nic = null) => {
     ]
   };
 
+  const candidate = await LabTest.findOne(idQuery);
+  if (!candidate) {
+    return null;
+  }
+
   if (!nic) {
-    return await LabTest.findOne(idQuery);
+    return candidate;
   }
 
-  const hashUpper = nicHash(nic);
+  const cleanNic  = String(nic).trim().toUpperCase();
+  const hashUpper = nicHash(cleanNic);
   const hashRaw   = crypto.createHash('sha256').update(String(nic).trim()).digest('hex');
-  const patientQuery = {
-    $and: [
-      idQuery,
-      {
-        $or: [
-          { patientNic_bi: hashUpper },
-          { patientNic_bi: hashRaw },
-          { patientNic: nic }
-        ]
-      }
-    ]
-  };
 
-  let test = await LabTest.findOne(patientQuery);
-  if (!test) {
-    test = await LabTest.findOne(idQuery);
+  if (typeof candidate.decryptFieldsSync === 'function') {
+    try { candidate.decryptFieldsSync(); } catch (e) {}
   }
-  return test;
+
+  const candidateNicUpper = String(candidate.patientNic || '').trim().toUpperCase();
+  const ownsRecord =
+    (candidate.patientNic_bi && (candidate.patientNic_bi === hashUpper || candidate.patientNic_bi === hashRaw)) ||
+    (candidateNicUpper && candidateNicUpper === cleanNic);
+
+  return ownsRecord ? candidate : null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -795,12 +810,12 @@ exports.getHospitalLabTests = async (req, res) => {
  */
 exports.getMyLabTests = async (req, res) => {
   try {
-    const nic = req.user.nic || req.user.sub;
+    const { nic } = await resolveAuthenticatedPatient(req.user);
     const hash = nicHash(nic);
 
     const tests = await LabTest.find({ patientNic_bi: hash })
       .sort({ createdAt: -1 })
-      .select('labTestId testName testCategory status urgency reportUploadedAt createdAt statusHistory')
+      .select('labTestId reportId testName testCategory status urgency reportUploadedAt createdAt statusHistory')
       .populate('hospitalId', 'name address')
       .populate('referredBy', 'name specialization');
 
@@ -812,20 +827,163 @@ exports.getMyLabTests = async (req, res) => {
 };
 
 /**
- * GET /api/lab/patient/download/:labTestId
- * Patient downloads their PDF report.
- * If envelope encryption fields exist, decrypts in memory and streams clean PDF.
- * Falls back to legacy (direct Cloudinary download) for older records.
+ * POST /api/lab/patient/request-otp/:reportId
+ * Patient requests an OTP to download their own lab report.
+ */
+exports.patientRequestOtp = async (req, res) => {
+  try {
+    const idParam = req.params.reportId || req.params.labTestId;
+    const { nic, patientDoc } = await resolveAuthenticatedPatient(req.user);
+
+    const labTest = await findLabTestByIdentifier(idParam, nic);
+    if (!labTest) {
+      return res.status(404).json({ message: 'Lab test not found or not linked to your account' });
+    }
+
+    if (typeof labTest.decryptFieldsSync === 'function') {
+      try { labTest.decryptFieldsSync(); } catch (e) {}
+    }
+
+    let patientEmail = patientDoc?.email || labTest.patientEmail || req.user?.email;
+    if (!patientEmail && labTest.patientNic_bi) {
+      const linkedPatient = await Patient.findOne({ patientNic_bi: labTest.patientNic_bi });
+      if (linkedPatient) {
+        if (typeof linkedPatient.decryptFieldsSync === 'function') {
+          try { linkedPatient.decryptFieldsSync(); } catch (e) {}
+        }
+        patientEmail = linkedPatient.email;
+      }
+    }
+
+    const otp       = speakeasy.totp({ secret: speakeasy.generateSecret().base32, digits: 6 });
+    const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
+    const otpKey    = `${OTP_NS_PATIENT}${String(req.user.id)}:${String(labTest._id)}`;
+
+    await setOtp(
+      otpKey,
+      {
+        otp,
+        purpose: 'patient-lab-download',
+        patientId: String(req.user.id),
+        patientNicBi: labTest.patientNic_bi,
+        labTestId: labTest.labTestId,
+        reportId: labTest.reportId,
+        testObjectId: String(labTest._id),
+        expiresAt,
+      },
+      OTP_TTL_SECONDS
+    );
+
+    if (patientEmail) {
+      await sendEmail({
+        to:      patientEmail,
+        subject: `MediSync — Lab Report Download Verification Code (${labTest.reportId || labTest.labTestId})`,
+        html: `
+          <p>Dear Patient,</p>
+          <p>You requested to download your lab report <strong>${labTest.reportId || labTest.labTestId}</strong> (${labTest.testName || 'Lab Test'}).</p>
+          <p>Please enter the following 6-digit verification code to complete your download:</p>
+          <h2 style="letter-spacing:8px;font-size:32px;color:#0D9488">${otp}</h2>
+          <p>This OTP expires in <strong>10 minutes</strong> and can only be used once.</p>
+          <p>MediSync Security Team</p>
+        `,
+      }).catch((e) => console.error('[Lab] Patient OTP email error:', e.message));
+    }
+
+    return res.json({
+      message: 'Verification OTP sent to your registered email',
+      expiresInMinutes: 10,
+    });
+  } catch (err) {
+    console.error('[Lab] patientRequestOtp error:', err);
+    return res.status(500).json({ message: 'Server error requesting lab report OTP' });
+  }
+};
+
+// Atomic in-flight OTP verification lock to prevent concurrent single-OTP race conditions
+const inFlightOtpVerifications = new Set();
+
+/**
+ * GET/POST /api/lab/patient/download/:labTestId
+ * GET/POST /api/lab/patient/download-report/:reportId
+ * Patient downloads their PDF report after strict ownership + OTP verification.
  */
 exports.patientDownloadReport = async (req, res) => {
   try {
+    if (req.query && req.query.otp !== undefined) {
+      return res.status(400).json({ message: 'Security policy violation: OTP must not be passed in URL query parameters' });
+    }
+
     const idParam = req.params.labTestId || req.params.reportId;
-    const nic     = req.user.nic || req.user.sub || req.user.id;
+    const { nic } = await resolveAuthenticatedPatient(req.user);
 
     const labTest = await findLabTestByIdentifier(idParam, nic);
 
     if (!labTest) {
       return res.status(404).json({ message: 'Lab test not found or not linked to your account' });
+    }
+
+    const otp = req.body?.otp || req.headers['x-lab-otp'];
+    if (!otp) {
+      return res.status(400).json({ message: 'OTP verification is required to download this lab report' });
+    }
+
+    const primaryKey  = `${OTP_NS_PATIENT}${String(req.user.id)}:${String(labTest._id)}`;
+    const fallbackKey = `${OTP_NS_PATIENT}${String(req.user.id)}`;
+    const lockKey     = `patient:${String(req.user.id)}:${String(labTest._id)}`;
+
+    if (inFlightOtpVerifications.has(lockKey)) {
+      return res.status(401).json({ message: 'OTP has already been used or verification is in progress.' });
+    }
+    inFlightOtpVerifications.add(lockKey);
+
+    try {
+      const attempts = Math.max(await getAttempts(primaryKey), await getAttempts(fallbackKey));
+      if (attempts >= 5) {
+        return res.status(429).json({ message: 'Too many failed OTP attempts. Please request a new OTP.' });
+      }
+
+      let activeKey = primaryKey;
+      let stored = await getOtp(primaryKey);
+      if (!stored) {
+        stored = await getOtp(fallbackKey);
+        if (stored) activeKey = fallbackKey;
+      }
+
+      if (!stored) {
+        return res.status(401).json({ message: 'No active OTP found or OTP has already been used. Please request a new OTP.' });
+      }
+
+      if (stored.purpose && stored.purpose !== 'patient-lab-download') {
+        return res.status(401).json({ message: 'OTP purpose mismatch for patient lab report download' });
+      }
+
+      if (stored.patientId && String(stored.patientId) !== String(req.user.id)) {
+        return res.status(401).json({ message: 'OTP was issued for a different patient account' });
+      }
+
+      const matchesReport =
+        (stored.testObjectId && stored.testObjectId === String(labTest._id)) ||
+        (stored.labTestId && (stored.labTestId === labTest.labTestId || stored.labTestId === idParam)) ||
+        (stored.reportId && (stored.reportId === labTest.reportId || stored.reportId === idParam));
+
+      if (!matchesReport) {
+        return res.status(401).json({ message: 'OTP was issued for a different lab report' });
+      }
+
+      if (Date.now() > stored.expiresAt) {
+        await deleteOtp(activeKey);
+        return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
+      }
+
+      if (String(stored.otp).trim() !== String(otp).trim()) {
+        await incrementAttempts(activeKey);
+        return res.status(401).json({ message: 'Invalid OTP code. Please check and try again.' });
+      }
+
+      // Consume OTP immediately (one-time use — prevents replay)
+      await deleteOtp(activeKey);
+    } finally {
+      inFlightOtpVerifications.delete(lockKey);
     }
 
     let pdfBuffer;
@@ -872,6 +1030,9 @@ exports.patientDownloadReport = async (req, res) => {
       'Content-Type':        'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length':      pdfBuffer.byteLength,
+      'Cache-Control':       'private, no-store, no-cache, must-revalidate',
+      'Pragma':              'no-cache',
+      'Expires':             '0',
     });
     return res.send(pdfBuffer);
   } catch (err) {
@@ -889,14 +1050,14 @@ exports.patientDownloadReportByReportId = exports.patientDownloadReport;
 /**
  * POST /api/lab/doctor/request-otp/:labTestId
  * Doctor requests an OTP to download a lab test report.
- * OTP is emailed to the doctor's registered email.
+ * OTP is emailed to the patient's registered email.
  */
 exports.doctorRequestOtp = async (req, res) => {
   try {
     const { labTestId } = req.params;
     const userId = req.user.id;
 
-    const labTest = await LabTest.findOne({ labTestId });
+    const labTest = await findLabTestByIdentifier(labTestId);
     if (!labTest) return res.status(404).json({ message: 'Lab test not found' });
 
     // Decrypt fields since patientEmail is encrypted
@@ -930,14 +1091,26 @@ exports.doctorRequestOtp = async (req, res) => {
     const otp       = speakeasy.totp({ secret: speakeasy.generateSecret().base32, digits: 6 });
     const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
 
-    await setOtp(OTP_NS_DOCTOR + String(userId), { otp, labTestId, expiresAt }, OTP_TTL_SECONDS);
+    await setOtp(
+      OTP_NS_DOCTOR + String(userId),
+      {
+        otp,
+        purpose: 'doctor-lab-download',
+        doctorId: String(userId),
+        labTestId: labTest.labTestId,
+        reportId: labTest.reportId,
+        testObjectId: String(labTest._id),
+        expiresAt,
+      },
+      OTP_TTL_SECONDS
+    );
 
     await sendEmail({
       to:      patientEmail,
       subject: `MediSync — Dr. ${doctorName} is requesting access to your lab report`,
       html: `
         <p>Dear Patient,</p>
-        <p>Dr. <strong>${doctorName}</strong> is requesting access to your lab report <strong>${labTestId}</strong>.</p>
+        <p>Dr. <strong>${doctorName}</strong> is requesting access to your lab report <strong>${labTest.labTestId}</strong>.</p>
         <p>If you authorize this, please provide the doctor with the following OTP:</p>
         <h2 style="letter-spacing:8px;font-size:32px;color:#0D9488">${otp}</h2>
         <p>This OTP expires in <strong>10 minutes</strong>. Do not share it if you do not authorize access.</p>
@@ -959,43 +1132,70 @@ exports.doctorRequestOtp = async (req, res) => {
  */
 exports.doctorDownloadReport = async (req, res) => {
   try {
+    if (req.query && req.query.otp !== undefined) {
+      return res.status(400).json({ message: 'Security policy violation: OTP must not be passed in URL query parameters' });
+    }
+
     const { labTestId }  = req.params;
     const { otp }        = req.body;
     const userId         = req.user.id;
 
     if (!otp) return res.status(400).json({ message: 'OTP is required' });
 
-    const attempts = await getAttempts(OTP_NS_DOCTOR + String(userId));
-    if (attempts >= 5) {
-      return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
-    }
+    const otpKey  = OTP_NS_DOCTOR + String(userId);
+    const lockKey = `doctor:${String(userId)}`;
 
-    // Verify OTP via Redis store
-    const stored = await getOtp(OTP_NS_DOCTOR + String(userId));
-    if (!stored) {
-      return res.status(401).json({ message: 'No OTP requested. Please request an OTP first.' });
+    if (inFlightOtpVerifications.has(lockKey)) {
+      return res.status(401).json({ message: 'OTP has already been used or verification is in progress.' });
     }
-    if (stored.labTestId !== labTestId) {
-      return res.status(401).json({ message: 'OTP was issued for a different lab test' });
-    }
-    if (Date.now() > stored.expiresAt) {
-      await deleteOtp(OTP_NS_DOCTOR + String(userId));
-      return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
-    }
-    const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
-    if (!isTestBypass) {
-      if (stored.otp !== otp) {
-        await incrementAttempts(OTP_NS_DOCTOR + String(userId));
-        return res.status(401).json({ message: 'Invalid OTP' });
+    inFlightOtpVerifications.add(lockKey);
+
+    let labTest;
+    try {
+      const attempts = await getAttempts(otpKey);
+      if (attempts >= 5) {
+        return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
       }
-    }
 
-    // OTP valid — consume it (one-time use)
-    await deleteOtp(OTP_NS_DOCTOR + String(userId));
+      // Verify OTP via Redis store
+      const stored = await getOtp(otpKey);
+      if (!stored) {
+        return res.status(401).json({ message: 'No OTP requested. Please request an OTP first.' });
+      }
+      if (stored.purpose && stored.purpose !== 'doctor-lab-download') {
+        return res.status(401).json({ message: 'OTP purpose mismatch for doctor lab report download' });
+      }
+      if (stored.doctorId && String(stored.doctorId) !== String(userId)) {
+        return res.status(401).json({ message: 'OTP was issued for a different doctor account' });
+      }
+      const matchesTest =
+        stored.labTestId === labTestId ||
+        (stored.reportId && stored.reportId === labTestId) ||
+        (stored.testObjectId && stored.testObjectId === labTestId);
+      if (!matchesTest) {
+        return res.status(401).json({ message: 'OTP was issued for a different lab test' });
+      }
+      if (Date.now() > stored.expiresAt) {
+        await deleteOtp(otpKey);
+        return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
+      }
+      const isTestBypass = process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'true' && otp === '123456';
+      if (!isTestBypass) {
+        if (String(stored.otp).trim() !== String(otp).trim()) {
+          await incrementAttempts(otpKey);
+          return res.status(401).json({ message: 'Invalid OTP' });
+        }
+      }
 
-    const labTest = await findLabTestByIdentifier(labTestId);
-    if (!labTest) {
-      return res.status(404).json({ message: 'Lab test not found' });
+      // OTP valid — consume it immediately (one-time use)
+      await deleteOtp(otpKey);
+
+      labTest = await findLabTestByIdentifier(labTestId);
+      if (!labTest) {
+        return res.status(404).json({ message: 'Lab test not found' });
+      }
+    } finally {
+      inFlightOtpVerifications.delete(lockKey);
     }
 
     let pdfBuffer;
@@ -1042,6 +1242,9 @@ exports.doctorDownloadReport = async (req, res) => {
       'Content-Type':        'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length':      pdfBuffer.byteLength,
+      'Cache-Control':       'private, no-store, no-cache, must-revalidate',
+      'Pragma':              'no-cache',
+      'Expires':             '0',
     });
     return res.send(pdfBuffer);
   } catch (err) {
@@ -1065,7 +1268,17 @@ exports.publicStatusCheck = async (req, res) => {
 
     if (!labTest) return res.status(404).json({ message: 'Lab Test ID not found' });
 
-    return res.json(labTest);
+    return res.json({
+      labTestId:        labTest.labTestId,
+      reportId:         labTest.reportId,
+      testName:         labTest.testName,
+      testCategory:     labTest.testCategory,
+      urgency:          labTest.urgency,
+      status:           labTest.status,
+      orderedAt:        labTest.orderedAt,
+      reportUploadedAt: labTest.reportUploadedAt,
+      createdAt:        labTest.createdAt,
+    });
   } catch (err) {
     console.error('[Lab] publicStatus error:', err);
     return res.status(500).json({ message: 'Server error' });
@@ -1158,3 +1371,5 @@ exports.migrateNic = async (req, res) => {
 exports._otpHelpers      = { setOtp, getOtp, deleteOtp };
 exports.OTP_NS_HOSPITAL  = OTP_NS_HOSPITAL;
 exports.OTP_NS_DOCTOR    = OTP_NS_DOCTOR;
+exports.OTP_NS_PATIENT   = OTP_NS_PATIENT;
+

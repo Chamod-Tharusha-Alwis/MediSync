@@ -13,6 +13,7 @@ const {
   uploadReport,
   getHospitalLabTests,
   getMyLabTests,
+  patientRequestOtp,
   patientDownloadReport,
   doctorRequestOtp,
   doctorDownloadReport,
@@ -70,11 +71,14 @@ router.patch ('/:labTestId/status',          protect(['hospital_admin', 'labTech
 router.post  ('/:labTestId/upload-report',   protect(['hospital_admin', 'labTechnician']), uploadMemory.single('report'), uploadReport);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PATIENT routes — role: 'patient'
+// PATIENT routes — role: 'patient' (OTP-gated report downloads)
 // ─────────────────────────────────────────────────────────────────────────────
-router.get   ('/patient/my-tests',                protect(['patient']), getMyLabTests);
-router.get   ('/patient/download/:labTestId',     protect(['patient']), patientDownloadReport);
+router.get   ('/patient/my-tests',                  protect(['patient']), getMyLabTests);
+router.post  ('/patient/request-otp/:reportId',     protect(['patient']), patientRequestOtp);
+router.get   ('/patient/download/:labTestId',       protect(['patient']), patientDownloadReport);
+router.post  ('/patient/download/:labTestId',       protect(['patient']), patientDownloadReport);
 router.get   ('/patient/download-report/:reportId', protect(['patient']), patientDownloadReportByReportId);
+router.post  ('/patient/download-report/:reportId', protect(['patient']), patientDownloadReportByReportId);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOCTOR routes — OTP-gated download
@@ -83,3 +87,4 @@ router.post  ('/doctor/request-otp/:labTestId',   protect(['doctor']), doctorReq
 router.post  ('/doctor/download/:labTestId',      protect(['doctor']), doctorDownloadReport);
 
 module.exports = router;
+

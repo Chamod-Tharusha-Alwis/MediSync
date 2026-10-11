@@ -167,7 +167,19 @@ exports.downloadPrescriptionPdf = async (req, res) => {
     });
 
     const patientNic = prescriptions[0].patientNic;
-    if (patientNic.toUpperCase() !== req.user.sub.toUpperCase()) {
+    let authNic = req.user.nic || req.user.sub || null;
+    if (req.user.id) {
+      const authPatient = await Patient.findById(req.user.id);
+      if (authPatient) {
+        if (typeof authPatient.decryptFieldsSync === 'function') {
+          authPatient.decryptFieldsSync();
+        }
+        if (authPatient.nic) {
+          authNic = authPatient.nic;
+        }
+      }
+    }
+    if (!authNic || !patientNic || String(patientNic).trim().toUpperCase() !== String(authNic).trim().toUpperCase()) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -209,7 +221,9 @@ exports.downloadPrescriptionPdf = async (req, res) => {
       'Content-Type':        'application/pdf',
       'Content-Disposition': `inline; filename="E-Prescription-${refId}.pdf"`,
       'Content-Length':      pdfBuffer.length,
-      'Cache-Control':       'no-store',
+      'Cache-Control':       'private, no-store, no-cache, must-revalidate',
+      'Pragma':              'no-cache',
+      'Expires':             '0',
     });
     return res.send(pdfBuffer);
   } catch (err) {
