@@ -13,6 +13,10 @@ const sessionTokenSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  refreshTokenHash: {
+    type: String,
+    default: null
+  },
   deviceInfo: {
     type: String
   },

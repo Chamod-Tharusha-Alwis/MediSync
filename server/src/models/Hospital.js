@@ -17,6 +17,7 @@ const hospitalSchema = new mongoose.Schema({
   pickupLocationAddress: { type: String, default: '' },
   averageRating: { type: Number, default: 0 },
   ratingCount: { type: Number, default: 0 },
+  twoFactorEnabled: { type: Boolean, default: false },
   lastLoginAt: { type: Date },
   lastSignOutAt: { type: Date }
 }, { timestamps: true });

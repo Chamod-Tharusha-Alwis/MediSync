@@ -80,97 +80,16 @@ exports.registerHospital = async (req, res) => {
 
 exports.loginHospital = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    const hospital = await Hospital.findOne({ email });
-    if (!hospital) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const isMatch = await bcrypt.compare(password, hospital.password);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const accessToken = jwt.sign({ id: hospital._id, role: 'hospital_admin' }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: hospital._id, role: 'hospital_admin' }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: '7d' });
-
-    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
-    const ua = req.headers['user-agent'] || 'Unknown Device';
-    const fingerprint = req.headers['x-device-fingerprint'] || null;
-    const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
-    const parsedModel = parseDeviceModel(ua, clientHw);
-
-    let isTrusted = false;
-    if (fingerprint) {
-      const existingCount = await TrustedDevice.countDocuments({ userId: hospital._id, isRevoked: false });
-      const existing = await TrustedDevice.findOne({ userId: hospital._id, deviceFingerprint: fingerprint });
-      if (existing) {
-        isTrusted = !existing.isRevoked && (existing.isTrusted === true);
-        existing.lastSeenAt = new Date();
-        existing.deviceModel = parsedModel;
-        await existing.save();
-      } else {
-        isTrusted = existingCount === 0;
-        try {
-          await TrustedDevice.create({
-            userId: hospital._id,
-            userModel: 'Hospital',
-            deviceFingerprint: fingerprint,
-            deviceModel: parsedModel,
-            deviceLabel: parsedModel,
-            deviceInfo: ua,
-            isTrusted: isTrusted,
-            trustedAt: isTrusted ? new Date() : null,
-            lastSeenAt: new Date(),
-            isRevoked: false
-          });
-        } catch (e) {}
-      }
-    }
-
-    await SessionToken.create({
-      userId: hospital._id,
-      userModel: 'Hospital',
-      tokenHash,
-      deviceInfo: ua,
-      deviceFingerprint: fingerprint,
-      deviceModel: parsedModel,
-      isTrusted,
-      isValid: true,
-      lastUsed: new Date()
-    });
-
-    hospital.lastLoginAt = new Date();
-    await hospital.save();
-
-    // Login Notification Email
-    try {
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
-      const networkInfo = await resolveLocation(ip);
-      console.log(`[AUTH LOGIN NOTIFICATION] Attempting send to: ${hospital.email} | Role: hospital_admin | User: ${hospital.name} | isTrusted: ${isTrusted}`);
-      const resNotification = await emailService.sendLoginNotificationEmail(
-        hospital.email,
-        hospital.name,
-        hospital.regNo || hospital.email,
-        'Hospital Administrator',
-        parsedModel,
-        networkInfo,
-        'Hospital Login',
-        hospital.name,
-        isTrusted
-      );
-      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, resNotification);
-    } catch (e) {
-      console.error('[AUTH LOGIN NOTIFICATION ERROR] Hospital login email failed:', e.message);
-    }
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-    
-    res.json({ message: 'Login successful', data: { accessToken, refreshToken, role: 'hospital_admin', hospitalName: hospital.name } });
+    const authController = require('./authController');
+    const identifier = req.body?.email || req.body?.identifier || req.body?.regNo || '';
+    req.body = {
+      ...req.body,
+      email: String(identifier).trim(),
+      role: 'hospital_admin',
+    };
+    return await authController.login(req, res);
   } catch (error) {
-    res.status(500).json({ error: 'Login failed', details: error.message });
+    return res.status(500).json({ error: 'Login failed', details: error.message });
   }
 };
 

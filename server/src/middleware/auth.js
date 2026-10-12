@@ -26,7 +26,13 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const session = await SessionToken.findOne({ tokenHash });
     
-    if (!session || !session.isValid) {
+    if (
+      !session ||
+      !session.isValid ||
+      String(session.userId) !== String(decoded.id) ||
+      Boolean(session.logoutAt) ||
+      (session.expiredAt && session.expiredAt <= new Date())
+    ) {
       return res.status(401).json({ error: 'Session expired or invalidated. Please log in again.' });
     }
 
@@ -91,6 +97,7 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
 
     // Attach to request
     req.user = decoded;
+    req.session = session;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

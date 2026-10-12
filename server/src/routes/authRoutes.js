@@ -31,8 +31,11 @@ router.post('/change-password', protect(), authController.changePassword); // pr
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password', authRateLimiter, authController.resetPassword);
 router.post('/reset-password-recovery', authRateLimiter, authController.resetPasswordRecovery);
-router.post('/enable-2fa', protect(['doctor']), authController.enable2FA);
-router.post('/verify-2fa', protect(['doctor']), authController.verify2FASetup);
+router.get('/2fa', protect(), authController.get2FAStatus);
+router.post('/enable-2fa', protect(), authController.enable2FA);
+router.post('/verify-2fa', protect(), authController.verify2FASetup);
+router.put('/2fa', protect(), authController.toggle2FA);
+router.post('/2fa', protect(), authController.toggle2FA);
 router.post('/logout', protect(), authController.logout); // protect() with no roles allows any authenticated user
 router.post('/heartbeat', protect(), authController.heartbeat);
 router.post('/refresh', authController.refreshToken);

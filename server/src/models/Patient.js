@@ -37,6 +37,7 @@ const patientSchema = new mongoose.Schema({
   height: { type: Number, default: null },   // centimetres
   weight: { type: Number, default: null },   // kilograms
   profilePicture: { type: String, default: '' },
+  twoFactorEnabled: { type: Boolean, default: false },
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 },
   lastLoginAt: { type: Date },
   lastSignOutAt: { type: Date }

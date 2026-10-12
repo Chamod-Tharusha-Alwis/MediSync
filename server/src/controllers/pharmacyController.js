@@ -65,31 +65,145 @@ exports.loginPharmacy = async (req, res) => {
       });
     }
 
-    const accessToken = jwt.sign(
-      { id: staff._id, role: staff.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '15m' }
-    );
-
-    // ── Persist session and track trusted device ────────────────────────────
-    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
     const ua = req.headers['user-agent'] || 'Unknown Device';
     const fingerprint = req.headers['x-device-fingerprint'] || null;
     const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
     const parsedModel = parseDeviceModel(ua, clientHw);
 
-    let isTrusted = false;
+    const TrustedDevice = require('../models/TrustedDevice');
+    let existingDevice = null;
     if (fingerprint) {
-      const TrustedDevice = require('../models/TrustedDevice');
-      const existingCount = await TrustedDevice.countDocuments({ userId: staff._id, isRevoked: false });
-      const existing = await TrustedDevice.findOne({ userId: staff._id, deviceFingerprint: fingerprint });
-      if (existing) {
-        isTrusted = !existing.isRevoked && (existing.isTrusted === true);
-        existing.lastSeenAt = new Date();
-        existing.deviceModel = parsedModel;
-        await existing.save();
+      existingDevice = await TrustedDevice.findOne({ userId: staff._id, deviceFingerprint: fingerprint });
+    }
+    const isRevokedDeviceLogin = Boolean(existingDevice && existingDevice.isRevoked);
+    const hasTwoFactor = Boolean(
+      staff.twoFactorEnabled ||
+      staff._doc?.twoFactorEnabled ||
+      (typeof staff.get === 'function' && staff.get('twoFactorEnabled'))
+    );
+
+    if (hasTwoFactor || isRevokedDeviceLogin) {
+      const OTPSession = require('../models/OTPSession');
+      const { getAttempts, checkOtpRequestThrottle, recordOtpRequestSent } = require('../config/redis');
+      const authOtpKey = 'auth:' + String(staff._id);
+      const verifyLockoutCount = await getAttempts(authOtpKey);
+      if (verifyLockoutCount >= 5) {
+        return res.status(429).json({
+          error: 'Account OTP verification is temporarily locked due to too many failed attempts. Please try again later.',
+          message: 'Account OTP verification is temporarily locked due to too many failed attempts. Please try again later.',
+        });
+      }
+
+      const latestLoginOtp = await OTPSession.findOne({
+        userId: staff._id,
+        purpose: 'login',
+      }).sort({ createdAt: -1 });
+      const priorFailedAttempts = Number(latestLoginOtp?._doc?.failedAttempts || latestLoginOtp?.failedAttempts || 0);
+      if (priorFailedAttempts >= 5) {
+        return res.status(429).json({
+          error: 'Account OTP verification is temporarily locked due to too many failed attempts. Please try again later.',
+          message: 'Account OTP verification is temporarily locked due to too many failed attempts. Please try again later.',
+        });
+      }
+
+      const throttle = await checkOtpRequestThrottle(authOtpKey, req.ip, { cooldownSeconds: 0 });
+      if (!throttle.allowed) {
+        return res.status(throttle.statusCode).json({
+          error: throttle.message,
+          message: throttle.message,
+          retryAfterSeconds: throttle.retryAfterSeconds,
+          errorCode: throttle.reason,
+        });
+      }
+
+      const otp = crypto.randomInt(100000, 1000000).toString();
+      const hashedOtp = await bcrypt.hash(otp, 10);
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+      await OTPSession.updateMany(
+        { userId: staff._id, purpose: 'login', used: false },
+        { $set: { used: true } }
+      );
+
+      const otpDoc = await OTPSession.create({
+        userId: staff._id,
+        userModel: 'PharmacyStaff',
+        otp: hashedOtp,
+        expiresAt,
+        purpose: 'login',
+        failedAttempts: priorFailedAttempts,
+      });
+
+      const emailResult = await emailService.sendOTPEmail(staff.email, staff.fullName || 'Pharmacist', otp);
+      if (!emailResult || !emailResult.providerAccepted) {
+        await OTPSession.deleteOne({ _id: otpDoc._id });
+        return res.status(emailResult?.statusCode || 503).json({
+          error: emailResult?.errorCode === 'invalid_recipient'
+            ? 'Invalid recipient email address.'
+            : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+          message: emailResult?.errorCode === 'invalid_recipient'
+            ? 'Invalid recipient email address.'
+            : 'Unable to deliver verification OTP email right now. Please try again shortly.',
+          providerAccepted: false,
+          deliveryQueued: Boolean(emailResult?.deliveryQueued),
+          deliveryConfirmed: false,
+          errorCode: emailResult?.errorCode || 'email_delivery_failed',
+        });
+      }
+
+      await recordOtpRequestSent(authOtpKey, req.ip);
+
+      const maskedEmail = (staff.email || '').replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(Math.max(2, b.length)));
+
+      return res.json({
+        message: isRevokedDeviceLogin && !hasTwoFactor
+          ? 'This device was previously revoked. Please verify the OTP sent to your email to continue.'
+          : 'OTP sent to your email',
+        data: {
+          requiresOTP: true,
+          userId: staff._id,
+          emailHint: maskedEmail,
+          role: staff.role,
+          reason: isRevokedDeviceLogin && !hasTwoFactor ? 'revoked_device' : '2fa',
+          providerAccepted: true,
+          deliveryQueued: false,
+          deliveryConfirmed: false,
+          provider: emailResult.provider,
+          fallbackUsed: Boolean(emailResult.fallbackUsed),
+        }
+      });
+    }
+
+    const { v4: uuid } = require('uuid');
+    const accessToken = jwt.sign(
+      { id: staff._id, role: staff.role, jti: uuid() },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: staff._id, role: staff.role, jti: uuid() },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // ── Persist session and track trusted device ────────────────────────────
+    const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    let isTrusted = false;
+    let isNewDevice = false;
+    if (fingerprint) {
+      if (existingDevice) {
+        isTrusted = !existingDevice.isRevoked && (existingDevice.isTrusted === true);
+        existingDevice.lastSeenAt = new Date();
+        existingDevice.deviceModel = parsedModel;
+        await existingDevice.save();
       } else {
-        isTrusted = existingCount === 0;
+        // Security invariant: newly seen devices always start as UNTRUSTED (false)
+        isNewDevice = true;
+        isTrusted = false;
         try {
           await TrustedDevice.create({
             userId: staff._id,
@@ -98,8 +212,8 @@ exports.loginPharmacy = async (req, res) => {
             deviceModel: parsedModel,
             deviceLabel: parsedModel,
             deviceInfo: ua,
-            isTrusted: isTrusted,
-            trustedAt: isTrusted ? new Date() : null,
+            isTrusted: false,
+            trustedAt: null,
             lastSeenAt: new Date(),
             isRevoked: false
           });
@@ -107,10 +221,23 @@ exports.loginPharmacy = async (req, res) => {
       }
     }
 
+    if (isNewDevice || !isTrusted) {
+      try {
+        const AuditLog = require('../models/AuditLog');
+        await AuditLog.create({
+          actorId: staff._id,
+          actorRole: staff.role,
+          action: 'Untrusted Login Attempt',
+          deviceModel: parsedModel
+        });
+      } catch (_) {}
+    }
+
     await SessionToken.create({
       userId:     staff._id,
       userModel:  'PharmacyStaff',
       tokenHash,
+      refreshTokenHash,
       deviceInfo: ua,
       deviceFingerprint: fingerprint,
       deviceModel: parsedModel,
@@ -123,49 +250,46 @@ exports.loginPharmacy = async (req, res) => {
     await staff.save();
 
     // ── Send Login Notification Email ─────────────────────────────────────────
-    try {
-      const axios = require('axios');
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
-      let networkInfo = { isp: 'Internet Service Provider', country: 'Sri Lanka', city: 'Colombo', region: 'Western' };
+    if (process.env.SKIP_LOGIN_NOTIFICATION !== 'true') {
       try {
-        if (ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1') {
-          const cleanIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
-          const geoRes = await axios.get(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp`, { timeout: 2500 });
-          if (geoRes.data?.status === 'success') {
-            networkInfo = { isp: geoRes.data.isp, country: geoRes.data.country, city: geoRes.data.city, region: geoRes.data.regionName };
+        const axios = require('axios');
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+        let networkInfo = { isp: 'Internet Service Provider', country: 'Sri Lanka', city: 'Colombo', region: 'Western' };
+        try {
+          if (ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1') {
+            const cleanIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
+            const geoRes = await axios.get(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp`, { timeout: 2500 });
+            if (geoRes.data?.status === 'success') {
+              networkInfo = { isp: geoRes.data.isp, country: geoRes.data.country, city: geoRes.data.city, region: geoRes.data.regionName };
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
 
-      console.log(`[AUTH LOGIN NOTIFICATION] Role: ${staff.role} | Device: ${parsedModel} | isTrusted: ${isTrusted}`);
-      const resNotification = await emailService.sendLoginNotificationEmail(
-        staff.email,
-        staff.fullName,
-        staff.nic || staff.email,
-        staff.role === 'pharmacy_admin' ? 'Pharmacy Administrator' : 'Pharmacist',
-        parsedModel,
-        networkInfo,
-        'Individual Login',
-        staff.pharmacyId ? staff.pharmacyId.name : null,
-        isTrusted
-      );
-      console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
-        provider: resNotification?.provider || null,
-        providerAccepted: Boolean(resNotification?.providerAccepted),
-        deliveryQueued: Boolean(resNotification?.deliveryQueued),
-        fallbackUsed: Boolean(resNotification?.fallbackUsed),
-        deliveryConfirmed: false,
-      });
-    } catch (e) {
-      console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:', e.message);
+        console.log(`[AUTH LOGIN NOTIFICATION] Role: ${staff.role} | Device: ${parsedModel} | isTrusted: ${isTrusted}`);
+        const resNotification = await emailService.sendLoginNotificationEmail(
+          staff.email,
+          staff.fullName,
+          staff.nic || staff.email,
+          staff.role === 'pharmacy_admin' ? 'Pharmacy Administrator' : 'Pharmacist',
+          parsedModel,
+          networkInfo,
+          'Individual Login',
+          staff.pharmacyId ? staff.pharmacyId.name : null,
+          isTrusted
+        );
+        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
+          provider: resNotification?.provider || null,
+          providerAccepted: Boolean(resNotification?.providerAccepted),
+          deliveryQueued: Boolean(resNotification?.deliveryQueued),
+          fallbackUsed: Boolean(resNotification?.fallbackUsed),
+          deliveryConfirmed: false,
+        });
+      } catch (e) {
+        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:', e.message);
+      }
     }
 
     // ── Set refresh token cookie so the Axios interceptor can silently renew ─
-    const refreshToken = jwt.sign(
-      { id: staff._id, role: staff.role },
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
@@ -180,7 +304,8 @@ exports.loginPharmacy = async (req, res) => {
         refreshToken,
         role: staff.role,
         pharmacyName: staff.pharmacyId ? staff.pharmacyId.name : 'Unknown Pharmacy',
-        staffName: staff.fullName
+        staffName: staff.fullName,
+        isTrusted
       }
     });
   } catch (error) {

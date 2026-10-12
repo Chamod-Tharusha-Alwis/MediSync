@@ -6,6 +6,8 @@ const deviceController = require('../controllers/deviceController');
 // User routes (any authenticated user)
 router.get('/my', protect([]), deviceController.getMyDevices);
 router.put('/my/:id', protect([]), deviceController.updateMyDeviceLabel);
+router.post('/my/:id/request-trust-otp', protect([]), deviceController.requestDeviceTrustOTP);
+router.post('/my/:id/trust', protect([]), deviceController.trustMyDevice);
 router.delete('/my/:id', protect([]), deviceController.revokeMyDevice);
 
 // Admin routes

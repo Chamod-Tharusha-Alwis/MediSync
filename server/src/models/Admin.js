@@ -8,6 +8,7 @@ const adminSchema = new mongoose.Schema({
   role:     { type: String, default: 'admin' },
   isSuperAdmin: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  twoFactorEnabled: { type: Boolean, default: false },
   lastLoginAt: { type: Date },
   lastSignOutAt: { type: Date }
 }, { timestamps: true });

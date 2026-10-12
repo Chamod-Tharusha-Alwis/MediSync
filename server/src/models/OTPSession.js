@@ -22,9 +22,13 @@ const otpSessionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  failedAttempts: {
+    type: Number,
+    default: 0
+  },
   purpose: {
     type: String,
-    enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access'],
+    enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access', 'device-trust'],
     required: true
   },
   // Used for patient-access OTPs to track who requested access

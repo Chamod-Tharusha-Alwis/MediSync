@@ -49,7 +49,8 @@ const pharmacyStaffSchema = new mongoose.Schema({
     ref: 'PharmacyStaff' // Self-referencing if created by another staff (admin)
   },
   profilePicture: { type: String, default: '' },
-  description: { type: String, default: '' }
+  description: { type: String, default: '' },
+  twoFactorEnabled: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('PharmacyStaff', pharmacyStaffSchema);
