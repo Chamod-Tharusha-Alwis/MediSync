@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, CheckCircle, X, Loader2, RefreshCw } from 'lucide-react';
+import useModalFocus from '../hooks/useModalFocus';
 import api from '../api/axiosInstance';
 
 /**
@@ -22,108 +23,78 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
   const [error, setError] = useState('');
   const inputRefs = useRef([]);
 
-  const hasRequestedOTP = useRef(false);
+  const generation = useRef(0);
+  const busy = useRef(false);
+  const pending = useRef(null);
+  const callbacks = useRef({ onSuccess });
+  callbacks.current = { onSuccess };
+  const dialogRef = useModalFocus(true, onClose);
+  const expiresAt = useRef(0);
 
-  // Send OTP on mount — intentionally runs once, sendOTP is stable
-  /* eslint-disable react-hooks/exhaustive-deps */
+  // Defer the initial send one tick so StrictMode's probe cannot send a second OTP.
   useEffect(() => {
-    if (!hasRequestedOTP.current) {
-      hasRequestedOTP.current = true;
-      sendOTP();
-    }
-  }, []);
-  /* eslint-enable react-hooks/exhaustive-deps */
+    const id = ++generation.current;
+    setStep('sending'); setError(''); setOtp(['', '', '', '', '', '']);
+    const timer = setTimeout(() => sendOTP(id), 0);
+    return () => { clearTimeout(timer); generation.current++; pending.current?.abort(); busy.current = false; };
+    // Identity changes retire every response from the previous patient.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientNic, requesterName, requesterRole]);
 
-  // Countdown timer
   useEffect(() => {
-    if (step !== 'otp') return;
-    const interval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
+    if (step !== 'otp') return undefined;
+    const tick = () => setCountdown(Math.max(0, Math.ceil((expiresAt.current - Date.now()) / 1000)));
+    tick(); const timer = setInterval(tick, 1000);
+    inputRefs.current[0]?.focus();
+    return () => clearInterval(timer);
   }, [step]);
 
-  const sendOTP = async () => {
-    setLoading(true);
-    setError('');
+  const sendOTP = async (id = generation.current) => {
+    if (busy.current) return;
+    busy.current = true; setLoading(true); setError(''); setStep('sending');
+    pending.current = new AbortController();
     try {
-      const res = await api.post('/patient/request-access', {
-        patientNic,
-        requesterName,
-        requesterRole,
-      });
-      setSessionId(res.data.sessionId);
-      setStep('otp');
-      setCountdown(600);
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      const res = await api.post('/patient/request-access', { patientNic, requesterName, requesterRole }, { signal: pending.current.signal });
+      if (id !== generation.current) return;
+      if (!res.data.sessionId) throw new Error('Missing verification session');
+      setSessionId(res.data.sessionId); setOtp(['', '', '', '', '', '']);
+      expiresAt.current = Date.now() + 600000; setCountdown(600); setStep('otp');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      if (id !== generation.current) return;
+      setStep('error'); setError('Unable to request verification. Please retry or close this dialog.');
+    } finally { if (id === generation.current) { busy.current = false; setLoading(false); } }
   };
 
   const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    
-    // Handle paste / bulk fill
-    if (value.length > 1) {
-      const pasted = value.slice(0, 6).split('');
-      setOtp(prev => {
-        const newOtp = [...prev];
-        for (let i = 0; i < pasted.length; i++) {
-          if (index + i < 6) newOtp[index + i] = pasted[i];
-        }
-        if (newOtp.every(d => d !== '')) setTimeout(() => verifyOTP(newOtp.join('')), 0);
-        return newOtp;
-      });
-      const nextFocus = Math.min(index + pasted.length, 5);
-      inputRefs.current[nextFocus]?.focus();
-      return;
-    }
-
-    setOtp(prev => {
-      const newOtp = [...prev];
-      newOtp[index] = value.slice(-1);
-      if (index === 5 && value && newOtp.every(d => d !== '')) {
-        setTimeout(() => verifyOTP(newOtp.join('')), 0);
-      }
-      return newOtp;
-    });
-    if (value && index < 5) inputRefs.current[index + 1]?.focus();
+    if (!/^\d*$/.test(value) || loading) return;
+    const next = [...otp];
+    value.slice(0, 6 - index).split('').forEach((digit, offset) => { next[index + offset] = digit; });
+    if (!value) next[index] = '';
+    setOtp(next);
+    if (value) inputRefs.current[Math.min(index + value.length, 5)]?.focus();
   };
-
-  const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
+  const handleKeyDown = (index, event) => {
+    if (event.key === 'Backspace' && !otp[index] && index > 0) inputRefs.current[index - 1]?.focus();
   };
-
-  const verifyOTP = async (otpStr) => {
-    const code = otpStr || otp.join('');
-    if (code.length !== 6) { setError('Enter all 6 digits'); return; }
-    setLoading(true);
-    setError('');
+  const verifyOTP = async () => {
+    if (busy.current) return;
+    if (!sessionId || Date.now() >= expiresAt.current) { setCountdown(0); setError('Verification expired. Request a new code.'); return; }
+    const code = otp.join('');
+    if (!/^\d{6}$/.test(code)) { setError('Enter all 6 digits'); return; }
+    const id = generation.current;
+    busy.current = true; setLoading(true); setError('');
+    pending.current = new AbortController();
     try {
-      const res = await api.post('/patient/verify-access', {
-        sessionId,
-        otp: code,
-        patientNic,
-      });
+      const res = await api.post('/patient/verify-access', { sessionId, otp: code, patientNic }, { signal: pending.current.signal });
+      if (id !== generation.current) return;
+      if (!res.data.accessToken) throw new Error('Missing access grant');
       setStep('success');
-      setTimeout(() => {
-        onSuccess(res.data.accessToken);
-      }, 1000);
+      callbacks.current.onSuccess(res.data.accessToken);
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid OTP. Please try again.');
-      setOtp(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
-    } finally {
-      setLoading(false);
-    }
+      if (id !== generation.current) return;
+      setError('Verification was not accepted. Check the code or request a new one.');
+      setOtp(['', '', '', '', '', '']); inputRefs.current[0]?.focus();
+    } finally { if (id === generation.current) { busy.current = false; setLoading(false); } }
   };
 
   const formatTime = (secs) => {
@@ -145,6 +116,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <motion.div
+          ref={dialogRef} role="dialog" aria-modal="true" aria-label="Patient verification" tabIndex={-1}
           initial={{ x: 60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 60, opacity: 0 }}
@@ -162,7 +134,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                 <p className="text-slate-400 text-xs">NIC: {patientNic}</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+            <button type="button" aria-label="Close verification" onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -178,6 +150,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
               </div>
             )}
 
+            {step === 'error' && <div><p role="alert">{error}</p><button type="button" disabled={loading} onClick={() => sendOTP()}>Retry verification request</button></div>}
             {/* Step: OTP Entry */}
             {step === 'otp' && (
               <>
@@ -214,6 +187,8 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                       ref={el => inputRefs.current[i] = el}
                       type="text"
                       inputMode="numeric"
+                      aria-label={`Verification digit ${i + 1}`}
+                      disabled={loading || countdown === 0}
                       value={digit}
                       onChange={e => handleOtpChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
@@ -224,12 +199,12 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                 </div>
 
                 {error && (
-                  <p className="text-red-400 text-sm text-center mb-4">{error}</p>
+                  <p role="alert" className="text-red-400 text-sm text-center mb-4">{error}</p>
                 )}
 
                 <button
                   onClick={() => verifyOTP()}
-                  disabled={loading || otp.some(d => !d)}
+                  disabled={loading || countdown === 0 || otp.some(d => !d)}
                   className="glass-button w-full py-3 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -238,7 +213,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
 
                 {countdown === 0 && (
                   <button
-                    onClick={sendOTP}
+                    onClick={() => sendOTP()}
                     disabled={loading}
                     className="w-full mt-3 py-2.5 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >

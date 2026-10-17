@@ -31,11 +31,15 @@ const otpSessionSchema = new mongoose.Schema({
     enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access', 'device-trust'],
     required: true
   },
-  // Used for patient-access OTPs to track who requested access
+  // Used for patient-access OTPs to track who requested access and consent lifecycle
   metadata: {
+    requesterId: String,
     requesterRole: String,
     requesterName: String,
-    accessNic: String
+    accessNic: String,
+    accessGrantedAt: Date,
+    accessExpiresAt: Date,
+    revoked: { type: Boolean, default: false }
   }
 }, { timestamps: true });
 

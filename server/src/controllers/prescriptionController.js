@@ -5,11 +5,14 @@ const Doctor = require('../models/Doctor');
 const Consultation = require('../models/Consultation');
 const { generateLockedPrescription } = require('../utils/pdfGenerator');
 const emailService = require('../utils/emailService');
+const { checkAllergyConflict } = require('../utils/ingredientResolver');
+const { prescriptionTiming, DurationError } = require('../utils/prescriptionDuration');
 
 // POST /api/prescription/issue — Doctor issues prescription
 exports.issuePrescription = async (req, res) => {
   try {
-    const { patientNic, drugName, dosage, frequency, durationDays } = req.body;
+    const { patientNic, drugName, dosage, frequency } = req.body;
+    const timing = prescriptionTiming(req.body);
 
     // Allergy cross-reference check
     const patient = await Patient.findOne({ nic: patientNic });
@@ -17,15 +20,14 @@ exports.issuePrescription = async (req, res) => {
       patient.decryptFieldsSync();
     }
 
-    if (patient?.allergies?.some(a => drugName.toLowerCase().includes(a.toLowerCase()))) {
+    const allergyResult = checkAllergyConflict(drugName, patient?.allergies);
+    if (allergyResult.hasConflict) {
       return res.status(400).json({ 
         error: 'ALLERGY_CONFLICT', 
-        message: `Patient is allergic to: ${patient.allergies.join(', ')}` 
+        message: `Patient is allergic to: ${patient.allergies.join(', ')}`,
+        conflicts: allergyResult.conflicts
       });
     }
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (durationDays || 7));
 
     const hashedNic = crypto.createHash('sha256').update(patientNic.trim()).digest('hex');
 
@@ -33,7 +35,7 @@ exports.issuePrescription = async (req, res) => {
       patientNic,
       nicHash: hashedNic,
       drugName, dosage, frequency,
-      durationDays, expiresAt,
+      ...timing,
       doctorId: req.user.id
     });
 
@@ -97,6 +99,7 @@ exports.issuePrescription = async (req, res) => {
 
     res.status(201).json(rx);
   } catch (err) {
+    if (err instanceof DurationError) return res.status(400).json({ error: err.code, message: err.message });
     res.status(400).json({ error: err.message });
   }
 };
@@ -118,27 +121,7 @@ exports.getPendingByNic = async (req, res) => {
 };
 
 // PUT /api/prescription/dispense/:id — Pharmacist marks dispensed
-exports.dispense = async (req, res) => {
-  try {
-    const rx = await Prescription.findById(req.params.id);
-    if (!rx) return res.status(404).json({ error: 'Prescription not found' });
-    if (rx.status === 'dispensed') {
-      return res.status(400).json({ error: 'DUPLICATE_DISPENSE', message: 'Already dispensed' });
-    }
-    if (rx.status === 'expired' || rx.expiresAt < new Date()) {
-      return res.status(400).json({ error: 'Prescription has expired' });
-    }
-
-    rx.status = 'dispensed';
-    rx.dispensedAt = new Date();
-    rx.dispensedBy = req.body.pharmacyId;
-    await rx.save();
-
-    res.json({ message: 'Dispensed successfully', rx });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+exports.dispense = require('./dispensingController').dispense;
 
 // GET /api/prescription/download/:prescriptionId — Patient downloads their own E-Prescription PDF
 exports.downloadPrescriptionPdf = async (req, res) => {

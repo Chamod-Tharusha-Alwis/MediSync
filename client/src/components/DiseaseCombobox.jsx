@@ -30,7 +30,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
       const res = await axios.get('/api/public/diseases/search', { params: { q: searchQuery } });
       setOptions(['All Diseases', ...(res.data.data || [])]);
     } catch (err) {
-      console.error('Failed to fetch diseases', err);
+      console.error('Failed to fetch diseases [code: DISEASE_SEARCH_FAILED]');
     }
   };
 

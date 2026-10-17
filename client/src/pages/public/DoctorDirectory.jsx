@@ -98,19 +98,34 @@ const DoctorDirectory = () => {
                           doc.fullName?.charAt(0).toUpperCase()
                         )}
                       </div>
-                      {doc.averageRating > 0 && (
-                        <div className="flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 select-none">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-bold text-amber-400">{doc.averageRating}</span>
-                          <span className="text-[10px] text-amber-400/60">({doc.ratingCount})</span>
-                        </div>
-                      )}
+                      <div className="flex flex-col items-end gap-1.5 select-none">
+                        {(doc.isSynthetic || doc.syntheticLabel) && (
+                          <span
+                            data-testid="synthetic-doctor-badge"
+                            className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                          >
+                            {doc.syntheticLabel || 'Demo Doctor — Synthetic Profile'}
+                          </span>
+                        )}
+                        {doc.averageRating > 0 && (
+                          <div className="flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 select-none">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-bold text-amber-400">{doc.averageRating}</span>
+                            <span className="text-[10px] text-amber-400/60">({doc.ratingCount})</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <h3 className="text-base font-bold text-white mb-1 group-hover:text-blue-400 transition-colors line-clamp-1">
                       {doc.fullName}
                     </h3>
-                    <p className="text-blue-400 font-bold text-xs mb-4">{doc.specialization || 'General Practitioner'}</p>
+                    <p className="text-blue-400 font-bold text-xs mb-2">{doc.specialization || 'General Practitioner'}</p>
+                    {(doc.isSynthetic || doc.slmcRegistered === false) && (
+                      <p className="text-[10px] font-semibold text-amber-400/90 mb-3">
+                        Synthetic University Demo Fixture — Not SLMC Registered
+                      </p>
+                    )}
                     
                     <div className="space-y-2.5 text-xs text-slate-400 border-t border-white/5 pt-3 select-none">
                       <div className="flex items-center gap-2">

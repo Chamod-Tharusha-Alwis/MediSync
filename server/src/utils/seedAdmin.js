@@ -2,13 +2,39 @@ require('dotenv').config({ path: __dirname + '/../../.env' });
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
 
 async function seedAdmin() {
   try {
-    console.log('Connecting to MongoDB...');
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/medisync';
-    await mongoose.connect(mongoUri);
-    console.log('Connected to MongoDB.');
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-seed) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-seed')) {
+      throw new Error(
+        `[SAFEGUARD] Seeding "${PROD_DB_NAME}" requires explicit --confirm-production-seed flag.`
+      );
+    }
+
+    console.log(`Connecting to MongoDB Atlas [target=${targetDb}]...`);
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
+    console.log(`Connected to MongoDB [db=${mongoose.connection.name}].`);
 
     const adminEmail = 'superadmin@medisync.com';
     const adminExists = await Admin.findOne({ email: adminEmail });

@@ -2,17 +2,20 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Activity, ArrowLeft, Users, Building2, Pill, Map } from 'lucide-react';
+import { useTranslation } from '../../i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const PublicNavbar = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const navItems = [
-    { name: 'Doctors', path: '/doctors', icon: Users },
-    { name: 'Hospitals', path: '/hospitals', icon: Building2 },
-    { name: 'Pharmacies', path: '/pharmacies', icon: Pill },
-    { name: 'Public Health', path: '/public-health', icon: Map },
+    { name: t('nav.doctors', 'Doctors'), path: '/doctors', icon: Users },
+    { name: t('nav.hospitals', 'Hospitals'), path: '/hospitals', icon: Building2 },
+    { name: t('nav.pharmacies', 'Pharmacies'), path: '/pharmacies', icon: Pill },
+    { name: t('nav.publicHealth', 'Public Health'), path: '/public-health', icon: Map },
   ];
 
   return (
@@ -55,14 +58,17 @@ const PublicNavbar = () => {
           })}
         </div>
 
-        {/* Action Button: Back to Home */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 shadow-sm transition-all duration-200 hover:scale-103"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </button>
+        {/* Action Controls: Language Switcher + Back to Home */}
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="light" />
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 shadow-sm transition-all duration-200 hover:scale-103"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t('nav.backToHome', 'Back to Home')}
+          </button>
+        </div>
       </div>
 
       {/* Mobile nav indicator bar */}

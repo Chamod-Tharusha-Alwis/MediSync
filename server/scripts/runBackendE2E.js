@@ -16,9 +16,16 @@ const colors = {
 
 const print = (color, text) => console.log(`${color}${text}${colors.reset}`);
 
+const {
+  connectAutomatedTestDB,
+  installDestructiveOpGuards,
+  maskMongoUri
+} = require('../src/config/dbGuard');
+
+installDestructiveOpGuards();
+
 // Targets
 const BACKEND_URL = 'http://127.0.0.2:5005';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/medisync';
 
 // Dummy Test Data
 const DUMMY_PATIENT = {
@@ -45,16 +52,17 @@ async function runE2E() {
   print(colors.magenta, '==================================================\n');
 
   print(colors.cyan, `Using Backend API Endpoint: ${BACKEND_URL}`);
-  print(colors.cyan, `Using MongoDB URI: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}\n`);
+  print(colors.cyan, `Using Isolated Atlas Test URI: ${maskMongoUri(process.env.MONGO_URI_TEST)}\n`);
 
   let dbConnection = null;
 
   try {
     // -------------------------------------------------------------------------
-    // Setup: Connect to MongoDB and clean up previous dummy records
+    // Setup: Connect to isolated Atlas test DB and clean up previous dummy records
     // -------------------------------------------------------------------------
-    print(colors.yellow, 'Setting up: Cleaning previous dummy records from MongoDB...');
-    dbConnection = await mongoose.connect(MONGO_URI);
+    print(colors.yellow, 'Setting up: Connecting to isolated Atlas test database (medisync_automated_test)...');
+    const connInfo = await connectAutomatedTestDB();
+    dbConnection = connInfo.connection;
     
     // Import Schemas / Define inline to avoid path import issues
     const Patient = mongoose.models.Patient || mongoose.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');

@@ -1,0 +1,116 @@
+// Tamil UI Dictionary (ta - தமிழ்)
+export const ta = {
+  nav: {
+    home: 'முகப்பு',
+    doctors: 'மருத்துவர்கள்',
+    hospitals: 'மருத்துவமனைகள்',
+    pharmacies: 'மருந்தகங்கள்',
+    publicHealth: 'பொது சுகாதாரம்',
+    login: 'உள்நுழைக',
+    register: 'பதிவு செய்க',
+    logout: 'வெளியேறுக',
+    selectRole: 'பங்கைத் தேர்ந்தெடுக்கவும்',
+    backToHome: 'முகப்பிற்குத் திரும்புக'
+  },
+  common: {
+    search: 'தேடுக',
+    filter: 'வடிகட்டுக',
+    save: 'சேமிக்க',
+    cancel: 'ரத்து செய்க',
+    loading: 'ஏற்றப்படுகிறது…',
+    submit: 'சமர்ப்பிக்க',
+    view: 'பார்க்க',
+    download: 'பதிவிறக்குக',
+    status: 'நிலை',
+    actions: 'செயல்கள்',
+    selectLanguage: 'மொழி',
+    all: 'அனைத்தும்',
+    success: 'வெற்றி',
+    error: 'பிழை',
+    warning: 'எச்சரிக்கை',
+    notice: 'அறிவிப்பு',
+    active: 'செயலில்',
+    pending: 'நிலுவையில்',
+    resolved: 'தீர்க்கப்பட்டது',
+    dismissed: 'நிராகரிக்கப்பட்டது',
+    date: 'தேதி',
+    district: 'மாவட்டம்',
+    phone: 'தொலைபேசி',
+    email: 'மின்னஞ்சல்',
+    address: 'முகவரி',
+    version: 'பதிப்பு'
+  },
+  roles: {
+    patient: 'நோயாளி',
+    doctor: 'மருத்துவர்',
+    hospitalAdmin: 'மருத்துவமனை நிர்வாகி',
+    pharmacist: 'மருந்தாளர்',
+    admin: 'கணினி நிர்வாகி',
+    superAdmin: 'முதன்மை நிர்வாகி'
+  },
+  patient: {
+    dashboard: 'நோயாளி சுகாதார தளம்',
+    myPrescriptions: 'எனது மருந்துச்சீட்டுகள்',
+    medicalHistory: 'மருத்துவ வரலாறு',
+    timeline: 'சிகிச்சை காலவரிசை',
+    allergies: 'ஒவ்வாமைகள்',
+    chronicConditions: 'நீண்டகால சுகாதார நிலைகள்',
+    recentVisits: 'சமீபத்திய மருத்துவ ஆலோசனைகள்',
+    downloadPdf: 'பாதுகாக்கப்பட்ட PDF பதிவிறக்குக',
+    enterOtp: 'அனுமதி OTP குறியீட்டை உள்ளிடவும்'
+  },
+  doctor: {
+    dashboard: 'மருத்துவப் பணியிடம்',
+    consultations: 'மருத்துவ ஆலோசனைகள்',
+    newConsultation: 'புதிய மருத்துவ ஆலோசனை',
+    patientsDirectory: 'நோயாளி அடைவு',
+    symptomsEntered: 'பதிவுசெய்யப்பட்ட அறிகுறிகள்',
+    aiAssist: 'செயற்கை நுண்ணறிவு நோய் கணிப்பு',
+    clinicalDiagnosis: 'மருத்துவ நோய் கண்டறிதல்',
+    icdSelection: 'ICD வகைப்பாடு தரம்',
+    icd10: 'ICD-10 (CM)',
+    icd11: 'உலக சுகாதார அமைப்பின் ICD-11 (MMS)',
+    prescribeMedication: 'மருந்துகளை பரிந்துரைக்கவும்',
+    saveConsultation: 'ஆலோசனையை சேமித்து அங்கீகரிக்கவும்'
+  },
+  pharmacy: {
+    dashboard: 'மருந்தக செயல்பாடுகள்',
+    pendingPrescriptions: 'நிலுவையிலுள்ள மருந்துச்சீட்டுகள்',
+    dispense: 'மருந்துகளை வழங்குக',
+    dispenseOtc: 'நேரடி மருந்து வழங்கல் (OTC)',
+    inventoryStock: 'இருப்பு மேலாண்மை',
+    stockLevel: 'தற்போதைய இருப்பு',
+    reorderLevel: 'மறுவரிசை நிலை',
+    receiptNumber: 'வழங்கல் ரசீது'
+  },
+  hospital: {
+    dashboard: 'மருத்துவமனை கட்டுப்பாட்டு மையம்',
+    departmentStats: 'துறை புள்ளிவிவரங்கள்',
+    bedCapacity: 'படுக்கை திறன்',
+    admissions: 'அனுமதிக்கப்பட்ட நோயாளிகள்',
+    labOrders: 'ஆய்வக சோதனை கட்டளைகள்',
+    approveLab: 'ஆய்வக சோதனையை அங்கீகரிக்கவும்'
+  },
+  admin: {
+    dashboard: 'தேசிய சுகாதார பகுப்பாய்வு',
+    userManagement: 'பயனர் மேலாண்மை மற்றும் பங்குகள்',
+    auditLogs: 'பாதுகாப்பு தணிக்கை பதிவுகள்',
+    outbreakSurveillance: 'தொற்றுநோய் கண்காணிப்பு',
+    broadcastAdvisories: 'பொது சுகாதார அறிவிப்புகள்',
+    systemSettings: 'கணினி அமைப்புகள்'
+  },
+  outbreak: {
+    surveillanceTitle: 'பல்வேறு தொற்றுநோய் கண்காணிப்பு',
+    dangerLevel: 'நோய் ஆபத்து நிலை',
+    riskLevel: 'பரவல் ஆபத்து வேகம்',
+    responsePriority: 'பதிலளிப்பு முன்னுரிமை',
+    critical: 'P1-அவசர முன்னுரிமை',
+    high: 'P2-உயர் தீவிர முன்னுரிமை',
+    moderate: 'P3-மிதமான கண்காணிப்பு',
+    advisory: 'P4-பொது ஆலோசனை',
+    routine: 'P5-வழக்கமான கண்காணிப்பு',
+    approveAlert: 'எச்சரிக்கையை அங்கீகரிக்கவும்',
+    resolveAlert: 'தொற்றை முடித்து வைக்கவும்',
+    broadcastNotice: 'மாவட்டத்திற்கு எச்சரிக்கையை வெளியிடவும்'
+  }
+};

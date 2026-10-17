@@ -1,0 +1,12 @@
+# Verbatim byte-level preservation for the 11 cryptographically verified files
+server/src/middleware/auth.js -text
+server/src/controllers/doctorController.js -text
+ml-engine/app.py -text
+ml-engine/evaluate_symptom_model.py -text
+client/src/components/SymptomTagInput.jsx -text
+server/tests/ir04BackendIntegration.test.js -text
+server/tests/patientProfileOwnedIntegration.test.js -text
+server/tests/prescriptionDurationOwnedIntegration.test.js -text
+server/tests/lab.test.js -text
+server/tests/universityDemoSeedVerify.test.js -text
+client/tests/ir04-isolated-five-role-e2e.spec.js -text

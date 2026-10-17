@@ -7,7 +7,7 @@ import {
   Settings, Loader2, Monitor, Server, Database, Key, ShieldCheck, Mail
 } from 'lucide-react';
 import { io } from 'socket.io-client';
-import api from '../../api/axiosInstance';
+import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
@@ -150,15 +150,24 @@ const ManageUsers = () => {
   const [viewTab, setViewTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
   const [auditUserId, setAuditUserId] = useState(null);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/admin/users?page=${page}&limit=50${roleFilter ? `&role=${roleFilter}` : ''}`);
-      setUsers(data.data);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: '50',
+      });
+      if (roleFilter) params.set('role', roleFilter);
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      const { data } = await api.get(`/admin/users?${params.toString()}`);
+      setUsers(data.data || []);
+      if (data.pagination) setPagination(data.pagination);
     } catch (err) {
       toast.error('Failed to load users');
     } finally {
@@ -167,7 +176,7 @@ const ManageUsers = () => {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchUsers(); }, [roleFilter, page]);
+  useEffect(() => { fetchUsers(); }, [roleFilter, page, searchQuery]);
 
   const handleToggle = async (userId, role) => {
     try {
@@ -175,19 +184,19 @@ const ManageUsers = () => {
       toast.success('User status updated');
       fetchUsers();
     } catch (err) {
-      toast.error('Failed to update user status');
+      toast.error(err.response?.data?.error || 'Failed to update user status');
     }
   };
 
   return (
-    <PageTransition className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <PageTransition className="space-y-6 w-full max-w-full min-w-0">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">User Management</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Global access control and operational oversight across roles.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex bg-slate-900/60 p-1 rounded-lg border border-white/5">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex bg-slate-900/60 p-1 rounded-lg border border-white/5 shrink-0">
             <button
               onClick={() => setViewTab('users')}
               className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${viewTab === 'users' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
@@ -202,16 +211,27 @@ const ManageUsers = () => {
             </button>
           </div>
           {viewTab === 'users' && (
-            <select
-              value={roleFilter}
-              onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
-              className="glass-input text-xs w-48 sm:w-auto"
-            >
-              <option value="">All Roles</option>
-              <option value="doctor">Doctors</option>
-              <option value="patient">Patients</option>
-              <option value="pharmacist">Pharmacists</option>
-            </select>
+            <>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Search name, email, or NIC..."
+                className="glass-input text-xs flex-1 sm:w-56 min-w-[160px]"
+              />
+              <select
+                value={roleFilter}
+                onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
+                className="glass-input text-xs w-full sm:w-auto"
+              >
+                <option value="">All Roles</option>
+                <option value="doctor">Doctors</option>
+                <option value="patient">Patients</option>
+                <option value="pharmacist">Pharmacists</option>
+                <option value="hospital_admin">Hospitals</option>
+                <option value="admin">Admins</option>
+              </select>
+            </>
           )}
         </div>
       </div>
@@ -219,68 +239,72 @@ const ManageUsers = () => {
       {viewTab === 'hospitals' ? (
         <ManageHospitals />
       ) : (
-      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
+      <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 w-full max-w-full">
         {loading ? (
           <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
         ) : users.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+              <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
                 <tr>
-                  <th className="px-6 py-4">User Name</th>
-                  <th className="px-6 py-4">Credential / ID</th>
-                  <th className="px-6 py-4">System Role</th>
-                  <th className="px-6 py-4">Last Active</th>
-                  <th className="px-6 py-4">Device Model</th>
-                  <th className="px-6 py-4">Last Login</th>
-                  <th className="px-6 py-4">Last Sign-Out</th>
-                  <th className="px-6 py-4">Access Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-3 py-3">User Name</th>
+                  <th className="px-3 py-3">Credential / ID</th>
+                  <th className="px-2.5 py-3">Role</th>
+                  <th className="px-2.5 py-3 hidden xl:table-cell">Last Active</th>
+                  <th className="px-2.5 py-3 hidden 2xl:table-cell">Device Model</th>
+                  <th className="px-2.5 py-3 hidden lg:table-cell">Last Login</th>
+                  <th className="px-2.5 py-3 hidden 2xl:table-cell">Last Sign-Out</th>
+                  <th className="px-2.5 py-3">Status</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                 {users.map(u => (
                   <tr key={u._id} className="hover:bg-white/[0.01] transition-colors">
-                    <td className="px-6 py-4 font-bold text-white">{u.fullName}</td>
-                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{u.email || u.nic}</td>
-                    <td className="px-6 py-4 capitalize font-semibold text-slate-300">{u.role?.replace('_', ' ')}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${u.isValid && u.lastAccess && (new Date() - new Date(u.lastAccess)) < 30 * 60 * 1000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
+                    <td className="px-3 py-2.5 font-bold text-white max-w-[160px] sm:max-w-[240px] lg:max-w-[280px] truncate" title={u.fullName}>
+                      {u.fullName || 'Unknown'}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-400 font-mono text-xs max-w-[130px] sm:max-w-[200px] truncate" title={u.email || u.nic}>
+                      {u.email || u.nic}
+                    </td>
+                    <td className="px-2.5 py-2.5 capitalize font-semibold text-slate-300 text-xs whitespace-nowrap">{u.role?.replace('_', ' ')}</td>
+                    <td className="px-2.5 py-2.5 whitespace-nowrap hidden xl:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${u.isValid && u.lastAccess && (new Date() - new Date(u.lastAccess)) < 30 * 60 * 1000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
                         <span className="text-slate-400 text-xs">{timeAgo(u.lastAccess) || 'Never'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-xs text-slate-300 truncate max-w-[140px]" title={u.deviceInfo}>{u.deviceModel || 'Unknown'}</div>
+                    <td className="px-2.5 py-2.5 hidden 2xl:table-cell">
+                      <div className="text-xs text-slate-300 truncate max-w-[110px]" title={u.deviceInfo}>{u.deviceModel || 'Unknown'}</div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-400">
+                    <td className="px-2.5 py-2.5 text-xs text-slate-400 whitespace-nowrap hidden lg:table-cell">
                       {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-400">
+                    <td className="px-2.5 py-2.5 text-xs text-slate-400 whitespace-nowrap hidden 2xl:table-cell">
                       {u.lastSignOutAt ? new Date(u.lastSignOutAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (u.isValid === false ? 'Session expired' : '—')}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2.5 py-2.5 whitespace-nowrap">
                       {u.isActive !== false ? (
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
+                        <span className="inline-flex px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold uppercase select-none">
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase select-none">
+                        <span className="inline-flex px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-bold uppercase select-none">
                           Blocked
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex justify-end gap-1.5">
                         <button
                           onClick={() => setAuditUserId(u._id)}
-                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
+                          className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
                         >
                           Audit
                         </button>
                         <button
                           onClick={() => handleToggle(u._id, u.role)}
-                          className={`text-[10px] font-bold transition-all px-3 py-1.5 rounded-lg border ${
+                          className={`text-[10px] font-bold transition-all px-2.5 py-1.5 rounded-lg border ${
                             u.isActive !== false
                               ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
                               : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
@@ -294,6 +318,32 @@ const ManageUsers = () => {
                 ))}
               </tbody>
             </table>
+            <div className="px-4 py-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+              <span>
+                Showing <strong className="text-slate-200">{users.length}</strong> of <strong className="text-slate-200">{pagination.total || users.length}</strong> users
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-white/10 disabled:opacity-40 hover:bg-slate-700 transition-colors font-semibold"
+                >
+                  Prev
+                </button>
+                <span className="font-mono text-[11px] text-slate-300">
+                  Page {pagination.page || page} / {Math.max(1, pagination.pages || 1)}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= (pagination.pages || 1)}
+                  onClick={() => setPage(p => p + 1)}
+                  className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-white/10 disabled:opacity-40 hover:bg-slate-700 transition-colors font-semibold"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">
@@ -527,14 +577,14 @@ const Overview = ({ stats, geo, activeAlerts }) => (
     {/* System Status Indicators (System Admin Infrastructure) */}
     <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
       <h3 className="text-base font-bold text-white flex items-center gap-2">
-        <Server className="w-4.5 h-4.5 text-emerald-400" /> Core System Infrastructure Indicators
+        <Server className="w-4.5 h-4.5 text-emerald-400" /> Infrastructure configuration (live health not verified)
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
         {[
-          { label: 'Database Connectivity', desc: 'MongoDB Atlas Replica Set', status: 'Online', icon: Database },
-          { label: 'AES-256 HSM Cryptography', desc: 'Field-level encryption engine', status: 'Active', icon: Key },
-          { label: 'Vault Secret Management', desc: 'Active encryption key v1', status: 'Operational', icon: ShieldCheck },
-          { label: 'Email HTTPS Dispatcher', desc: 'Resend Cloud API (Port 443)', status: 'Connected', icon: Mail }
+          { label: 'Database Connectivity', desc: 'MongoDB Atlas Replica Set', status: 'Not verified', icon: Database },
+          { label: 'AES-256 Field Encryption', desc: 'Field-level encryption engine', status: 'Not verified', icon: Key },
+          { label: 'Vault Secret Management', desc: 'Encryption key service', status: 'Not verified', icon: ShieldCheck },
+          { label: 'Email HTTPS Dispatcher', desc: 'Resend Cloud API (Port 443)', status: 'Not verified', icon: Mail }
         ].map(sys => {
           const Icon = sys.icon;
           return (
@@ -589,9 +639,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     let socket;
     const timer = setTimeout(() => {
-      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
-      socket = io(serverUrl, {
-        transports: ['websocket', 'polling'],
+      socket = io(SOCKET_SERVER_URL, {
+        transports: ['polling', 'websocket'],
         reconnectionAttempts: 5,
         reconnectionDelay: 3000,
       });

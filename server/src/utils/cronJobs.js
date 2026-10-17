@@ -205,98 +205,10 @@ const initCronJobs = () => {
       console.error('Error in clean OTPs cron job:', error);
     }
   });
-  // Job 5 — Automated outbreak detection (daily at 2am)
+  // Manual and scheduled detection share exactly the same eligibility policy.
   cron.schedule('0 2 * * *', async () => {
-    console.log('[Cron] Starting daily outbreak detection job...');
-    try {
-      const axios = require('axios');
-      const OutbreakAlert = require('../models/OutbreakAlert');
-      const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
-
-      const now = new Date();
-      const sevenDaysAgo  = new Date(now); sevenDaysAgo.setDate(now.getDate() - 7);
-      const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
-
-      // Fetch & auto-decrypt consultations for last 30 days
-      const consultations = await Consultation.find({ createdAt: { $gte: thirtyDaysAgo } });
-
-      if (consultations.length === 0) {
-        console.log('[Cron] No consultation data — skipping outbreak analysis.');
-        return;
-      }
-
-      // Aggregate into buckets: district + disease → recent vs baseline counts
-      const buckets = {};
-      for (const c of consultations) {
-        const disease  = c.diagnosis || c.icdDescription || 'Unknown';
-        const district = c.district  || 'Colombo';
-        const key      = `${district}||${disease}`;
-        const isRecent = new Date(c.createdAt) >= sevenDaysAgo;
-
-        if (!buckets[key]) {
-          buckets[key] = { district, disease, last_7_days: 0, prev_23_days: 0 };
-        }
-        if (isRecent) buckets[key].last_7_days++;
-        else          buckets[key].prev_23_days++;
-      }
-
-      const payload = Object.values(buckets).map(b => ({
-        district:              b.district,
-        disease:               b.disease,
-        last_7_days_count:     b.last_7_days,
-        previous_baseline_avg: parseFloat((b.prev_23_days / 3.29).toFixed(2))
-      }));
-
-      const { generateToken } = require('./internalAuth');
-      const { data: mlResult } = await axios.post(
-        `${ML_ENGINE_URL}/analyze-realtime`,
-        { data: payload },
-        { 
-          timeout: 30000,
-          headers: { 'x-internal-key': generateToken() }
-        }
-      );
-
-      console.log(`[Cron] ML result — anomaly: ${mlResult.anomaly}, disease: ${mlResult.disease}, spike: ${mlResult.spike_percentage}%`);
-
-      // Persist alert and broadcast if anomaly detected
-      if (mlResult.anomaly) {
-        try {
-          const severityMap = { 'Normal': 'Low', 'Low': 'Low', 'Medium': 'Moderate', 'High': 'High' };
-          const mappedSeverity = severityMap[mlResult.risk_level] || (mlResult.spike_percentage >= 600 ? 'Critical' : 'High');
-          
-          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          
-          // Duplicate suppression
-          const existingAlert = await OutbreakAlert.findOne({
-            disease: mlResult.disease,
-            location: mlResult.district,
-            status: { $in: ['Pending', 'Active'] },
-            createdAt: { $gte: twentyFourHoursAgo }
-          });
-          
-          if (!existingAlert) {
-            const alert = await OutbreakAlert.create({
-              disease:        mlResult.disease || 'Unknown',
-              location:       mlResult.district || 'Nationwide',
-              affectedCount:  mlResult.last_7_days_count || 0,
-              severity:       mappedSeverity,
-              status:         'Pending',
-              message:        `[Auto] Outbreak: ${mlResult.disease} in ${mlResult.district}. Spike: +${mlResult.spike_percentage}%`
-            });
-            console.log(`[Cron] ✅ Outbreak alert saved as Pending: ${mlResult.disease} in ${mlResult.district}`);
-            const io = require('../app').get?.('io');
-            if (io) io.emit('outbreak_alert_pending', alert);
-          } else {
-            console.log(`[Cron] ℹ️ Outbreak alert suppressed (already exists): ${mlResult.disease} in ${mlResult.district}`);
-          }
-        } catch (dbErr) {
-          console.error('[Cron] Alert DB save failed:', dbErr.message);
-        }
-      }
-    } catch (err) {
-      console.error('[Cron] Daily outbreak detection error:', err.message);
-    }
+    try { await require('../services/surveillanceService').runAnalysis({mode:'real'}); }
+    catch (_) { console.error('[Cron] Surveillance unavailable; no broadcast performed.'); }
   });
   // Job 6: Session Expiry — mark inactive sessions as expired (every 15 min)
   cron.schedule('*/15 * * * *', async () => {

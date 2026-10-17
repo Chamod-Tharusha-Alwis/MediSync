@@ -1,0 +1,116 @@
+// English UI Dictionary (en)
+export const en = {
+  nav: {
+    home: 'Home',
+    doctors: 'Doctors',
+    hospitals: 'Hospitals',
+    pharmacies: 'Pharmacies',
+    publicHealth: 'Public Health',
+    login: 'Sign In',
+    register: 'Register',
+    logout: 'Sign Out',
+    selectRole: 'Select Role',
+    backToHome: 'Back to Home'
+  },
+  common: {
+    search: 'Search',
+    filter: 'Filter',
+    save: 'Save',
+    cancel: 'Cancel',
+    loading: 'Loading…',
+    submit: 'Submit',
+    view: 'View',
+    download: 'Download',
+    status: 'Status',
+    actions: 'Actions',
+    selectLanguage: 'Language',
+    all: 'All',
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    notice: 'Notice',
+    active: 'Active',
+    pending: 'Pending',
+    resolved: 'Resolved',
+    dismissed: 'Dismissed',
+    date: 'Date',
+    district: 'District',
+    phone: 'Phone',
+    email: 'Email',
+    address: 'Address',
+    version: 'Version'
+  },
+  roles: {
+    patient: 'Patient',
+    doctor: 'Doctor',
+    hospitalAdmin: 'Hospital Admin',
+    pharmacist: 'Pharmacist',
+    admin: 'System Admin',
+    superAdmin: 'Super Administrator'
+  },
+  patient: {
+    dashboard: 'Patient Health Portal',
+    myPrescriptions: 'My Prescriptions',
+    medicalHistory: 'Medical History',
+    timeline: 'Clinical Timeline',
+    allergies: 'Documented Allergies',
+    chronicConditions: 'Chronic Conditions',
+    recentVisits: 'Recent Clinical Consultations',
+    downloadPdf: 'Download Locked PDF',
+    enterOtp: 'Enter Consent OTP'
+  },
+  doctor: {
+    dashboard: 'Clinical Workspace',
+    consultations: 'Consultations',
+    newConsultation: 'New Clinical Consultation',
+    patientsDirectory: 'Patient Directory',
+    symptomsEntered: 'Recorded Symptoms',
+    aiAssist: 'AI Diagnostic Differential',
+    clinicalDiagnosis: 'Clinical Diagnosis',
+    icdSelection: 'ICD Standard Classification',
+    icd10: 'ICD-10 (CM)',
+    icd11: 'WHO ICD-11 (MMS)',
+    prescribeMedication: 'Prescribe Medication',
+    saveConsultation: 'Save & Authorize Consultation'
+  },
+  pharmacy: {
+    dashboard: 'Pharmacy Operations',
+    pendingPrescriptions: 'Pending Prescriptions',
+    dispense: 'Dispense Medication',
+    dispenseOtc: 'OTC Walk-in Dispensation',
+    inventoryStock: 'Inventory Management',
+    stockLevel: 'Current Stock',
+    reorderLevel: 'Reorder Level',
+    receiptNumber: 'Dispensing Receipt'
+  },
+  hospital: {
+    dashboard: 'Hospital Command Center',
+    departmentStats: 'Facility Statistics',
+    bedCapacity: 'Bed Capacity',
+    admissions: 'Active Admissions',
+    labOrders: 'Laboratory Test Orders',
+    approveLab: 'Authorize Lab Test'
+  },
+  admin: {
+    dashboard: 'National Health Analytics',
+    userManagement: 'User Governance & Roles',
+    auditLogs: 'Security Audit Trail',
+    outbreakSurveillance: 'Outbreak Surveillance',
+    broadcastAdvisories: 'Public Health Broadcasts',
+    systemSettings: 'Platform Configuration'
+  },
+  outbreak: {
+    surveillanceTitle: 'Multi-Disease Outbreak Monitoring',
+    dangerLevel: 'Pathogen Danger Level',
+    riskLevel: 'Surge Transmission Risk',
+    responsePriority: 'Response Priority',
+    critical: 'P1-Critical Emergency',
+    high: 'P2-High Escalation',
+    moderate: 'P3-Moderate Surveillance',
+    advisory: 'P4-Public Advisory',
+    routine: 'P5-Baseline Routine',
+    approveAlert: 'Approve & Activate Alert',
+    resolveAlert: 'Resolve Outbreak',
+    broadcastNotice: 'Dispatch District Advisory'
+  }
+};

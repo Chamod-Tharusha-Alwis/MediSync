@@ -1,0 +1,116 @@
+// Sinhala UI Dictionary (si - සිංහල)
+export const si = {
+  nav: {
+    home: 'මුල් පිටුව',
+    doctors: 'වෛද්‍යවරුන්',
+    hospitals: 'රෝහල්',
+    pharmacies: 'ඖෂධසල්',
+    publicHealth: 'මහජන සෞඛ්‍යය',
+    login: 'ඇතුල් වන්න',
+    register: 'ලියාපදිංචි වන්න',
+    logout: 'පිටවීම',
+    selectRole: 'කාර්යභාරය තෝරන්න',
+    backToHome: 'ආපසු මුල් පිටුවට'
+  },
+  common: {
+    search: 'සොයන්න',
+    filter: 'පෙරහන් කරන්න',
+    save: 'සුරකින්න',
+    cancel: 'අවලංගු කරන්න',
+    loading: 'පූරණය වෙමින්…',
+    submit: 'යොමු කරන්න',
+    view: 'බලන්න',
+    download: 'බාගන්න',
+    status: 'තත්ත්වය',
+    actions: 'ක්‍රියාමාර්ග',
+    selectLanguage: 'භාෂාව',
+    all: 'සියල්ල',
+    success: 'සාර්ථකයි',
+    error: 'දෝෂයකි',
+    warning: 'අවවාදයයි',
+    notice: 'දැනුම්දීම',
+    active: 'සක්‍රීයයි',
+    pending: 'පොරොත්තුවේ',
+    resolved: 'විසඳා ඇත',
+    dismissed: 'ඉවත් කර ඇත',
+    date: 'දිනය',
+    district: 'දිස්ත්‍රික්කය',
+    phone: 'දුරකථන',
+    email: 'විද්‍යුත් තැපෑල',
+    address: 'ලිපිනය',
+    version: 'අනුවාදය'
+  },
+  roles: {
+    patient: 'රෝගියා',
+    doctor: 'වෛද්‍යවරයා',
+    hospitalAdmin: 'රෝහල් පරිපාලක',
+    pharmacist: 'ඖෂධවේදියා',
+    admin: 'පද්ධති පරිපාලක',
+    superAdmin: 'ප්‍රධාන පරිපාලක'
+  },
+  patient: {
+    dashboard: 'රෝගී සෞඛ්‍ය පාලක පුවරුව',
+    myPrescriptions: 'මගේ බෙහෙත් වට්ටෝරු',
+    medicalHistory: 'වෛද්‍ය ඉතිහාසය',
+    timeline: 'සායනික කාලරේඛාව',
+    allergies: 'ආසාත්මිකතා',
+    chronicConditions: 'දීර්ඝකාලීන රෝගී තත්ත්වයන්',
+    recentVisits: 'මෑත සායනික හමුවීම්',
+    downloadPdf: 'ආරක්ෂිත PDF බාගන්න',
+    enterOtp: 'අවසර OTP අංකය ඇතුළත් කරන්න'
+  },
+  doctor: {
+    dashboard: 'වෛද්‍ය සායනික අතුරුමුහුණත',
+    consultations: 'සායනික හමුවීම්',
+    newConsultation: 'නව සායනික පරීක්ෂාව',
+    patientsDirectory: 'රෝගී නාමාවලිය',
+    symptomsEntered: 'වාර්තාගත රෝග ලක්ෂණ',
+    aiAssist: 'කෘතිම බුද්ධි උපකල්පන සහාය',
+    clinicalDiagnosis: 'සායනික රෝග විනිශ්චය',
+    icdSelection: 'ICD වර්ගීකරණ ප්‍රමිතිය',
+    icd10: 'ICD-10 (CM)',
+    icd11: 'ලෝක සෞඛ්‍ය සංවිධානයේ ICD-11 (MMS)',
+    prescribeMedication: 'ඖෂධ නියම කිරීම',
+    saveConsultation: 'පරීක්ෂාව සුරකින්න සහ අනුමත කරන්න'
+  },
+  pharmacy: {
+    dashboard: 'ඖෂධසල් මෙහෙයුම්',
+    pendingPrescriptions: 'පොරොත්තු බෙහෙත් වට්ටෝරු',
+    dispense: 'ඖෂධ නිකුත් කරන්න',
+    dispenseOtc: 'කවුන්ටර ඖෂධ නිකුත් කිරීම (OTC)',
+    inventoryStock: 'තොග කළමනාකරණය',
+    stockLevel: 'වත්මන් තොගය',
+    reorderLevel: 'නැවත ඇණවුම් මට්ටම',
+    receiptNumber: 'නිකුත් කිරීමේ රිසිට්පත'
+  },
+  hospital: {
+    dashboard: 'රෝහල් පාලන මධ්‍යස්ථානය',
+    departmentStats: 'අංශ සංඛ්‍යාලේඛන',
+    bedCapacity: 'ඇඳන් ධාරිතාව',
+    admissions: 'නේවාසික රෝගීන්',
+    labOrders: 'රසායනාගාර පරීක්ෂණ නියෝග',
+    approveLab: 'රසායනාගාර පරීක්ෂණය අනුමත කරන්න'
+  },
+  admin: {
+    dashboard: 'ජාතික සෞඛ්‍ය විශ්ලේෂණ',
+    userManagement: 'පරිශීලක පාලනය සහ කාර්යභාර',
+    auditLogs: 'ආරක්ෂක විගණන වාර්තා',
+    outbreakSurveillance: 'වසංගත රෝග නිරීක්ෂණය',
+    broadcastAdvisories: 'මහජන සෞඛ්‍ය නිවේදන',
+    systemSettings: 'පද්ධති සැකසුම්'
+  },
+  outbreak: {
+    surveillanceTitle: 'බහු-රෝග වසංගත අවදානම් නිරීක්ෂණය',
+    dangerLevel: 'රෝග කාරකයේ බරපතලකම',
+    riskLevel: 'සම්ප්‍රේෂණ අවදානම් වේගය',
+    responsePriority: 'ප්‍රතිචාර ප්‍රමුඛතාවය',
+    critical: 'P1-හදිසි අත්‍යවශ්‍ය අවස්ථාව',
+    high: 'P2-ඉහළ ප්‍රමුඛතාවය',
+    moderate: 'P3-මධ්‍යස්ථ නිරීක්ෂණය',
+    advisory: 'P4-මහජන උපදේශනය',
+    routine: 'P5-සාමාන්‍ය නිරීක්ෂණය',
+    approveAlert: 'අවදානම් නිවේදනය අනුමත කරන්න',
+    resolveAlert: 'වසංගතය විසඳූ බව සටහන් කරන්න',
+    broadcastNotice: 'දිස්ත්‍රික්කයට නිවේදනය නිකුත් කරන්න'
+  }
+};

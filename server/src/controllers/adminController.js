@@ -11,7 +11,7 @@ const BanRecord = require('../models/BanRecord');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
-const { hashPassword } = require('../utils/passwordUtils');
+const { hashPassword, validatePasswordStrength } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const { generateToken } = require('../utils/internalAuth');
 const { parseDeviceModel } = require('../utils/deviceParser');
@@ -53,9 +53,10 @@ exports.getSystemStats = async (req, res) => {
 // ─── EXISTING: getAllUsers ────────────────────────────────────────────────────
 exports.getAllUsers = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
     const { role } = req.query;
+    const rawSearch = (req.query.search || req.query.q || '').trim();
 
     let users = [];
 
@@ -66,8 +67,27 @@ exports.getAllUsers = async (req, res) => {
     }
     if (!role || role === 'patient') {
       const pats = await Patient.find()
-        .select('fullName email nic district createdAt riskLevel isActive lastLoginAt lastSignOutAt').lean();
-      users.push(...pats.map(p => ({ ...p, role: 'patient' })));
+        .select('fullName email nic district createdAt riskLevel isActive lastLoginAt lastSignOutAt __enc_fullName __enc_fullName_d keyVersion');
+      users.push(
+        ...pats.map(p => ({
+          _id: p._id,
+          fullName: p.fullName,
+          email: p.email,
+          nic: p.nic,
+          district: p.district,
+          createdAt: p.createdAt,
+          riskLevel: p.riskLevel,
+          isActive: p.isActive,
+          lastLoginAt: p.lastLoginAt,
+          lastSignOutAt: p.lastSignOutAt,
+          role: 'patient'
+        }))
+      );
+    }
+    if (!role || role === 'pharmacist') {
+      const pharms = await PharmacyStaff.find()
+        .select('fullName email nic role createdAt isActive lastLoginAt lastSignOutAt').lean();
+      users.push(...pharms.map(ph => ({ ...ph, role: ph.role || 'pharmacist' })));
     }
     if (!role || role === 'hospital_admin') {
       const hosps = await Hospital.find()
@@ -75,9 +95,56 @@ exports.getAllUsers = async (req, res) => {
       users.push(...hosps.map(h => ({ ...h, role: 'hospital_admin', fullName: h.name })));
     }
     if (!role || role === 'admin') {
-      const admins = await Doctor.find({ role: { $in: ['admin', 'super_admin'] } })
-        .select('fullName email doctorId createdAt isActive role isSuperAdmin lastLoginAt lastSignOutAt').lean();
-      users.push(...admins);
+      const [adminDocs, legacyDoctorAdmins] = await Promise.all([
+        Admin.find()
+          .select('fullName name email role isSuperAdmin isActive createdAt lastLoginAt lastSignOutAt')
+          .lean(),
+        Doctor.find({ role: { $in: ['admin', 'super_admin'] } })
+          .select('fullName email doctorId createdAt isActive role isSuperAdmin lastLoginAt lastSignOutAt')
+          .lean()
+      ]);
+
+      const seenAdminEmails = new Set();
+      for (const a of adminDocs) {
+        const emailKey = String(a.email || '').toLowerCase();
+        if (emailKey) seenAdminEmails.add(emailKey);
+        users.push({
+          _id: a._id,
+          fullName: a.fullName || a.name || 'Administrator',
+          email: a.email,
+          role: a.role || 'admin',
+          isSuperAdmin: Boolean(a.isSuperAdmin || a.role === 'super_admin'),
+          isActive: a.isActive !== false,
+          createdAt: a.createdAt,
+          lastLoginAt: a.lastLoginAt,
+          lastSignOutAt: a.lastSignOutAt
+        });
+      }
+
+      for (const d of legacyDoctorAdmins) {
+        const emailKey = String(d.email || '').toLowerCase();
+        if (emailKey && seenAdminEmails.has(emailKey)) continue;
+        users.push({
+          ...d,
+          role: d.role || 'admin',
+          isSuperAdmin: Boolean(d.isSuperAdmin || d.role === 'super_admin'),
+          isActive: d.isActive !== false
+        });
+      }
+    }
+
+    if (rawSearch) {
+      const escapedSearch = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+      users = users.filter(u =>
+        searchRegex.test(u.fullName || '') ||
+        searchRegex.test(u.email || '') ||
+        searchRegex.test(u.nic || '') ||
+        searchRegex.test(u.doctorId || '') ||
+        searchRegex.test(u.regNo || '') ||
+        searchRegex.test(u.district || '') ||
+        searchRegex.test(u.specialization || '')
+      );
     }
 
     const total = users.length;
@@ -113,9 +180,16 @@ exports.getAllUsers = async (req, res) => {
 exports.toggleUserStatus = async (req, res) => {
   try {
     const { userId, role } = req.body;
+    if (req.user && String(req.user.id) === String(userId)) {
+      return res.status(400).json({ error: 'Cannot deactivate your own account' });
+    }
+
     let user;
 
-    if (role === 'doctor' || role === 'admin') user = await Doctor.findById(userId);
+    if (role === 'admin' || role === 'super_admin') {
+      user = await Admin.findById(userId);
+      if (!user) user = await Doctor.findById(userId);
+    } else if (role === 'doctor') user = await Doctor.findById(userId);
     else if (role === 'patient') user = await Patient.findById(userId);
     else if (role === 'hospital_admin') user = await Hospital.findById(userId);
     else if (role === 'pharmacy_admin' || role === 'pharmacist') user = await PharmacyStaff.findById(userId);
@@ -149,17 +223,21 @@ exports.getAuditLogs = async (req, res) => {
     }
 
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
-      const [doctors, patients, pharmacies, hospitals, admins] = await Promise.all([
+      const escapedSearch = String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+      const [doctors, allPatients, pharmacies, hospitals, admins] = await Promise.all([
         Doctor.find({ $or: [{ nic: searchRegex }, { fullName: searchRegex }, { doctorId: searchRegex }, { email: searchRegex }] }),
-        Patient.find({ $or: [{ nic: searchRegex }, { email: searchRegex }] }),
+        Patient.find().select('_id fullName nic email __enc_fullName __enc_fullName_d keyVersion'),
         PharmacyStaff.find({ $or: [{ nic: searchRegex }, { fullName: searchRegex }, { email: searchRegex }] }),
         Hospital.find({ $or: [{ regNo: searchRegex }, { name: searchRegex }, { email: searchRegex }] }),
         Admin.find({ $or: [{ email: searchRegex }, { fullName: searchRegex }, { name: searchRegex }] })
       ]);
+      const matchedPatients = allPatients.filter(
+        p => searchRegex.test(p.nic || '') || searchRegex.test(p.email || '') || searchRegex.test(p.fullName || '')
+      );
       const matchedIds = [
         ...doctors.map(d => d._id.toString()),
-        ...patients.map(p => p._id.toString()),
+        ...matchedPatients.map(p => p._id.toString()),
         ...pharmacies.map(p => p._id.toString()),
         ...hospitals.map(h => h._id.toString()),
         ...admins.map(a => a._id.toString())
@@ -445,145 +523,11 @@ exports.getUserAuditProfile = async (req, res) => {
 // ─── NEW: ML — triggerMLDetection ────────────────────────────────────────────
 exports.triggerMLDetection = async (req, res) => {
   try {
-    const now = new Date();
-
-    // Time windows
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    // 1. Fetch last 30 days — NO .lean() so mongoose-field-encryption decrypts 'diagnosis' automatically
-    const recentConsultations = await Consultation.find({ createdAt: { $gte: thirtyDaysAgo } });
-
-    if (recentConsultations.length === 0) {
-      // No real data — fall back to Prophet prediction for demo
-      const { data } = await axios.post(
-        `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/api/ml/predict-outbreak`,
-        { district: req.body?.district || 'Colombo' },
-        { 
-          timeout: ML_TIMEOUT,
-          headers: { 'x-internal-key': generateToken() }
-        }
-      );
-      return res.json({
-        disease:          data.disease        || 'Dengue',
-        district:         data.district       || 'Colombo',
-        z_score:          data.z_score        ?? 0,
-        anomaly:          data.anomaly        || false,
-        severity:         data.severity       || 'low',
-        historical_mean:  data.historical_mean|| 0,
-        historical_std:   data.historical_std || 0,
-        data_points:      data.data_points    || 0,
-        forecast:         data.forecast       || [],
-        status:           data.status         || 'normal',
-        model:            data.model          || 'Prophet',
-        source:           'prophet_fallback'
-      });
-    }
-
-    const aggregatedData = {};
-    recentConsultations.forEach(c => {
-      const disease = c.diagnosis || c.icdDescription || 'Unknown';
-      const district = c.district || 'Colombo';
-      const key = `${district}_${disease}`;
-
-      if (!aggregatedData[key]) {
-        aggregatedData[key] = { district, disease, last_7_days_count: 0, previous_baseline_avg: 0 };
-      }
-
-      // Bucket into recent (7 days) or baseline (older 23 days)
-      if (c.createdAt >= sevenDaysAgo) {
-        aggregatedData[key].last_7_days_count += 1;
-      } else {
-        aggregatedData[key].previous_baseline_avg += 1;
-      }
-    });
-
-    // Convert the 23-day baseline count into a weekly average
-    const payload = Object.values(aggregatedData).map(item => {
-      item.previous_baseline_avg = Math.round(item.previous_baseline_avg / 3.29); 
-      return item;
-    });
-
-    // Send as direct array payload to ML engine with 90s timeout to survive Render cold start
-    let mlResponse;
-    try {
-      mlResponse = await axios.post(
-        `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
-        payload, 
-        { 
-          timeout: ML_TIMEOUT,
-          headers: { 'x-internal-key': generateToken() }
-        }
-      );
-    } catch (primaryErr) {
-      // If timed out or cold-starting (502/503/ECONNREFUSED/ECONNABORTED), retry once
-      if (primaryErr.code === 'ECONNABORTED' || primaryErr.code === 'ECONNREFUSED' || primaryErr.response?.status >= 500) {
-        console.log('[Admin] ML Engine cold-start retry in progress...');
-        await new Promise(r => setTimeout(r, 3000));
-        mlResponse = await axios.post(
-          `${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`, 
-          payload, 
-          { 
-            timeout: ML_TIMEOUT,
-            headers: { 'x-internal-key': generateToken() }
-          }
-        );
-      } else {
-        throw primaryErr;
-      }
-    }
-
-    const data = mlResponse.data;
-
-    // 5. If anomaly detected, save an OutbreakAlert record and emit Socket event
-    if (data.results && Array.isArray(data.results)) {
-      for (const result of data.results) {
-        if (result.anomaly) {
-          try {
-            const OutbreakAlert = require('../models/OutbreakAlert');
-            // Map severity to valid schema enum: ['Low', 'Moderate', 'High', 'Critical']
-            const severityMap = { 'low': 'Low', 'medium': 'Moderate', 'high': 'High' };
-            const mappedSeverity = severityMap[result.severity] || 'High';
-
-            const alert = await OutbreakAlert.create({
-              disease:        result.disease || 'Unknown',
-              location:       result.district || 'Nationwide',
-              affectedCount:  result.latest_actual || 0,
-              severity:       mappedSeverity,
-              status:         'Pending',
-              message:        `Real-time outbreak detected: ${result.disease} in ${result.district}.`
-            });
-            const io = require('../app').get?.('io');
-            if (io) io.emit('outbreak_alert_pending', alert);
-          } catch (dbErr) {
-            console.error('[Admin] Alert DB save failed:', dbErr.message);
-          }
-        }
-      }
-    }
-
-    // 6. Return enriched response to the frontend
-    res.json({
-      results: data.results || [],
-      consultations_analysed: recentConsultations.length,
-      model: 'Real-time DB Aggregation + Threshold Analysis',
-      source: 'live_data',
-      data_points: recentConsultations.length
-    });
-
-  } catch (err) {
-    console.error('[Admin] ML trigger error:', err.message);
-    console.error('[FATAL] ML Engine API Failed:', err.response ? err.response.data : err.message);
-    if (err.code === 'ECONNREFUSED') {
-      return res.status(503).json({ error: 'ML Engine is starting up or offline. Please retry in 30 seconds.' });
-    }
-    if (err.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'ML Engine cold-start timeout. Please retry in a few seconds.' });
-    }
-    return res.status(500).json({ error: err.response ? err.response.data.error || 'ML Engine Error' : err.message });
-  }
+    const service = require('../services/surveillanceService');
+    const mode = (req.body?.mode || req.query?.mode) === 'simulation' ? 'simulation' : 'real';
+    if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
+    res.json(await service.runAnalysis({mode}));
+  } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
 };
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
@@ -758,40 +702,88 @@ exports.getBans = async (req, res) => {
 // ─── NEW: ADD ADMIN ───────────────────────────────────────────────────────────
 exports.addAdmin = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
+    let isAuthorizedSuperAdmin = false;
+
+    if (req.user?.id) {
+      let caller = await Admin.findById(req.user.id).select('role isSuperAdmin isActive').lean();
+      if (!caller) {
+        caller = await Doctor.findById(req.user.id).select('role isSuperAdmin isActive').lean();
+      }
+      if (caller) {
+        isAuthorizedSuperAdmin = Boolean(
+          caller.isActive !== false && (caller.isSuperAdmin === true || caller.role === 'super_admin')
+        );
+      }
+    }
+
+    if (!isAuthorizedSuperAdmin) {
       return res.status(403).json({ error: 'Only super admins can add new admins' });
     }
 
     const { fullName, email, password } = req.body;
-    if (!fullName || !email || !password) {
+    const trimmedName = String(fullName || '').trim();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!trimmedName || !normalizedEmail || !password) {
       return res.status(400).json({ error: 'fullName, email, and password are required' });
     }
 
-    const existing = await Doctor.findOne({ email });
-    if (existing) return res.status(400).json({ error: 'Email already registered' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'Invalid email address format' });
+    }
+
+    const strength = validatePasswordStrength(String(password));
+    if (!strength.valid || strength.score < 3) {
+      return res.status(400).json({
+        error: 'Password is too weak. Must be at least 8 characters with uppercase, lowercase, and a number.'
+      });
+    }
+
+    const [existingAdmin, existingDoctor] = await Promise.all([
+      Admin.findOne({ email: normalizedEmail }).lean(),
+      Doctor.findOne({ email: normalizedEmail }).lean()
+    ]);
+    if (existingAdmin || existingDoctor) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
 
     const hashedPassword = await hashPassword(password);
     const adminId = 'ADMIN-' + uuid().slice(0, 8).toUpperCase();
 
-    const newAdmin = new Doctor({
-      doctorId: adminId,
-      fullName,
-      email,
+    const newAdmin = new Admin({
+      fullName: trimmedName,
+      name: trimmedName,
+      email: normalizedEmail,
       password: hashedPassword,
-      licenseNo: `ADMIN-${adminId}`,
-      specialization: 'System Administration',
       role: 'admin',
       isSuperAdmin: false,
-      isActive: true,
+      isActive: true
     });
 
     await newAdmin.save();
 
-    emailService.sendWelcomeEmail(email, fullName, 'admin').catch(() => {});
+    await AuditLog.create({
+      actorId: req.user.id,
+      actorRole: 'admin',
+      action: 'ADD_ADMIN',
+      accessedNic: normalizedEmail,
+      deviceModel: parseDeviceModel(req.headers['user-agent'] || ''),
+      timestamp: new Date()
+    }).catch(() => {});
+
+    emailService.sendWelcomeEmail(normalizedEmail, trimmedName, 'admin').catch(() => {});
 
     return res.status(201).json({
       message: 'Admin created successfully',
-      data: { doctorId: adminId, fullName, email, role: 'admin' }
+      data: {
+        _id: newAdmin._id,
+        doctorId: adminId,
+        fullName: newAdmin.fullName,
+        email: newAdmin.email,
+        role: 'admin',
+        isSuperAdmin: false,
+        isActive: true
+      }
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to create admin', details: error.message });
@@ -857,116 +849,41 @@ exports.reviewReport = async (req, res) => {
 
 // ─── NEW: GET BROADCASTS ──────────────────────────────────────────────────────
 exports.getBroadcasts = async (req, res) => {
-  try {
-    const BroadcastMessage = require('../models/BroadcastMessage');
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-    
-    const total = await BroadcastMessage.countDocuments();
-    const messages = await BroadcastMessage.find()
-      .sort({ sentAt: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-    
-    res.json({ messages, total, page, pages: Math.ceil(total / limit) });
-  } catch (err) {
-    console.error('getBroadcasts:', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  // Legacy messages lack a verified audience/provenance contract. Keep them
+  // stored for audit without distributing them through the live history feed.
+  res.json({messages:[],total:0,page:1,pages:0,message:'Legacy broadcast delivery is gated pending provenance review.'});
 };
 
 // ─── NEW: APPROVE ALERT ───────────────────────────────────────────────────────
 exports.approveAlert = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { emailScope } = req.body; // 'none', 'district', 'national'
+    const service = require('../services/surveillanceService');
     const OutbreakAlert = require('../models/OutbreakAlert');
-
-    const alert = await OutbreakAlert.findById(id);
-    if (!alert) return res.status(404).json({ error: 'Alert not found' });
-    if (alert.status !== 'Pending') return res.status(400).json({ error: 'Only pending alerts can be approved' });
-
-    alert.status = 'Active';
-    alert.approvedBy = req.user ? req.user.id : null;
-    alert.approvedAt = new Date();
-    alert.emailScope = emailScope || 'none';
-    await alert.save();
-
-    const io = require('../app').get?.('io');
-    if (io) io.emit('outbreak_alert', alert);
-
-    if (emailScope === 'district' || emailScope === 'national') {
-      try {
-        const Patient = require('../models/Patient');
-        const Doctor = require('../models/Doctor');
-        const PharmacyStaff = require('../models/PharmacyStaff');
-        const Hospital = require('../models/Hospital');
-        const emailService = require('../utils/emailService');
-
-        let query = {};
-        if (emailScope === 'district' && alert.location !== 'Nationwide') {
-          query.district = alert.location;
-        }
-
-        const [patients, doctors, pharmacists, hospitals] = await Promise.all([
-          Patient.find(query).select('email contactInfo'),
-          Doctor.find(query).select('email'),
-          PharmacyStaff.find(query).select('email'),
-          Hospital.find(query).select('email')
-        ]);
-
-        const allEmails = [
-          ...patients.map(p => p.email || p.contactInfo?.email),
-          ...doctors.map(d => d.email),
-          ...pharmacists.map(p => p.email),
-          ...hospitals.map(h => h.email)
-        ].filter(e => e);
-
-        // Approximate spike pct from affectedCount (since we don't have baseline here easily)
-        await emailService.sendMassOutbreakAlert(
-          allEmails,
-          alert.disease,
-          alert.location,
-          alert.severity,
-          null
-        );
-      } catch (e) {
-        console.error('[Admin] Mass email failed on approve:', e.message);
-      }
-
-      try {
-        const BroadcastMessage = require('../models/BroadcastMessage');
-        const broadcast = new BroadcastMessage({
-          title: `CRITICAL OUTBREAK ALERT`,
-          message: `A ${alert.severity} risk outbreak of ${alert.disease} has been detected in ${alert.location}. Please take immediate precautions.`,
-          targetRole: 'all',
-          targetDistrict: emailScope === 'national' ? null : alert.location,
-          sentBy: req.user ? req.user.id : null,
-          sentAt: new Date()
-        });
-        await broadcast.save();
-        if (io) io.emit('broadcast_message', broadcast);
-      } catch (e) {
-        console.error('[Admin] Broadcast save failed on approve:', e.message);
-      }
-    }
-
-    res.json({ message: 'Alert approved successfully', data: alert });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to approve alert', details: error.message });
-  }
+    const alert = await OutbreakAlert.findById(req.params.id);
+    if (!alert) return res.status(404).json({error:'Alert not found'});
+    if (alert.surveillancePolicy !== service.POLICY) return res.status(409).json({error:'Legacy alert requires provenance review.'});
+    if (service.synthetic(alert) && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
+    if (!['admin','super_admin','superadmin'].includes(req.user?.role)) return res.status(403).json({error:'Administrator review required.'});
+    if (req.body?.emailScope && req.body.emailScope !== 'none') return res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});
+    const updated = await OutbreakAlert.findOneAndUpdate({_id:alert._id,status:'Pending'},{$set:{status:'Active',approvedBy:req.user.id,approvedAt:new Date(),emailScope:'none'}},{new:true});
+    if (!updated) return res.status(409).json({error:'Only pending alerts can be approved.'});
+    res.json({message:'Review recorded. No external delivery performed.',data:updated});
+  } catch (_) { res.status(503).json({error:'Unable to record alert review.'}); }
 };
 
 // ─── NEW: RESOLVE ALERT ───────────────────────────────────────────────────────
 exports.resolveAlert = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action } = req.body; // 'resolve' or 'dismiss'
+    const { action } = req.body || {}; // 'resolve' or 'dismiss'
     const OutbreakAlert = require('../models/OutbreakAlert');
 
     const alert = await OutbreakAlert.findById(id);
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
+
+    const service = require('../services/surveillanceService');
+    if (alert.surveillancePolicy !== service.POLICY) return res.status(409).json({error:'Legacy provenance review required.'});
+    if (service.synthetic(alert) && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
 
     alert.status = action === 'dismiss' ? 'Dismissed' : 'Resolved';
     await alert.save();
@@ -980,23 +897,28 @@ exports.resolveAlert = async (req, res) => {
 // ─── NEW: SEARCH USERS ────────────────────────────────────────────────────────
 exports.searchUsers = async (req, res) => {
   try {
-    const q = req.query.q;
+    const q = (req.query.q || '').trim();
     if (!q) return res.json({ data: [] });
-    const regex = new RegExp(q, 'i');
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
     
-    const [doctors, patients, pharmacies, hospitals] = await Promise.all([
-      Doctor.find({ $or: [{ nic: regex }, { doctorId: regex }] }).select('_id fullName nic role'),
-      Patient.find({ $or: [{ nic: regex }] }).select('_id fullName nic'),
-      PharmacyStaff.find({ $or: [{ nic: regex }] }).select('_id fullName nic role'),
-      Hospital.find({ $or: [{ regNo: regex }] }).select('_id name regNo')
+    const [doctors, allPatients, pharmacies, hospitals] = await Promise.all([
+      Doctor.find({ $or: [{ nic: regex }, { doctorId: regex }, { fullName: regex }, { email: regex }] }).select('_id fullName nic doctorId role').lean(),
+      Patient.find().select('_id fullName nic email __enc_fullName __enc_fullName_d keyVersion'),
+      PharmacyStaff.find({ $or: [{ nic: regex }, { fullName: regex }, { email: regex }] }).select('_id fullName nic email role').lean(),
+      Hospital.find({ $or: [{ regNo: regex }, { name: regex }, { email: regex }] }).select('_id name regNo').lean()
     ]);
+
+    const matchingPatients = allPatients.filter(
+      p => regex.test(p.nic || '') || regex.test(p.email || '') || regex.test(p.fullName || '')
+    );
     
     const results = [
-      ...doctors,
-      ...patients.map(p => ({ _id: p._id, fullName: p.fullName, nic: p.nic, role: 'patient' })),
-      ...pharmacies,
+      ...doctors.map(d => ({ _id: d._id, fullName: d.fullName, nic: d.nic || d.doctorId, role: d.role })),
+      ...matchingPatients.map(p => ({ _id: p._id, fullName: p.fullName, nic: p.nic, role: 'patient' })),
+      ...pharmacies.map(ph => ({ _id: ph._id, fullName: ph.fullName, nic: ph.nic || ph.email, role: ph.role })),
       ...hospitals.map(h => ({ _id: h._id, fullName: h.name, nic: h.regNo, role: 'hospital_admin' }))
-    ];
+    ].slice(0, 50);
     
     res.json({ data: results });
   } catch (err) {

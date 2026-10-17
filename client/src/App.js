@@ -7,6 +7,7 @@ import BanNotice from './components/BanNotice';
 import { initGA, usePageTracking } from './utils/analytics';
 import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
 
 // ─── Lazy-loaded route components ──────────────────────────────────────────
@@ -59,6 +60,50 @@ const PageLoader = () => (
   </div>
 );
 
+// ─── Route Error Boundary (prevents white-screen on render error) ───────────
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[ErrorBoundary] Runtime render error captured (sanitized operational notice)');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="glass-panel rounded-2xl p-8 max-w-md w-full text-center space-y-5 border border-white/10">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl font-bold">
+              !
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white">Something went wrong</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                An unexpected error occurred while rendering this page. Your data is safe—please reload to continue.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Inner component that lives inside <Router> so hooks can use useLocation ──
 function AppRoutes() {
   // Fires ReactGA.send({ hitType: 'pageview', page: location.pathname }) on
@@ -73,13 +118,16 @@ function AppRoutes() {
       <NotificationToast />
       <BanNotice />
 
-      <Suspense fallback={<PageLoader />}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Home />} />
+      <ErrorBoundary key={location.pathname}>
+        <Suspense fallback={<PageLoader />}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<Home />} />
           <Route path="/select-role" element={<SelectRole />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dev/style-guide" element={<StyleGuide />} />
+          {process.env.NODE_ENV !== 'production' && (
+            <Route path="/dev/style-guide" element={<StyleGuide />} />
+          )}
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Public Directories */}
@@ -130,9 +178,10 @@ function AppRoutes() {
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/select-role" replace />} />
-          </Routes>
-        </AnimatePresence>
-      </Suspense>
+            </Routes>
+          </AnimatePresence>
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }
@@ -145,7 +194,9 @@ function App() {
 
   return (
     <Router>
-      <AppRoutes />
+      <LanguageProvider>
+        <AppRoutes />
+      </LanguageProvider>
     </Router>
   );
 }

@@ -35,13 +35,21 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
 
   const isPatient = localStorage.getItem('role') === 'patient';
 
-  // Lock body scroll
+  // Lock body scroll and handle Escape key dismissal (DEF-A11Y-01)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [onClose]);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -101,6 +109,9 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
 
       {/* Modal Content */}
       <motion.div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hospital-modal-title"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
@@ -111,7 +122,9 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
         {/* Top Header Panel */}
         <div className="bg-slate-950/50 p-6 border-b border-white/5 relative">
           <button 
+            type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="absolute top-5 right-5 p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors border border-white/5"
           >
             <X className="w-4 h-4" />
@@ -126,7 +139,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
               )}
             </div>
             <div className="text-left">
-              <h2 className="text-xl font-bold text-white mb-1 leading-tight">{hospital.name}</h2>
+              <h2 id="hospital-modal-title" className="text-xl font-bold text-white mb-1 leading-tight">{hospital.name}</h2>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
                   hospital.type === 'government' ? 'bg-blue-500/15 border border-blue-500/25 text-blue-400' : 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400'

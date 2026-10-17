@@ -29,6 +29,13 @@ const doctorSchema = new mongoose.Schema({
   googleMapsUrl: { type: String, default: '' },
   averageRating: { type: Number, default: 0 },
   ratingCount: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  isVerified: { type: Boolean, default: false },
+  isSynthetic: { type: Boolean, default: false },
+  isDemoData: { type: Boolean, default: false },
+  isDemoAccount: { type: Boolean, default: false },
+  datasetVersion: { type: String },
+  verificationSource: { type: String },
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 },
   lastLoginAt: { type: Date },
   lastSignOutAt: { type: Date }

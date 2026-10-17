@@ -8,6 +8,9 @@ const ConsultationRating = require('../models/ConsultationRating');
 const { generateLockedPrescription } = require('../utils/pdfGenerator');
 const emailService = require('../utils/emailService');
 const { sendEmail } = require('../utils/email');
+const { checkAllergyConflict } = require('../utils/ingredientResolver');
+const { validateMedicines, DurationError } = require('../utils/prescriptionDuration');
+const { canonicalMedicationName, MedicationNameError } = require('../utils/medicationName');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -132,12 +135,26 @@ exports.createConsultation = async (req, res) => {
       sessionHospitalId, prescriptions = [], labTests = [], orderedTests = []
     } = req.body
 
+    // Validate ALL medicines before any clinical read/write, including direct callers.
+    const timings = validateMedicines(prescriptions);
+    const medicationNames = prescriptions.map(canonicalMedicationName);
     // Validate patient exists
     const patient = await Patient.findOne({ nic: patientNic })
     if (!patient) {
       return res.status(404).json({ 
         error: 'Patient not found. Register patient first.' 
       })
+    }
+    patient.decryptFieldsSync();
+    // Check the entire list before creating a consultation or any prescription.
+    // The same validated name is used below for persistence and PDF/email data.
+    for (const drugName of medicationNames) {
+      const allergyResult = checkAllergyConflict(drugName, patient.allergies || []);
+      if (allergyResult.hasConflict) {
+        return res.status(400).json({ error:'ALLERGY_CONFLICT',
+          message:`Patient is allergic to: ${(patient.allergies || []).join(', ')}`,
+          conflicts:allergyResult.conflicts });
+      }
     }
     
     // Generate Global Consultation ID
@@ -164,6 +181,7 @@ exports.createConsultation = async (req, res) => {
     // Optional fields - only add if schema has them
     if (icdCode) consultationData.icdCode = icdCode
     if (icdDescription) consultationData.icdDescription = icdDescription
+    if (req.body.icdVersion) consultationData.icdVersion = req.body.icdVersion
     if (followUpDate) consultationData.followUpDate = new Date(followUpDate)
     if (followUpNotes) consultationData.followUpNotes = followUpNotes
     if (sessionHospitalId) consultationData.sessionHospitalId = sessionHospitalId
@@ -181,23 +199,8 @@ exports.createConsultation = async (req, res) => {
     const createdPrescriptions = []
     const conflictWarnings = []
     
-    for (const rxData of prescriptions) {
-      // Allergy check
-      const patientAllergies = patient.allergies || []
-      const hasConflict = patientAllergies.some(a => 
-        rxData.drugName && rxData.drugName.toLowerCase().includes(a.toLowerCase())
-      )
-      if (hasConflict) {
-        conflictWarnings.push({
-          drug: rxData.drugName,
-          allergen: patientAllergies.find(a => 
-            rxData.drugName.toLowerCase().includes(a.toLowerCase())
-          )
-        })
-      }
-      
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + (parseInt(rxData.durationDays) || 7))
+    for (const [rxIndex, rxData] of prescriptions.entries()) {
+      const timing = timings[rxIndex];
       
       try {
         const rxDoc = new Prescription({
@@ -208,12 +211,13 @@ exports.createConsultation = async (req, res) => {
           patientNic_bi: hashedNic,
           patientId: patient._id,       // unencrypted ObjectId for safe querying
           doctorId: req.user.id,
-          drugName: rxData.drugName || rxData.name || '',
+          drugName: medicationNames[rxIndex],
           dosage: rxData.dosage || '',
           frequency: rxData.frequency || '',
-          durationDays: parseInt(rxData.durationDays) || 7,
+          durationDays: timing.durationDays,
           instructions: rxData.instructions || '',
-          expiresAt,
+          issuedAt: timing.issuedAt,
+          expiresAt: timing.expiresAt,
           status: 'pending',
           hospitalId: sessionHospitalId || null,
         });
@@ -422,6 +426,7 @@ exports.createConsultation = async (req, res) => {
     })
     
   } catch (err) {
+    if (err instanceof DurationError || err instanceof MedicationNameError) return res.status(400).json({ error:err.code, message:err.message });
     console.error('createConsultation ERROR:', err.message)
     console.error('Full error:', err)
     if (err.name === 'ValidationError') {
@@ -502,23 +507,13 @@ exports.predictDisease = async (req, res) => {
         timeout: 60000, // 60-second timeout for Render cold starts
       }
     );
-    return res.json(mlRes.data);
-  } catch (error) {
-    console.error('⚠️  ML Engine unavailable — returning fallback predictions:', error.message);
-    if (error.response) {
-      console.error('ML Engine Response:', error.response.data);
-    }
-
-    // ── Graceful fallback so the frontend wizard keeps working ─────────────
-    return res.status(200).json({
-      predictions: [
-        { disease: 'General Infection',       probability: 0.75, specialist: 'General Physician' },
-        { disease: 'Viral Fever',             probability: 0.60, specialist: 'General Physician' },
-        { disease: 'Allergic Reaction',       probability: 0.45, specialist: 'Immunologist' },
-        { disease: 'Stress-Related Disorder', probability: 0.30, specialist: 'Psychiatrist' },
-      ],
-      fallback: true,
-      note: 'ML engine was unreachable; these are generic suggestions. Please use clinical judgement.',
+    const { inferencePredictions } = require('../utils/inferenceResponse');
+    return res.json({ availability: 'available', predictions: inferencePredictions(mlRes.data) });
+  } catch (_) {
+    return res.status(503).json({
+      availability: 'unavailable',
+      predictions: [],
+      error: 'AI suggestions unavailable. Please use the existing manual diagnosis option.'
     });
   }
 };

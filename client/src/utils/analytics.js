@@ -13,6 +13,7 @@ const GA_MEASUREMENT_ID =
 // testMode: true prevents data from being sent during local development when
 // the placeholder ID is still in use.
 export function initGA() {
+  if (process.env.REACT_APP_MEDISYNC_QA === 'true') return;
   const isPlaceholder = GA_MEASUREMENT_ID === 'G-XXXXXXXXXX' || !GA_MEASUREMENT_ID;
 
   if (isPlaceholder) {
@@ -36,6 +37,7 @@ export function usePageTracking() {
   const location = useLocation();
 
   useEffect(() => {
+    if (process.env.REACT_APP_MEDISYNC_QA === 'true') return;
     const isPlaceholder = GA_MEASUREMENT_ID === 'G-XXXXXXXXXX' || !GA_MEASUREMENT_ID;
     if (isPlaceholder) {
       return;

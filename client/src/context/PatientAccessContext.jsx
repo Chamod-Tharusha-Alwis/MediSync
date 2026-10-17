@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const PatientAccessContext = createContext(null);
 
@@ -7,29 +7,29 @@ export const PatientAccessProvider = ({ children }) => {
   const [activeSession, setActiveSession] = useState(null);
 
   useEffect(() => {
-    console.log('[PatientAccessContext] activeSession state:', activeSession ? {
-      nic: activeSession.nic,
-      patientName: activeSession.patientName,
-      hasToken: !!activeSession.token,
-      expiresAt: new Date(activeSession.expiresAt).toLocaleTimeString()
-    } : null);
+    if (!activeSession) return undefined;
+    const timer = setTimeout(() => setActiveSession(null), Math.max(0, activeSession.expiresAt - Date.now()));
+    return () => clearTimeout(timer);
   }, [activeSession]);
+  useEffect(() => {
+    const clear = () => setActiveSession(null);
+    window.addEventListener('medisync:session-cleared', clear);
+    return () => window.removeEventListener('medisync:session-cleared', clear);
+  }, []);
 
-  const setPatientSession = ({ nic, patientName, token, expiresInMinutes = 15 }) => {
+  const setPatientSession = useCallback(({ nic, patientName, token, expiresInMinutes = 15 }) => {
     const expiresAt = Date.now() + expiresInMinutes * 60 * 1000;
-    setActiveSession({ nic: nic.toUpperCase(), patientName, token, expiresAt });
-  };
+    if (!token || !nic?.trim() || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) { setActiveSession(null); return; }
+    setActiveSession({ nic: nic.trim().toUpperCase(), patientName, token, expiresAt });
+  }, []);
 
-  const clearPatientSession = () => {
+  const clearPatientSession = useCallback(() => {
     setActiveSession(null);
-  };
+  }, []);
 
   const getPatientToken = (targetNic) => {
     if (!activeSession) return null;
-    if (activeSession.expiresAt < Date.now()) {
-      setActiveSession(null);
-      return null;
-    }
+    if (activeSession.expiresAt <= Date.now()) return null;
     if (targetNic && activeSession.nic !== targetNic.trim().toUpperCase()) {
       return null;
     }
