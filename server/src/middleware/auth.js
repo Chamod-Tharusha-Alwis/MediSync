@@ -56,7 +56,18 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
         ]
       });
 
-      if (activeBan) {
+      // findOne() proves absence only with null. An unexpected result is not
+      // evidence that suspension verification succeeded.
+      if (activeBan !== null) {
+        if (
+          !activeBan || typeof activeBan !== 'object' || Array.isArray(activeBan) ||
+          activeBan.isActive !== true || String(activeBan.targetId) !== String(decoded.id) ||
+          !['temporary', 'permanent'].includes(activeBan.banType) || typeof activeBan.reason !== 'string' ||
+          (activeBan.expiresAt != null &&
+            (!Number.isFinite(new Date(activeBan.expiresAt).getTime()) || new Date(activeBan.expiresAt) <= new Date()))
+        ) {
+          throw new Error('Invalid suspension verification result');
+        }
         const expiryStr = activeBan.expiresAt
           ? new Date(activeBan.expiresAt).toLocaleDateString()
           : null;
@@ -70,9 +81,9 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
             : `Your account is temporarily suspended until ${expiryStr}.`
         });
       }
-    } catch (banErr) {
-      console.error('Ban check error:', banErr.message);
-      // Don't block request if ban check fails
+    } catch (_) {
+      console.error('[Auth] Suspension verification unavailable.');
+      return res.status(503).json({ error: 'Authentication verification unavailable. Please try again later.' });
     }
 
     // Write to AuditLog

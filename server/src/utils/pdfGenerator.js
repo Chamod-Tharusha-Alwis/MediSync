@@ -133,7 +133,7 @@ function drawFooter(page, { now, fontRegular, fontBold, width }) {
 
 // ── Shared Helper: Apply Real PDF Password Encryption ──────────────────
 async function applyPDFEncryption(pdfDoc, patientNIC) {
-  const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[global.ACTIVE_KEY_VERSION] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || 'MediSync#2026_Secure_Key_32bytes!');
+  const masterKey = global.ENCRYPTION_KEYS ? global.ENCRYPTION_KEYS[global.ACTIVE_KEY_VERSION] : (global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY);
   if (!masterKey) throw new Error('FATAL: No encryption key available for PDF password generation');
   
   const nicStr = (patientNIC || 'MEDISYNC').toString().trim();
@@ -223,7 +223,7 @@ exports.generateLockedPrescription = async (
   consultationRef
 ) => {
   const pdfDoc = await PDFDocument.create();
-  const page   = pdfDoc.addPage([595, 842]);
+  let page     = pdfDoc.addPage([595, 842]);
   const { width, height } = page.getSize();
 
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -417,6 +417,12 @@ exports.generateLockedPrescription = async (
     : [];
 
   if (validLabTests.length > 0) {
+    const labBoxH = validLabTests.length * 22 + 16;
+    if (currentY - (labBoxH + 34) < 100) {
+      drawFooter(page, { now: new Date(), fontRegular, fontBold, width });
+      page = pdfDoc.addPage([595, 842]);
+      currentY = height - 50;
+    }
     currentY -= 10;
     page.drawText('RECOMMENDED LAB TESTS', {
       x: 40, y: currentY,
@@ -424,7 +430,6 @@ exports.generateLockedPrescription = async (
     });
     currentY -= 18;
 
-    const labBoxH = validLabTests.length * 22 + 16;
     page.drawRectangle({
       x: 40, y: currentY - labBoxH,
       width: width - 80, height: labBoxH,

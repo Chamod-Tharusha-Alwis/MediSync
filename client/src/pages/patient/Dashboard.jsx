@@ -58,6 +58,8 @@ const Overview = ({ data }) => {
       gradient: 'from-purple-600 to-violet-500',
       shadow: 'rgba(139,92,246,0.35)',
       id: 'upload-lab-results',
+      disabled: true,
+      description: 'Patient upload is unavailable here. Contact your laboratory.',
       action: () => {},
     },
     {
@@ -91,10 +93,13 @@ const Overview = ({ data }) => {
 
       {/* ── Quick Actions ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        {quickActions.map(({ label, icon: Icon, gradient, shadow, id, action }) => (
+        {quickActions.map(({ label, icon: Icon, gradient, shadow, id, action, disabled, description }) => (
           <button
             key={id}
             id={id}
+            disabled={disabled}
+            title={description}
+            aria-label={description ? `${label}. ${description}` : label}
             onClick={action}
             className="glass-card hover-lift group flex flex-col items-center gap-2.5 p-5 cursor-pointer"
             style={{ background: 'rgba(15,23,42,0.58)', backdropFilter: 'blur(16px)' }}

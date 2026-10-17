@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const outbreakAlertSchema = new mongoose.Schema({
+  surveillancePolicy: String,
+  sourceConsultationIds: [{type:mongoose.Schema.Types.ObjectId,ref:'Consultation'}],
   disease: { 
     type: String, 
     required: true 
@@ -25,7 +27,7 @@ const outbreakAlertSchema = new mongoose.Schema({
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Doctor'
+    ref: 'Admin'
   },
   approvedAt: {
     type: Date
@@ -42,6 +44,32 @@ const outbreakAlertSchema = new mongoose.Schema({
     type: String,
     enum: ['unverified', 'confirmed', 'false_positive'],
     default: 'unverified'
+  },
+  dangerLevel: {
+    type: String,
+    enum: ['Low', 'Medium', 'High']
+  },
+  riskLevel: {
+    type: String,
+    enum: ['Normal', 'Low', 'Medium', 'High']
+  },
+  responsePriority: {
+    type: String
+  },
+  isDemoData: {
+    type: Boolean,
+    default: false
+  },
+  isSyntheticUniversityData: {
+    type: Boolean,
+    default: false
+  },
+  datasetVersion: {
+    type: String
+  },
+  isSimulation: {
+    type: Boolean,
+    default: false
   }
 }, { 
   timestamps: true 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from '../api/axiosInstance';
-import { FiSearch, FiAlertTriangle } from 'react-icons/fi';
+import { FiSearch, FiAlertTriangle, FiInfo, FiPlus } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies = [] }) => {
@@ -9,6 +9,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [interactionWarning, setInteractionWarning] = useState(null);
+  const [verificationWarning, setVerificationWarning] = useState(null);
   
   const wrapperRef = useRef(null);
 
@@ -31,8 +32,8 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
 
       setIsLoading(true);
       try {
-        const res = await axios.get(`/drugs/search?q=${query}`);
-        setResults(res.data.data);
+        const res = await axios.get(`/drugs/search?q=${encodeURIComponent(query)}`);
+        setResults(res.data.data || []);
         setIsOpen(true);
       } catch (err) {
         // Fallback to standard list if drug search fails
@@ -66,33 +67,40 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
 
   const checkInteractions = async (selectedDrug) => {
     setInteractionWarning(null);
+    setVerificationWarning(null);
 
     // 1. Allergy check (client-side, instant)
     const allergies = patientAllergies || [];
     const nameLC = (selectedDrug.name || '').toLowerCase();
     const genericLC = (selectedDrug.genericName || '').toLowerCase();
-    if (allergies.some(a => a.toLowerCase() === nameLC || a.toLowerCase() === genericLC)) {
+    if (allergies.some(a => a.toLowerCase() === nameLC || (genericLC && genericLC.includes(a.toLowerCase())))) {
       setInteractionWarning(`⚠ ALLERGY: Patient has a recorded allergy to ${selectedDrug.name}`);
       return;
     }
 
-    // 2. Drug-drug interaction check (backend resolves brand → generic)
+    // 2. Drug-drug interaction & ingredient resolution check
     const currentDrugNames = currentPrescriptions.map(p => p.name).filter(Boolean);
-    if (currentDrugNames.length > 0) {
-      try {
-        const res = await axios.post('/drugs/interactions', {
-          drugs: [selectedDrug.name, ...currentDrugNames]
-        });
-        console.log("INTERACTION CHECK RESPONSE:", res.data);
-        if (res.data.data?.hasInteraction) {
-          const warnings = res.data.data.warnings
-            .map(w => w.description)
-            .join(" | ");
-          setInteractionWarning(`⚠️ DRUG INTERACTION: ${warnings}`);
-        }
-      } catch (error) {
-        // Silently ignore network failures
+    const drugsToCheck = [selectedDrug.name, ...currentDrugNames];
+    try {
+      const res = await axios.post('/drugs/interactions', {
+        drugs: drugsToCheck
+      });
+      const payload = res.data?.data;
+      if (payload?.hasInteraction && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
+        const warningsText = payload.warnings
+          .map(w => w.message || w.description)
+          .filter(Boolean)
+          .join(' | ');
+        setInteractionWarning(`⚠️ MEDICATION SAFETY ALERT: ${warningsText}`);
       }
+      if (payload?.verificationIncomplete && Array.isArray(payload.unresolvedIngredients) && payload.unresolvedIngredients.length > 0) {
+        setVerificationWarning(
+          payload.statusMessage ||
+          `Automated interaction checking is incomplete. Unresolved ingredient(s): ${payload.unresolvedIngredients.join(', ')}.`
+        );
+      }
+    } catch (error) {
+      setVerificationWarning('Automated interaction checking could not be completed due to a service error.');
     }
   };
 
@@ -101,6 +109,23 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
     setIsOpen(false);
     checkInteractions(drug);
     onSelect(drug);
+  };
+
+  const handleAddCustomMedication = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const exactMatch = results.find(d => d.name.toLowerCase() === trimmed.toLowerCase());
+    if (exactMatch) {
+      handleSelect(exactMatch);
+      return;
+    }
+    handleSelect({
+      _id: `custom-${Date.now()}`,
+      name: trimmed,
+      genericName: trimmed,
+      category: 'Unlisted / Free-Text',
+      commonDosages: []
+    });
   };
 
   return (
@@ -114,10 +139,17 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setInteractionWarning(null); // Clear warning on typing
+            setInteractionWarning(null);
+            setVerificationWarning(null);
           }}
-          onFocus={() => { if (query.trim() && results.length > 0) setIsOpen(true); }}
-          placeholder="Search medication name or generic..."
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && query.trim()) {
+              e.preventDefault();
+              handleAddCustomMedication();
+            }
+          }}
+          onFocus={() => { if (query.trim()) setIsOpen(true); }}
+          placeholder="Search medication name or generic (press Enter to add unlisted)..."
           className="w-full pl-10 pr-4 py-2.5 glass-input text-sm text-slate-100 placeholder-slate-500"
           autoComplete="off"
         />
@@ -140,9 +172,20 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
             <p>{interactionWarning}</p>
           </motion.div>
         )}
+        {verificationWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="mt-2 p-3 bg-amber-950/40 border border-amber-500/30 rounded-xl flex items-start space-x-2 text-amber-200 text-sm"
+          >
+            <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
+            <p>{verificationWarning}</p>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {isOpen && results.length > 0 && (
+      {isOpen && (results.length > 0 || query.trim().length > 0) && (
         <div className="absolute top-full left-0 right-0 z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
           {results.map((drug) => (
             <div
@@ -170,6 +213,20 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
               )}
             </div>
           ))}
+          {query.trim().length > 0 && !results.some(d => d.name.toLowerCase() === query.trim().toLowerCase()) && (
+            <div
+              onClick={handleAddCustomMedication}
+              className="p-3 hover:bg-amber-500/10 cursor-pointer transition-colors flex items-center justify-between text-amber-300 text-xs font-semibold"
+            >
+              <span className="flex items-center gap-2">
+                <FiPlus className="w-4 h-4 text-amber-400" />
+                Add "{query.trim()}" as unlisted / custom medication
+              </span>
+              <span className="text-[10px] uppercase px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 rounded">
+                Unverified Ingredient
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

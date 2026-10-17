@@ -1,30 +1,99 @@
 // server/tests/lab.test.js
 // ─────────────────────────────────────────────────────────────────────────────
-// Real-World Integration Tests — Zero-Trust Lab Module
-// No mocks. Real MongoDB, Real Cloudinary, Real ML Engine (localhost:5001).
+// Zero-Trust Lab Module — isolated Atlas fixtures and in-memory Cloudinary.
 // ─────────────────────────────────────────────────────────────────────────────
+
+throw new Error('Phase 5X-B quarantine: migrated lab suite awaits separate execution approval and final static safety review.');
+
+require('./helpers/qaEnvironment');
+const qa = require('./helpers/ownedFixtures');
+global.__MEDISYNC_QA_FREEZE = qa.freeze;
+jest.mock('uuid', () => ({ v4: () => require('crypto').randomUUID() }));
+jest.mock('node-vault', () => () => { throw new Error('Vault initialization is prohibited in the laboratory suite'); });
 
 const path     = require('path');
 const fs       = require('fs');
 const crypto   = require('crypto');
+const { Writable } = require('stream');
+const axios    = require('axios');
+const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
 const jwt      = require('jsonwebtoken');
 const request  = require('supertest');
 const express  = require('express');
-
-// ── Load environment variables ───────────────────────────────────────────────
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { createOwnedHttpServer } = require('./helpers/ownedHttpServer');
 
 // Set global encryption key BEFORE models are required
 // (mongoose-field-encryption reads this at require-time)
 global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+global.ENCRYPTION_KEYS = { "1": process.env.ENCRYPTION_KEY };
+global.ACTIVE_KEY_VERSION = 1;
+
+// ── In-memory Cloudinary mock (preserves real AES-256-GCM envelope encryption/decryption) ─
+const inMemoryCloudinaryBlobs = new Map();
+const isolationReceipt = { cloudinaryUploads: 0, cloudinaryReads: 0, cloudinaryRejectedReads: 0, cleanupCycles: [], final: null };
+const isolationPath = path.resolve(__dirname, `../../scratch/phase5x-evidence/${qa.owner}-lab-isolation.json`);
+const saveIsolation = () => fs.writeFileSync(isolationPath, JSON.stringify(isolationReceipt, null, 2));
+const origUploadStream = cloudinary.uploader.upload_stream.bind(cloudinary.uploader);
+const origAxiosGet = axios.get.bind(axios);
+const originalCloudinaryConfig = { ...cloudinary.config() };
+
+function installCloudinaryInMemoryMock() {
+  cloudinary.config({ cloud_name: 'medisync-test-mock', api_key: 'qa-placeholder', api_secret: 'qa-placeholder', secure: true });
+  cloudinary.uploader.upload_stream = function (_options, callback) {
+    const chunks = [];
+    const writable = new Writable({
+      write(chunk, _encoding, next) {
+        chunks.push(Buffer.from(chunk));
+        next();
+      }
+    });
+    writable.on('finish', () => {
+      isolationReceipt.cloudinaryUploads++;
+      const blob = Buffer.concat(chunks);
+      const publicId = `medisync/lab-reports/test-blob-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const secureUrl = `https://res.cloudinary.com/medisync-test-mock/raw/authenticated/v1/${publicId}`;
+      inMemoryCloudinaryBlobs.set(publicId, blob);
+      inMemoryCloudinaryBlobs.set(secureUrl, blob);
+      callback(null, {
+        secure_url: secureUrl,
+        public_id: publicId
+      });
+    });
+    return writable;
+  };
+
+  axios.get = async function (url, config) {
+    const urlStr = String(url || '');
+    const parsed = new URL(urlStr);
+    if (parsed.hostname === 'res.cloudinary.com') {
+      for (const [key, blob] of inMemoryCloudinaryBlobs.entries()) {
+        if (urlStr === key || decodeURIComponent(parsed.pathname).endsWith(`/${key}`)) {
+          isolationReceipt.cloudinaryReads++;
+          return { status: 200, data: Buffer.from(blob) };
+        }
+      }
+    }
+    isolationReceipt.cloudinaryRejectedReads++;
+    throw new Error('Unregistered Cloudinary blob or external URL refused by lab mock');
+  };
+}
+
+function restoreCloudinaryInMemoryMock() {
+  cloudinary.uploader.upload_stream = origUploadStream;
+  cloudinary.config(originalCloudinaryConfig);
+  axios.get = origAxiosGet;
+  inMemoryCloudinaryBlobs.clear();
+}
 
 // ── Models ───────────────────────────────────────────────────────────────────
 const Patient      = require('../src/models/Patient');
 const Hospital     = require('../src/models/Hospital');
 const Doctor       = require('../src/models/Doctor');
 const LabTest      = require('../src/models/LabTest');
+const Notification = require('../src/models/Notification');
 const SessionToken = require('../src/models/SessionToken');
+const AuditLog     = require('../src/models/AuditLog');
 
 // ── Build Express app with only lab routes ───────────────────────────────────
 const labRoutes = require('../src/routes/labRoutes');
@@ -34,30 +103,33 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/lab', labRoutes);
+const labHttp = createOwnedHttpServer(app);
+const labRequest = () => {
+  if (!labHttp.server.listening || !labHttp.server.address()) throw new Error('Laboratory HTTP server is not ready');
+  return request(labHttp.server);
+};
+
+const {
+  TEST_DB_NAME,
+  connectAutomatedTestDB,
+  installDestructiveOpGuards
+} = require('../src/config/dbGuard');
+
+installDestructiveOpGuards();
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const JWT_SECRET    = process.env.JWT_SECRET;
-const TEST_NIC      = '200012345678';
-const TEST_DB_NAME  = 'medisync_test_lab';
-
-// Robust parsing to inject the test database name into the MONGO_URI string
-const getTestUri = (uri, dbName) => {
-  const qIdx = uri.indexOf('?');
-  const base = qIdx !== -1 ? uri.substring(0, qIdx) : uri;
-  const query = qIdx !== -1 ? uri.substring(qIdx) : '';
-  const protoEnd = base.startsWith('mongodb+srv://') ? 14 : 10;
-  const lastSlash = base.lastIndexOf('/');
-  if (lastSlash > protoEnd) {
-    return base.substring(0, lastSlash) + '/' + dbName + query;
-  } else {
-    return base + '/' + dbName + query;
-  }
-};
-
-const MONGO_TEST_URI = process.env.MONGO_URI_TEST || getTestUri(process.env.MONGO_URI, TEST_DB_NAME);
+const TEST_NIC      = qa.alias('200012345678');
+const OTHER_NIC     = qa.alias('999988887777');
+const EMPTY_NIC     = qa.alias('111122223333');
+const TEST_RUN_ID   = qa.owner;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const nicHash = (nic) => crypto.createHash('sha256').update(nic.trim()).digest('hex');
+
+async function cleanupScopedLabFixtures() {
+  await qa.cleanup();
+}
 
 /**
  * Creates a JWT token AND a matching SessionToken document in the test DB
@@ -67,7 +139,7 @@ async function createAuthToken(payload) {
   const token     = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' });
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-  await SessionToken.create({
+  const sessDoc = await SessionToken.create({
     userId:    payload.id,
     userModel: payload.role === 'patient' ? 'Patient' : payload.role === 'doctor' ? 'Doctor' : 'Hospital',
     tokenHash,
@@ -101,7 +173,7 @@ async function seedPatient(nic, data) {
  * Creates a minimal 1 KB dummy PDF file for upload tests.
  */
 function createDummyPdf() {
-  const dummyPath = path.join(__dirname, 'dummy_report.pdf');
+  const dummyPath = path.resolve(__dirname, `../../scratch/phase5x-evidence/${qa.owner}-dummy_report.pdf`);
   if (!fs.existsSync(dummyPath)) {
     // Minimal valid PDF structure
     const pdfContent =
@@ -129,7 +201,7 @@ function createDummyPdf() {
  */
 async function createLabTestViaApi(token, nic, testName, testCategory) {
   // Step 1: Request consent OTP
-  const otpRes = await request(app)
+  const otpRes = await labRequest()
     .post('/api/lab/hospital/request-otp')
     .set('Authorization', `Bearer ${token}`)
     .send({ patientNic: nic });
@@ -148,7 +220,7 @@ async function createLabTestViaApi(token, nic, testName, testCategory) {
   }
 
   // Step 3: Accept lab test with the OTP
-  const res = await request(app)
+  const res = await labRequest()
     .post('/api/lab/accept')
     .set('Authorization', `Bearer ${token}`)
     .send({
@@ -173,7 +245,7 @@ async function createLabTestViaApi(token, nic, testName, testCategory) {
  */
 async function uploadReportViaApi(token, labTestId) {
   const dummyPdf = createDummyPdf();
-  const res = await request(app)
+  const res = await labRequest()
     .post(`/api/lab/${labTestId}/upload-report`)
     .set('Authorization', `Bearer ${token}`)
     .attach('report', dummyPdf);
@@ -196,33 +268,40 @@ let createdLabTestId;
 // ─────────────────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
-  await mongoose.connect(MONGO_TEST_URI);
-  console.log(`[Test] Connected to test DB: ${MONGO_TEST_URI}`);
-  try {
-    await mongoose.connection.db.dropDatabase();
-    console.log('[Test] Clean startup: Test DB dropped.');
-  } catch (err) {
-    console.warn('[Test] Warning dropping DB during startup:', err.message);
-  }
+  const info = await connectAutomatedTestDB();
+  qa.verifyRuntime(info);
+  installCloudinaryInMemoryMock();
+  if (app.get('io') || require('../src/config/redis').isUsingPersistentRedis()) throw new Error('Unexpected lab broadcast or Redis service');
+  await labHttp.start();
+  isolationReceipt.listener = labHttp.status();
+  saveIsolation();
+  console.log(`[QA_LAB_READY] db=${info.dbName} | role=readWrite@${info.dbName} | native ownership guard active | providers mocked`);
 }, 30000);
 
 afterAll(async () => {
-  await mongoose.connection.db.dropDatabase();
-  console.log('[Test] Test database dropped.');
-  await mongoose.connection.close();
-
-  // Clean up dummy PDF
-  const dummyPath = path.join(__dirname, 'dummy_report.pdf');
-  if (fs.existsSync(dummyPath)) fs.unlinkSync(dummyPath);
+  try { await labHttp.close(); }
+  finally {
+    isolationReceipt.listener = labHttp.status();
+    try { await cleanupScopedLabFixtures(); }
+    finally {
+    restoreCloudinaryInMemoryMock();
+    try { await mongoose.connection.close(); }
+    finally {
+    const dummyPath = path.resolve(__dirname, `../../scratch/phase5x-evidence/${qa.owner}-dummy_report.pdf`);
+    if (fs.existsSync(dummyPath)) fs.unlinkSync(dummyPath);
+    isolationReceipt.final = { mockBlobsRemaining: inMemoryCloudinaryBlobs.size, dummyPdfRemaining: fs.existsSync(dummyPath),
+      cloudinaryMockRestored: cloudinary.uploader.upload_stream === origUploadStream, axiosMockRestored: axios.get === origAxiosGet,
+      redisPersistent: require('../src/config/redis').isUsingPersistentRedis(), socketIoInstalled: Boolean(app.get('io')),
+      mockedEmails: global.__MEDISYNC_CAPTURED_TEST_EMAILS?.length || 0 };
+    require('../src/utils/emailService').__clearCapturedTestEmails();
+    isolationReceipt.final.mockEmailsRemaining = global.__MEDISYNC_CAPTURED_TEST_EMAILS?.length || 0;
+    saveIsolation();
+    }
+    }
+  }
 }, 15000);
 
 beforeEach(async () => {
-  // Clear all model collections cleanly before each test
-  await Patient.deleteMany({});
-  await Hospital.deleteMany({});
-  await Doctor.deleteMany({});
-  await LabTest.deleteMany({});
-  await SessionToken.deleteMany({});
 
   // ── Seed Hospital ──────────────────────────────────────────────────────────
   hospitalDoc = await Hospital.create({
@@ -230,8 +309,8 @@ beforeEach(async () => {
     type:     'government',
     district: 'Colombo',
     address:  '123 Hospital Road, Colombo',
-    regNo:    'HOSP-TEST-001',
-    email:    'hospital-test@medisync.lk',
+    regNo:    qa.alias('HOSP-TEST-001'),
+    email:    qa.alias('hospital-test@medisync.lk'),
     password: 'hashedpassword123',
   });
 
@@ -242,18 +321,18 @@ beforeEach(async () => {
     gender:      'Male',
     district:    'Colombo',
     contactInfo: '0771234567',
-    email:       'kamal.test@medisync.lk',
+    email:       qa.alias('kamal.test@medisync.lk'),
     password:    'hashedpassword456',
   });
 
   // ── Seed Doctor ────────────────────────────────────────────────────────────
   doctorDoc = await Doctor.create({
-    doctorId:       'DOC-TEST-001',
+    doctorId:       qa.alias('DOC-TEST-001'),
     fullName:       'Dr. Nimal Silva',
-    email:          'nimal.doctor@medisync.lk',
+    email:          qa.alias('nimal.doctor@medisync.lk'),
     password:       'hashedpassword789',
     specialization: 'Pathology',
-    licenseNo:      'SLMC-T-0001',
+    licenseNo:      qa.alias('SLMC-T-0001'),
     hospitals:      [hospitalDoc._id],
     role:           'doctor',
   });
@@ -267,7 +346,7 @@ beforeEach(async () => {
     role:       'hospital_admin',      // RBAC match for lab routes
     hospitalId: hospitalDoc._id,      // acceptLabTest: req.user.hospitalId
     userId:     hospitalDoc._id,      // acceptLabTest: req.user.userId
-    email:      'admin@test.medisync.lk',
+    email:      hospitalDoc.email,
   });
 
   patientToken = await createAuthToken({
@@ -280,12 +359,21 @@ beforeEach(async () => {
   doctorToken = await createAuthToken({
     id:     doctorDoc._id,
     role:   'doctor',
-    sub:    'DOC-TEST-001',
+    sub:    qa.alias('DOC-TEST-001'),
     userId: doctorDoc._id,            // doctorRequestOtp: req.user.userId
-    email:  'nimal.doctor@medisync.lk', // doctorRequestOtp: req.user.email
+    email:  qa.alias('nimal.doctor@medisync.lk'), // doctorRequestOtp: req.user.email
     name:   'Dr. Nimal Silva',        // doctorRequestOtp: req.user.name
   });
 }, 15000);
+afterEach(async () => {
+  let cleanupPassed = false;
+  try { await cleanupScopedLabFixtures(); cleanupPassed = true; }
+  finally {
+    inMemoryCloudinaryBlobs.clear();
+    isolationReceipt.cleanupCycles.push({ test: expect.getState().currentTestName, cleanupPassed, mockBlobsRemaining: inMemoryCloudinaryBlobs.size });
+    saveIsolation();
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEST SUITE
@@ -299,7 +387,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
   describe('POST /api/lab/accept', () => {
 
     it('should reject unauthenticated requests', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .send({ nic: TEST_NIC, testName: 'Full Blood Count', otp: '123456' });
 
@@ -307,7 +395,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject patients from creating lab tests', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ nic: TEST_NIC, testName: 'Full Blood Count', otp: '123456' });
@@ -316,7 +404,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject requests with missing required fields', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ nic: TEST_NIC }); // missing testName
@@ -326,7 +414,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject requests without a consent OTP', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({
@@ -341,12 +429,12 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
     it('should reject requests with an invalid OTP', async () => {
       // First request a real OTP
-      await request(app)
+      await labRequest()
         .post('/api/lab/hospital/request-otp')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ patientNic: TEST_NIC });
 
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({
@@ -361,7 +449,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
     it('should reject requests with an expired OTP', async () => {
       // Request OTP
-      await request(app)
+      await labRequest()
         .post('/api/lab/hospital/request-otp')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ patientNic: TEST_NIC });
@@ -374,7 +462,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
         await setOtp(OTP_NS_HOSPITAL + hash, stored, 60); // re-save with expired timestamp
       }
 
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({
@@ -389,7 +477,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
     it('should successfully create a lab test with a valid consent OTP', async () => {
       // Step 1: Request OTP
-      const otpRes = await request(app)
+      const otpRes = await labRequest()
         .post('/api/lab/hospital/request-otp')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ patientNic: TEST_NIC });
@@ -403,7 +491,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(stored).toBeTruthy();
 
       // Step 3: Create lab test with OTP
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/accept')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({
@@ -435,7 +523,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
     it('should return 404 when patient NIC is not registered', async () => {
       // Request OTP for a non-existent NIC should fail at OTP stage
-      const res = await request(app)
+      const res = await labRequest()
         .post('/api/lab/hospital/request-otp')
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ patientNic: '000000000000' });
@@ -457,7 +545,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject upload without a file', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/${createdLabTestId}/upload-report`)
         .set('Authorization', `Bearer ${hospitalToken}`);
 
@@ -468,7 +556,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     it('should encrypt via ML Engine, upload to Cloudinary, and return a secure_url', async () => {
       const dummyPdf = createDummyPdf();
 
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/${createdLabTestId}/upload-report`)
         .set('Authorization', `Bearer ${hospitalToken}`)
         .attach('report', dummyPdf);
@@ -498,14 +586,14 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     }, 45000);
 
     it('should reject unauthenticated OTP requests', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/doctor/request-otp/${createdLabTestId}`);
 
       expect(res.status).toBe(401);
     });
 
     it('should reject patients from requesting OTPs', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/doctor/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`);
 
@@ -513,7 +601,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should successfully send OTP to the patient email (Zero-Trust)', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/doctor/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${doctorToken}`);
 
@@ -536,14 +624,14 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     }, 45000);
 
     it('should reject unauthenticated download requests', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .get(`/api/lab/patient/download/${createdLabTestId}`);
 
       expect(res.status).toBe(401);
     });
 
     it('should reject doctors from downloading patient reports directly', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .get(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${doctorToken}`);
 
@@ -551,7 +639,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject download requests when OTP is missing', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .get(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`);
 
@@ -560,13 +648,13 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject OTPs passed in URL query parameters (?otp=...)', async () => {
-      const getQueryRes = await request(app)
+      const getQueryRes = await labRequest()
         .get(`/api/lab/patient/download/${createdLabTestId}?otp=123456`)
         .set('Authorization', `Bearer ${patientToken}`);
       expect(getQueryRes.status).toBe(400);
       expect(getQueryRes.body.message).toMatch(/must not be passed in URL query parameters/i);
 
-      const postQueryRes = await request(app)
+      const postQueryRes = await labRequest()
         .post(`/api/lab/patient/download/${createdLabTestId}?otp=123456`)
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ otp: '123456' });
@@ -575,7 +663,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject invalid, expired, and replayed OTPs, enforce private/no-store cache headers, and serve the decrypted PDF only with a valid one-time OTP', async () => {
-      const otpReqRes = await request(app)
+      const otpReqRes = await labRequest()
         .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`);
       expect(otpReqRes.status).toBe(200);
@@ -595,7 +683,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
         expiresAt: Date.now() - 5000,
       }, 60);
 
-      const expiredRes = await request(app)
+      const expiredRes = await labRequest()
         .post(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ otp: initialStored.otp });
@@ -603,7 +691,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(expiredRes.body.message).toMatch(/expired/i);
 
       // 2. Request fresh OTP and test wrong OTP
-      await request(app)
+      await labRequest()
         .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`);
 
@@ -612,7 +700,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(stored.otp).toMatch(/^\d{6}$/);
 
       const wrongOtp = stored.otp === '000000' ? '999999' : '000000';
-      const invalidRes = await request(app)
+      const invalidRes = await labRequest()
         .post(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ otp: wrongOtp });
@@ -620,7 +708,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(invalidRes.body.message).toMatch(/Invalid OTP/i);
 
       // 3. Valid OTP download succeeds with private/no-store cache control headers
-      const res = await request(app)
+      const res = await labRequest()
         .post(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ otp: stored.otp })
@@ -635,9 +723,12 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(res.headers['expires']).toBe('0');
       expect(res.body).toBeInstanceOf(Buffer);
       expect(res.body.length).toBeGreaterThan(0);
+      // Reject the controller's summary-PDF fallback: this must be the exact
+      // original PDF after real envelope encryption and decryption.
+      expect(res.body.equals(fs.readFileSync(createDummyPdf()))).toBe(true);
 
       // 4. Replayed OTP is rejected immediately
-      const replayRes = await request(app)
+      const replayRes = await labRequest()
         .post(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`)
         .send({ otp: stored.otp });
@@ -645,7 +736,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       expect(replayRes.body.message).toMatch(/No active OTP found|already been used/i);
 
       // 5. Concurrent single-use OTP check: 5 simultaneous requests with a fresh OTP -> only 1 succeeds
-      await request(app)
+      await labRequest()
         .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${patientToken}`);
       const freshStored = await getOtp(otpKey);
@@ -653,7 +744,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
       const concurrentResults = await Promise.all(
         Array.from({ length: 5 }, () =>
-          request(app)
+          labRequest()
             .post(`/api/lab/patient/download/${createdLabTestId}`)
             .set('Authorization', `Bearer ${patientToken}`)
             .send({ otp: freshStored.otp })
@@ -667,29 +758,29 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
 
     it('should return 404 for a lab test that does not belong to the patient', async () => {
       // Create a different patient with its own nic_bi blind index
-      const otherPatient = await seedPatient('999988887777', {
+      const otherPatient = await seedPatient(OTHER_NIC, {
         fullName:    'Other Person',
         dateOfBirth: new Date('1990-01-01'),
         gender:      'Female',
         district:    'Kandy',
         contactInfo: '0779999999',
-        email:       'other@medisync.lk',
+        email:       qa.alias('other@medisync.lk'),
         password:    'hashed',
       });
 
       const otherToken = await createAuthToken({
         id:   otherPatient._id,
         role: 'patient',
-        sub:  '999988887777',
-        nic:  '999988887777',
+        sub:  OTHER_NIC,
+        nic:  OTHER_NIC,
       });
 
-      const otpAttempt = await request(app)
+      const otpAttempt = await labRequest()
         .post(`/api/lab/patient/request-otp/${createdLabTestId}`)
         .set('Authorization', `Bearer ${otherToken}`);
       expect(otpAttempt.status).toBe(404);
 
-      const res = await request(app)
+      const res = await labRequest()
         .get(`/api/lab/patient/download/${createdLabTestId}`)
         .set('Authorization', `Bearer ${otherToken}`);
 
@@ -710,7 +801,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should return lab test status without authentication and strip all PII/encryption fields', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .get(`/api/lab/public/${createdLabTestId}/status`);
 
       expect(res.status).toBe(200);
@@ -727,7 +818,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should return 404 for a non-existent lab test ID', async () => {
-      const res = await request(app).get('/api/lab/public/INVALID-123/status');
+      const res = await labRequest().get('/api/lab/public/INVALID-123/status');
 
       expect(res.status).toBe(404);
     });
@@ -745,7 +836,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should return all lab tests for the authenticated patient', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .get('/api/lab/patient/my-tests')
         .set('Authorization', `Bearer ${patientToken}`);
 
@@ -755,24 +846,24 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should return empty array for a patient with no tests', async () => {
-      const emptyPatient = await seedPatient('111122223333', {
+      const emptyPatient = await seedPatient(EMPTY_NIC, {
         fullName:    'Empty Patient',
         dateOfBirth: new Date('1995-01-01'),
         gender:      'Male',
         district:    'Galle',
         contactInfo: '0770000000',
-        email:       'empty@medisync.lk',
+        email:       qa.alias('empty@medisync.lk'),
         password:    'hashed',
       });
 
       const emptyToken = await createAuthToken({
         id:   emptyPatient._id,
         role: 'patient',
-        sub:  '111122223333',
-        nic:  '111122223333',
+        sub:  EMPTY_NIC,
+        nic:  EMPTY_NIC,
       });
 
-      const res = await request(app)
+      const res = await labRequest()
         .get('/api/lab/patient/my-tests')
         .set('Authorization', `Bearer ${emptyToken}`);
 
@@ -793,7 +884,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should allow hospital admin to update status', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .patch(`/api/lab/${createdLabTestId}/status`)
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ status: 'sample_collected', note: 'Sample taken at 10am' });
@@ -808,7 +899,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
     });
 
     it('should reject invalid status values', async () => {
-      const res = await request(app)
+      const res = await labRequest()
         .patch(`/api/lab/${createdLabTestId}/status`)
         .set('Authorization', `Bearer ${hospitalToken}`)
         .send({ status: 'invalid_status' });
@@ -820,7 +911,7 @@ describe('Zero-Trust Lab Module — Integration Tests', () => {
       const statuses = ['sample_collected', 'processing', 'report_ready'];
 
       for (const status of statuses) {
-        const res = await request(app)
+        const res = await labRequest()
           .patch(`/api/lab/${createdLabTestId}/status`)
           .set('Authorization', `Bearer ${hospitalToken}`)
           .send({ status });

@@ -99,6 +99,14 @@ const PharmacyDirectory = () => {
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1.5 select-none">
+                        {(pharm.isSynthetic || pharm.syntheticLabel) && (
+                          <span
+                            data-testid="synthetic-pharmacy-badge"
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                          >
+                            {pharm.syntheticLabel || 'Demo Pharmacy — Synthetic Profile'}
+                          </span>
+                        )}
                         {pharm.isActive && (
                           <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 text-[9px] font-bold">
                             <ShieldCheck className="w-3 h-3 text-emerald-400" />

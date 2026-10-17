@@ -1,7 +1,17 @@
 require('dotenv').config();
 
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error('FATAL: ENCRYPTION_KEY environment variable is required to run seedUsers.js');
+}
+if (!process.env.MONGO_URI) {
+  throw new Error('FATAL: MONGO_URI environment variable is required to run seedUsers.js');
+}
+if (!process.env.SEED_TEST_PASSWORD) {
+  throw new Error('FATAL: SEED_TEST_PASSWORD environment variable is required to run seedUsers.js');
+}
+
 // Ensure global encryption keys are available for Mongoose versionedEncryption plugin
-global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '7c3f9a2e8b1d4f6a5c0d9e8b7a6f5c4d';
+global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 global.ENCRYPTION_KEYS = { "1": global.ENCRYPTION_KEY };
 global.ACTIVE_KEY_VERSION = 1;
 
@@ -15,14 +25,42 @@ const PharmacyStaff = require('../models/PharmacyStaff');
 const Hospital = require('../models/Hospital');
 const Admin = require('../models/Admin');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/medisync';
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
+
 const nicHash = (nic) => crypto.createHash('sha256').update(nic.trim()).digest('hex');
-const TEST_PASSWORD = process.env.SEED_TEST_PASSWORD || 'MediSync#2026!Pass';
+const TEST_PASSWORD = process.env.SEED_TEST_PASSWORD;
 
 const seedUsers = async () => {
   try {
-    await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB');
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-seed) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-seed')) {
+      throw new Error(
+        `[SAFEGUARD] Seeding "${PROD_DB_NAME}" requires explicit --confirm-production-seed flag.`
+      );
+    }
+
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
+    console.log(`Connected to MongoDB [db=${mongoose.connection.name}]`);
 
     const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
 
@@ -54,26 +92,34 @@ const seedUsers = async () => {
     try {
       const patNIC = '981234567V';
       const patEmail = 'codmobilechamod2025@gmail.com';
+      const patBi = nicHash(patNIC);
 
-      // Clean up any existing records for this email or NIC to avoid index conflicts
-      await Patient.deleteMany({ $or: [{ email: patEmail }, { nic: patNIC }] });
+      let doc = await Patient.findOne({
+        $or: [{ email: patEmail }, { patientNic_bi: patBi }]
+      });
 
-      const doc = await new Patient({
-        nic: patNIC,
-        fullName: 'John Doe',
-        password: hashedPassword,
-        dateOfBirth: new Date('1990-01-01'),
-        gender: 'Male',
-        district: 'Colombo',
-        contactInfo: '0771234567',
-        email: patEmail
-      }).save();
-      
+      if (!doc) {
+        doc = await new Patient({
+          nic: patNIC,
+          fullName: 'John Doe',
+          password: hashedPassword,
+          dateOfBirth: new Date('1990-01-01'),
+          gender: 'Male',
+          district: 'Colombo',
+          contactInfo: '0771234567',
+          email: patEmail
+        }).save();
+        console.log(`✅ Patient created!`);
+      } else {
+        doc.password = hashedPassword;
+        await doc.save();
+        console.log(`ℹ️ Patient updated non-destructively!`);
+      }
+
       await Patient.collection.updateOne(
         { _id: doc._id },
-        { $set: { patientNic_bi: nicHash(patNIC) } }
+        { $set: { patientNic_bi: patBi, isDemoData: true, isSynthetic: true } }
       );
-      console.log(`✅ Patient created!`);
       console.log(`   NIC     : ${patNIC}`);
       console.log(`   Email   : ${patEmail}`);
     } catch (e) {

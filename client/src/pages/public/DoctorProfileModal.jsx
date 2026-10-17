@@ -35,13 +35,21 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
 
   const isPatient = localStorage.getItem('role') === 'patient';
 
-  // Lock body scroll
+  // Lock body scroll and handle Escape key dismissal (DEF-A11Y-01)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [onClose]);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -101,6 +109,9 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
 
       {/* Modal Content */}
       <motion.div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doctor-modal-title"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
@@ -111,7 +122,9 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
         {/* Top Header Panel */}
         <div className="bg-slate-950/50 p-6 border-b border-white/5 relative">
           <button 
+            type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="absolute top-5 right-5 p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors border border-white/5"
           >
             <X className="w-4 h-4" />
@@ -126,10 +139,18 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
               )}
             </div>
             <div className="text-left">
-              <h2 className="text-xl font-bold text-white mb-0.5">{doctor.fullName}</h2>
+              <h2 id="doctor-modal-title" className="text-xl font-bold text-white mb-0.5">{doctor.fullName}</h2>
               <p className="text-blue-400 font-bold text-sm">{doctor.specialization || 'General Practitioner'}</p>
               
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {(doctor.isSynthetic || doctor.syntheticLabel) && (
+                  <span
+                    data-testid="modal-synthetic-doctor-badge"
+                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                  >
+                    {doctor.syntheticLabel || 'Demo Doctor — Synthetic Profile'}
+                  </span>
+                )}
                 <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-bold text-amber-400">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                   <span>{doctor.averageRating > 0 ? doctor.averageRating : 'New'}</span>

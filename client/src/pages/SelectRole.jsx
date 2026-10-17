@@ -83,11 +83,22 @@ const SelectRole = () => {
           return (
             <div
               key={role.id}
+              tabIndex={0}
+              role="button"
+              aria-label={role.title}
+              data-testid={`role-card-${role.id}`}
               onClick={() => navigate(role.route)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(role.route);
+                }
+              }}
               className={`
                 relative overflow-hidden cursor-pointer rounded-2xl p-6
                 bg-slate-900/40 backdrop-blur-xl border border-white/5 ${role.border}
                 transition-all duration-300 group flex flex-col h-full shadow-lg hover:-translate-y-1
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
               `}
             >
               {/* Background gradient on hover */}

@@ -35,6 +35,9 @@ const Dispense = () => {
   const [selectedRx, setSelectedRx] = useState(null);
   const [isAlt, setIsAlt] = useState(false);
   const [altDetails, setAltDetails] = useState('');
+  const [inventory, setInventory] = useState([]);
+  const [dispenseItems, setDispenseItems] = useState([]);
+  const [checkoutKey, setCheckoutKey] = useState('');
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -58,25 +61,39 @@ const Dispense = () => {
     }
   };
 
-  const openDispenseModal = (rx) => {
-    setIsAlt(false);
-    setAltDetails('');
-    setSelectedRx(rx);
-    setShowDispenseModal(true);
+  const openDispenseModal = async (rx) => {
+    try {
+      const { data } = await api.get('/pharmacy/inventory');
+      const stock = data.data || [];
+      setInventory(stock);
+      const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName }];
+      setDispenseItems(meds.map(m => {
+        const matches = stock.filter(i => i.drugName.trim().toLowerCase() === m.name.trim().toLowerCase());
+        return { prescribed: m.name, inventoryItemId: matches.length === 1 ? matches[0]._id : '', quantity: '' };
+      }));
+      setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
+      setIsAlt(false); setAltDetails(''); setSelectedRx(rx); setShowDispenseModal(true);
+    } catch (_) { toast.error('Cannot load pharmacy inventory.'); }
   };
 
   const confirmDispense = async () => {
     if (!selectedRx) return;
     if (isAlt && !altDetails.trim()) return toast.error('Please describe the alternative medication dispensed.');
+    const items = dispenseItems.map(item => {
+      const inv = inventory.find(i => i._id === item.inventoryItemId);
+      return { inventoryItemId: inv?._id, drugName: inv?.drugName, unit: inv?.unit, quantityDispensed: Number(item.quantity) };
+    });
+    if (items.some(i => !i.inventoryItemId || !Number.isSafeInteger(i.quantityDispensed) || i.quantityDispensed <= 0)) return toast.error('Select inventory and enter a positive whole quantity for every medicine.');
     setDispensing(true);
     try {
       await api.post('/pharmacy/dispense', {
         prescriptionId: selectedRx.prescriptionId,
         patientNic: selectedRx.patientNic,
+        items,
         isAlternativeDispensed: isAlt,
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
-      });
-      toast.success('Prescription dispensed! Patient notification email sent.');
+      }, { headers: { 'Idempotency-Key': checkoutKey } });
+      toast.success('Prescription dispensing recorded.');
       setPrescriptions(prev => prev.filter(p => p.prescriptionId !== selectedRx.prescriptionId));
       setShowDispenseModal(false);
     } catch (err) {
@@ -201,6 +218,20 @@ const Dispense = () => {
               <span className="text-[10px] uppercase font-bold text-slate-500 block">Medication Name</span>
               <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
             </div>
+
+            {dispenseItems.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <label className={labelClass} htmlFor={`stock-${index}`}>Inventory for {item.prescribed}</label>
+                <select id={`stock-${index}`} className="glass-input w-full" value={item.inventoryItemId}
+                  disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, inventoryItemId:e.target.value} : m))}>
+                  <option value="">Select medicine</option>
+                  {inventory.filter(i => isAlt || i.drugName.trim().toLowerCase() === item.prescribed.trim().toLowerCase()).map(i => <option key={i._id} value={i._id}>{i.drugName} — {i.stock} {i.unit}</option>)}
+                </select>
+                <label className={labelClass} htmlFor={`qty-${index}`}>Quantity in inventory units</label>
+                <input id={`qty-${index}`} type="number" min="1" step="1" className="glass-input w-full" value={item.quantity}
+                  disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, quantity:e.target.value} : m))} />
+              </div>
+            ))}
 
             {/* Alternative Toggle Box */}
             <label className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10 transition-all select-none">
@@ -333,6 +364,12 @@ const ManualDispenseOTC = () => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [lastReceipt, setLastReceipt] = useState(null);
+  const [otcKey, setOtcKey] = useState(() => {
+    const existing = sessionStorage.getItem('medisync:otc-checkout');
+    const key = existing || crypto.randomUUID();
+    sessionStorage.setItem('medisync:otc-checkout', key);
+    return key;
+  });
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const updateMed = (index, field, value) =>
@@ -354,8 +391,11 @@ const ManualDispenseOTC = () => {
         consultationRef: consultationRef.trim() || undefined,
         medications: validMeds,
         notes: notes.trim(),
-      });
+      }, { headers: { 'Idempotency-Key': otcKey } });
       toast.success(`OTC dispensation recorded successfully.`);
+      const nextKey = crypto.randomUUID();
+      sessionStorage.setItem('medisync:otc-checkout', nextKey);
+      setOtcKey(nextKey);
       setLastReceipt({
         ...res.data.data,
         medications: validMeds,

@@ -21,6 +21,7 @@ const {
   recordOtpRequestSent,
 } = require('../config/redis');
 const { parseDeviceModel } = require('../utils/deviceParser');
+const { fields: profileFields, projectProfile, profileSelection } = require('../utils/patientProfilePolicy');
 
 
 exports.registerPatient = async (req, res) => {
@@ -148,31 +149,36 @@ const resolveAuthenticatedPatientNic = async (reqUser) => {
 };
 
 exports.getPatient = async (req, res) => {
+  const AuditLog = require('../models/AuditLog');
+  const audit = outcome => AuditLog.create({actorId:String(req.user?.id || 'unknown'),actorRole:req.user?.role || 'unknown',
+    action:`patient_profile:${outcome}`,accessedNic:'N/A',deviceModel:'N/A'});
+  const deny = async () => { await audit('denied'); return res.status(403).json({error:'Access denied'}); };
   try {
-    const { nic } = req.params;
-    const normalizedNic = nic.toUpperCase();
-    
-    // Role-based access control against authenticated patient record
-    if (req.user.role === 'patient') {
+    const normalizedNic = String(req.params.nic || '').trim().toUpperCase();
+    const role = req.user?.role;
+    if (!/^([0-9]{9}[VX]|[0-9]{12})$/.test(normalizedNic) || !profileFields[role]) return await deny();
+    if (role === 'patient') {
       const authNic = await resolveAuthenticatedPatientNic(req.user);
-      if (!authNic || authNic !== normalizedNic) {
-        return res.status(403).json({ error: 'Access denied to other patient profiles' });
-      }
+      if (!authNic || authNic !== normalizedNic) return await deny();
+    } else if (role === 'doctor') {
+      const hash = crypto.createHash('sha256').update(normalizedNic).digest('hex');
+      const authorization = await verifyDoctorPatientAuthorization(req, normalizedNic, hash);
+      if (!authorization.authorized) return await deny();
+    } else {
+      // Account-management projection only, consistent with /admin/users.
+      // Super-admin status is checked against the stored account, never the NIC.
+      const admin = await Admin.findById(req.user.id).select('_id role isActive isSuperAdmin').lean();
+      if (!admin || admin.isActive !== true || !['admin','super_admin'].includes(admin.role) ||
+          (role === 'super_admin' && admin.isSuperAdmin !== true)) return await deny();
     }
-
-    const patient = await Patient.findOne({ nic: normalizedNic }).select('-password');
+    const patient = await Patient.findOne({ nic: normalizedNic, ...(role === 'patient' ? {_id:req.user.id} : {}) }).select(profileSelection(role));
     if (!patient) return res.status(404).json({ error: 'Patient not found' });
-    
-    const patientObj = stripEncryptionMetadata(patient.toObject());
-    
-    // Mask NIC in response if not the patient themselves or doctor
-    if (req.user.role !== 'patient' && req.user.role !== 'doctor') {
-      patientObj.nic = patientObj.nic.replace(/^(.{4})(.*)(.{2})$/, '$1****$3');
-    }
-
-    res.json({ data: patientObj });
+    patient.decryptFieldsSync();
+    await audit(role === 'admin' || role === 'super_admin' ? 'account_management_allowed' : 'clinical_allowed');
+    return res.json({ data: projectProfile(patient, role) });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch patient', details: error.message });
+    // Audit/authorization failures must not return a partially loaded profile.
+    return res.status(503).json({ error: 'Profile access unavailable' });
   }
 };
 
@@ -208,13 +214,168 @@ exports.updatePatient = async (req, res) => {
   }
 };
 
+const Admin = require('../models/Admin');
+const mongoose = require('mongoose');
+
+const NIC_FORMAT_REGEX = /^([0-9]{9}[VX]|[0-9]{12})$/;
+const ACTIVE_CONSULTATION_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+const verifyDoctorPatientAuthorization = async (req, targetNic, targetHash) => {
+  if (!req.user || req.user.role !== 'doctor' || !req.user.id) {
+    return { authorized: false, reason: 'invalid_actor' };
+  }
+
+  // 1. Verify requesting doctor account is active and verified
+  const doctor = await Doctor.findById(req.user.id).select('_id isActive isVerified role').lean();
+  if (!doctor || doctor.role !== 'doctor' || doctor.isActive !== true || doctor.isVerified !== true) {
+    return { authorized: false, reason: 'doctor_inactive_or_unverified' };
+  }
+
+  // 2. Resolve target patient unambiguously
+  const matchingPatients = await Patient.find({
+    $or: [{ nic: targetNic }, { patientNic_bi: targetHash }]
+  })
+    .select('_id nic patientNic_bi reportedDoctors')
+    .lean();
+
+  if (matchingPatients.length !== 1) {
+    return { authorized: false, reason: matchingPatients.length === 0 ? 'patient_not_found' : 'ambiguous_patient' };
+  }
+  const targetPatient = matchingPatients[0];
+
+  // 3. Deny immediately if the patient has reported/revoked this doctor
+  const isRevokedByPatient = Array.isArray(targetPatient.reportedDoctors) &&
+    targetPatient.reportedDoctors.some(
+      (r) => r && String(r.doctorId) === String(req.user.id) && r.status !== 'dismissed'
+    );
+  if (isRevokedByPatient) {
+    return { authorized: false, reason: 'relationship_revoked_by_patient' };
+  }
+
+  // 4. If an explicit patient-access consent token header is provided, validate it strictly (fail closed, never fall back)
+  const primaryConsent = req.headers['x-patient-access'];
+  const aliasConsent = req.headers['x-patient-access-token'];
+  if (primaryConsent !== undefined && aliasConsent !== undefined && primaryConsent !== aliasConsent) {
+    return { authorized:false, reason:'ambiguous_consent_headers' };
+  }
+  const rawConsentToken = primaryConsent !== undefined ? primaryConsent : aliasConsent;
+  if (rawConsentToken !== undefined) {
+    const tokenStr = String(rawConsentToken || '').trim();
+    if (!tokenStr) {
+      return { authorized: false, reason: 'empty_consent_token' };
+    }
+    let decodedConsent;
+    try {
+      decodedConsent = jwt.verify(tokenStr, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+    } catch (err) {
+      return { authorized: false, reason: 'expired_or_invalid_consent_token' };
+    }
+
+    // Fail closed if any required claim (type, nic, sessionId, requesterId, requesterRole, exp) is missing or mismatched
+    if (
+      !decodedConsent ||
+      decodedConsent.type !== 'patient-access' ||
+      !decodedConsent.nic ||
+      String(decodedConsent.nic).trim().toUpperCase() !== targetNic ||
+      !decodedConsent.sessionId ||
+      !mongoose.Types.ObjectId.isValid(String(decodedConsent.sessionId)) ||
+      !decodedConsent.requesterId ||
+      !decodedConsent.requesterRole ||
+      typeof decodedConsent.exp !== 'number'
+    ) {
+      return { authorized: false, reason: 'ambiguous_or_incomplete_consent_token' };
+    }
+
+    if (String(decodedConsent.requesterId) !== String(req.user.id)) {
+      return { authorized: false, reason: 'consent_token_actor_mismatch' };
+    }
+    if (decodedConsent.requesterRole !== 'doctor') {
+      return { authorized: false, reason: 'consent_token_role_mismatch' };
+    }
+
+    const OTPSession = require('../models/OTPSession');
+    const otpSession = await OTPSession.findById(decodedConsent.sessionId).lean();
+
+    // Fail closed if session is missing, not patient-access, unused, or if any consent metadata field is missing on older sessions
+    if (
+      !otpSession ||
+      otpSession.purpose !== 'patient-access' ||
+      otpSession.used !== true ||
+      String(otpSession.userId) !== String(targetPatient._id) ||
+      !otpSession.metadata ||
+      !otpSession.metadata.requesterId ||
+      String(otpSession.metadata.requesterId) !== String(req.user.id) ||
+      otpSession.metadata.requesterRole !== 'doctor' ||
+      !otpSession.metadata.accessNic ||
+      String(otpSession.metadata.accessNic).trim().toUpperCase() !== targetNic ||
+      !otpSession.metadata.accessExpiresAt ||
+      !Number.isFinite(new Date(otpSession.metadata.accessExpiresAt).getTime()) ||
+      new Date(otpSession.metadata.accessExpiresAt) <= new Date() ||
+      otpSession.metadata.revoked === true
+    ) {
+      return { authorized: false, reason: 'consent_session_missing_metadata_revoked_or_expired' };
+    }
+
+    return { authorized: true, mode: 'patient_otp_consent', patientId: targetPatient._id };
+  }
+
+  // 5. Otherwise, require an active, non-expired, non-revoked clinical consultation relationship
+  const consultations = await Consultation.find({
+    doctorId: req.user.id,
+    $or: [
+      { patientId: targetPatient._id },
+      { nicHash: targetHash },
+      { patientNic_bi: targetHash }
+    ]
+  })
+    .select('_id status createdAt isFollowUpRequired followUpDate')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!consultations || consultations.length === 0) {
+    return { authorized: false, reason: 'missing_relationship' };
+  }
+
+  const nonRevokedConsultations = consultations.filter(
+    (c) => c && c.status !== 'revoked' && c.status !== 'cancelled'
+  );
+  if (nonRevokedConsultations.length === 0) {
+    return { authorized: false, reason: 'revoked_consultation_relationship' };
+  }
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const activeCutoff = new Date(now.getTime() - ACTIVE_CONSULTATION_WINDOW_MS);
+
+  const hasActiveConsultation = nonRevokedConsultations.some((c) => {
+    if (c.followUpDate && new Date(c.followUpDate) < startOfToday) {
+      return false;
+    }
+    if (c.isFollowUpRequired && c.followUpDate && new Date(c.followUpDate) >= startOfToday) {
+      return true;
+    }
+    return c.createdAt && new Date(c.createdAt) >= activeCutoff;
+  });
+
+  if (!hasActiveConsultation) {
+    return { authorized: false, reason: 'expired_consultation_relationship' };
+  }
+
+  return { authorized: true, mode: 'active_clinical_consultation', patientId: targetPatient._id };
+};
+
+exports.verifyDoctorPatientAuthorization = verifyDoctorPatientAuthorization;
+
 exports.getTimeline = async (req, res) => {
   try {
     // ── Primary identity: Patient._id from the JWT (never encrypted) ──────
     const patientMongoId = req.user.id;
 
-    // ── Authorization against authenticated patient record ───────────────
+    // ── Authorization against authenticated patient record or doctor relationship ──
     const nicParam = req.params.nic?.trim().toUpperCase();
+    if (!nicParam || !NIC_FORMAT_REGEX.test(nicParam)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     let targetNic  = nicParam;
     if (req.user.role === 'patient') {
       const authNic = await resolveAuthenticatedPatientNic(req.user);
@@ -222,6 +383,12 @@ exports.getTimeline = async (req, res) => {
         return res.status(403).json({ error: 'Access denied' });
       }
       targetNic = authNic;
+    } else if (req.user.role === 'doctor') {
+      const targetHashForAuth = crypto.createHash('sha256').update(targetNic).digest('hex');
+      const authCheck = await verifyDoctorPatientAuthorization(req, targetNic, targetHashForAuth);
+      if (!authCheck.authorized) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     const targetHash = crypto.createHash('sha256').update(targetNic || '').digest('hex');
@@ -333,20 +500,35 @@ exports.getTimeline = async (req, res) => {
 
 exports.getPrescriptions = async (req, res) => {
   try {
-    const nicParam = (req.params.nic || '').trim().toUpperCase();
+    const nicParam = String(req.params.nic || '').trim().toUpperCase();
+    if (!nicParam || !NIC_FORMAT_REGEX.test(nicParam)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     let targetNic = nicParam;
-    
-    // Authorization check against authenticated patient record
+
     if (req.user.role === 'patient') {
       const authNic = await resolveAuthenticatedPatientNic(req.user);
-      if (!authNic || (nicParam && authNic !== nicParam)) {
+      if (!authNic || authNic !== nicParam) {
         return res.status(403).json({ error: 'Access denied' });
       }
       targetNic = authNic;
+    } else if (req.user.role === 'doctor') {
+      const targetHashForAuth = crypto.createHash('sha256').update(targetNic).digest('hex');
+      const authCheck = await verifyDoctorPatientAuthorization(req, targetNic, targetHashForAuth);
+      if (!authCheck.authorized) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+      const adminDoc = await Admin.findById(req.user.id).select('_id isActive role').lean();
+      if (!adminDoc || adminDoc.isActive === false) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
-    
+
     const myPrescriptions = await Prescription.find({
       $or: [
         { nicHash: targetHash },
@@ -368,7 +550,7 @@ exports.getPrescriptions = async (req, res) => {
 
     res.json({ data: cleanedPrescriptions });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch prescriptions', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch prescriptions' });
   }
 };
 
@@ -451,13 +633,20 @@ exports.requestPatientAccess = async (req, res) => {
       used: false
     });
 
+    const normalizedAccessNic = String(patientNic || '').trim().toUpperCase();
     const otpSession = await OTPSession.create({
       userId: patient._id,
       userModel: 'Patient',
       otp: hashedOtp,
       expiresAt,
       purpose: 'patient-access',
-      metadata: { requesterRole, requesterName, accessNic: patientNic }
+      metadata: {
+        requesterId: String(req.user.id),
+        requesterRole: req.user.role || requesterRole,
+        requesterName,
+        accessNic: normalizedAccessNic,
+        revoked: false
+      }
     });
 
     const emailResult = await emailService.sendOTPEmail(
@@ -518,6 +707,26 @@ exports.verifyPatientAccess = async (req, res) => {
       return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
+    // Fail closed if older OTPSession is missing required metadata bindings
+    if (
+      !otpRecord.metadata ||
+      !otpRecord.metadata.requesterId ||
+      String(otpRecord.metadata.requesterId) !== String(req.user.id) ||
+      !otpRecord.metadata.requesterRole ||
+      otpRecord.metadata.requesterRole !== req.user.role ||
+      !otpRecord.metadata.accessNic
+    ) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const normalizedPatientNic = String(patientNic || '').trim().toUpperCase();
+    if (
+      !normalizedPatientNic ||
+      String(otpRecord.metadata.accessNic).trim().toUpperCase() !== normalizedPatientNic
+    ) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     const patientAccessKey = 'patient-access:' + String(otpRecord.userId);
     const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
     if ((await getAttempts(patientAccessKey)) >= 5 || persistedFailures >= 5) {
@@ -542,9 +751,17 @@ exports.verifyPatientAccess = async (req, res) => {
       return res.status(401).json({ error: 'Incorrect OTP' });
     }
 
+    const accessGrantedAt = new Date();
+    const accessExpiresAt = new Date(accessGrantedAt.getTime() + 15 * 60 * 1000);
     const claimedOtp = await OTPSession.findOneAndUpdate(
       { _id: otpRecord._id, used: false },
-      { $set: { used: true } },
+      {
+        $set: {
+          used: true,
+          'metadata.accessGrantedAt': accessGrantedAt,
+          'metadata.accessExpiresAt': accessExpiresAt
+        }
+      },
       { returnDocument: 'after' }
     );
     if (!claimedOtp) {
@@ -554,14 +771,21 @@ exports.verifyPatientAccess = async (req, res) => {
     await clearAttempts('patient:' + sessionId);
     await clearAttempts(patientAccessKey);
 
-    // Issue a temporary 15-min patient-access token
+    // Issue a temporary 15-min patient-access token bound to the requesting actor and OTP session
     const accessToken = jwt.sign(
-      { type: 'patient-access', nic: patientNic, grantedAt: Date.now() },
+      {
+        type: 'patient-access',
+        nic: normalizedPatientNic,
+        requesterId: String(req.user.id),
+        requesterRole: req.user.role,
+        sessionId: String(otpRecord._id),
+        grantedAt: accessGrantedAt.getTime()
+      },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
-    return res.status(200).json({ accessToken, patientNic });
+    return res.status(200).json({ accessToken, patientNic: normalizedPatientNic });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to verify access', details: error.message });
   }

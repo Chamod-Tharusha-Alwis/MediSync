@@ -19,10 +19,13 @@ router.post('/login', loginLimiter, patientController.loginPatient);
 // Patient data routes
 // Self-service profile update — MUST be before /:nic wildcard
 router.put('/profile', protect(['patient']), patientController.updatePatientProfile);
-router.get('/:nic', protect(['patient', 'doctor', 'admin', 'super_admin', 'pharmacist', 'hospital_admin']), patientController.getPatient);
+// Medical profiles: self/scoped doctor; admins receive account fields only.
+// Hospital/pharmacy callers reach the controller only for an audited denial;
+// their medical-profile purpose/organisation policy is unresolved.
+router.get('/:nic', protect(['patient', 'doctor', 'admin', 'super_admin', 'pharmacist', 'pharmacy_admin', 'hospital_admin']), patientController.getPatient);
 router.put('/:nic', protect(['patient']), patientController.updatePatient);
 router.get('/:nic/timeline', protect(['patient', 'doctor', 'hospital_admin']), patientController.getTimeline);
-router.get('/:nic/prescriptions', protect(['patient', 'doctor']), patientController.getPrescriptions);
+router.get('/:nic/prescriptions', protect(['patient', 'doctor', 'admin', 'super_admin']), patientController.getPrescriptions);
 router.post('/consultation/:id/rate', protect(['patient']), patientController.rateConsultation);
 
 // Patient privacy — OTP gated access

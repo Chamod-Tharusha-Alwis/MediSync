@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io as socketIO } from 'socket.io-client';
-import api from '../../api/axiosInstance';
+import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
@@ -28,12 +28,11 @@ const NotificationBell = () => {
     // Real-time Socket.io listener
     let socket;
     const timer = setTimeout(() => {
-      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
       const token = localStorage.getItem('token');
-      if (token) {
-        socket = socketIO(serverUrl, {
+      if (token && token !== 'undefined') {
+        socket = socketIO(SOCKET_SERVER_URL, {
           auth: { token },
-          transports: ['websocket', 'polling'],
+          transports: ['polling', 'websocket'],
           reconnectionAttempts: 5,
           reconnectionDelay: 3000 });
 

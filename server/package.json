@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/app.js",
+    "start:qa": "node scripts/phase5xSafeBackend.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
     "seed": "node src/utils/seedData.js",

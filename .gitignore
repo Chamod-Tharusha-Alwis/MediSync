@@ -1,4 +1,4 @@
-﻿# Node dependency directories
+# Node dependency directories
 node_modules/
 
 # Local environment variable configuration files
@@ -34,3 +34,7 @@ dist/
 ml-engine/medisync.db
 
 
+scratch/
+docs/docs.rar
+client/test-results/
+client/playwright-report/

@@ -66,6 +66,60 @@ def run_tests():
             "expected_anomaly": True,
             "expected_risk": "Medium",
             "rationale": "Even with an extreme 2500% spike and 520 cases, Low Danger diseases remain permanently capped at Medium risk."
+        },
+        {
+            "name": "Scenario 7 (Boundary False-Positive Guard - High Danger at Exactly 10 Cases)",
+            "disease": "Dengue",
+            "current": 10,
+            "baseline": 2,
+            "expected_anomaly": False,
+            "expected_risk": "Low",
+            "rationale": "Boundary check: High Danger requires strictly >10 cases for anomaly=True; 10 cases with +400% spike stays anomaly=False."
+        },
+        {
+            "name": "Scenario 8 (Boundary False-Negative Guard - High Danger at 11 Cases & 150% Spike)",
+            "disease": "Dengue",
+            "current": 11,
+            "baseline": 4.4,
+            "expected_anomaly": True,
+            "expected_risk": "Low",
+            "rationale": "Boundary check: High Danger at 11 cases (>10) and +150% spike (>=150%) triggers anomaly=True, risk='Low'."
+        },
+        {
+            "name": "Scenario 9 (Boundary False-Positive Guard - Medium Danger at 30 Cases)",
+            "disease": "Gastroenteritis",
+            "current": 30,
+            "baseline": 5,
+            "expected_anomaly": False,
+            "expected_risk": "Low",
+            "rationale": "Boundary check: Medium Danger requires strictly >30 cases for anomaly=True; 30 cases with +500% spike stays anomaly=False."
+        },
+        {
+            "name": "Scenario 10 (Boundary False-Negative Guard - Medium Danger High Escalation at >=600% Spike)",
+            "disease": "Gastroenteritis",
+            "current": 35,
+            "baseline": 5,
+            "expected_anomaly": True,
+            "expected_risk": "High",
+            "rationale": "Boundary check: Medium Danger at 35 cases (>30) and +600% spike (>=600%) escalates risk_level to 'High'."
+        },
+        {
+            "name": "Scenario 11 (Boundary False-Positive Guard - Low Danger at 100 Cases / 900% Spike)",
+            "disease": "Common Cold",
+            "current": 100,
+            "baseline": 10,
+            "expected_anomaly": False,
+            "expected_risk": "Low",
+            "rationale": "Boundary check: Low Danger requires strictly >100 cases for anomaly=True; 100 cases stays anomaly=False."
+        },
+        {
+            "name": "Scenario 12 (Boundary False-Positive Guard - Low Danger at 101 Cases / 790% Spike)",
+            "disease": "Common Cold",
+            "current": 101,
+            "baseline": 11.35,
+            "expected_anomaly": False,
+            "expected_risk": "Low",
+            "rationale": "Boundary check: Low Danger with >100 cases but +790% spike (<800%) does not trigger anomaly=True."
         }
     ]
     

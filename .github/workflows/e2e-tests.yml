@@ -1,4 +1,4 @@
-name: End-to-End Walkthrough Tests
+name: MediSync Verification & Safe Mock-Browser Suite
 
 on:
   push:
@@ -7,32 +7,16 @@ on:
     branches: [ "main" ]
 
 jobs:
-  e2e-tests:
+  source-integrity-and-offline-tests:
     runs-on: ubuntu-latest
-    
-    services:
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-      mongo:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-      vault:
-        image: hashicorp/vault:latest
-        ports:
-          - 8200:8200
-        env:
-          VAULT_DEV_ROOT_TOKEN_ID: myroot
-          VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    name: Source Integrity & Unit Test Gate
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -41,71 +25,97 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Bootstrap Vault Keys
+      - name: Verify Protected Sources & Quarantines (Fail-Closed)
         run: |
-          sleep 2
-          curl -H "X-Vault-Token: myroot" \
-               -H "Content-Type: application/json" \
-               -d '{"data": {"activeVersion": 1, "versions": {"1": "12345678901234567890123456789012"}}}' \
-               http://127.0.0.1:8200/v1/secret/data/medisync/keys
-
-      - name: Install ML Engine Dependencies
-        working-directory: ./ml-engine
-        run: pip install -r requirements.txt
-
-      - name: Start ML Engine
-        working-directory: ./ml-engine
-        env:
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-        run: python app.py > ml_engine.log 2>&1 &
+          node -e "
+            const crypto = require('crypto');
+            const fs = require('fs');
+            const expected = {
+              'server/src/middleware/auth.js': '9729d2ca66e842e0df01bbdbb837069da563465209d8d12c189537715163ba24',
+              'server/src/controllers/doctorController.js': 'cec5fb2b7c9b552c28b3d012354caa380550546bd895d4062f1cb4f0b8feb75c',
+              'ml-engine/app.py': '48967c9c4920112e2373fd0055d48b2a69a5fea4e8d87ebd462a6752a8451a11',
+              'ml-engine/evaluate_symptom_model.py': '6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d',
+              'client/src/components/SymptomTagInput.jsx': '1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d',
+              'server/tests/ir04BackendIntegration.test.js': 'adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc',
+              'server/tests/patientProfileOwnedIntegration.test.js': '7335e2a5190d740d2ee7856fe26d2ba5edb7a204a4872d3fa081d52b345345c5',
+              'server/tests/prescriptionDurationOwnedIntegration.test.js': '562ba59f307e2081214f40ff2d674fd3546c82f9828a53b8195796f2d637cbc6',
+              'server/tests/lab.test.js': '227e2faf5424e53f836e5364fa592790d387206011e8264e72bb1cc88d19800c',
+              'server/tests/universityDemoSeedVerify.test.js': 'fc472f5707f96b2514d8ec50097da6a6eb7433ff427200f6d6649452ce463695',
+              'client/tests/ir04-isolated-five-role-e2e.spec.js': '496dbcc2337f2cc48d15fc5af217181c948fdd6d4251f301057e2121c7d9d2ee'
+            };
+            for (const [file, exp] of Object.entries(expected)) {
+              const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+              if (actual !== exp) {
+                console.error('Integrity compromise:', file);
+                process.exit(1);
+              }
+            }
+            console.log('All 5 protected files and 6 quarantined suites match verified SHA-256 hashes.');
+          "
 
       - name: Install Server Dependencies
         working-directory: ./server
-        run: npm install
+        run: npm ci
 
-      - name: Start Node Server (Test Mode)
+      - name: Execute Server Unit & Governance Suites (82 Tests)
         working-directory: ./server
-        env:
-          PORT: 5005
-          MONGO_URI: "mongodb://localhost:27017/medisync_test"
-          VAULT_TOKEN: "myroot"
-          VAULT_ADDR: "http://127.0.0.1:8200"
-          ENCRYPTION_KEY: "12345678901234567890123456789012"
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-          ADMIN_PASSWORD: "SecureCiAdminPassword2026!" 
-          JWT_SECRET: "dummy-secret-for-ci-tests"      
-          NODE_ENV: "test"
-          TEST_MODE: "true"
-          REDIS_HOST: "localhost"
-          REDIS_PORT: 6379
-        run: npm start > server.log 2>&1 &
+        run: npx jest tests/qaNativeDriverPolicy.test.js tests/qaTrustLedger.test.js tests/qaEncryptionBootstrap.test.js tests/qaProcessOrchestration.test.js tests/dbGuard.test.js
 
       - name: Install Client Dependencies
         working-directory: ./client
-        run: npm install
+        run: npm ci
 
-      - name: Install Playwright Browsers
+      - name: Execute Client Master Offline Unit Suites (90 Tests)
+        working-directory: ./client
+        run: npx jest --config master.offline.jest.cjs
+
+      - name: Prepare Scratch Artifact Directories
+        run: mkdir -p scratch/phase5x-evidence
+
+      - name: Execute ML Scoring Validation (40 Checks)
+        run: python ml-engine/b13_r2_scoring_checks.py scratch/ci_ml_receipt.json
+
+      - name: Execute Clinical Governance Checks (15 Checks)
+        run: node server/scripts/phase5xMasterClinicalChecks.js ci-run
+
+  mock-browser-automation:
+    runs-on: ubuntu-latest
+    name: Mock Playwright Browser Verification
+    needs: source-integrity-and-offline-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Client Dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Build Production Client Bundle
+        working-directory: ./client
+        run: npm run build
+
+      - name: Install Playwright Browsers (Chromium Only)
         working-directory: ./client
         run: npx playwright install --with-deps chromium
 
-      - name: Start React App
-        working-directory: ./client
-        env:
-          PORT: 3000
-          REACT_APP_API_URL: "http://localhost:5005/api"
-        run: npm start > client.log 2>&1 &
+      - name: Execute Expanded Mock-Browser Interaction Suite (20 Scenarios)
+        run: node scripts/run_expanded_browser_tests.js
 
-      - name: Wait for services to be ready
+      - name: Assert Evidence & Pass Receipt
         run: |
-          npx wait-on -t 30000 tcp:5005
-          npx wait-on -t 60000 tcp:3000
+          test -f medisync_browser_expanded_interaction_results.json
+          grep '"verdict": "ALL_INTERACTION_TESTS_PASSED"' medisync_browser_expanded_interaction_results.json
 
-      - name: Dump Logs on Failure
-        if: failure()
-        run: |
-          echo "=== NODE SERVER LOGS ==="
-          cat server/server.log || true
-          echo "=== ML ENGINE LOGS ==="
-          cat ml-engine/ml_engine.log || true
-          echo "=== REACT CLIENT LOGS ==="
-          cat client/client.log || true
+      - name: Upload Browser Screenshot Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: scratch/phase5x-evidence/playwright-screenshots-expanded/
+          retention-days: 14

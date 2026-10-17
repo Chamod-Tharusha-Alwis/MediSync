@@ -1,5 +1,7 @@
 //npx playwright test --headed
 
+throw new Error('Legacy browser suite quarantined until Phase 5X migration: it targets ports 3000/5005 and loads unrestricted server/.env.');
+
 /**
  * MediSync React Frontend E2E Playwright Test Suite
  * File: client/tests/medisync-live.spec.js
@@ -22,8 +24,12 @@ if (fs.existsSync(serverEnvPath)) {
   }
 }
 
+process.env.NODE_ENV = 'test';
+process.env.MEDISYNC_TEST_MODE = 'true';
+
 // Now load mongoose and schemas from server for DB-level helpers and cleanups
 const mongoose = require('../../server/node_modules/mongoose');
+const { connectAutomatedTestDB } = require('../../server/src/config/dbGuard');
 const Patient = require('../../server/src/models/Patient');
 const Prescription = require('../../server/src/models/Prescription');
 const LabTest = require('../../server/src/models/LabTest');
@@ -84,10 +90,10 @@ test.describe('MediSync E2E Live User Journeys', () => {
   let page;
 
   test.beforeAll(async ({ browser }) => {
-    // Connect to MongoDB using the URI loaded from server/.env
-    if (process.env.MONGO_URI) {
-      await mongoose.connect(process.env.MONGO_URI);
-      console.log('E2E Test Suite successfully connected to MongoDB.');
+    // Connect exclusively to the isolated Atlas test DB via dbGuard
+    if (process.env.MONGO_URI_TEST) {
+      const { dbName } = await connectAutomatedTestDB();
+      console.log(`E2E Test Suite successfully connected to isolated Atlas test DB (${dbName}).`);
 
       // Pre-test cleanup of any stale E2E patients or data from previous runs
       try {
@@ -117,7 +123,7 @@ test.describe('MediSync E2E Live User Journeys', () => {
         console.error('Error during pre-test database cleanup:', dbErr);
       }
     } else {
-      console.warn('MONGO_URI not defined in environment. Database-level tests may fail.');
+      console.warn('MONGO_URI_TEST not defined in environment. Database-level tests may fail.');
     }
 
     // Initialize shared page context

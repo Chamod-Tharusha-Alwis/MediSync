@@ -85,7 +85,7 @@ exports.getDashboardStats = async (req, res) => {
       .slice(0, 5);
 
     // 4. Recent Outbreak Alerts
-    const alerts = await OutbreakAlert.find({ ...hospitalQuery })
+    const alerts = await OutbreakAlert.find({ ...hospitalQuery, surveillancePolicy: require('../services/surveillanceService').POLICY, isSimulation:false, status:'Active' })
       .sort({ createdAt: -1 })
       .limit(5);
 

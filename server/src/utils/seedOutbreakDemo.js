@@ -10,10 +10,36 @@ const Consultation = require('../models/Consultation');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
 
 async function seedOutbreakDemo() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI);
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-seed) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-seed')) {
+      throw new Error(
+        `[SAFEGUARD] Seeding "${PROD_DB_NAME}" via CLI requires --confirm-production-seed.`
+      );
+    }
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
   }
   console.log('🌱 Seeding 14-day 3-Tier Outbreak Anomaly Detection Demo data...');
 

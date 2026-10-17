@@ -23,7 +23,7 @@ const OtpInput = ({
 
   const handleChange = (e, index) => {
     const val = e.target.value;
-    if (isNaN(Number(val))) return; // Allow numbers only
+    if (!/^\d*$/.test(val) || loading || timeLeft <= 0) return;
 
     const newCode = [...code];
     // Keep only the last character entered
@@ -37,7 +37,7 @@ const OtpInput = ({
 
     // Submit if complete
     const combined = newCode.join('');
-    if (combined.length === 6 && onSubmit && !loading) {
+    if (combined.length === 6 && onSubmit && !loading && timeLeft > 0) {
       onSubmit(combined);
     }
   };
@@ -57,13 +57,13 @@ const OtpInput = ({
   const handlePaste = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text').trim();
-    if (pasteData.length !== 6 || isNaN(Number(pasteData))) return;
+    if (!/^\d{6}$/.test(pasteData) || loading || timeLeft <= 0) return;
 
     const newCode = pasteData.split('');
     setCode(newCode);
     if (inputsRef.current[5]) inputsRef.current[5].focus();
 
-    if (onSubmit && !loading) {
+    if (onSubmit && !loading && timeLeft > 0) {
       onSubmit(pasteData);
     }
   };
@@ -96,7 +96,7 @@ const OtpInput = ({
             maxLength={1}
             aria-label={`OTP Digit ${idx + 1}`}
             value={digit}
-            disabled={loading}
+            disabled={loading || timeLeft <= 0}
             ref={(el) => (inputsRef.current[idx] = el)}
             onChange={(e) => handleChange(e, idx)}
             onKeyDown={(e) => handleKeyDown(e, idx)}

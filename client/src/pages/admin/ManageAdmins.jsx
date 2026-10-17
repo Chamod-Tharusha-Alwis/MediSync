@@ -72,6 +72,7 @@ const ManageAdmins = () => {
             <p className="text-slate-400">No admin accounts found</p>
           </div>
         ) : (
+          <div className="overflow-x-auto w-full">
           <table className="w-full text-left">
             <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-300">
               <tr>
@@ -94,13 +95,13 @@ const ManageAdmins = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">{admin.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      admin.role === 'super_admin'
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                      (admin.role === 'super_admin' || admin.isSuperAdmin)
                         ? 'bg-purple-500/20 text-purple-400'
                         : 'bg-blue-500/20 text-blue-400'
                     }`}>
-                      {admin.role === 'super_admin' ? '⭐ Super Admin' : 'Admin'}
+                      {(admin.role === 'super_admin' || admin.isSuperAdmin) ? '⭐ Super Admin' : 'Admin'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">
@@ -117,12 +118,13 @@ const ManageAdmins = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       {/* Create Admin Modal */}
       {showModal && (
-        <Modal title="Create New Admin Account" onClose={() => setShowModal(false)}>
+        <Modal isOpen={showModal} title="Create New Admin Account" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-300 mb-1.5 block">Full Name</label>

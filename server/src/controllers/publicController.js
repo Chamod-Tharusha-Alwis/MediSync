@@ -61,13 +61,135 @@ exports.getHealthStats = async (req, res) => {
   }
 };
 
+const mongoose = require('mongoose');
+const BanRecord = require('../models/BanRecord');
+const { isAutomatedTestEnvironment, TEST_DB_NAME, PROD_DB_NAME } = require('../config/dbGuard');
+
+const APPROVED_DEMO_DATASET_VERSION = 'MEDISYNC_UNIV_DEMO_V2';
+const DEMO_DOCTOR_SYNTHETIC_LABEL = 'Demo Doctor — Synthetic Profile';
+const DEMO_HOSPITAL_SYNTHETIC_LABEL = 'Demo Hospital — Synthetic Profile';
+const DEMO_PHARMACY_SYNTHETIC_LABEL = 'Demo Pharmacy — Synthetic Profile';
+
+const SYNTHETIC_DOCTOR_EMAIL_REGEX = /(?:@(?:test\.com|example\.com|invalid|demo\.medisync\.local|test\.medisync\.local)$|\.(?:invalid|test|example)$|^(?:dummy\.doctor|test_dup_|doctor_lic_|drtest_|qa\.doctor|synth[._-]))/i;
+const SYNTHETIC_DOCTOR_NAME_REGEX = /^(?:dr\.?\s+)?(?:e2e\s+)?(?:test|dummy|qa|synthetic|demo)\s+(?:doctor|diag|hospital\s+specialist|practitioner|specialist|user)\b|\(demo\)/i;
+
+/**
+ * Fail-closed check for isolated university demonstration directory mode.
+ * Requires ALL conditions simultaneously:
+ *  1. NODE_ENV !== 'production'
+ *  2. Automated test mode active (isAutomatedTestEnvironment() === true)
+ *  3. Explicit demo-only feature flag ALLOW_SYNTHETIC_DEMO_DIRECTORY === 'true'
+ *  4. Active verified Mongoose connection strictly to medisync_automated_test (never production 'test')
+ */
+const isIsolatedDemoDoctorDirectoryAllowed = () => {
+  try {
+    if (process.env.NODE_ENV === 'production') return false;
+    if (!isAutomatedTestEnvironment()) return false;
+    if (process.env.ALLOW_SYNTHETIC_DEMO_DIRECTORY !== 'true') return false;
+    if (!mongoose.connection || mongoose.connection.readyState !== 1) return false;
+    const connectedDbName = String(mongoose.connection.name || '').trim();
+    if (connectedDbName !== TEST_DB_NAME || connectedDbName === PROD_DB_NAME) return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+};
+
+const isPublicVerifiedDoctor = (doc, bannedDoctorIdSet = new Set(), options = {}) => {
+  if (!doc) return false;
+  if (doc.role && doc.role !== 'doctor') return false;
+  if (doc.isActive !== true) return false;
+  if (doc.isVerified !== true) return false;
+  if (doc._id && bannedDoctorIdSet.has(String(doc._id))) return false;
+
+  if (
+    doc.loginType === 'hospital' &&
+    Array.isArray(doc.orgLogins) &&
+    doc.orgLogins.length > 0 &&
+    doc.orgLogins.every(org => org && org.isActive === false)
+  ) {
+    return false;
+  }
+
+  const email = String(doc.email || '').trim().toLowerCase();
+  const fullName = String(doc.fullName || '').trim();
+  if (!email || !fullName) return false;
+
+  const isSyntheticOrDemo =
+    doc.isSynthetic === true ||
+    doc.isDemoAccount === true ||
+    doc.isDemoData === true;
+
+  if (isSyntheticOrDemo) {
+    const allowDemo =
+      options.allowApprovedDemoDataset === true &&
+      isIsolatedDemoDoctorDirectoryAllowed();
+    if (!allowDemo) return false;
+    if (doc.isSynthetic !== true) return false;
+    if (doc.datasetVersion !== APPROVED_DEMO_DATASET_VERSION) return false;
+    return true;
+  }
+
+  if (SYNTHETIC_DOCTOR_EMAIL_REGEX.test(email)) return false;
+  if (SYNTHETIC_DOCTOR_NAME_REGEX.test(fullName)) return false;
+
+  return true;
+};
+
+exports.isPublicVerifiedDoctor = isPublicVerifiedDoctor;
+exports.isIsolatedDemoDoctorDirectoryAllowed = isIsolatedDemoDoctorDirectoryAllowed;
+exports.APPROVED_DEMO_DATASET_VERSION = APPROVED_DEMO_DATASET_VERSION;
+exports.DEMO_DOCTOR_SYNTHETIC_LABEL = DEMO_DOCTOR_SYNTHETIC_LABEL;
+
 exports.getDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find()
-      .select('-password -otpSecret -orgLogins')
-      .populate('hospitals', 'name district address')
+    const allowApprovedDemoDataset = isIsolatedDemoDoctorDirectoryAllowed();
+
+    const activeBans = await BanRecord.find({
+      targetModel: 'Doctor',
+      isActive: true,
+      $or: [
+        { expiresAt: null },
+        { expiresAt: { $gt: new Date() } }
+      ]
+    })
+      .select('targetId')
       .lean();
 
+    const bannedDoctorIdSet = new Set(activeBans.map(b => String(b.targetId)));
+
+    const mongoQuery = allowApprovedDemoDataset
+      ? {
+          role: 'doctor',
+          isActive: true,
+          isVerified: true,
+          $or: [
+            { isSynthetic: { $ne: true }, isDemoAccount: { $ne: true }, isDemoData: { $ne: true } },
+            {
+              isSynthetic: true,
+              datasetVersion: APPROVED_DEMO_DATASET_VERSION,
+              isActive: true,
+              isVerified: true
+            }
+          ]
+        }
+      : {
+          role: 'doctor',
+          isActive: true,
+          isVerified: true,
+          isSynthetic: { $ne: true },
+          isDemoAccount: { $ne: true },
+          isDemoData: { $ne: true }
+        };
+
+    const rawDoctors = await Doctor.find(mongoQuery)
+      .select('doctorId fullName email specialization hospitals role loginType isActive isVerified isSynthetic isDemoAccount isDemoData datasetVersion verificationSource orgLogins contactNumber clinicAddress profilePicture description googleMapsUrl averageRating ratingCount createdAt')
+      .populate('hospitals', 'name district address isSynthetic datasetVersion')
+      .lean();
+
+    const doctors = rawDoctors.filter(doc =>
+      isPublicVerifiedDoctor(doc, bannedDoctorIdSet, { allowApprovedDemoDataset })
+    );
     const doctorIds = doctors.map(d => d._id);
 
     const allRecentReviews = await Review.find({ 
@@ -94,13 +216,80 @@ exports.getDoctors = async (req, res) => {
       }
     });
 
-    const enrichedDoctors = doctors.map(doc => {
+    let enrichedDoctors = doctors.map(doc => {
       const dId = doc._id.toString();
-      doc.averageRating = doc.averageRating || 0;
-      doc.ratingCount = doc.ratingCount || 0;
-      doc.recentReviews = reviewsMap[dId] || [];
-      return doc;
+      const isSyntheticDemo = Boolean(doc.isSynthetic === true && doc.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
+      return {
+        _id: doc._id,
+        doctorId: doc.doctorId,
+        fullName: doc.fullName,
+        email: doc.email,
+        specialization: doc.specialization || 'General Practice',
+        hospitals: doc.hospitals || [],
+        role: 'doctor',
+        loginType: doc.loginType || 'personal',
+        isActive: doc.isActive === true,
+        isVerified: doc.isVerified === true,
+        isSynthetic: Boolean(doc.isSynthetic),
+        isDemoAccount: Boolean(doc.isDemoAccount),
+        isDemoData: Boolean(doc.isDemoData),
+        ...(isSyntheticDemo
+          ? {
+              datasetVersion: doc.datasetVersion,
+              syntheticLabel: DEMO_DOCTOR_SYNTHETIC_LABEL,
+              verificationNote: 'Synthetic University Demo Profile — Not Real SLMC Registration',
+              slmcRegistered: false
+            }
+          : {}),
+        contactNumber: doc.contactNumber || '',
+        clinicAddress: doc.clinicAddress || '',
+        profilePicture: doc.profilePicture || '',
+        description: doc.description || '',
+        googleMapsUrl: doc.googleMapsUrl || '',
+        averageRating: doc.averageRating || 0,
+        ratingCount: doc.ratingCount || 0,
+        recentReviews: reviewsMap[dId] || [],
+        createdAt: doc.createdAt
+      };
     });
+
+    const targetId = String(req.query?.id || req.query?.doctorId || '').trim();
+    if (targetId) {
+      const matchedDoctor = enrichedDoctors.find(
+        d => String(d._id) === targetId || String(d.doctorId || '').toLowerCase() === targetId.toLowerCase()
+      );
+      if (!matchedDoctor) {
+        return res.status(404).json({ error: 'Doctor not found or not publicly available' });
+      }
+      return res.json({ data: matchedDoctor });
+    }
+
+    const searchQuery = String(req.query?.search || req.query?.q || '').trim().toLowerCase();
+    if (searchQuery) {
+      enrichedDoctors = enrichedDoctors.filter(
+        d =>
+          String(d.fullName || '').toLowerCase().includes(searchQuery) ||
+          String(d.specialization || '').toLowerCase().includes(searchQuery)
+      );
+    }
+
+    const specializationQuery = String(req.query?.specialization || '').trim().toLowerCase();
+    if (specializationQuery) {
+      enrichedDoctors = enrichedDoctors.filter(
+        d => String(d.specialization || '').toLowerCase().includes(specializationQuery)
+      );
+    }
+
+    if (req.query?.page !== undefined || req.query?.limit !== undefined) {
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+      const total = enrichedDoctors.length;
+      const paged = enrichedDoctors.slice((page - 1) * limit, page * limit);
+      return res.json({
+        data: paged,
+        pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+      });
+    }
 
     res.json({ data: enrichedDoctors });
   } catch (error) {
@@ -108,9 +297,22 @@ exports.getDoctors = async (req, res) => {
   }
 };
 
+exports.getDoctorById = async (req, res) => {
+  req.query = { ...(req.query || {}), id: req.params?.id || req.query?.id };
+  return exports.getDoctors(req, res);
+};
+
 exports.getHospitals = async (req, res) => {
   try {
-    const hospitals = await Hospital.find().select('-password').lean();
+    const rawHospitals = await Hospital.find().select('-password').lean();
+    const hospitals = rawHospitals.map(h => {
+      const isSynth = Boolean(h.isSynthetic === true || h.isDemoData === true || h.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
+      return {
+        ...h,
+        isSynthetic: isSynth,
+        ...(isSynth ? { syntheticLabel: DEMO_HOSPITAL_SYNTHETIC_LABEL } : {})
+      };
+    });
     res.json({ data: hospitals });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch hospitals', details: error.message });
@@ -119,7 +321,15 @@ exports.getHospitals = async (req, res) => {
 
 exports.getPharmacies = async (req, res) => {
   try {
-    const pharmacies = await Pharmacy.find().select('-inventory').lean();
+    const rawPharmacies = await Pharmacy.find().select('-inventory').lean();
+    const pharmacies = rawPharmacies.map(p => {
+      const isSynth = Boolean(p.isSynthetic === true || p.isDemoData === true || p.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
+      return {
+        ...p,
+        isSynthetic: isSynth,
+        ...(isSynth ? { syntheticLabel: DEMO_PHARMACY_SYNTHETIC_LABEL } : {})
+      };
+    });
     res.json({ data: pharmacies });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch pharmacies', details: error.message });

@@ -5,9 +5,8 @@ import api from '../api/axiosInstance';
 
 /**
  * SymptomTagInput
- * Fetches the canonical symptom list from GET /api/drugs/symptoms (which reads
- * symptom_map.json from the ML engine) so the doctor can only pick exact strings
- * the ML model understands, eliminating the data-sync gap.
+ * Provides autocomplete for symptoms indexed by the ML prediction engine
+ * while allowing clinicians to enter standard clinical symptom tags.
  */
 const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
   const [inputValue, setInputValue] = useState('');
@@ -68,13 +67,12 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
   };
 
   const addSymptom = (symptom) => {
-    console.log(`addSymptom called with: "${symptom}"`);
+    if (!symptom) return;
+    const trimmed = symptom.trim();
+    if (!trimmed) return;
     if (selectedSymptoms.length >= 15) return;
-    if (symptom.trim() && !selectedSymptoms.includes(symptom)) {
-      console.log(`Adding symptom: "${symptom}". Current symptoms:`, selectedSymptoms);
-      onChange([...selectedSymptoms, symptom]);
-    } else {
-      console.log(`Skipping symptom "${symptom}". Already included?`, selectedSymptoms.includes(symptom));
+    if (!selectedSymptoms.includes(trimmed)) {
+      onChange([...selectedSymptoms, trimmed]);
     }
     setInputValue('');
     setIsOpen(false);
@@ -96,17 +94,14 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
     } else if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const val = e.target.value.trim();
-      console.log(`Enter key pressed. e.target.value: "${val}", inputValue state: "${inputValue}"`);
       if (val) {
         if (isOpen && focusedIndex >= 0 && suggestions[focusedIndex]) {
           addSymptom(suggestions[focusedIndex]);
         } else {
-          // Case-insensitive match against canonical symptoms list
+          // Case-insensitive match against recognized symptoms if available, or keep entered clinical term
           const match = allSymptoms.find(s => s.toLowerCase() === val.toLowerCase());
           addSymptom(match || val);
         }
-      } else {
-        console.log(`Enter pressed but val is empty!`);
       }
     } else if (e.key === 'Backspace' && !inputValue && selectedSymptoms.length > 0) {
       removeSymptom(selectedSymptoms[selectedSymptoms.length - 1]);
@@ -151,7 +146,7 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
             isLoadingList
               ? 'Loading symptom list...'
               : selectedSymptoms.length === 0
-              ? 'Type to search ML-verified symptoms...'
+              ? 'Type symptom to search indexed terms or add custom tag...'
               : ''
           }
           className="flex-1 min-w-[180px] bg-transparent outline-none text-sm text-slate-100 placeholder-slate-500 py-1"
@@ -182,7 +177,7 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
               </div>
             ))}
             <div className="px-4 py-2 text-xs text-slate-500 border-t border-white/5">
-              ✦ These symptoms are indexed by the ML prediction engine
+              ✦ Suggesting symptoms recognized by the decision-support engine
             </div>
           </div>
         </div>
@@ -192,8 +187,8 @@ const SymptomTagInput = ({ selectedSymptoms, onChange }) => {
         <div className="relative z-50">
           <div className="absolute top-1 left-0 w-full bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-lg py-3 px-4">
             <p className="text-xs text-slate-400">
-              No ML-indexed symptom matches "<span className="font-semibold">{inputValue}</span>".
-              Check spelling or try a broader term.
+              No indexed symptom matches "<span className="font-semibold">{inputValue}</span>".
+              Press Enter to add as a clinical symptom tag.
             </p>
           </div>
         </div>

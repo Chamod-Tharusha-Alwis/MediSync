@@ -99,6 +99,14 @@ const HospitalDirectory = () => {
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1.5 select-none">
+                        {(hospital.isSynthetic || hospital.syntheticLabel) && (
+                          <span
+                            data-testid="synthetic-hospital-badge"
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                          >
+                            {hospital.syntheticLabel || 'Demo Hospital — Synthetic Profile'}
+                          </span>
+                        )}
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           hospital.type === 'government' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                         }`}>

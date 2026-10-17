@@ -3,6 +3,8 @@
  * Covers Phases 1-8 of the End-to-End QA Script
  */
 
+throw new Error('Legacy browser suite quarantined until Phase 5X migration: it targets ports 3000/5005.');
+
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
@@ -20,6 +22,7 @@ if (fs.existsSync(serverEnvPath)) {
 process.env.NODE_ENV = 'test';
 
 const mongoose = require('../../server/node_modules/mongoose');
+const { connectAutomatedTestDB } = require('../../server/src/config/dbGuard');
 const Patient = require('../../server/src/models/Patient');
 const Doctor = require('../../server/src/models/Doctor');
 const Pharmacy = require('../../server/src/models/Pharmacy');
@@ -37,26 +40,26 @@ const timestamp = Date.now();
 const state = {
   patient: {
     nic: `19901234567${randSuffix}`,
-    email: `patient_${timestamp}@test.com`,
+    email: `patient_${timestamp}@test.medisync.local`,
     password: 'Password123!'
   },
   doctor: {
     nic: `19801234567${randSuffix}`,
-    email: `doctor_${timestamp}@test.com`,
+    email: `doctor_${timestamp}@test.medisync.local`,
     password: 'Password123!'
   },
   pharmacist: {
     nic: `19851234567${randSuffix}`,
-    email: `pharmacist_${timestamp}@test.com`,
+    email: `pharmacist_${timestamp}@test.medisync.local`,
     password: 'Password123!'
   },
   labAssistant: {
     nic: `19881234567${randSuffix}`,
-    email: `lab_${timestamp}@test.com`,
+    email: `lab_${timestamp}@test.medisync.local`,
     password: 'Password123!'
   },
   admin: {
-    email: `admin_${timestamp}@test.com`,
+    email: `admin_${timestamp}@test.medisync.local`,
     password: 'AdminPassword123!'
   },
   labTestId: null,
@@ -66,9 +69,9 @@ const state = {
 test.describe('MediSync E2E Walkthrough QA', () => {
 
   test.beforeAll(async ({ browser }) => {
-    if (process.env.MONGO_URI) {
-      await mongoose.connect(process.env.MONGO_URI);
-      console.log('Connected to DB for E2E setup');
+    if (process.env.MONGO_URI_TEST) {
+      const { dbName } = await connectAutomatedTestDB();
+      console.log(`Connected to isolated Atlas test DB (${dbName}) for E2E setup`);
 
       // Seed an admin manually since open self-registration for Admin is bad
       const bcrypt = require('../../server/node_modules/bcryptjs');

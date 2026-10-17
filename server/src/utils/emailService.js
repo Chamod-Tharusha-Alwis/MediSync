@@ -832,14 +832,38 @@ const sendMail = async (options = {}) => {
     };
   }
 
-  // Task 5 Control: In automated Jest test environment (NODE_ENV=test), prevent accidental
-  // live Resend/Brevo quota burn unless custom test transports or explicit live testing is active.
+  // Task 5 & IR-04 Control: In automated test environment (NODE_ENV=test or MEDISYNC_TEST_MODE=true)
+  // or when addressing synthetic .local test/demo domains, prevent external Resend/Brevo delivery
+  // and capture payloads in-memory for deterministic test assertions.
+  const isSyntheticLocalRecipient =
+    allRecipients.length > 0 &&
+    allRecipients.every((addr) => /\.local$/i.test(String(addr).trim()));
   if (
-    process.env.NODE_ENV === 'test' &&
-    !customTransports &&
-    process.env.EMAIL_SERVICE_LIVE_TEST !== 'true'
+    process.env.MEDISYNC_TEST_MODE === 'true' ||
+    ((process.env.NODE_ENV === 'test' ||
+      process.env.MEDISYNC_TEST_MODE === 'true' ||
+      isSyntheticLocalRecipient) &&
+      !customTransports &&
+      process.env.EMAIL_SERVICE_LIVE_TEST !== 'true')
   ) {
     const mockId = `test-accepted-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const htmlWithoutHexColors = String(options.html || options.text || '').replace(/#[0-9a-fA-F]{3,8}\b/g, '');
+    const otpMatch = htmlWithoutHexColors.match(/\b(\d{6})\b/);
+    if (!global.__MEDISYNC_CAPTURED_TEST_EMAILS) {
+      global.__MEDISYNC_CAPTURED_TEST_EMAILS = [];
+    }
+    global.__MEDISYNC_CAPTURED_TEST_EMAILS.push({
+      id: mockId,
+      to: toList,
+      bcc: bccList,
+      subject: options.subject,
+      otp: options.otpCode || (otpMatch ? otpMatch[1] : null),
+      hasAttachment: Boolean(options.attachments && options.attachments.length > 0),
+      capturedAt: new Date().toISOString(),
+    });
+    if (global.__MEDISYNC_CAPTURED_TEST_EMAILS.length > 200) {
+      global.__MEDISYNC_CAPTURED_TEST_EMAILS.shift();
+    }
     return {
       success: true,
       providerAccepted: true,
@@ -861,6 +885,7 @@ const sendMail = async (options = {}) => {
         fallbackUsed: false,
         deliveryQueued: false,
         deliveryConfirmed: false,
+        mockedInTestMode: true,
       },
     };
   }
@@ -1485,3 +1510,12 @@ exports.sendLoginNotificationEmail = async (
     `,
   });
 };
+
+exports.__getCapturedTestEmails = () => Array.isArray(global.__MEDISYNC_CAPTURED_TEST_EMAILS)
+  ? [...global.__MEDISYNC_CAPTURED_TEST_EMAILS]
+  : [];
+
+exports.__clearCapturedTestEmails = () => {
+  global.__MEDISYNC_CAPTURED_TEST_EMAILS = [];
+};
+

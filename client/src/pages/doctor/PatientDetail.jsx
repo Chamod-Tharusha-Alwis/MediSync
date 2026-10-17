@@ -66,7 +66,7 @@ const DoctorPatientDetail = () => {
       setPatientSession({ nic, patientName: patientRes.data.data?.fullName || nic, token });
       
     } catch (err) {
-      console.error('fetchRecords failed:', err);
+      console.error('fetchRecords failed: [operational error code: CLINICAL_RECORD_FETCH_FAILED]');
       toast.error('Failed to fetch patient records');
     } finally {
       setLoading(false);

@@ -8,6 +8,7 @@ router.get('/search', protect(['doctor', 'pharmacist', 'pharmacy_admin']), drugC
 // ICD routes — both canonical and alias paths
 router.get('/icd/search',  protect(['doctor']), drugController.getICDCodes);
 router.get('/icd-search',  protect(['doctor']), drugController.getICDCodes);  // alias
+router.get('/icd/status',  protect(['doctor', 'admin']), drugController.getWhoIcdStatus);
 
 // Drug interaction routes — both canonical and alias paths
 router.post('/interactions',       protect(['doctor', 'pharmacist', 'pharmacy_admin']), drugController.checkInteraction);
