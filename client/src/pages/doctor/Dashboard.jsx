@@ -1,64 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Search, Building2, User, Activity, Clock,
-  ChevronRight, Check, LayoutDashboard, Users,
+  Building2, User,
+  Check, LayoutDashboard,
   Pill, Plus, Calendar, ShieldAlert,
-  Stethoscope, FileText, TrendingUp, Loader2
+  Stethoscope
 } from 'lucide-react';
 import { FiUser } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+
 import api from '../../api/axiosInstance';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import { usePatientAccess } from '../../context/PatientAccessContext';
-
-// ─── Workspace Selector ──────────────────────────────────────────────────────
-const WorkspaceSelector = ({ onSelect }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xl px-4"
-  >
-    <motion.div
-      initial={{ scale: 0.9, y: 24 }}
-      animate={{ scale: 1, y: 0 }}
-      transition={{ type: 'spring', duration: 0.5 }}
-      className="bg-slate-900/90 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl backdrop-blur-md"
-    >
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
-          <Building2 size={32} />
-        </div>
-        <h2 className="text-2xl font-bold text-white">Select Workspace</h2>
-        <p className="text-slate-400 mt-2 text-sm">Choose your current consulting environment</p>
-      </div>
-      <div className="space-y-4">
-        {[
-          { label: 'Personal Clinic', desc: 'Private practice dashboard', icon: User, color: 'blue' },
-          { label: 'Hospital Consultation', desc: 'Hospital-linked session', icon: Activity, color: 'cyan' },
-        ].map(({ label, desc, icon: Icon, color }) => (
-          <button
-            key={label}
-            onClick={() => onSelect(label)}
-            className="w-full flex items-center p-4 rounded-2xl border border-white/10 hover:border-blue-500/50 hover:bg-white/5 transition-all group"
-          >
-            <div className={`p-3 bg-${color}-500/10 text-${color}-400 rounded-xl border border-${color}-500/20 group-hover:bg-${color}-500/20`}>
-              <Icon size={22} />
-            </div>
-            <div className="ml-4 text-left flex-1">
-              <h3 className="font-semibold text-white">{label}</h3>
-              <p className="text-sm text-slate-400">{desc}</p>
-            </div>
-            <ChevronRight className="text-slate-500 group-hover:text-blue-400 transition-colors" />
-          </button>
-        ))}
-      </div>
-    </motion.div>
-  </motion.div>
-);
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ label, value, icon: Icon, color }) => (
@@ -76,38 +31,6 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
     </div>
   </motion.div>
 );
-
-// ─── Medical Timeline ─────────────────────────────────────────────────────────
-const MedicalTimeline = ({ history }) => {
-  if (!history || history.length === 0) {
-    return <p className="text-slate-500 text-sm text-center py-6">No medical history available.</p>;
-  }
-  return (
-    <div className="relative border-l border-white/10 ml-4 py-2 space-y-6">
-      {history.map((item, index) => (
-        <motion.div
-          key={item._id || index}
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="relative pl-6"
-        >
-          <span className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-slate-800 bg-blue-500 ring-4 ring-blue-500/10" />
-          <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-            <div className="flex justify-between items-start mb-1">
-              <h4 className="font-semibold text-white text-sm">{item.diagnosis}</h4>
-              <span className="text-xs text-slate-400 flex items-center gap-1 ml-2 shrink-0">
-                <Calendar size={11} />
-                {item.date || new Date(item.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            {item.icdCode && <p className="text-xs text-slate-500">ICD-10: {item.icdCode}</p>}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DoctorDashboard() {

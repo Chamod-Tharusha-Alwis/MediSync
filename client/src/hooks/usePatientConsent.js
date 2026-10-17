@@ -19,7 +19,13 @@ export default function usePatientConsent(api, nic, onRevoke) {
     setState({ status: error ? 'error' : 'idle', patient: null, history: [], token: '', error });
     revokeCallback.current?.();
   }, []);
-  useEffect(() => { revoke(); return () => { run.current++; request.current?.abort(); clearTimeout(timer.current); }; }, [nic, revoke]);
+  useEffect(() => {
+    revoke();
+    const runRef = run;
+    const requestRef = request;
+    const timerRef = timer;
+    return () => { runRef.current++; requestRef.current?.abort(); clearTimeout(timerRef.current); };
+  }, [nic, revoke]);
   useEffect(() => {
     const clear = () => revoke('Your session ended. Sign in again.');
     window.addEventListener('medisync:session-cleared', clear);

@@ -6,7 +6,7 @@ import {
   FiAward, FiEdit3, FiCamera, FiPlus,
 } from 'react-icons/fi';
 import {
-  LayoutDashboard, Users, Stethoscope, BadgeCheck,
+  LayoutDashboard, BadgeCheck,
   Building2, Loader2, Key, PenTool, CheckCircle, UploadCloud
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';

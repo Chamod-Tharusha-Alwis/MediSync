@@ -33,10 +33,13 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
 
   // Defer the initial send one tick so StrictMode's probe cannot send a second OTP.
   useEffect(() => {
-    const id = ++generation.current;
+    const genRef = generation;
+    const pendingRef = pending;
+    const busyRef = busy;
+    const id = ++genRef.current;
     setStep('sending'); setError(''); setOtp(['', '', '', '', '', '']);
     const timer = setTimeout(() => sendOTP(id), 0);
-    return () => { clearTimeout(timer); generation.current++; pending.current?.abort(); busy.current = false; };
+    return () => { clearTimeout(timer); genRef.current++; pendingRef.current?.abort(); busyRef.current = false; };
     // Identity changes retire every response from the previous patient.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientNic, requesterName, requesterRole]);

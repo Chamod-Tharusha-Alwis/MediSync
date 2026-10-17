@@ -16,7 +16,7 @@ import PatientAccessModal from '../../components/PatientAccessModal';
 import { inferencePredictions } from '../../utils/inferenceResponse';
 import usePatientConsent from '../../hooks/usePatientConsent';
 import { prescriptionPayload } from '../../utils/prescriptionDuration';
-import { LayoutDashboard, Users, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, FlaskConical } from 'lucide-react';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -173,8 +173,10 @@ const NewConsultation = () => {
   const [inferenceStatus, setInferenceStatus] = useState('idle');
   const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true);
   useEffect(() => {
-    inferenceMounted.current = true;
-    return () => { inferenceMounted.current = false; inferenceRequest.current++; };
+    const infMntRef = inferenceMounted;
+    const infReqRef = inferenceRequest;
+    infMntRef.current = true;
+    return () => { infMntRef.current = false; infReqRef.current++; };
   }, []);
   const [selectedDiagnosis,  setSelectedDiagnosis] = useState('');
   const [selectedIcd,        setSelectedIcd]       = useState('');
@@ -188,7 +190,7 @@ const NewConsultation = () => {
   const [interactionAnalysis, setInteractionAnalysis] = useState(null);
   const [labTests,           setLabTests]          = useState([]);
   const [labTestInput,       setLabTestInput]      = useState('');
-  const [testInput,          setTestInput]         = useState('');   // kept for compat; UI uses labTestInput
+
   const [labSuggestions,     setLabSuggestions]    = useState([]);
   const [followUpDate,       setFollowUpDate]      = useState('');
 
@@ -200,7 +202,7 @@ const NewConsultation = () => {
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
     setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
     setPrescriptions([]); setInteractionAnalysis(null); setLabTests([]); setLabTestInput('');
-    setTestInput(''); setLabSuggestions([]); setFollowUpDate('');
+    setLabSuggestions([]); setFollowUpDate('');
   };
   const consent = usePatientConsent(axios, patientNic, clearClinicalDraft);
   const patientAccessToken = consent.token, patientData = consent.patient;
@@ -325,7 +327,7 @@ const NewConsultation = () => {
     if (labTests.includes(trimmed)) { toast.error('Already added'); return; }
     setLabTests(prev => [...prev, trimmed]);
     setLabTestInput('');
-    setTestInput('');
+
     setLabSuggestions([]);
   };
   const removeLabTest = (i) => setLabTests(t => t.filter((_, idx) => idx !== i));
@@ -333,9 +335,9 @@ const NewConsultation = () => {
   // ── Backward-compat aliases ───────────────────────────────────────────────
   // Step 1 JSX still references the pre-migration names: addTest / removeTest /
   // orderedTests. Both Step 1 and Step 3 now share the same labTests state.
-  const addTest    = () => addLabTest(testInput);
-  const removeTest = (i) => removeLabTest(i);
-  const orderedTests = labTests;      // Step 1 panel reads this array for its tags
+
+
+
 
 
   const handleSubmit = async () => {
