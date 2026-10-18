@@ -163,13 +163,17 @@ describe('Cloudinary 2.11 Compatibility & Hardening Specification', () => {
   });
 
   it('6. Generates time-limited signed URLs for private clinical assets', () => {
-    cloudinary.config({ cloud_name: 'medisync_qa' });
+    cloudinary.config({ cloud_name: 'medisync_qa', api_key: '123456789012345', api_secret: 'mock_secret_key_12345' });
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expiresAt = nowSec + 300;
     const signedUrl = cloudinaryUtils.generateSignedUrl('medisync/test-results/lab_report_001', {
       resource_type: 'raw',
-      expires_at: 1893456000
+      expires_at: expiresAt
     });
     assert(typeof signedUrl === 'string');
     assert(signedUrl.includes('lab_report_001'));
+    assert(signedUrl.includes(`expires_at=${expiresAt}`));
+    assert(signedUrl.includes('signature='));
   });
 
   it('7. Handles encrypted laboratory report envelope with zero plaintext exposure', async () => {

@@ -152,7 +152,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     const receipt = new Dispensing({ _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:rx._id,
       pharmacyId:pharmacy._id,staffId:staff._id,patientNic:nic,notes:body.notes,
       idempotencyKey:key,requestHash:hash,
-      audit:{actorId:String(staff._id),action:otc?'OTC_PRESCRIPTION_DISPENSED':'PRESCRIPTION_DISPENSED',timestamp:new Date()},
+      audit:{actorId:String(staff._id),actorRole:user.role||'pharmacist',action:otc?'OTC_PRESCRIPTION_DISPENSED':'PRESCRIPTION_DISPENSED',timestamp:new Date()},
       items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:'dispensed'})) });
     await receipt.save({session});
     return {receipt:receipt.toObject(),replay:false};

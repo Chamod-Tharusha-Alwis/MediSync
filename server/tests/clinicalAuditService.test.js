@@ -33,8 +33,8 @@ describe('ClinicalAuditService — Mandatory Service-Level Auditing Specificatio
   });
 
   it('4. Correctly masks patient NIC', () => {
-    assert.strictEqual(maskNic('199012345678'), '1990****5678');
-    assert.strictEqual(maskNic('901234567V'), '9012****567V');
+    assert.strictEqual(maskNic('199012345678'), '********5678');
+    assert.strictEqual(maskNic('901234567V'), '******567V');
     assert.strictEqual(maskNic('123'), '****');
     assert.strictEqual(maskNic(null), 'N/A');
   });
@@ -79,7 +79,7 @@ describe('ClinicalAuditService — Mandatory Service-Level Auditing Specificatio
     assert.strictEqual(result.actorId, 'pharm-001');
     assert.strictEqual(result.actorRole, 'pharmacist');
     assert(result.action.includes('PRESCRIPTION_DISPENSED'));
-    assert.strictEqual(result.accessedNic, '1990****5678');
+    assert.strictEqual(result.accessedNic, '********5678');
     assert.strictEqual(result.outcome, OUTCOMES.SUCCESS);
   });
 

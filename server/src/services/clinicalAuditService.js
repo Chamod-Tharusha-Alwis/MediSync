@@ -39,7 +39,7 @@ function maskNic(nic) {
   if (!nic || typeof nic !== 'string') return 'N/A';
   const clean = nic.trim().toUpperCase();
   if (clean.length <= 4) return '****';
-  return clean.slice(0, 4) + '****' + clean.slice(-4);
+  return '*'.repeat(clean.length - 4) + clean.slice(-4);
 }
 
 function sanitizeDetails(details = {}) {
@@ -171,74 +171,87 @@ async function reconcileClinicalAuditOutbox(models = {}) {
 
   // 1. Dispensing domain outbox
   if (DispensingModel && typeof DispensingModel.find === 'function') {
-    const unprojected = await DispensingModel.find({ 'audit.actorId': { $exists: true } }).lean();
+    const query = DispensingModel.find({
+      'audit.actorId': { $exists: true },
+      'audit.projectedAt': { $exists: false }
+    });
+    const unprojected = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
     scanned += unprojected.length;
     for (const doc of unprojected) {
-      const existing = await AuditLogModel.findOne({
-        action: new RegExp(`\\[${doc._id}\\]`)
+      const recordedRole = doc.audit?.actorRole;
+      const written = await recordClinicalEvent({
+        actorId: doc.audit?.actorId || 'system',
+        actorRole: recordedRole || 'unknown',
+        action: doc.audit?.action || (recordedRole ? ACTIONS.PRESCRIPTION_DISPENSED : 'RECONCILED'),
+        resourceType: 'Dispensing',
+        resourceId: String(doc._id),
+        patientNic: doc.patientNic,
+        correlationId: doc.idempotencyKey || doc.requestHash || crypto.randomUUID(),
+        details: { receiptNumber: doc.receiptNumber, reconciled: true },
+        auditLogModel: AuditLogModel
       });
-      if (!existing) {
-        await recordClinicalEvent({
-          actorId: doc.audit?.actorId || 'system',
-          actorRole: 'pharmacist',
-          action: doc.audit?.action || ACTIONS.PRESCRIPTION_DISPENSED,
-          resourceType: 'Dispensing',
-          resourceId: String(doc._id),
-          patientNic: doc.patientNic,
-          correlationId: doc.idempotencyKey || doc.requestHash || crypto.randomUUID(),
-          details: { receiptNumber: doc.receiptNumber, reconciled: true },
-          auditLogModel: AuditLogModel
-        });
+      if (written) {
+        if (typeof DispensingModel.updateOne === 'function') {
+          await DispensingModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
+        }
         reconciled++;
       }
     }
   }
 
-  // 2. Consultation domain outbox
+  // 2. Consultation domain outbox - only for records carrying an embedded audit block
   if (ConsultationModel && typeof ConsultationModel.find === 'function') {
-    const unprojectedConsultations = await ConsultationModel.find({ doctorId: { $exists: true } }).lean();
+    const query = ConsultationModel.find({
+      'audit.actorId': { $exists: true },
+      'audit.projectedAt': { $exists: false }
+    });
+    const unprojectedConsultations = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
     scanned += unprojectedConsultations.length;
     for (const doc of unprojectedConsultations) {
-      const existing = await AuditLogModel.findOne({
-        action: new RegExp(`\\[${doc._id}\\]`)
+      const written = await recordClinicalEvent({
+        actorId: String(doc.audit?.actorId || doc.doctorId),
+        actorRole: doc.audit?.actorRole || 'doctor',
+        action: doc.audit?.action || ACTIONS.CONSULTATION_CREATED,
+        resourceType: 'Consultation',
+        resourceId: String(doc._id),
+        patientNic: doc.patientNic,
+        correlationId: doc.consultationId || crypto.randomUUID(),
+        details: { consultationId: doc.consultationId, reconciled: true },
+        auditLogModel: AuditLogModel
       });
-      if (!existing) {
-        await recordClinicalEvent({
-          actorId: String(doc.doctorId),
-          actorRole: 'doctor',
-          action: ACTIONS.CONSULTATION_CREATED,
-          resourceType: 'Consultation',
-          resourceId: String(doc._id),
-          patientNic: doc.patientNic,
-          correlationId: doc.consultationId || crypto.randomUUID(),
-          details: { consultationId: doc.consultationId, reconciled: true },
-          auditLogModel: AuditLogModel
-        });
+      if (written) {
+        if (typeof ConsultationModel.updateOne === 'function') {
+          await ConsultationModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
+        }
         reconciled++;
       }
     }
   }
 
-  // 3. Lab test domain outbox
+  // 3. Lab test domain outbox - only for records carrying an embedded audit block
   if (LabTestModel && typeof LabTestModel.find === 'function') {
-    const unprojectedLabTests = await LabTestModel.find({ labTestId: { $exists: true } }).lean();
+    const query = LabTestModel.find({
+      'audit.actorId': { $exists: true },
+      'audit.projectedAt': { $exists: false }
+    });
+    const unprojectedLabTests = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
     scanned += unprojectedLabTests.length;
     for (const doc of unprojectedLabTests) {
-      const existing = await AuditLogModel.findOne({
-        action: new RegExp(`\\[${doc._id}\\]`)
+      const written = await recordClinicalEvent({
+        actorId: String(doc.audit?.actorId || doc.referredBy || doc.acceptedBy || 'system'),
+        actorRole: doc.audit?.actorRole || 'unknown',
+        action: doc.audit?.action || ACTIONS.LAB_TEST_ORDERED,
+        resourceType: 'LabTest',
+        resourceId: String(doc._id),
+        patientNic: doc.patientNic,
+        correlationId: doc.labTestId || crypto.randomUUID(),
+        details: { labTestId: doc.labTestId, status: doc.status, reconciled: true },
+        auditLogModel: AuditLogModel
       });
-      if (!existing) {
-        await recordClinicalEvent({
-          actorId: String(doc.referredBy || doc.acceptedBy || 'system'),
-          actorRole: 'hospital_admin',
-          action: ACTIONS.LAB_TEST_ORDERED,
-          resourceType: 'LabTest',
-          resourceId: String(doc._id),
-          patientNic: doc.patientNic,
-          correlationId: doc.labTestId || crypto.randomUUID(),
-          details: { labTestId: doc.labTestId, status: doc.status, reconciled: true },
-          auditLogModel: AuditLogModel
-        });
+      if (written) {
+        if (typeof LabTestModel.updateOne === 'function') {
+          await LabTestModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
+        }
         reconciled++;
       }
     }

@@ -106,6 +106,11 @@ describe('Laboratory Report Authenticated Envelope Encryption Specification', ()
 
   it('4. Fails closed and rejects decryption with wrong master key', async () => {
     const fileKey = crypto.randomBytes(32);
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', fileKey, iv);
+    const encryptedBytes = Buffer.concat([cipher.update(syntheticPdf), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+
     const cbcIV = crypto.randomBytes(16);
     const keyCipher = crypto.createCipheriv('aes-256-cbc', masterKeyBuf, cbcIV);
     keyCipher.setAutoPadding(false);
@@ -117,24 +122,38 @@ describe('Laboratory Report Authenticated Envelope Encryption Specification', ()
     const corruptedFileKey = Buffer.concat([wrongDecipher.update(wrappedKey), wrongDecipher.final()]);
 
     assert.notDeepStrictEqual(corruptedFileKey, fileKey);
+
+    // Fail closed: using corrupted file key must fail GCM authentication
+    const wrongGcmDecipher = crypto.createDecipheriv('aes-256-gcm', corruptedFileKey, iv);
+    wrongGcmDecipher.setAuthTag(authTag);
+    assert.throws(() => {
+      Buffer.concat([wrongGcmDecipher.update(encryptedBytes), wrongGcmDecipher.final()]);
+    }, /Unsupported state or unable to authenticate data/);
   });
 
-  it('5. Rejects unauthorized patient access (RBAC & ownership boundary)', () => {
-    const labTestMetadata = {
-      testId: 'LT-20261018-001',
+  it('5. Rejects unauthorized patient access (RBAC & ownership boundary)', async () => {
+    const LabTest = require('../src/models/LabTest');
+    const { _findLabTestByIdentifier } = require('../src/controllers/labController');
+
+    const origFindOne = LabTest.findOne;
+    LabTest.findOne = async () => ({
+      _id: '507f1f77bcf86cd799439011',
+      labTestId: 'LT-20261018-001',
       patientNic: '199012345678',
       hospitalId: 'HOSP-001'
-    };
+    });
 
-    const requestingPatient1 = { role: 'patient', nic: '199012345678' };
-    const requestingPatient2 = { role: 'patient', nic: '199587654321' };
+    try {
+      // 1. Authorized patient request with matching NIC receives record
+      const authorizedDoc = await _findLabTestByIdentifier('LT-20261018-001', '199012345678');
+      assert(authorizedDoc !== null, 'Authorized patient must receive their lab test record');
+      assert.strictEqual(authorizedDoc.labTestId, 'LT-20261018-001');
 
-    // Authorized patient
-    const authorized = requestingPatient1.nic === labTestMetadata.patientNic;
-    assert.strictEqual(authorized, true);
-
-    // Cross-patient unauthorized attempt
-    const crossPatientDenied = requestingPatient2.nic !== labTestMetadata.patientNic;
-    assert.strictEqual(crossPatientDenied, true);
+      // 2. Cross-patient unauthorized request with non-matching NIC is denied (returns null)
+      const unauthorizedDoc = await _findLabTestByIdentifier('LT-20261018-001', '199587654321');
+      assert.strictEqual(unauthorizedDoc, null, 'Controller must deny access to non-matching patient NIC');
+    } finally {
+      LabTest.findOne = origFindOne;
+    }
   });
 });

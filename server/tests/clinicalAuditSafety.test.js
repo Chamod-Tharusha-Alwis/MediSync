@@ -75,7 +75,7 @@ describe('Clinical Audit Safety & Durability Specification', () => {
       correlationId: 'corr-001'
     };
 
-    assert.strictEqual(auditRecord.accessedNic, '1990****5678');
+    assert.strictEqual(auditRecord.accessedNic, '********5678');
     assert(auditRecord.action.includes('PRESCRIPTION_DISPENSED'));
   });
 
@@ -209,7 +209,7 @@ describe('Clinical Audit Safety & Durability Specification', () => {
     assert.strictEqual(reconciliation.scanned, 1);
     assert.strictEqual(reconciliation.reconciled, 1);
     assert.strictEqual(mockAuditLogStore.length, 1);
-    assert.strictEqual(mockAuditLogStore[0].accessedNic, '1990****5678');
+    assert.strictEqual(mockAuditLogStore[0].accessedNic, '********5678');
     assert(mockAuditLogStore[0].action.includes('disp-crash-101'));
   });
 

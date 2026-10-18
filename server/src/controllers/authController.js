@@ -84,12 +84,9 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
 
   const finalIsTrusted = isRevokedDevice ? false : (opts.isTrusted !== undefined ? opts.isTrusted : isTrusted);
 
-  const existingSession = await SessionToken.findOne({
-    userId,
-    userModel,
-    isValid: true,
-    ...(fingerprint ? { deviceFingerprint: fingerprint } : {})
-  });
+  const existingSession = fingerprint
+    ? await SessionToken.findOne({ userId, userModel, isValid: true, deviceFingerprint: fingerprint })
+    : null;
 
   if (existingSession) {
     existingSession.tokenHash = tokenHash;
