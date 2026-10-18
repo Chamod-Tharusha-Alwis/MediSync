@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  medisync-internal:
+    driver: bridge
+
 services:
   server:
     build: ./server
@@ -10,12 +14,16 @@ services:
     restart: unless-stopped
     depends_on:
       - redis
+    networks:
+      - medisync-internal
 
   redis:
     image: redis:alpine
     ports:
       - "127.0.0.1:6379:6379"
     restart: unless-stopped
+    networks:
+      - medisync-internal
 
   ml-engine:
     build: ./ml-engine
@@ -24,6 +32,8 @@ services:
     env_file:
       - ./ml-engine/.env
     restart: unless-stopped
+    networks:
+      - medisync-internal
 
   client:
     build: ./client
@@ -34,4 +44,7 @@ services:
     restart: unless-stopped
     depends_on:
       - server
-      - ml-engine
+      - ml-engine
+    networks:
+      - medisync-internal
+
