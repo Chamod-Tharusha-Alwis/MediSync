@@ -4,7 +4,7 @@ services:
   server:
     build: ./server
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     env_file:
       - ./server/.env
     restart: unless-stopped
@@ -14,13 +14,13 @@ services:
   redis:
     image: redis:alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     restart: unless-stopped
 
   ml-engine:
     build: ./ml-engine
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     env_file:
       - ./ml-engine/.env
     restart: unless-stopped
@@ -28,11 +28,10 @@ services:
   client:
     build: ./client
     ports:
-      - "3000:3000"
-
-    # Required for React to run in a container without exiting
-    stdin_open: true 
-    tty: true
+      - "127.0.0.1:3000:3000"
+    environment:
+      - PORT=3000
+    restart: unless-stopped
     depends_on:
       - server
-      - ml-engine
+      - ml-engine
