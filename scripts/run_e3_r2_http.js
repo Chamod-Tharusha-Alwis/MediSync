@@ -25,8 +25,8 @@ const assert = require('assert');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const QA_ENV_PATH = path.join(ROOT_DIR, 'scratch/qa-config/qa.env');
-const RECEIPT_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_execution_receipt.json');
-const JOURNAL_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_mutation_journal.json');
+const RECEIPT_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_retest_execution_receipt.json');
+const JOURNAL_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_retest_mutation_journal.json');
 
 const PROTECTED_HASHES = {
   'server/src/middleware/auth.js': '9729d2ca66e842e0df01bbdbb837069da563465209d8d12c189537715163ba24',
@@ -108,7 +108,7 @@ async function runE3R2Http() {
   const startTime = Date.now();
   const attemptNonce = crypto.randomBytes(32).toString('hex');
   const journal = {
-    attemptId: '5X-E3-R2-HTTP',
+    attemptId: '5X-E3-R2-HTTP-RETEST',
     timestamp: new Date().toISOString(),
     nonce: attemptNonce,
     events: []
@@ -119,9 +119,9 @@ async function runE3R2Http() {
   }
 
   console.log('===============================================================');
-  console.log('MEDISYNC PHASE 5X — MASTER STAGE E3-R2 LIVE HTTP CLINICAL QA');
-  console.log('Attempt: 5X-E3-R2-HTTP | Target: gwprp27.mongodb.net/medisync_automated_test');
-  console.log('Budget: Max 36 Inserts | Max 7 Updates | Hard Ceiling: <= 160 Docs');
+  console.log('MEDISYNC PHASE 5X — MASTER STAGE E3-R2 LIVE HTTP CLINICAL QA (RETEST)');
+  console.log('Attempt: 5X-E3-R2-HTTP-RETEST | Target: gwprp27.mongodb.net/medisync_automated_test');
+  console.log('Budget: Max 33 Inserts | Max 7 Updates | Hard Ceiling: <= 160 Docs');
   console.log('===============================================================\n');
 
   // ── PREFLIGHT ─────────────────────────────────────────────────────────────
@@ -168,9 +168,9 @@ async function runE3R2Http() {
     baselineTotal += cnt;
   }
   console.log('  ✓ Pre-run collection counts:', baselineCollectionCounts);
-  console.log(`  ✓ Total pre-run baseline documents: ${baselineTotal} (expected: 122)`);
-  if (baselineTotal !== 122) {
-    throw new Error(`Baseline mismatch: expected exactly 122 documents, found ${baselineTotal}`);
+  console.log(`  ✓ Total pre-run baseline documents: ${baselineTotal} (expected: 125)`);
+  if (baselineTotal !== 125) {
+    throw new Error(`Baseline mismatch: expected exactly 125 documents, found ${baselineTotal}`);
   }
 
   // Verify forbidden collections
@@ -192,11 +192,12 @@ async function runE3R2Http() {
     MEDISYNC_TEST_MODE: 'true',
     MEDISYNC_QA_MODE: 'true',
     MEDISYNC_QA_BOOTSTRAPPED: 'true',
-    MEDISYNC_QA_ATTEMPT_ID: '5X-E3-R2-HTTP',
+    MEDISYNC_QA_ATTEMPT_ID: '5X-E3-R2-HTTP-RETEST',
     MEDISYNC_QA_OWNER: 'qa_e3_operator',
     MEDISYNC_QA_NONCE: attemptNonce,
     MONGO_URI_TEST: mongoUri,
     ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    INTERNAL_API_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     JWT_SECRET: 'qa-test-jwt-secret-at-least-32-chars-long-phase5x',
     JWT_REFRESH_SECRET: 'qa-test-refresh-jwt-secret-32-chars-long-phase5x',
     VAULT_TOKEN: 'bypass',
@@ -435,7 +436,7 @@ async function runE3R2Http() {
 
     // Step 7: Doctor Clinical Consultation Creation (Dual ICD + Rx + Lab Order)
     console.log('\n  --> Step 7: Doctor Consultation Creation (Dual ICD + Prescription + Lab)...');
-    // Also test duration boundary: > 90 days probe
+    // Also test duration boundary: durationDays <= 0 probe (DurationError)
     const durationProbeRes = await httpRequest({
       hostname: '127.0.0.1',
       port: 5100,
@@ -450,11 +451,11 @@ async function runE3R2Http() {
       diagnosis: 'Duration Boundary Probe',
       prescriptions: [{
         drugName: 'Paracetamol 500mg',
-        durationDays: 95
+        durationDays: 0
       }]
     });
-    assert.strictEqual(durationProbeRes.statusCode, 400, 'Prescription duration > 90 days must be rejected with 400');
-    console.log('      ✓ Prescription duration > 90 days rejected with HTTP 400.');
+    assert.strictEqual(durationProbeRes.statusCode, 400, 'Prescription duration <= 0 must be rejected with 400');
+    console.log('      ✓ Prescription duration <= 0 rejected with HTTP 400.');
 
     // Valid Consultation Creation
     const consultRes = await httpRequest({
@@ -655,14 +656,14 @@ async function runE3R2Http() {
 
   // Check budget rules
   const BUDGET_LIMITS = {
-    trusteddevices: 3,
-    sessiontokens: 3,
+    trusteddevices: 2,
+    sessiontokens: 2,
     otpsessions: 1,
     consultations: 1,
     prescriptions: 1,
     dispensings: 1,
     labtests: 1,
-    auditlogs: 25
+    auditlogs: 24
   };
 
   const violations = [];
@@ -679,8 +680,8 @@ async function runE3R2Http() {
     }
   }
 
-  if (totalInserts > 36) {
-    violations.push(`Total inserts exceeded 36: actual ${totalInserts}`);
+  if (totalInserts > 33) {
+    violations.push(`Total inserts exceeded 33: actual ${totalInserts}`);
   }
   if (postTotal > 160) {
     violations.push(`Hard ceiling 160 exceeded: actual ${postTotal}`);
@@ -725,7 +726,7 @@ async function runE3R2Http() {
   // Write receipt
   const receipt = {
     phase: '5X-E3',
-    attemptId: '5X-E3-R2-HTTP',
+    attemptId: '5X-E3-R2-HTTP-RETEST',
     status: isPass ? 'PASS' : 'FAIL',
     timestamp: new Date().toISOString(),
     durationMs: Date.now() - startTime,
@@ -735,7 +736,7 @@ async function runE3R2Http() {
     baselineTotal,
     postTotal,
     netInserts: totalInserts,
-    maxAllowedInserts: 36,
+    maxAllowedInserts: 33,
     hardCeiling: 160,
     withinCeiling: postTotal <= 160,
     deltaCollectionCounts,
