@@ -289,7 +289,16 @@ async function connectAutomatedTestDB({
 
   const testInfo = validateAutomatedTestConfig({ testUri, prodUri });
 
-  await mongoose.connect(testUri, { dbName: TEST_DB_NAME });
+  // In automated test environments, disable automatic background index builds
+  // and automatic collection creation on unseeded models to prevent unauthorized
+  // collection pollution.
+  mongoose.set('autoIndex', false);
+  mongoose.set('autoCreate', false);
+  await mongoose.connect(testUri, {
+    dbName: TEST_DB_NAME,
+    autoIndex: false,
+    autoCreate: false
+  });
 
   const actualDb = mongoose.connection?.db?.databaseName || mongoose.connection?.name;
   if (actualDb !== TEST_DB_NAME) {
