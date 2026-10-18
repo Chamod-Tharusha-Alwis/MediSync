@@ -162,30 +162,89 @@ async function recordClinicalFailure(params = {}) {
  */
 async function reconcileClinicalAuditOutbox(models = {}) {
   const DispensingModel = models.DispensingModel || require('../models/Dispensing');
+  const ConsultationModel = models.ConsultationModel || (models.DispensingModel ? null : require('../models/Consultation'));
+  const LabTestModel = models.LabTestModel || (models.DispensingModel ? null : require('../models/LabTest'));
   const AuditLogModel = models.AuditLogModel || require('../models/AuditLog');
 
-  const unprojected = await DispensingModel.find({ 'audit.actorId': { $exists: true } }).lean();
   let reconciled = 0;
-  for (const doc of unprojected) {
-    const existing = await AuditLogModel.findOne({
-      action: new RegExp(`\\[${doc._id}\\]`)
-    });
-    if (!existing) {
-      await recordClinicalEvent({
-        actorId: doc.audit.actorId,
-        actorRole: 'pharmacist',
-        action: doc.audit.action,
-        resourceType: 'Dispensing',
-        resourceId: String(doc._id),
-        patientNic: doc.patientNic,
-        correlationId: doc.idempotencyKey || doc.requestHash || crypto.randomUUID(),
-        details: { receiptNumber: doc.receiptNumber, reconciled: true },
-        auditLogModel: AuditLogModel
+  let scanned = 0;
+
+  // 1. Dispensing domain outbox
+  if (DispensingModel && typeof DispensingModel.find === 'function') {
+    const unprojected = await DispensingModel.find({ 'audit.actorId': { $exists: true } }).lean();
+    scanned += unprojected.length;
+    for (const doc of unprojected) {
+      const existing = await AuditLogModel.findOne({
+        action: new RegExp(`\\[${doc._id}\\]`)
       });
-      reconciled++;
+      if (!existing) {
+        await recordClinicalEvent({
+          actorId: doc.audit?.actorId || 'system',
+          actorRole: 'pharmacist',
+          action: doc.audit?.action || ACTIONS.PRESCRIPTION_DISPENSED,
+          resourceType: 'Dispensing',
+          resourceId: String(doc._id),
+          patientNic: doc.patientNic,
+          correlationId: doc.idempotencyKey || doc.requestHash || crypto.randomUUID(),
+          details: { receiptNumber: doc.receiptNumber, reconciled: true },
+          auditLogModel: AuditLogModel
+        });
+        reconciled++;
+      }
     }
   }
-  return { scanned: unprojected.length, reconciled };
+
+  // 2. Consultation domain outbox
+  if (ConsultationModel && typeof ConsultationModel.find === 'function') {
+    const unprojectedConsultations = await ConsultationModel.find({ doctorId: { $exists: true } }).lean();
+    scanned += unprojectedConsultations.length;
+    for (const doc of unprojectedConsultations) {
+      const existing = await AuditLogModel.findOne({
+        action: new RegExp(`\\[${doc._id}\\]`)
+      });
+      if (!existing) {
+        await recordClinicalEvent({
+          actorId: String(doc.doctorId),
+          actorRole: 'doctor',
+          action: ACTIONS.CONSULTATION_CREATED,
+          resourceType: 'Consultation',
+          resourceId: String(doc._id),
+          patientNic: doc.patientNic,
+          correlationId: doc.consultationId || crypto.randomUUID(),
+          details: { consultationId: doc.consultationId, reconciled: true },
+          auditLogModel: AuditLogModel
+        });
+        reconciled++;
+      }
+    }
+  }
+
+  // 3. Lab test domain outbox
+  if (LabTestModel && typeof LabTestModel.find === 'function') {
+    const unprojectedLabTests = await LabTestModel.find({ labTestId: { $exists: true } }).lean();
+    scanned += unprojectedLabTests.length;
+    for (const doc of unprojectedLabTests) {
+      const existing = await AuditLogModel.findOne({
+        action: new RegExp(`\\[${doc._id}\\]`)
+      });
+      if (!existing) {
+        await recordClinicalEvent({
+          actorId: String(doc.referredBy || doc.acceptedBy || 'system'),
+          actorRole: 'hospital_admin',
+          action: ACTIONS.LAB_TEST_ORDERED,
+          resourceType: 'LabTest',
+          resourceId: String(doc._id),
+          patientNic: doc.patientNic,
+          correlationId: doc.labTestId || crypto.randomUUID(),
+          details: { labTestId: doc.labTestId, status: doc.status, reconciled: true },
+          auditLogModel: AuditLogModel
+        });
+        reconciled++;
+      }
+    }
+  }
+
+  return { scanned, reconciled };
 }
 
 module.exports = {
