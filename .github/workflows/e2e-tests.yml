@@ -14,15 +14,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -76,6 +76,9 @@ jobs:
       - name: Execute ML Scoring Validation (40 Checks)
         run: python ml-engine/b13_r2_scoring_checks.py scratch/ci_ml_receipt.json
 
+      - name: Execute Offline ML Medication Safety Checks (6 Checks)
+        run: python ml-engine/test_medication_safety.py
+
       - name: Execute Clinical Governance Checks (15 Checks)
         run: node server/scripts/phase5xMasterClinicalChecks.js ci-run
 
@@ -86,10 +89,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -115,7 +118,7 @@ jobs:
 
       - name: Upload Browser Screenshot Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-screenshots
           path: scratch/phase5x-evidence/playwright-screenshots-expanded/
