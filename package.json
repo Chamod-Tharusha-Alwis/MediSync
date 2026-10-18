@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node scripts/refuseUnsafeRootStart.js",
+    "start": "node scripts/startLocalDev.js",
+    "start:mock": "node scripts/startLocalDev.js",
+    "test:offline": "node scripts/run_offline_tests.js",
+    "build": "npm --prefix client run build",
     "start:redis": "node scripts/refuseUnsafeRootStart.js",
     "start:vault": "node scripts/refuseUnsafeRootStart.js",
     "start:server": "node scripts/refuseUnsafeRootStart.js",
