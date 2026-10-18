@@ -334,6 +334,15 @@ async function startServer() {
   app.use('/api/doctor',               require('./routes/doctorRoutes'));
   app.use('/api/hospital',             require('./routes/hospitalRoutes'));
   app.use('/api/pharmacy',             require('./routes/pharmacyRoutes'));
+  if (qaMode) {
+    app.use('/api/qa', require('./routes/qaRoutes'));
+    app.get('/api/patient/e1-denied', (req, res) => {
+      res.status(423).json({
+        error: 'E1 read-only lifecycle lockdown. Patient routes locked.',
+        code: 'QA_E1_ROUTE_LOCKED'
+      });
+    });
+  }
   app.use('/api/patient',              require('./routes/patientRoutes'));
   app.use('/api/admin',                require('./routes/adminRoutes'));
   app.use('/api/drugs',                require('./routes/drugRoutes'));
