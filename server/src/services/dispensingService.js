@@ -67,7 +67,9 @@ function validateItems(raw) {
   });
 }
 
-async function dispense({ user, body = {}, prescriptionRef, otc = false, idempotencyKey }) {
+const { recordClinicalEvent, ACTIONS } = require('./clinicalAuditService');
+
+async function dispense({ user, body = {}, prescriptionRef, otc = false, idempotencyKey, skipAuditProjection = false }) {
   if (!user?.id || !['pharmacist','pharmacy_admin','assistant'].includes(user.role)) fail('FORBIDDEN', 'Authorized pharmacy staff required.', 403);
   const items = validateItems(otc ? body.medications : body.items);
   const nic = typeof body.patientNic === 'string' ? body.patientNic.trim().toUpperCase() : '';
@@ -82,7 +84,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     alternative:!!body.isAlternativeDispensed, reason:body.alternativeDetails || '', notes:body.notes || '', consultationRef:body.consultationRef || '' })).digest('hex');
   // This identifier is allocated once, outside the retryable callback.
   const otcPrescriptionId = new mongoose.Types.ObjectId();
-  return runTransaction(async session => {
+  const outcome = await runTransaction(async session => {
     const staff = await PharmacyStaff.findById(user.id).session(session);
     if (!staff || staff.isActive !== true || staff.role !== user.role) fail('FORBIDDEN', 'Pharmacy staff account is not eligible.', 403);
     const pharmacy = await Pharmacy.findById(staff.pharmacyId).session(session);
@@ -155,5 +157,20 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     await receipt.save({session});
     return {receipt:receipt.toObject(),replay:false};
   });
+
+  // Post-commit durable clinical audit projection (when not explicitly handled by an HTTP controller)
+  if (!skipAuditProjection && !outcome.replay && outcome.receipt) {
+    recordClinicalEvent({
+      actorId: String(user.id),
+      actorRole: user.role,
+      action: otc ? ACTIONS.OTC_PRESCRIPTION_DISPENSED : ACTIONS.PRESCRIPTION_DISPENSED,
+      resourceType: 'Dispensing',
+      resourceId: String(outcome.receipt._id),
+      patientNic: nic,
+      correlationId: key || hash
+    }).catch(() => {});
+  }
+
+  return outcome;
 }
 module.exports = { dispense, runTransaction, DispenseError, validateItems };

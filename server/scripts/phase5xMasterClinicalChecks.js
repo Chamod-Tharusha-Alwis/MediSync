@@ -10,6 +10,7 @@ vm.runInNewContext(source,{module:moduleDouble,exports:moduleDouble.exports,Date
   if(name==='crypto')return require('crypto');
   if(name.startsWith('../models/'))return model;
   if(name==='../utils/ingredientResolver')return {checkAllergyConflict:deny};
+  if(name==='./clinicalAuditService')return {recordClinicalEvent:async()=>{},ACTIONS:{}};
   throw Error('Unreviewed service import');
 }},{filename:'actual-dispensingService.js'});
 const api=moduleDouble.exports,checks=[];

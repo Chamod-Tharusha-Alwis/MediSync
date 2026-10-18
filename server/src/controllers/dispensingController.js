@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const handler = otc => async (req, res) => {
   try {
     const {receipt,replay} = await dispense({user:req.user,body:req.body,otc,prescriptionRef:req.params?.id,
-      idempotencyKey:req.headers['idempotency-key']});
+      idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true});
     // Capped audit collections cannot participate in the dispensing transaction.
     // The receipt's durable audit event is authoritative; this is an extra projection.
     if (!replay) {
