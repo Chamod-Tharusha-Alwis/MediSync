@@ -37,13 +37,13 @@ const Overview = ({ data }) => {
   }
 
   const activeRxs = prescriptions.filter(
-    p => (p.status === 'pending' || p.status === 'ready_for_pickup') && new Date(p.expiresAt) > new Date()
+    p => p && (p.status === 'pending' || p.status === 'ready_for_pickup') && p.expiresAt && new Date(p.expiresAt) > new Date()
   );
 
   // ── Nearest future follow-up across all consultations ──────────────────────
   const now = new Date();
   const upcomingFollowUp = consultations
-    .filter(c => c.followUpDate && new Date(c.followUpDate) > now)
+    .filter(c => c && c.followUpDate && new Date(c.followUpDate) > now)
     .sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate))[0] || null;
 
   const followUpDaysAway = upcomingFollowUp
