@@ -84,7 +84,8 @@ async function recordClinicalEvent(params = {}) {
     patientNic = 'N/A',
     correlationId = crypto.randomUUID(),
     details = {},
-    session = null
+    session = null,
+    auditLogModel = null
   } = params;
 
   // 1. Mandatory audit context validation (Fail-closed)
@@ -124,8 +125,9 @@ async function recordClinicalEvent(params = {}) {
   }
 
   // 3. Standalone persistent write to AuditLog capped collection
+  const TargetAuditModel = auditLogModel || AuditLog;
   try {
-    const entry = await AuditLog.create({
+    const entry = await TargetAuditModel.create({
       actorId,
       actorRole,
       action: formattedAction,
@@ -154,11 +156,44 @@ async function recordClinicalFailure(params = {}) {
   });
 }
 
+/**
+ * Reconcile unprojected clinical audits from durable transactional models (Dispensing, etc.)
+ * to the central AuditLog collection, ensuring zero silent evidence loss across process restarts.
+ */
+async function reconcileClinicalAuditOutbox(models = {}) {
+  const DispensingModel = models.DispensingModel || require('../models/Dispensing');
+  const AuditLogModel = models.AuditLogModel || require('../models/AuditLog');
+
+  const unprojected = await DispensingModel.find({ 'audit.actorId': { $exists: true } }).lean();
+  let reconciled = 0;
+  for (const doc of unprojected) {
+    const existing = await AuditLogModel.findOne({
+      action: new RegExp(`\\[${doc._id}\\]`)
+    });
+    if (!existing) {
+      await recordClinicalEvent({
+        actorId: doc.audit.actorId,
+        actorRole: 'pharmacist',
+        action: doc.audit.action,
+        resourceType: 'Dispensing',
+        resourceId: String(doc._id),
+        patientNic: doc.patientNic,
+        correlationId: doc.idempotencyKey || doc.requestHash || crypto.randomUUID(),
+        details: { receiptNumber: doc.receiptNumber, reconciled: true },
+        auditLogModel: AuditLogModel
+      });
+      reconciled++;
+    }
+  }
+  return { scanned: unprojected.length, reconciled };
+}
+
 module.exports = {
   ACTIONS,
   OUTCOMES,
   recordClinicalEvent,
   recordClinicalFailure,
+  reconcileClinicalAuditOutbox,
   maskNic,
   sanitizeDetails
 };
