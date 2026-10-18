@@ -25,8 +25,8 @@ const assert = require('assert');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const QA_ENV_PATH = path.join(ROOT_DIR, 'scratch/qa-config/qa.env');
-const RECEIPT_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_retest_execution_receipt.json');
-const JOURNAL_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_http_retest_mutation_journal.json');
+const RECEIPT_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_final_http_execution_receipt.json');
+const JOURNAL_PATH = path.join(ROOT_DIR, 'scratch/phase5x-evidence/gate_d_e3_r2_final_http_mutation_journal.json');
 
 const PROTECTED_HASHES = {
   'server/src/middleware/auth.js': '9729d2ca66e842e0df01bbdbb837069da563465209d8d12c189537715163ba24',
@@ -108,7 +108,7 @@ async function runE3R2Http() {
   const startTime = Date.now();
   const attemptNonce = crypto.randomBytes(32).toString('hex');
   const journal = {
-    attemptId: '5X-E3-R2-HTTP-RETEST',
+    attemptId: '5X-E3-R2-FINAL-HTTP',
     timestamp: new Date().toISOString(),
     nonce: attemptNonce,
     events: []
@@ -119,9 +119,9 @@ async function runE3R2Http() {
   }
 
   console.log('===============================================================');
-  console.log('MEDISYNC PHASE 5X — MASTER STAGE E3-R2 LIVE HTTP CLINICAL QA (RETEST)');
-  console.log('Attempt: 5X-E3-R2-HTTP-RETEST | Target: gwprp27.mongodb.net/medisync_automated_test');
-  console.log('Budget: Max 33 Inserts | Max 7 Updates | Hard Ceiling: <= 160 Docs');
+  console.log('MEDISYNC PHASE 5X — MASTER STAGE E3-R2 LIVE HTTP CLINICAL QA (FINAL)');
+  console.log('Attempt: 5X-E3-R2-FINAL-HTTP | Target: gwprp27.mongodb.net/medisync_automated_test');
+  console.log('Budget: Max 19 Inserts | Max 6 Updates | Hard Ceiling: <= 160 Docs (Expected: 158)');
   console.log('===============================================================\n');
 
   // ── PREFLIGHT ─────────────────────────────────────────────────────────────
@@ -168,9 +168,9 @@ async function runE3R2Http() {
     baselineTotal += cnt;
   }
   console.log('  ✓ Pre-run collection counts:', baselineCollectionCounts);
-  console.log(`  ✓ Total pre-run baseline documents: ${baselineTotal} (expected: 125)`);
-  if (baselineTotal !== 125) {
-    throw new Error(`Baseline mismatch: expected exactly 125 documents, found ${baselineTotal}`);
+  console.log(`  ✓ Total pre-run baseline documents: ${baselineTotal} (expected: 139)`);
+  if (baselineTotal !== 139) {
+    throw new Error(`Baseline mismatch: expected exactly 139 documents, found ${baselineTotal}`);
   }
 
   // Verify forbidden collections
@@ -192,12 +192,12 @@ async function runE3R2Http() {
     MEDISYNC_TEST_MODE: 'true',
     MEDISYNC_QA_MODE: 'true',
     MEDISYNC_QA_BOOTSTRAPPED: 'true',
-    MEDISYNC_QA_ATTEMPT_ID: '5X-E3-R2-HTTP-RETEST',
+    MEDISYNC_QA_ATTEMPT_ID: '5X-E3-R2-FINAL-HTTP',
     MEDISYNC_QA_OWNER: 'qa_e3_operator',
     MEDISYNC_QA_NONCE: attemptNonce,
     MONGO_URI_TEST: mongoUri,
-    ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    INTERNAL_API_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    ENCRYPTION_KEY: qaConfig.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    INTERNAL_API_KEY: qaConfig.INTERNAL_API_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     JWT_SECRET: 'qa-test-jwt-secret-at-least-32-chars-long-phase5x',
     JWT_REFRESH_SECRET: 'qa-test-refresh-jwt-secret-32-chars-long-phase5x',
     VAULT_TOKEN: 'bypass',
@@ -656,14 +656,14 @@ async function runE3R2Http() {
 
   // Check budget rules
   const BUDGET_LIMITS = {
-    trusteddevices: 2,
-    sessiontokens: 2,
+    trusteddevices: 0,
+    sessiontokens: 0,
     otpsessions: 1,
     consultations: 1,
     prescriptions: 1,
     dispensings: 1,
     labtests: 1,
-    auditlogs: 24
+    auditlogs: 14
   };
 
   const violations = [];
@@ -680,8 +680,8 @@ async function runE3R2Http() {
     }
   }
 
-  if (totalInserts > 33) {
-    violations.push(`Total inserts exceeded 33: actual ${totalInserts}`);
+  if (totalInserts > 19) {
+    violations.push(`Total inserts exceeded 19: actual ${totalInserts}`);
   }
   if (postTotal > 160) {
     violations.push(`Hard ceiling 160 exceeded: actual ${postTotal}`);
@@ -726,7 +726,7 @@ async function runE3R2Http() {
   // Write receipt
   const receipt = {
     phase: '5X-E3',
-    attemptId: '5X-E3-R2-HTTP-RETEST',
+    attemptId: '5X-E3-R2-FINAL-HTTP',
     status: isPass ? 'PASS' : 'FAIL',
     timestamp: new Date().toISOString(),
     durationMs: Date.now() - startTime,
@@ -736,7 +736,7 @@ async function runE3R2Http() {
     baselineTotal,
     postTotal,
     netInserts: totalInserts,
-    maxAllowedInserts: 33,
+    maxAllowedInserts: 19,
     hardCeiling: 160,
     withinCeiling: postTotal <= 160,
     deltaCollectionCounts,
