@@ -84,18 +84,32 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
 
   const finalIsTrusted = isRevokedDevice ? false : (opts.isTrusted !== undefined ? opts.isTrusted : isTrusted);
 
-  await SessionToken.create({
-    userId,
-    userModel,
-    tokenHash,
-    refreshTokenHash,
-    deviceInfo: ua,
-    deviceFingerprint: fingerprint,
-    deviceModel: parsedModel,
-    isTrusted: finalIsTrusted,
-    isValid: true,
-    lastUsed: new Date()
-  });
+  const existingSession = fingerprint
+    ? await SessionToken.findOne({ userId, userModel, isValid: true, deviceFingerprint: fingerprint })
+    : null;
+
+  if (existingSession) {
+    existingSession.tokenHash = tokenHash;
+    existingSession.refreshTokenHash = refreshTokenHash;
+    existingSession.deviceInfo = ua;
+    existingSession.deviceModel = parsedModel;
+    existingSession.isTrusted = finalIsTrusted;
+    existingSession.lastUsed = new Date();
+    await existingSession.save();
+  } else {
+    await SessionToken.create({
+      userId,
+      userModel,
+      tokenHash,
+      refreshTokenHash,
+      deviceInfo: ua,
+      deviceFingerprint: fingerprint,
+      deviceModel: parsedModel,
+      isTrusted: finalIsTrusted,
+      isValid: true,
+      lastUsed: new Date()
+    });
+  }
 
   return { isTrusted: finalIsTrusted, parsedModel, isNewDevice, isRevokedDevice, wasTrusted };
 };

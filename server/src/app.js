@@ -329,23 +329,44 @@ async function startServer() {
   // All route files are require()'d here — AFTER global.ENCRYPTION_KEY is
   // set — so the Mongoose models they pull in (directly or transitively) are
   // always registered with the correct encryption secret.
-  app.use('/api/auth',     authLimiter, require('./routes/authRoutes'));
-  app.use('/api/public',               require('./routes/publicRoutes'));
-  app.use('/api/doctor',               require('./routes/doctorRoutes'));
-  app.use('/api/hospital',             require('./routes/hospitalRoutes'));
-  app.use('/api/pharmacy',             require('./routes/pharmacyRoutes'));
-  app.use('/api/patient',              require('./routes/patientRoutes'));
-  app.use('/api/admin',                require('./routes/adminRoutes'));
-  app.use('/api/drugs',                require('./routes/drugRoutes'));
-  app.use('/api/alerts',               require('./routes/alertRoutes'));
-  app.use('/api/tests',                require('./routes/testRoutes'));
-  app.use('/api/prescription',         require('./routes/prescriptionRoutes'));
-  app.use('/api/prescriptions',        require('./routes/prescriptionRoutes'));
-  app.use('/api/lab',                  require('./routes/labRoutes'));
-  app.use('/api/notifications',        require('./routes/notificationRoutes'));
-  app.use('/api/users',                require('./routes/userRoutes'));
-  app.use('/api/support',              require('./routes/supportRoutes'));
-  app.use('/api/devices',              require('./routes/deviceRoutes'));
+  // E1 Minimal Profile Check: Exclude ordinary clinical routes during E1 zero-write lifecycle probe
+  const isE1ProbeAttempt = Boolean(qaMode && process.env.MEDISYNC_QA_ATTEMPT_ID?.startsWith('5X-E1'));
+  if (isE1ProbeAttempt) {
+    app.use('/api/qa', require('./routes/qaRoutes'));
+    app.get('/api/patient/e1-denied', (req, res) => {
+      res.status(423).json({
+        error: 'E1 read-only lifecycle lockdown. Patient routes locked.',
+        code: 'QA_E1_ROUTE_LOCKED'
+      });
+    });
+  } else {
+    app.use('/api/auth',     authLimiter, require('./routes/authRoutes'));
+    app.use('/api/public',               require('./routes/publicRoutes'));
+    app.use('/api/doctor',               require('./routes/doctorRoutes'));
+    app.use('/api/hospital',             require('./routes/hospitalRoutes'));
+    app.use('/api/pharmacy',             require('./routes/pharmacyRoutes'));
+    if (qaMode) {
+      app.use('/api/qa', require('./routes/qaRoutes'));
+      app.get('/api/patient/e1-denied', (req, res) => {
+        res.status(423).json({
+          error: 'E1 read-only lifecycle lockdown. Patient routes locked.',
+          code: 'QA_E1_ROUTE_LOCKED'
+        });
+      });
+    }
+    app.use('/api/patient',              require('./routes/patientRoutes'));
+    app.use('/api/admin',                require('./routes/adminRoutes'));
+    app.use('/api/drugs',                require('./routes/drugRoutes'));
+    app.use('/api/alerts',               require('./routes/alertRoutes'));
+    app.use('/api/tests',                require('./routes/testRoutes'));
+    app.use('/api/prescription',         require('./routes/prescriptionRoutes'));
+    app.use('/api/prescriptions',        require('./routes/prescriptionRoutes'));
+    app.use('/api/lab',                  require('./routes/labRoutes'));
+    app.use('/api/notifications',        require('./routes/notificationRoutes'));
+    app.use('/api/users',                require('./routes/userRoutes'));
+    app.use('/api/support',              require('./routes/supportRoutes'));
+    app.use('/api/devices',              require('./routes/deviceRoutes'));
+  }
 
   // 404 handler
   app.use((req, res) => {

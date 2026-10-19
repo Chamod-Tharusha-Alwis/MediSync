@@ -861,6 +861,10 @@ const sendMail = async (options = {}) => {
       hasAttachment: Boolean(options.attachments && options.attachments.length > 0),
       capturedAt: new Date().toISOString(),
     });
+    if (process.env.MEDISYNC_TEST_MODE === 'true') {
+      const capturedOtp = options.otpCode || (otpMatch ? otpMatch[1] : null);
+      if (capturedOtp) console.log(`[QA_EMAIL_OTP] ${capturedOtp}`);
+    }
     if (global.__MEDISYNC_CAPTURED_TEST_EMAILS.length > 200) {
       global.__MEDISYNC_CAPTURED_TEST_EMAILS.shift();
     }

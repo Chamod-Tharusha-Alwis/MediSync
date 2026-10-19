@@ -61,14 +61,25 @@ const upload = multer({
  */
 function generateSignedUrl(publicId, options = {}) {
   const defaultExpiry = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
+  const expiresAt = options.expires_at || defaultExpiry;
 
-  return cloudinary.url(publicId, {
-    resource_type: options.resource_type || 'raw',
-    type:          options.type || 'authenticated',
-    sign_url:      true,
-    expires_at:    options.expires_at || defaultExpiry,
-    secure:        true,
-  });
+  try {
+    const format = options.format || 'pdf';
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: options.resource_type || 'raw',
+      type:          options.type || 'authenticated',
+      expires_at:    expiresAt,
+      ...options
+    });
+  } catch (_) {
+    return cloudinary.url(publicId, {
+      resource_type: options.resource_type || 'raw',
+      type:          options.type || 'authenticated',
+      sign_url:      true,
+      expires_at:    expiresAt,
+      secure:        true,
+    });
+  }
 }
 
 // Cloudinary storage for profile pictures with automatic face-detection crop

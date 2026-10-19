@@ -1478,9 +1478,10 @@ exports.migrateNic = async (req, res) => {
   }
 };
 
-// ── Export OTP helpers for test accessibility ────────────────────────────────
-exports._otpHelpers      = { setOtp, getOtp, deleteOtp };
-exports.OTP_NS_HOSPITAL  = OTP_NS_HOSPITAL;
-exports.OTP_NS_DOCTOR    = OTP_NS_DOCTOR;
-exports.OTP_NS_PATIENT   = OTP_NS_PATIENT;
+// ── Export helpers for test accessibility ────────────────────────────────
+exports._otpHelpers              = { setOtp, getOtp, deleteOtp };
+exports._findLabTestByIdentifier = findLabTestByIdentifier;
+exports.OTP_NS_HOSPITAL          = OTP_NS_HOSPITAL;
+exports.OTP_NS_DOCTOR            = OTP_NS_DOCTOR;
+exports.OTP_NS_PATIENT           = OTP_NS_PATIENT;
 

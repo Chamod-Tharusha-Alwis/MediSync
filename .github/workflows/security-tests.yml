@@ -2,9 +2,10 @@ name: Security Hardening & Trust Governance Tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release/medisync-v1-final-integration" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "chore/safe-localhost-development" ]
+  workflow_dispatch:
 
 jobs:
   security-and-trust-tests:
@@ -12,12 +13,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Server Dependencies
         working-directory: ./server
@@ -26,3 +27,8 @@ jobs:
       - name: Execute Security & Cryptographic Suites (71 Tests)
         working-directory: ./server
         run: npx jest tests/qaTrustLedger.test.js tests/qaEncryptionBootstrap.test.js tests/qaNativeDriverPolicy.test.js tests/dbGuard.test.js
+
+      - name: Execute Clinical & Security Integration Suites (39 Tests)
+        working-directory: ./server
+        run: npx jest tests/clinicalAuditSafety.test.js tests/clinicalAuditService.test.js tests/labEncryptionStorageAdapter.test.js tests/clinicalHttpWorkflow.test.js tests/cloudinaryCompatibility.test.js tests/dispensingTransaction.test.js
+
