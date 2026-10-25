@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "clinicalValidation": "not_established",
+  "licenseReview": "not_verified",
+  "entries": [
+    {
+      "file": "drugs_clean.json",
+      "bytes": 1035979,
+      "sha256": "6d81e3f04c3b6f3b95bf41f9eda2fba6381ae5dac9ce9d4b690a80e77daf7788"
+    },
+    {
+      "file": "interactions_clean.json",
+      "bytes": 40459602,
+      "sha256": "82f38ea35a051cb70f27a9d3fea08a44589993029841db797525f718e274fcf0"
+    },
+    {
+      "file": "icd10_clean.json",
+      "bytes": 7714981,
+      "sha256": "f5b9a27d34777a69d44c680ae60bbf47bbd4ae48a7fc0c7359ad92b77412c752"
+    },
+    {
+      "file": "dataset.csv",
+      "bytes": 632202,
+      "sha256": "ebbd391c4ba4d64f57a00eb3d0a55f0ca9b920b0c5de6b9af4234e72519c9618"
+    },
+    {
+      "file": "symptom_Description.csv",
+      "bytes": 11025,
+      "sha256": "e0581662e815509596707ebb5b31efb44539562b451ecef8c1246aa713b7d832"
+    },
+    {
+      "file": "symptom_precaution.csv",
+      "bytes": 3488,
+      "sha256": "49371294708232b928f68fc60e9837e5cab8b90d450b7bd90f7305795bb6d311"
+    },
+    {
+      "file": "Symptom-severity.csv",
+      "bytes": 2332,
+      "sha256": "cb5a84b5ebde81bb18738b7e7733bcbc5abdc667b4376893fb1774d8c444bc8d"
+    }
+  ]
+}

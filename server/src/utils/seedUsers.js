@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 require('dotenv').config();
 
 if (!process.env.ENCRYPTION_KEY) {
@@ -90,8 +91,8 @@ const seedUsers = async () => {
     // ── 2. PATIENT ─────────────────────────────────────────────────────────────
     console.log('\n--- Patient Seed ---');
     try {
-      const patNIC = '981234567V';
-      const patEmail = 'codmobilechamod2025@gmail.com';
+      const patNIC = process.env.SEED_PATIENT_NIC;
+      const patEmail = 'qa-seed@example.invalid';
       const patBi = nicHash(patNIC);
 
       let doc = await Patient.findOne({

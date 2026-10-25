@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pharmacyController = require('../controllers/pharmacyController');
-const protect = require('../middleware/auth');
+const protect = require('../middleware/verifiedAuth');
 const rateLimit = require('express-rate-limit');
 
 const loginLimiter = rateLimit({ 
@@ -14,10 +14,11 @@ const loginLimiter = rateLimit({
 // Public routes
 router.post('/register', pharmacyController.registerPharmacy);
 router.post('/login', loginLimiter, pharmacyController.loginPharmacy);
-router.post('/change-first-password', pharmacyController.changeFirstPassword);
+router.post('/change-first-password', loginLimiter, pharmacyController.changeFirstPassword);
 
 // Protected routes (any pharmacy staff role)
 const pharmacyAuth = protect(['pharmacist', 'pharmacy_admin', 'assistant']);
+const dispensingAuth = protect(['pharmacist', 'pharmacy_admin']);
 
 // Profile
 router.get('/staff/me', pharmacyAuth, pharmacyController.getMe);
@@ -28,9 +29,9 @@ router.get('/staff', pharmacyAuth, pharmacyController.getStaff);
 router.put('/staff/:id/toggle', pharmacyAuth, pharmacyController.toggleStaffStatus);
 
 // Prescriptions & dispensing
-router.get('/prescriptions/pending/:nic', pharmacyAuth, pharmacyController.getPendingPrescriptions);
-router.post('/dispense', pharmacyAuth, pharmacyController.dispense);
-router.post('/dispense-otc', pharmacyAuth, pharmacyController.dispenseOTC);
+router.get('/prescriptions/pending/:nic', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.getPendingPrescriptions);
+router.post('/dispense', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.dispense);
+router.post('/dispense-otc', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.dispenseOTC);
 router.get('/history', pharmacyAuth, pharmacyController.getDispensingHistory);
 router.get('/receipt/:receiptNo', pharmacyAuth, pharmacyController.getReceipt);
 router.get('/stats', pharmacyAuth, pharmacyController.getStats);
@@ -43,24 +44,8 @@ router.put('/inventory', pharmacyAuth, pharmacyController.updateInventoryItem);
 router.get('/analytics/restock', pharmacyAuth, pharmacyController.getRestockAnalytics);
 router.post('/predict-restock', pharmacyAuth, pharmacyController.predictRestock);
 router.get('/restock-alerts', pharmacyAuth, pharmacyController.getDistrictRestockAlerts);
-router.post('/seed-restock', pharmacyAuth, async (req, res) => {
-  try {
-    const seedRestock = require('../utils/seedRestockData');
-    const result = await seedRestock();
-    res.json({ message: 'Restock seed data generated successfully', data: result });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to seed restock data', details: err.message });
-  }
-});
-
-router.delete('/seed-restock', pharmacyAuth, async (req, res) => {
-  try {
-    const wipeSeedRestockData = require('../utils/wipeSeedRestockData');
-    const result = await wipeSeedRestockData();
-    res.json({ message: 'Synthetic restock seed data wiped successfully', data: result });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to wipe seed restock data', details: err.message });
-  }
-});
+const maintenanceDenied = (_req, res) => res.status(403).json({ error: 'Dataset maintenance requires a separately approved operator procedure' });
+router.post('/seed-restock', pharmacyAuth, maintenanceDenied);
+router.delete('/seed-restock', pharmacyAuth, maintenanceDenied);
 
 module.exports = router;

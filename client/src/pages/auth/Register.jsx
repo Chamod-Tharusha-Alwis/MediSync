@@ -1,3 +1,5 @@
+import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, Key, Building, Calendar, Phone, ChevronRight, ChevronLeft, Check, ShieldCheck } from 'lucide-react';
@@ -11,7 +13,7 @@ import GlassButton from '../../components/common/GlassButton';
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
   let score = 0;
-  if (pass.length >= 8) score++;
+  if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
   if (/[0-9]/.test(pass)) score++;
   if (/[^A-Za-z0-9]/.test(pass)) score++;
@@ -24,6 +26,7 @@ const checkPasswordStrength = (pass) => {
 };
 
 const Register = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -40,7 +43,7 @@ const Register = () => {
     nic: '',
     licenseNo: '',
     specialization: '',
-    pharmacyId: '60d5ecb8b392d700153ee6b2', // Mock Object ID for testing
+    pharmacyId: '',
     dateOfBirth: '',
     contactInfo: ''
   });
@@ -93,7 +96,7 @@ const Register = () => {
   const validateStep1 = () => {
     if (!formData.fullName.trim()) { toast.error('Full Name is required'); return false; }
     if (!formData.email.trim() || !formData.email.includes('@')) { toast.error('Valid Email Address is required'); return false; }
-    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters'); return false; }
+    if (!passwordAccepted(formData.password)) { toast.error(PASSWORD_REQUIREMENTS); return false; }
     if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return false; }
     return true;
   };
@@ -105,6 +108,8 @@ const Register = () => {
       return;
     }
     
+    if (!passwordAccepted(formData.password)) { setError(PASSWORD_REQUIREMENTS); return; }
+    if (role === 'pharmacist' && !/^[a-f0-9]{24}$/i.test(formData.pharmacyId)) { setError('An approved facility identifier is required.'); return; }
     setLoading(true);
     setError(null);
 
@@ -145,7 +150,7 @@ const Register = () => {
             <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20 mb-4 shadow-[0_0_15px_rgba(79,70,229,0.1)] select-none">
               <UserPlus className="w-7 h-7 text-indigo-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
+            <h2 className="text-2xl font-bold text-white tracking-tight">{t('auth.createAccount', 'Create Account')}</h2>
             <p className="text-slate-400 text-xs mt-1.5 font-medium">Join the secure MediSync healthcare network</p>
           </div>
 

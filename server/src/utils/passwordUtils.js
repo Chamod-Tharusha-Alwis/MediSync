@@ -1,11 +1,12 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 exports.generateTempPassword = () => {
-  const length = 10;
+  const length = 16;
   const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let retVal = "";
   for (let i = 0, n = charset.length; i < length; ++i) {
-    retVal += charset.charAt(Math.floor(Math.random() * n));
+    retVal += charset.charAt(crypto.randomInt(0, n));
   }
   // Ensure at least one uppercase, one lowercase, one number
   const hasUpper = /[A-Z]/.test(retVal);
@@ -18,8 +19,9 @@ exports.generateTempPassword = () => {
 };
 
 exports.validatePasswordStrength = (password) => {
+  if (typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72) return { valid: false, score: 0, message: 'Invalid password length', requirements: {} };
   const requirements = {
-    minLength: password.length >= 8,
+    minLength: password.length >= 12,
     hasUpper: /[A-Z]/.test(password),
     hasLower: /[a-z]/.test(password),
     hasNumber: /[0-9]/.test(password),
@@ -41,7 +43,7 @@ exports.validatePasswordStrength = (password) => {
   else if (score === 4) message = "Strong";
 
   return {
-    valid: score >= 2, // minimum threshold generally
+    valid: score >= 3,
     score,
     message,
     requirements
@@ -49,6 +51,7 @@ exports.validatePasswordStrength = (password) => {
 };
 
 exports.hashPassword = async (password) => {
+  if (!exports.validatePasswordStrength(password).valid) throw new Error('PASSWORD_POLICY_REJECTED');
   const salt = await bcrypt.genSalt(12);
   return bcrypt.hash(password, salt);
 };

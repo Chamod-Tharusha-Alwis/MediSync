@@ -1,3 +1,4 @@
+import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -12,6 +13,7 @@ import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
@@ -40,6 +42,7 @@ const timeAgo = (dateString) => {
 // SUB-COMPONENT: Manage Registered Hospitals
 // ─────────────────────────────────────────────────────────────────────────────
 const ManageHospitals = () => {
+  const { t } = useTranslation();
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,10 +62,10 @@ const ManageHospitals = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Hospital Name</th>
-                  <th className="px-6 py-4">Registration No</th>
-                  <th className="px-6 py-4">District</th>
-                  <th className="px-6 py-4 text-right">Status</th>
+                  <th className="px-6 py-4">{t('tables.hospitalName', 'Hospital Name')}</th>
+                  <th className="px-6 py-4">{t('hospital.regNo', 'Registration No')}</th>
+                  <th className="px-6 py-4">{t('common.district', 'District')}</th>
+                  <th className="px-6 py-4 text-right">{t('common.status', 'Status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -73,7 +76,7 @@ const ManageHospitals = () => {
                     <td className="px-6 py-4 text-slate-300 font-semibold">{h.district}</td>
                     <td className="px-6 py-4 text-right">
                       <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
-                        Active
+                        {t('common.active', 'Active')}
                       </span>
                     </td>
                   </tr>
@@ -84,7 +87,7 @@ const ManageHospitals = () => {
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">
             <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-semibold">No registered hospital workspaces found.</p>
+            <p className="text-sm font-semibold">{t('hospital.noWorkspacesFound', 'No registered hospital workspaces found.')}</p>
           </div>
         )}
     </div>
@@ -147,6 +150,7 @@ const UserAuditModal = ({ userId, onClose }) => {
 // SUB-COMPONENT: Manage Users
 // ─────────────────────────────────────────────────────────────────────────────
 const ManageUsers = () => {
+  const { t } = useTranslation();
   const [viewTab, setViewTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
@@ -192,8 +196,8 @@ const ManageUsers = () => {
     <PageTransition className="space-y-6 w-full max-w-full min-w-0">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">User Management</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">Global access control and operational oversight across roles.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('admin.userManagement', 'User Management')}</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">{t('admin.userManagementDesc', 'Global access control and operational oversight across roles.')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           <div className="flex bg-slate-900/60 p-1 rounded-lg border border-white/5 shrink-0">
@@ -201,13 +205,13 @@ const ManageUsers = () => {
               onClick={() => setViewTab('users')}
               className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${viewTab === 'users' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              Users
+              {t('nav.users', 'Users')}
             </button>
             <button
               onClick={() => setViewTab('hospitals')}
               className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${viewTab === 'hospitals' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              Hospitals
+              {t('nav.hospitals', 'Hospitals')}
             </button>
           </div>
           {viewTab === 'users' && (
@@ -216,7 +220,7 @@ const ManageUsers = () => {
                 type="text"
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
-                placeholder="Search name, email, or NIC..."
+                placeholder={t('common.searchPlaceholder', 'Search name, email, or NIC...')}
                 className="glass-input text-xs flex-1 sm:w-56 min-w-[160px]"
               />
               <select
@@ -224,12 +228,12 @@ const ManageUsers = () => {
                 onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
                 className="glass-input text-xs w-full sm:w-auto"
               >
-                <option value="">All Roles</option>
-                <option value="doctor">Doctors</option>
-                <option value="patient">Patients</option>
-                <option value="pharmacist">Pharmacists</option>
-                <option value="hospital_admin">Hospitals</option>
-                <option value="admin">Admins</option>
+                <option value="">{t('common.allRoles', 'All Roles')}</option>
+                <option value="doctor">{t('roles.doctor', 'Doctors')}</option>
+                <option value="patient">{t('roles.patient', 'Patients')}</option>
+                <option value="pharmacist">{t('roles.pharmacist', 'Pharmacists')}</option>
+                <option value="hospital_admin">{t('roles.hospitalAdmin', 'Hospitals')}</option>
+                <option value="admin">{t('roles.admin', 'Admins')}</option>
               </select>
             </>
           )}
@@ -247,15 +251,15 @@ const ManageUsers = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
                 <tr>
-                  <th className="px-3 py-3">User Name</th>
-                  <th className="px-3 py-3">Credential / ID</th>
-                  <th className="px-2.5 py-3">Role</th>
-                  <th className="px-2.5 py-3 hidden xl:table-cell">Last Active</th>
-                  <th className="px-2.5 py-3 hidden 2xl:table-cell">Device Model</th>
-                  <th className="px-2.5 py-3 hidden lg:table-cell">Last Login</th>
-                  <th className="px-2.5 py-3 hidden 2xl:table-cell">Last Sign-Out</th>
-                  <th className="px-2.5 py-3">Status</th>
-                  <th className="px-3 py-3 text-right">Actions</th>
+                  <th className="px-3 py-3">{t('common.fullName', 'User Name')}</th>
+                  <th className="px-3 py-3">{t('common.identifier', 'Credential / ID')}</th>
+                  <th className="px-2.5 py-3">{t('common.role', 'Role')}</th>
+                  <th className="px-2.5 py-3 hidden xl:table-cell">{t('common.lastActive', 'Last Active')}</th>
+                  <th className="px-2.5 py-3 hidden 2xl:table-cell">{t('common.deviceModel', 'Device Model')}</th>
+                  <th className="px-2.5 py-3 hidden lg:table-cell">{t('common.lastLogin', 'Last Login')}</th>
+                  <th className="px-2.5 py-3 hidden 2xl:table-cell">{t('common.lastSignOut', 'Last Sign-Out')}</th>
+                  <th className="px-2.5 py-3">{t('common.status', 'Status')}</th>
+                  <th className="px-3 py-3 text-right">{t('common.actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -286,11 +290,11 @@ const ManageUsers = () => {
                     <td className="px-2.5 py-2.5 whitespace-nowrap">
                       {u.isActive !== false ? (
                         <span className="inline-flex px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold uppercase select-none">
-                          Active
+                          {t('common.active', 'Active')}
                         </span>
                       ) : (
                         <span className="inline-flex px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-bold uppercase select-none">
-                          Blocked
+                          {t('common.blocked', 'Blocked')}
                         </span>
                       )}
                     </td>
@@ -300,7 +304,7 @@ const ManageUsers = () => {
                           onClick={() => setAuditUserId(u._id)}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
                         >
-                          Audit
+                          {t('common.audit', 'Audit')}
                         </button>
                         <button
                           onClick={() => handleToggle(u._id, u.role)}
@@ -310,7 +314,7 @@ const ManageUsers = () => {
                               : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
                           }`}
                         >
-                          {u.isActive !== false ? 'Block' : 'Unblock'}
+                          {u.isActive !== false ? t('common.block', 'Block') : t('common.unblock', 'Unblock')}
                         </button>
                       </div>
                     </td>
@@ -362,57 +366,30 @@ const ManageUsers = () => {
 // SUB-COMPONENT: Alert settings (Z-score sensitivity)
 // ─────────────────────────────────────────────────────────────────────────────
 const AlertSettings = () => {
-  const [sensitivity, setSensitivity] = useState(2.0);
   const [alerts, setAlerts] = useState([]);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get('/alerts/active').then(res => setAlerts(res.data.data)).catch(() => {});
   }, []);
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
-      toast.success(`ML Sensitivity updated to ${sensitivity} (Z-Score)`);
-      setSaving(false);
-    }, 800);
-  };
 
   return (
     <PageTransition className="space-y-6">
       <div className="mb-6">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">ML Alert Configuration</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Fine-tune epidemiological anomaly detection engines and sensitivity thresholds.</p>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Review the availability of outbreak alert configuration.</p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card p-6 rounded-2xl space-y-5 border border-white/5">
           <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 select-none">
             <Settings className="w-4 h-4 text-slate-400" /> Outbreak Threshold sensitivity
           </h3>
-          <p className="text-xs text-slate-400 leading-normal select-none">Adjusting the Z-Score warning threshold updates regional disease spike trigger alerts.</p>
-          
-          <div className="space-y-3 pt-3 select-none">
-            <input 
-              type="range" min="1" max="5" step="0.1" 
-              value={sensitivity} 
-              onChange={e => setSensitivity(parseFloat(e.target.value))} 
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400" 
-            />
-            <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-              <span>High Alert (1.0)</span>
-              <span className="text-slate-300 font-mono text-xs font-black">Z = {sensitivity}</span>
-              <span>Low Alert (5.0)</span>
-            </div>
-          </div>
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 border border-white/5 mt-4"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-            Save Configuration
-          </button>
+          <p className="text-xs text-slate-400 leading-normal select-none">Detection thresholds require clinical and operational review before changes are deployed.</p>
+
+          <p role="status" className="text-sm text-slate-300">
+            Sensitivity settings are managed through reviewed ML configuration. Runtime changes are unavailable from this page.
+          </p>
         </div>
 
         <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
@@ -445,11 +422,14 @@ const AlertSquareIcon = ShieldAlert;
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENT: Overview Stats & Geo Maps
 // ─────────────────────────────────────────────────────────────────────────────
-const Overview = ({ stats, geo, activeAlerts }) => (
+const Overview = ({ stats, geo, activeAlerts }) => {
+  const { t } = useTranslation();
+  if (!stats) return <section role="alert"><h2>Dashboard metrics unavailable</h2><p>Metrics could not be verified. No counts are shown.</p></section>;
+  return (
   <PageTransition className="space-y-6">
     <div className="mb-6">
-      <h1 className="text-3xl font-extrabold text-white tracking-tight">Super Admin Command</h1>
-      <p className="text-slate-400 mt-1 text-sm font-medium">Platform surveillance logs, operational nodes, and regional health outbreaks map.</p>
+      <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('admin.commandCenter', 'Administration Dashboard')}</h1>
+      <p className="text-slate-400 mt-1 text-sm font-medium">{t('admin.commandSubtitle', 'Platform surveillance logs, operational nodes, and regional health outbreaks map.')}</p>
     </div>
 
     {/* ML Active Outbreak Alert Header */}
@@ -459,7 +439,7 @@ const Overview = ({ stats, geo, activeAlerts }) => (
           <ShieldAlert className="w-5 h-5 text-red-400" />
         </div>
         <div>
-          <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">Active System Outbreak Alert</h3>
+          <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">{t('outbreak.surveillanceTitle', 'Active System Outbreak Alert')}</h3>
           <p className="text-slate-200 text-xs font-semibold mt-1">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
         </div>
       </div>
@@ -467,31 +447,31 @@ const Overview = ({ stats, geo, activeAlerts }) => (
 
     {/* Metric Cards Grid */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 select-none">
-      <StatCard 
-        icon={Building2} 
-        title="Registered Hospitals" 
-        value={stats?.totalHospitals || 0} 
+      <StatCard
+        icon={Building2}
+        title={t('admin.registeredHospitals', 'Registered Hospitals')}
+        value={stats?.totalHospitals || 0}
         gradient="from-slate-700/80 to-slate-700/50"
         delay={0.1}
       />
-      <StatCard 
-        icon={Users} 
-        title="Total Practitioners" 
-        value={stats?.totalDoctors || 0} 
+      <StatCard
+        icon={Users}
+        title={t('admin.totalPractitioners', 'Total Practitioners')}
+        value={stats?.totalDoctors || 0}
         gradient="from-slate-700/80 to-slate-700/50"
         delay={0.2}
       />
-      <StatCard 
-        icon={Users} 
-        title="Total Registered Patients" 
-        value={stats?.totalPatients || 0} 
+      <StatCard
+        icon={Users}
+        title={t('admin.totalPatients', 'Total Registered Patients')}
+        value={stats?.totalPatients || 0}
         gradient="from-slate-700/80 to-slate-700/50"
         delay={0.3}
       />
-      <StatCard 
-        icon={ClipboardList} 
-        title="Total Fulfillments" 
-        value={stats?.totalConsultations || 0} 
+      <StatCard
+        icon={ClipboardList}
+        title={t('admin.totalFulfillments', 'Total Fulfillments')}
+        value={stats?.totalConsultations || 0}
         gradient="from-slate-700/80 to-slate-700/50"
         delay={0.4}
       />
@@ -505,7 +485,7 @@ const Overview = ({ stats, geo, activeAlerts }) => (
           Recent Platform Audit Feed
         </h3>
         <p className="text-slate-500 text-xs select-none">Live auditing telemetry logs ingested from distributed workspaces.</p>
-        
+
         <div className="space-y-3.5 h-72 overflow-y-auto pr-2 custom-scrollbar">
           {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
             stats.recentAuditLogs.map((log) => {
@@ -544,7 +524,7 @@ const Overview = ({ stats, geo, activeAlerts }) => (
                     <span className="text-[10px] text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
                   </div>
                   <p className="text-xs text-slate-300 font-medium">
-                    <span className="text-white font-bold">{actorName}</span> 
+                    <span className="text-white font-bold">{actorName}</span>
                     <span className="text-slate-500 ml-1 text-[10px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
                     <br/>
                     <span className="text-slate-400 mt-1 inline-block">{humanAction} regarding <span className="text-blue-400 font-semibold">{targetEntity}</span>.</span>
@@ -605,11 +585,27 @@ const Overview = ({ stats, geo, activeAlerts }) => (
       </div>
     </div>
   </PageTransition>
-);
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT PORTAL ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
+const AdminSettingsPage = () => {
+  const { t } = useTranslation();
+  return (
+    <PageTransition className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('nav.settings', 'Admin Settings & Preferences')}</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">{t('preferences.adminSubtitle', 'Manage administrative localized interfaces, language bindings, and operator preferences.')}</p>
+      </div>
+      <div className="max-w-4xl space-y-8">
+        <LanguagePreferenceCard />
+      </div>
+    </PageTransition>
+  );
+};
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [geo, setGeo] = useState(null);
@@ -639,10 +635,21 @@ const AdminDashboard = () => {
   useEffect(() => {
     let socket;
     const timer = setTimeout(() => {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       socket = io(SOCKET_SERVER_URL, {
+        auth: { token: token && token !== 'undefined' ? token : undefined },
         transports: ['polling', 'websocket'],
         reconnectionAttempts: 5,
-        reconnectionDelay: 3000,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
+        randomizationFactor: 0.5,
+      });
+
+      socket.on('connect_error', (err) => {
+        if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired')) {
+          console.warn('[Socket.IO Admin] Authentication rejected or expired. Halting reconnection.');
+          socket.disconnect();
+        }
       });
 
       socket.on('outbreak_alert', (data) => {
@@ -688,11 +695,12 @@ const AdminDashboard = () => {
     { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
     { label: 'Support Tickets', path: '/admin/dashboard/support', icon: ClipboardList },
     { label: 'Admin Accounts', path: '/admin/dashboard/admins', icon: Users },
+    { label: 'Settings', path: '/admin/dashboard/settings', icon: Settings },
   ];
 
   const userName = localStorage.getItem('userName') || 'Admin User';
   const rawRole = localStorage.getItem('role') || 'admin';
-  const displayRole = rawRole === 'admin' ? 'Super Administrator' : rawRole.replace('_', ' ').toUpperCase();
+  const displayRole = rawRole === 'admin' ? 'Administrator' : rawRole.replace('_', ' ').toUpperCase();
 
   return (
     <div className="admin-theme">
@@ -719,6 +727,7 @@ const AdminDashboard = () => {
               <Route path="/dashboard/bans" element={<BanManagement />} />
               <Route path="/dashboard/support" element={<SupportTicketsRoster />} />
               <Route path="/dashboard/admins" element={<ManageAdmins />} />
+              <Route path="/dashboard/settings" element={<AdminSettingsPage />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           )}

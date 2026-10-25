@@ -1,5 +1,5 @@
 /* ─── Fonts ───────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+/* Use the established local/system fallback stack without external font calls. */
 
 /* ─── Tailwind layers ─────────────────────────────────────────────────────── */
 @tailwind base;
@@ -49,6 +49,10 @@
 
   html {
     scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
   }
 
   body {

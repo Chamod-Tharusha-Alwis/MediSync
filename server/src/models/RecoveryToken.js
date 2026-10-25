@@ -9,10 +9,11 @@ const recoveryTokenSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  token: {
+  tokenHash: {
     type: String,
     required: true
   },
+  consumedAt: { type: Date, default: null },
   purpose: {
     type: String,
     required: true

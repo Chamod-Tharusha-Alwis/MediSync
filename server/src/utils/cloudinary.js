@@ -61,25 +61,17 @@ const upload = multer({
  */
 function generateSignedUrl(publicId, options = {}) {
   const defaultExpiry = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
-  const expiresAt = options.expires_at || defaultExpiry;
-
-  try {
-    const format = options.format || 'pdf';
-    return cloudinary.utils.private_download_url(publicId, format, {
-      resource_type: options.resource_type || 'raw',
-      type:          options.type || 'authenticated',
-      expires_at:    expiresAt,
-      ...options
-    });
-  } catch (_) {
-    return cloudinary.url(publicId, {
-      resource_type: options.resource_type || 'raw',
-      type:          options.type || 'authenticated',
-      sign_url:      true,
-      expires_at:    expiresAt,
-      secure:        true,
-    });
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = options.expires_at ?? defaultExpiry;
+  if (typeof publicId !== 'string' || !publicId || !Number.isInteger(expiresAt) || expiresAt <= now || expiresAt > now + 300 ||
+      (options.type && options.type !== 'authenticated') || (options.resource_type && !['raw', 'image'].includes(options.resource_type))) {
+    throw new Error('PRIVATE_DOWNLOAD_OPTIONS_INVALID');
   }
+  try {
+    return cloudinary.utils.private_download_url(publicId, options.format || 'pdf', {
+      resource_type: options.resource_type || 'raw', type: 'authenticated', expires_at: expiresAt, secure: true
+    });
+  } catch (_) { throw new Error('PRIVATE_DOWNLOAD_UNAVAILABLE'); }
 }
 
 // Cloudinary storage for profile pictures with automatic face-detection crop

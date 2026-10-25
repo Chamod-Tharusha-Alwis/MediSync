@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, Stethoscope } from 'lucide-react';
@@ -7,8 +8,10 @@ import LoginShell from '../../components/common/LoginShell';
 import GlassInput from '../../components/common/GlassInput';
 import GlassButton from '../../components/common/GlassButton';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
+import { selectDoctorWorkspace } from '../../utils/doctorWorkspace';
 
 const DoctorLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,6 +28,7 @@ const DoctorLogin = () => {
     if (!accessToken || accessToken === 'undefined') {
       throw new Error('Authentication token missing from server response.');
     }
+    const selectedOrganization = loginType === 'hospital' ? selectDoctorWorkspace(orgLogins, email) : null;
 
     localStorage.setItem('token', accessToken);
     localStorage.setItem('accessToken', accessToken);
@@ -34,8 +38,7 @@ const DoctorLogin = () => {
     if (name) localStorage.setItem('userName', name);
 
     if (loginType === 'hospital') {
-      const activeOrgs = (orgLogins || []).filter((o) => o.isActive);
-      const org = activeOrgs.length > 0 ? activeOrgs[0] : (orgLogins && orgLogins[0]);
+      const org = selectedOrganization;
 
       if (data.isFirstLogin || org?.mustChangePassword || org?.isFirstLogin) {
         localStorage.setItem('loginType', 'hospital');
@@ -188,7 +191,7 @@ const DoctorLogin = () => {
             <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
-          <GlassButton type="submit" isLoading={loading} className="w-full mt-4">Sign In</GlassButton>
+          <GlassButton type="submit" isLoading={loading} className="w-full mt-4">{t('auth.signInBtn', 'Sign In')}</GlassButton>
 
           <div className="mt-4 text-center">
             <button

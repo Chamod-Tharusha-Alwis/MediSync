@@ -1,9 +1,11 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, X, Download, Calendar, User, Building2, FileText } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 
 const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
+  const { t } = useTranslation();
   if (!isOpen || !labTest) return null;
 
   const testName = typeof labTest === 'string'
@@ -52,7 +54,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
           <div className="space-y-4">
             {/* Status Banner */}
             <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-white/5">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Test Status</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t("lab.testStatus", "Test Status")}</span>
               <StatusBadge status={status} />
             </div>
 
@@ -61,7 +63,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
               <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 text-purple-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">Requested Date</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.requestedDate", "Requested Date")}</p>
                   <p className="text-slate-200 font-medium">
                     {new Date(orderedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
@@ -71,7 +73,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
               <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">Prescribed By</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.prescribedBy", "Prescribed By")}</p>
                   <p className="text-slate-200 font-medium truncate">{doctorName}</p>
                 </div>
               </div>
@@ -79,7 +81,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
               <div className="col-span-2 p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <Building2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">Testing Facility / Hospital</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.testingFacility", "Testing Facility / Hospital")}</p>
                   <p className="text-slate-200 font-medium">{hospitalName}</p>
                 </div>
               </div>
@@ -89,7 +91,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
             <div className="p-3.5 rounded-xl bg-slate-950/50 border border-white/5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-purple-400" />
-                Clinical Remarks & Findings
+                {t("lab.clinicalRemarks", "Clinical Remarks & Findings")}
               </p>
               <p className="text-xs text-slate-300 italic leading-relaxed">{notes}</p>
             </div>
@@ -105,11 +107,11 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
             </button>
             <motion.button
               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              onClick={() => onDownload ? onDownload(reportId) : null}
+              disabled title="Encrypted PDF delivery is undergoing security verification."
               className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all duration-200 flex items-center gap-2 shadow-lg shadow-purple-600/20"
             >
               <Download className="w-4 h-4" />
-              Download Lab Report (PDF)
+              Lab PDF unavailable
             </motion.button>
           </div>
         </motion.div>

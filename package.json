@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node scripts/startLocalDev.js",
-    "start:mock": "node scripts/startLocalDev.js",
+    "start:check": "node scripts/startLocalDev.js --check",
+    "qa:dev": "node scripts/runDemoQa.cjs",
+    "qa:demo": "node scripts/runDemoQa.cjs",
+    "qa:production": "node scripts/runProductionQa.cjs",
     "test:offline": "node scripts/run_offline_tests.js",
     "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",

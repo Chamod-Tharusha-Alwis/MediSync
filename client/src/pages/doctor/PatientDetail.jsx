@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
@@ -20,6 +21,7 @@ import LabDetailModal from '../../components/common/LabDetailModal';
 import { usePatientAccess } from '../../context/PatientAccessContext';
 
 const DoctorPatientDetail = () => {
+  const { t } = useTranslation();
   const { nic } = useParams();
   const navigate = useNavigate();
   const { getPatientToken, setPatientSession } = usePatientAccess();
@@ -319,7 +321,7 @@ const DoctorPatientDetail = () => {
                   <motion.div key="history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
                       <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-xl font-bold text-white">Consultation Timeline</h2>
+                        <h2 className="text-xl font-bold text-white">{t("doctor.consultations", "Consultation Timeline")}</h2>
                         <button 
                           onClick={() => navigate('/doctor/consultation/new')}
                           className="glass-button text-xs px-4 py-2 flex items-center gap-2"
@@ -335,7 +337,7 @@ const DoctorPatientDetail = () => {
                 {activeTab === 'medications' && (
                   <motion.div key="medications" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
-                      <h2 className="text-xl font-bold text-white mb-6">Prescription & Medication History</h2>
+                      <h2 className="text-xl font-bold text-white mb-6">{t("patient.prescriptionsTitle", "Prescription & Medication History")}</h2>
                       {prescriptionsList.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 border border-dashed border-white/5 rounded-xl">
                           <Activity className="w-10 h-10 mx-auto mb-3 opacity-50 text-teal-400" />
@@ -374,7 +376,7 @@ const DoctorPatientDetail = () => {
                 {activeTab === 'labs' && (
                   <motion.div key="labs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
-                      <h2 className="text-xl font-bold text-white mb-6">Laboratory Tests</h2>
+                      <h2 className="text-xl font-bold text-white mb-6">{t("hospital.labOrders", "Laboratory Tests")}</h2>
                       {tests.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 border border-dashed border-white/5 rounded-xl">
                           <FlaskConical className="w-10 h-10 mx-auto mb-3 opacity-50" />

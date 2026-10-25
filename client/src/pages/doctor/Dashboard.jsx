@@ -14,6 +14,7 @@ import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import { usePatientAccess } from '../../context/PatientAccessContext';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ label, value, icon: Icon, color }) => (
@@ -34,6 +35,7 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DoctorDashboard() {
+  const { t } = useTranslation();
   const { activeSession, clearPatientSession } = usePatientAccess();
   const navigate = useNavigate();
   const [workspace, setWorkspace] = useState(() => localStorage.getItem('workspaceMode') || localStorage.getItem('loginType') || 'personal');
@@ -66,9 +68,9 @@ export default function DoctorDashboard() {
   const _dashIsPersonal = _dashWsMode !== 'hospital';
 
   const menuItems = [
-    { label: 'Dashboard',         path: '/doctor/dashboard',        icon: LayoutDashboard, end: true },
-    { label: 'New Consultation',  path: '/doctor/consultation/new', icon: Plus },
-    ...(_dashIsPersonal ? [{ label: 'My Profile', path: '/doctor/profile', icon: FiUser }] : []),
+    { label: t('nav.dashboard', 'Dashboard'),         path: '/doctor/dashboard',        icon: LayoutDashboard, end: true },
+    { label: t('doctor.newConsultation', 'New Consultation'),  path: '/doctor/consultation/new', icon: Plus },
+    ...(_dashIsPersonal ? [{ label: t('nav.myprofile', 'My Profile'), path: '/doctor/profile', icon: FiUser }] : []),
   ];
 
 
@@ -92,17 +94,17 @@ export default function DoctorDashboard() {
               {/* Verified Badge */}
               <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Check className="w-3.5 h-3.5" />
-                Verified Medical Professional
+                {t('doctor.verifiedProfessional', 'Verified Medical Professional')}
               </span>
             </div>
             <p className="text-slate-400 mt-1.5 text-sm flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-slate-500" />
-              Current Workspace: <span className="text-slate-200 font-semibold">{workspace}</span>
+              {t('doctor.currentWorkspace', 'Current Workspace')}: <span className="text-slate-200 font-semibold">{workspace}</span>
               <button 
                 onClick={() => { setWorkspace(null); localStorage.removeItem('workspaceMode'); }}
                 className="ml-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-0.5 rounded text-slate-300 transition-colors"
               >
-                Change Workspace
+                {t('doctor.changeWorkspace', 'Change Workspace')}
               </button>
             </p>
           </div>
@@ -131,12 +133,12 @@ export default function DoctorDashboard() {
         )}
 
         {/* ── Stats Row ──────────────────────────────────────── */}
-        {!loadingStats && stats && (
+        {!loadingStats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Today's Consultations" value={stats.todayConsultations} icon={Stethoscope} color="blue" />
-            <StatCard label="Active Prescriptions" value={stats.activeRx} icon={Pill} color="green" />
-            <StatCard label="Total Patients" value={stats.totalPatients} icon={User} color="purple" />
-            <StatCard label="Pending Follow-ups" value={stats.pendingFollowUps} icon={Calendar} color="orange" />
+            <StatCard label={t('doctor.todayConsultations', "Today's Consultations")} value={stats?.todayConsultations} icon={Stethoscope} color="blue" />
+            <StatCard label={t('doctor.activePrescriptions', 'Active Prescriptions')} value={stats?.activeRx} icon={Pill} color="green" />
+            <StatCard label={t('doctor.totalPatients', 'Total Patients')} value={stats?.totalPatients} icon={User} color="purple" />
+            <StatCard label={t('doctor.pendingFollowUps', 'Pending Follow-ups')} value={stats?.pendingFollowUps} icon={Calendar} color="orange" />
           </div>
         )}
         {loadingStats && (
@@ -156,7 +158,7 @@ export default function DoctorDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-3xl p-1 relative overflow-hidden shadow-2xl shadow-blue-900/20"
         >
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-10 mix-blend-overlay"></div>
           <div className="bg-slate-900/90 backdrop-blur-xl rounded-[22px] p-8 lg:p-12 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10">
             <div className="text-left flex-1">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold uppercase tracking-wider mb-4">

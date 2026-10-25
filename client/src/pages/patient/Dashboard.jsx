@@ -14,11 +14,14 @@ import PatientHistory from './History';
 import PatientProfile from './Profile';
 import PatientSupport from './Support';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { isActivePrescription, patientDashboardTimeline } from '../../utils/patientPrescriptionStatus';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Overview — the landing page of the patient dashboard
    ───────────────────────────────────────────────────────────────────────────── */
-const Overview = ({ data }) => {
+export const Overview = ({ data }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const patient       = data?.patient       || {};
@@ -36,9 +39,7 @@ const Overview = ({ data }) => {
     );
   }
 
-  const activeRxs = prescriptions.filter(
-    p => p && (p.status === 'pending' || p.status === 'ready_for_pickup') && p.expiresAt && new Date(p.expiresAt) > new Date()
-  );
+  const activeRxs = prescriptions.filter(p => isActivePrescription(p));
 
   // ── Nearest future follow-up across all consultations ──────────────────────
   const now = new Date();
@@ -63,20 +64,20 @@ const Overview = ({ data }) => {
       action: () => {},
     },
     {
-      label: 'My Prescriptions',
+      label: t('patient.myPrescriptions', 'My Prescriptions'),
       icon: Pill,
       gradient: 'from-emerald-600 to-teal-500',
       shadow: 'rgba(16,185,129,0.35)',
       id: 'go-prescriptions',
-      action: () => navigate('/patient/dashboard/history'),
+      action: () => navigate('/patient/dashboard/history', { state: { filter: 'prescription' } }),
     },
     {
-      label: 'Medical History',
+      label: t('patient.medicalHistory', 'Medical History'),
       icon: FileText,
       gradient: 'from-rose-600 to-pink-500',
       shadow: 'rgba(244,63,94,0.35)',
       id: 'go-history',
-      action: () => navigate('/patient/dashboard/history'),
+      action: () => navigate('/patient/dashboard/history', { state: { filter: 'all' } }),
     },
   ];
 
@@ -86,9 +87,9 @@ const Overview = ({ data }) => {
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">
-          Welcome back, {patient.fullName.split(' ')[0]}
+          {t('common.welcomeBack', 'Welcome back')}, {patient.fullName.split(' ')[0]}
         </h1>
-        <p className="text-slate-400 mt-1">Here is an overview of your health status.</p>
+        <p className="text-slate-400 mt-1">{t('patient.overviewSubtitle', 'Here is an overview of your health status.')}</p>
       </div>
 
       {/* ── Quick Actions ───────────────────────────────────────────────────── */}
@@ -123,11 +124,11 @@ const Overview = ({ data }) => {
 
         <div className="relative z-10 flex flex-col md:flex-row gap-8">
           <div className="flex-1">
-            <h2 className="text-sm uppercase tracking-wider font-bold text-pink-400 mb-2">Patient Profile</h2>
+            <h2 className="text-sm uppercase tracking-wider font-bold text-pink-400 mb-2">{t('patient.profile', 'Patient Profile')}</h2>
             <p className="text-2xl font-semibold text-white mb-4">{patient.fullName}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-slate-400 text-xs uppercase">Blood Group</p>
+                <p className="text-slate-400 text-xs uppercase">{t('patient.bloodGroup', 'Blood Group')}</p>
                 <p className="text-white font-medium">{patient.bloodGroup || 'Not set'}</p>
               </div>
               <div>
@@ -274,7 +275,7 @@ const Overview = ({ data }) => {
                       <p className="text-slate-400 text-sm">Dr. {rx.doctorId?.fullName || 'Doctor'}</p>
                     </div>
                     <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded uppercase">
-                      Ready to pickup
+                      Awaiting dispensing
                     </span>
                   </div>
                   {rx.medications?.length > 0 && (
@@ -386,11 +387,11 @@ export default function PatientDashboard() {
       ]);
 
 
-      const timeline = timelineRes.data.data || [];
+      const timeline = timelineRes.data.data;
+      if (!patientRes.data.data || typeof patientRes.data.data.fullName !== 'string' || !patientRes.data.data.fullName.trim()) throw new Error('Invalid patient profile response');
       return {
         patient:       patientRes.data.data,
-        prescriptions: timeline.filter(e => e.type === 'prescription').map(e => e.data),
-        consultations: timeline.filter(e => e.type === 'consultation').map(e => e.data),
+        ...patientDashboardTimeline(timeline),
       };
     },
     enabled:   !!nic,

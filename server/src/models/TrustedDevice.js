@@ -10,6 +10,7 @@ const trustedDeviceSchema = new mongoose.Schema({
   lastSeenAt: { type: Date, default: Date.now },
   isTrusted: { type: Boolean, default: false },
   isRevoked: { type: Boolean, default: false },
+  clinicalUseVersion: { type: Number, default: 0 },
   revokedAt: { type: Date },
   deviceLabel: { type: String, default: null }
 });

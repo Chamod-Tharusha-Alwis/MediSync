@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, ShieldAlert, Loader2 } from 'lucide-react';
@@ -8,6 +9,7 @@ import GlassInput from '../../components/common/GlassInput';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
 
 const AdminLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -114,7 +116,7 @@ const AdminLogin = () => {
 
   return (
     <LoginShell
-      title="Super Admin command"
+      title="MediSync Administration"
       subtitle="Authorized personnel access credentials clearance required."
       icon={ShieldAlert}
       bannerText="Restricted Access Area"
@@ -138,7 +140,7 @@ const AdminLogin = () => {
       ) : (
         <>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">Admin Email</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">{t('auth.adminEmail', 'Admin Email')}</label>
             <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 

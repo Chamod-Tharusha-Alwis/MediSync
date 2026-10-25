@@ -27,6 +27,7 @@ router.post('/login', authRateLimiter, authController.login);
 router.post('/verify-otp', authRateLimiter, authController.verifyLoginOTP);
 router.post('/send-otp', authRateLimiter, authController.sendOTP);
 router.post('/login-type', protect(['doctor']), authController.setLoginType);
+router.post('/change-org-password', authRateLimiter, require('../middleware/verifiedAuth')(['doctor']), require('../controllers/organizationPasswordController').change);
 router.post('/change-password', protect(), authController.changePassword); // protect() with no roles allows any authenticated user
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password', authRateLimiter, authController.resetPassword);
@@ -38,6 +39,11 @@ router.put('/2fa', protect(), authController.toggle2FA);
 router.post('/2fa', protect(), authController.toggle2FA);
 router.post('/logout', protect(), authController.logout); // protect() with no roles allows any authenticated user
 router.post('/heartbeat', protect(), authController.heartbeat);
-router.post('/refresh', authController.refreshToken);
+router.post('/refresh', authRateLimiter, require('../middleware/trustedCookieOrigin'), authController.refreshToken);
+// Consistent self-service account preferences; never the legacy user profile role map.
+const languageController = require('../controllers/accountLanguageController');
+const languageAuth = require('../middleware/verifiedAuth')(['admin', 'super_admin', 'superadmin', 'patient', 'doctor', 'hospital_admin', 'pharmacist', 'pharmacy_admin', 'assistant']);
+router.get('/preferences/language', languageAuth, languageController.get);
+router.patch('/preferences/language', languageAuth, languageController.update);
 
 module.exports = router;

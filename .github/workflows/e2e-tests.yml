@@ -1,136 +1,52 @@
-name: MediSync Verification & Safe Mock-Browser Suite
-
+name: MediSync Clinical Offline Verification
 on:
   push:
-    branches: [ "main", "release/medisync-v1-final-integration" ]
+    branches: [main, release/medisync-v1-final-integration]
   pull_request:
-    branches: [ "main", "chore/safe-localhost-development" ]
+    branches: [main, chore/safe-localhost-development]
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   source-integrity-and-offline-tests:
+    env:
+      MONGOMS_DISABLE_POSTINSTALL: '1'
+      MONGOMS_RUNTIME_DOWNLOAD: 'false'
     runs-on: ubuntu-latest
-    name: Source Integrity & Unit Test Gate
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # reviewed v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # reviewed v7
         with:
           node-version: '24'
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # reviewed v7
         with:
           python-version: '3.11'
-
-      - name: Install ML Offline Dependencies
+      - name: Install reviewed locked dependencies
         run: |
-          python -m pip install Flask==3.1.3 python-dotenv==1.2.2 flask-cors==6.0.2 pypdf==6.14.2 pandas==3.0.2 numpy==2.4.4
-          python -m pip check
-
-      - name: Verify Protected Sources & Quarantines (Fail-Closed)
-        run: |
-          node -e "
-            const crypto = require('crypto');
-            const fs = require('fs');
-            const expected = {
-              'server/src/middleware/auth.js': '9729d2ca66e842e0df01bbdbb837069da563465209d8d12c189537715163ba24',
-              'server/src/controllers/doctorController.js': 'cec5fb2b7c9b552c28b3d012354caa380550546bd895d4062f1cb4f0b8feb75c',
-              'ml-engine/app.py': '48967c9c4920112e2373fd0055d48b2a69a5fea4e8d87ebd462a6752a8451a11',
-              'ml-engine/evaluate_symptom_model.py': '6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d',
-              'client/src/components/SymptomTagInput.jsx': '1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d',
-              'server/tests/ir04BackendIntegration.test.js': 'adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc',
-              'server/tests/patientProfileOwnedIntegration.test.js': '7335e2a5190d740d2ee7856fe26d2ba5edb7a204a4872d3fa081d52b345345c5',
-              'server/tests/prescriptionDurationOwnedIntegration.test.js': '562ba59f307e2081214f40ff2d674fd3546c82f9828a53b8195796f2d637cbc6',
-              'server/tests/lab.test.js': '227e2faf5424e53f836e5364fa592790d387206011e8264e72bb1cc88d19800c',
-              'server/tests/universityDemoSeedVerify.test.js': 'fc472f5707f96b2514d8ec50097da6a6eb7433ff427200f6d6649452ce463695',
-              'client/tests/ir04-isolated-five-role-e2e.spec.js': '496dbcc2337f2cc48d15fc5af217181c948fdd6d4251f301057e2121c7d9d2ee'
-            };
-            for (const [file, exp] of Object.entries(expected)) {
-              const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-              if (actual !== exp) {
-                console.error('Integrity compromise:', file);
-                process.exit(1);
-              }
-            }
-            console.log('All 5 protected files and 6 quarantined suites match verified SHA-256 hashes.');
-          "
-
-      - name: Install Server Dependencies
-        working-directory: ./server
-        run: npm ci
-
-      - name: Execute Server Unit & Governance Suites (82 Tests)
-        working-directory: ./server
-        run: npx jest tests/qaNativeDriverPolicy.test.js tests/qaTrustLedger.test.js tests/qaEncryptionBootstrap.test.js tests/qaProcessOrchestration.test.js tests/dbGuard.test.js
-
-      - name: Install Client Dependencies
-        working-directory: ./client
-        run: npm ci
-
-      - name: Execute Client Master Offline Unit Suites (90 Tests)
-        working-directory: ./client
-        run: npx jest --config master.offline.jest.cjs
-
-      - name: Prepare Scratch Artifact Directories
-        run: mkdir -p scratch/phase5x-evidence
-
-      - name: Execute ML Scoring Validation (40 Checks)
-        run: python ml-engine/b13_r2_scoring_checks.py scratch/ci_ml_receipt.json
-
-      - name: Execute Offline ML Medication Safety Checks (6 Checks)
+          npm ci
+          npm --prefix server ci
+          npm --prefix client ci
+          python -m venv ml-engine/.venv
+          ml-engine/.venv/bin/python -m pip install -r ml-engine/requirements.txt
+          ml-engine/.venv/bin/python -m pip check
+      - name: Run actual offline profiles and authorized hash chain
         env:
-          MEDISYNC_ML_QA: "true"
-          MEDISYNC_ML_DB_PATH: "${{ github.workspace }}/scratch/ci-ml/ci_medisync_test.db"
-          INTERNAL_API_KEY: "synthetic_ci_test_key_0123456789abcdef"
+          MEDISYNC_OFFLINE_CI: 'true'
+        run: node scripts/run_offline_tests.js
+      - name: Build isolated clinical source without environment files or network
+        env:
+          NODE_ENV: production
+          BABEL_ENV: production
+          CI: 'false'
+          MEDISYNC_COMBINED_MODE: build
+          MEDISYNC_COMBINED_EVIDENCE: ${{ github.workspace }}/scratch/ci-build
+          BUILD_PATH: ${{ github.workspace }}/scratch/ci-build/build
+          REACT_APP_API_URL: https://backend.example.invalid/api
+          REACT_APP_SERVER_URL: https://backend.example.invalid
+          GENERATE_SOURCEMAP: 'false'
         run: |
-          mkdir -p scratch/ci-ml
-          python ml-engine/test_medication_safety.py
-
-      - name: Execute Clinical Governance Checks (15 Checks)
-        run: node server/scripts/phase5xMasterClinicalChecks.js ci-run
-
-  mock-browser-automation:
-    runs-on: ubuntu-latest
-    name: Mock Playwright Browser Verification
-    needs: source-integrity-and-offline-tests
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: Install Client Dependencies
-        working-directory: ./client
-        run: npm ci
-
-      - name: Build Production Client Bundle
-        working-directory: ./client
-        run: npm run build
-
-      - name: Install Playwright Browsers (Chromium Only)
-        working-directory: ./client
-        run: npx playwright install --with-deps chromium
-
-      - name: Execute Expanded Mock-Browser Interaction Suite (20 Scenarios)
-        run: node scripts/run_expanded_browser_tests.js
-
-      - name: Assert Evidence & Pass Receipt
-        run: |
-          test -f medisync_browser_expanded_interaction_results.json
-          grep '"verdict": "ALL_INTERACTION_TESTS_PASSED"' medisync_browser_expanded_interaction_results.json
-
-      - name: Upload Browser Screenshot Artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-screenshots
-          path: scratch/phase5x-evidence/playwright-screenshots-expanded/
-          retention-days: 14
+          mkdir -p scratch/ci-build
+          node --require ./scripts/agent_b_combined_boundary.cjs scripts/agent_b_combined_child.cjs
+      - name: Declare clinical execution boundary
+        run: echo 'NOT RUN - Atlas preservation, authenticated five-role E2E, providers and deployments require separate authorization. No mock-browser result represents clinical E2E.'

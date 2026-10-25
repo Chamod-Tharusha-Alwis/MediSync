@@ -10,6 +10,7 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 import io
+from reference_catalog import search_diseases as search_reference_diseases, reference_status, ReferenceDataError
 from flask import Flask, request, jsonify, send_file
 from pypdf import PdfReader, PdfWriter
 from flask_cors import CORS
@@ -398,6 +399,15 @@ def require_internal_auth(f):
 @require_internal_auth
 def predict_disease():
     data = request.json
+    # Reject malformed authenticated requests before joining/lowercasing entries.
+    # Empty/missing and unknown symptom sets retain their existing empty result.
+    if data is not None and not isinstance(data, dict):
+        return jsonify({'error': 'INVALID_SYMPTOMS'}), 400
+    if isinstance(data, dict) and 'symptoms' in data:
+        values = data['symptoms']
+        if not (isinstance(values, str) or
+                (isinstance(values, list) and all(isinstance(value, str) for value in values))):
+            return jsonify({'error': 'INVALID_SYMPTOMS'}), 400
     if not data or 'symptoms' not in data:
         return jsonify({'predictions': []})
         
@@ -546,19 +556,10 @@ def ingest_data():
         return jsonify({'error': str(e)}), 500
 
 
-# Dummy historical data for Prophet to use when buffer is empty
-if PROPHET_AVAILABLE:
-    np.random.seed(42)
-    dates = pd.date_range(start='2023-01-01', periods=100, freq='W')
-    # Generate some realistic looking case numbers
-    cases = np.random.poisson(lam=50, size=100) + np.sin(np.linspace(0, 10, 100)) * 20
-    cases = np.maximum(0, cases)
-    historical_df = pd.DataFrame({'ds': dates, 'y': cases})
-    prophet_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=False)
-    prophet_model.fit(historical_df)
-else:
-    prophet_model = None
-    historical_df = None
+# Startup must not train a forecasting model on fabricated historical data.
+# Forecasting remains unavailable until an independently validated model is approved.
+prophet_model = None
+historical_df = None
 
 
 def calculate_outbreak_metrics(current_cases, baseline, disease=None, base_danger_level=None):
@@ -1206,7 +1207,7 @@ def model_status():
         'clinicalValidation': 'not established',
         'models': {
             'diseasePrediction': 'TF-IDF + Cosine Similarity' if SKLEARN_AVAILABLE else 'Intersection Fallback',
-            'outbreakForecasting': 'Prophet' if PROPHET_AVAILABLE else 'Naive Moving Average',
+            'outbreakForecasting': 'unavailable',
             'interactionChecker': f'{len(interactions_data):,} reference drug pairs (not clinical certification)'
         },
         'uptime': 'OK',
@@ -1534,20 +1535,12 @@ def decrypt_pdf():
 @require_internal_auth
 def search_diseases():
     try:
-        q = request.args.get('q', '').strip().lower()
-        if not q:
-            return jsonify({"results": []})
-            
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        c.execute("SELECT disease_name FROM icd10_diseases WHERE LOWER(disease_name) LIKE ? ORDER BY CASE WHEN base_danger_level = 'High' THEN 1 WHEN base_danger_level = 'Medium' THEN 2 ELSE 3 END LIMIT 20", (f"%{q}%",))
-        rows = c.fetchall()
-        conn.close()
-        
-        results = [row[0] for row in rows]
-        return jsonify({"results": results})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        results = search_reference_diseases(request.args.get('q', ''), data_dir)
+        return jsonify({'results': results}), 200
+    except ValueError:
+        return jsonify({'error': 'Invalid disease query'}), 400
+    except ReferenceDataError:
+        return jsonify({'error': 'Disease reference unavailable'}), 503
 
 
 @app.route('/api/internal/health-stats', methods=['GET'])
@@ -1637,8 +1630,14 @@ def get_health_stats():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Returns 200 once Flask has fully loaded all data and initialized models."""
-    return jsonify({'status': 'ready'}), 200
+    """Readiness requires delivered reference files and loaded symptom profiles."""
+    try:
+        if not symptom_data:
+            raise ReferenceDataError()
+        references = reference_status(data_dir)
+        return jsonify({'status': 'ready', 'references': references}), 200
+    except ReferenceDataError:
+        return jsonify({'status': 'unavailable', 'error': 'Reference data unavailable'}), 503
 
 
 if __name__ == '__main__':

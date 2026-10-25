@@ -1,39 +1,25 @@
+import { trustedMapEmbedUrl as getEmbedMapUrl } from '../../utils/trustedMapEmbed';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, Star, MapPin, MessageSquare, Quote, BookOpen, Phone, Globe, PhoneCall, Building2 } from 'lucide-react';
 import api from '../../api/axiosInstance';
-import { toast } from 'react-toastify';
 
-const getEmbedMapUrl = (url) => {
-  if (!url) return '';
-  if (url.includes('/embed') || url.includes('embed?pb=')) {
-    return url;
-  }
-  try {
-    if (url.startsWith('http')) {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('google') && urlObj.pathname.includes('/place/')) {
-        const place = urlObj.pathname.split('/place/')[1]?.split('/')[0];
-        if (place) {
-          return `https://maps.google.com/maps?q=${place}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-        }
-      }
-      return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-    }
-  } catch (_) {}
-  return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-};
+
+
 
 const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
-  const [hospital, setHospital] = useState(initialHospital);
+  const hospital = initialHospital;
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [reviewsError, setReviewsError] = useState(false);
+
+
+
   const [activeTab, setActiveTab] = useState('about'); // 'about', 'reviews', 'location'
 
-  const isPatient = localStorage.getItem('role') === 'patient';
+  const isPatient = process.env.REACT_APP_UNIVERSITY_RUNTIME !== 'true' && localStorage.getItem('role') === 'patient';
+  const { t } = useTranslation();
 
   // Lock body scroll and handle Escape key dismissal (DEF-A11Y-01)
   useEffect(() => {
@@ -52,11 +38,13 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
   }, [onClose]);
 
   const fetchReviews = useCallback(async () => {
+    if (process.env.REACT_APP_UNIVERSITY_RUNTIME === 'true') { setReviewsError(true); setLoadingReviews(false); return; }
+    setLoadingReviews(true); setReviewsError(false);
     try {
       const res = await api.get(`/reviews/${hospital._id}`);
       setReviews(res.data.data || []);
     } catch (err) {
-      console.error('Failed to fetch reviews', err);
+      setReviewsError(true);
     } finally {
       setLoadingReviews(false);
     }
@@ -66,35 +54,6 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
     fetchReviews();
   }, [fetchReviews]);
 
-  const handleReviewSubmit = async (e) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-    setSubmitting(true);
-    try {
-      const res = await api.post('/reviews', {
-        targetId: hospital._id,
-        targetModel: 'Hospital',
-        rating,
-        comment: comment.trim()
-      });
-      toast.success('Thank you for your feedback!');
-      setComment('');
-      setRating(5);
-      await fetchReviews();
-      
-      if (res.data.stats) {
-        setHospital(prev => ({
-          ...prev,
-          averageRating: res.data.stats.averageRating,
-          ratingCount: res.data.stats.ratingCount
-        }));
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to submit review');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 select-none">
@@ -206,7 +165,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                   
                   {hospital.pickupLocationAddress && (
                     <div className="mt-3 pt-3 border-t border-white/5">
-                      <span className="text-[9px] font-black text-emerald-450 block uppercase tracking-wider">Pickup Location</span>
+                      <span className="text-[9px] font-black text-emerald-450 block uppercase tracking-wider">{t("public.pickupLocation", "Pickup Location")}</span>
                       <span className="text-slate-300 text-xs mt-0.5 block leading-normal">{hospital.pickupLocationAddress}</span>
                     </div>
                   )}
@@ -254,40 +213,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
                     Rate this Medical Facility
                   </h3>
-                  <form onSubmit={handleReviewSubmit} className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400 text-xs font-bold uppercase">Rating:</span>
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setRating(star)}
-                            className="hover:scale-105 transition-transform"
-                          >
-                            <Star className={`w-5 h-5 ${star <= rating ? 'fill-amber-450 text-amber-450' : 'text-slate-700'}`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <textarea
-                        rows={3}
-                        value={comment}
-                        onChange={e => setComment(e.target.value)}
-                        placeholder="Detail your consulting experience at this hospital..."
-                        required
-                        className="w-full bg-slate-950/40 border border-white/5 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none resize-none transition-colors"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={submitting || !comment.trim()}
-                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-                    >
-                      {submitting ? 'Submitting...' : 'Submit Feedback'}
-                    </button>
-                  </form>
+                  <a href="/patient/dashboard/history" className="inline-block text-teal-400 underline">{t('public.reviewViaHistory', 'Review a verified visit from your medical history')}</a>
                 </div>
               )}
 
@@ -297,8 +223,8 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                 </h3>
                 
                 {loadingReviews ? (
-                  <p className="text-slate-500 text-xs py-4">Loading testimonials...</p>
-                ) : reviews.length > 0 ? (
+                  <p className="text-slate-500 text-xs py-4">{t("public.loadingTestimonials", "Loading testimonials...")}</p>
+                ) : reviewsError ? (<div role="alert">{t('public.reviewsUnavailable', 'Reviews unavailable. Please try again.')} <button type="button" onClick={fetchReviews}>{t('serviceStatus.retry', 'Try again')}</button></div>) : reviews.length > 0 ? (
                   reviews.map((review) => (
                     <div key={review._id} className="p-4 rounded-xl border border-white/5 bg-slate-950/20 relative">
                       <Quote className="absolute top-4 right-4 w-6 h-6 text-white/[0.02] rotate-180 select-none" />
@@ -315,7 +241,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-slate-500 text-xs italic">No patient testimonials logged yet.</p>
+                  <p className="text-slate-500 text-xs italic">{t("public.noTestimonials", "No patient testimonials logged yet.")}</p>
                 )}
               </div>
             </div>
@@ -327,7 +253,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" /> Interactive Map Frame
               </h3>
-              {hospital.googleMapsUrl ? (
+              {process.env.REACT_APP_UNIVERSITY_RUNTIME !== 'true' && getEmbedMapUrl(hospital.googleMapsUrl) ? (
                 <div className="w-full h-64 rounded-xl overflow-hidden border border-white/5 shadow-2xl relative bg-slate-950/40">
                   <iframe
                     title="Hospital Location"

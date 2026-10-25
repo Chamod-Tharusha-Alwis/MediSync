@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, AlertCircle, X } from 'lucide-react';
@@ -14,6 +15,7 @@ const ActiveOutbreakBanner = () => {
   const [broadcast, setBroadcast] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [loading,   setLoading]   = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchBroadcast = async () => {
@@ -96,7 +98,7 @@ const ActiveOutbreakBanner = () => {
             onClick={() => setDismissed(true)}
             className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0 absolute"
             style={{ right: '1rem', top: '50%', transform: 'translateY(-50%)' }}
-            aria-label="Dismiss outbreak alert"
+            aria-label={t("common.dismiss", "Dismiss outbreak alert")}
           >
             <X className="w-4 h-4" />
           </motion.button>

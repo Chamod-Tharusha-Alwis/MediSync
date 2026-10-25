@@ -120,7 +120,7 @@ export const ta = {
     "allergies": "ஒவ்வாமைகள்",
     "chronicConditions": "நீண்டகால நோய்கள்",
     "recentVisits": "சமீபத்திய மருத்துவ ஆলোசனைகள்",
-    "downloadPdf": "மருத்துவ சுருக்கம் PDF பதிவிறக்குக",
+    "downloadPdf": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
     "enterOtp": "அனுமதி OTP உள்ளிடவும்",
     "accessGrants": "மருத்துவர் அணுகல் அனுமதிகள்",
     "grantConsent": "அணுகல் அனுமதியை வழங்குக",

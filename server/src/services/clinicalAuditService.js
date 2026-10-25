@@ -2,14 +2,14 @@
 
 /**
  * MediSync Service-Level Clinical Audit Service
- * Provides mandatory, durable, attributable clinical audit logging
- * for state-changing operations across services and background workers.
+ * Provides audit projection and bounded reconciliation helpers. Durable evidence
+ * depends on an embedded transactional outbox and an operational archival worker.
  *
  * Enforces:
  * - Mandatory audit context (actorId, actorRole, action, outcome)
  * - Safe handling of MongoDB capped audit collection limitations
  * - Correlation IDs for request traceability
- * - Zero PHI, password, or token leakage
+ * - Filtering of known sensitive metadata (not a general PII detector)
  * - Fail-closed validation
  */
 
@@ -45,14 +45,14 @@ function maskNic(nic) {
 function sanitizeDetails(details = {}) {
   if (!details || typeof details !== 'object') return {};
   const sanitized = {};
-  const forbiddenKeys = ['password', 'token', 'jwt', 'secret', 'key', 'diagnosis', 'notes', 'symptoms'];
+  const forbiddenKeys = ['password', 'token', 'jwt', 'secret', 'key', 'diagnosis', 'notes', 'symptoms', 'nic', 'email', 'address', 'phone', 'patient', 'name'];
   
   for (const [k, v] of Object.entries(details)) {
     const lower = k.toLowerCase();
-    if (forbiddenKeys.some(fk => lower.includes(fk))) {
+    if (lower !== 'drugname' && forbiddenKeys.some(fk => lower.includes(fk))) {
       continue; // exclude PHI and secrets
     }
-    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+    if ((typeof v === 'string' && v.length <= 120 && !/@|\b(?:\d{12}|\d{9}[vVxX])\b/.test(v)) || (typeof v === 'number' && Number.isFinite(v)) || typeof v === 'boolean') {
       sanitized[k] = v;
     }
   }
@@ -85,7 +85,9 @@ async function recordClinicalEvent(params = {}) {
     correlationId = crypto.randomUUID(),
     details = {},
     session = null,
-    auditLogModel = null
+    auditLogModel = null,
+    projectionId: requestedProjectionId = null,
+    eventAt = new Date()
   } = params;
 
   // 1. Mandatory audit context validation (Fail-closed)
@@ -126,21 +128,32 @@ async function recordClinicalEvent(params = {}) {
 
   // 3. Standalone persistent write to AuditLog capped collection
   const TargetAuditModel = auditLogModel || AuditLog;
-  try {
-    const entry = await TargetAuditModel.create({
+  if (requestedProjectionId !== null && !/^[a-f0-9]{24}$/.test(requestedProjectionId)) throw new Error('AUDIT_PROJECTION_ID_INVALID');
+  if (!Number.isFinite(new Date(eventAt).getTime())) throw new Error('AUDIT_TIMESTAMP_INVALID');
+  const projectionId = requestedProjectionId || (resourceType === 'Dispensing' && resourceId !== 'N/A'
+    ? crypto.createHash('sha256').update(JSON.stringify(['dispensing-audit-v1', resourceId, outcome])).digest('hex').slice(0, 24) : null);
+  const payload = {
+      ...(projectionId ? { _id: projectionId } : {}),
       actorId,
       actorRole,
       action: formattedAction,
       accessedNic: masked,
       deviceModel: `ServiceLevel[${correlationId.slice(0, 8)}]`,
-      timestamp: new Date()
-    });
+      timestamp: new Date(eventAt)
+    };
+  try {
+    const entry = await TargetAuditModel.create(payload);
     return entry;
   } catch (err) {
-    console.error('[ClinicalAuditService] Failed to write durable audit log:', err.message);
+    if (projectionId && err.code === 11000) {
+      const existing = await TargetAuditModel.findById(projectionId).lean();
+      if (!existing || ['actorId', 'actorRole', 'action', 'accessedNic'].some(field => existing[field] !== payload[field]) || (requestedProjectionId && new Date(existing.timestamp).getTime() !== new Date(payload.timestamp).getTime())) throw new Error('AUDIT_PROJECTION_CONFLICT');
+      return existing;
+    }
+    console.error('[ClinicalAuditService] Audit persistence unavailable.');
     // In regulated healthcare context, sensitive clinical operations must fail if auditing is down
     if (process.env.ENFORCE_STRICT_AUDIT === 'true') {
-      throw new Error(`[ClinicalAuditService] Audit persistence unavailable: ${err.message}`);
+      throw new Error('[ClinicalAuditService] Audit persistence unavailable');
     }
     return null;
   }
@@ -158,7 +171,8 @@ async function recordClinicalFailure(params = {}) {
 
 /**
  * Reconcile unprojected clinical audits from durable transactional models (Dispensing, etc.)
- * to the central AuditLog collection, ensuring zero silent evidence loss across process restarts.
+ * to the central AuditLog collection. Callers must schedule reconciliation and
+ * archive evidence before the capped collection rolls off.
  */
 async function reconcileClinicalAuditOutbox(models = {}) {
   const DispensingModel = models.DispensingModel || require('../models/Dispensing');
@@ -175,14 +189,15 @@ async function reconcileClinicalAuditOutbox(models = {}) {
       'audit.actorId': { $exists: true },
       'audit.projectedAt': { $exists: false }
     });
-    const unprojected = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
+    if (typeof query.limit !== 'function' || typeof DispensingModel.updateOne !== 'function') throw new Error('AUDIT_RECONCILIATION_ADAPTER_INVALID');
+    const unprojected = await query.limit(100).lean();
     scanned += unprojected.length;
     for (const doc of unprojected) {
       const recordedRole = doc.audit?.actorRole;
       const written = await recordClinicalEvent({
         actorId: doc.audit?.actorId || 'system',
         actorRole: recordedRole || 'unknown',
-        action: doc.audit?.action || (recordedRole ? ACTIONS.PRESCRIPTION_DISPENSED : 'RECONCILED'),
+        action: doc.audit?.action || 'RECONCILED',
         resourceType: 'Dispensing',
         resourceId: String(doc._id),
         patientNic: doc.patientNic,
@@ -191,10 +206,8 @@ async function reconcileClinicalAuditOutbox(models = {}) {
         auditLogModel: AuditLogModel
       });
       if (written) {
-        if (typeof DispensingModel.updateOne === 'function') {
-          await DispensingModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
-        }
-        reconciled++;
+        const result = await DispensingModel.updateOne({ _id: doc._id, 'audit.projectedAt': { $exists: false } }, { $set: { 'audit.projectedAt': new Date() } });
+        if (result.modifiedCount === 1) reconciled++;
       }
     }
   }
@@ -205,13 +218,14 @@ async function reconcileClinicalAuditOutbox(models = {}) {
       'audit.actorId': { $exists: true },
       'audit.projectedAt': { $exists: false }
     });
-    const unprojectedConsultations = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
+    if (typeof query.limit !== 'function' || typeof ConsultationModel.updateOne !== 'function') throw new Error('AUDIT_RECONCILIATION_ADAPTER_INVALID');
+    const unprojectedConsultations = await query.limit(100).lean();
     scanned += unprojectedConsultations.length;
     for (const doc of unprojectedConsultations) {
       const written = await recordClinicalEvent({
         actorId: String(doc.audit?.actorId || doc.doctorId),
-        actorRole: doc.audit?.actorRole || 'doctor',
-        action: doc.audit?.action || ACTIONS.CONSULTATION_CREATED,
+        actorRole: doc.audit?.actorRole || 'unknown',
+        action: doc.audit?.action || 'RECONCILED',
         resourceType: 'Consultation',
         resourceId: String(doc._id),
         patientNic: doc.patientNic,
@@ -220,10 +234,8 @@ async function reconcileClinicalAuditOutbox(models = {}) {
         auditLogModel: AuditLogModel
       });
       if (written) {
-        if (typeof ConsultationModel.updateOne === 'function') {
-          await ConsultationModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
-        }
-        reconciled++;
+        const result = await ConsultationModel.updateOne({ _id: doc._id, 'audit.projectedAt': { $exists: false } }, { $set: { 'audit.projectedAt': new Date() } });
+        if (result.modifiedCount === 1) reconciled++;
       }
     }
   }
@@ -234,13 +246,14 @@ async function reconcileClinicalAuditOutbox(models = {}) {
       'audit.actorId': { $exists: true },
       'audit.projectedAt': { $exists: false }
     });
-    const unprojectedLabTests = typeof query.limit === 'function' ? await query.limit(100).lean() : await query.lean();
+    if (typeof query.limit !== 'function' || typeof LabTestModel.updateOne !== 'function') throw new Error('AUDIT_RECONCILIATION_ADAPTER_INVALID');
+    const unprojectedLabTests = await query.limit(100).lean();
     scanned += unprojectedLabTests.length;
     for (const doc of unprojectedLabTests) {
       const written = await recordClinicalEvent({
         actorId: String(doc.audit?.actorId || doc.referredBy || doc.acceptedBy || 'system'),
         actorRole: doc.audit?.actorRole || 'unknown',
-        action: doc.audit?.action || ACTIONS.LAB_TEST_ORDERED,
+        action: doc.audit?.action || 'RECONCILED',
         resourceType: 'LabTest',
         resourceId: String(doc._id),
         patientNic: doc.patientNic,
@@ -249,10 +262,8 @@ async function reconcileClinicalAuditOutbox(models = {}) {
         auditLogModel: AuditLogModel
       });
       if (written) {
-        if (typeof LabTestModel.updateOne === 'function') {
-          await LabTestModel.updateOne({ _id: doc._id }, { $set: { 'audit.projectedAt': new Date() } });
-        }
-        reconciled++;
+        const result = await LabTestModel.updateOne({ _id: doc._id, 'audit.projectedAt': { $exists: false } }, { $set: { 'audit.projectedAt': new Date() } });
+        if (result.modifiedCount === 1) reconciled++;
       }
     }
   }

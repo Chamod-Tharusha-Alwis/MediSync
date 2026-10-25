@@ -27,6 +27,10 @@ __pycache__/
 .venv/
 venv/
 ml-engine/data/*.csv
+!ml-engine/data/dataset.csv
+!ml-engine/data/symptom_Description.csv
+!ml-engine/data/symptom_precaution.csv
+!ml-engine/data/Symptom-severity.csv
 *.pyc
 
 dist/

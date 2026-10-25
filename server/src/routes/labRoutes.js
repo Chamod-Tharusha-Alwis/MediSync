@@ -3,7 +3,7 @@ const express  = require('express');
 const multer   = require('multer');
 const path     = require('path');
 const router   = express.Router();
-const protect  = require('../middleware/auth');
+const protect  = require('../middleware/verifiedAuth');
 const { 
   publicStatusCheck,
   searchPatientByNic,

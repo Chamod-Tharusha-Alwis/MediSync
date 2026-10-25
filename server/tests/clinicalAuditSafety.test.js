@@ -186,8 +186,13 @@ describe('Clinical Audit Safety & Durability Specification', () => {
 
     const mockDispensingModel = {
       find: () => ({
-        lean: async () => mockDispensings
-      })
+        limit: (count) => { assert.strictEqual(count, 100); return { lean: async () => mockDispensings }; }
+      }),
+      updateOne: async (filter, update) => {
+        assert.deepStrictEqual(filter, { _id: 'disp-crash-101', 'audit.projectedAt': { $exists: false } });
+        assert(update.$set['audit.projectedAt'] instanceof Date);
+        return { modifiedCount: 1 };
+      }
     };
 
     const mockAuditLogModel = {

@@ -1,3 +1,4 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const { dispense, DispenseError } = require('../services/dispensingService');
 const { recordClinicalEvent } = require('../services/clinicalAuditService');
 const AuditLog = require('../models/AuditLog');
@@ -8,7 +9,8 @@ const crypto = require('crypto');
 const handler = otc => async (req, res) => {
   try {
     const {receipt,replay} = await dispense({user:req.user,body:req.body,otc,prescriptionRef:req.params?.id,
-      idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true});
+      idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true,
+      authorization:{ consentToken: req.headers['x-patient-access'] || req.headers['x-patient-access-token'], sessionId: req.session?._id }});
     // Capped audit collections cannot participate in the dispensing transaction.
     // The receipt's durable audit event is authoritative; this is an extra projection.
     if (!replay) {
@@ -22,20 +24,20 @@ const handler = otc => async (req, res) => {
         correlationId: req.headers['idempotency-key'] || receipt.requestHash || receipt.receiptNumber,
         details: { receiptNumber: receipt.receiptNumber }
       }).catch((err) => {
-        console.error('[DispensingController] Audit projection warning:', err.message);
+        console.error('[DispensingController] Audit projection warning:');
       });
       if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true') {
         const nicHash = crypto.createHash('sha256').update(receipt.patientNic).digest('hex');
-        Patient.findOne({$or:[{nic:receipt.patientNic},{patientNic_bi:nicHash}]}).then(patient => {
-          if (patient?.email) return emailService.sendDispenseNotificationEmail(patient.email,patient.fullName,'MediSync Pharmacy',
-            String(receipt.staffId),receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),new Date().toLocaleString('en-GB'));
+        Patient.findOne(nicFilter(receipt.patientNic, { plainFields: ['nic'] })).then(patient => {
+          if (patient?.email && (!receipt.patientId || String(receipt.patientId) === String(patient._id))) return require('../services/recipientLanguageService').email({ model: 'Patient', accountId: String(patient._id) }, ({ to, lang }) => emailService.sendDispenseNotificationEmail(to,patient.fullName,'MediSync Pharmacy',
+            String(receipt.staffId),receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),new Date().toLocaleString('en-GB'), { lang }));
         }).catch(()=>{});
       }
     }
     return res.status(replay?200:201).json({message:'Dispensed successfully',replayed:replay,
       data:{receiptNumber:receipt.receiptNumber,prescriptionId:receipt.prescriptionId,medicationCount:receipt.items.length}});
   } catch (e) {
-    const known = e instanceof DispenseError;
+    const known = e instanceof DispenseError || e instanceof require('../services/clinicalErrors').ClinicalCommandError;
     return res.status(known?e.status:503).json({error:known?e.message:'Dispensing could not be completed safely.',
       code:known?e.code:'TRANSACTION_FAILED'});
   }

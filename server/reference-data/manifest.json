@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "clinicalValidation": "not_established",
+  "licenseReview": "not_verified",
+  "entries": [
+    {
+      "catalog": "drugs",
+      "file": "drugs_clean.json",
+      "source": "ml-engine/data/drugs_clean.json",
+      "bytes": 1035979,
+      "rows": 3000,
+      "sha256": "6d81e3f04c3b6f3b95bf41f9eda2fba6381ae5dac9ce9d4b690a80e77daf7788"
+    },
+    {
+      "catalog": "interactions",
+      "file": "interactions_clean.json",
+      "source": "ml-engine/data/interactions_clean.json",
+      "bytes": 40459602,
+      "rows": 191541,
+      "sha256": "82f38ea35a051cb70f27a9d3fea08a44589993029841db797525f718e274fcf0"
+    },
+    {
+      "catalog": "icd10",
+      "file": "icd10_clean.json",
+      "source": "ml-engine/data/icd10_clean.json",
+      "bytes": 7714981,
+      "rows": 71704,
+      "sha256": "f5b9a27d34777a69d44c680ae60bbf47bbd4ae48a7fc0c7359ad92b77412c752"
+    },
+    {
+      "catalog": "symptoms",
+      "file": "symptoms.json",
+      "source": "ml-engine/data/dataset.csv",
+      "sourceSha256": "ebbd391c4ba4d64f57a00eb3d0a55f0ca9b920b0c5de6b9af4234e72519c9618",
+      "bytes": 2687,
+      "rows": 131,
+      "sha256": "8c3e5b8554e58095c26db29e6a010ec3211efe25318719d95a6143b35b506c76"
+    }
+  ]
+}

@@ -1,3 +1,6 @@
+const { updateFacilityProfile } = require('../services/facilityProfileService');
+const { ClinicalCommandError } = require('../services/clinicalErrors');
+const { profileDto, isHttpsLink } = require('../security/publicDto');
 const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient');
 const Hospital = require('../models/Hospital');
@@ -11,21 +14,21 @@ exports.uploadProfilePic = async (req, res) => {
     }
 
     const { role, id } = req.user;
+    if (role === 'patient') return res.status(503).json({error:'PRIVATE_PROFILE_IMAGE_STORAGE_REQUIRED'});
     const imageUrl = req.file.path || req.file.secure_url;
+    if (!isHttpsLink(imageUrl)) return res.status(400).json({error:'Invalid profile image URL'});
 
+    if (!['doctor','patient','hospital_admin','pharmacy_admin'].includes(role)) return res.status(403).json({error:'Profile editing is not permitted for this role'});
     let updatedDoc;
 
-    if (role === 'doctor' || role === 'admin' || role === 'super_admin') {
+    if (role === 'doctor') {
       updatedDoc = await Doctor.findByIdAndUpdate(id, { profilePicture: imageUrl }, { new: true });
     } else if (role === 'patient') {
       updatedDoc = await Patient.findByIdAndUpdate(id, { profilePicture: imageUrl }, { new: true });
     } else if (role === 'hospital_admin') {
       updatedDoc = await Hospital.findByIdAndUpdate(id, { profilePicture: imageUrl }, { new: true });
-    } else if (role === 'pharmacy_admin' || role === 'pharmacist' || role === 'assistant') {
-      updatedDoc = await PharmacyStaff.findByIdAndUpdate(id, { profilePicture: imageUrl }, { new: true });
-      if (updatedDoc && updatedDoc.pharmacyId) {
-        await Pharmacy.findByIdAndUpdate(updatedDoc.pharmacyId, { profilePicture: imageUrl });
-      }
+    } else if (role === 'pharmacy_admin') {
+      updatedDoc = await updateFacilityProfile({id,role,update:{profilePicture:imageUrl}});
     }
 
     if (!updatedDoc) {
@@ -35,21 +38,25 @@ exports.uploadProfilePic = async (req, res) => {
     res.json({
       message: 'Profile picture uploaded successfully',
       imageUrl,
-      data: updatedDoc
+      data: profileDto(updatedDoc)
     });
   } catch (error) {
-    res.status(500).json({ error: 'Profile picture upload failed', details: error.message });
+    res.status(error instanceof ClinicalCommandError ? error.status : 500).json({ error: error instanceof ClinicalCommandError ? error.code : 'Profile picture upload failed' });
   }
 };
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { description, googleMapsUrl, pickupLocationAddress } = req.body;
+    const body = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length===0 || Object.keys(body).some(k => !['description','googleMapsUrl','pickupLocationAddress'].includes(k)) || Object.entries(body).some(([k,v]) => typeof v !== 'string' || v.length > (k === 'description' ? 5000 : 2000))) return res.status(400).json({error:'Invalid profile fields'});
+    const { description, googleMapsUrl, pickupLocationAddress } = body;
+    if (googleMapsUrl && !isHttpsLink(googleMapsUrl)) return res.status(400).json({error:'A valid HTTPS map link is required'});
     const { role, id } = req.user;
 
+    if (!['doctor','patient','hospital_admin','pharmacy_admin'].includes(role)) return res.status(403).json({error:'Profile editing is not permitted for this role'});
     let updatedDoc;
 
-    if (role === 'doctor' || role === 'admin' || role === 'super_admin') {
+    if (role === 'doctor') {
       const updateData = { description };
       if (googleMapsUrl !== undefined) updateData.googleMapsUrl = googleMapsUrl;
       updatedDoc = await Doctor.findByIdAndUpdate(id, updateData, { new: true });
@@ -60,15 +67,8 @@ exports.updateProfile = async (req, res) => {
       if (googleMapsUrl !== undefined) updateData.googleMapsUrl = googleMapsUrl;
       if (pickupLocationAddress !== undefined) updateData.pickupLocationAddress = pickupLocationAddress;
       updatedDoc = await Hospital.findByIdAndUpdate(id, updateData, { new: true });
-    } else if (role === 'pharmacy_admin' || role === 'pharmacist' || role === 'assistant') {
-      const updateData = { description };
-      updatedDoc = await PharmacyStaff.findByIdAndUpdate(id, updateData, { new: true });
-      if (updatedDoc && updatedDoc.pharmacyId) {
-        const pharmUpdateData = { description };
-        if (googleMapsUrl !== undefined) pharmUpdateData.googleMapsUrl = googleMapsUrl;
-        if (pickupLocationAddress !== undefined) pharmUpdateData.pickupLocationAddress = pickupLocationAddress;
-        await Pharmacy.findByIdAndUpdate(updatedDoc.pharmacyId, pharmUpdateData);
-      }
+    } else if (role === 'pharmacy_admin') {
+      updatedDoc = await updateFacilityProfile({id,role,update:body});
     }
 
     if (!updatedDoc) {
@@ -77,9 +77,9 @@ exports.updateProfile = async (req, res) => {
 
     res.json({
       message: 'Profile updated successfully',
-      data: updatedDoc
+      data: profileDto(updatedDoc)
     });
   } catch (error) {
-    res.status(500).json({ error: 'Profile update failed', details: error.message });
+    res.status(error instanceof ClinicalCommandError ? error.status : 500).json({ error: error instanceof ClinicalCommandError ? error.code : 'Profile update failed' });
   }
 };

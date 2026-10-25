@@ -1,3 +1,4 @@
+import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -7,6 +8,7 @@ import {
   TrendingUp, Save
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import { useTranslation } from '../../i18n/LanguageContext';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
@@ -14,11 +16,12 @@ import LabManagement from './LabManagement';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 
 // ─── DOCTOR ROSTER ───────────────────────────────────────────────────────────
-const DoctorRoster = () => {
+export const DoctorRoster = () => {
+  const { t } = useTranslation();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
-  const [licenseNo, setLicenseNo] = useState('');
+  const [doctorId, setDoctorId] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
   const fetchDoctors = async () => {
@@ -40,10 +43,10 @@ const DoctorRoster = () => {
     e.preventDefault();
     setIsAdding(true);
     try {
-      await api.post('/hospital/doctors/link', { email, doctorId: licenseNo });
-      toast.success('Doctor linked successfully. Email sent.');
+      await api.post('/hospital/doctors/link', { email: email.trim(), doctorId: doctorId.trim() });
+      toast.success(t('hospitalLink.saved', 'Doctor linked. Invitation delivery is not confirmed.'));
       setEmail('');
-      setLicenseNo('');
+      setDoctorId('');
       fetchDoctors();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to add doctor');
@@ -71,12 +74,13 @@ const DoctorRoster = () => {
 
       <div className="glass-card p-6 rounded-2xl mb-8 border border-white/5">
         <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-          <Plus className="w-4 h-4 text-emerald-400" /> Link Certified Medical Practitioner
+          <Plus className="w-4 h-4 text-emerald-400" /> Link Verified Doctor
         </h3>
         <form onSubmit={handleAddDoctor} className="grid md:grid-cols-3 gap-4 items-end">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-400">Doctor Corporate Email</label>
+            <label htmlFor="hospital-doctor-email" className="text-xs font-semibold uppercase text-slate-400">{t('hospitalLink.registeredEmail', 'Doctor Registered Email')}</label>
             <input
+              id="hospital-doctor-email"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -85,18 +89,19 @@ const DoctorRoster = () => {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-400">OR SLMC License ID</label>
+            <label htmlFor="hospital-doctor-id" className="text-xs font-semibold uppercase text-slate-400">{t('hospitalLink.doctorId', 'OR MediSync Doctor ID')}</label>
             <input
+              id="hospital-doctor-id"
               type="text"
-              value={licenseNo}
-              onChange={e => setLicenseNo(e.target.value)}
+              value={doctorId}
+              onChange={e => setDoctorId(e.target.value)}
               className="glass-input text-sm"
-              placeholder="e.g. SLMC-12345"
+              placeholder="e.g. DR-1234ABCD"
             />
           </div>
           <button
             type="submit"
-            disabled={isAdding || (!email && !licenseNo)}
+            disabled={isAdding || (!email.trim() && !doctorId.trim())}
             className="glass-button text-xs py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-white disabled:opacity-40"
           >
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -113,11 +118,11 @@ const DoctorRoster = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4 font-bold">Doctor Name</th>
-                  <th className="px-6 py-4 font-bold">Specialization</th>
-                  <th className="px-6 py-4 font-bold">Corporate Email</th>
-                  <th className="px-6 py-4 font-bold">Access Status</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  <th className="px-6 py-4 font-bold">{t("hospital.doctorName", "Doctor Name")}</th>
+                  <th className="px-6 py-4 font-bold">{t("hospital.specialization", "Specialization")}</th>
+                  <th className="px-6 py-4 font-bold">{t("hospital.corporateEmail", "Corporate Email")}</th>
+                  <th className="px-6 py-4 font-bold">{t("hospital.accessStatus", "Access Status")}</th>
+                  <th className="px-6 py-4 font-bold text-right">{t("common.actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -144,7 +149,7 @@ const DoctorRoster = () => {
                             : 'text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/20'
                         }`}
                       >
-                        {doc.isActive ? 'Suspend Access' : 'Activate Access'}
+                        {doc.isActive ? t('hospital.suspendAccess', 'Suspend Access') : t('hospital.activateAccess', 'Activate Access')}
                       </button>
                     </td>
                   </tr>
@@ -168,6 +173,7 @@ const DoctorRoster = () => {
 
 // ─── SETTINGS PAGE ───────────────────────────────────────────────────────────
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState({ name: '', email: '', district: '', address: '', emergencyHotline: '', description: '', profilePicture: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -341,6 +347,8 @@ const SettingsPage = () => {
             </div>
           </form>
 
+          <LanguagePreferenceCard />
+
           {/* Password Rotation Card */}
           <form onSubmit={handlePasswordRotate} className="glass-card p-6 rounded-2xl space-y-6">
             <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
@@ -350,7 +358,7 @@ const SettingsPage = () => {
 
             <div className="grid sm:grid-cols-3 gap-5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">Current Password</label>
+                <label className="text-xs font-semibold uppercase text-slate-400">{t("common.currentPassword", "Current Password")}</label>
                 <input
                   type="password"
                   value={currentPassword}
@@ -360,7 +368,7 @@ const SettingsPage = () => {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">New Password</label>
+                <label className="text-xs font-semibold uppercase text-slate-400">{t("common.newPassword", "New Password")}</label>
                 <input
                   type="password"
                   value={newPassword}
@@ -370,7 +378,7 @@ const SettingsPage = () => {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">Confirm Password</label>
+                <label className="text-xs font-semibold uppercase text-slate-400">{t("auth.confirmPassword", "Confirm Password")}</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -388,7 +396,7 @@ const SettingsPage = () => {
                 className="glass-button text-xs py-2.5 px-6"
               >
                 {rotatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-                {rotatingPassword ? 'Updating...' : 'Rotate Password'}
+                {rotatingPassword ? t('common.loading', 'Updating...') : t('hospital.rotatePassword', 'Rotate Password')}
               </button>
             </div>
           </form>
@@ -399,35 +407,11 @@ const SettingsPage = () => {
           <div className="glass-card rounded-2xl p-6 border border-white/5 space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-white/5">
               <Key className="w-4.5 h-4.5 text-emerald-400" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">API Integration Credential</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t("hospital.apiCredentials", "API Integration Credential")}</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Integrate your LIS (Laboratory Information System) with MediSync secure REST catalogs using OAuth Client credentials.
+            <p role="status" className="text-xs text-slate-400 leading-relaxed">
+              External laboratory integration is unavailable. No integration credentials or webhook have been provisioned.
             </p>
-            <div className="space-y-4">
-              {[
-                { label: 'Facility App ID', value: `HOSP-${profile._id || '9b1a8c'}` },
-                { label: 'Sandbox Secret Key', value: 'sk_sandbox_mock_credential_12345' },
-                { label: 'Webhook Endpoint', value: 'https://api.medisync.io/v1/webhooks/lis' }
-              ].map(cred => (
-                <div key={cred.label} className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">{cred.label}</span>
-                  <div className="flex items-center gap-2 bg-slate-950/40 border border-white/5 px-3 py-2 rounded-xl">
-                    <span className="font-mono text-[11px] text-slate-300 select-all truncate flex-1">{cred.value}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(cred.value);
-                        toast.success(`${cred.label} copied!`);
-                      }}
-                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold shrink-0 uppercase tracking-wider"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -437,13 +421,15 @@ const SettingsPage = () => {
 
 // ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
 const Overview = ({ stats, labStats, onNavigate }) => {
+  const { t } = useTranslation();
+  if (!stats || !labStats) return <section role="alert"><h2>Dashboard metrics unavailable</h2><p>Metrics could not be verified. No counts are shown.</p></section>;
   return (
     <PageTransition className="space-y-8">
       {/* Overview Header */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Hospital Administration</h1>
-          <p className="text-slate-400 mt-1.5 text-sm font-medium">Facility operations, doctor rosters, and laboratory metrics summary.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("hospital.dashboard", "Hospital Administration")}</h1>
+          <p className="text-slate-400 mt-1.5 text-sm font-medium">{t("hospital.facilityOpsDesc", "Facility operations, doctor rosters, and laboratory metrics summary.")}</p>
         </div>
         <button
           onClick={() => onNavigate('/hospital/dashboard/tests')}
@@ -477,16 +463,16 @@ const Overview = ({ stats, labStats, onNavigate }) => {
         <div className="lg:col-span-2 space-y-6">
           <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-4.5 h-4.5 text-emerald-400" /> Operational Metrics
+              <TrendingUp className="w-4.5 h-4.5 text-emerald-400" /> {t("hospital.facilityOps", "Operational Metrics")}
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5">
-                <span className="text-xs text-slate-400 font-semibold block">Total Linked Doctors</span>
+                <span className="text-xs text-slate-400 font-semibold block">{t("hospital.totalDoctors", "Total Linked Doctors")}</span>
                 <span className="text-2xl font-bold text-white mt-1 block">{stats?.totalDoctors || 0}</span>
                 <span className="text-[10px] text-slate-500 mt-1 block">Active: {stats?.activeDoctors || 0} | Suspended: {stats?.inactiveDoctors || 0}</span>
               </div>
               <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5">
-                <span className="text-xs text-slate-400 font-semibold block">Consultations Today</span>
+                <span className="text-xs text-slate-400 font-semibold block">{t("hospital.consultationsToday", "Consultations Today")}</span>
                 <span className="text-2xl font-bold text-white mt-1 block">{stats?.consultationsToday || 0}</span>
                 <span className="text-[10px] text-slate-500 mt-1 block">Prescriptions issued: {stats?.prescriptionsToday || 0}</span>
               </div>
@@ -500,8 +486,9 @@ const Overview = ({ stats, labStats, onNavigate }) => {
 
 // ─── MAIN ROUTER CONTAINER ───────────────────────────────────────────────────
 const HospitalDashboard = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
-  const [labStats, setLabStats] = useState({ receivedToday: 0, completed: 0, pending: 0, avgTime: '0.0h' });
+  const [labStats, setLabStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -515,7 +502,8 @@ const HospitalDashboard = () => {
       setStats(generalStats.data);
 
       // Compute Lab statistics
-      const tests = Array.isArray(labAll) ? labAll : [];
+      if (!Array.isArray(labAll)) throw Error('LAB_METRICS_RESPONSE_INVALID');
+      const tests = labAll;
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
@@ -549,10 +537,10 @@ const HospitalDashboard = () => {
   const hospitalName = localStorage.getItem('hospitalName') || 'Hospital';
 
   const menuItems = [
-    { label: 'Overview', path: '/hospital/dashboard', icon: LayoutDashboard, end: true },
-    { label: 'Doctor Roster', path: '/hospital/dashboard/doctors', icon: Users },
-    { label: 'Lab Tests', path: '/hospital/dashboard/tests', icon: FlaskConical },
-    { label: 'Settings', path: '/hospital/dashboard/settings', icon: Settings },
+    { label: t('nav.overview', 'Overview'), path: '/hospital/dashboard', icon: LayoutDashboard, end: true },
+    { label: t('hospital.doctorRoster', 'Doctor Roster'), path: '/hospital/dashboard/doctors', icon: Users },
+    { label: t('hospital.labOrders', 'Lab Tests'), path: '/hospital/dashboard/tests', icon: FlaskConical },
+    { label: t('common.settings', 'Settings'), path: '/hospital/dashboard/settings', icon: Settings },
   ];
 
   return (

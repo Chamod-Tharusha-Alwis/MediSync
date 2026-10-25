@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, FlaskConical, ChevronDown } from 'lucide-react';
@@ -5,6 +6,7 @@ import { Download, FlaskConical, ChevronDown } from 'lucide-react';
 const LabReportDownloadButton = ({ labTests = [], onSelectTest }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { t } = useTranslation();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -43,7 +45,7 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest }) => {
         className="glass-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all duration-200"
       >
         <Download className="w-3.5 h-3.5 text-purple-400" />
-        Download Lab Report
+        {t("lab.downloadReport", "Download Lab Report")}
       </motion.button>
     );
   }
@@ -62,7 +64,7 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest }) => {
         className="glass-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all duration-200"
       >
         <Download className="w-3.5 h-3.5 text-purple-400" />
-        Download Lab Report ({labTests.length})
+        {t("lab.downloadReport", "Download Lab Report")} ({labTests.length})
         <ChevronDown className={`w-3.5 h-3.5 text-purple-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </motion.button>
 
@@ -79,7 +81,7 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest }) => {
             <div className="px-3 py-1.5 border-b border-white/10 mb-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
                 <FlaskConical className="w-3 h-3" />
-                Select Lab Report to Download
+                {t("lab.selectReportToDownload", "Select Lab Report to Download")}
               </p>
             </div>
 

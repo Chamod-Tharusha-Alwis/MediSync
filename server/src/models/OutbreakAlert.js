@@ -67,9 +67,18 @@ const outbreakAlertSchema = new mongoose.Schema({
   datasetVersion: {
     type: String
   },
+  datasetBatch: { type: String },
   isSimulation: {
     type: Boolean,
     default: false
+  },
+  syntheticLabel: {
+    type: String,
+    default: null
+  },
+  publicAuthorityNotice: {
+    type: String,
+    default: null
   }
 }, { 
   timestamps: true 

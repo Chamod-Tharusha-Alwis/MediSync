@@ -8,14 +8,15 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "start": "node src/app.js",
+    "start": "node src/production.js",
     "start:qa": "node scripts/phase5xSafeBackend.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
     "seed": "node src/utils/seedData.js",
     "seed:users": "node src/utils/seedUsers.js",
     "seed:drugs": "node src/utils/seedDrugs.js",
-    "seed:admin": "node src/utils/seedAdmin.js"
+    "seed:admin": "node src/utils/seedAdmin.js",
+    "start:university": "node src/university.js"
   },
   "keywords": [],
   "author": "",

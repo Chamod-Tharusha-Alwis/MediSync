@@ -88,21 +88,16 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
 
     // Write to AuditLog
     try {
-      let accessedNic = 'N/A';
-      if (req.params && req.params.nic) accessedNic = req.params.nic;
-      else if (req.body && req.body.nic) accessedNic = req.body.nic;
-      else if (req.body && req.body.patientNic) accessedNic = req.body.patientNic;
-
       const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
       await AuditLog.create({
         actorId: decoded.id || decoded.sub || 'unknown',
         actorRole: decoded.role || 'unknown',
-        action: `${req.method} ${req.originalUrl || req.path}`,
-        accessedNic: accessedNic,
+        action: `${req.method} ${req.route?.path || 'protected-route'}`,
+        accessedNic: 'REDACTED',
         deviceModel: parseDeviceModel(req.headers['user-agent'], clientHw)
       });
     } catch (auditErr) {
-      console.error('Failed to write audit log:', auditErr);
+      console.error('Audit persistence unavailable.');
       // Don't block the request if audit logging fails
     }
 
@@ -111,7 +106,7 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
     req.session = session;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('Authentication unavailable.');
     res.status(500).json({ error: 'Server error during authentication' });
   }
 };
