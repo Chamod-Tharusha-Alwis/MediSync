@@ -123,5 +123,12 @@ describe('IR-02 MongoDB Atlas Free (M0) Database Isolation & Destructive-Op Safe
     await expect(connectProductionDB(dummyProdUri)).rejects.toThrow(DatabaseIsolationError);
     await expect(mongoose.connect(dummyProdUri, { dbName: 'test' })).rejects.toThrow(DatabaseIsolationError);
   });
+
+  test('11. Explicitly rejects production cluster (p7hjket.mongodb.net) in MONGO_URI_TEST', () => {
+    const prodClusterTestUri = 'mongodb+srv://test_user:test_pass@cluster0.p7hjket.mongodb.net/medisync_automated_test?appName=MediSync';
+    expect(() =>
+      validateAutomatedTestConfig({ testUri: prodClusterTestUri })
+    ).toThrow(/Cluster collision violation: MONGO_URI_TEST points to denied production cluster "p7hjket.mongodb.net"/i);
+  });
 });
 

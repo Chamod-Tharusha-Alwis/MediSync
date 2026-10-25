@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { useLocation } from 'react-router-dom';
 import RateConsultationModal from './RateConsultationModal';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,7 +103,7 @@ const downloadPdf = async (prescriptionId, setDownloading) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('E-Prescription downloaded. Check your registered email for your secure PDF password.');
+    toast.success('E-Prescription downloaded.');
   } catch (err) {
     toast.error(err.response?.data?.error || err.message || 'Download failed');
   } finally {
@@ -569,7 +571,7 @@ const HistoryCard = ({ event, onRate }) => {
                               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               : <Download className="w-3.5 h-3.5" />
                             }
-                            {downloading ? 'Downloading…' : 'Download E-Prescription (PDF) 🔒'}
+                            {downloading ? 'Downloading…' : 'Download E-Prescription (PDF)'}
                           </motion.button>
                         )}
 
@@ -675,10 +677,30 @@ const SummaryChip = ({ icon: Icon, label, count, color }) => (
 );
 
 /* ─── Main Page ───────────────────────────────────────────────────────────── */
+  const VALID_FILTERS = ['all', 'consultation', 'prescription', 'otc', 'dispensing'];
+  const getSafeFilter = (val) => (VALID_FILTERS.includes(val) ? val : 'all');
+
 const PatientHistory = () => {
+  const { t } = useTranslation();
   const [timeline,    setTimeline]    = useState([]);
   const [ratingModal, setRatingModal] = useState({ show: false, consultation: null });
-  const [filter,      setFilter]      = useState('all');
+  const location = useLocation();
+  const [filter, setFilter] = useState(() => getSafeFilter(location.state?.filter));
+  const lastLocationKey = useRef(location?.key);
+
+  // Sync filter when navigation occurs (new location key) or when state updates while mounted
+  useEffect(() => {
+    if (lastLocationKey.current !== location?.key) {
+      lastLocationKey.current = location?.key;
+      if (location?.state && typeof location.state === 'object' && 'filter' in location.state) {
+        setFilter(getSafeFilter(location.state.filter));
+      } else {
+        setFilter('all');
+      }
+    } else if (location?.state && typeof location.state === 'object' && 'filter' in location.state) {
+      setFilter(getSafeFilter(location.state.filter));
+    }
+  }, [location?.key, location?.state]);
 
   let nic = localStorage.getItem('nic');
   if (!nic) {
@@ -703,14 +725,18 @@ const PatientHistory = () => {
       item.data?._id === consultationId ? { ...item, data: { ...item.data, reviews: [...(item.data.reviews || []), ...newReviews] } } : item
     ));
 
-  /* Filtered feed — OTC filter maps to prescription events, prescription filter maps to consultations with nested prescriptions */
-  const filtered = filter === 'all'
+  /* Filtered feed — OTC filter maps to prescription events, prescription filter maps to consultations with nested prescriptions or standalone non-OTC prescriptions */
+  const activeFilter = getSafeFilter(filter);
+  const filtered = activeFilter === 'all'
     ? timeline
-    : filter === 'otc'
+    : activeFilter === 'otc'
       ? timeline.filter(e => e.type === 'prescription' && e.data?.isOTC)
-      : filter === 'prescription'
-        ? timeline.filter(e => e.type === 'consultation' && e.data?.prescriptions && e.data.prescriptions.length > 0)
-        : timeline.filter(e => e.type === filter);
+      : activeFilter === 'prescription'
+        ? timeline.filter(e =>
+            (e.type === 'consultation' && Array.isArray(e.data?.prescriptions) && e.data.prescriptions.length > 0) ||
+            (e.type === 'prescription' && !e.data?.isOTC)
+          )
+        : timeline.filter(e => e.type === activeFilter);
 
   /* ── Guards ── */
   if (!nic) return (
@@ -765,7 +791,7 @@ const PatientHistory = () => {
         <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 tracking-tight">
           Medical History
         </h1>
-        <p className="text-slate-400 mt-1 text-sm">Your complete chronological health and prescription record.</p>
+        <p className="text-slate-400 mt-1 text-sm">{t("patient.medicalHistorySubtitle", "Your complete chronological health and prescription record.")}</p>
       </div>
 
       {/* ── Summary chips ── */}
@@ -791,7 +817,7 @@ const PatientHistory = () => {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all duration-200 ${
-                filter === f
+                activeFilter === f
                   ? 'bg-teal-500/15 text-teal-400 border-teal-500/30 shadow-[0_0_12px_rgba(20,184,166,0.10)]'
                   : 'text-slate-500 border-slate-800/60 hover:text-slate-300 hover:border-slate-700'
               }`}
@@ -847,7 +873,7 @@ const PatientHistory = () => {
       {timeline.length > 0 && filtered.length === 0 && (
         <div className="text-center py-16 text-slate-500">
           <FileText className="w-10 h-10 mx-auto mb-3 opacity-20" />
-          <p className="text-sm font-semibold">No {filter} records found.</p>
+          <p className="text-sm font-semibold">No {activeFilter} records found.</p>
         </div>
       )}
 

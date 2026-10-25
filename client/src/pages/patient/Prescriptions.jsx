@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -10,7 +11,7 @@ import PageTransition from '../../components/common/PageTransition';
 import { toast } from 'react-toastify';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PDF Download helper — streams the NIC-locked PDF and triggers browser save
+   PDF Download helper — streams the prescription PDF and triggers browser save
    ───────────────────────────────────────────────────────────────────────────── */
 const downloadPdf = async (prescriptionId, setDownloading) => {
   if (!prescriptionId) {
@@ -161,13 +162,6 @@ const PrescriptionCard = ({ rx, badge, index }) => {
             }
           </button>
         )}
-
-        {/* Hint: password is patient's NIC */}
-        {rx.prescriptionId && (
-          <p className="text-center text-slate-600 text-[10px] mt-1.5">
-            🔒 PDF is password-protected with your NIC
-          </p>
-        )}
       </div>
     </motion.div>
   );
@@ -290,7 +284,7 @@ const PatientPrescriptions = () => {
 
       {/* ── Page header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">My Prescriptions</h1>
+        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">{t("patient.prescriptionsTitle", "My Prescriptions")}</h1>
         <p className="text-slate-400 mt-1">
           Track all your medications and download your E-Prescriptions.
         </p>
