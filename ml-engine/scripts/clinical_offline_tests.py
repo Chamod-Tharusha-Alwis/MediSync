@@ -14,9 +14,16 @@ if not out.is_relative_to(root / 'scratch'):
 
 def audit(event, args):
     if event == 'subprocess.Popen':
-        command = tuple(args[1])
-        allowed = {('uname', '-p'), ('fc-list', '--help'), ('fc-list', '--format=%{file}\n')}
-        if command in allowed and command not in metadata_probes:
+        command = tuple(args[1]) if isinstance(args[1], (list, tuple)) else (args[1],)
+        cmd_name = pathlib.Path(str(command[0])).name if command else ''
+        norm_cmd = (cmd_name,) + tuple(str(x) for x in command[1:])
+        allowed = {
+            ('uname', '-p'),
+            ('fc-list', '--help'),
+            ('fc-list', '--format=%{file}\n'),
+            ('fc-list', '--format=%{file}\\n'),
+        }
+        if (norm_cmd in allowed or command in allowed) and command not in metadata_probes:
             metadata_probes.append(command)
             return
     if event == 'open' and isinstance(args[0], (str, bytes)) and pathlib.Path(str(args[0])).name.startswith('.env'):
