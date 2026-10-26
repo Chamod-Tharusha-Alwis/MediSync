@@ -8,6 +8,6 @@ function createRuntimeHealth({requireRedis=true,requireAdmission=false,admission
 }
 function hasProductionAdmission(info){
   const required=require('./productionStorageManifest.json').collections.filter(row=>!row.whenAll);
-  return info?.dbName==='test'&&info.authenticatedUserCount===1&&info.authenticatedRoles?.length===1&&info.authenticatedRoles[0].role==='readWrite'&&info.authenticatedRoles[0].db==='test'&&info.storageProfile==='current-model-contract-no-migration'&&info.transactionTopologyVerified===true&&info.verifiedCollections>=required.length&&info.verifiedRequiredIndexes>=required.reduce((n,row)=>n+row.indexes.length,0);
+  return info?.dbName==='medisync_prod'&&info.authenticatedUserCount===1&&info.authenticatedRoles?.length===1&&info.authenticatedRoles[0].role==='readWrite'&&info.authenticatedRoles[0].db==='medisync_prod'&&info.storageProfile==='current-model-contract-no-migration'&&info.transactionTopologyVerified===true&&info.verifiedCollections>=required.length&&info.verifiedRequiredIndexes>=required.reduce((n,row)=>n+row.indexes.length,0);
 }
 module.exports={createRuntimeHealth,hasProductionAdmission};

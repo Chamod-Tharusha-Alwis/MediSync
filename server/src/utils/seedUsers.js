@@ -78,11 +78,15 @@ const seedUsers = async () => {
         specialization: 'Cardiologist',
         licenseNo: 'SLMC-12345',
         role: 'doctor',
-        twoFactorEnabled: false
+        twoFactorEnabled: false,
+        isActive: true,
+        isVerified: true
       }).save();
       console.log(`✅ Doctor created!`);
     } else {
       existingDoc.password = hashedPassword;
+      existingDoc.isActive = true;
+      existingDoc.isVerified = true;
       await existingDoc.save();
       console.log(`ℹ️ Doctor updated with new password!`);
     }

@@ -53,4 +53,4 @@ tzlocal==5.3.1
 urllib3==2.6.3
 Werkzeug==3.1.8
 xlsxwriter==3.2.9
-gunicorn==21.2.0
+gunicorn==23.0.0

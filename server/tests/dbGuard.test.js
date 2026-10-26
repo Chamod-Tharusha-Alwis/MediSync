@@ -124,11 +124,36 @@ describe('IR-02 MongoDB Atlas Free (M0) Database Isolation & Destructive-Op Safe
     await expect(mongoose.connect(dummyProdUri, { dbName: 'test' })).rejects.toThrow(DatabaseIsolationError);
   });
 
-  test('11. Explicitly rejects production cluster (p7hjket.mongodb.net) in MONGO_URI_TEST', () => {
+  test('11. Explicitly rejects production cluster (p7hjket.mongodb.net and medisync.p7hjket.mongodb.net) in MONGO_URI_TEST', () => {
     const prodClusterTestUri = 'mongodb+srv://test_user:test_pass@cluster0.p7hjket.mongodb.net/medisync_automated_test?appName=MediSync';
     expect(() =>
       validateAutomatedTestConfig({ testUri: prodClusterTestUri })
     ).toThrow(/Cluster collision violation: MONGO_URI_TEST points to denied production cluster "p7hjket.mongodb.net"/i);
+
+    const exactProdClusterTestUri = 'mongodb+srv://test_user:test_pass@medisync.p7hjket.mongodb.net/medisync_automated_test?appName=MediSync';
+    expect(() =>
+      validateAutomatedTestConfig({ testUri: exactProdClusterTestUri })
+    ).toThrow(/Cluster collision violation: MONGO_URI_TEST points to denied production cluster "p7hjket.mongodb.net"/i);
+  });
+
+  test('12. Rejects legacy database "test" and production database "medisync_prod" as QA target in MONGO_URI_TEST', () => {
+    const prodUri = 'mongodb+srv://prod_user:prod_pass@medisync.p7hjket.mongodb.net/medisync_prod?appName=MediSync';
+    const legacyTestUri = 'mongodb+srv://test_user:test_pass@qa-project-medisync.gwprp27.mongodb.net/test?appName=MediSync';
+    const prodDbAsTestUri = 'mongodb+srv://test_user:test_pass@qa-project-medisync.gwprp27.mongodb.net/medisync_prod?appName=MediSync';
+
+    expect(() =>
+      validateAutomatedTestConfig({ testUri: legacyTestUri, prodUri })
+    ).toThrow(/specifies database "test", but "medisync_automated_test" is required/i);
+
+    expect(() =>
+      validateAutomatedTestConfig({ testUri: prodDbAsTestUri, prodUri })
+    ).toThrow(/specifies database "medisync_prod", but "medisync_automated_test" is required/i);
+  });
+
+  test('13. Blocks connecting real production DB (medisync.p7hjket.mongodb.net/medisync_prod) in automated-test mode', async () => {
+    const realProdUri = 'mongodb+srv://prod_user:prod_pass@medisync.p7hjket.mongodb.net/medisync_prod?appName=MediSync';
+    await expect(connectProductionDB(realProdUri)).rejects.toThrow(DatabaseIsolationError);
+    await expect(mongoose.connect(realProdUri, { dbName: 'medisync_prod' })).rejects.toThrow(DatabaseIsolationError);
   });
 });
 

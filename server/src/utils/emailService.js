@@ -1337,26 +1337,26 @@ exports.sendMassOutbreakAlert = async (emailArray, disease, district, riskLevel,
 // 6. E-PRESCRIPTION EMAIL
 // -----------------------------------------------------------------------------
 exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, securePassword, options = {}) => {
-  if (!patientEmail || !pdfBuffer) {
+  if (!patientEmail) {
     return {
       success: false,
       providerAccepted: false,
       deliveryConfirmed: false,
       errorCode: 'missing_parameters',
-      error: 'Missing recipient email or PDF buffer',
+      error: 'Missing recipient email',
     };
   }
 
   const lang = resolveLang(options);
   const subjects = {
-    en: 'MediSync — Your Secure E-Prescription',
+    en: 'MediSync — Your E-Prescription Details',
     si: 'MediSync — ඔබගේ ආරක්ෂිත ඊ-බෙහෙත් වට්ටෝරුව',
-    ta: 'MediSync — உங்கள் பாதுகாப்பான மின்னணு மருந்துச்சீட்டு'
+    ta: 'MediSync — உங்கள் மின்னணு மருந்துச்சீட்டு விவரங்கள்'
   };
   const bodies = {
-    en: 'Your recent E-Prescription is attached. Confidential medical document. Handle according to privacy policy.',
-    si: 'ඔබගේ මෑතකාලීන ඊ-බෙහෙත් වට්ටෝරුව මෙහි අමුණා ඇත. රහස්‍ය වෛද්‍ය ලේඛනයකි. පුද්ගලිකත්ව ප්‍රතිපත්තියට අනුකූලව පරිහරණය කරන්න.',
-    ta: 'உங்கள் சமீபத்திய மின்னணு மருந்துச்சீட்டு இணைக்கப்பட்டுள்ளது. இரகசிய மருத்துவ ஆவணம். தனியுரிமைக் கொள்கையின்படி கையாளவும்.'
+    en: 'Your recent E-Prescription details are recorded in your MediSync profile. PDF export is temporarily unavailable. Confidential medical document. Handle according to privacy policy.',
+    si: 'ඔබගේ මෑතකාලීන ඊ-බෙහෙත් වට්ටෝරු තොරතුරු ඔබගේ MediSync ගිණුමේ සටහන් කර ඇත. PDF අපනයනය තාවකාලිකව ලබාගත නොහැක. රහස්‍ය වෛද්‍ය ලේඛනයකි. පුද්ගලිකත්ව ප්‍රතිපත්තියට අනුකූලව පරිහරණය කරන්න.',
+    ta: 'உங்கள் சமீபத்திய மின்னணு மருந்துச்சீட்டு விவரங்கள் உங்கள் MediSync சுயவிவரத்தில் பதிவு செய்யப்பட்டுள்ளன. PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை. இரகசிய மருத்துவ ஆவணம். தனியுரிமைக் கொள்கையின்படி கையாளவும்.'
   };
 
   return sendMail({
@@ -1376,13 +1376,6 @@ exports.sendPrescriptionEmail = async (patientEmail, patientName, pdfBuffer, sec
         </div>
       </div>
     `,
-    attachments: [
-      {
-        filename: 'MediSync_Prescription.pdf',
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      },
-    ],
   });
 };
 

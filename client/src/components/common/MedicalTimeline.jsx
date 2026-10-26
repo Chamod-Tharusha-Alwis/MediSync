@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -224,6 +225,7 @@ const MedicalTimeline = ({ events }) => {
 
 /* ─── Individual timeline item ────────────────────────────────────────────── */
 const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
+  const { t } = useTranslation();
   const data = event.data || {};
   const type = event.type || 'consultation';
   const tc   = getTC(type);
@@ -363,11 +365,12 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                 <button
                   type="button"
                   disabled
-                  title="Encrypted PDF delivery is undergoing security verification."
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200"
+                  aria-disabled="true"
+                  title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold opacity-60 cursor-not-allowed"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Prescription PDF unavailable
+                  {t("pdfUnavailable", "PDF export temporarily unavailable")}
                 </button>
               )}
 

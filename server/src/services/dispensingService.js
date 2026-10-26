@@ -156,7 +156,8 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
         consultationRef:body.consultationRef, dispensedBy:pharmacy._id, dispenserStaffId:String(staff._id),
         dispensedByPharmacist:staff.fullName, pharmacyName:pharmacy.name, dispensedAt:new Date(),
         medications:[...updates.values()].map(i=>({name:i.drugName,dosage:i.dosage,frequency:i.frequency})),
-        drugName:items[0].name, dosage:items[0].dosage, instructions:body.notes || 'OTC Dispensation', status:'dispensed' });
+        drugName:items[0].name, dosage:items[0].dosage, instructions:body.notes || 'OTC Dispensation', status:'dispensed',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
       await rx.save({session});
     }
     const receipt = new Dispensing({ _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:rx._id,

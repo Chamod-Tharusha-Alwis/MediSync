@@ -12,6 +12,7 @@ data/**
 !data/symptom_Description.csv
 !data/symptom_precaution.csv
 !data/Symptom-severity.csv
+!data/srilanka_dengue_weekly.csv
 !data/drugs_clean.json
 !data/interactions_clean.json
 !data/icd10_clean.json

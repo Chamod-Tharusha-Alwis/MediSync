@@ -56,6 +56,21 @@ async function initializeVault() {
     return;
   }
 
+  // Operator-key opt-in for prototype release (no hosted Vault required)
+  if (process.env.MEDISYNC_PROTOTYPE_MODE === 'true' && process.env.MEDISYNC_ALLOW_OPERATOR_KEYS === 'true') {
+    if (process.env.VAULT_TOKEN === 'bypass') {
+      console.error('[FATAL] VAULT_TOKEN=bypass is forbidden in production operator-key mode.');
+      process.exit(1);
+    }
+    const { validateAndLoadOperatorKeys } = require('./security/operatorKeyPolicy');
+    const operatorConfig = validateAndLoadOperatorKeys(process.env);
+    global.ENCRYPTION_KEYS = operatorConfig.keys;
+    global.ACTIVE_KEY_VERSION = operatorConfig.activeVersion;
+    global.ENCRYPTION_KEY = operatorConfig.keys[operatorConfig.activeVersion];
+    console.warn('[SECURITY WARNING] MEDISYNC_PROTOTYPE_MODE active: Booting with operator-supplied encryption keys. Vault bypassed for prototype only.');
+    return;
+  }
+
   const vault = nodeVault({
     apiVersion: 'v1',
     endpoint: process.env.VAULT_URL || 'http://127.0.0.1:8200',

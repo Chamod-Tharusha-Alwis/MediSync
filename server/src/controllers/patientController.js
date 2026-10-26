@@ -577,7 +577,8 @@ exports.rateConsultation = async (req, res) => {
 // ─── NEW: Request OTP-gated access to patient record ─────────────────────────
 exports.requestPatientAccess = async (req, res) => {
   try {
-    const { patientNic, requesterRole, requesterName } = req.body;
+    const { requesterRole, requesterName } = req.body;
+    const patientNic = req.body.patientNic || req.body.nic;
 
     const patient = await Patient.findOne(nicFilter(patientNic, { plainFields: ['nic'] }));
     // Always return same message to prevent enumeration
@@ -670,7 +671,8 @@ exports.requestPatientAccess = async (req, res) => {
 // ─── NEW: Verify patient access OTP ──────────────────────────────────────────
 exports.verifyPatientAccess = async (req, res) => {
   try {
-    const { sessionId, otp, patientNic } = req.body;
+    const { sessionId, otp } = req.body;
+    const patientNic = req.body.patientNic || req.body.nic;
     const OTPSession = require('../models/OTPSession');
     const jwt = require('jsonwebtoken');
 

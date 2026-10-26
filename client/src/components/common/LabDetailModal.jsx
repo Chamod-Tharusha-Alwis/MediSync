@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, X, Download, Calendar, User, Building2, FileText } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 
-const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
+const LabDetailModal = ({ isOpen, onClose, labTest }) => {
   const { t } = useTranslation();
   if (!isOpen || !labTest) return null;
 
@@ -105,14 +105,16 @@ const LabDetailModal = ({ isOpen, onClose, labTest, onDownload }) => {
             >
               Close
             </button>
-            <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              disabled title="Encrypted PDF delivery is undergoing security verification."
-              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all duration-200 flex items-center gap-2 shadow-lg shadow-purple-600/20"
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+              className="px-5 py-2.5 rounded-xl bg-purple-600/40 text-white/60 text-xs font-bold flex items-center gap-2 cursor-not-allowed opacity-60"
             >
               <Download className="w-4 h-4" />
-              Lab PDF unavailable
-            </motion.button>
+              {t("pdfUnavailable", "PDF export temporarily unavailable")}
+            </button>
           </div>
         </motion.div>
       </div>

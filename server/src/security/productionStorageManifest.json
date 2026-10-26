@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "database": "test",
+  "database": "medisync_prod",
   "profile": "current-model-contract-no-migration",
   "metadataOnly": true,
   "collections": [

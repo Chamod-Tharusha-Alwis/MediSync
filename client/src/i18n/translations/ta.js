@@ -163,7 +163,8 @@ export const ta = {
     "labTestsOrdered": "பரிந்துரைக்கப்பட்ட ஆய்வகப் பரிசோதனைகள்",
     "pdfLockedNotice": "இரகசிய மருத்துவ ஆவணம். தனியுரிமைக் கொள்கையின்படி கையாளவும்",
     "generatingPdf": "PDF உருவாக்கப்படுகிறது…",
-    "downloadEPrescription": "மின்-மருந்துச்சீட்டைப் பதிவிறக்கவும் (PDF)",
+    "downloadEPrescription": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
+    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
     "medicalHistorySubtitle": "முந்தைய மருத்துவப் பதிவுகள், பரிசோதனைகள் மற்றும் நோய் கண்டறிதல்களை மதிப்பாய்வு செய்யவும்.",
     "fullName": "முழு பெயர்",
     "contactInfo": "தொடர்பு தகவல்",
@@ -617,7 +618,7 @@ export const ta = {
     "approveTest": "செயலாக்கத்திற்கு ஒப்புதல் அளிக்கவும்",
     "sampleCollected": "மாதிரி சேகரிக்கப்பட்டது",
     "reportReady": "அறிக்கை தயார்",
-    "downloadPdf": "PDF அறிக்கையைப் பதிவிறக்கவும்",
+    "downloadPdf": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
     "consentCode": "6 இலக்க ஒப்புதல் குறியீட்டை உள்ளிடவும்",
     "markSampleCollected": "மாதிரி சேகரிக்கப்பட்டதாகக் குறிக்கவும்",
     "beginProcessing": "ஆய்வக செயலாக்கத்தைத் தொடங்கவும்",
@@ -630,7 +631,7 @@ export const ta = {
     "requestedDate": "கோரப்பட்ட தேதி",
     "prescribedBy": "பரிந்துரைத்தவர்",
     "testingFacility": "பரிசோதனை வசதி / மருத்துவமனை",
-    "downloadReport": "ஆய்வக அறிக்கையைப் பதிவிறக்கவும்",
+    "downloadReport": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
     "clinicalRemarks": "மருத்துவக் குறிப்புகள் மற்றும் கண்டுபிடிப்புகள்",
     "consentVerification": "நோயாளி ஒப்புதல் சரிபார்ப்பு",
     "consentSubtitle": "சரிபார்ப்பு OTP ஐ அனுப்ப தேசிய அடையாள அட்டை (NIC) மூலம் நோயாளியின் அடையாளத்தை சரிபார்க்கவும்.",
@@ -639,7 +640,8 @@ export const ta = {
     "testsLoadedRoster": "செயலில் உள்ள செயலாக்கத்திற்காக ஆய்வக அமைப்பின் பட்டியலில் சோதனைகள் ஏற்றப்பட்டுள்ளன.",
     "urgencyPriority": "அவசர முன்னுரிமை",
     "operationalState": "செயல்பாட்டு நிலை",
-    "selectReportToDownload": "பதிவிறக்க ஒரு அறிக்கையைத் தேர்ந்தெடுக்கவும்"
+    "selectReportToDownload": "பதிவிறக்க ஒரு அறிக்கையைத் தேர்ந்தெடுக்கவும்",
+    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை"
   },
   "adminManagement": {
     "analyticsTitle": "நிர்வாக சுகாதார பகுப்பாய்வு",

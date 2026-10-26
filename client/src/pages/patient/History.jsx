@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, Star, ChevronDown, ChevronUp,
   Stethoscope, FileText, Package, FlaskConical,
-  User, Building2, Pill, Download, ShoppingBag, Loader2,
+  User, Building2, Pill, Download, ShoppingBag,
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -85,33 +85,7 @@ const typeConfig = {
 };
 const getTC = (type) => typeConfig[type] || typeConfig.consultation;
 
-/* ─── PDF download helper ─────────────────────────────────────────────────── */
-const downloadPdf = async (prescriptionId, setDownloading) => {
-  if (!prescriptionId) {
-    toast.error('No prescription ID available for this record.');
-    return;
-  }
-  setDownloading(true);
-  try {
-    const response = await api.get(`/prescription/download/${prescriptionId}`, { responseType: 'blob' });
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href     = url;
-    link.download = `E-Prescription-${prescriptionId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success('E-Prescription downloaded.');
-  } catch (err) {
-    toast.error(err.response?.data?.error || err.message || 'Download failed');
-  } finally {
-    setDownloading(false);
-  }
-};
-
-/* ─── Lab Test Tags — colored pill chips ─────────────────────────────────── */
+/* ─── Lab Test Tags — colored pill chips ─── */
 const LabTestTags = ({ tests, tc, limit = 4, onSelectLab }) => {
   if (!tests || tests.length === 0) return null;
   const visible = tests.slice(0, limit);
@@ -140,8 +114,8 @@ const LabTestTags = ({ tests, tc, limit = 4, onSelectLab }) => {
 
 /* ─── History feed card ───────────────────────────────────────────────────── */
 const HistoryCard = ({ event, onRate }) => {
+  const { t } = useTranslation();
   const [expanded,    setExpanded]    = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -209,7 +183,6 @@ const HistoryCard = ({ event, onRate }) => {
 
     setOtpLoading(true);
     setOtpError(null);
-    setDownloading(true);
     setIsDownloading(true);
     setDownloadProgress(35);
 
@@ -238,7 +211,6 @@ const HistoryCard = ({ event, onRate }) => {
       toast.error(errorMsg);
     } finally {
       setOtpLoading(false);
-      setDownloading(false);
       setIsDownloading(false);
       setDownloadProgress(0);
     }
@@ -519,15 +491,16 @@ const HistoryCard = ({ event, onRate }) => {
                                 )}
 
                                 {!isString && (status.toLowerCase() === 'approved' || status.toLowerCase() === 'report_ready' || status.toLowerCase() === 'completed') && reportId && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                    onClick={(e) => { e.stopPropagation(); triggerDownloadReport(reportId); }}
-                                    disabled={downloading || isDownloading}
-                                    className="mt-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 w-full disabled:opacity-50"
+                                  <button
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                                    className="mt-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold w-full opacity-60 cursor-not-allowed"
                                   >
-                                    {downloading || isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                                    Download Report
-                                  </motion.button>
+                                    <Download className="w-3.5 h-3.5" />
+                                    {t("pdfUnavailable", "PDF export temporarily unavailable")}
+                                  </button>
                                 )}
                               </div>
                             );
@@ -561,18 +534,16 @@ const HistoryCard = ({ event, onRate }) => {
                       <div className="flex flex-wrap items-center gap-2">
                         {/* PDF E-Prescription Download */}
                         {((details.prescriptions && details.prescriptions.length > 0) || isConsultation) && (
-                          <motion.button
-                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                            onClick={e => { e.stopPropagation(); downloadPdf(details.consultationId || details._id, setDownloading); }}
-                            disabled={downloading}
-                            className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
+                          <button
+                            type="button"
+                            disabled
+                            aria-disabled="true"
+                            title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                            className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold opacity-60 cursor-not-allowed"
                           >
-                            {downloading
-                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              : <Download className="w-3.5 h-3.5" />
-                            }
-                            {downloading ? 'Downloading…' : 'Download E-Prescription (PDF)'}
-                          </motion.button>
+                            <Download className="w-3.5 h-3.5" />
+                            {t("pdfUnavailable", "PDF export temporarily unavailable")}
+                          </button>
                         )}
 
                         {/* Lab Report Download Button with zero/single/multiple test conditional logic */}

@@ -49,7 +49,7 @@ function createReminderDispatcher({store,now=()=>new Date(),newOwner=crypto.rand
 async function existingReminderStore(db){
   // No createCollection/index/TTL/lease expiry. Provisioning is a separate
   // operator approval; an absent or capped collection holds all reminders.
-  if(db?.databaseName!=='test')throw Error('REMINDER_PRODUCTION_STORE_REQUIRED');
+  if(db?.databaseName!=='medisync_prod')throw Error('REMINDER_PRODUCTION_STORE_REQUIRED');
   const rows=await db.listCollections({name:'reminderdispatches'},{nameOnly:false}).toArray();
   if(rows.length!==1||rows[0].type!=='collection'||rows[0].options?.capped===true||rows[0].options?.timeseries||rows[0].options?.expireAfterSeconds!==undefined)throw Error('REMINDER_STORE_PROVISIONING_REQUIRED');
   const store=db.collection('reminderdispatches'),indexes=await store.listIndexes().toArray();

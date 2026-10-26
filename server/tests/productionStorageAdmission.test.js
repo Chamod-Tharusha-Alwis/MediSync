@@ -2,13 +2,13 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),crypto=require('crypto');
 const {verifyProductionStorage,manifest}=require('../src/security/productionStorageAdmission');
 const root=path.resolve(__dirname,'../..'),copy=v=>JSON.parse(JSON.stringify(v));
-const env=()=>({NODE_ENV:'production',MEDISYNC_LIVE_START_APPROVED:'true',MEDISYNC_ATLAS_ROTATION_CONFIRMED:'true',MONGO_URI:'mongodb+srv://offline:fictional@cluster.p7hjket.mongodb.net/test?retryWrites=true&w=majority'});
+const env=()=>({NODE_ENV:'production',MEDISYNC_LIVE_START_APPROVED:'true',MEDISYNC_ATLAS_ROTATION_CONFIRMED:'true',MONGO_URI:'mongodb+srv://offline:fictional@medisync.p7hjket.mongodb.net/medisync_prod?retryWrites=true&w=majority&authSource=admin'});
 const required=manifest.collections.filter(c=>!c.whenAll);
 function fake(){
  const calls=[],collections=new Map(manifest.collections.map(spec=>[spec.name,{rows:[{name:spec.name,type:'collection',options:{...(spec.capped?{capped:true,...spec.capped}:{}),...(spec.validator?{validator:copy(spec.validator)}:{})}}],indexes:copy(spec.indexes)}]));
  const cursor=(rows,label)=>({toArray:async()=>{calls.push(label);return copy(rows);},close:async()=>calls.push('close:'+label)});
- const state={calls,collections,hello:{isWritablePrimary:true,setName:'offline-replica',logicalSessionTimeoutMinutes:30,maxWireVersion:17},roles:[{role:'readWrite',db:'test'}]};
- const db={databaseName:'test',command:jest.fn(async command=>{calls.push(command.hello?'hello':'identity');if(command.hello)return state.hello;if(command.connectionStatus)return{authInfo:{authenticatedUsers:[{}],authenticatedUserRoles:state.roles}};throw Error('COMMAND_FORBIDDEN');}),
+ const state={calls,collections,hello:{isWritablePrimary:true,setName:'offline-replica',logicalSessionTimeoutMinutes:30,maxWireVersion:17},roles:[{role:'readWrite',db:'medisync_prod'}]};
+ const db={databaseName:'medisync_prod',command:jest.fn(async command=>{calls.push(command.hello?'hello':'identity');if(command.hello)return state.hello;if(command.connectionStatus)return{authInfo:{authenticatedUsers:[{}],authenticatedUserRoles:state.roles}};throw Error('COMMAND_FORBIDDEN');}),
  listCollections:jest.fn(({name},options)=>{expect(options).toMatchObject({nameOnly:false,authorizedCollections:false,maxTimeMS:5000});return cursor(collections.get(name)?.rows||[],name);}),
  collection:jest.fn(name=>({listIndexes:jest.fn(options=>{expect(options.maxTimeMS).toBe(5000);return cursor(collections.get(name)?.indexes||[],'indexes:'+name);})}))};
  state.db=db;return state;
@@ -42,7 +42,7 @@ test('explicit manifest covers every actual model and plugin index without any c
 });
 test('valid metadata admits only after exact identity, topology and all required metadata',async()=>{
  const c=candidate(),result=await c.guard.connectProductionDB();
- expect(result).toMatchObject({dbName:'test',verifiedCollections:28,verifiedRequiredIndexes:65,transactionTopologyVerified:true,authenticatedRoles:[{role:'readWrite',db:'test'}]});
+ expect(result).toMatchObject({dbName:'medisync_prod',verifiedCollections:28,verifiedRequiredIndexes:65,transactionTopologyVerified:true,authenticatedRoles:[{role:'readWrite',db:'medisync_prod'}]});
  expect(c.driverCalls[0]).toMatchObject({tls:true,autoIndex:false,autoCreate:false,writeConcern:{w:'majority'},readPreference:'primary'});
  expect(c.calls.slice(0,2)).toEqual(['identity','hello']);expect(c.mongoose.disconnect).not.toHaveBeenCalled();
 });
@@ -121,7 +121,7 @@ test.each(['MONGO_URI_TEST','SEED_TEST_PASSWORD'])('QA material %s remains denie
 test.each(['tls=false','tlsInsecure=true','tlsAllowInvalidCertificates=true','tlsAllowInvalidHostnames=true'])('candidate retains TLS denial for %s',async option=>{
  const environment=env();environment.MONGO_URI+='&'+option;const c=candidate(fake(),environment);await expect(c.guard.connectProductionDB()).rejects.toThrow();expect(c.driverCalls).toHaveLength(0);
 });
-test.each(['mongodb+srv://offline:fictional@other.mongodb.net/test','mongodb+srv://offline:fictional@cluster.p7hjket.mongodb.net/medisync_automated_test'])('candidate retains cluster/database pin %#',async uri=>{
+test.each(['mongodb+srv://offline:fictional@other.mongodb.net/medisync_prod','mongodb+srv://offline:fictional@p7hjket.mongodb.net/test','mongodb+srv://offline:fictional@p7hjket.mongodb.net/medisync_automated_test'])('candidate retains cluster/database pin %#',async uri=>{
  const c=candidate(fake(),{...env(),MONGO_URI:uri});await expect(c.guard.connectProductionDB()).rejects.toThrow();expect(c.driverCalls).toHaveLength(0);
 });
 test('extra authenticated role denies before metadata and disconnects',async()=>{

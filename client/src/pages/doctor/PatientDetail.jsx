@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Plus, LayoutDashboard,
-  Activity, FlaskConical, Download, Loader2
+  Activity, FlaskConical, Download
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import MedicalTimeline from '../../components/common/MedicalTimeline';
@@ -46,7 +46,6 @@ const DoctorPatientDetail = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [targetLabTestId, setTargetLabTestId] = useState(null);
-  const [requestingOtp, setRequestingOtp] = useState(false);
   const [downloadOtpError, setDownloadOtpError] = useState('');
 
   const fetchRecords = useCallback(async (token) => {
@@ -98,7 +97,6 @@ const DoctorPatientDetail = () => {
 
   // Doctor requests OTP to download lab report
   const handleRequestDownloadOtp = async (labTestId) => {
-    setRequestingOtp(true);
     setDownloadOtpError('');
     try {
       const headers = { 'x-patient-access': patientToken };
@@ -109,7 +107,6 @@ const DoctorPatientDetail = () => {
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to request OTP');
     } finally {
-      setRequestingOtp(false);
     }
   };
 
@@ -405,13 +402,15 @@ const DoctorPatientDetail = () => {
                               <div className="flex items-center gap-3">
                                 <span className="text-xs text-purple-400 font-semibold underline">View Test Details & Findings →</span>
                                 {test.status === 'report_ready' && test.labTestId && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleRequestDownloadOtp(test.labTestId); }}
-                                    disabled={requestingOtp || isDownloading}
-                                    className="inline-flex items-center gap-2 text-sm text-teal-400 hover:text-teal-300 font-bold underline transition-colors disabled:opacity-50 ml-auto"
+                                  <button
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                                    className="inline-flex items-center gap-2 text-sm text-slate-400/60 font-bold opacity-60 cursor-not-allowed ml-auto"
                                   >
-                                    {requestingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                                    Authorize & Download PDF
+                                    <Download className="w-4 h-4" />
+                                    {t("pdfUnavailable", "PDF export temporarily unavailable")}
                                   </button>
                                 )}
                               </div>

@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { ConnectionString } = require('mongodb-connection-string-url');
 
-const PROD_DB_NAME = 'test';
+const PROD_DB_NAME = 'medisync_prod';
 const TEST_DB_NAME = 'medisync_automated_test';
 const STAGING_DB_NAME = 'medisync_staging';
 

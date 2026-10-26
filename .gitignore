@@ -31,6 +31,7 @@ ml-engine/data/*.csv
 !ml-engine/data/symptom_Description.csv
 !ml-engine/data/symptom_precaution.csv
 !ml-engine/data/Symptom-severity.csv
+!ml-engine/data/srilanka_dengue_weekly.csv
 *.pyc
 
 dist/

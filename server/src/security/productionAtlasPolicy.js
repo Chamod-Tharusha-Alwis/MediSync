@@ -10,15 +10,15 @@ function assertProductionAtlasConfiguration(environment,rawUri=environment?.MONG
   if(Object.getOwnPropertyNames(environment).some(name=>forbidden.has(name.toUpperCase())||/^MEDISYNC_(QA_|TEST_|COMBINED_)/i.test(name)))fail('PRODUCTION_ATLAS_QA_MATERIAL_FORBIDDEN');
   let uri;try{uri=new ConnectionString(rawUri);}catch(_){fail('PRODUCTION_ATLAS_URI_INVALID');}
   const host=uri.hosts?.[0]?.toLowerCase();
-  if(!uri.isSRV||uri.hosts.length!==1||!host||!(/^[a-z0-9-]+\.p7hjket\.mongodb\.net$/.test(host)||host==='p7hjket.mongodb.net')||uri.pathname!=='/test'||!uri.username||!uri.password)fail('PRODUCTION_EXISTING_CLUSTER_AND_DATABASE_REQUIRED');
+  if(!uri.isSRV||uri.hosts.length!==1||!host||host!=='medisync.p7hjket.mongodb.net'||uri.pathname!=='/medisync_prod'||!uri.username||!uri.password)fail('PRODUCTION_EXISTING_CLUSTER_AND_DATABASE_REQUIRED');
   const seen=new Set(),allowed=new Set(['tls','ssl','tlsinsecure','tlsallowinvalidcertificates','tlsallowinvalidhostnames','sslvalidate','retrywrites','w','appname','authsource','authmechanism','readpreference']);
   for(const [rawName,rawValue]of uri.searchParams){
     const name=rawName.toLowerCase(),value=rawValue.toLowerCase();
     if(seen.has(name)||!allowed.has(name))fail('PRODUCTION_ATLAS_URI_OPTION_FORBIDDEN');seen.add(name);
     if((['tls','ssl','sslvalidate'].includes(name)&&value!=='true')||(['tlsinsecure','tlsallowinvalidcertificates','tlsallowinvalidhostnames'].includes(name)&&value!=='false'))fail('PRODUCTION_ATLAS_TLS_REQUIRED');
-    if((name==='w'&&value!=='majority')||(name==='readpreference'&&value!=='primary')||(name==='retrywrites'&&!['true','false'].includes(value))||(name==='authsource'&&!['admin','test'].includes(value))||(name==='authmechanism'&&rawValue!=='SCRAM-SHA-256'))fail('PRODUCTION_ATLAS_URI_OPTION_FORBIDDEN');
+    if((name==='w'&&value!=='majority')||(name==='readpreference'&&value!=='primary')||(name==='retrywrites'&&!['true','false'].includes(value))||(name==='authsource'&&value!=='admin')||(name==='authmechanism'&&rawValue!=='SCRAM-SHA-256'))fail('PRODUCTION_ATLAS_URI_OPTION_FORBIDDEN');
   }
-  return Object.freeze({database:'test',cluster:'p7hjket.mongodb.net',tlsRequired:true,rotationAttested:true});
+  return Object.freeze({database:'medisync_prod',cluster:'medisync.p7hjket.mongodb.net',tlsRequired:true,rotationAttested:true});
 }
 function disableAutomaticModelDdl(mongoose){
   if(!mongoose||typeof mongoose.set!=='function'||typeof mongoose.plugin!=='function')fail('MONGOOSE_DDL_POLICY_REQUIRED');
@@ -28,10 +28,10 @@ function disableAutomaticModelDdl(mongoose){
   for(const model of Object.values(mongoose.models||{}))if(model.schema)suppress(model.schema);
 }
 async function verifyProductionIdentity(db){
-  if(db?.databaseName!=='test'||typeof db.command!=='function')fail('PRODUCTION_DATABASE_IDENTITY_MISMATCH');
+  if(db?.databaseName!=='medisync_prod'||typeof db.command!=='function')fail('PRODUCTION_DATABASE_IDENTITY_MISMATCH');
   let proof;try{proof=await db.command({connectionStatus:1});}catch(_){fail('PRODUCTION_AUTHENTICATED_ROLE_UNVERIFIED');}
   const users=proof?.authInfo?.authenticatedUsers,roles=proof?.authInfo?.authenticatedUserRoles;
-  if(!Array.isArray(users)||users.length!==1||!Array.isArray(roles)||roles.length!==1||roles[0].role!=='readWrite'||roles[0].db!=='test')fail('PRODUCTION_AUTHENTICATED_ROLE_DENIED');
-  return Object.freeze({dbName:'test',authenticatedUserCount:1,authenticatedRoles:[{role:'readWrite',db:'test'}]});
+  if(!Array.isArray(users)||users.length!==1||!Array.isArray(roles)||roles.length!==1||roles[0].role!=='readWrite'||roles[0].db!=='medisync_prod')fail('PRODUCTION_AUTHENTICATED_ROLE_DENIED');
+  return Object.freeze({dbName:'medisync_prod',authenticatedUserCount:1,authenticatedRoles:[{role:'readWrite',db:'medisync_prod'}]});
 }
 module.exports={assertProductionAtlasConfiguration,disableAutomaticModelDdl,verifyProductionIdentity};

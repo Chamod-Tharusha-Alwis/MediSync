@@ -9,4 +9,6 @@ server/tests/patientProfileOwnedIntegration.test.js -text
 server/tests/prescriptionDurationOwnedIntegration.test.js -text
 server/tests/lab.test.js -text
 server/tests/universityDemoSeedVerify.test.js -text
+ml-engine/data/* -text
+server/reference-data/* -text
 client/tests/ir04-isolated-five-role-e2e.spec.js -text
