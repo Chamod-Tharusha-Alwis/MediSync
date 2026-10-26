@@ -3,9 +3,10 @@ WORKDIR /app
 
 # Reviewed wheel set targets CPython 3.11 / Linux amd64. No floating apt or
 # source-build compiler toolchain; actual clean-image imports remain gated.
-COPY requirements.txt requirements.lock requirements-artifacts.json ./
+COPY requirements.txt requirements.lock requirements-tooling.lock requirements-artifacts.json ./
 RUN python -c "import platform,sys; assert sys.version_info[:2] == (3,11) and platform.machine() == 'x86_64'"
-RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements.lock
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements-tooling.lock
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements.lock
 
 COPY . .
 # Verify reference delivery using stdlib only; no application/SQLite/seed startup.

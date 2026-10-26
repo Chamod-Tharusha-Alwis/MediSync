@@ -1,51 +1,37 @@
-# MediSync Production Release Runbook & Smoke Test Checklist
+# MediSync synthetic-only release smoke test
 
-## 1. Rollback Procedures
+This is an operator checklist, not a record of a completed deployment. Every result below is **expected**, pending a captured run. Real-patient clinical production remains NO-GO. Follow `GATE3_OPERATOR_RUNBOOK.md` for preparation, merge/deployment sequencing and rollback; this checklist does not authorize any of those operations.
 
-### A. Vercel Frontend Rollback
-1. **Instant UI Rollback**:
-   - Navigate to [Vercel Dashboard](https://vercel.com/) -> Project `medi-sync`.
-   - Go to **Deployments**.
-   - Find the previous known-good deployment (e.g. `dpl_7J2VKfMH2jPfuUuD9ikBFobQKNKK`).
-   - Click `...` and select **Promote to Production** / **Rollback**.
-   - Traffic routes to the prior deployment in < 5 seconds.
-2. **Git-Level Rollback**:
-   ```bash
-   git revert HEAD -m 1
-   git push origin main
-   ```
+## Before the smoke test
 
-### B. Render Services Rollback (Backend & ML Engine)
-1. **Immediate Service Suspension (Emergency Halt)**:
-   - If an unexpected error occurs during launch, immediately suspend backend ingress:
-     - Render Dashboard -> Web Service `medisync-wabc` -> Settings -> **Suspend Service**.
-     - Public endpoints immediately return HTTP 503 while database state is preserved.
-2. **Instant Image / Commit Rollback**:
-   - In Render Dashboard for `medisync-wabc` and `medisync-ml-service`:
-   - Go to **Events** / **Deploys**.
-   - Locate the previous successful deployment.
-   - Click **Rollback to this deploy**.
-   - Render re-deploys the previous container build within 2 minutes.
+- Record the merged Git SHA and the actual Vercel, backend Render and ML Render deployment IDs/SHAs. All three must identify the intended release. Old commit `64abeaa` cannot validate the new health endpoints or operator-key startup policy.
+- Check ML `/health`, then backend `/health`, after the new deployments finish. Record actual status/body and source deployment identity; a not-found response from old code is not a new-release health failure or a readiness pass.
+- Use only the operator-provisioned synthetic records in `medisync_prod`. Do not use operational database `test`, real patient data or unrelated records.
+- Use separately provisioned passwords; never put passwords, tokens, connection strings or clinical records in screenshots, logs or this document.
+- Open a fresh browser profile for each role. The newly provisioned accounts default to `twoFactorEnabled: false`; ordinary password login is the smoke path. There is no OTP-entry step in this checklist. If authentication requires an unavailable factor, stop and investigate the account/device state; do not bypass it.
+- Default `*.synth@medisync.synthetic` addresses cannot receive email. Do not enable email-dependent authentication on them. Existing records skipped by bootstrap must have their state verified separately; bootstrap does not reset existing accounts.
 
----
+## Checklist
 
-## 2. Production Smoke Test Account Management
-- **Zero Hardcoded Passwords**: No test or default passwords are stored in configuration or documentation.
-- **Runtime Password Provisioning**: The operator generates strong, unique random passwords (minimum 16 characters with mixed case, digits, and symbols) at runtime when provisioning temporary smoke-test accounts.
-- **Post-Verification Deactivation**: Immediately upon conclusion of the smoke test, all temporary accounts are deactivated by setting `isActive: false` or removing the temporary testing record.
+Record PASS/FAIL/BLOCKED and a sanitized captured-run reference for each row. Browser rendering alone does not prove database persistence or atomicity.
 
----
+| Check | Operator action | Expected result | Actual result / captured run |
+|---|---|---|---|
+| Five-role login | Use `/admin/login`, `/doctor/login`, `/patient/login`, `/pharmacy/login` and `/hospital/login` with the five provisioned identities; sign out between roles. | Expected: each correct role dashboard opens, protected session behavior is valid, no credentials or tokens appear in logs. | NOT RUN |
+| Role protection | While signed in as the Patient, navigate to an Admin-only page and inspect the corresponding API denial without changing records. Repeat a relevant cross-role denial. | Expected: access denied; no protected data disclosed and no mutation. | NOT RUN |
+| Symptom/reference tools | Use the actual symptom-checker control in the application with synthetic symptoms. | Expected: a bounded, valid ML response or an honest unavailable/error state; no unsupported diagnosis/safety claim. A prediction is not clinical validation. | NOT RUN |
+| Public health | Open `/public-health` and the public directories `/doctors`, `/hospitals`, `/pharmacies`. | Expected: map/reference views and permitted synthetic directory entries render; provider/network errors are visible and handled. Data provenance must match the release scope. | NOT RUN |
+| Languages and layout | Switch EN/SI/TA on desktop and a narrow mobile viewport; use keyboard navigation. | Expected: navigation, prototype notice, principal workflow labels and disabled-export explanation translate; no overflow blocks actions or focus. | NOT RUN |
+| Consultation/prescription | Within the explicitly authorized synthetic scope, create one Doctor consultation/prescription for the owned Patient and view it as that Patient. Record only sanitized run-owned IDs. | Expected: the authorized record is persisted once and only the intended Patient can access it. Persistence requires actual server/DB evidence. | NOT RUN |
+| Dispensing/retry | Dispense that owned prescription as Pharmacist, then repeat the same intended retry using the supported idempotency path. | Expected: one logical dispense, correct stock decrement, receipt and no duplicate effect. Do not infer this from a success toast. | NOT RUN |
+| Laboratory view | View the provisioned owned laboratory record from the relevant Hospital/Patient workflow. | Expected: authorized details render with correct linkage; foreign-role/foreign-record access is denied. Do not upload files or create additional records outside the approved scope. | NOT RUN |
+| PDF security hold | Inspect prescription, history and laboratory export controls in EN/SI/TA. If separately permitted, call the owned export endpoint. | Expected: controls truthfully state export is unavailable; no PDF is delivered. A held endpoint returns HTTP 503 with JSON `{"code":"PDF_EXPORT_UNAVAILABLE"}`. | NOT RUN |
+| Session expiry/logout | Log out, revisit a protected page and retry the old authenticated request without publishing its token. | Expected: the old session cannot continue authorized access; expiry/logout errors are handled visibly. | NOT RUN |
 
-## 3. Production Smoke Test Checklist
+## Email-dependent features
 
-Execute these 7 verification steps immediately upon deployment before declaring general availability:
+Real deliverable, operator-controlled addresses and an independently verified sender/provider configuration are required to test email OTP/2FA, password reset/recovery, invitations, email verification, temporary-password delivery, patient-record consent/access OTP, laboratory consent/report-access OTP, consent/access-request mail, laboratory availability notices, appointment reminders, prescription/dispensing notifications and security/login alerts. These are **BLOCKED for default synthetic mailboxes**; successful password login does not verify mail delivery. A revoked-device challenge may also require email; do not weaken the challenge to complete a smoke test.
 
-| Step # | Verification Item | Action & Expected Result | Pass / Fail |
-|--------|-------------------|--------------------------|-------------|
-| 1 | **Five-Role Login** | Log in sequentially with operator-provisioned test accounts for each role:<br>• Patient<br>• Doctor<br>• Pharmacist<br>• Hospital Admin<br>• System Admin<br>Verify authentication tokens are issued in `HttpOnly` cookies, role dashboard renders, and 2FA OTP prompt is prompted only if 2FA is explicitly enabled on that account (`twoFactorEnabled: true`). | [ ] |
-| 2 | **Symptom Checker & ML Triage** | Navigate to `/symptom-checker`. Select symptoms (e.g. "itching", "skin rash"). Click "Analyze Symptoms".<br>Verify ML engine responds with predicted condition, triage urgency, and confidence without network timeout or 500 error. | [ ] |
-| 3 | **Public Health Map** | Navigate to `/outbreak-map`. Verify CARTO / Leaflet tile layers load, Sri Lanka district boundaries render, and outbreak risk levels display correctly. | [ ] |
-| 4 | **Trilingual Language Switch** | Toggle language between **EN** (English), **SI** (Sinhala), and **TA** (Tamil) in navigation bar.<br>Verify all UI headings, navigation links, and notices update immediately without missing string keys. | [ ] |
-| 5 | **Clinical Workflow: Consultation & Dispensing** | 1. Doctor creates consultation note and issues e-prescription for patient.<br>2. Patient profile reflects new prescription under `/prescriptions`.<br>3. Pharmacist dispenses prescription; verify inventory quantity decrements atomically. | [ ] |
-| 6 | **Laboratory Test & Diagnostic View** | 1. Navigate to `/lab` as Doctor or Patient.<br>2. Open existing lab test detail modal (`LabDetailModal`).<br>3. Verify test parameters, reference ranges, and notes display cleanly. | [ ] |
-| 7 | **Truthful PDF Export Disabled State** | On `/prescriptions`, `/history`, and `LabDetailModal`:<br>1. Verify PDF download buttons are disabled (`aria-disabled="true"`).<br>2. Verify tooltip and label truthfully state `"PDF export temporarily unavailable"` (in EN, SI, and TA).<br>3. Verify clicking disabled button does not trigger network request, error toast, or crash. | [ ] |
+## Stop and rollback
+
+Stop on unauthorized access, real data exposure, duplicate mutations, schema/admission failures or source/deployment mismatch. Suspend the Render services and select the previously verified Vercel deployment as described in the operator runbook. Do not assume old Render code is a safe rollback or promise an unmeasured recovery time. Do not drop/restore a database or deactivate/delete accounts without the separately reviewed scope. Preserve evidence first; never touch `test` during rollback.

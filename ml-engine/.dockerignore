@@ -1,6 +1,7 @@
 **
 !requirements.txt
 !requirements.lock
+!requirements-tooling.lock
 !requirements-artifacts.json
 !app.py
 !risk_input.py
