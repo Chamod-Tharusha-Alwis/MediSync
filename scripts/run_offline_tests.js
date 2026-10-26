@@ -40,7 +40,7 @@ function snapshot() {
 }
 function cleanEnvironment() {
   const env = {};
-  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT']) if (process.env[key]) env[key] = process.env[key];
+  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER']) if (process.env[key]) env[key] = process.env[key];
   return { ...env, NODE_ENV: 'test', BABEL_ENV: 'test', CI: 'true', TZ: 'UTC', MEDISYNC_OFFLINE_ONLY: 'true', ENCRYPTION_KEY: 'synthetic-offline-key-never-for-real-data', REACT_APP_MEDISYNC_QA: 'true', REACT_APP_API_URL: '/api', REACT_APP_SERVER_URL: 'http://127.0.0.1:5100' };
 }
 async function main() {
@@ -108,6 +108,16 @@ async function main() {
   summary.profile = ciProfile ? (securityOnly ? 'ci-security' : 'ci-offline') : 'local-offline';
   summary.notRun = ciProfile ? ['Local QA preservation baseline proof (private scratch evidence is not published)',...(securityOnly ? ['Client and ML profiles (covered by the independent full offline job)'] : [])] : [];
   save('summary.json', summary); console.log(JSON.stringify(summary, null, 2));
+  if (!summary.success) {
+    for (const exit of exits) {
+      if (exit.code !== 0 || exit.timedOut) {
+        console.error(`=== FAILURE LOG FOR ${exit.mode} (code: ${exit.code}, timedOut: ${exit.timedOut}) ===`);
+        try {
+          console.error(fs.readFileSync(path.join(out, exit.mode + '-console.txt'), 'utf8'));
+        } catch (_) {}
+      }
+    }
+  }
   process.exitCode = summary.success ? 0 : 1;
 }
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

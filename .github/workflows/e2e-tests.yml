@@ -34,6 +34,15 @@ jobs:
         env:
           MEDISYNC_OFFLINE_CI: 'true'
         run: node scripts/run_offline_tests.js
+      - name: Diagnostic failure log output
+        if: failure()
+        run: |
+          for f in scratch/clinical-offline-*/*-console.txt; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              tail -n 120 "$f"
+            fi
+          done
       - name: Build isolated clinical source without environment files or network
         env:
           NODE_ENV: production
