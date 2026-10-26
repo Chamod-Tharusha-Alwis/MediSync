@@ -41,6 +41,14 @@ jobs:
             if [ -f "$f" ]; then
               echo "=== $f ==="
               tail -n 120 "$f"
+              content=$(tail -n 30 "$f" | tr '\r\n' '  ')
+              echo "::error title=$f::$content"
+            fi
+          done
+          for s in scratch/clinical-offline-*/summary.json; do
+            if [ -f "$s" ]; then
+              content=$(cat "$s" | tr '\r\n' '  ')
+              echo "::error title=summary::$content"
             fi
           done
       - name: Build isolated clinical source without environment files or network
