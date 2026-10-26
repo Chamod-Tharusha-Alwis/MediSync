@@ -5,18 +5,18 @@
   "entries": [
     {
       "file": "drugs_clean.json",
-      "bytes": 1035979,
-      "sha256": "6d81e3f04c3b6f3b95bf41f9eda2fba6381ae5dac9ce9d4b690a80e77daf7788"
+      "bytes": 999032,
+      "sha256": "16fd96a1b297e60bf8824626af04a0a4f2655123aefd3e1bce190e2804c965a5"
     },
     {
       "file": "interactions_clean.json",
-      "bytes": 40459602,
-      "sha256": "82f38ea35a051cb70f27a9d3fea08a44589993029841db797525f718e274fcf0"
+      "bytes": 39310355,
+      "sha256": "a8296b8e72a4edaf5ca65aaf5e23d2b8bcb35df4b1edcaef32b0b8554cafc0ce"
     },
     {
       "file": "icd10_clean.json",
-      "bytes": 7714981,
-      "sha256": "f5b9a27d34777a69d44c680ae60bbf47bbd4ae48a7fc0c7359ad92b77412c752"
+      "bytes": 7428164,
+      "sha256": "acffa3b7aa1b188387575880d40f6e24fe2117e054d2de18a6ea2d2d6f926e67"
     },
     {
       "file": "dataset.csv",
