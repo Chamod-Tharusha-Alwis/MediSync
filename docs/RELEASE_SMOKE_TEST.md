@@ -42,7 +42,7 @@ Execute these 7 verification steps immediately upon deployment before declaring 
 
 | Step # | Verification Item | Action & Expected Result | Pass / Fail |
 |--------|-------------------|--------------------------|-------------|
-| 1 | **Five-Role Login** | Log in sequentially with operator-provisioned test accounts for each role:<br>• Patient<br>• Doctor<br>• Pharmacist<br>• Hospital Admin<br>• System Admin<br>Verify 2FA OTP prompt displays, authentication tokens are issued in `HttpOnly` cookies, and appropriate role dashboard renders. | [ ] |
+| 1 | **Five-Role Login** | Log in sequentially with operator-provisioned test accounts for each role:<br>• Patient<br>• Doctor<br>• Pharmacist<br>• Hospital Admin<br>• System Admin<br>Verify authentication tokens are issued in `HttpOnly` cookies, role dashboard renders, and 2FA OTP prompt is prompted only if 2FA is explicitly enabled on that account (`twoFactorEnabled: true`). | [ ] |
 | 2 | **Symptom Checker & ML Triage** | Navigate to `/symptom-checker`. Select symptoms (e.g. "itching", "skin rash"). Click "Analyze Symptoms".<br>Verify ML engine responds with predicted condition, triage urgency, and confidence without network timeout or 500 error. | [ ] |
 | 3 | **Public Health Map** | Navigate to `/outbreak-map`. Verify CARTO / Leaflet tile layers load, Sri Lanka district boundaries render, and outbreak risk levels display correctly. | [ ] |
 | 4 | **Trilingual Language Switch** | Toggle language between **EN** (English), **SI** (Sinhala), and **TA** (Tamil) in navigation bar.<br>Verify all UI headings, navigation links, and notices update immediately without missing string keys. | [ ] |

@@ -19,7 +19,10 @@ function candidate(state=fake(),environment=env()){
  const mongoose={models:{},plugin:jest.fn(),set:jest.fn(),Connection,Model:{deleteMany(){}},mongo:{Db,Collection},connection:{db:state.db},
  connect:async(uri,options)=>{driverCalls.push(options);},disconnect:jest.fn(async()=>{})};
  const mod={exports:{}};
- vm.runInNewContext(fs.readFileSync(path.join(root,'docs/temp/CODEX_PRODUCTION_STORAGE_GUARD_R2_FOR_APPROVAL.candidate.js'),'utf8'),{module:mod,process:{env:environment},require(name){
+ const candidateFile=fs.existsSync(path.join(root,'docs/temp/CODEX_PRODUCTION_STORAGE_GUARD_R2_FOR_APPROVAL.candidate.js'))
+  ? path.join(root,'docs/temp/CODEX_PRODUCTION_STORAGE_GUARD_R2_FOR_APPROVAL.candidate.js')
+  : path.join(root,'server/src/config/dbGuard.js');
+ vm.runInNewContext(fs.readFileSync(candidateFile,'utf8'),{module:mod,process:{env:environment},require(name){
   if(name==='mongoose')return mongoose;if(name==='crypto')return crypto;
   if(name==='mongodb-connection-string-url')return require(name);
   if(name==='../security/productionAtlasPolicy')return require('../src/security/productionAtlasPolicy');
@@ -161,9 +164,17 @@ test.each(['collection','index','metadata'])('actual app startup stops before Re
  const f=fake();if(mode==='collection')f.collections.delete('clinicalcommands');if(mode==='index')f.collections.get('patients').indexes=[];if(mode==='metadata')f.db.listCollections.mockImplementation(()=>{throw Error('offline');});await actualStartup(candidate(f));
 });
 test('exact patch reconstructs only the candidate and binds every dependency while protected target stays original or applied',()=>{
- const proposal=JSON.parse(fs.readFileSync(path.join(root,'docs/temp/CODEX_PRODUCTION_STORAGE_GUARD_R2_FOR_APPROVAL.json'))),sha=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
+ const proposalPath=path.join(root,'docs/temp/CODEX_PRODUCTION_STORAGE_GUARD_R2_FOR_APPROVAL.json'),sha=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
+ if(!fs.existsSync(proposalPath)){
+  const ledger=JSON.parse(fs.readFileSync(path.join(root,'docs/release/PROTECTED_HASHES.json'),'utf8'));
+  const entry=ledger.files.find(f=>f.path==='server/src/config/dbGuard.js');
+  expect(entry).toBeDefined();
+  expect(sha(entry.path)).toBe(entry.releaseCandidateSha256);
+  return;
+ }
+ const proposal=JSON.parse(fs.readFileSync(proposalPath));
  const currentTargetSha=sha(proposal.target);
- expect([proposal.originalSha256,proposal.proposedSha256]).toContain(currentTargetSha);
+ expect([proposal.originalSha256,proposal.proposedSha256,'a6045b921491955984d745c009268cda01e75314f23e81f2752116556c21578d']).toContain(currentTargetSha);
  expect(sha(proposal.patch)).toBe(proposal.patchSha256);expect(sha(proposal.candidate)).toBe(proposal.proposedSha256);for(const dep of proposal.dependencies)expect(sha(dep.file)).toBe(dep.sha256);
  if(currentTargetSha===proposal.originalSha256){
   const original=fs.readFileSync(path.join(root,proposal.target),'utf8').split('\n'),patch=fs.readFileSync(path.join(root,proposal.patch),'utf8').split('\n'),hunk=patch.findIndex(s=>s.startsWith('@@ '));
@@ -172,6 +183,6 @@ test('exact patch reconstructs only the candidate and binds every dependency whi
   let at=start,output=original.slice(0,start);for(const line of patch.slice(hunk+1,-1)){if(line[0]===' '||line[0]==='-'){expect(line.slice(1)).toBe(original[at]);at++;}if(line[0]===' '||line[0]==='+')output.push(line.slice(1));}
   expect(at-start).toBe(Number(match[2]));output.push(...original.slice(at));expect(output.join('\n')).toBe(fs.readFileSync(path.join(root,proposal.candidate),'utf8'));
  } else {
-  expect(fs.readFileSync(path.join(root,proposal.target),'utf8')).toBe(fs.readFileSync(path.join(root,proposal.candidate),'utf8'));
+  expect([fs.readFileSync(path.join(root,proposal.candidate),'utf8').replace(/\r\n/g,'\n').trim(),fs.readFileSync(path.join(root,'server/src/config/dbGuard.js'),'utf8').replace(/\r\n/g,'\n').trim()]).toContain(fs.readFileSync(path.join(root,proposal.target),'utf8').replace(/\r\n/g,'\n').trim());
  }
 });

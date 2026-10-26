@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MediSync Release Candidate Protected File Ledger",
+  "generatedAt": "2026-10-26T18:00:00.000Z",
+  "totalFiles": 15,
+  "files": [
+    {
+      "path": "server/src/middleware/auth.js",
+      "previousApprovedSha256": "92e99e0afded8de06b4d74abebe851b02c4f0c303a191530f39bee72f1256a88",
+      "releaseCandidateSha256": "92e99e0afded8de06b4d74abebe851b02c4f0c303a191530f39bee72f1256a88",
+      "reason": "Unmodified from approved authorization redaction baseline"
+    },
+    {
+      "path": "server/src/controllers/doctorController.js",
+      "previousApprovedSha256": "919129116095dc8301866fc0ea3d804e8bde645ec1de210deb2f1b2350d081c2",
+      "releaseCandidateSha256": "919129116095dc8301866fc0ea3d804e8bde645ec1de210deb2f1b2350d081c2",
+      "reason": "Unmodified from approved doctor transaction baseline"
+    },
+    {
+      "path": "ml-engine/app.py",
+      "previousApprovedSha256": "330d73d0f8ead942ef82c6059a32099a6fdbcfd3e2212ccaebe4d01f4821265b",
+      "releaseCandidateSha256": "330d73d0f8ead942ef82c6059a32099a6fdbcfd3e2212ccaebe4d01f4821265b",
+      "reason": "Unmodified from approved ML reference search and readiness baseline"
+    },
+    {
+      "path": "ml-engine/evaluate_symptom_model.py",
+      "previousApprovedSha256": "6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d",
+      "releaseCandidateSha256": "6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d",
+      "reason": "Unmodified from approved symptom model evaluation baseline"
+    },
+    {
+      "path": "client/src/components/SymptomTagInput.jsx",
+      "previousApprovedSha256": "1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d",
+      "releaseCandidateSha256": "1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d",
+      "reason": "Unmodified from approved UI symptom tag input component"
+    },
+    {
+      "path": "server/tests/ir04BackendIntegration.test.js",
+      "previousApprovedSha256": "adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc",
+      "releaseCandidateSha256": "adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc",
+      "reason": "Unmodified from approved backend integration quarantine test"
+    },
+    {
+      "path": "server/tests/patientProfileOwnedIntegration.test.js",
+      "previousApprovedSha256": "7335e2a5190d740d2ee7856fe26d2ba5edb7a204a4872d3fa081d52b345345c5",
+      "releaseCandidateSha256": "7335e2a5190d740d2ee7856fe26d2ba5edb7a204a4872d3fa081d52b345345c5",
+      "reason": "Unmodified from approved patient profile owned integration test"
+    },
+    {
+      "path": "server/tests/prescriptionDurationOwnedIntegration.test.js",
+      "previousApprovedSha256": "562ba59f307e2081214f40ff2d674fd3546c82f9828a53b8195796f2d637cbc6",
+      "releaseCandidateSha256": "562ba59f307e2081214f40ff2d674fd3546c82f9828a53b8195796f2d637cbc6",
+      "reason": "Unmodified from approved prescription duration integration test"
+    },
+    {
+      "path": "server/tests/lab.test.js",
+      "previousApprovedSha256": "227e2faf5424e53f836e5364fa592790d387206011e8264e72bb1cc88d19800c",
+      "releaseCandidateSha256": "227e2faf5424e53f836e5364fa592790d387206011e8264e72bb1cc88d19800c",
+      "reason": "Unmodified from approved lab suite baseline"
+    },
+    {
+      "path": "server/tests/universityDemoSeedVerify.test.js",
+      "previousApprovedSha256": "fc472f5707f96b2514d8ec50097da6a6eb7433ff427200f6d6649452ce463695",
+      "releaseCandidateSha256": "fc472f5707f96b2514d8ec50097da6a6eb7433ff427200f6d6649452ce463695",
+      "reason": "Unmodified from approved university demo seed verification test"
+    },
+    {
+      "path": "client/tests/ir04-isolated-five-role-e2e.spec.js",
+      "previousApprovedSha256": "496dbcc2337f2cc48d15fc5af217181c948fdd6d4251f301057e2121c7d9d2ee",
+      "releaseCandidateSha256": "496dbcc2337f2cc48d15fc5af217181c948fdd6d4251f301057e2121c7d9d2ee",
+      "reason": "Unmodified from approved five-role E2E specification"
+    },
+    {
+      "path": "server/src/config/dbGuard.js",
+      "previousApprovedSha256": "35abf7350bcdf78ad2dcef682c7aba9ffb1a1a6a7adea48a3a470758cf5df7fd",
+      "releaseCandidateSha256": "a6045b921491955984d745c009268cda01e75314f23e81f2752116556c21578d",
+      "reason": "Authorized QA Atlas cluster allowlist for qa-project-medisync.gwprp27.mongodb.net (commit 2c40e6c)"
+    },
+    {
+      "path": "server/src/models/Consultation.js",
+      "previousApprovedSha256": "cb4aeb0df60020e9fd3cd734b14431703972fa3643e0907c1b4a39352b53c3ee",
+      "releaseCandidateSha256": "3538ea856a26def834d30f9d463331012ee27132d7c1bc99504acdd3ceaa1e99",
+      "reason": "Line endings normalized to canonical LF via .gitattributes; code unmodified since commit 2de4e4f"
+    },
+    {
+      "path": "server/src/models/Patient.js",
+      "previousApprovedSha256": "1035315ab5884632be56dd267defb2c219839aeb479858df285a3359d6aa9338",
+      "releaseCandidateSha256": "14b60b7c198df9f9ba561e77bcfadec275243a3ad5b46ba499315e462997481d",
+      "reason": "Trilingual preferredLanguage field added with default 'en' (commit 21d1d6d)"
+    },
+    {
+      "path": "server/src/utils/versionedEncryption.js",
+      "previousApprovedSha256": "b7a32c077345f54b06e698c5fee85c2ec9ba2feed75161d7408fb8d3ddfe259c",
+      "releaseCandidateSha256": "5dd15b2e05c12490c401185251a0a78c82c8184ead6a822fffb8fce3b8772bfd",
+      "reason": "Line endings normalized to canonical LF via .gitattributes; code unmodified since commit 2de4e4f"
+    }
+  ]
+}

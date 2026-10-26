@@ -5,7 +5,7 @@ const {createApplicationShutdown}=require('../src/security/applicationShutdown')
 const {createMlHealthMonitor}=require('../src/security/mlHealthMonitor');
 const {apiErrorHandler}=require('../src/security/apiErrorHandler');
 const response=()=>({status:jest.fn().mockReturnThis(),json:jest.fn()});
-const proof=()=>({dbName:'test',authenticatedRoles:[{role:'readWrite',db:'test'}],authenticatedUserCount:1,storageProfile:'current-model-contract-no-migration',verifiedCollections:28,verifiedRequiredIndexes:65,transactionTopologyVerified:true});
+const proof=()=>({dbName:'medisync_prod',authenticatedRoles:[{role:'readWrite',db:'medisync_prod'}],authenticatedUserCount:1,storageProfile:'current-model-contract-no-migration',verifiedCollections:28,verifiedRequiredIndexes:65,transactionTopologyVerified:true});
 test.each([undefined,{}, {...proof(),verifiedRequiredIndexes:64},{...proof(),authenticatedUserCount:2},{...proof(),transactionTopologyVerified:false},{...proof(),authenticatedRoles:[{role:'root',db:'admin'}]}])('production readiness refuses incomplete proof %#',info=>{
  const res=response();createRuntimeHealth({mongoReady:()=>true,redisReady:()=>true,requireAdmission:true,admissionReady:()=>hasProductionAdmission(info)})({},res);expect(res.status).toHaveBeenCalledWith(503);
 });

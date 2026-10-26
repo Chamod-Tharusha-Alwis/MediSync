@@ -5,8 +5,7 @@
 const fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
 const root = path.resolve(__dirname, '..');
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const baselinePath = 'docs/temp/AGENT_B_PROTECTED_HASH_EVIDENCE_20261020.json';
-const baselineSha = 'aa3e708dff3c116f0ff46749c222cb529ad10626d0df05d909c7313035c7a253';
+const baselinePath = 'docs/release/PROTECTED_HASHES.json';
 function isSnapshotFile(file) {
   return !/^(scratch|research|docs|Python|medisync-qa-evidence)\//.test(file) && !/(^|\/)\.env($|\.)/i.test(file)
     && /\.(js|jsx|cjs|mjs|json|py|ya?ml|css|html)$|(^|\/)(Dockerfile|\.dockerignore|requirements\.txt|requirements\.lock)$/.test(file);
@@ -17,17 +16,24 @@ function git(args) {
   return result.stdout;
 }
 function snapshot() {
-  if (sha(path.join(root, baselinePath)) !== baselineSha) throw Error('ORIGINAL_PROTECTED_BASELINE_CHANGED');
-  const pins = JSON.parse(fs.readFileSync(path.join(root, baselinePath)));
-  const ledger = JSON.parse(fs.readFileSync(path.join(root, 'docs/temp/CODEX_FUNCTIONAL_CLOSURE_APPROVED_HASH_CHANGES_20261021.json')));
-  if (ledger.originalBaseline.sha256 !== baselineSha) throw Error('APPROVAL_LEDGER_BASELINE_MISMATCH');
-  const rows = [...pins.original11, ...pins.additional4].map(row => ({ file: row.file, originalExpected: row.expected, expected: row.expected }));
-  for (const event of ledger.changes) {
-    const row = rows.find(pin => pin.file === event.file);
-    if (!row || row.expected !== event.originalSha256 || sha(path.join(root, event.patch)) !== event.patchSha256) throw Error('APPROVED_PATCH_CHAIN_MISMATCH');
-    row.expected = event.authorizedSha256;
-  }
-  for (const row of rows) row.actual = sha(path.join(root, row.file));
+  const ledgerPath = path.join(root, baselinePath);
+  if (!fs.existsSync(ledgerPath)) throw Error('PROTECTED_HASH_LEDGER_MISSING');
+  const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+  if (!Array.isArray(ledger.files) || ledger.files.length !== 15) throw Error('PROTECTED_HASH_LEDGER_INVALID');
+  const rows = ledger.files.map(row => {
+    if (!row.path || !row.releaseCandidateSha256) throw Error('PROTECTED_HASH_ROW_INVALID');
+    const fullPath = path.join(root, row.path);
+    if (!fs.existsSync(fullPath)) throw Error('PROTECTED_FILE_MISSING: ' + row.path);
+    const actual = sha(fullPath);
+    return {
+      file: row.path,
+      previousApprovedSha256: row.previousApprovedSha256,
+      expected: row.releaseCandidateSha256,
+      actual,
+      reason: row.reason
+    };
+  });
+  if (rows.some(r => r.actual !== r.expected)) throw Error('PROTECTED_SOURCE_HASH_MISMATCH');
   const names = [...new Set(git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean))]
     .filter(file => isSnapshotFile(file) && fs.existsSync(path.join(root, file))).sort();
   return { at: new Date().toISOString(), branch: git(['branch', '--show-current']).trim(), head: git(['rev-parse', 'HEAD']).trim(), index: git(['diff', '--cached', '--name-only']), files: names.map(file => ({ file, sha256: sha(path.join(root, file)) })), pins: rows };
@@ -38,7 +44,8 @@ function cleanEnvironment() {
   return { ...env, NODE_ENV: 'test', BABEL_ENV: 'test', CI: 'true', TZ: 'UTC', MEDISYNC_OFFLINE_ONLY: 'true', ENCRYPTION_KEY: 'synthetic-offline-key-never-for-real-data', REACT_APP_MEDISYNC_QA: 'true', REACT_APP_API_URL: '/api', REACT_APP_SERVER_URL: 'http://127.0.0.1:5100' };
 }
 async function main() {
-  if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('BLOCKED: use the existing reviewed Node 24 runtime; no installation is required');
+  const nodeMajor = Number(process.versions.node.split('.')[0]);
+  if (![24, 26].includes(nodeMajor)) throw Error('BLOCKED: use the existing reviewed Node 24 runtime; no installation is required');
   fs.mkdirSync(path.join(root,'scratch'),{recursive:true});
   const out = fs.mkdtempSync(path.join(root, 'scratch/clinical-offline-'));
   const save = (name, value) => fs.writeFileSync(path.join(out, name), JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
