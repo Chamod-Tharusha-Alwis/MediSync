@@ -14,6 +14,17 @@ jest.mock('../components/PatientAccessModal',()=>({onSuccess,onClose})=><div rol
 const mockToken=(seconds=600)=>`inert.${btoa(JSON.stringify({exp:Math.floor(Date.now()/1000)+seconds}))}.inert`;
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 beforeEach(()=>{localStorage.clear();api.get.mockReset();api.post.mockReset();});
+test.each(['committed','unconfirmed'])('remounted wizard preserves pending save until matching server confirmation: %s',async state=>{
+ const key='owned-consultation-reference-0001';sessionStorage.setItem('medisync:pending-consultation',JSON.stringify({key}));
+ api.get.mockResolvedValue({data:{state,operationKey:key,consultationId:'000000000000000000000001'}});
+ try {
+  render(<NewConsultation/>);expect(screen.getByRole('alert')).toHaveTextContent('previous save');expect(api.post).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'Check previous save'}));
+  await waitFor(()=>expect(api.get).toHaveBeenCalledWith(`/doctor/consultation-command/${key}`));
+  await waitFor(()=>expect(sessionStorage.getItem('medisync:pending-consultation')===null).toBe(state==='committed'));
+  expect(api.post).not.toHaveBeenCalled();
+ }finally {sessionStorage.removeItem('medisync:pending-consultation');}
+});
 test('Doctor wizard requests no profile or timeline before consent',()=>{render(<NewConsultation/>);fireEvent.change(screen.getByLabelText('Patient NIC'),{target:{value:'QA-NIC'}});fireEvent.click(screen.getByLabelText('Request patient verification'));expect(screen.getByRole('dialog')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();expect(api.post).not.toHaveBeenCalled();});
 test('Closing consent does not fetch patient information',()=>{render(<NewConsultation/>);fireEvent.change(screen.getByLabelText('Patient NIC'),{target:{value:'QA-NIC'}});fireEvent.click(screen.getByLabelText('Request patient verification'));fireEvent.click(screen.getByText('Cancel'));expect(api.get).not.toHaveBeenCalled();expect(screen.queryByRole('dialog')).toBeNull();});
 test('Authorized doctor profile and timeline carry the grant',async()=>{api.get.mockResolvedValue({data:{data:[]}});render(<NewConsultation/>);fireEvent.change(screen.getByLabelText('Patient NIC'),{target:{value:'QA-NIC'}});fireEvent.click(screen.getByLabelText('Request patient verification'));fireEvent.click(screen.getByText('Grant synthetic consent'));await waitFor(()=>expect(api.get).toHaveBeenCalledTimes(2));for(const [,options]of api.get.mock.calls)expect(options.headers['x-patient-access']).toMatch(/^inert\./);});
@@ -37,7 +48,7 @@ test('Changing patient clears the authorized clinical overview',async()=>{
 });
 test('Double completion dispatches only one mocked consultation submission',async()=>{
   const d=deferred();api.post.mockReturnValue(d.promise);await authorizeWizard();
-  fireEvent.click(screen.getByText('Proceed to Symptoms'));fireEvent.click(screen.getByText('Continue to AI Diagnosis'));
+  fireEvent.click(screen.getByText('Proceed to Symptoms'));fireEvent.click(screen.getByText('Continue to Reference Matches'));
   fireEvent.change(screen.getByPlaceholderText('Enter clinician-entered condition description...'),{target:{value:'Synthetic test description'}});
   fireEvent.click(screen.getByText('Build Prescription'));const button=screen.getByText('Complete Consultation');fireEvent.click(button);fireEvent.click(button);
   expect(api.post).toHaveBeenCalledTimes(1);expect(api.post.mock.calls[0][0]).toBe('/doctor/consultation');

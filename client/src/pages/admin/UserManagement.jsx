@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { Search, User, Shield, Smartphone, Trash2, Loader2, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import api from '../../api/axiosInstance';
@@ -5,6 +6,7 @@ import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 
 const UserManagement = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
@@ -78,7 +80,7 @@ const UserManagement = () => {
   return (
     <PageTransition className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">User Management</h1>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('admin.userManagement', 'User Management')}</h1>
         <p className="text-slate-400 mt-1 text-sm font-medium">Search users, manage trusted devices, and send secure recovery links.</p>
       </div>
 

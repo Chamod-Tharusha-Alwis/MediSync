@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const hospitalController = require('../controllers/hospitalController');
-const protect = require('../middleware/auth');
+const protect = require('../middleware/verifiedAuth');
 const rateLimit = require('express-rate-limit');
 
 const loginLimiter = rateLimit({ 
@@ -28,6 +28,6 @@ router.put('/doctors/:doctorId/status', hospAuth, hospitalController.toggleDocto
 
 router.get('/patients', hospAuth, hospitalController.getPatients);
 router.get('/patients/:nic/history', hospAuth, hospitalController.getHospitalPatientHistory);
-router.put('/patients/update-records', hospAuth, hospitalController.updatePatientRecords);
+router.put('/patients/update-records', hospAuth, (_req, res) => res.status(403).json({ error: 'Clinical changes require a licensed clinician and patient authorization' }));
 
 module.exports = router;

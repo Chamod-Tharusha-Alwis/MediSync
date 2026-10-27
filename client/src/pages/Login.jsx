@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
+import { useTranslation } from '../i18n/LanguageContext';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export default function Login() {
       };
       navigate(routes[data.role] || '/doctor');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || t('auth.loginFailed', 'Login failed'));
     } finally {
       setLoading(false);
     }
@@ -36,11 +38,11 @@ export default function Login() {
     <div className="min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-blue-900 mb-1">MediSync</h1>
-        <p className="text-gray-500 text-sm mb-6">Secure Healthcare Platform</p>
+        <p className="text-gray-500 text-sm mb-6">{t('auth.platformSubtitle', 'Secure Healthcare Platform')}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Email</label>
+            <label className="text-sm font-medium text-gray-700">{t('auth.emailAddress', 'Email Address')}</label>
             <input
               type="email"
               required
@@ -51,7 +53,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Password</label>
+            <label className="text-sm font-medium text-gray-700">{t('auth.password', 'Password')}</label>
             <input
               type="password"
               required
@@ -71,7 +73,7 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-blue-700 text-white py-2 rounded-lg font-medium hover:bg-blue-800 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('auth.signingIn', 'Signing in…') : t('nav.login', 'Sign In')}
           </button>
         </form>
       </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
@@ -42,6 +43,7 @@ const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg
 );
 
 const OutbreakMonitor = () => {
+  const { t } = useTranslation();
   const [modelStatus, setModelStatus] = useState(null);
   const [alerts,      setAlerts]      = useState([]);
   const [mlResult,    setMlResult]    = useState(null);
@@ -186,7 +188,7 @@ const OutbreakMonitor = () => {
             <PulseRing color="bg-red-500" />
             <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Surveillance Feed</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Outbreak Monitor</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("nav.outbreakmonitor", "Outbreak Monitor")}</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Real-time epidemiological ML anomaly surveillance center.</p>
         </div>
 
@@ -216,7 +218,7 @@ const OutbreakMonitor = () => {
           delay={0.08}
         />
         <StatTile
-          icon={ShieldAlert} label="Active Outbreak Alerts" value={activeCount}
+          icon={ShieldAlert} label={t("outbreak.activeAlerts", "Active Outbreak Alerts")} value={activeCount}
           accentText={activeCount > 0 ? 'text-red-400' : 'text-emerald-400'}
           accentBg={activeCount > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}
           accentBorder={activeCount > 0 ? 'border-red-500/20' : 'border-emerald-500/20'}

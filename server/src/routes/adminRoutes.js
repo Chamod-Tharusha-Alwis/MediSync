@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const protect = require('../middleware/auth');
+const protect = require('../middleware/verifiedAuth');
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 const analyticsController = require('../controllers/analyticsController');
-router.get('/analytics/dashboard', protect(['admin', 'super_admin', 'hospital_admin']), analyticsController.getDashboardStats);
+router.get('/analytics/dashboard', protect(['admin', 'super_admin']), analyticsController.getDashboardStats);
 
 // ─── Core stats & users ──────────────────────────────────────────────────────
 router.get('/stats', protect(['admin', 'super_admin']), adminController.getSystemStats);
@@ -48,25 +48,10 @@ router.post('/users/:id/recovery', protect(['admin', 'super_admin']), adminContr
 // ─── Broadcasts ──────────────────────────────────────────────────────────────
 router.get('/broadcasts', protect(['admin', 'super_admin']), adminController.getBroadcasts);
 
-// ─── Demo Seeding & Wiping (Viva / Demo Only) ──────────────────────────────────
-router.post('/seed-outbreak-demo', protect(['admin', 'super_admin']), async (req, res) => {
-  try {
-    const seedOutbreakDemo = require('../utils/seedOutbreakDemo');
-    const summary = await seedOutbreakDemo();
-    res.json({ message: 'Demo disease outbreak cases seeded successfully', data: summary });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to seed demo outbreak cases', details: err.message });
-  }
-});
-
-router.delete('/seed-outbreak-demo', protect(['admin', 'super_admin']), async (req, res) => {
-  try {
-    const wipeOutbreakDemo = require('../utils/wipeOutbreakDemo');
-    const result = await wipeOutbreakDemo();
-    res.json({ message: 'Demo disease outbreak cases wiped successfully', data: result });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to wipe demo outbreak cases', details: err.message });
-  }
-});
+// Dataset maintenance requires a separately approved exact-ID operator procedure.
+const maintenanceDenied = (_req, res) => res.status(403).json({ error: 'Dataset maintenance is not available over HTTP' });
+router.post('/seed-outbreak-demo', protect(['admin', 'super_admin']), maintenanceDenied);
+router.delete('/seed-outbreak-demo', protect(['admin', 'super_admin']), maintenanceDenied);
+router.get('/outbreak/preview', protect(['admin', 'super_admin']), maintenanceDenied);
 
 module.exports = router;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
+import { clearLocalSession } from '../../utils/sessionCleanup';
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
@@ -18,16 +19,16 @@ const IdleTimer = () => {
     try {
       await api.post('/auth/logout');
     } catch (e) {
-      console.error('Logout error on idle', e);
+      console.error('Idle logout could not reach the server.');
     } finally {
-      localStorage.clear();
+      clearLocalSession();
       toast.warning('Session expired due to inactivity');
       navigate('/select-role');
     }
   }, [navigate]);
 
   const resetIdleTimer = useCallback(() => {
-    if (isAuthPage) return;
+    if (isAuthPage || !localStorage.getItem('token')) return;
 
     // Reset local idle timeout
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -35,7 +36,7 @@ const IdleTimer = () => {
 
     // Debounce heartbeat ping
     const now = Date.now();
-    if (now - lastHeartbeatRef.current > HEARTBEAT_INTERVAL_MS) {
+    if (process.env.REACT_APP_UNIVERSITY_RUNTIME !== 'true' && now - lastHeartbeatRef.current > HEARTBEAT_INTERVAL_MS) {
       lastHeartbeatRef.current = now;
       api.post('/auth/heartbeat').catch(() => {
         // Silent fail on heartbeat, if 401 the interceptor will handle it

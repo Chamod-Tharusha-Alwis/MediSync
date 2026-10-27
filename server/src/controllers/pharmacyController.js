@@ -1,3 +1,4 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Pharmacy = require('../models/Pharmacy');
@@ -43,7 +44,7 @@ exports.registerPharmacy = async (req, res) => {
     if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
       return res.status(400).json({ error: 'Pharmacy registration number or admin email already exists' });
     }
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.status(500).json({ error: 'Registration failed' });
   }
 };
 
@@ -136,7 +137,7 @@ exports.loginPharmacy = async (req, res) => {
         failedAttempts: priorFailedAttempts,
       });
 
-      const emailResult = await emailService.sendOTPEmail(staff.email, staff.fullName || 'Pharmacist', otp);
+      const emailResult = await emailService.sendOTPEmail(staff.email, staff.fullName || 'Pharmacist', otp, require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff));
       if (!emailResult || !emailResult.providerAccepted) {
         await OTPSession.deleteOne({ _id: otpDoc._id });
         return res.status(emailResult?.statusCode || 503).json({
@@ -276,7 +277,8 @@ exports.loginPharmacy = async (req, res) => {
           networkInfo,
           'Individual Login',
           staff.pharmacyId ? staff.pharmacyId.name : null,
-          isTrusted
+          isTrusted,
+          require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff)
         );
         console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
           provider: resNotification?.provider || null,
@@ -286,7 +288,7 @@ exports.loginPharmacy = async (req, res) => {
           deliveryConfirmed: false,
         });
       } catch (e) {
-        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:', e.message);
+        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:');
       }
     }
 
@@ -310,26 +312,25 @@ exports.loginPharmacy = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Login failed', details: error.message });
+    res.status(500).json({ error: 'Login failed' });
   }
 };
 
 exports.changeFirstPassword = async (req, res) => {
   try {
-    const { staffId, newPassword } = req.body;
+    const { staffId, newPassword, currentPassword } = req.body;
+    if (typeof currentPassword !== 'string' || currentPassword.length > 256 || !mongoose.isObjectIdOrHexString(staffId)) return res.status(401).json({ error: 'Password setup verification required' });
     const staff = await PharmacyStaff.findById(staffId);
-    if (!staff) return res.status(404).json({ error: 'Staff not found' });
+    if (!staff || staff.mustChangePassword !== true || staff.isActive !== true || !await bcrypt.compare(currentPassword, staff.password)) return res.status(401).json({ error: 'Password setup verification required' });
 
     const strength = validatePasswordStrength(newPassword);
-    if (!strength.valid || strength.score < 2) return res.status(400).json({ error: 'Password too weak' });
+    if (!strength.valid || strength.score < 3) return res.status(400).json({ error: 'Password too weak' });
 
-    staff.password = await hashPassword(newPassword);
-    staff.mustChangePassword = false;
-    await staff.save();
+    await require('../services/passwordChangeService').changePasswordAtomic({ user: staff, UserModel: PharmacyStaff, userModel: 'PharmacyStaff', newHash: await hashPassword(newPassword), setup: true });
 
     res.json({ message: 'Password changed successfully. You can now log in.' });
   } catch (error) {
-    res.status(500).json({ error: 'Password change failed', details: error.message });
+    res.status(error.code === 'PASSWORD_CHANGE_CONFLICT' ? 409 : 503).json({ error: 'Password setup could not be completed safely' });
   }
 };
 
@@ -341,7 +342,7 @@ exports.getMe = async (req, res) => {
     if (!staff) return res.status(404).json({ error: 'Staff not found' });
     res.json({ data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get profile', details: error.message });
+    res.status(500).json({ error: 'Failed to get profile' });
   }
 };
 
@@ -368,11 +369,11 @@ exports.addStaff = async (req, res) => {
     });
     await staff.save();
 
-    await emailService.sendTempPasswordEmail(email, name, tempPassword, `${process.env.CLIENT_URL}/pharmacy/login`, admin.pharmacyId.name);
+    await emailService.sendTempPasswordEmail(email, name, tempPassword, `${process.env.CLIENT_URL}/pharmacy/login`, admin.pharmacyId.name, require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff));
 
     res.status(201).json({ message: 'Staff added and email sent' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add staff', details: error.message });
+    res.status(500).json({ error: 'Failed to add staff' });
   }
 };
 
@@ -382,14 +383,16 @@ exports.getStaff = async (req, res) => {
     const staff = await PharmacyStaff.find({ pharmacyId: admin.pharmacyId }).select('-password');
     res.json({ data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get staff', details: error.message });
+    res.status(500).json({ error: 'Failed to get staff' });
   }
 };
 
 exports.toggleStaffStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const staff = await PharmacyStaff.findById(id);
+    const actor = await PharmacyStaff.findById(req.user.id);
+    if (!actor || actor.role !== 'pharmacy_admin' || actor.isActive !== true) return res.status(403).json({ error: 'Pharmacy administrator required' });
+    const staff = await PharmacyStaff.findOne({ _id: id, pharmacyId: actor.pharmacyId });
     if (!staff) return res.status(404).json({ error: 'Staff not found' });
     if (staff._id.toString() === req.user.id) return res.status(400).json({ error: 'Cannot toggle own status' });
 
@@ -397,7 +400,7 @@ exports.toggleStaffStatus = async (req, res) => {
     await staff.save();
     res.json({ message: 'Status toggled', data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to toggle status', details: error.message });
+    res.status(500).json({ error: 'Failed to toggle status' });
   }
 };
 
@@ -407,21 +410,22 @@ exports.getPendingPrescriptions = async (req, res) => {
     // Use SHA-256 blind index so we never query the encrypted field
     const targetHash = crypto.createHash('sha256').update(nic.trim().toUpperCase()).digest('hex');
     const prescriptions = await Prescription.find({ 
-      nicHash: targetHash, 
+      ...nicFilter(nic.trim().toUpperCase(), { legacyFields: ['nicHash', 'patientNic_bi'] }),
       status: { $in: ['pending', 'issued'] },
       isOTC: { $ne: true },           // Only doctor-issued prescriptions
       expiresAt: { $gt: new Date() }
     }).populate('doctorId', 'fullName').populate('hospitalId', 'name');
     // Fetch the patient profile to display on frontend (do NOT use .lean() or restrict .select() so decryption works)
-    const patientUser = await Patient.findOne({ nic: nic.trim().toUpperCase() });
+    const patientUser = await Patient.findOne(nicFilter(nic.trim().toUpperCase(), { plainFields: ['nic'] }));
     if (patientUser && typeof patientUser.decryptFieldsSync === 'function') {
       patientUser.decryptFieldsSync();
     }
 
-    res.json({ data: { prescriptions, patient: patientUser } });
+    const profile = patientUser ? Object.fromEntries(['_id', 'nic', 'fullName', 'allergies'].filter(key => patientUser[key] !== undefined).map(key => [key, patientUser[key]])) : null;
+    res.json({ data: { prescriptions, patient: profile } });
   } catch (error) {
-    console.error('getPendingPrescriptions error:', error);
-    res.status(500).json({ error: 'Failed to get prescriptions', details: error.message });
+    console.error('getPendingPrescriptions error:');
+    res.status(500).json({ error: 'Failed to get prescriptions' });
   }
 };
 
@@ -457,26 +461,30 @@ exports.getDispensingHistory = async (req, res) => {
     const total = await Dispensing.countDocuments(query);
     res.json({ data: validHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    console.error('[getDispensingHistory Error]:', error.message);
-    res.status(500).json({ error: 'Failed to get history', details: error.message });
+    console.error('[getDispensingHistory Error]:');
+    res.status(500).json({ error: 'Failed to get history' });
   }
 };
 
 exports.getReceipt = async (req, res) => {
   try {
     const { receiptNo } = req.params;
-    const dispensing = await Dispensing.findOne({ receiptNumber: receiptNo })
+    if (typeof receiptNo !== 'string' || !receiptNo.trim() || receiptNo.length > 120) return res.status(400).json({ error: 'Invalid receipt number' });
+    if (!mongoose.isObjectIdOrHexString(req.user?.id)) return res.status(401).json({ error: 'Authentication required' });
+    const staff = await PharmacyStaff.findById(req.user.id).select('pharmacyId role isActive');
+    if (!staff || staff.isActive !== true || !['pharmacist', 'pharmacy_admin', 'assistant'].includes(staff.role) || !mongoose.isObjectIdOrHexString(staff.pharmacyId)) return res.status(403).json({ error: 'Active pharmacy staff required' });
+    const dispensing = await Dispensing.findOne({ receiptNumber: receiptNo, pharmacyId: staff.pharmacyId })
       .populate('pharmacyId', 'name address phone')
       .populate('staffId', 'fullName role')
       .populate({
         path: 'prescriptionId',
         populate: { path: 'doctorId', select: 'fullName' }
       });
-      
+
     if (!dispensing) return res.status(404).json({ error: 'Receipt not found' });
     res.json({ data: dispensing });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch receipt', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch receipt' });
   }
 };
 
@@ -493,7 +501,7 @@ exports.getStats = async (req, res) => {
 
     res.json({ data: { todayDispensed, monthDispensed } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stats', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 };
 
@@ -574,7 +582,7 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       );
       return res.json(mlRes.data);
     } catch (mlErr) {
-      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:', mlErr.message);
+      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:');
       
       const alerts = [];
       for (const [drugName, dailyCounts] of Object.entries(drugTrends)) {
@@ -618,8 +626,8 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('[getDistrictRestockAlerts]', err.message);
-    res.status(500).json({ error: 'Failed to generate restock alerts', details: err.message });
+    console.error('[getDistrictRestockAlerts]');
+    res.status(500).json({ error: 'Failed to generate restock alerts' });
   }
 };
 
@@ -632,7 +640,7 @@ exports.getInventory = async (req, res) => {
     const pharmacy = await Pharmacy.findById(staff.pharmacyId);
     res.json({ data: pharmacy.inventory || [] });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch inventory', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch inventory' });
   }
 };
 
@@ -666,7 +674,7 @@ exports.updateInventoryItem = async (req, res) => {
     await pharmacy.save();
     res.json({ message: 'Inventory updated successfully', data: pharmacy.inventory });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update inventory', details: error.message });
+    res.status(500).json({ error: 'Failed to update inventory' });
   }
 };
 
@@ -742,8 +750,8 @@ exports.getRestockAnalytics = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[getRestockAnalytics]', error.message);
-    res.status(500).json({ error: 'Failed to fetch restock analytics', details: error.message });
+    console.error('[getRestockAnalytics]');
+    res.status(500).json({ error: 'Failed to fetch restock analytics' });
   }
 };
 

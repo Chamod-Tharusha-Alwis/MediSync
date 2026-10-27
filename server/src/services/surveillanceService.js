@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const POLICY = '5w-verified-episodes-v1';
 const DAY = 86400000;
 const DISTRICTS = new Set('Ampara|Anuradhapura|Badulla|Batticaloa|Colombo|Galle|Gampaha|Hambantota|Jaffna|Kalutara|Kandy|Kegalle|Kilinochchi|Kurunegala|Mannar|Matale|Matara|Monaragala|Mullaitivu|Nuwara Eliya|Polonnaruwa|Puttalam|Ratnapura|Trincomalee|Vavuniya'.split('|'));
-const synthetic = c => c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.testRunId || c.phase5wOwner);
+const synthetic = c => c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
+const realAlertFilter = () => ({ isSimulation: false, isDemoData: { $ne: true }, isSynthetic: { $ne: true }, isUniversityDemo: { $ne: true }, isSyntheticUniversityData: { $ne: true }, isTestFixture: { $ne: true }, datasetVersion: { $exists: false }, datasetBatch: { $exists: false }, testRunId: { $exists: false }, phase5wOwner: { $exists: false } });
 function diseaseId(c) {
   const code = String(c.icdCode || '').trim().toUpperCase();
   const version = String(c.icdVersion || '').toUpperCase().replace(/[-\s]/g, '');
@@ -15,6 +16,7 @@ function diseaseId(c) {
 // defines a case; repeated visits for that patient/disease/episode count once.
 // Missing clinical provenance/confirmation/episode metadata requires review.
 function selectCases(candidates, { mode = 'real', now = new Date() } = {}) {
+  if (!['real', 'simulation'].includes(mode)) throw new Error('Invalid surveillance mode');
   const cases = [], excluded = {}, seen = new Set();
   const reject = reason => { excluded[reason] = (excluded[reason] || 0) + 1; };
   for (const c of [...candidates].sort((a,b) => new Date(a.createdAt)-new Date(b.createdAt))) {
@@ -37,7 +39,11 @@ async function loadCases(options) {
   // into aggregation. This metadata cannot be supplied by public consultation APIs.
   const Consultation = require('../models/Consultation');
   const now = options?.now || new Date();
-  const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-30*DAY),$lte:now}}).toArray();
+  const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-30*DAY),$lte:now}}, { projection: {
+    _id: 1, patientId: 1, createdAt: 1, district: 1, icdCode: 1, icdVersion: 1, surveillanceVerification: 1,
+    isSimulation: 1, isTestFixture: 1, isDemoData: 1, isSynthetic: 1, isUniversityDemo: 1, isSyntheticUniversityData: 1,
+    datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1
+  } }).toArray();
   return selectCases(docs, {...options,now});
 }
 async function runAnalysis({mode='real', now=new Date()} = {}) {
@@ -77,4 +83,4 @@ async function canReviewSimulation(user) {
   const admin=await require('../models/Admin').collection.findOne({_id:new mongoose.Types.ObjectId(user.id),isActive:true});
   return Boolean(admin && synthetic(admin));
 }
-module.exports={POLICY,synthetic,diseaseId,selectCases,loadCases,runAnalysis,canReviewSimulation};
+module.exports={POLICY,synthetic,realAlertFilter,diseaseId,selectCases,loadCases,runAnalysis,canReviewSimulation};

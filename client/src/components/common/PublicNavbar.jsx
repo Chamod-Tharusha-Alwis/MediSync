@@ -20,19 +20,19 @@ const PublicNavbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-lg border-b border-slate-200/60 shadow-sm transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2 py-2">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+        <Link to="/" className="flex shrink-0 items-center gap-1.5 sm:gap-2.5 group">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
             <Activity className="w-5.5 h-5.5" />
           </div>
-          <span className="font-black text-2xl tracking-tight text-slate-900 bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700">
+          <span className="font-black text-lg sm:text-2xl tracking-tight text-slate-900 bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700">
             Medi<span className="text-blue-600">Sync</span>
           </span>
         </Link>
 
         {/* Directory Switcher Nav Links */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-full border border-slate-200/50">
+        <div className="hidden xl:flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-full border border-slate-200/50">
           {navItems.map((item) => {
             const isActive = currentPath === item.path;
             const Icon = item.icon;
@@ -59,20 +59,21 @@ const PublicNavbar = () => {
         </div>
 
         {/* Action Controls: Language Switcher + Back to Home */}
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher variant="light" />
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          <LanguageSwitcher variant="light" compact />
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 shadow-sm transition-all duration-200 hover:scale-103"
+            aria-label={t('nav.backToHome', 'Back to Home')}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 px-2 xl:px-5 py-2.5 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 shadow-sm transition-all duration-200"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t('nav.backToHome', 'Back to Home')}
+            <span className="hidden xl:inline">{t('nav.backToHome', 'Back to Home')}</span>
           </button>
         </div>
       </div>
 
       {/* Mobile nav indicator bar */}
-      <div className="flex sm:hidden border-t border-slate-100 bg-white/95 px-4 py-2 justify-around">
+      <div className="grid grid-cols-4 xl:hidden border-t border-slate-100 bg-white/95 px-2 py-2">
         {navItems.map((item) => {
           const isActive = currentPath === item.path;
           const Icon = item.icon;
@@ -80,12 +81,12 @@ const PublicNavbar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center gap-1 py-1 px-3 text-xs font-bold transition-colors ${
+              className={`flex min-w-0 min-h-[44px] flex-col items-center justify-center gap-1 py-1 px-1 text-[10px] sm:text-xs font-bold transition-colors ${
                 isActive ? 'text-blue-600' : 'text-slate-500'
               }`}
             >
               <Icon className="w-4.5 h-4.5" />
-              <span>{item.name}</span>
+              <span className="max-w-full break-words text-center leading-snug">{item.name}</span>
             </Link>
           );
         })}

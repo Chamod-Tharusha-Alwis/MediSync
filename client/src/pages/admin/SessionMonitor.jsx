@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   Monitor, ShieldCheck, ShieldAlert, LogOut, Loader2, RefreshCw,
@@ -53,6 +54,7 @@ const roles = [
 ];
 
 const SessionMonitor = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('online'); // 'online' | 'audit'
 
@@ -126,7 +128,7 @@ const SessionMonitor = () => {
             Session Monitor
           </h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">
-            Platform surveillance, active sessions, and HIPAA-compliant logs.
+            {t("admin.sessionMonitorSubtitle", "Security audit of authenticated tokens, devices, and origins.")}
           </p>
         </div>
         

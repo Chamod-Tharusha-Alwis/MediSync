@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
-const versionedEncryption = require('../utils/versionedEncryption');
+const versionedEncryption = require('../security/fieldEncryption');
 
 const doctorSchema = new mongoose.Schema({
+  preferredLanguage: require('../security/preferredLanguage').preferredLanguageField(),
   doctorId: { type: String, unique: true }, // auto-generated universal ID
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -31,6 +32,7 @@ const doctorSchema = new mongoose.Schema({
   ratingCount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },
+  clinicalUseVersion: { type: Number, default: 0 },
   isSynthetic: { type: Boolean, default: false },
   isDemoData: { type: Boolean, default: false },
   isDemoAccount: { type: Boolean, default: false },

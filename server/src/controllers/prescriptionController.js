@@ -1,3 +1,4 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const crypto = require('crypto');
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
@@ -11,112 +12,33 @@ const { prescriptionTiming, DurationError } = require('../utils/prescriptionDura
 // POST /api/prescription/issue — Doctor issues prescription
 exports.issuePrescription = async (req, res) => {
   try {
-    const { patientNic, drugName, dosage, frequency } = req.body;
-    const timing = prescriptionTiming(req.body);
-
-    // Allergy cross-reference check
-    const patient = await Patient.findOne({ nic: patientNic });
-    if (patient) {
-      patient.decryptFieldsSync();
-    }
-
-    const allergyResult = checkAllergyConflict(drugName, patient?.allergies);
-    if (allergyResult.hasConflict) {
-      return res.status(400).json({ 
-        error: 'ALLERGY_CONFLICT', 
-        message: `Patient is allergic to: ${patient.allergies.join(', ')}`,
-        conflicts: allergyResult.conflicts
-      });
-    }
-
-    const hashedNic = crypto.createHash('sha256').update(patientNic.trim()).digest('hex');
-
-    const rx = await Prescription.create({
-      patientNic,
-      nicHash: hashedNic,
-      drugName, dosage, frequency,
-      ...timing,
-      doctorId: req.user.id
-    });
-
-    rx.decryptFieldsSync();
-
-    // Generate and send password-protected PDF E-Prescription email to patient
-    if (patient && patient.email) {
-      try {
-        const doctor = await Doctor.findById(req.user.id);
-        const doctorName = doctor ? doctor.fullName : 'Consulting Medical Professional';
-        
-        let hospitalName = 'Private Practice';
-        if (rx.hospitalId) {
-          const Hospital = require('../models/Hospital');
-          const hosp = await Hospital.findById(rx.hospitalId);
-          if (hosp) hospitalName = hosp.name;
-        }
-
-        const patientDOB = patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A';
-        
-        // Generate secure password-locked PDF (password is patient's NIC)
-        const pdfBuffer = await generateLockedPrescription(rx, patient.fullName, patient.nic, patientDOB, doctorName, hospitalName);
-        
-        const masterKey = global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
-        if (!masterKey) throw new Error('FATAL: No encryption key available for PDF password generation');
-        const securePassword = crypto.createHmac('sha256', masterKey)
-          .update(patient.nic)
-          .digest('hex')
-          .substring(0, 8)
-          .toUpperCase();
-
-        // Send email with secure PDF attached
-        const emailResult = await emailService.sendPrescriptionEmail(patient.email, patient.fullName, pdfBuffer, securePassword);
-        
-        if (!(emailResult && emailResult.success)) {
-          console.error(`[DEBUG] ERROR IN PDF/EMAIL PIPELINE - ${emailResult ? emailResult.error : 'Unknown Email Failure'}`);
-        }
-      } catch (pdfErr) {
-        console.error(`[DEBUG] ERROR IN PDF/EMAIL PIPELINE - ${pdfErr.message}`);
-        console.error('❌ Failed to generate or send secured E-Prescription PDF email:', pdfErr);
-      }
-    }
-
-    // Send anonymized data point to Python ML engine
-    try {
-      const { generateToken } = require('../utils/internalAuth');
-      await fetch(`${process.env.ML_ENGINE_URL}/ingest`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-internal-key': generateToken()
-        },
-        body: JSON.stringify({
-          district: req.body.district,
-          drugCategory: req.body.drugCategory || 'general',
-          date: new Date().toISOString().split('T')[0]
-          // NIC intentionally NOT sent — anonymized
-        })
-      });
-    } catch (e) { /* ML engine errors should not block prescription */ }
-
-    res.status(201).json(rx);
-  } catch (err) {
-    if (err instanceof DurationError) return res.status(400).json({ error: err.code, message: err.message });
-    res.status(400).json({ error: err.message });
+    const outcome = await require('../services/consultationCommandService').executeClinicalWrite(req, { standalone: true });
+    const rx = await Prescription.findOne({ _id: outcome.result.prescriptionId, doctorId: req.user.id, patientId: req.clinicalAuthorization.patientId });
+    if (!rx) return res.status(503).json({ error: 'Committed prescription cannot be read safely', commandId: outcome.commandId });
+    rx.decryptFieldsSync?.();
+    const data = {};
+    for (const key of ['_id','prescriptionId','consultationId','consultationRef','patientId','doctorId','hospitalId','drugName','dosage','frequency','durationDays','instructions','status','issuedAt','expiresAt']) if (rx[key] !== undefined) data[key] = rx[key];
+    res.set('X-Idempotent-Replay', String(outcome.replayed));
+    return res.status(outcome.replayed ? 200 : 201).json(data);
+  } catch (error) {
+    if (error instanceof DurationError) return res.status(400).json({ error: error.code, message: error.message });
+    if (error instanceof require('../services/clinicalErrors').ClinicalCommandError) return res.status(error.status).json({ error: error.code });
+    return res.status(503).json({ error: 'Clinical write could not be completed safely' });
   }
 };
 
 // GET /api/prescription/pending/:nic — Pharmacist gets pending prescriptions
 exports.getPendingByNic = async (req, res) => {
   try {
-    const targetHash = crypto.createHash('sha256').update(req.params.nic.trim()).digest('hex');
     const rxList = await Prescription.find({
-      nicHash: targetHash,
+      ...nicFilter(req.params.nic, { legacyFields: ['nicHash', 'patientNic_bi'] }),
       status: { $in: ['pending', 'issued'] },
       expiresAt: { $gt: new Date() }
     }).populate('doctorId', 'fullName specialization');
 
     res.json(rxList);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Failed to fetch prescriptions' });
   }
 };
 
@@ -127,13 +49,19 @@ exports.dispense = require('./dispensingController').dispense;
 exports.downloadPrescriptionPdf = async (req, res) => {
   try {
     const { refId } = req.params;
+    const patient = await Patient.findById(req.user.id);
+    patient?.decryptFieldsSync?.();
+    if (!patient?.nic || !refId) return res.status(403).json({ error: 'Access denied' });
+    const authNic = String(patient.nic).trim().toUpperCase();
 
     // Support querying by either the consultation string or the individual prescription ObjectId/string
-    const prescriptions = await Prescription.find({ 
-      $or: [
+    const prescriptions = await Prescription.find({ $and: [
+      nicFilter(authNic, { legacyFields: ['nicHash', 'patientNic_bi'], plainFields: ['patientNic'] }),
+      { $or: [
         { consultationRef: refId }, 
         { prescriptionId: refId }
-      ] 
+      ] }
+    ]
     })
       .populate('doctorId', 'fullName')
       .populate('hospitalId', 'name');
@@ -149,27 +77,8 @@ exports.downloadPrescriptionPdf = async (req, res) => {
       }
     });
 
-    const patientNic = prescriptions[0].patientNic;
-    let authNic = req.user.nic || req.user.sub || null;
-    if (req.user.id) {
-      const authPatient = await Patient.findById(req.user.id);
-      if (authPatient) {
-        if (typeof authPatient.decryptFieldsSync === 'function') {
-          authPatient.decryptFieldsSync();
-        }
-        if (authPatient.nic) {
-          authNic = authPatient.nic;
-        }
-      }
-    }
-    if (!authNic || !patientNic || String(patientNic).trim().toUpperCase() !== String(authNic).trim().toUpperCase()) {
+    if (prescriptions.some(rx => !rx.patientNic || String(rx.patientNic).trim().toUpperCase() !== authNic || (rx.patientId && String(rx.patientId) !== String(patient._id)))) {
       return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const patient = await Patient.findOne({ nic: patientNic });
-    if (!patient) return res.status(404).json({ error: 'Patient record not found' });
-    if (typeof patient.decryptFieldsSync === 'function') {
-      patient.decryptFieldsSync();
     }
 
     const firstRx = prescriptions[0];
@@ -184,7 +93,7 @@ exports.downloadPrescriptionPdf = async (req, res) => {
     let labTests = [];
     let followUpDate = null;
     if (refId) {
-      const consultation = await Consultation.findOne({ consultationId: refId });
+      const consultation = await Consultation.findOne({ consultationId: refId, patientId: patient._id });
       if (consultation) {
         if (typeof consultation.decryptFieldsSync === 'function') {
           consultation.decryptFieldsSync();
@@ -194,10 +103,12 @@ exports.downloadPrescriptionPdf = async (req, res) => {
       }
     }
 
-    // Re-generate the NIC-locked PDF containing all prescriptions under this consultation
+    // Language is resolved only after persisted identity and every row's ownership.
+    const languageOptions = await require('../services/recipientLanguageService').pdf({ model: 'Patient', accountId: String(patient._id), authorizedSubjectId: String(req.user.id) });
+    // Re-generate the e-prescription PDF containing all prescriptions under this consultation
     const pdfBuffer = await generateLockedPrescription(
       prescriptions, patient.fullName, patient.nic, patientDOB, doctorName, hospitalName,
-      patient.gender || '', labTests, followUpDate, refId
+      patient.gender || '', labTests, followUpDate, refId, languageOptions
     );
 
     res.set({
@@ -210,7 +121,7 @@ exports.downloadPrescriptionPdf = async (req, res) => {
     });
     return res.send(pdfBuffer);
   } catch (err) {
-    console.error('[PDF Download] Error:', err.message);
-    res.status(500).json({ error: 'Failed to generate PDF', details: err.message });
+    console.error('[PDF Download] Generation unavailable.');
+    res.status(500).json({ error: 'Failed to generate PDF' });
   }
 };

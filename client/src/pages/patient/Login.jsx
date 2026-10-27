@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, HeartPulse } from 'lucide-react';
@@ -9,6 +10,7 @@ import GlassButton from '../../components/common/GlassButton';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
 
 const PatientLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -150,7 +152,7 @@ const PatientLogin = () => {
             <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
-          <GlassButton type="submit" isLoading={loading} className="w-full mt-4">Sign In</GlassButton>
+          <GlassButton type="submit" isLoading={loading} className="w-full mt-4">{t("auth.signInBtn", "Sign In")}</GlassButton>
 
           <div className="mt-4 text-center">
             <button

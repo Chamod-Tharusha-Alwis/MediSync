@@ -1,8 +1,11 @@
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 RUN npm install -g serve
-CMD serve -s build -l $PORT
+USER node
+EXPOSE 3000
+CMD ["sh", "-c", "serve -s build -l ${PORT:-3000}"]
+

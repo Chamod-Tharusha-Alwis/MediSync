@@ -1,6 +1,7 @@
 import { clearLocalSession, sessionGeneration } from '../utils/sessionCleanup';
 import axios from 'axios';
 import { getDeviceFingerprint, getHardwareModel } from '../utils/deviceFingerprint';
+import { resolveClinicalEndpoints } from '../config/clinicalEndpoints';
 
 const isBrowserLocalhost = () =>
   typeof window !== 'undefined' &&
@@ -24,13 +25,17 @@ export const sanitizeRuntimeUrl = (rawUrl, fallbackUrl) => {
   return trimmed;
 };
 
-export const API_BASE_URL = isQa ? '/api' : (process.env.REACT_APP_API_URL || '/api');
+const clinicalEndpoints = process.env.NODE_ENV === 'production' && !isQa
+  ? resolveClinicalEndpoints(process.env.REACT_APP_API_URL, process.env.REACT_APP_SERVER_URL)
+  : null;
 
-export const SOCKET_SERVER_URL = isQa ? 'http://127.0.0.1:3100' : sanitizeRuntimeUrl(
+export const API_BASE_URL = clinicalEndpoints?.apiBaseUrl || (isQa ? '/api' : (process.env.REACT_APP_API_URL || '/api'));
+
+export const SOCKET_SERVER_URL = clinicalEndpoints?.socketServerUrl || (isQa ? 'http://127.0.0.1:3100' : sanitizeRuntimeUrl(
   process.env.REACT_APP_SERVER_URL ||
     (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '') : ''),
   typeof window !== 'undefined' ? window.location.origin : ''
-);
+));
 
 const assertQaRequest = (config) => {
     for (const value of [config.url, config.baseURL]) {
@@ -83,7 +88,12 @@ window.addEventListener('medisync:session-cleared', () => {
 });
 
 // Clear authentication state and redirect to login
+let sessionRedirectInProgress = false;
 const clearSessionAndRedirect = () => {
+  // Concurrent failed requests share one refresh, and must also share one
+  // terminal redirect. Repeated hard navigations can abort the login page.
+  if (sessionRedirectInProgress) return;
+  sessionRedirectInProgress = true;
   clearLocalSession();
   window.location.href = '/select-role';
 };
@@ -92,6 +102,7 @@ const clearSessionAndRedirect = () => {
 let refreshTokenPromise = null;
 
 const performTokenRefresh = async () => {
+  if (process.env.REACT_APP_UNIVERSITY_RUNTIME === 'true') { clearLocalSession(); throw new Error('Demonstration session expired. Sign in again.'); }
   const startedGeneration = sessionGeneration();
   const storedRefreshToken = localStorage.getItem('refreshToken');
   const headers = {};

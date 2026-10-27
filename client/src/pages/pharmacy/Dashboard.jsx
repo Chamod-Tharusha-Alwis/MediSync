@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
+import PatientAccessModal from '../../components/PatientAccessModal';
+import { PatientAccessProvider, usePatientAccess } from '../../context/PatientAccessContext';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -8,6 +11,7 @@ import {
   Key, Printer, Save
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import { useTranslation } from '../../i18n/LanguageContext';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
@@ -15,6 +19,8 @@ import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
 
 const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
+const requiresPatientConsent = error => error.response?.status === 403 &&
+  (error.response?.data?.error === 'Patient consent required' || error.response?.data?.requiresPatientAccess === true);
 
 function getPharmacyRole() {
   return localStorage.getItem('role') || null;
@@ -24,11 +30,14 @@ function getPharmacyRole() {
 // TAB: Dispense Medication
 // ─────────────────────────────────────────────────────────────────────────────
 const Dispense = () => {
+  const { t } = useTranslation();
   const [nic, setNic] = useState('');
   const [prescriptions, setPrescriptions] = useState([]);
   const [patientInfo, setPatientInfo] = useState(null);
+  const [loadedNic, setLoadedNic] = useState('');
   const [loading, setLoading] = useState(false);
   const [dispensing, setDispensing] = useState(false);
+  const searchGeneration = useRef(0);
   
   // Alternative dispense modal states
   const [showDispenseModal, setShowDispenseModal] = useState(false);
@@ -38,32 +47,75 @@ const Dispense = () => {
   const [inventory, setInventory] = useState([]);
   const [dispenseItems, setDispenseItems] = useState([]);
   const [checkoutKey, setCheckoutKey] = useState('');
+  const { setPatientSession, getPatientToken } = usePatientAccess();
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!nic) return toast.error('Enter Patient NIC');
+  const changePatientNic = useCallback(value => {
+    searchGeneration.current += 1;
+    setNic(value);
+    setLoading(false);
+    setPatientInfo(null);
+    setPrescriptions([]);
+    setLoadedNic('');
+    setShowConsentModal(false);
+    setShowDispenseModal(false);
+    setSelectedRx(null);
+  }, []);
+
+  useEffect(() => {
+    const clear = () => changePatientNic('');
+    window.addEventListener('medisync:session-cleared', clear);
+    return () => {
+      searchGeneration.current += 1;
+      window.removeEventListener('medisync:session-cleared', clear);
+    };
+  }, [changePatientNic]);
+
+  const handleSearch = async (e, forcedToken) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const lookupNic = nic.trim().toUpperCase();
+    if (!lookupNic) return toast.error('Enter Patient NIC');
+    const generation = ++searchGeneration.current;
     setLoading(true);
+    setPatientInfo(null);
+    setPrescriptions([]);
+    setLoadedNic('');
+    setShowConsentModal(false);
+    const patientToken = forcedToken || (getPatientToken ? getPatientToken(lookupNic) : null);
     try {
-      const { data } = await api.get(`/pharmacy/prescriptions/pending/${nic}`);
-      if (data.data.prescriptions) {
+      const headers = patientToken ? { 'x-patient-access': patientToken } : {};
+      const { data } = await api.get(`/pharmacy/prescriptions/pending/${encodeURIComponent(lookupNic)}`, { headers });
+      if (generation !== searchGeneration.current) return;
+      if (Array.isArray(data?.data?.prescriptions)) {
         setPrescriptions(data.data.prescriptions);
         setPatientInfo(data.data.patient);
+        setLoadedNic(lookupNic);
         if (data.data.prescriptions.length === 0) toast.info('No pending prescriptions found for this NIC.');
-      } else {
+      } else if (Array.isArray(data?.data)) {
         setPrescriptions(data.data);
         setPatientInfo(null);
+        setLoadedNic(lookupNic);
         if (data.data.length === 0) toast.info('No pending prescriptions found for this NIC.');
+      } else {
+        toast.error('Invalid prescription response. Please retry.');
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to fetch prescriptions');
+      if (generation !== searchGeneration.current) return;
+      if (requiresPatientConsent(err)) {
+        setShowConsentModal(true);
+      } else {
+        toast.error(err.response?.data?.error || 'Failed to fetch prescriptions');
+      }
     } finally {
-      setLoading(false);
+      if (generation === searchGeneration.current) setLoading(false);
     }
   };
 
   const openDispenseModal = async (rx) => {
+    const generation = searchGeneration.current;
     try {
       const { data } = await api.get('/pharmacy/inventory');
+      if (generation !== searchGeneration.current) return;
       const stock = data.data || [];
       setInventory(stock);
       const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName }];
@@ -86,13 +138,14 @@ const Dispense = () => {
     if (items.some(i => !i.inventoryItemId || !Number.isSafeInteger(i.quantityDispensed) || i.quantityDispensed <= 0)) return toast.error('Select inventory and enter a positive whole quantity for every medicine.');
     setDispensing(true);
     try {
+      const patientToken = getPatientToken ? getPatientToken(selectedRx.patientNic) : null;
       await api.post('/pharmacy/dispense', {
         prescriptionId: selectedRx.prescriptionId,
         patientNic: selectedRx.patientNic,
         items,
         isAlternativeDispensed: isAlt,
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
-      }, { headers: { 'Idempotency-Key': checkoutKey } });
+      }, { headers: { 'Idempotency-Key': checkoutKey, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
       toast.success('Prescription dispensing recorded.');
       setPrescriptions(prev => prev.filter(p => p.prescriptionId !== selectedRx.prescriptionId));
       setShowDispenseModal(false);
@@ -106,8 +159,8 @@ const Dispense = () => {
   return (
     <PageTransition className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Dispense Medication</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Verify patient NIC, fetch e-prescriptions, and log clinical dispensations.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("pharmacy.dispense", "Dispense Medication")}</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.dispenseSubtitle", "Verify patient NIC, fetch e-prescriptions, and log clinical dispensations.")}</p>
       </div>
 
       <div className="glass-panel p-6 rounded-2xl border border-white/5 max-w-2xl relative overflow-hidden">
@@ -119,7 +172,8 @@ const Dispense = () => {
             <input
               type="text"
               value={nic}
-              onChange={(e) => setNic(e.target.value)}
+              aria-label="Patient NIC"
+              onChange={(e) => changePatientNic(e.target.value)}
               placeholder="Enter Patient NIC (e.g. 981234567V)"
               className="glass-input py-3.5 px-4 text-base uppercase"
             />
@@ -142,19 +196,19 @@ const Dispense = () => {
           </div>
           <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full text-xs font-semibold">
             <div>
-              <p className="text-slate-500 uppercase tracking-wider mb-1">Patient Name</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.fullName", "Patient Name")}</p>
               <p className="text-slate-200 text-sm truncate">{patientInfo.fullName || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-slate-500 uppercase tracking-wider mb-1">Contact No</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.contactInfo", "Contact No")}</p>
               <p className="text-slate-200 text-sm truncate">{patientInfo.contactInfo || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-slate-500 uppercase tracking-wider mb-1">Blood Group</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.bloodGroup", "Blood Group")}</p>
               <p className="text-red-400 text-sm">{patientInfo.bloodGroup || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-slate-500 uppercase tracking-wider mb-1">Date of Birth</p>
+              <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.dob", "Date of Birth")}</p>
               <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
             </div>
           </div>
@@ -165,7 +219,7 @@ const Dispense = () => {
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <div className="p-5 bg-slate-900/60 border-b border-white/5 flex justify-between items-center select-none">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for NIC: {nic}
+              <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for NIC: {loadedNic}
             </h2>
             <span className="text-xs font-mono font-bold text-teal-400">{prescriptions.length} items</span>
           </div>
@@ -183,9 +237,9 @@ const Dispense = () => {
                     </div>
                     {mainDrug && (
                       <div className="space-y-1.5 mb-4 text-xs text-slate-300 font-semibold pt-1">
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Dosage:</span> {mainDrug.dosage}</p>
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Frequency:</span> {mainDrug.frequency}</p>
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">Duration:</span> {mainDrug.durationDays} Days</p>
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.dosageLabel", "Dosage:")}</span> {mainDrug.dosage}</p>
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.frequencyLabel", "Frequency:")}</span> {mainDrug.frequency}</p>
+                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.durationLabel", "Duration:")}</span> {mainDrug.durationDays} Days</p>
                       </div>
                     )}
                     <p className="text-xs text-slate-500 mb-4 border-t border-white/5 pt-3 select-none">
@@ -215,7 +269,7 @@ const Dispense = () => {
         {selectedRx && (
           <div className="space-y-5">
             <div className="text-center md:text-left select-none">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Medication Name</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
               <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
             </div>
 
@@ -224,10 +278,10 @@ const Dispense = () => {
                 <label className={labelClass} htmlFor={`stock-${index}`}>Inventory for {item.prescribed}</label>
                 <select id={`stock-${index}`} className="glass-input w-full" value={item.inventoryItemId}
                   disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, inventoryItemId:e.target.value} : m))}>
-                  <option value="">Select medicine</option>
+                  <option value="">{t("pharmacy.selectMedicine", "Select medicine")}</option>
                   {inventory.filter(i => isAlt || i.drugName.trim().toLowerCase() === item.prescribed.trim().toLowerCase()).map(i => <option key={i._id} value={i._id}>{i.drugName} — {i.stock} {i.unit}</option>)}
                 </select>
-                <label className={labelClass} htmlFor={`qty-${index}`}>Quantity in inventory units</label>
+                <label className={labelClass} htmlFor={`qty-${index}`}>{t("pharmacy.quantity", "Quantity in inventory units")}</label>
                 <input id={`qty-${index}`} type="number" min="1" step="1" className="glass-input w-full" value={item.quantity}
                   disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, quantity:e.target.value} : m))} />
               </div>
@@ -242,8 +296,8 @@ const Dispense = () => {
                 className="mt-0.5 w-4 h-4 accent-amber-400 shrink-0"
               />
               <div className="min-w-0">
-                <p className="text-amber-400 font-bold text-xs">Dispense Brand Substitute / Alternative</p>
-                <p className="text-slate-500 text-[10px] mt-1 leading-normal">Select if dispensing a generic alternative different from prescription.</p>
+                <p className="text-amber-400 font-bold text-xs">{t("pharmacy.brandSubstitute", "Dispense Brand Substitute / Alternative")}</p>
+                <p className="text-slate-500 text-[10px] mt-1 leading-normal">{t("pharmacy.substituteHelp", "Select if dispensing a generic alternative different from prescription.")}</p>
               </div>
             </label>
 
@@ -280,6 +334,19 @@ const Dispense = () => {
           </div>
         )}
       </Modal>
+      {showConsentModal && (
+        <PatientAccessModal
+          patientNic={nic.trim().toUpperCase()}
+          requesterName={localStorage.getItem('userName') || 'Staff Pharmacist'}
+          requesterRole="pharmacist"
+          onSuccess={(token) => {
+            if (setPatientSession) setPatientSession({ nic: nic.trim().toUpperCase(), token });
+            setShowConsentModal(false);
+            handleSearch(null, token);
+          }}
+          onClose={() => setShowConsentModal(false)}
+        />
+      )}
     </PageTransition>
   );
 };
@@ -288,6 +355,7 @@ const Dispense = () => {
 // TAB: Dispensing History Log
 // ─────────────────────────────────────────────────────────────────────────────
 const History = () => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -304,8 +372,8 @@ const History = () => {
   return (
     <PageTransition className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Dispensing History</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Review medication logs and patient receipts issued from this facility.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("pharmacy.history", "Dispensing History")}</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.auditSubtitle", "Review medication logs and patient receipts issued from this facility.")}</p>
       </div>
 
       <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
@@ -316,11 +384,11 @@ const History = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Receipt Number</th>
-                  <th className="px-6 py-4">Patient NIC</th>
-                  <th className="px-6 py-4">Medications</th>
-                  <th className="px-6 py-4">Dispensed By</th>
-                  <th className="px-6 py-4 text-right">Timestamp</th>
+                  <th className="px-6 py-4">{t("pharmacy.receiptNo", "Receipt Number")}</th>
+                  <th className="px-6 py-4">{t("pharmacy.patientNic", "Patient NIC")}</th>
+                  <th className="px-6 py-4">{t("common.medications", "Medications")}</th>
+                  <th className="px-6 py-4">{t("pharmacy.dispensedBy", "Dispensed By")}</th>
+                  <th className="px-6 py-4 text-right">{t("common.timestamp", "Timestamp")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -344,7 +412,7 @@ const History = () => {
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">
             <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-semibold">No dispensing events found in system logs.</p>
+            <p className="text-sm font-semibold">{t("pharmacy.noDispenseEvents", "No dispensing events found in system logs.")}</p>
           </div>
         )}
       </div>
@@ -355,70 +423,137 @@ const History = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB: Manual OTC Dispensing (Checkout shopping cart & invoice print)
 // ─────────────────────────────────────────────────────────────────────────────
-const emptyMed = () => ({ name: '', dosage: '', frequency: '', qty: 1, price: 150 });
+const emptyMed = () => ({ inventoryItemId: '', name: '', dosage: '', frequency: '', qty: 1, unit: '' });
 
 const ManualDispenseOTC = () => {
+  const { t } = useTranslation();
   const [patientNic, setPatientNic] = useState('');
   const [consultationRef, setConsultationRef] = useState('');
   const [medications, setMedications] = useState([emptyMed()]);
+  const [availableStock, setAvailableStock] = useState([]);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [lastReceipt, setLastReceipt] = useState(null);
+  const { setPatientSession, getPatientToken } = usePatientAccess();
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const [otcKey, setOtcKey] = useState(() => {
     const existing = sessionStorage.getItem('medisync:otc-checkout');
-    const key = existing || crypto.randomUUID();
+    const key = existing || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
     sessionStorage.setItem('medisync:otc-checkout', key);
     return key;
   });
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/pharmacy/inventory')
+      .then(res => {
+        if (isMounted) setAvailableStock(res.data?.data || []);
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
   const updateMed = (index, field, value) =>
     setMedications(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
 
-  const totalSum = useMemo(() => {
-    return medications.reduce((acc, m) => acc + (m.qty || 1) * (m.price || 0), 0);
+  const validMeds = useMemo(() => {
+    return medications
+      .filter(m => m.name.trim())
+      .map(m => {
+        const raw = typeof m.qty === 'string' ? m.qty.trim() : (m.qty !== undefined && m.qty !== null ? String(m.qty).trim() : '');
+        const isStrictPositiveInt = /^[1-9]\d*$/.test(raw);
+        const parsed = isStrictPositiveInt ? Number(raw) : null;
+        const validQty = (parsed !== null && Number.isSafeInteger(parsed) && parsed > 0) ? parsed : null;
+        return {
+          name: m.name.trim(),
+          dosage: m.dosage ? m.dosage.trim() : undefined,
+          qty: validQty,
+          inventoryItemId: m.inventoryItemId || undefined,
+          unit: m.unit || undefined
+        };
+      });
   }, [medications]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!patientNic.trim()) return toast.error('Patient NIC is required.');
-    const validMeds = medications.filter(m => m.name.trim());
-    if (validMeds.length === 0) return toast.error('At least one medication name is required.');
+  const totalQuantity = useMemo(() => {
+    return validMeds.reduce((acc, m) => acc + (m.qty || 0), 0);
+  }, [validMeds]);
+
+  const executeDispense = async (forcedToken) => {
+    const normalizedNic = patientNic.trim().toUpperCase();
+    if (!normalizedNic) return toast.error(t('pharmacy.nicRequired', 'Patient NIC is required.'));
+    if (validMeds.length === 0) return toast.error(t('pharmacy.medRequired', 'At least one medication name is required.'));
+    if (validMeds.some(m => !m.qty || m.qty <= 0)) {
+      return toast.error(t('pharmacy.positiveQtyRequired', 'Enter an exact positive whole integer quantity for every medication.'));
+    }
+
+    const token = forcedToken || (getPatientToken ? getPatientToken(normalizedNic) : null);
+    if (!token) {
+      setShowConsentModal(true);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await api.post('/pharmacy/dispense-otc', {
-        patientNic: patientNic.trim().toUpperCase(),
+        patientNic: normalizedNic,
         consultationRef: consultationRef.trim() || undefined,
         medications: validMeds,
         notes: notes.trim(),
-      }, { headers: { 'Idempotency-Key': otcKey } });
-      toast.success(`OTC dispensation recorded successfully.`);
+      }, {
+        headers: {
+          'Idempotency-Key': otcKey,
+          'x-patient-access': token
+        }
+      });
+
+      const responseData = res?.data?.data;
+      if (!responseData?.receiptNumber) {
+        toast.error(t('pharmacy.unconfirmedResponse', 'Dispensing completed but no valid receipt acknowledgement was returned.'));
+        return;
+      }
+
+      toast.success(t('pharmacy.otcSuccess', 'OTC dispensation recorded successfully.'));
       const nextKey = crypto.randomUUID();
       sessionStorage.setItem('medisync:otc-checkout', nextKey);
       setOtcKey(nextKey);
+
       setLastReceipt({
-        ...res.data.data,
-        medications: validMeds,
-        total: totalSum
+        receiptNumber: responseData.receiptNumber,
+        prescriptionId: responseData.prescriptionId || null,
+        medicationCount: responseData.medicationCount || validMeds.length,
+        issuedAt: responseData.issuedAt || null,
+        replayed: Boolean(res?.data?.replayed),
+        medications: validMeds
       });
+
       setShowReceiptModal(true);
       setPatientNic('');
       setConsultationRef('');
       setMedications([emptyMed()]);
       setNotes('');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'OTC dispensing failed');
+      if (requiresPatientConsent(err)) {
+        setShowConsentModal(true);
+      } else {
+        toast.error(err.response?.data?.error || t('pharmacy.otcFailed', 'OTC dispensing failed'));
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    executeDispense();
+  };
+
   return (
-    <PageTransition className="space-y-6">
+<PageTransition className="space-y-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Manual OTC Checkout</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">Record direct over-the-counter checkouts and generate simulated receipts.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("pharmacy.manualOtc", "Manual OTC Checkout")}</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.otcSubtitle", "Record direct over-the-counter checkouts and generate simulated receipts.")}</p>
         </div>
       </div>
 
@@ -427,8 +562,9 @@ const ManualDispenseOTC = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="glass-card p-6 rounded-2xl space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className={labelClass}>Patient NIC *</label>
+              <label className={labelClass} htmlFor="otc-patient-nic">Patient NIC *</label>
               <input
+                id="otc-patient-nic"
                 type="text"
                 value={patientNic}
                 onChange={e => setPatientNic(e.target.value)}
@@ -438,7 +574,7 @@ const ManualDispenseOTC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={labelClass}>Consultation Reference (optional)</label>
+              <label className={labelClass}>{t("pharmacy.consultationRefOptional", "Consultation Reference (optional)")}</label>
               <input
                 type="text"
                 value={consultationRef}
@@ -451,7 +587,7 @@ const ManualDispenseOTC = () => {
 
           <div className="glass-card p-6 rounded-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-white/5 pb-3 select-none">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Medications Shopping Cart</label>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("pharmacy.medicationsCart", "Medications Shopping Cart")}</label>
               <button
                 type="button"
                 onClick={() => setMedications(prev => [...prev, emptyMed()])}
@@ -462,13 +598,23 @@ const ManualDispenseOTC = () => {
             </div>
 
             <datalist id="drug-suggestions">
-              {[
-                'Paracetamol 500mg','Panadol 500mg','Calpol 500mg',
-                'Amoxicillin 250mg','Amoxicillin 500mg','Amoxiclav 625mg',
-                'Ibuprofen 200mg','Ibuprofen 400mg',
-                'Cetirizine 10mg','Piriton 4mg','Loratadine 10mg',
-                'Metformin 500mg','Amlodipine 5mg','Omeprazole 20mg'
-              ].map(d => <option key={d} value={d} />)}
+              {availableStock.length > 0 ? (
+                availableStock.map(item => (
+                  <option
+                    key={item._id || item.drugName + (item.batchNumber || '')}
+                    value={item.drugName}
+                    label={`${item.drugName} (Batch: ${item.batchNumber || 'STD'}, Stock: ${item.quantity ?? item.stock ?? 0})`}
+                  />
+                ))
+              ) : (
+                [
+                  'Paracetamol 500mg','Panadol 500mg','Calpol 500mg',
+                  'Amoxicillin 250mg','Amoxicillin 500mg','Amoxiclav 625mg',
+                  'Ibuprofen 200mg','Ibuprofen 400mg',
+                  'Cetirizine 10mg','Piriton 4mg','Loratadine 10mg',
+                  'Metformin 500mg','Amlodipine 5mg','Omeprazole 20mg'
+                ].map(d => <option key={d} value={d} />)
+              )}
             </datalist>
 
             <div className="space-y-3">
@@ -476,36 +622,61 @@ const ManualDispenseOTC = () => {
                 <div key={idx} className="flex gap-3 bg-slate-950/30 rounded-xl p-4 border border-white/5 relative items-center">
                   <span className="text-slate-500 text-xs font-mono font-bold w-5 shrink-0 text-center">{idx + 1}</span>
                   <div className="grid grid-cols-12 gap-3 flex-1">
+                    <select
+                      value={med.inventoryItemId || ''}
+                      onChange={e => {
+                        const chosenId = e.target.value;
+                        const item = availableStock.find(i => String(i._id) === chosenId);
+                        if (item) {
+                          updateMed(idx, 'inventoryItemId', item._id);
+                          updateMed(idx, 'name', item.drugName);
+                          updateMed(idx, 'dosage', item.dosage || med.dosage || '');
+                          updateMed(idx, 'unit', item.unit || 'unit');
+                        } else {
+                          updateMed(idx, 'inventoryItemId', '');
+                        }
+                      }}
+                      className="col-span-12 sm:col-span-4 glass-card rounded-lg px-2.5 py-2 text-white text-xs focus:border-teal-500 outline-none"
+                    >
+                      <option value="" className="bg-slate-900 text-slate-400">Select Stock Drug...</option>
+                      {availableStock.map(i => (
+                        <option key={i._id} value={i._id} className="bg-slate-900 text-white">
+                          {i.drugName} (Stock: {i.quantity ?? i.stock ?? 0} {i.unit || 'units'})
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="text"
                       list="drug-suggestions"
                       value={med.name}
-                      onChange={e => updateMed(idx, 'name', e.target.value)}
-                      placeholder="Medication name* (select or type)"
-                      className="col-span-12 sm:col-span-5 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
+                      onChange={e => {
+                        const val = e.target.value;
+                        updateMed(idx, 'name', val);
+                        const match = availableStock.filter(i => i.drugName.toLowerCase() === val.trim().toLowerCase());
+                        if (match.length === 1) {
+                          updateMed(idx, 'inventoryItemId', match[0]._id);
+                          updateMed(idx, 'unit', match[0].unit || 'unit');
+                        } else {
+                          updateMed(idx, 'inventoryItemId', '');
+                        }
+                      }}
+                      placeholder="Medication name* (select stock or type)"
+                      className="col-span-12 sm:col-span-4 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
                     />
                     <input
                       type="text"
                       value={med.dosage}
                       onChange={e => updateMed(idx, 'dosage', e.target.value)}
                       placeholder="Dosage (500mg)"
-                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
+                      className="col-span-6 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none"
                     />
                     <input
-                      type="number"
-                      min={1}
-                      value={med.qty}
-                      onChange={e => updateMed(idx, 'qty', parseInt(e.target.value) || 1)}
+                      type="text"
+                      inputMode="numeric"
+                      value={med.qty ?? ''}
+                      onChange={e => updateMed(idx, 'qty', e.target.value)}
                       placeholder="Qty"
-                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none font-mono"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      value={med.price}
-                      onChange={e => updateMed(idx, 'price', parseFloat(e.target.value) || 0)}
-                      placeholder="Price"
-                      className="col-span-4 sm:col-span-2 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none font-mono"
+                      className="col-span-6 sm:col-span-1 glass-card rounded-lg px-3 py-2 text-white text-xs focus:border-teal-500 outline-none font-mono"
                     />
                     <button
                       type="button"
@@ -522,23 +693,27 @@ const ManualDispenseOTC = () => {
           </div>
         </div>
 
-        {/* Right billing summary panel */}
+        {/* Right dispensing summary panel */}
         <div className="space-y-6">
           <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4 select-none">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">Billing Summary</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">Clinical Order Summary</h4>
             <div className="space-y-2 text-xs font-semibold text-slate-300">
               <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span className="font-mono text-slate-200">LKR {totalSum.toFixed(2)}</span>
+                <span>Patient NIC:</span>
+                <span className="font-mono text-slate-200">{patientNic.trim().toUpperCase() || 'Pending'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax (Govt 2.5%):</span>
-                <span className="font-mono text-slate-200">LKR {(totalSum * 0.025).toFixed(2)}</span>
+                <span>Medication Lines:</span>
+                <span className="font-mono text-slate-200">{validMeds.length} line(s)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Units:</span>
+                <span className="font-mono text-teal-400">{totalQuantity} units</span>
               </div>
               <div className="h-px bg-white/5 my-2" />
-              <div className="flex justify-between text-white text-sm font-bold">
-                <span>Total Bill:</span>
-                <span className="font-mono text-teal-400">LKR {(totalSum * 1.025).toFixed(2)}</span>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Idempotency Key:</span>
+                <span className="font-mono">{otcKey.slice(0, 12)}...</span>
               </div>
             </div>
             <button
@@ -547,48 +722,53 @@ const ManualDispenseOTC = () => {
               className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
-              Fulfill & Issue Receipt
+              Fulfill Dispensation
             </button>
           </div>
         </div>
       </form>
 
-      {/* Simulated printable receipt invoice modal */}
+      {/* Dispensed medication fulfillment confirmation modal */}
       <Modal
         isOpen={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
-        title="Dispensed OTC Receipt"
+        title={t('pharmacy.dispensedReceiptTitle', 'Dispensed Medication Fulfillment Record')}
         size="sm"
       >
         {lastReceipt && (
           <div className="space-y-5 select-none text-xs">
             <div className="text-center py-2 border-b border-dashed border-white/10">
               <p className="text-white font-black text-sm uppercase">MEDISYNC PHARMACY</p>
-              <p className="text-slate-500 mt-0.5">Automated Dispensation Network</p>
+              <p className="text-slate-500 mt-0.5">Clinical Dispensation Fulfillment</p>
             </div>
             
             <div className="space-y-1 font-mono text-slate-400">
-              <p>Receipt ID: {lastReceipt.receiptNumber || 'OTC-82194'}</p>
-              <p>Patient NIC: {lastReceipt.patientNic}</p>
-              <p>Issued: {new Date().toLocaleString()}</p>
+              <p>Receipt Number: <span className="text-white font-bold">{lastReceipt.receiptNumber}</span></p>
+              {lastReceipt.prescriptionId && <p>Prescription Ref: {lastReceipt.prescriptionId}</p>}
+              {lastReceipt.issuedAt && <p>Issued At: {lastReceipt.issuedAt}</p>}
+              {lastReceipt.replayed && <p className="text-amber-400 font-bold">[Replayed Idempotent Response]</p>}
             </div>
 
             <div className="h-px bg-white/5" />
 
             <div className="space-y-2">
-              <p className="font-bold text-white uppercase tracking-wider text-[10px] text-slate-500">Items Checkout</p>
+              <p className="font-bold text-white uppercase tracking-wider text-[10px] text-slate-500">Fulfilled Medications</p>
               {lastReceipt.medications?.map((m, i) => (
                 <div key={i} className="flex justify-between font-mono text-slate-300">
-                  <span>{m.name} x{m.qty}</span>
-                  <span>LKR {(m.qty * m.price).toFixed(2)}</span>
+                  <span>{m.name} {m.dosage ? `(${m.dosage})` : ''}</span>
+                  <span className="text-teal-400 font-bold">Qty: {m.qty || 1} {m.unit || ''}</span>
                 </div>
               ))}
             </div>
 
             <div className="border-t border-dashed border-white/10 pt-3 space-y-1.5 font-mono text-slate-300">
-              <div className="flex justify-between font-bold text-white text-sm">
-                <span>TOTAL PAID:</span>
-                <span>LKR {(lastReceipt.total * 1.025).toFixed(2)}</span>
+              <div className="flex justify-between font-bold text-white text-xs">
+                <span>TRANSACTION STATUS:</span>
+                <span className="text-emerald-400">COMMITTED</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>MEDICATION LINES DISPENSED:</span>
+                <span>{lastReceipt.medicationCount ?? lastReceipt.medications?.length ?? 0} LINES</span>
               </div>
             </div>
 
@@ -597,7 +777,7 @@ const ManualDispenseOTC = () => {
                 onClick={() => window.print()}
                 className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 border border-white/5"
               >
-                <Printer className="w-3.5 h-3.5" /> Print simulated Invoice
+                <Printer className="w-3.5 h-3.5" /> Print Dispensing Record
               </button>
               <button
                 onClick={() => setShowReceiptModal(false)}
@@ -609,6 +789,20 @@ const ManualDispenseOTC = () => {
           </div>
         )}
       </Modal>
+          {showConsentModal && (
+        <PatientAccessModal
+          patientNic={patientNic.trim().toUpperCase()}
+          requesterName={localStorage.getItem('userName') || 'Staff Pharmacist'}
+          requesterRole="pharmacist"
+          onSuccess={(token) => {
+            const normalizedNic = patientNic.trim().toUpperCase();
+            if (setPatientSession) setPatientSession({ nic: normalizedNic, token });
+            setShowConsentModal(false);
+            executeDispense(token);
+          }}
+          onClose={() => setShowConsentModal(false)}
+        />
+      )}
     </PageTransition>
   );
 };
@@ -617,6 +811,7 @@ const ManualDispenseOTC = () => {
 // TAB: Restock Leaderboard Analytics
 // ─────────────────────────────────────────────────────────────────────────────
 const RestockAnalytics = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -704,7 +899,7 @@ const RestockAnalytics = () => {
             <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4">Rank</th>
-                <th className="px-6 py-4">Medication Name</th>
+                <th className="px-6 py-4">{t("pharmacy.drugName", "Medication Name")}</th>
                 <th className="px-6 py-4 text-center">Dispensed (24h)</th>
                 <th className="px-6 py-4 text-center">Current Stock</th>
                 <th className="px-6 py-4">Depletion Level</th>
@@ -766,6 +961,7 @@ const RestockAnalytics = () => {
 // TAB: District Restock Alerts (ML Predictor)
 // ─────────────────────────────────────────────────────────────────────────────
 const RestockPredictor = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -796,7 +992,7 @@ const RestockPredictor = () => {
     <PageTransition className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">District Restock Alerts</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('pharmacy.restockAlertsTitle', 'District Restock Alerts')}</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">ML demand analysis mapping regional pharmacy trends in {district || 'your district'}.</p>
         </div>
         <button onClick={fetchAlerts} className="glass-button text-xs py-2 px-4 flex items-center gap-1.5">
@@ -871,6 +1067,7 @@ const RestockPredictor = () => {
 // TAB: Staff Management (pharmacy_admin only)
 // ─────────────────────────────────────────────────────────────────────────────
 const StaffManagement = () => {
+  const { t } = useTranslation();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -934,7 +1131,7 @@ const StaffManagement = () => {
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <Users className="w-8 h-8 text-teal-400" />
-            Staff Management
+            {t('pharmacy.staffManagement', 'Staff Management')}
           </h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Manage pharmacy assistant accounts and operational privileges.</p>
         </div>
@@ -1073,6 +1270,7 @@ const StaffManagement = () => {
 // TAB: Pharmacy Settings & credential rotation
 // ─────────────────────────────────────────────────────────────────────────────
 const PharmacySettings = () => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState({ fullName: '', email: '', role: '', description: '', profilePicture: '', pharmacyId: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1160,8 +1358,8 @@ const PharmacySettings = () => {
   return (
     <PageTransition className="space-y-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Pharmacy Settings</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Update facility profiles, rotate passwords, and manage API keys.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('pharmacy.pharmacySettings', 'Pharmacy Settings')}</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">Update facility profiles and rotate account passwords.</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -1240,6 +1438,8 @@ const PharmacySettings = () => {
             </div>
           </form>
 
+          <LanguagePreferenceCard />
+
           {/* Password Rotation Card */}
           <form onSubmit={handlePasswordRotate} className="glass-card p-6 rounded-2xl space-y-6">
             <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
@@ -1293,40 +1493,19 @@ const PharmacySettings = () => {
           </form>
         </div>
 
-        {/* API Credentials Sidebar Card */}
+        {/* Unavailable integration: do not present sample credentials as provisioned. */}
         <div className="space-y-6">
           <div className="glass-card rounded-2xl p-6 border border-white/5 space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
               <Key className="w-4.5 h-4.5 text-teal-400" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">OAuth API Credentials</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">External Inventory Integration</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed select-none">
-              Link internal Inventory Systems using authenticated API integration client tokens.
+            <p role="status" className="text-xs text-slate-400 leading-relaxed">
+              External inventory integration is unavailable. No integration client, token or webhook has been provisioned.
             </p>
-            <div className="space-y-4">
-              {[
-                { label: 'Pharmacy Client ID', value: `PHARM-${profile.pharmacyId || '8b2c89'}` },
-                { label: 'Sandbox Integration Secret', value: 'sk_sandbox_mock_credential_67890' },
-                { label: 'Inventory Sync Webhook', value: 'https://api.medisync.io/v1/pharmacy/sync' }
-              ].map(cred => (
-                <div key={cred.label} className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">{cred.label}</span>
-                  <div className="flex items-center gap-2 bg-slate-950/40 border border-white/5 px-3 py-2 rounded-xl">
-                    <span className="font-mono text-[11px] text-slate-300 select-all truncate flex-1">{cred.value}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(cred.value);
-                        toast.success(`${cred.label} copied!`);
-                      }}
-                      className="text-[10px] text-teal-400 hover:text-teal-300 font-bold shrink-0 uppercase tracking-wider"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              External inventory systems cannot be linked from this page.
+            </p>
           </div>
         </div>
       </div>
@@ -1338,19 +1517,24 @@ const PharmacySettings = () => {
 // PHARMACY PORTAL MAIN ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PharmacyDashboard() {
+  const { t } = useTranslation();
   const role = getPharmacyRole();
   const isAdmin = role === 'pharmacy_admin';
+  const canDispense = role === 'pharmacist' || isAdmin;
+  const defaultPath = canDispense ? '/pharmacy/dashboard/dispense' : '/pharmacy/dashboard/settings';
 
   const menuItems = [
-    { label: 'Dispense',    path: '/pharmacy/dashboard/dispense',  icon: Package },
-    { label: 'Manual OTC',  path: '/pharmacy/dashboard/otc',       icon: ShoppingBag },
-    { label: 'History',     path: '/pharmacy/dashboard/history',   icon: Clock },
-    ...(isAdmin ? [
-      { label: 'Restock ML',  path: '/pharmacy/dashboard/restock',   icon: Pill },
-      { label: 'Analytics',   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
-      { label: 'Staff',       path: '/pharmacy/dashboard/staff',     icon: Users }
+    ...(canDispense ? [
+      { label: t('pharmacy.dispense', 'Dispense'), path: '/pharmacy/dashboard/dispense', icon: Package },
+      { label: t('pharmacy.dispenseOtc', 'Manual OTC'), path: '/pharmacy/dashboard/otc', icon: ShoppingBag },
     ] : []),
-    { label: 'Settings',    path: '/pharmacy/dashboard/settings',  icon: Settings },
+    { label: t('pharmacy.dispenseHistory', 'History'),     path: '/pharmacy/dashboard/history',   icon: Clock },
+    ...(isAdmin ? [
+      { label: t('pharmacy.restockAlerts', 'Restock ML'),  path: '/pharmacy/dashboard/restock',   icon: Pill },
+      { label: t('nav.analytics', 'Analytics'),   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
+      { label: t('pharmacy.staffManagement', 'Staff'),       path: '/pharmacy/dashboard/staff',     icon: Users }
+    ] : []),
+    { label: t('common.settings', 'Settings'),    path: '/pharmacy/dashboard/settings',  icon: Settings },
   ];
 
   const userName = localStorage.getItem('userName') || 'Pharmacy Staff';
@@ -1360,6 +1544,7 @@ export default function PharmacyDashboard() {
                       rawRole.replace('_', ' ');
 
   return (
+    <PatientAccessProvider>
     <div className="pharmacy-theme">
       <AppShell
         role="pharmacy"
@@ -1370,9 +1555,9 @@ export default function PharmacyDashboard() {
         <ActiveOutbreakBanner />
         <div className="mt-4">
           <Routes>
-            <Route path="/dashboard"                element={<Navigate to="/pharmacy/dashboard/dispense" replace />} />
-            <Route path="/dashboard/dispense"       element={<Dispense />} />
-            <Route path="/dashboard/otc"            element={<ManualDispenseOTC />} />
+            <Route path="/dashboard" element={<Navigate to={defaultPath} replace />} />
+            <Route path="/dashboard/dispense" element={canDispense ? <Dispense /> : <Navigate to={defaultPath} replace />} />
+            <Route path="/dashboard/otc" element={canDispense ? <ManualDispenseOTC /> : <Navigate to={defaultPath} replace />} />
             <Route path="/dashboard/history"        element={<History />} />
             <Route path="/dashboard/restock"        element={<RestockPredictor />} />
             
@@ -1383,10 +1568,11 @@ export default function PharmacyDashboard() {
               </>
             )}
             <Route path="/dashboard/settings"       element={<PharmacySettings />} />
-            <Route path="*" element={<Navigate to="/pharmacy/dashboard/dispense" replace />} />
+            <Route path="*" element={<Navigate to={defaultPath} replace />} />
           </Routes>
         </div>
       </AppShell>
     </div>
+    </PatientAccessProvider>
   );
 }

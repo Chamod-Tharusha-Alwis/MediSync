@@ -46,7 +46,7 @@ exports.getSystemStats = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch system stats', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch system stats' });
   }
 };
 
@@ -172,36 +172,18 @@ exports.getAllUsers = async (req, res) => {
 
     res.json({ data: users, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 };
 
 // ─── EXISTING: toggleUserStatus ──────────────────────────────────────────────
 exports.toggleUserStatus = async (req, res) => {
   try {
-    const { userId, role } = req.body;
-    if (req.user && String(req.user.id) === String(userId)) {
-      return res.status(400).json({ error: 'Cannot deactivate your own account' });
-    }
-
-    let user;
-
-    if (role === 'admin' || role === 'super_admin') {
-      user = await Admin.findById(userId);
-      if (!user) user = await Doctor.findById(userId);
-    } else if (role === 'doctor') user = await Doctor.findById(userId);
-    else if (role === 'patient') user = await Patient.findById(userId);
-    else if (role === 'hospital_admin') user = await Hospital.findById(userId);
-    else if (role === 'pharmacy_admin' || role === 'pharmacist') user = await PharmacyStaff.findById(userId);
-
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    user.isActive = user.isActive === false ? true : false;
-    await user.save();
-
-    res.json({ message: `User status set to ${user.isActive ? 'Active' : 'Inactive'}`, data: { isActive: user.isActive } });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to toggle status', details: error.message });
+    const data = await require('../services/accountStatusService').toggleAccountStatus({actor:req.user,body:req.body});
+    return res.json({message:'User status updated',data});
+  } catch(error) {
+    const {ClinicalCommandError}=require('../services/clinicalErrors');
+    return res.status(error instanceof ClinicalCommandError?error.status:503).json({error:error instanceof ClinicalCommandError?error.code:'Account status update unavailable'});
   }
 };
 
@@ -330,7 +312,7 @@ exports.getAuditLogs = async (req, res) => {
 
     res.json({ data: enrichedLogs, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch audit logs', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch audit logs' });
   }
 };
 
@@ -516,7 +498,7 @@ exports.getUserAuditProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user audit profile', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch user audit profile' });
   }
 };
 
@@ -606,16 +588,15 @@ exports.banUser = async (req, res) => {
 
     // Notify user via email
     if (targetUser.email) {
-      const expMsg = banType === 'temporary' && expiresAt
-        ? `until ${new Date(expiresAt).toLocaleDateString()}`
-        : 'permanently';
-      emailService.sendWelcomeEmail(targetUser.email, targetUser.fullName || 'User', 'banned')
-        .catch(e => console.error('Ban email failed:', e.message));
+      emailService.sendSecurityIncidentEmail(targetUser.email, targetUser.fullName || targetUser.name || 'User',
+        'Your account access has been suspended. Contact MediSync support for review.',
+        require('../services/recipientLanguageService').languageOptionsForRecord(targetModel, targetUser))
+        .catch(e => console.error('Ban email failed:'));
     }
 
     return res.status(201).json({ message: 'User banned successfully', data: banRecord });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to ban user', details: error.message });
+    return res.status(500).json({ error: 'Failed to ban user' });
   }
 };
 
@@ -648,7 +629,7 @@ exports.liftBan = async (req, res) => {
 
     return res.json({ message: 'Ban lifted successfully', data: banRecord });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to lift ban', details: error.message });
+    return res.status(500).json({ error: 'Failed to lift ban' });
   }
 };
 
@@ -667,7 +648,7 @@ exports.getActiveBans = async (req, res) => {
       .sort({ bannedAt: -1 });
     res.json({ data: bans });
   } catch (err) {
-    console.error('getActiveBans:', err.message);
+    console.error('getActiveBans:');
     res.status(500).json({ error: err.message });
   }
 };
@@ -695,7 +676,7 @@ exports.getBans = async (req, res) => {
     const total = await BanRecord.countDocuments(query);
     return res.json({ data: bans, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch bans', details: error.message });
+    return res.status(500).json({ error: 'Failed to fetch bans' });
   }
 };
 
@@ -771,7 +752,7 @@ exports.addAdmin = async (req, res) => {
       timestamp: new Date()
     }).catch(() => {});
 
-    emailService.sendWelcomeEmail(normalizedEmail, trimmedName, 'admin').catch(() => {});
+    emailService.sendWelcomeEmail(normalizedEmail, trimmedName, 'admin', require('../services/recipientLanguageService').languageOptionsForRecord('Admin', newAdmin)).catch(() => {});
 
     return res.status(201).json({
       message: 'Admin created successfully',
@@ -786,7 +767,7 @@ exports.addAdmin = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to create admin', details: error.message });
+    return res.status(500).json({ error: 'Failed to create admin' });
   }
 };
 
@@ -820,7 +801,7 @@ exports.getPatientReports = async (req, res) => {
     const reports = await Patient.aggregate(pipeline);
     return res.json({ data: reports });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch reports', details: error.message });
+    return res.status(500).json({ error: 'Failed to fetch reports' });
   }
 };
 
@@ -843,7 +824,7 @@ exports.reviewReport = async (req, res) => {
 
     return res.json({ message: 'Report updated', data: report });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to update report', details: error.message });
+    return res.status(500).json({ error: 'Failed to update report' });
   }
 };
 
@@ -890,7 +871,7 @@ exports.resolveAlert = async (req, res) => {
 
     res.json({ message: `Alert ${alert.status.toLowerCase()} successfully`, data: alert });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to resolve alert', details: error.message });
+    res.status(500).json({ error: 'Failed to resolve alert' });
   }
 };
 
@@ -922,7 +903,7 @@ exports.searchUsers = async (req, res) => {
     
     res.json({ data: results });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to search users', details: err.message });
+    res.status(500).json({ error: 'Failed to search users' });
   }
 };
 
@@ -933,7 +914,7 @@ exports.getUserDevices = async (req, res) => {
     const devices = await TrustedDevice.find({ userId: req.params.id });
     res.json({ data: devices });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch devices', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch devices' });
   }
 };
 
@@ -954,12 +935,12 @@ exports.removeUserDevice = async (req, res) => {
     }
     
     if (email) {
-      emailService.sendDeviceRemovedEmail(email, device.deviceModel || 'Unknown Device').catch(e => console.error(e));
+      emailService.sendDeviceRemovedEmail(email, device.deviceModel || 'Unknown Device').catch(e => console.error('Operation failed; sensitive details suppressed.'));
     }
     
     res.json({ message: 'Device removed successfully' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to remove device', details: err.message });
+    res.status(500).json({ error: 'Failed to remove device' });
   }
 };
 
@@ -1016,7 +997,7 @@ exports.getUserRecoveryInfo = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch recovery info', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch recovery info' });
   }
 };
 
@@ -1051,8 +1032,8 @@ exports.generateRecoveryToken = async (req, res) => {
     await RecoveryToken.create({
       userId: id,
       userModel: modelName,
-      token: tokenStr,
-      purpose: purpose || 'Account Recovery',
+      tokenHash: crypto.createHash('sha256').update(tokenStr).digest('hex'),
+      purpose: 'password-reset',
       expiresAt
     });
     
@@ -1061,7 +1042,7 @@ exports.generateRecoveryToken = async (req, res) => {
     const link = `${clientUrl}/reset-password?token=${tokenStr}`;
     
     if (email) {
-      emailService.sendRecoveryEmail(email, link, purpose || 'Account Recovery').catch(e => console.error('[EMAIL RECOVERY ERROR]', e.message));
+      emailService.sendRecoveryEmail(email, link, purpose || 'Account Recovery', require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user)).catch(e => console.error('[EMAIL RECOVERY ERROR]'));
     }
     
     if (req.user) {
@@ -1085,6 +1066,6 @@ exports.generateRecoveryToken = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate recovery token', details: err.message });
+    res.status(500).json({ error: 'Failed to generate recovery token' });
   }
 };

@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { ShieldCheck, RefreshCw, ArrowLeft, Loader2 } from 'lucide-react';
 
@@ -15,6 +16,7 @@ const LoginOtpStep = ({
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputsRef = useRef([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (inputsRef.current[0]) {
@@ -159,11 +161,11 @@ const LoginOtpStep = ({
       <div className="flex items-center justify-between text-xs px-1">
         {timeLeft > 0 ? (
           <span className="text-slate-400">
-            Code expires in{' '}
+            {t("auth.codeExpiresIn", "Code expires in")}{' '}
             <span className="font-mono font-bold text-teal-400">{formatTime(timeLeft)}</span>
           </span>
         ) : (
-          <span className="text-rose-400 font-semibold">Code expired — please request a new OTP</span>
+          <span className="text-rose-400 font-semibold">{t("auth.codeExpired", "Code expired")} — please request a new OTP</span>
         )}
 
         <button

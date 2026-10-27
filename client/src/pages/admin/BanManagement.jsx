@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { toast } from 'react-toastify';
 import { ShieldBan, ShieldCheck, Clock, AlertTriangle, Search, Loader2 } from 'lucide-react';
 import api from '../../api/axiosInstance';
@@ -6,6 +7,7 @@ import PageTransition from '../../components/common/PageTransition';
 import Modal from '../../components/ui/Modal';
 
 const BanManagement = () => {
+  const { t } = useTranslation();
   const [bans, setBans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('true'); // 'true' = active, 'false' = lifted, '' = all
@@ -108,7 +110,7 @@ const BanManagement = () => {
     <PageTransition className="space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Ban Management</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("admin.banManagementTitle", "Ban Management")}</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Suspend patient or practitioner accounts violating system compliance guidelines.</p>
         </div>
         <button

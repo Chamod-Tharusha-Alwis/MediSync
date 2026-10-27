@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/LanguageContext';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -49,7 +50,7 @@ const roles = [
   {
     id: 'admin',
     title: 'Super Admin Command Center',
-    description: 'Inspect HIPAA audit trails, dispatch broadcasts, and execute surveillance scans.',
+    description: 'Inspect activity logs, manage platform access, and review surveillance dashboards.',
     icon: ShieldAlert,
     route: '/admin/login',
     color: 'text-amber-400',
@@ -59,10 +60,11 @@ const roles = [
 ];
 
 const SelectRole = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
-    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col items-center justify-center pt-28 pb-12 px-6 sm:px-12 relative overflow-hidden">
+    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col items-center justify-center pt-44 xl:pt-28 pb-12 px-6 sm:px-12 relative overflow-hidden">
       <PublicNavbar />
       
       {/* Background Glow */}
@@ -70,10 +72,10 @@ const SelectRole = () => {
 
       <div className="text-center z-10 mb-12 max-w-2xl select-none">
         <h1 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-4">
-          Access MediSync Portal
+          {t("auth.chooseRole", "Access MediSync Portal")}
         </h1>
         <p className="text-sm text-slate-400 leading-relaxed">
-          Please select your system role below to enter the secure authenticated workspace portal.
+          {t("auth.roleDescription", "Please select your system role below to enter the secure authenticated workspace portal.")}
         </p>
       </div>
 

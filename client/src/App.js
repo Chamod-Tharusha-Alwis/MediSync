@@ -9,6 +9,7 @@ import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
+import PrototypeNotice from './components/common/PrototypeNotice';
 
 // ─── Lazy-loaded route components ──────────────────────────────────────────
 // Each import() creates a separate JS chunk that is only downloaded when
@@ -18,8 +19,7 @@ import IdleTimer from './components/common/IdleTimer';
 // Public / shared pages (lightweight – loaded on first visit)
 const Home              = React.lazy(() => import('./pages/Home'));
 const SelectRole        = React.lazy(() => import('./pages/SelectRole'));
-const Register          = React.lazy(() => import('./pages/auth/Register'));
-const StyleGuide        = React.lazy(() => import('./pages/dev/StyleGuide'));
+const Register          = React.lazy(() => import('./pages/auth/RegistrationEntry'));
 const ResetPassword     = React.lazy(() => import('./pages/common/ResetPassword'));
 
 // Public directory pages
@@ -86,7 +86,7 @@ export class ErrorBoundary extends React.Component {
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-white">Something went wrong</h2>
               <p className="text-sm text-slate-300 leading-relaxed">
-                An unexpected error occurred while rendering this page. Your data is safe—please reload to continue.
+                This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.
               </p>
             </div>
             <button
@@ -113,6 +113,7 @@ function AppRoutes() {
 
   return (
     <div className="relative min-h-screen text-slate-200 overflow-x-hidden">
+      <PrototypeNotice />
       <AnimatedBackground />
       <IdleTimer />
       <NotificationToast />
@@ -125,9 +126,9 @@ function AppRoutes() {
               <Route path="/" element={<Home />} />
           <Route path="/select-role" element={<SelectRole />} />
           <Route path="/register" element={<Register />} />
-          {process.env.NODE_ENV !== 'production' && (
-            <Route path="/dev/style-guide" element={<StyleGuide />} />
-          )}
+          <Route path="/patient/register" element={<Navigate to="/register?role=patient" replace />} />
+          <Route path="/hospital/register" element={<Navigate to="/register?role=hospital_admin" replace />} />
+          <Route path="/pharmacy/register" element={<Navigate to="/register?role=pharmacy" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Public Directories */}
@@ -168,7 +169,7 @@ function AppRoutes() {
             <Route path="/patient/*" element={<PatientDashboard />} />
           </Route>
 
-          <Route element={<PrivateRoute allowedRoles={['pharmacist', 'pharmacy_admin']} />}>
+          <Route element={<PrivateRoute allowedRoles={['pharmacist', 'pharmacy_admin', 'assistant']} />}>
             <Route path="/pharmacy/*" element={<PharmacyDashboard />} />
           </Route>
 

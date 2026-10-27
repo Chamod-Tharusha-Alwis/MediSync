@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { en } from './translations/en';
 import { si } from './translations/si';
 import { ta } from './translations/ta';
@@ -33,6 +33,12 @@ export const LanguageProvider = ({ children }) => {
       }
     }
   };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined' && language) {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
 
   const t = useMemo(() => {
     return (path, fallback) => {

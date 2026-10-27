@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const versionedEncryption = require('../utils/versionedEncryption');
+const versionedEncryption = require('../security/fieldEncryption');
 
 const testOrderSchema = new mongoose.Schema({
   consultationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Consultation', required: true },

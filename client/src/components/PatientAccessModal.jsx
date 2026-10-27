@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/LanguageContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, CheckCircle, X, Loader2, RefreshCw } from 'lucide-react';
@@ -30,6 +31,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
   callbacks.current = { onSuccess };
   const dialogRef = useModalFocus(true, onClose);
   const expiresAt = useRef(0);
+  const { t } = useTranslation();
 
   // Defer the initial send one tick so StrictMode's probe cannot send a second OTP.
   useEffect(() => {
@@ -133,7 +135,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                 <Shield className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-white font-bold text-base">Patient Verification Required</h2>
+                <h2 className="text-white font-bold text-base">{t("consent.verificationRequired", "Patient Verification Required")}</h2>
                 <p className="text-slate-400 text-xs">NIC: {patientNic}</p>
               </div>
             </div>
@@ -148,8 +150,8 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
             {step === 'sending' && (
               <div className="text-center py-8">
                 <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-4" />
-                <p className="text-white font-medium">Sending OTP to patient…</p>
-                <p className="text-slate-400 text-sm mt-2">The patient will receive a verification code via email.</p>
+                <p className="text-white font-medium">{t("consent.sendingOtp", "Sending OTP to patient…")}</p>
+                <p className="text-slate-400 text-sm mt-2">{t("consent.otpWillReceive", "The patient will receive a verification code via email.")}</p>
               </div>
             )}
 
@@ -176,7 +178,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
                       {formatTime(countdown)}
                     </span>
                   </div>
-                  <p className="text-white font-medium">Enter the 6-digit code</p>
+                  <p className="text-white font-medium">{t("consent.enter6Digit", "Enter the 6-digit code")}</p>
                   <p className="text-slate-400 text-sm mt-1">
                     Sent to patient's registered email address
                   </p>

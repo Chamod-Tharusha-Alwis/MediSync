@@ -33,12 +33,16 @@ const otpSessionSchema = new mongoose.Schema({
   },
   // Used for patient-access OTPs to track who requested access and consent lifecycle
   metadata: {
+    deviceId: String,
+    deviceFingerprint: String,
+    sessionId: String,
     requesterId: String,
     requesterRole: String,
     requesterName: String,
     accessNic: String,
     accessGrantedAt: Date,
     accessExpiresAt: Date,
+    commitVersion: { type: Number, default: 0 },
     revoked: { type: Boolean, default: false }
   }
 }, { timestamps: true });

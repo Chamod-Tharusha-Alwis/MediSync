@@ -1,55 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Phone, ShieldCheck, Pill, Star, ArrowRight } from 'lucide-react';
-import api from '../../api/axiosInstance';
+import { usePublicDirectory } from '../../api/usePublicDirectory';
+import DirectoryLoadError from '../../components/common/DirectoryLoadError';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PharmacyProfileModal from './PharmacyProfileModal';
 import PageTransition from '../../components/common/PageTransition';
 
 const PharmacyDirectory = () => {
-  const [pharmacies, setPharmacies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const { records: pharmacies, loading, error, retry } = usePublicDirectory('/public/pharmacies');
   const [search, setSearch] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
 
-  useEffect(() => {
-    const fetchPharmacies = async () => {
-      try {
-        const res = await api.get('/public/pharmacies');
-        setPharmacies(res.data.data || []);
-      } catch (err) {
-        console.error('Failed to fetch pharmacies', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPharmacies();
-  }, []);
-
-  const filteredPharmacies = pharmacies.filter(p => 
-    p.name?.toLowerCase().includes(search.toLowerCase()) || 
-    p.district?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredPharmacies = pharmacies.filter(p => [p.name, p.district, p.address, p.regNo].some(value => String(value || '').toLowerCase().includes(search.trim().toLowerCase())));
 
   return (
-    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 pt-28 pb-12 px-6">
+    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 pt-44 xl:pt-28 pb-12 px-6">
       <PublicNavbar />
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header & Search */}
         <div className="text-center max-w-2xl mx-auto space-y-4">
           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-            Dispensing Locations
+            {t('directory.pharmacyTitle', 'Dispensing Locations')}
           </h1>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Locate pharmacies and distribution centers synchronized with our central prescription locking networks.
+            {t('directory.description')}
           </p>
           
           <div className="relative max-w-lg mx-auto pt-2">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-4.5 h-4.5 select-none" />
             <input 
               type="text" 
-              placeholder="Search by pharmacy name or district..."
+              placeholder={t('directory.searchPharmacyPlaceholder')}
+              aria-label={t('directory.searchPharmacyPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-11 pr-4 py-3 rounded-xl border border-white/5 bg-slate-900/60 text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-lg"
@@ -58,7 +44,7 @@ const PharmacyDirectory = () => {
         </div>
 
         {/* Directory Grid */}
-        {loading ? (
+        {error ? <DirectoryLoadError retry={retry} /> : loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 animate-pulse select-none">
@@ -86,8 +72,16 @@ const PharmacyDirectory = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, delay: idx * 0.03 }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${t('directory.viewProfile', 'View profile')}: ${pharm.name}`}
                   onClick={() => setSelectedPharmacy(pharm)}
-                  className="glass-panel p-6 rounded-2xl border border-white/5 hover:border-emerald-500/20 transition-all duration-300 cursor-pointer flex flex-col justify-between h-full group"
+                  onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault(); setSelectedPharmacy(pharm);
+                    }
+                  }}
+                  className="glass-panel p-6 rounded-2xl border border-white/5 hover:border-emerald-500/20 transition-all duration-300 cursor-pointer flex flex-col justify-between h-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-4">
@@ -155,10 +149,10 @@ const PharmacyDirectory = () => {
           </div>
         )}
         
-        {!loading && filteredPharmacies.length === 0 && (
+        {!loading && !error && filteredPharmacies.length === 0 && (
           <div className="text-center py-20 text-slate-500 select-none">
             <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="text-sm font-semibold">No pharmacies found matching "{search}"</p>
+            <p className="text-sm font-semibold">{t('directory.noResultsFound')}</p>
           </div>
         )}
       </div>

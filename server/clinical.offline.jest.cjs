@@ -1,0 +1,13 @@
+'use strict';
+const base = require('./agent-b.offline.jest.cjs');
+module.exports = { ...base, testMatch: [...base.testMatch.filter(file => !file.includes('agentBPublicDemoIsolation')), '<rootDir>/tests/clinicalProductionEntry.test.js', '<rootDir>/tests/localStartupAndDirectory.test.js', '<rootDir>/tests/approvedClinicalPatchBinding.test.js', '<rootDir>/tests/closureQaReadOnly.test.js', '<rootDir>/tests/closureQaPreservationBaseline.local.test.js', '<rootDir>/tests/masterSupportSafety.test.js', '<rootDir>/tests/masterClinicalStorage.test.js', '<rootDir>/tests/masterLoginAdmission.test.js', '<rootDir>/tests/masterReviewSafety.test.js', '<rootDir>/tests/masterOrganizationPassword.test.js', '<rootDir>/tests/masterReleaseBoundary.test.js', '<rootDir>/tests/masterReconciliation.test.js', '<rootDir>/tests/masterExistingStorage.test.js', '<rootDir>/tests/masterAuthRedaction.test.js', '<rootDir>/tests/masterQaAdmissionDiagnostics.test.js'] };
+module.exports.testMatch.push(...['websiteClinicalContracts','websiteReferencePackaging','websiteNotifications'].map(name=>`<rootDir>/tests/${name}.test.js`));
+module.exports.testMatch.push('<rootDir>/tests/websiteHospitalDoctorLink.test.js');
+module.exports.testMatch.push('<rootDir>/tests/productionAtlasAdmission.test.js','<rootDir>/tests/reminderDispatchSafety.test.js');
+module.exports.testMatch.push('<rootDir>/tests/productionArtifactPins.test.js');
+module.exports.testMatch.push('<rootDir>/tests/productionStorageAdmission.test.js');
+module.exports.testMatch.push('<rootDir>/tests/postR2LocalReadiness.test.js');
+module.exports.testMatch.push('<rootDir>/tests/realIntegrationTransport.test.js');
+module.exports.testMatch.push('<rootDir>/tests/antigravityPublicHealthPrivacy.test.js');
+module.exports.testMatch.push('<rootDir>/tests/productionAccountAndProfile.test.js','<rootDir>/tests/productionPublicIsolation.test.js');
+module.exports.testMatch.push(...['gate3StorageRepair', 'gate3BootstrapRepair', 'gate3DatabaseMode', 'provisionProductionStorage', 'bootstrapSyntheticAccounts', 'preflightProduction', 'operatorKeyPolicy'].map(name => `<rootDir>/tests/${name}.test.js`));

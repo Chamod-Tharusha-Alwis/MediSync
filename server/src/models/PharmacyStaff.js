@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const pharmacyStaffSchema = new mongoose.Schema({
+  preferredLanguage: require('../security/preferredLanguage').preferredLanguageField(),
   pharmacyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Pharmacy',
@@ -27,6 +28,7 @@ const pharmacyStaffSchema = new mongoose.Schema({
     enum: ['pharmacy_admin', 'pharmacist', 'assistant'],
     required: true
   },
+  isVerified: { type: Boolean, default: false },
   isActive: {
     type: Boolean,
     default: true

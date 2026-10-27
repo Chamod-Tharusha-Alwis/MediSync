@@ -2,8 +2,9 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { ConnectionString } = require('mongodb-connection-string-url');
 
-const PROD_DB_NAME = 'test';
+const PROD_DB_NAME = 'medisync_prod';
 const TEST_DB_NAME = 'medisync_automated_test';
+const STAGING_DB_NAME = 'medisync_staging';
 
 class DatabaseIsolationError extends Error {
   constructor(message) {
@@ -223,6 +224,19 @@ function validateAutomatedTestConfig({
     );
   }
 
+  // Explicitly deny production cluster (p7hjket.mongodb.net)
+  const DENIED_CLUSTERS = ['p7hjket.mongodb.net'];
+  for (const host of testInfo.hosts) {
+    const hostLower = String(host).toLowerCase();
+    for (const denied of DENIED_CLUSTERS) {
+      if (hostLower.includes(denied)) {
+        throw new DatabaseIsolationError(
+          `[FATAL][DB-GUARD] Cluster collision violation: MONGO_URI_TEST points to denied production cluster "${denied}". Automated tests must run on a separate dedicated Atlas project/cluster.`
+        );
+      }
+    }
+  }
+
   if (prodUri && typeof prodUri === 'string' && prodUri.trim()) {
     const prodInfo = parseAndValidateAtlasUri(prodUri, 'MONGO_URI', null);
     if (testInfo.usernameHash === prodInfo.usernameHash) {
@@ -255,22 +269,25 @@ async function connectProductionDB(uri = process.env.MONGO_URI) {
     );
   }
 
+  const policy = require('../security/productionAtlasPolicy');
+  const storageAdmission = require('../security/productionStorageAdmission');
+  policy.assertProductionAtlasConfiguration(process.env, uri);
+  policy.disableAutomaticModelDdl(mongoose);
   const prodInfo = parseAndValidateAtlasUri(uri, 'MONGO_URI', PROD_DB_NAME);
-  await mongoose.connect(uri, { dbName: PROD_DB_NAME });
-
-  const actualDb = mongoose.connection?.db?.databaseName || mongoose.connection?.name;
-  if (actualDb !== PROD_DB_NAME) {
-    await mongoose.disconnect();
-    throw new DatabaseIsolationError(
-      `[FATAL][DB-GUARD] Expected production connection to "${PROD_DB_NAME}", but connected to "${actualDb}".`
-    );
+  try {
+    await mongoose.connect(uri, {
+      dbName: PROD_DB_NAME, tls: true, autoIndex: false, autoCreate: false,
+      readPreference: 'primary', writeConcern: { w: 'majority' },
+      serverSelectionTimeoutMS: 10000, socketTimeoutMS: 10000
+    });
+    const identity = await policy.verifyProductionIdentity(mongoose.connection.db);
+    const storage = await storageAdmission.verifyProductionStorage(mongoose.connection.db, process.env);
+    return { connection: mongoose.connection, ...identity, ...storage, maskedUri: prodInfo.maskedUri };
+  } catch (_) {
+    try { await mongoose.disconnect(); }
+    catch (_) { throw new DatabaseIsolationError('[FATAL][DB-GUARD] Production admission failed; connection shutdown failed.'); }
+    throw new DatabaseIsolationError('[FATAL][DB-GUARD] Production identity or storage prerequisites were not verified.');
   }
-
-  return {
-    connection: mongoose.connection,
-    dbName: actualDb,
-    maskedUri: prodInfo.maskedUri
-  };
 }
 
 /**
@@ -289,7 +306,16 @@ async function connectAutomatedTestDB({
 
   const testInfo = validateAutomatedTestConfig({ testUri, prodUri });
 
-  await mongoose.connect(testUri, { dbName: TEST_DB_NAME });
+  // In automated test environments, disable automatic background index builds
+  // and automatic collection creation on unseeded models to prevent unauthorized
+  // collection pollution.
+  mongoose.set('autoIndex', false);
+  mongoose.set('autoCreate', false);
+  await mongoose.connect(testUri, {
+    dbName: TEST_DB_NAME,
+    autoIndex: false,
+    autoCreate: false
+  });
 
   const actualDb = mongoose.connection?.db?.databaseName || mongoose.connection?.name;
   if (actualDb !== TEST_DB_NAME) {
@@ -336,9 +362,160 @@ async function connectAutomatedTestDB({
   };
 }
 
+/**
+ * Validates that a staging URI is completely isolated from production and automated test URIs
+ * BEFORE any network connection is opened.
+ */
+function validateStagingConfig({
+  stagingUri = process.env.MONGO_URI_STAGING,
+  prodUri = process.env.MONGO_URI,
+  testUri = process.env.MONGO_URI_TEST
+} = {}) {
+  const stagingInfo = parseAndValidateAtlasUri(stagingUri, 'MONGO_URI_STAGING', STAGING_DB_NAME);
+
+  if (stagingInfo.pathnameDb !== STAGING_DB_NAME) {
+    throw new DatabaseIsolationError(
+      `[FATAL][DB-GUARD] MONGO_URI_STAGING must explicitly specify "/${STAGING_DB_NAME}" in its URI path (found "/${stagingInfo.pathnameDb || ''}").`
+    );
+  }
+
+  // Explicitly deny production (p7hjket.mongodb.net) and QA (gwprp27.mongodb.net) clusters
+  const DENIED_CLUSTERS = ['p7hjket.mongodb.net', 'gwprp27.mongodb.net'];
+  for (const host of stagingInfo.hosts) {
+    const hostLower = String(host).toLowerCase();
+    for (const denied of DENIED_CLUSTERS) {
+      if (hostLower.includes(denied)) {
+        throw new DatabaseIsolationError(
+          `[FATAL][DB-GUARD] Cluster collision violation: MONGO_URI_STAGING points to denied cluster "${denied}". Staging must run on a separate dedicated Atlas project/cluster.`
+        );
+      }
+    }
+  }
+
+  // Ensure TLS is not explicitly disabled
+  const searchParams = stagingInfo.cs.searchParams;
+  if (searchParams && (searchParams.get('ssl') === 'false' || searchParams.get('tls') === 'false')) {
+    throw new DatabaseIsolationError(
+      '[FATAL][DB-GUARD] TLS/SSL encryption is strictly mandatory for MongoDB Atlas staging connections.'
+    );
+  }
+
+  // Pinned staging host validation if configured
+  if (process.env.STAGING_PINNED_HOST) {
+    const pinned = process.env.STAGING_PINNED_HOST.toLowerCase().trim();
+    const hasPinned = stagingInfo.hosts.some(h => String(h).toLowerCase().includes(pinned));
+    if (!hasPinned) {
+      throw new DatabaseIsolationError(
+        `[FATAL][DB-GUARD] Pinned staging host mismatch: MONGO_URI_STAGING hosts do not match STAGING_PINNED_HOST "${pinned}".`
+      );
+    }
+  }
+
+  if (prodUri && typeof prodUri === 'string' && prodUri.trim()) {
+    const prodInfo = parseAndValidateAtlasUri(prodUri, 'MONGO_URI', null);
+    if (stagingInfo.usernameHash === prodInfo.usernameHash) {
+      throw new DatabaseIsolationError(
+        `[FATAL][DB-GUARD] Credential separation violation: MONGO_URI_STAGING uses the same MongoDB Atlas database user as production MONGO_URI. Staging must use a dedicated Atlas user restricted to readWrite@${STAGING_DB_NAME}.`
+      );
+    }
+  }
+
+  if (testUri && typeof testUri === 'string' && testUri.trim()) {
+    const testInfo = parseAndValidateAtlasUri(testUri, 'MONGO_URI_TEST', null);
+    if (stagingInfo.usernameHash === testInfo.usernameHash) {
+      throw new DatabaseIsolationError(
+        `[FATAL][DB-GUARD] Credential separation violation: MONGO_URI_STAGING uses the same MongoDB Atlas database user as MONGO_URI_TEST. Staging must use a dedicated Atlas user restricted to readWrite@${STAGING_DB_NAME}.`
+      );
+    }
+  }
+
+  return stagingInfo;
+}
+
+/**
+ * Connects the staging server ONLY to 'medisync_staging' on MongoDB Atlas,
+ * and verifies that the dedicated staging user holds ONLY restricted privileges.
+ * Fails closed immediately if called without MEDISYNC_STAGING_MODE=true or in unauthorized environment.
+ */
+async function connectStagingDB({
+  stagingUri = process.env.MONGO_URI_STAGING,
+  prodUri = process.env.MONGO_URI
+} = {}) {
+  installDestructiveOpGuards();
+
+  if (process.env.MEDISYNC_STAGING_MODE !== 'true') {
+    throw new DatabaseIsolationError(
+      '[FATAL][DB-GUARD] Staging database access requires explicit MEDISYNC_STAGING_MODE=true. Unauthorized startup blocked.'
+    );
+  }
+
+  if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_LIVE_START_APPROVED === 'true') {
+    throw new DatabaseIsolationError(
+      '[FATAL][DB-GUARD] Fail-closed: Staging connection cannot be initiated in a live production approved environment.'
+    );
+  }
+
+  if (process.env.MONGO_URI) {
+    throw new DatabaseIsolationError('[FATAL][DB-GUARD] Production MONGO_URI must not be loaded in a staging environment.');
+  }
+
+  const stagingInfo = validateStagingConfig({ stagingUri, prodUri });
+
+  mongoose.set('autoIndex', false);
+  mongoose.set('autoCreate', false);
+  await mongoose.connect(stagingUri, {
+    dbName: STAGING_DB_NAME,
+    autoIndex: false,
+    autoCreate: false
+  });
+
+  const actualDb = mongoose.connection?.db?.databaseName || mongoose.connection?.name;
+  if (actualDb !== STAGING_DB_NAME) {
+    await mongoose.disconnect();
+    throw new DatabaseIsolationError(
+      `[FATAL][DB-GUARD] Expected staging connection to "${STAGING_DB_NAME}", but connected to "${actualDb}".`
+    );
+  }
+
+  let connStatus;
+  try {
+    connStatus = await mongoose.connection.db.command({ connectionStatus: 1 });
+  } catch (_) {
+    await mongoose.disconnect();
+    throw new DatabaseIsolationError('[FATAL][DB-GUARD] Could not verify authenticated staging database role.');
+  }
+  const authUsers = connStatus?.authInfo?.authenticatedUsers || [];
+  const authRoles = connStatus?.authInfo?.authenticatedUserRoles || [];
+
+  if (authRoles.length === 0) {
+    await mongoose.disconnect();
+    throw new DatabaseIsolationError(
+      `[FATAL][DB-GUARD] Unable to verify authenticated roles for staging user on "${STAGING_DB_NAME}".`
+    );
+  }
+
+  const exactRole = authRoles.length === 1 && authRoles[0].db === STAGING_DB_NAME && authRoles[0].role === 'readWrite';
+  if (!exactRole || authUsers.length !== 1) {
+    await mongoose.disconnect();
+    throw new DatabaseIsolationError(
+      `[FATAL][DB-GUARD] Permission isolation failure: Staging user must authenticate once with exactly readWrite@${STAGING_DB_NAME}.`
+    );
+  }
+
+  return {
+    connection: mongoose.connection,
+    dbName: actualDb,
+    maskedUri: stagingInfo.maskedUri,
+    usernameHash8: stagingInfo.usernameHash.slice(0, 8),
+    authenticatedRoles: authRoles,
+    authenticatedUserCount: authUsers.length
+  };
+}
+
 module.exports = {
   PROD_DB_NAME,
   TEST_DB_NAME,
+  STAGING_DB_NAME,
   DatabaseIsolationError,
   DestructiveOperationBlockedError,
   isAutomatedTestEnvironment,
@@ -347,7 +524,9 @@ module.exports = {
   installDestructiveOpGuards,
   areDestructiveGuardsInstalled: () => guardsInstalled,
   validateAutomatedTestConfig,
+  validateStagingConfig,
   connectProductionDB,
-  connectAutomatedTestDB
+  connectAutomatedTestDB,
+  connectStagingDB
 };
 

@@ -1,28 +1,33 @@
 name: Security Hardening & Trust Governance Tests
-
 on:
   push:
-    branches: [ "main" ]
+    branches: [main, release/medisync-v1-final-integration]
   pull_request:
-    branches: [ "main" ]
-
+    branches: [main, chore/safe-localhost-development]
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   security-and-trust-tests:
+    env:
+      MONGOMS_DISABLE_POSTINSTALL: '1'
+      MONGOMS_RUNTIME_DOWNLOAD: 'false'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # reviewed v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # reviewed v7
         with:
-          node-version: '20'
-
-      - name: Install Server Dependencies
-        working-directory: ./server
-        run: npm ci
-
-      - name: Execute Security & Cryptographic Suites (71 Tests)
-        working-directory: ./server
-        run: npx jest tests/qaTrustLedger.test.js tests/qaEncryptionBootstrap.test.js tests/qaNativeDriverPolicy.test.js tests/dbGuard.test.js
+          node-version: '24'
+      - name: Install reviewed locked Node dependencies
+        run: |
+          npm ci
+          npm --prefix server ci
+          npm --prefix client ci
+      - name: Run bounded backend, email/PDF and lifecycle security profiles
+        env:
+          MEDISYNC_OFFLINE_CI: 'true'
+          MEDISYNC_OFFLINE_PROFILE: security
+        run: node scripts/run_offline_tests.js
+      - name: Declare remaining evidence boundaries
+        run: echo 'NOT RUN - private local preservation baseline, Atlas, clinical E2E and providers. Client/ML checks belong to the separate full offline job.'

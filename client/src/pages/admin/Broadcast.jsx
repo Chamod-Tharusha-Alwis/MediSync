@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { Send, MessageSquare, Users, MapPin, Loader2, CheckCircle, Bell, Info, Pill, FlaskConical, AlertTriangle } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -15,6 +16,7 @@ const SRI_LANKA_DISTRICTS = [
 ];
 
 const Broadcast = () => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [targetRole, setTargetRole] = useState('all');
@@ -81,8 +83,8 @@ const Broadcast = () => {
   return (
     <PageTransition className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Broadcast Center</h1>
-        <p className="text-slate-400 mt-1 text-sm font-medium">Dispatch targeted alerts and real-time announcements to connected users.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("admin.broadcastTitle", "Broadcast Center")}</h1>
+        <p className="text-slate-400 mt-1 text-sm font-medium">{t("admin.broadcastSubtitle", "Dispatch targeted alerts and real-time announcements to connected users.")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -91,7 +93,7 @@ const Broadcast = () => {
           <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-5">
             <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
               <MessageSquare className="w-4.5 h-4.5 text-indigo-400" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Compose Announcement</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t("admin.composeAnnouncement", "Compose Announcement")}</h3>
             </div>
 
             <div className="space-y-4">
@@ -189,7 +191,7 @@ const Broadcast = () => {
           {/* Sent Broadcasts History list */}
           <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
             <div className="p-4 bg-slate-900/60 border-b border-white/5 select-none">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Broadcast History</h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("admin.broadcastHistory", "Broadcast History")}</h3>
             </div>
             {broadcasts.length === 0 ? (
               <p className="text-slate-500 text-xs text-center py-6 select-none font-semibold">No announcements sent yet</p>

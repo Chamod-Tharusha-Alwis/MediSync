@@ -10,7 +10,12 @@ vm.runInNewContext(source,{module:moduleDouble,exports:moduleDouble.exports,Date
   if(name==='crypto')return require('crypto');
   if(name.startsWith('../models/'))return model;
   if(name==='../utils/ingredientResolver')return {checkAllergyConflict:deny};
-  throw Error('Unreviewed service import');
+  if(name==='./clinicalAuditService')return {recordClinicalEvent:async()=>{},ACTIONS:{}};
+  if(name==='../security/nicPersistence')return {nicFilter:x=>x,writeNicFields:x=>x};
+  if(name==='./clinicalErrors')return {ClinicalCommandError:class extends Error{}};
+  if(name==='./pharmacyCommitGuard')return {claimPharmacyAuthorization:async()=>{}};
+  if(name==='./currentMedicationSafety')return {currentMedicationNames:()=>[],assertMedicationResult:()=>{}};
+  throw Error('Unreviewed service import: ' + name);
 }},{filename:'actual-dispensingService.js'});
 const api=moduleDouble.exports,checks=[];
 const check=async(name,fn)=>{try{await fn();checks.push({name,passed:true});}catch(error){checks.push({name,passed:false,detail:error.message});}};

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -10,7 +11,7 @@ import PageTransition from '../../components/common/PageTransition';
 import { toast } from 'react-toastify';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PDF Download helper — streams the NIC-locked PDF and triggers browser save
+   PDF Download helper — streams the prescription PDF and triggers browser save
    ───────────────────────────────────────────────────────────────────────────── */
 const downloadPdf = async (prescriptionId, setDownloading) => {
   if (!prescriptionId) {
@@ -33,7 +34,7 @@ const downloadPdf = async (prescriptionId, setDownloading) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    toast.success('E-Prescription downloaded. Open it with your NIC as the password.');
+    toast.success('E-Prescription downloaded.');
   } catch (err) {
     const msg = err.response?.data?.error || err.message || 'Download failed';
     toast.error(msg);
@@ -46,6 +47,7 @@ const downloadPdf = async (prescriptionId, setDownloading) => {
    PrescriptionCard
    ───────────────────────────────────────────────────────────────────────────── */
 const PrescriptionCard = ({ rx, badge, index }) => {
+  const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
   const isActive = rx.status === 'issued' && (!rx.expiresAt || new Date(rx.expiresAt) > new Date());
 
@@ -141,32 +143,21 @@ const PrescriptionCard = ({ rx, badge, index }) => {
         {rx.prescriptionId && (
           <button
             id={`download-pdf-${rx.prescriptionId}`}
-            onClick={() => downloadPdf(rx.prescriptionId, setDownloading)}
-            disabled={downloading}
+            disabled
+            aria-disabled="true"
+            title={t("pdfUnavailable", "PDF export temporarily unavailable")}
             className={`
               w-full flex items-center justify-center gap-2.5
               px-4 py-2.5 rounded-xl
               text-sm font-bold tracking-wide
               border transition-all duration-300
-              ${isActive
-                ? 'bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border-emerald-500/35 text-emerald-300 hover:from-emerald-600/35 hover:to-teal-600/35 hover:border-emerald-400/50 hover:shadow-[0_4px_20px_rgba(16,185,129,0.20)]'
-                : 'bg-slate-800/40 border-slate-600/40 text-slate-400 hover:bg-slate-700/40 hover:text-slate-200 hover:border-slate-500/60'
-              }
-              disabled:opacity-50 disabled:cursor-not-allowed
+              bg-slate-800/40 border-slate-600/40 text-slate-400
+              opacity-50 cursor-not-allowed
             `}
           >
-            {downloading
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating PDF…</>
-              : <><Download className="w-4 h-4" /> Download E-Prescription (PDF)</>
-            }
+            <Download className="w-4 h-4" />
+            {t("pdfUnavailable", "PDF export temporarily unavailable")}
           </button>
-        )}
-
-        {/* Hint: password is patient's NIC */}
-        {rx.prescriptionId && (
-          <p className="text-center text-slate-600 text-[10px] mt-1.5">
-            🔒 PDF is password-protected with your NIC
-          </p>
         )}
       </div>
     </motion.div>
@@ -290,7 +281,7 @@ const PatientPrescriptions = () => {
 
       {/* ── Page header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">My Prescriptions</h1>
+        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">{t("patient.prescriptionsTitle", "My Prescriptions")}</h1>
         <p className="text-slate-400 mt-1">
           Track all your medications and download your E-Prescriptions.
         </p>
@@ -335,11 +326,10 @@ const PatientPrescriptions = () => {
 
       {/* ── PDF hint banner (active tab only) ── */}
       {activeTab === 'active' && filteredRx.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 mb-5 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
-          <Download className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <p className="text-emerald-300 text-xs font-medium">
-            Your E-Prescriptions are digitally locked with your NIC as the password.
-            Download and present them at any registered pharmacy.
+        <div className="flex items-center gap-3 px-4 py-3 mb-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+          <Download className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          <p className="text-slate-300 text-xs font-medium">
+            {t("pdfUnavailable", "PDF export temporarily unavailable")}. Present your prescription ID at any registered pharmacy.
           </p>
         </div>
       )}

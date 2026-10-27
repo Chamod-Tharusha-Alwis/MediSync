@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config(); // fallback
@@ -43,11 +44,11 @@ async function seedOutbreakDemo() {
   }
   console.log('🌱 Seeding 14-day 3-Tier Outbreak Anomaly Detection Demo data...');
 
-  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: '200325711121' };
+  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: 'NIC-SYNTHETIC-DEMO-9999' };
   const doc = await Doctor.findOne() || { _id: new mongoose.Types.ObjectId() };
   const hospital = await Hospital.findOne() || { _id: new mongoose.Types.ObjectId() };
 
-  const patientNic = patient.nic || '200325711121';
+  const patientNic = patient.nic || 'NIC-SYNTHETIC-DEMO-9999';
   const now = new Date();
   const records = [];
   let seq = 1000;

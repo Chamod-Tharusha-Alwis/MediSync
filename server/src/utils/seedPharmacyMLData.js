@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config(); // fallback
@@ -45,12 +46,12 @@ async function seedPharmacyMLData() {
   console.log('🌱 Seeding Pharmacy Medication Release & ML Analytics Data...');
 
   const pharmacy = await Pharmacy.findOne() || { _id: new mongoose.Types.ObjectId(), name: 'Central City Pharmacy' };
-  const staff = await PharmacyStaff.findOne({ email: 'coctharusha0913@gmail.com' }) || await PharmacyStaff.findOne() || { _id: new mongoose.Types.ObjectId(), fullName: 'Tharusha (Pharmacist)' };
-  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: '200325711121' };
+  const staff = await PharmacyStaff.findOne({ email: 'qa-seed@example.invalid' }) || await PharmacyStaff.findOne() || { _id: new mongoose.Types.ObjectId(), fullName: 'Tharusha (Pharmacist)' };
+  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: 'NIC-SYNTHETIC-DEMO-9999' };
 
   const pharmacyId = pharmacy._id;
   const staffId = staff._id;
-  const patientNic = patient.nic || '200325711121';
+  const patientNic = patient.nic || 'NIC-SYNTHETIC-DEMO-9999';
 
   const medications = [
     { name: 'Amoxicillin 500mg', baseDaily: 15, spikeTrend: 1.8, district: 'Kandy', dosage: '500mg' },

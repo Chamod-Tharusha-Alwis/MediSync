@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config(); // fallback
@@ -103,7 +104,7 @@ async function seedRestock() {
         const finalQty = Math.round(baseQty * multiplier);
 
         const dummyPrescription = new Prescription({
-          patientNic: '200325711121',
+          patientNic: 'NIC-SYNTHETIC-DEMO-9999',
           nicHash: 'dummy_hash_seed',
           drugName: d.drugName,
           dosage: 'Standard',
@@ -121,7 +122,7 @@ async function seedRestock() {
           prescriptionId: dummyPrescription._id,
           pharmacyId: pharmacy._id,
           staffId: staffId,
-          patientNic: '200325711121',
+          patientNic: 'NIC-SYNTHETIC-DEMO-9999',
           items: [{
             drugName: d.drugName,
             dosage: 'Standard',

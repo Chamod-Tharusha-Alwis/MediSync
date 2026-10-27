@@ -24,6 +24,7 @@ const reviewSchema = new mongoose.Schema({
     ref: 'Consultation',
     index: true
   },
+  publishConsent: { type: Boolean, default: false },
   rating: {
     type: Number,
     required: true,

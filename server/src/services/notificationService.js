@@ -30,12 +30,7 @@ async function sendNotification(io, userId, { title, message, type, referenceId,
   });
 
   // 2. Push via Socket.io if the user is online
-  if (io.userSocketMap) {
-    const socketId = io.userSocketMap.get(userId.toString());
-    if (socketId) {
-      io.to(socketId).emit('notification', notification);
-    }
-  }
+  if (typeof io?.emitToVerifiedUser === 'function') await io.emitToVerifiedUser(userId, 'notification', notification);
 
   return notification;
 }

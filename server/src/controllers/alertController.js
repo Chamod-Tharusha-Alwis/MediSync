@@ -21,7 +21,7 @@ exports.getActiveAlerts = async (req, res) => {
     if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
-    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,isSimulation:simulation,status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
+    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : service.realAlertFilter()),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
     res.json({ data: alerts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });

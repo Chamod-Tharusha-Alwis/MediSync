@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const drugController = require('../controllers/drugController');
-const protect = require('../middleware/auth');
+const protect = require('../middleware/verifiedAuth');
 
 router.get('/search', protect(['doctor', 'pharmacist', 'pharmacy_admin']), drugController.searchDrugs);
 

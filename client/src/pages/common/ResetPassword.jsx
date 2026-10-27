@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Loader2, Lock, Key } from 'lucide-react';
@@ -6,6 +7,7 @@ import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 
 const ResetPassword = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ const ResetPassword = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#0B0F19] text-white p-4">
         <div className="glass-panel p-8 rounded-2xl max-w-md w-full text-center border border-red-500/20 bg-red-500/5">
           <ShieldCheck className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Invalid Reset Link</h2>
+          <h2 className="text-xl font-bold mb-2">{t('auth.invalidResetLink', 'Invalid Reset Link')}</h2>
           <p className="text-slate-400 text-sm mb-6">
             This password reset link is invalid or missing the secure token. Please request a new recovery link.
           </p>

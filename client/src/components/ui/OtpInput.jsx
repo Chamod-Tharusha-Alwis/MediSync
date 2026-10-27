@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 
@@ -11,6 +12,7 @@ const OtpInput = ({
   const [code, setCode] = useState(new Array(6).fill(''));
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const inputsRef = useRef([]);
+  const { t } = useTranslation();
 
   // Timer countdown logic
   useEffect(() => {
@@ -117,7 +119,7 @@ const OtpInput = ({
             Expires in <span className="font-semibold text-teal-400 font-mono">{formatTime(timeLeft)}</span>
           </p>
         ) : (
-          <p className="text-rose-400 font-semibold">OTP expired</p>
+          <p className="text-rose-400 font-semibold">{t('auth.codeExpired', 'OTP expired')}</p>
         )}
 
         <button

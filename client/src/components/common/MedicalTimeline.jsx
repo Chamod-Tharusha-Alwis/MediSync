@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -224,6 +225,7 @@ const MedicalTimeline = ({ events }) => {
 
 /* ─── Individual timeline item ────────────────────────────────────────────── */
 const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
+  const { t } = useTranslation();
   const data = event.data || {};
   const type = event.type || 'consultation';
   const tc   = getTC(type);
@@ -233,23 +235,6 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
   const isPrescription = type === 'prescription';
   const labTests = [...(data.labTests || []), ...(data.orderedTests || [])];
 
-  const handleDownloadPrescription = async (consultationId) => {
-    try {
-      const response = await axiosInstance.get(`/prescription/download/${consultationId}`, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `E-Prescription-${consultationId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('E-Prescription downloaded successfully.');
-    } catch (err) {
-      toast.info(`Generated prescription download for Ref: ${consultationId}`);
-    }
-  };
 
   return (
     <motion.div
@@ -379,14 +364,13 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
               {(isPrescription || data.prescriptions?.length > 0 || isConsultation) && (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownloadPrescription(data.consultationId || data._id || 'RX-SAMPLE');
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-200"
+                  disabled
+                  aria-disabled="true"
+                  title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold opacity-60 cursor-not-allowed"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Download E-Prescription
+                  {t("pdfUnavailable", "PDF export temporarily unavailable")}
                 </button>
               )}
 

@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion} from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -6,6 +7,7 @@ import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 
 const SupportTicketsRoster = () => {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All'); // 'All', 'Open', 'Closed'
@@ -36,7 +38,7 @@ const SupportTicketsRoster = () => {
       await api.post(`/support/ticket/${selectedTicket._id}/reply`, {
         reply: replyText.trim()
       });
-      toast.success('Reply submitted and email notification sent!');
+      toast.success('Reply saved. Notification delivery is not confirmed.');
       setReplyText('');
       setSelectedTicket(null);
       fetchTickets();
@@ -57,7 +59,7 @@ const SupportTicketsRoster = () => {
       {/* Header */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">Support Tickets</h1>
+          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">{t('admin.supportTickets', 'Support Tickets')}</h1>
           <p className="text-slate-400 mt-1">Manage and respond to patient inquiries across the platform.</p>
         </div>
         
