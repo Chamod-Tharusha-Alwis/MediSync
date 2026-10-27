@@ -153,6 +153,10 @@ Encrypt/verify the backup via the approved recovery system and record location p
 
 Keep services held and other writers idle. Preserve the approved medisync_prod recovery point. Review exact options/identities before separate apply approval. Provision/bootstrap dry-runs connect but must not write. No migration or blanket cleanup.
 
+**Launch authority:** use only the committed scripts/bootstrapSyntheticAccounts.js from the approved release SHA. All Antigravity launch/account/demo runbooks, the concurrent demo-account/outbreak edits and all seedLiveDemoData.js procedures are superseded for this launch. Historical evidence is preserved; the concurrent candidates are in docs/temp/CODEX_CONCURRENT_QUARANTINE_20261027_154511 and docs/temp/PARKED_DEMO_DATA, not integrated or authorized to run. No six-outbreak seeding or public-demo visibility is part of this procedure.
+
+**Confirmed source limitation:** the committed bootstrap does NOT reject duplicate emails across roles or reused passwords across the five roles. An independent inert proof against release a6aa9fc produced 8 PASS / 2 FAIL, with those two required rejection assertions failing. The session checks below enforce distinct NEW inputs before invoking bootstrap; they are operator-side checks, not repaired server-side validation. They do not prove absence of existing cross-role identities or compatible fixed-ID records. Obtain a separately authorized read-only identity/ownership review before apply; stop on any collision, wrong linked entity, existing password/account mismatch or uncertainty. Do not adopt, elevate, reactivate or reset an existing account. Bypassing these commands by invoking the script directly loses the distinctness check.
+
 ~~~powershell
 node scripts/provisionProductionStorage.js
 if ($LASTEXITCODE -ne 0) { throw 'PROVISION_DRY_RUN_FAILED' }
@@ -161,12 +165,52 @@ node scripts/provisionProductionStorage.js --apply
 if ($LASTEXITCODE -ne 0) { throw 'PROVISION_APPLY_FAILED' }
 node scripts/provisionProductionStorage.js --verify
 if ($LASTEXITCODE -ne 0) { throw 'PROVISION_VERIFY_FAILED' }
+foreach ($Name in @('BOOTSTRAP_ADMIN_EMAIL','BOOTSTRAP_DOCTOR_EMAIL','BOOTSTRAP_HOSPITAL_EMAIL','BOOTSTRAP_PHARMACY_EMAIL','BOOTSTRAP_PATIENT_EMAIL')) { Read-SessionSecret $Name }
 foreach ($Name in @('BOOTSTRAP_ADMIN_PASSWORD','BOOTSTRAP_DOCTOR_PASSWORD','BOOTSTRAP_HOSPITAL_PASSWORD','BOOTSTRAP_PHARMACY_PASSWORD','BOOTSTRAP_PATIENT_PASSWORD')) { Read-SessionSecret $Name }
-node scripts/bootstrapSyntheticAccounts.js
-if ($LASTEXITCODE -ne 0) { throw 'BOOTSTRAP_DRY_RUN_FAILED' }
-# STOP: inspect synthetic plan and obtain apply authorization.
-node scripts/bootstrapSyntheticAccounts.js --apply
-if ($LASTEXITCODE -ne 0) { throw 'BOOTSTRAP_APPLY_FAILED' }
+function Assert-BootstrapSessionInputs {
+    $EmailSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $PasswordSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($Role in @('ADMIN','DOCTOR','HOSPITAL','PHARMACY','PATIENT')) {
+        $EmailName = "BOOTSTRAP_${Role}_EMAIL"
+        $Email = [Environment]::GetEnvironmentVariable($EmailName, 'Process')
+        if ([string]::IsNullOrWhiteSpace($Email)) { throw 'BOOTSTRAP_FIVE_EMAILS_REQUIRED' }
+        $Email = $Email.Trim().ToLowerInvariant()
+        try { $Parsed = [System.Net.Mail.MailAddress]::new($Email) }
+        catch { throw 'BOOTSTRAP_EMAIL_FORMAT_INVALID' }
+        if ($Parsed.Address -cne $Email -or $Email -match '\.(local|internal)$') { throw 'BOOTSTRAP_EMAIL_FORMAT_INVALID' }
+        [Environment]::SetEnvironmentVariable($EmailName, $Email, 'Process')
+        [void]$EmailSet.Add($Email)
+        $Password = [Environment]::GetEnvironmentVariable("BOOTSTRAP_${Role}_PASSWORD", 'Process')
+        if ([string]::IsNullOrEmpty($Password) -or $Password.Length -lt 12 -or [Text.Encoding]::UTF8.GetByteCount($Password) -gt 72) { throw 'BOOTSTRAP_PASSWORD_LENGTH_INVALID' }
+        $Classes = @('[A-Z]','[a-z]','[0-9]','[^A-Za-z0-9]' | Where-Object { $Password -cmatch $_ })
+        if ($Classes.Count -lt 3) { throw 'BOOTSTRAP_PASSWORD_STRENGTH_INVALID' }
+        [void]$PasswordSet.Add($Password)
+    }
+    if ($EmailSet.Count -ne 5) { throw 'BOOTSTRAP_EMAILS_MUST_BE_DISTINCT' }
+    if ($PasswordSet.Count -ne 5) { throw 'BOOTSTRAP_PASSWORDS_MUST_BE_DISTINCT' }
+}
+function Invoke-PrivateBootstrap([switch]$Apply) {
+    Assert-BootstrapSessionInputs
+    $BootstrapArgs = @()
+    if ($Apply) { $BootstrapArgs = @('--apply') }
+    $SavedPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        # Script prints identities: capture only in memory, never to a file/transcript.
+        $PrivateBootstrapOutput = & node scripts/bootstrapSyntheticAccounts.js @BootstrapArgs 2>&1
+        $BootstrapExit = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $SavedPreference }
+    if ($BootstrapExit -ne 0) {
+        Remove-Variable PrivateBootstrapOutput -ErrorAction SilentlyContinue
+        throw 'BOOTSTRAP_FAILED_STOP_NO_RETRY_PRIVATE_DIAGNOSIS_REQUIRED'
+    }
+    $PrivateBootstrapOutput | Where-Object { $_.ToString() -match '^(Skipped existing|Planned items|Created items|Updated items):\s+\d+\s*$' } | ForEach-Object { Write-Output "captured [$Stamp] $($_.ToString().Trim())" }
+    Remove-Variable PrivateBootstrapOutput -ErrorAction SilentlyContinue
+    Write-Output "captured [$Stamp] bootstrap exit 0; private identities suppressed"
+}
+Invoke-PrivateBootstrap
+# STOP: privately review identities/fixed IDs/plan and obtain explicit apply approval.
+Invoke-PrivateBootstrap -Apply
 # MANDATORY after BOTH tools and BEFORE manual redeployment:
 node scripts/preflightProduction.js --connect
 if ($LASTEXITCODE -ne 0) { throw 'FINAL_PREDEPLOY_PREFLIGHT_FAILED' }
@@ -176,10 +220,16 @@ Provisioning is additive: audit capped size 104857600/max 100000, OTP expiresAt 
 
 Bootstrap disables autoCreate/autoIndex before models/connection and creates an active super-admin. In production --apply, ALL FIVE BOOTSTRAP_*_PASSWORD values must have at least 12 characters; use unique strong passwords meeting the existing complexity and bcrypt byte-length policy too. Too-short/missing values fail before connection. Dry-run still permits absent passwords and performs no writes; the separately admitted QA length threshold remains unchanged. Bootstrap validates operator keys before creating documents, even though model registration occurs earlier: key defaults/hooks are lazy, as proved by cold-start versions 2 and 1. It never elevates/reactivates existing accounts or saves/renews/replaces existing prescriptions. Incompatible baseline stops before saves. New records share one transaction. Unknown commit, abort failure or shutdown failure means STOP/investigate, not blind retry. --passwords-from-env does not exist; use documented variables.
 
+All five BOOTSTRAP_*_EMAIL overrides are read at bootstrapSyntheticAccounts.js:114-120 and select the Admin, Doctor, Hospital, PharmacyStaff and Patient login emails. The Pharmacy facility has its own fixed synthetic contact email; the PHARMACY override is the PharmacyStaff login. No actual operator address belongs in this document. The stricter wrapper intentionally requires all ten session inputs even for dry-run, although the script itself permits absent passwords in dry-run.
+
+The patient keeps the script's fixed synthetic NIC at bootstrapSyntheticAccounts.js:198; BOOTSTRAP_PATIENT_NIC is NOT read by this committed script. Never supply a real NIC or assume an environment override changes it. The patient can use BOOTSTRAP_PATIENT_EMAIL on /patient/login, while the default synthetic NIC remains unchanged. An inert execution of the REAL login controller with the actual created bcrypt credential returned HTTP 200; sessions/providers were mocked, so this is not a live login receipt.
+
+The five freshly created account objects pass the REAL production assertAccountState: active super-admin, verified active doctor/hospital/pharmacist, active patient, and no production-rejected synthetic flags. This proves policy compatibility only, not real clinical verification, production access or existing-account compatibility. Existing MFA is not disabled. The bootstrap also creates its existing consultation, prescription, lab and legacy Dengue baseline when missing; this is not an accounts-only write scope. Review those secondary writes before authorizing apply. It does not populate the ML SQLite health feed or deliver a six-outbreak dashboard.
+
 expected: [DRY-RUN COMPLETE] No changes were written to the database.
 expected: [APPLY COMPLETE] All missing collections and indexes created additively.
 expected: [VERIFY PASS] Database storage is 100% compliant with productionStorageManifest.json.
-expected: [BOOTSTRAP PROCESS COMPLETED]
+expected: wrapper prints captured [timestamp] numeric summaries and bootstrap exit 0; private identities suppressed. The script's internal [BOOTSTRAP PROCESS COMPLETED] line is not published by the wrapper.
 expected: final preflight prints EVERY Step 3 PASS line and exits 0. Partial success does not permit deployment readiness or smoke testing.
 
 ### Empty-database recovery — NEW medisync_prod only
