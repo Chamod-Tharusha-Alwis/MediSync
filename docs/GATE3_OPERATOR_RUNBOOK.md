@@ -93,6 +93,7 @@ $env:ACTIVE_KEY_VERSION = '1'
 $env:CLIENT_URL = 'https://medisync.chamodtharusha.com.lk'
 $env:CORS_ORIGIN = $env:CLIENT_URL
 $env:ML_ENGINE_URL = 'https://medisync-ml.onrender.com'
+$env:MEDISYNC_ML_ALLOWED_ORIGIN = $env:ML_ENGINE_URL
 foreach ($Name in @('MONGO_URI','REDIS_URL','ENCRYPTION_KEYS','JWT_SECRET','JWT_REFRESH_SECRET','SESSION_SECRET','INTERNAL_API_KEY')) { Read-SessionSecret $Name }
 node scripts/preflightProduction.js
 if ($LASTEXITCODE -ne 0) { throw 'OFFLINE_PREFLIGHT_FAILED' }
@@ -287,6 +288,57 @@ The patient API also accepts synthetic NIC 199512345678; doctor ID DOC-SYNTH-001
 
 ## 5 — save ALL current environments with Save only; ML first
 
+### Render environment cleanup (Save only)
+
+Operator-supplied names-only evidence: MediSync backend deploy 8e38992 failed with the generic fatal; MediSync-ML is live on a295d87. Both build from main, with roots server and ml-engine and Dockerfile ./Dockerfile. No values, live settings, deployed source bytes or connectivity were retrieved by Codex. The classification below is for the committed operator-key startup profile; presence alone cannot verify any flag, credential, key version or URL value.
+
+| Backend action | Variable NAMES | Actual source/meaning |
+|---|---|---|
+| REMOVE — forbidden by presence, even empty | MONGO_URI_TEST, SEED_TEST_PASSWORD | productionRuntimePolicy.js:9-17; first production gate fails before app imports. Remove inherited copies too; do not blank them or redirect QA credentials. |
+| ADD — missing operator-key dictionary | ENCRYPTION_KEYS | operatorKeyPolicy.js:79-86 and app.js:65-69. Supply the approved existing key dictionary privately; preserve matching encryption material. Never generate replacement encryption keys to repair startup. |
+| ADD — missing public ML proxy origin | MEDISYNC_ML_ALLOWED_ORIGIN | publicDto.js:30-34; required for public health/reference proxy acceptance, not the first boot gate. It must match the configured ML origin privately. |
+| ADD — recommended explicit mode | MEDISYNC_DEPLOYMENT_MODE | productionRuntimePolicy.js:18 and clinicalEntryPolicy.js:5 permit omission; it is NOT a currently mandatory missing boot variable. |
+| KEEP — operator/runtime admission | NODE_ENV, MEDISYNC_PROTOTYPE_MODE, MEDISYNC_ALLOW_OPERATOR_KEYS, MEDISYNC_LIVE_START_APPROVED, MEDISYNC_ATLAS_ROTATION_CONFIRMED, ACTIVE_KEY_VERSION | production.js:5-8; app.js:60-69,141; operatorKeyPolicy.js:69-80. Names do not prove their private settings or attestations. |
+| KEEP — database/security store | MONGO_URI, REDIS_URL | dbGuard.js:258-293; productionAtlasPolicy.js:5-24; redisConnectionPolicy.js:2-12. No QA fallback; identity, TLS, storage and Redis remain independently gated. |
+| KEEP — authentication/internal boundary | JWT_SECRET, JWT_REFRESH_SECRET, INTERNAL_API_KEY | authController.js:454-455; internalAuth.js:22. Backend/ML internal authentication must match privately. |
+| KEEP — networking/platform | CLIENT_URL, ML_ENGINE_URL, PORT | clientOriginPolicy.js:4-7; app.js:373,384; publicController.js:28-35. Actual CORS reads CLIENT_URL. |
+| KEEP — preflight compatibility only | SESSION_SECRET | preflightProduction.js:91-95; no server runtime session consumer. Do not remove the retained check. |
+| KEEP — optional upload capability | CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET | utils/cloudinary.js:18-20; labController.js:43-45. Names do not prove authenticated asset delivery or remove export holds. |
+| KEEP — Brevo HTTPS backup configuration | BREVO_API_KEY, BREVO_FROM_ADDRESS, BREVO_DAILY_FREE_LIMIT, EMAIL_BACKUP_PROVIDER | emailService.js:45-48,70-88. These are actual readers; sender/quota/delivery are unverified. |
+| KEEP — Resend sender and legacy API-key alias | RESEND_FROM_ADDRESS, RESEND_SMTP_PASS | emailService.js:32-42. RESEND_SMTP_PASS is read as an HTTPS API key, not as an SMTP transport password. Its contents are NOT VERIFIED. |
+| Preferred canonical API-key name, absent but not mandatory if a valid alias exists | RESEND_API_KEY | emailService.js:34 takes precedence over RESEND_SMTP_PASS and other legacy aliases. Configure privately and preserve access before retiring aliases. |
+| UNUSED by deployed transport/origin — remove stale settings | CORS_ORIGIN, EMAIL_PASS, RESEND_SMTP_HOST, RESEND_SMTP_PORT, RESEND_SMTP_USER | No consumers in tracked runtime source; changing these cannot configure CORS or SMTP. |
+| Diagnostic only — remove from deployed environment | EMAIL_PROVIDER, EMAIL_USER | scripts/test-email.js:5,7 reads a printed label and test recipient, not a transport selector/SMTP user; that stale script is not the deployed startup. |
+| LEGACY — omit from selected operator-key profile after preserving keys | ENCRYPTION_KEY, VAULT_TOKEN | app.js:46-56 and :75-118 read alternative test/Vault paths. Neither NAME is globally forbidden. The special Vault bypass setting is rejected; operator mode uses ENCRYPTION_KEYS. Do not delete/rotate private key material blindly. |
+
+The deployed email service uses Resend HTTPS first and eligible Brevo HTTPS fallback (emailService.js:910-972); EMAIL_PROVIDER does not select a different transport. Ordinary password login with no enabled second factor can issue a session without successful notification delivery (authController.js:454-511). Enabled MFA or revoked-device login requires accepted OTP delivery (:330-406), as do password recovery and step-up/email verification flows (:899,1144,1420). Failed OTP delivery must stop that flow; do not disable factors or use a test bypass. Names-only inspection proves neither sender authorization nor delivery.
+
+| ML action | Variable NAMES | Actual source/meaning |
+|---|---|---|
+| KEEP — internal request authentication | INTERNAL_API_KEY | app.py:370; verify correspondence privately, never paste either service's value. |
+| KEEP — CORS origin | CLIENT_URL | app.py:40 reads it. It is not a backend callback address. |
+| KEEP — platform/interpreter | PORT, PYTHONPATH | app.py:1644 (direct execution), Dockerfile:17 (Gunicorn bind), and Python interpreter configuration. PYTHONPATH has no direct app.py reader but is not an unused platform setting. |
+| UNUSED — remove stale application settings | NODE_API_URL, FLASK_ENV | No readers in the three Python source files admitted by the ML Docker context. The current Gunicorn command does not use FLASK_ENV; do not confuse it with the separate direct-run debug control. |
+
+Names-only offline helper (no environment export, secret file, network or variable values):
+
+~~~powershell
+$BackendKeyNames = Read-Host 'Paste comma-separated backend KEY NAMES ONLY, never assignments or values'
+$BackendKeyNames | node scripts/checkRenderEnvironmentNames.cjs backend
+$BackendNamesExit = $LASTEXITCODE
+if ($BackendNamesExit -eq 2) { throw 'BACKEND_NAME_LIST_INVALID_DO_NOT_PASTE_VALUES' }
+$MlKeyNames = Read-Host 'Paste comma-separated ML KEY NAMES ONLY, never assignments or values'
+$MlKeyNames | node scripts/checkRenderEnvironmentNames.cjs ml
+$MlNamesExit = $LASTEXITCODE
+if ($MlNamesExit -eq 2) { throw 'ML_NAME_LIST_INVALID_DO_NOT_PASTE_VALUES' }
+~~~
+
+expected: FORBIDDEN/MISSING/UNUSED/LEGACY/KEEP classifications; unknown input names are not echoed. Exit 1 means names require review, including explicitly labelled recommendations; exit 2 rejects malformed/value-bearing input; exit 0 is NOT value validation or startup readiness. Do not paste output from an environment export. The helper never reads process.env or credentials.
+
+Captured offline startup probes used exactly the screenshot backend NAME set with inert values and the real production/app/db/storage code: first PRODUCTION_RUNTIME_QA_MATERIAL_FORBIDDEN, before app loading or any connection. Removing only the two forbidden names exposes the missing ENCRYPTION_KEYS policy error. With corrected dummy configuration, valid inert identity/topology and an empty inert database, PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED fails first; dbGuard wraps it as a production identity/storage admission failure, disconnects, and db.js exits before Redis/listeners. Storage already provisioned is a different case: after Redis initializes, an absent active super-admin fails app.js:192. These are not observations of either live service; names alone cannot identify the next failure for unknown actual values.
+
+After separate operator approval: reconcile the private values with the existing strict offline preflight, preserve the established encryption dictionary, then save ALL intended settings with **Save only**, ML first, backend second. Check inherited environment groups for forbidden/stale NAMES. Follow the existing separately authorized storage/bootstrap/final-preflight and manual-deploy steps; no save, redeploy, provider message or connection was performed by this documentation task.
+
 Operator-supplied dashboard evidence, 27 October 2026: both MediSync-ML and MediSync use Auto-Deploy from main. PR #6 (release branch into main) is ALREADY merged as 096a601. Render already auto-deployed that code: MediSync-ML succeeded and is live; MediSync failed with the generic production fatal while its old environment settings remained. These are operator-reported facts, not independently captured hosting/health results from this documentation change.
 
 After the preceding authorized configuration/storage/bootstrap/preflight gates, save ALL intended environment variables using **Save only**, first on **MediSync-ML**, then on **MediSync**. Check inherited environment-group NAMES for stale or conflicting settings without exposing values. Save the complete configuration before initiating either manual deployment; do not deploy after individual variable edits.
@@ -294,7 +346,7 @@ After the preceding authorized configuration/storage/bootstrap/preflight gates, 
 | Target | Names/nonsecret settings |
 |---|---|
 | MediSync-ML — https://medisync-ml.onrender.com | INTERNAL_API_KEY matching backend; Render PORT; PYTHONPATH=.; no Atlas/Redis/provider secrets. |
-| MediSync — https://medisync-wabc.onrender.com | NODE_ENV=production; MEDISYNC_DEPLOYMENT_MODE=clinical; MEDISYNC_PROTOTYPE_MODE=true; MEDISYNC_ALLOW_OPERATOR_KEYS=true; truthful MEDISYNC_LIVE_START_APPROVED=true and MEDISYNC_ATLAS_ROTATION_CONFIRMED=true; MONGO_URI; REDIS_URL; ENCRYPTION_KEYS; ACTIVE_KEY_VERSION selecting an existing approved key; JWT_SECRET; JWT_REFRESH_SECRET; SESSION_SECRET (preflight-only compatibility requirement); INTERNAL_API_KEY; CLIENT_URL; ML_ENGINE_URL=https://medisync-ml.onrender.com; Render PORT. CORS_ORIGIN is unused and not required. |
+| MediSync — https://medisync-wabc.onrender.com | NODE_ENV=production; MEDISYNC_DEPLOYMENT_MODE=clinical; MEDISYNC_PROTOTYPE_MODE=true; MEDISYNC_ALLOW_OPERATOR_KEYS=true; truthful MEDISYNC_LIVE_START_APPROVED=true and MEDISYNC_ATLAS_ROTATION_CONFIRMED=true; MONGO_URI; REDIS_URL; ENCRYPTION_KEYS; ACTIVE_KEY_VERSION selecting an existing approved key; JWT_SECRET; JWT_REFRESH_SECRET; SESSION_SECRET (preflight-only compatibility requirement); INTERNAL_API_KEY; CLIENT_URL; ML_ENGINE_URL=https://medisync-ml.onrender.com; MEDISYNC_ML_ALLOWED_ORIGIN; Render PORT. CORS_ORIGIN is unused and not required. |
 | Approved optional providers | RESEND_API_KEY/RESEND_FROM_ADDRESS; BREVO_API_KEY/BREVO_FROM_ADDRESS; CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET. Verify sender/upload access separately. |
 | Vercel Production | REACT_APP_API_URL=https://medisync-wabc.onrender.com/api; REACT_APP_SERVER_URL=https://medisync-wabc.onrender.com; approved public REACT_APP_CARTO_API_KEY; optional REACT_APP_GA_MEASUREMENT_ID. No backend secrets. |
 

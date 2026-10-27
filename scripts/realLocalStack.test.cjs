@@ -1,4 +1,6 @@
 'use strict';
+// Enroll names-only reconciliation/startup negatives in the existing CI root profile.
+require('./checkRenderEnvironmentNames.test.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),cp=require('child_process'),path=require('path'),fs=require('fs');
 const stack=require('./realLocalStack.cjs');
 test('root npm start selects only real orchestrator; mock API is not an execution target',()=>{
