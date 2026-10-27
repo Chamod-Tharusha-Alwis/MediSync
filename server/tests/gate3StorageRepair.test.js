@@ -124,10 +124,9 @@ test('name-only metadata cannot claim compliance', () => {
 test('read-only preflight supplies full collection metadata and refuses incompatible options', async () => {
   fixture = storageFixture({ complete: true });
   fixture.rows.get('auditlogs').options = {};
-  fixture.db.command.mockResolvedValue({ authInfo: { authenticatedUsers: [{ user: 'inert', db: 'admin' }], authenticatedUserRoles: [{ role: 'readWrite', db: 'medisync_prod' }] } });
   const { runLiveConnectivityPreflight } = require('../scripts/preflightProduction');
-  await expect(runLiveConnectivityPreflight({ MONGO_URI: syntheticUri })).rejects.toThrow('PREFLIGHT_STORAGE_INCOMPATIBLE');
-  expect(fixture.db.listCollections).toHaveBeenCalledWith({}, expect.objectContaining({ nameOnly: false, authorizedCollections: false }));
+  await expect(runLiveConnectivityPreflight({ ...process.env, MONGO_URI: syntheticUri, REDIS_URL: 'rediss://:inert@redis.example.invalid:6379' })).rejects.toThrow('PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED');
+  expect(fixture.db.listCollections).toHaveBeenCalledWith({ name: expect.any(String) }, expect.objectContaining({ nameOnly: false, authorizedCollections: false }));
   expect(fixture.writes).toEqual([]); expect(close).toHaveBeenCalledTimes(1);
 });
 

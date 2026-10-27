@@ -13,6 +13,18 @@ This is an operator checklist, not a record of a completed deployment. Every res
 
 ## Checklist
 
+Default synthetic identifiers (only after separately approved bootstrap and key-consistency verification; existence/login NOT VERIFIED):
+
+| Role | Identifier | Login URL |
+|---|---|---|
+| Super-admin | admin.synth@medisync.synthetic | https://medisync.chamodtharusha.com.lk/admin/login |
+| Doctor, personal login | doctor.synth@medisync.synthetic | https://medisync.chamodtharusha.com.lk/doctor/login |
+| Patient | patient.synth@medisync.synthetic | https://medisync.chamodtharusha.com.lk/patient/login |
+| Pharmacist | pharmacist.synth@medisync.synthetic | https://medisync.chamodtharusha.com.lk/pharmacy/login |
+| Hospital administrator | hospital.synth@medisync.synthetic | https://medisync.chamodtharusha.com.lk/hospital/login |
+
+No passwords. BOOTSTRAP_*_EMAIL overrides require the reviewed actual identifiers. Synthetic mailboxes cannot receive mail. PHARM-SYNTH-001 is an organization identifier, not the Pharmacist's login. Never use the old .local examples.
+
 Record PASS/FAIL/BLOCKED and a sanitized captured-run reference for each row. Browser rendering alone does not prove database persistence or atomicity.
 
 | Check | Operator action | Expected result | Actual result / captured run |
@@ -25,7 +37,7 @@ Record PASS/FAIL/BLOCKED and a sanitized captured-run reference for each row. Br
 | Consultation/prescription | Within the explicitly authorized synthetic scope, create one Doctor consultation/prescription for the owned Patient and view it as that Patient. Record only sanitized run-owned IDs. | Expected: the authorized record is persisted once and only the intended Patient can access it. Persistence requires actual server/DB evidence. | NOT RUN |
 | Dispensing/retry | Dispense that owned prescription as Pharmacist, then repeat the same intended retry using the supported idempotency path. | Expected: one logical dispense, correct stock decrement, receipt and no duplicate effect. Do not infer this from a success toast. | NOT RUN |
 | Laboratory view | View the provisioned owned laboratory record from the relevant Hospital/Patient workflow. | Expected: authorized details render with correct linkage; foreign-role/foreign-record access is denied. Do not upload files or create additional records outside the approved scope. | NOT RUN |
-| PDF security hold | Inspect prescription, history and laboratory export controls in EN/SI/TA. If separately permitted, call the owned export endpoint. | Expected: controls truthfully state export is unavailable; no PDF is delivered. A held endpoint returns HTTP 503 with JSON `{"code":"PDF_EXPORT_UNAVAILABLE"}`. | NOT RUN |
+| PDF/export contract | Inspect disabled export controls in EN/SI/TA. Do not call PDF delivery endpoints under this checklist. | Expected from actual source: prescription generation hits `SECURITY_HOLD` and its catch returns HTTP **500** `{"error":"Failed to generate PDF"}` (`server/src/controllers/prescriptionController.js:123-125`; `server/src/utils/pdfGenerator.js:306-307`). Patient/doctor lab downloads return HTTP **503** with `{"message":"Stored laboratory report unavailable"}` for no report path, or `{"message":"Lab report unavailable. Please try again later."}` for storage failure; their outer catches return 500 (`server/src/controllers/labController.js:1052-1075,1264-1287`). Authorized stored lab PDFs can still be delivered when retrieval succeeds; disabled UI is not a universal API hold. No uniform `PDF_EXPORT_UNAVAILABLE` response exists. PDF delivery requires separate review/authorization. | NOT RUN |
 | Session expiry/logout | Log out, revisit a protected page and retry the old authenticated request without publishing its token. | Expected: the old session cannot continue authorized access; expiry/logout errors are handled visibly. | NOT RUN |
 
 ## Email-dependent features

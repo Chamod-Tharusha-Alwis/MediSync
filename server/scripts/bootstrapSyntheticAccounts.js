@@ -23,21 +23,26 @@ const { disableAutomaticModelDdl } = require('../src/security/productionAtlasPol
 disableAutomaticModelDdl(mongoose);
 const { selectOperatorDatabase, verifyOperatorIdentity } = require('./operatorDatabaseMode');
 
-// Ensure global encryption key dictionary is initialized for Mongoose field encryption plugins
-if (!global.ENCRYPTION_KEYS) {
-  if (process.env.ENCRYPTION_KEYS) {
-    try {
-      global.ENCRYPTION_KEYS = typeof process.env.ENCRYPTION_KEYS === 'string'
-        ? JSON.parse(process.env.ENCRYPTION_KEYS)
-        : process.env.ENCRYPTION_KEYS;
-    } catch (_) {}
+// Production must validate the same operator key dictionary as app.js.
+// Never trust stale globals or an unvalidated singular/default key.
+function loadBootstrapEncryption(isQa) {
+  if (!isQa) {
+    const configuration = require('../src/security/operatorKeyPolicy').validateAndLoadOperatorKeys(process.env);
+    const profile = require('../src/security/securityRuntime').current().status();
+    if (profile.nicMode !== 'legacy' || profile.fieldMode !== 'legacy') throw new Error('BOOTSTRAP_SECURITY_PROFILE_UNSUPPORTED');
+    global.ENCRYPTION_KEYS = configuration.keys;
+    global.ACTIVE_KEY_VERSION = configuration.activeVersion;
+    global.ENCRYPTION_KEY = configuration.keys[configuration.activeVersion];
+    return;
   }
-  if (!global.ENCRYPTION_KEYS && process.env.ENCRYPTION_KEY) {
-    global.ENCRYPTION_KEYS = { '1': process.env.ENCRYPTION_KEY };
+  // Preserve the separately admitted QA key path. No production fallback.
+  if (!global.ENCRYPTION_KEYS) {
+    if (process.env.ENCRYPTION_KEYS) {
+      try { global.ENCRYPTION_KEYS = JSON.parse(process.env.ENCRYPTION_KEYS); } catch (_) {}
+    }
+    if (!global.ENCRYPTION_KEYS && process.env.ENCRYPTION_KEY) global.ENCRYPTION_KEYS = { '1': process.env.ENCRYPTION_KEY };
   }
-}
-if (!global.ACTIVE_KEY_VERSION) {
-  global.ACTIVE_KEY_VERSION = process.env.ACTIVE_KEY_VERSION || 1;
+  if (!global.ACTIVE_KEY_VERSION) global.ACTIVE_KEY_VERSION = process.env.ACTIVE_KEY_VERSION || 1;
 }
 
 const { hashPassword } = require('../src/utils/passwordUtils');
@@ -126,16 +131,18 @@ async function bootstrapSyntheticData(options = {}) {
 
   const requiredRoles = ['admin', 'doctor', 'hospital', 'pharmacy', 'patient'];
   const missingPasswords = [];
+  const minimumPasswordLength = isQa ? 8 : 12;
   for (const role of requiredRoles) {
-    if (!passwords[role] || typeof passwords[role] !== 'string' || passwords[role].length < 8) {
+    if (!passwords[role] || typeof passwords[role] !== 'string' || passwords[role].length < minimumPasswordLength) {
       missingPasswords.push(`BOOTSTRAP_${role.toUpperCase()}_PASSWORD`);
     }
   }
 
   if (isApply && missingPasswords.length > 0) {
-    throw new Error(`BOOTSTRAP_ERROR: Missing required password environment variables in apply mode: ${missingPasswords.join(', ')}`);
+    throw new Error(`BOOTSTRAP_ERROR: Missing required password environment variables in apply mode (minimum ${minimumPasswordLength} characters each): ${missingPasswords.join(', ')}`);
   }
 
+  loadBootstrapEncryption(isQa);
   if (mongoose.connection.readyState !== 0) throw new Error('BOOTSTRAP_EXISTING_CONNECTION_FORBIDDEN');
   disableAutomaticModelDdl(mongoose);
   let session, failure;

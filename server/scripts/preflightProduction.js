@@ -22,9 +22,10 @@ const { assertProductionAtlasConfiguration, verifyProductionIdentity } = require
 const { clientOrigin } = require('../src/security/clientOriginPolicy');
 const { validateRedisConnection } = require('../src/security/redisConnectionPolicy');
 const { validateAndLoadOperatorKeys } = require('../src/security/operatorKeyPolicy');
-const { compareStorageWithManifest, redactUri, isTargetAllowed } = require('./provisionProductionStorage');
-const manifest = require('../src/security/productionStorageManifest.json');
+const { verifyProductionStorage } = require('../src/security/productionStorageAdmission');
+const { selectOperatorDatabase } = require('./operatorDatabaseMode');
 const { MongoClient } = require('mongodb');
+const { createClient } = require('redis');
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -84,6 +85,9 @@ function runOfflinePreflight(env = process.env) {
 
   // 7. Core Production Secrets Presence (names only, non-empty, min 32 chars)
   record('7. Core Secrets Presence', () => {
+    // SESSION_SECRET is a retained preflight compatibility requirement. The
+    // current server runtime uses JWT sessions and has no SESSION_SECRET reader.
+    // CORS_ORIGIN is likewise not consumed: actual origin policy reads CLIENT_URL.
     const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'SESSION_SECRET', 'INTERNAL_API_KEY'];
     const missing = [];
     for (const name of required) {
@@ -115,56 +119,56 @@ function runOfflinePreflight(env = process.env) {
 }
 
 async function runLiveConnectivityPreflight(env = process.env) {
-  const rawUri = env.MONGO_URI;
-  if (!rawUri) {
-    throw new Error('PREFLIGHT_CONNECT_ERROR: MONGO_URI is missing.');
-  }
-
-  const { host, database } = redactUri(rawUri);
+  // Direct callers receive the same admission as the command-line entrypoint;
+  // there is no QA fallback and no Mongoose model import or implicit DDL.
+  const target = selectOperatorDatabase(env, false);
+  const redisUrl = validateRedisConnection(env);
+  if (new URL(redisUrl).protocol !== 'rediss:') throw new Error('PREFLIGHT_REDIS_TLS_REQUIRED');
   console.log('\n[CONNECT MODE] Initiating read-only live probes...');
-  console.log(`Target MongoDB Host:     ${host}`);
-  console.log(`Target MongoDB Database: ${database}`);
-
-  if (!isTargetAllowed(host, database)) {
-    throw new Error(`PREFLIGHT_CONNECT_GUARD: Target host "${host}" / database "${database}" is not in the allowlist.`);
-  }
-
-  const client = new MongoClient(rawUri, {
-    serverSelectionTimeoutMS: 5000,
-    connectTimeoutMS: 5000
-  });
-
+  console.log(`Target MongoDB Database: ${target.database}`);
+  const client = new MongoClient(target.uri, { ...target.connectionOptions, socketTimeoutMS: 5000 });
+  let redisClient, failure;
+  const bounded = async operation => {
+    let timer;
+    try {
+      return await Promise.race([Promise.resolve().then(operation), new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('PREFLIGHT_REDIS_UNAVAILABLE')), 5000);
+      })]);
+    } finally { clearTimeout(timer); }
+  };
   try {
-    await client.connect();
-    const db = client.db(database);
-
-    // Probe 1: Verify authenticated database user identity
-    console.log('Probing Atlas user identity and roles via connectionStatus...');
+    try { await client.connect(); } catch (_) { throw new Error('PREFLIGHT_ATLAS_CONNECTION_UNAVAILABLE'); }
+    const db = client.db(target.database);
     const identityReceipt = await verifyProductionIdentity(db);
     console.log(`[PASS] Identity verified: db=${identityReceipt.dbName}, users=${identityReceipt.authenticatedUserCount}, roles=${JSON.stringify(identityReceipt.authenticatedRoles)}`);
-
-    // Probe 2: Read-only inventory of collections and indexes
-    console.log('Probing collections and indexes against productionStorageManifest.json...');
-    const collectionsCursor = db.listCollections({}, { authorizedCollections: false, nameOnly: false, maxTimeMS: 5000 });
-    let existingCollections;
-    try { existingCollections = await collectionsCursor.toArray(); }
-    finally { if (typeof collectionsCursor.close === 'function') await collectionsCursor.close(); }
-
-    const existingIndexes = {};
-    for (const collection of existingCollections) {
-      existingIndexes[collection.name] = await db.collection(collection.name).indexes();
-    }
-
-    const storageComparison = compareStorageWithManifest(existingCollections, existingIndexes, manifest, env);
-    if (storageComparison.incompatibilities.length) throw new Error('PREFLIGHT_STORAGE_INCOMPATIBLE');
-    console.log(`[STORAGE AUDIT] Compliant collections: ${storageComparison.alreadyCompliantCollections}/${storageComparison.totalRequiredCollections}, Compliant indexes: ${storageComparison.alreadyCompliantIndexes}/${storageComparison.totalRequiredIndexes}`);
-
-    return {
-      identity: identityReceipt,
-      storage: storageComparison
-    };
+    const storage = await verifyProductionStorage(db, env);
+    console.log(`[PASS] Strict runtime storage verified: collections=${storage.verifiedCollections}, indexes=${storage.verifiedRequiredIndexes}, transactionTopologyVerified=true`);
+    // Same filter as app.js boot. Read only the existence projection, never
+    // account credentials, clinical records or a complete account document.
+    let admin;
+    try { admin = await db.collection('admins').findOne({ isActive: true, isSuperAdmin: true }, { projection: { _id: 1 }, maxTimeMS: 5000 }); }
+    catch (_) { throw new Error('PREFLIGHT_BOOT_ADMIN_UNVERIFIED'); }
+    if (!admin?._id) throw new Error('PREFLIGHT_ACTIVE_SUPER_ADMIN_REQUIRED');
+    console.log('[PASS] Active super-admin exists: isActive=true, isSuperAdmin=true');
+    try {
+      redisClient = createClient({ url: redisUrl, disableOfflineQueue: true, socket: { tls: true, rejectUnauthorized: true, connectTimeout: 5000, reconnectStrategy: false } });
+      redisClient.on('error', () => {}); // Never log library errors containing a URL.
+      await bounded(() => redisClient.connect());
+      if (await bounded(() => redisClient.ping()) !== 'PONG') throw new Error('PREFLIGHT_REDIS_UNAVAILABLE');
+    } catch (_) { throw new Error('PREFLIGHT_REDIS_UNAVAILABLE'); }
+    console.log('[PASS] TLS Redis PING: PONG (no data commands)');
+    return { identity: identityReceipt, storage, operator: { activeSuperAdminVerified: true }, redis: { tls: true, ping: 'PONG' } };
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
-    await client.close();
+    let shutdownFailed = false;
+    try { if (redisClient?.isOpen) redisClient.destroy(); } catch (_) { shutdownFailed = true; }
+    try { await client.close(); } catch (_) { shutdownFailed = true; }
+    if (shutdownFailed) {
+      if (failure) failure.message += '; PREFLIGHT_DISCONNECT_UNVERIFIED';
+      else throw new Error('PREFLIGHT_DISCONNECT_UNVERIFIED');
+    }
   }
 }
 
@@ -197,7 +201,7 @@ async function main() {
     console.log('\n[PREFLIGHT CONNECT COMPLETE] All read-only probes finished successfully.');
   } else {
     console.log('\n[PREFLIGHT OFFLINE COMPLETE] All offline policy gates passed.');
-    console.log('To run live read-only connectivity probes against MongoDB and Redis, supply the --connect flag.');
+    console.log('To verify Atlas identity/storage, active super-admin and TLS Redis PING read-only, supply --connect with separate operator authorization.');
   }
 }
 
