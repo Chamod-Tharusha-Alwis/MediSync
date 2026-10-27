@@ -1,4 +1,7 @@
+import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
+import { Globe } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Shield, Phone, Heart, Lock, Save, Loader2,
@@ -24,6 +27,7 @@ const TABS = [
   { key: 'emergency', label: 'Emergency Contact',  icon: Phone },
   { key: 'security',  label: 'Security',           icon: Lock },
   { key: 'devices',   label: 'My Devices',         icon: Smartphone },
+  { key: 'preferences', label: 'Preferences', icon: Globe },
 ];
 
 /* ─── Blood group options ─────────────────────────────────────────────────── */
@@ -91,6 +95,7 @@ const AllergyTags = ({ tags, onChange }) => {
    Main component
    ══════════════════════════════════════════════════════════════════════════ */
 const PatientProfile = () => {
+  const { t } = useTranslation();
   const [patient,  setPatient]  = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
@@ -99,30 +104,7 @@ const PatientProfile = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  const uploadFile = async (file) => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('image', file);
-
-    setUploadingPic(true);
-    setUploadProgress(10);
-    try {
-      const res = await api.post('/users/upload-profile-pic', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(progress);
-        }
-      });
-      setPatient(prev => ({ ...prev, profilePicture: res.data.imageUrl }));
-      toast.success('Profile picture updated successfully!');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to upload picture');
-    } finally {
-      setUploadingPic(false);
-      setUploadProgress(0);
-    }
-  };
+  const uploadFile = async (file) => { toast.info('Profile image uploads are unavailable while private delivery is being verified.'); };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -275,7 +257,7 @@ const PatientProfile = () => {
     <PageTransition className="p-4 md:p-8">
       {/* ── Page header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">My Profile</h1>
+        <h1 className="text-3xl font-bold text-gradient-rose tracking-tight">{t("nav.myprofile", "My Profile")}</h1>
         <p className="text-slate-400 mt-1">Manage your personal information and health data.</p>
       </div>
 
@@ -306,7 +288,7 @@ const PatientProfile = () => {
             {!uploadingPic && (
               <label className="absolute inset-0 bg-[#020817]/85 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none">
                 <Camera className="w-5 h-5 text-teal-400 mb-1" />
-                <span className="text-[9px] text-slate-300 font-bold leading-tight">Drag & Drop<br />or Click</span>
+                <span className="text-[9px] text-slate-300 font-bold leading-tight">Private image uploads unavailable</span>
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -315,7 +297,7 @@ const PatientProfile = () => {
                     if (file) uploadFile(file);
                   }} 
                   className="hidden" 
-                  disabled={uploadingPic} 
+                  disabled 
                 />
               </label>
             )}
@@ -445,7 +427,7 @@ const PatientProfile = () => {
             className="glass-panel rounded-2xl p-6 space-y-8"
           >
             <div>
-              <h3 className="text-lg font-bold text-white mb-1">Basic Information</h3>
+              <h3 className="text-lg font-bold text-white mb-1">{t("patient.personalInfo", "Basic Information")}</h3>
               <p className="text-slate-500 text-xs">Contact details visible to your healthcare providers.</p>
             </div>
 
@@ -489,7 +471,7 @@ const PatientProfile = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 {/* Blood Group */}
                 <div>
-                  <label htmlFor="bloodGroup" className={labelCls}>Blood Group</label>
+                  <label htmlFor="bloodGroup" className={labelCls}>{t("patient.bloodGroup", "Blood Group")}</label>
                   <select
                     id="bloodGroup"
                     value={form.bloodGroup}
@@ -592,7 +574,7 @@ const PatientProfile = () => {
             onSubmit={handleSaveEmergency}
             className="glass-panel rounded-2xl p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-1">Emergency Contact</h3>
+            <h3 className="text-lg font-bold text-white mb-1">{t("patient.emergencyContact", "Emergency Contact")}</h3>
             <p className="text-slate-500 text-xs mb-6">This person will be contacted in a medical emergency.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -658,7 +640,7 @@ const PatientProfile = () => {
             onSubmit={handleChangePassword}
             className="glass-panel rounded-2xl p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-1">Change Password</h3>
+            <h3 className="text-lg font-bold text-white mb-1">{t("auth.resetPassword", "Change Password")}</h3>
             <p className="text-slate-500 text-xs mb-6">Use a strong password — at least 8 characters with mixed case and numbers.</p>
 
             <div className="space-y-5 max-w-md">
@@ -708,13 +690,24 @@ const PatientProfile = () => {
             transition={{ duration: 0.22 }}
             className="glass-panel rounded-2xl p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-1">My Trusted Devices</h3>
+            <h3 className="text-lg font-bold text-white mb-1">{t("nav.identitydevices", "My Trusted Devices")}</h3>
             <p className="text-slate-500 text-xs mb-6">Devices verified via OTP. Remove a device to revoke its trusted status and terminate active sessions from it.</p>
             
             <TrustedDevices />
           </motion.div>
         )}
-      </AnimatePresence>
+        {activeTab === 'preferences' && (
+          <motion.div
+            key="preferences"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
+            <LanguagePreferenceCard />
+          </motion.div>
+        )}
+            </AnimatePresence>
     </PageTransition>
   );
 };

@@ -56,7 +56,18 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
         ]
       });
 
-      if (activeBan) {
+      // findOne() proves absence only with null. An unexpected result is not
+      // evidence that suspension verification succeeded.
+      if (activeBan !== null) {
+        if (
+          !activeBan || typeof activeBan !== 'object' || Array.isArray(activeBan) ||
+          activeBan.isActive !== true || String(activeBan.targetId) !== String(decoded.id) ||
+          !['temporary', 'permanent'].includes(activeBan.banType) || typeof activeBan.reason !== 'string' ||
+          (activeBan.expiresAt != null &&
+            (!Number.isFinite(new Date(activeBan.expiresAt).getTime()) || new Date(activeBan.expiresAt) <= new Date()))
+        ) {
+          throw new Error('Invalid suspension verification result');
+        }
         const expiryStr = activeBan.expiresAt
           ? new Date(activeBan.expiresAt).toLocaleDateString()
           : null;
@@ -70,28 +81,23 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
             : `Your account is temporarily suspended until ${expiryStr}.`
         });
       }
-    } catch (banErr) {
-      console.error('Ban check error:', banErr.message);
-      // Don't block request if ban check fails
+    } catch (_) {
+      console.error('[Auth] Suspension verification unavailable.');
+      return res.status(503).json({ error: 'Authentication verification unavailable. Please try again later.' });
     }
 
     // Write to AuditLog
     try {
-      let accessedNic = 'N/A';
-      if (req.params && req.params.nic) accessedNic = req.params.nic;
-      else if (req.body && req.body.nic) accessedNic = req.body.nic;
-      else if (req.body && req.body.patientNic) accessedNic = req.body.patientNic;
-
       const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'];
       await AuditLog.create({
         actorId: decoded.id || decoded.sub || 'unknown',
         actorRole: decoded.role || 'unknown',
-        action: `${req.method} ${req.originalUrl || req.path}`,
-        accessedNic: accessedNic,
+        action: `${req.method} ${req.route?.path || 'protected-route'}`,
+        accessedNic: 'REDACTED',
         deviceModel: parseDeviceModel(req.headers['user-agent'], clientHw)
       });
     } catch (auditErr) {
-      console.error('Failed to write audit log:', auditErr);
+      console.error('Audit persistence unavailable.');
       // Don't block the request if audit logging fails
     }
 
@@ -100,7 +106,7 @@ const protect = (allowedRoles = []) => async (req, res, next) => {
     req.session = session;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('Authentication unavailable.');
     res.status(500).json({ error: 'Server error during authentication' });
   }
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import Sidebar from '../common/Sidebar';
 import NotificationBell from '../common/NotificationBell';
+import { useTranslation } from '../../i18n/LanguageContext';
 
 const AppShell = ({
   role = 'doctor',
@@ -9,6 +10,8 @@ const AppShell = ({
   menuItems = [],
   children
 }) => {
+  const { t } = useTranslation();
+
   // Map role to Sidebar's themePrefix and titles
   const roleConfig = {
     doctor: { theme: 'doctor', title: 'Doctor Portal' },
@@ -30,7 +33,7 @@ const AppShell = ({
       {/* Sidebar Rail */}
       <Sidebar
         menuItems={menuItems}
-        title={current.title}
+        title={t(`roles.${current.theme}`, current.title)}
         themePrefix={current.theme}
         userName={userName}
         userRole={userRole}
@@ -41,10 +44,12 @@ const AppShell = ({
         {/* Topbar/Header */}
         <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 glass-panel border-b-0 border-white/5">
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-slate-100 tracking-tight">{current.title}</h1>
+            <h1 className="text-lg font-bold text-slate-100 tracking-tight">
+              {t(`roles.${current.theme}`, current.title)}
+            </h1>
             {userName && (
               <p className="text-xs text-slate-400 mt-0.5">
-                Welcome back, <span className="font-semibold text-slate-200">{userName}</span>
+                {t('common.welcomeBack', 'Welcome back')}, <span className="font-semibold text-slate-200">{userName}</span>
               </p>
             )}
           </div>
@@ -70,7 +75,7 @@ const AppShell = ({
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-6 md:p-8">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 min-w-0 max-w-full">
           {children}
         </main>
       </div>

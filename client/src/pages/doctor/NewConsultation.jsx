@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { requiresWriteReconciliation } from '../../utils/clinicalSaveOutcome';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { pendingClinicalAttempt, beginClinicalAttempt, finishClinicalAttempt } from '../../utils/pendingClinicalAttempt';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiUser, FiActivity, FiFileText, FiPlus, FiTrash2,
-  FiSave, FiSearch, FiChevronRight, FiChevronLeft, FiCheck
+  FiSave, FiSearch, FiChevronRight, FiChevronLeft, FiCheck,
+  FiAlertTriangle, FiInfo
 } from 'react-icons/fi';
 import AppShell from '../../components/ui/AppShell';
 import PageTransition from '../../components/common/PageTransition';
 import SymptomTagInput from '../../components/SymptomTagInput';
 import DrugSearchInput from '../../components/DrugSearchInput';
 import PatientAccessModal from '../../components/PatientAccessModal';
-import { LayoutDashboard, Users, FlaskConical } from 'lucide-react';
+import { inferencePredictions } from '../../utils/inferenceResponse';
+import usePatientConsent from '../../hooks/usePatientConsent';
+import { prescriptionPayload } from '../../utils/prescriptionDuration';
+import { LayoutDashboard, FlaskConical } from 'lucide-react';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -83,7 +90,7 @@ const STEPS = [
   { id: 1, label: 'Identify Patient', short: 'Patient', icon: FiUser },
   { id: 2, label: 'Medical History',  short: 'History', icon: FiFileText },
   { id: 3, label: 'Symptoms',         short: 'Symptoms',icon: FiActivity },
-  { id: 4, label: 'AI Diagnosis',     short: 'AI Diag', icon: FiActivity },
+  { id: 4, label: 'Reference Matches', short: 'Reference', icon: FiActivity },
   { id: 5, label: 'Rx & Labs',        short: 'Rx/Labs', icon: FiFileText },
 ];
 
@@ -155,56 +162,98 @@ const StepBar = ({ current }) => (
 
 /* ─── Main Component ────────────────────────────────────────────────────────── */
 const NewConsultation = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step,    setStep]   = useState(1);
   const [dir,     setDir]    = useState(1);   // slide direction: +1 = forward, -1 = back
   const [loading, setLoading] = useState(false);
   const [showOtpModal,       setShowOtpModal]       = useState(false);
-  const [patientAccessToken, setPatientAccessToken] = useState('');
-  const [medicalHistory, setMedicalHistory] = useState([]);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-
-  const fetchMedicalHistory = async () => {
-    setIsHistoryLoading(true);
-    try {
-      const res = await axios.get(`/patient/${patientNic}/timeline`, {
-        headers: { 'x-patient-access': patientAccessToken }
-      });
-      setMedicalHistory(res.data.data || []);
-    } catch (err) {
-      toast.error('Failed to load medical history');
-    } finally {
-      setIsHistoryLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (step === 2 && patientAccessToken && medicalHistory.length === 0) {
-      fetchMedicalHistory();
-    }
-  }, [step, patientAccessToken]);
-
   /* ── Form state ── */
   const [patientNic,         setPatientNic]        = useState('');
-  const [patientData,        setPatientData]       = useState(null);
+
   const [symptoms,           setSymptoms]          = useState([]);
   const [clinicalNotes,      setClinicalNotes]     = useState('');
   const [diagnosesOptions,   setDiagnosesOptions]  = useState([]);
+  const [inferenceStatus, setInferenceStatus] = useState('idle');
+  const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true);
+  useEffect(() => {
+    const infMntRef = inferenceMounted;
+    const infReqRef = inferenceRequest;
+    infMntRef.current = true;
+    return () => { infMntRef.current = false; infReqRef.current++; };
+  }, []);
   const [selectedDiagnosis,  setSelectedDiagnosis] = useState('');
   const [selectedIcd,        setSelectedIcd]       = useState('');
+  const [selectedIcdVersion, setSelectedIcdVersion] = useState('ICD-10');
+  const [icdVersionFilter,   setIcdVersionFilter]   = useState('all');
   const [manualDiagnosis,    setManualDiagnosis]   = useState('');
   const [icdSearchQuery,     setIcdSearchQuery]    = useState('');
   const [icdSuggestions,     setIcdSuggestions]    = useState([]);
   const [isIcdLoading,       setIsIcdLoading]      = useState(false);
   const [prescriptions,      setPrescriptions]     = useState([]);
+  const [interactionAnalysis, setInteractionAnalysis] = useState(null);
   const [labTests,           setLabTests]          = useState([]);
   const [labTestInput,       setLabTestInput]      = useState('');
-  const [testInput,          setTestInput]         = useState('');   // kept for compat; UI uses labTestInput
+
   const [labSuggestions,     setLabSuggestions]    = useState([]);
   const [followUpDate,       setFollowUpDate]      = useState('');
 
-  // Fetch ICD-10 suggestions debounced
+  const draftEpoch = useRef(0);
+  const generateConsultIdempotencyKey = () => `consult-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  const initialAttempt = useRef(pendingClinicalAttempt());
+  const consultationIdempotencyKey = useRef(initialAttempt.current.key || generateConsultIdempotencyKey());
+  const [pendingWriteHold, setPendingWriteHold] = useState(initialAttempt.current.blocked);
+  const clearClinicalDraft = () => {
+    draftEpoch.current++;
+    if (!pendingClinicalAttempt().blocked && !submissionBusy.current && !submissionUncertain.current) consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+    inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle');
+    setShowOtpModal(false); setStep(1); setLoading(false);
+    setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
+    setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
+    setPrescriptions([]); setInteractionAnalysis(null); setLabTests([]); setLabTestInput('');
+    setLabSuggestions([]); setFollowUpDate('');
+  };
+  const consent = usePatientConsent(axios, patientNic, clearClinicalDraft);
+  const patientAccessToken = consent.token, patientData = consent.patient;
+  const medicalHistory = consent.history, isHistoryLoading = consent.status === 'loading';
+  const submissionBusy = useRef(false);
+  const submissionUncertain = useRef(initialAttempt.current.blocked);
+
+  // Re-evaluate medication interactions & ingredient resolution whenever prescriptions change
   useEffect(() => {
+    const drugNames = prescriptions.map(p => p.name).filter(Boolean);
+    if (drugNames.length === 0) {
+      setInteractionAnalysis(null);
+      return;
+    }
+    let cancelled = false;
+    const runInteractionCheck = async () => {
+      try {
+        const res = await axios.post('/drugs/interactions', { drugs: drugNames });
+        if (!cancelled) {
+          setInteractionAnalysis(res.data?.data || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setInteractionAnalysis({
+            hasInteraction: false,
+            verificationIncomplete: true,
+            statusMessage: 'Automated interaction checking is incomplete due to a service error. Do not assume this combination is safe.',
+            warnings: [],
+            unresolvedDrugs: [],
+            unresolvedIngredients: ['<service_unavailable>']
+          });
+        }
+      }
+    };
+    runInteractionCheck();
+    return () => { cancelled = true; };
+  }, [prescriptions]);
+
+  // Fetch ICD-10 & WHO ICD-11 suggestions debounced
+  useEffect(() => {
+    const controller = new AbortController();
+    let current = true;
     if (icdSearchQuery.trim().length < 2) {
       setIcdSuggestions([]);
       return;
@@ -212,16 +261,16 @@ const NewConsultation = () => {
     const delayDebounce = setTimeout(async () => {
       setIsIcdLoading(true);
       try {
-        const res = await axios.get(`/drugs/icd/search?q=${encodeURIComponent(icdSearchQuery)}`);
-        setIcdSuggestions(res.data.data || []);
+        const res = await axios.get(`/drugs/icd/search?q=${encodeURIComponent(icdSearchQuery)}&version=${icdVersionFilter}`, { signal: controller.signal });
+        if (current) setIcdSuggestions(res.data.data || []);
       } catch (error) {
-        console.error("Error searching ICD codes:", error);
+        if (current) setIcdSuggestions([]);
       } finally {
-        setIsIcdLoading(false);
+        if (current) setIsIcdLoading(false);
       }
     }, 300);
-    return () => clearTimeout(delayDebounce);
-  }, [icdSearchQuery]);
+    return () => { current = false; controller.abort(); clearTimeout(delayDebounce); };
+  }, [icdSearchQuery, icdVersionFilter]);
 
   const workspaceMode = localStorage.getItem('workspaceMode') || 'personal';
   const isPersonalMode = workspaceMode !== 'hospital';
@@ -237,49 +286,40 @@ const NewConsultation = () => {
   const goTo = (next) => { setDir(next > step ? 1 : -1); setStep(next); };
 
   /* ── API actions ── */
-  const searchPatient = async () => {
-    if (!patientNic) return toast.error('Enter patient NIC');
-    setLoading(true);
-    try {
-      const res = await axios.get(`/patient/${patientNic}`);
-      setPatientData(res.data.data);
-      setShowOtpModal(true);
-    } catch { toast.error('Patient not found'); }
-    finally   { setLoading(false); }
+  const searchPatient = () => {
+    if (!patientNic.trim()) return toast.error('Enter patient NIC');
+    if (showOtpModal || consent.status === 'loading') return;
+    setShowOtpModal(true);
   };
 
-  const handleOtpSuccess = (token) => {
-    setPatientAccessToken(token);
+  const handleOtpSuccess = async (token) => {
     setShowOtpModal(false);
-    goTo(2);
+    if (await consent.authorize(token)) goTo(2);
   };
 
   const getDiagnosisSuggestions = async () => {
     if (symptoms.length === 0) return toast.error('Add at least one symptom');
-    setLoading(true);
+    if (inferenceBusy.current) return;
+    const epoch = draftEpoch.current, requestId = ++inferenceRequest.current;
+    const current = () => inferenceMounted.current && epoch === draftEpoch.current && requestId === inferenceRequest.current;
+    inferenceBusy.current = true;
+    setLoading(true); setDiagnosesOptions([]); setInferenceStatus('loading');
     try {
       const res = await axios.post('/doctor/predict-disease', { symptoms });
-      setDiagnosesOptions(res.data.predictions || []);
+      if (!current()) return;
+      const predictions = inferencePredictions(res.data);
+      setDiagnosesOptions(predictions);
+      setInferenceStatus(predictions.length ? 'available' : 'empty');
     } catch {
-      toast.error('ML service unavailable. Using standard list.');
-      setDiagnosesOptions([
-        { disease: 'Common Cold',             icd_code: 'J00',     recommendedSpecialist: 'General Physician', confidence: 85, urgent: false },
-        { disease: 'Influenza',               icd_code: 'J11.1',   recommendedSpecialist: 'General Physician', confidence: 80, urgent: false },
-        { disease: 'Acute Bronchitis',        icd_code: 'J20.9',   recommendedSpecialist: 'Pulmonologist',     confidence: 75, urgent: false },
-        { disease: 'Essential Hypertension',  icd_code: 'I10',     recommendedSpecialist: 'Cardiologist',      confidence: 90, urgent: false },
-        { disease: 'Type 2 Diabetes',         icd_code: 'E11.9',   recommendedSpecialist: 'Endocrinologist',   confidence: 88, urgent: false },
-        { disease: 'Migraine',                icd_code: 'G43.909', recommendedSpecialist: 'Neurologist',       confidence: 70, urgent: false },
-        { disease: 'Acute Pharyngitis',       icd_code: 'J02.9',   recommendedSpecialist: 'ENT',               confidence: 82, urgent: false },
-        { disease: 'Gastroenteritis',         icd_code: 'A09',     recommendedSpecialist: 'Gastroenterologist',confidence: 78, urgent: false },
-        { disease: 'Asthma',                  icd_code: 'J45.909', recommendedSpecialist: 'Pulmonologist',     confidence: 85, urgent: true  },
-        { disease: 'Urinary Tract Infection', icd_code: 'N39.0',   recommendedSpecialist: 'Urologist',         confidence: 80, urgent: false },
-      ]);
-    } finally { setLoading(false); }
+      if (!current()) return;
+      setDiagnosesOptions([]); setInferenceStatus('unavailable');
+      toast.error('AI suggestions unavailable');
+    } finally { if (current()) { inferenceBusy.current = false; setLoading(false); } }
   };
 
   const addPrescription    = (drug) => {
     if (prescriptions.find(p => p.name === drug.name)) return toast.error('Drug already added');
-    setPrescriptions(prev => [...prev, { name: drug.name, dosage: '1 tab', frequency: 'TDS', duration: '5 days', instructions: 'After meals' }]);
+    setPrescriptions(prev => [...prev, { name: drug.name, dosage: '1 tab', frequency: 'TDS', durationDays: 5, instructions: 'After meals' }]);
   };
   const removePrescription = (i)         => setPrescriptions(p => p.filter((_, idx) => idx !== i));
   const updatePrescription = (i, f, val) => setPrescriptions(p => p.map((rx, idx) => idx === i ? { ...rx, [f]: val } : rx));
@@ -297,7 +337,7 @@ const NewConsultation = () => {
     if (labTests.includes(trimmed)) { toast.error('Already added'); return; }
     setLabTests(prev => [...prev, trimmed]);
     setLabTestInput('');
-    setTestInput('');
+
     setLabSuggestions([]);
   };
   const removeLabTest = (i) => setLabTests(t => t.filter((_, idx) => idx !== i));
@@ -305,34 +345,51 @@ const NewConsultation = () => {
   // ── Backward-compat aliases ───────────────────────────────────────────────
   // Step 1 JSX still references the pre-migration names: addTest / removeTest /
   // orderedTests. Both Step 1 and Step 3 now share the same labTests state.
-  const addTest    = () => addLabTest(testInput);
-  const removeTest = (i) => removeLabTest(i);
-  const orderedTests = labTests;      // Step 1 panel reads this array for its tags
+
+
+
 
 
   const handleSubmit = async () => {
+    if (submissionUncertain.current) return toast.error('Save status is uncertain. Check consultation history with an authorized operator before another submission.');
+    if (submissionBusy.current) return;
+    if (!patientAccessToken || consent.status !== 'authorized') return toast.error('Verify patient access again');
     if (!selectedDiagnosis && !manualDiagnosis) return toast.error('Select or type a diagnosis');
+    submissionBusy.current = true;
     setLoading(true);
     try {
-      await axios.post('/doctor/consultation', {
+      beginClinicalAttempt(consultationIdempotencyKey.current);
+      const response = await axios.post('/doctor/consultation', {
         patientNic, symptoms,
         diagnosis:      manualDiagnosis || selectedDiagnosis,
         icdDescription: selectedIcd ? selectedDiagnosis : '',
         icdCode:        selectedIcd || '',
+        icdVersion:     selectedIcdVersion || 'ICD-10',
         clinicalNotes,
-        prescriptions,
+        prescriptions: prescriptionPayload(prescriptions),
         orderedTests: labTests.map(t => ({ testName: t, instructions: '' })),
         labTests,
         isFollowUpRequired: !!followUpDate,
         followUpDate:       followUpDate || null,
         loginType:          localStorage.getItem('loginType'),
         sessionHospitalId:  localStorage.getItem('sessionHospitalId'),
-      }, { headers: { 'x-patient-access': patientAccessToken } });
-      toast.success('Consultation saved & prescription emailed!');
+      }, { headers: { 'x-patient-access': patientAccessToken, 'Idempotency-Key': consultationIdempotencyKey.current } });
+      if (![200, 201].includes(response.status) || !/^[a-f0-9]{24}$/i.test(response.data?.consultationId || '')) throw new Error('CLINICAL_OUTCOME_UNCONFIRMED');
+      finishClinicalAttempt(consultationIdempotencyKey.current);
+      consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+      toast.success('Consultation saved.');
       navigate('/doctor/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save consultation');
-    } finally { setLoading(false); }
+      if ([401, 403].includes(err.response?.status)) consent.revoke('Authorization ended. Verify patient access again.');
+      if (requiresWriteReconciliation(err)) {
+        submissionUncertain.current = true;
+        setPendingWriteHold(true);
+        return toast.error('Save status is uncertain. Check consultation history with an authorized operator before another submission.');
+      }
+      try { finishClinicalAttempt(consultationIdempotencyKey.current); }
+      catch (_) { submissionUncertain.current = true; setPendingWriteHold(true); }
+      toast.error('Unable to save consultation. Review access and retry.');
+    } finally { submissionBusy.current = false; setLoading(false); }
   };
 
   /* Shared input class */
@@ -350,18 +407,35 @@ const NewConsultation = () => {
         menuItems={menuItems}
       >
         <PageTransition>
+          {pendingWriteHold && <div role="alert" className="mb-6 rounded-xl border border-amber-500/50 p-4 text-amber-200">
+            <p>{t('doctor.pendingSaveHold', 'A previous save is unconfirmed. Check its outcome before another submission.')}</p>
+            <button type="button" className="mt-3 underline" disabled={loading} onClick={async () => {
+              if (loading) return;
+              setLoading(true);
+              try {
+                const key = consultationIdempotencyKey.current;
+                const result = await axios.get(`/doctor/consultation-command/${encodeURIComponent(key)}`);
+                if (result.data?.state !== 'committed' || result.data?.operationKey !== key || !/^[a-f0-9]{24}$/i.test(result.data?.consultationId || '')) throw new Error('UNCONFIRMED');
+                finishClinicalAttempt(key); submissionUncertain.current = false; setPendingWriteHold(false);
+                toast.success('Previous consultation save confirmed.'); navigate('/doctor/dashboard');
+              } catch (_) { toast.error('Save outcome remains unconfirmed. Contact an authorized operator before another submission.'); }
+              finally { setLoading(false); }
+            }}>{t('doctor.checkPreviousSave', 'Check previous save')}</button>
+          </div>}
+          <fieldset disabled={pendingWriteHold} className="min-w-0 border-0 p-0 m-0">
           {/* ── Page header ── */}
           <div className="mb-8 flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 tracking-tight">
                 New Consultation
               </h1>
-              <p className="text-slate-400 mt-1 text-sm">Complete the wizard to record a clinical assessment.</p>
+              <p className="text-slate-400 mt-1 text-sm">{t("doctor.newConsultationSubtitle", "Complete the wizard to record a clinical assessment.")}</p>
             </div>
             {step > 1 && (
               <motion.button
                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                onClick={() => goTo(step - 1)}
+                onClick={() => consent.revoke()}
+                disabled={loading}
                 className="text-teal-400 text-sm px-4 py-2 glass-card rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition-all"
               >
                 ↩ Change Patient
@@ -382,13 +456,15 @@ const NewConsultation = () => {
                     initial="enter" animate="center" exit="exit"
                     className="space-y-8"
                   >
+                    {consent.error && <p role="alert" className="text-red-400">{consent.error}</p>}
+                    {consent.status === 'loading' && <p role="status">Loading authorized patient records…</p>}
                     {/* Patient search */}
                     <div className="max-w-lg mx-auto space-y-6 py-6">
                       <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center neumorphic-flat">
                           <FiUser className="w-7 h-7 text-teal-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Identify Patient</h2>
+                        <h2 className="text-2xl font-bold text-white">{t("doctor.identifyPatient", "Identify Patient")}</h2>
                         <p className="text-slate-400 mt-1.5 text-sm">Enter the patient's NIC number to begin the consultation.</p>
                       </div>
 
@@ -398,12 +474,13 @@ const NewConsultation = () => {
                           value={patientNic}
                           onChange={e => setPatientNic(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && searchPatient()}
+                          aria-label="Patient NIC"
                           placeholder="e.g. 200312345699"
                           className={`${inp} pr-14 py-4 text-lg`}
                         />
                         <motion.button
                           whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                          onClick={searchPatient} disabled={loading}
+                          type="button" aria-label="Request patient verification" onClick={searchPatient} disabled={loading || consent.status === 'loading'}
                           className="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-gradient-to-br from-teal-600 to-cyan-600 text-white flex items-center shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 transition-shadow"
                         >
                           {loading
@@ -454,7 +531,7 @@ const NewConsultation = () => {
                       {patientData && (
                         <div className="grid md:grid-cols-2 gap-4 mb-6">
                           <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Basic Info</p>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">{t("doctor.basicInfo", "Basic Info")}</p>
                             <p className="text-lg font-bold text-white">{patientData.fullName}</p>
                             <p className="text-sm text-slate-400">
                               Age: {patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : (patientData.age || '—')} yrs | Blood: <span className="text-red-400 font-semibold">{patientData.bloodGroup || 'Unknown'}</span>
@@ -462,14 +539,14 @@ const NewConsultation = () => {
                           </div>
                           
                           <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/20">
-                            <p className="text-xs text-orange-500/70 font-bold uppercase tracking-wider mb-1">Known Allergies</p>
+                            <p className="text-xs text-orange-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.knownAllergies", "Known Allergies")}</p>
                             <p className="text-orange-400 font-semibold text-sm">
                               {patientData.allergies?.length > 0 ? patientData.allergies.join(', ') : 'No known allergies'}
                             </p>
                           </div>
                           
                           <div className="bg-purple-500/10 p-4 rounded-xl border border-purple-500/20 md:col-span-2">
-                            <p className="text-xs text-purple-500/70 font-bold uppercase tracking-wider mb-1">Chronic Conditions</p>
+                            <p className="text-xs text-purple-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.chronicConditions", "Chronic Conditions")}</p>
                             <p className="text-purple-400 font-semibold text-sm">
                               {patientData.chronicConditions?.length > 0 ? patientData.chronicConditions.join(', ') : 'None reported'}
                             </p>
@@ -479,7 +556,7 @@ const NewConsultation = () => {
 
                       {!isHistoryLoading && medicalHistory.length > 0 && (
                         <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 mb-6">
-                          <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">Recent / Active Medications</p>
+                          <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.recentMedications", "Recent / Active Medications")}</p>
                           {(() => {
                             const recentMeds = medicalHistory
                               .filter(h => h.type === 'consultation' && h.data?.prescriptions?.length > 0)
@@ -507,7 +584,7 @@ const NewConsultation = () => {
                       {isHistoryLoading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                           <div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-400 rounded-full animate-spin mb-4" />
-                          <p className="text-slate-400 text-sm">Loading historical records...</p>
+                          <p className="text-slate-400 text-sm">{t("doctor.loadingHistory", "Loading historical records...")}</p>
                         </div>
                       ) : medicalHistory.length === 0 ? (
                         <div className="py-12 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10">
@@ -540,25 +617,25 @@ const NewConsultation = () => {
                                   <div className="space-y-4 pt-4">
                                     {item.data.diagnosis && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Diagnosis</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("common.diagnosis", "Diagnosis")}</p>
                                         <p className="text-emerald-400 font-semibold">{item.data.diagnosis} {item.data.icdCode ? `(${item.data.icdCode})` : ''}</p>
                                       </div>
                                     )}
                                     {item.data.symptoms?.length > 0 && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Symptoms</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.symptoms", "Symptoms")}</p>
                                         <p className="text-slate-300">{item.data.symptoms.join(', ')}</p>
                                       </div>
                                     )}
                                     {item.data.clinicalNotes && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Clinical Notes</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.clinicalNotes", "Clinical Notes")}</p>
                                         <p className="text-slate-300 italic">"{item.data.clinicalNotes}"</p>
                                       </div>
                                     )}
                                     {item.data.prescriptions?.length > 0 && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Prescribed Drugs</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.prescribedDrugs", "Prescribed Drugs")}</p>
                                         <ul className="list-disc list-inside text-slate-300">
                                           {item.data.prescriptions.map((rx, idx) => (
                                             <li key={idx}>{rx.name} - {rx.dosage} ({rx.frequency})</li>
@@ -588,7 +665,7 @@ const NewConsultation = () => {
                     <div className="flex justify-between items-center pt-4 border-t border-white/5">
                       <motion.button
                         whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => goTo(1)}
+                        onClick={() => consent.revoke()}
                         className="glass-button-ghost px-6 py-3 flex items-center gap-2"
                       >
                         <FiChevronLeft /> Change Patient
@@ -645,7 +722,7 @@ const NewConsultation = () => {
                         onClick={() => goTo(4)}
                         className="glass-button px-8 py-3 flex items-center gap-2"
                       >
-                        Continue to AI Diagnosis <FiChevronRight />
+                        Continue to Reference Matches <FiChevronRight />
                       </motion.button>
                     </div>
                   </motion.div>
@@ -664,7 +741,7 @@ const NewConsultation = () => {
                         <p className="font-bold text-white">{patientData?.fullName}</p>
                       </div>
                       <div>
-                        <p className="label-caps mb-1">Symptoms</p>
+                        <p className="label-caps mb-1">{t("doctor.symptoms", "Symptoms")}</p>
                         <p className="text-teal-400 font-medium text-sm">{symptoms.length > 0 ? symptoms.join(', ') : '—'}</p>
                       </div>
                     </div>
@@ -678,9 +755,8 @@ const NewConsultation = () => {
                           <span className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center">
                             <FiActivity className="text-teal-400 animate-pulse" />
                           </span>
-                          AI Diagnosis Engine
+                          Symptom Reference Matching
                         </h3>
-                        {console.log("RENDER BUTTON: symptoms.length =", symptoms.length, "loading =", loading)}
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                           onClick={getDiagnosisSuggestions}
@@ -692,6 +768,10 @@ const NewConsultation = () => {
                             : 'Analyze Symptoms'}
                         </motion.button>
                       </div>
+
+                      <p role="note" className="mb-5 text-sm text-amber-200/90 relative z-10">
+                        Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.
+                      </p>
 
                       {diagnosesOptions.length > 0 ? (
                         <div className="space-y-3 relative z-10 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
@@ -727,12 +807,8 @@ const NewConsultation = () => {
                                     </span>
                                   </div>
                                 </div>
-                                <span className={`flex-shrink-0 text-xs font-extrabold px-2.5 py-1 rounded border ${
-                                  diag.confidence > 70
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                    : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                                }`}>
-                                  {diag.confidence}%
+                                <span className="flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded border border-slate-700 text-slate-300">
+                                  Similarity score: {diag.confidence}%
                                 </span>
                               </div>
                             </motion.div>
@@ -742,23 +818,53 @@ const NewConsultation = () => {
                         <div className="relative z-10 py-14 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10">
                           <FiActivity className="w-10 h-10 text-slate-700 mx-auto mb-3" />
                           <p className="text-sm text-slate-500 max-w-xs mx-auto">
-                            Click "Analyze Symptoms" to get AI-powered diagnosis suggestions.
+                            {inferenceStatus === 'unavailable'
+                              ? 'AI suggestions unavailable. Existing manual clinician entry remains available.'
+                              : inferenceStatus === 'empty'
+                                ? 'No AI suggestions returned. Existing manual clinician entry remains available.'
+                                : inferenceStatus === 'loading'
+                                  ? 'Requesting AI suggestions…'
+                                  : 'Click "Analyze Symptoms" to request suggestions. Scores are not calibrated disease probabilities.'}
                           </p>
                         </div>
                       )}
 
                       {/* Manual confirmation */}
                       <div className="mt-6 pt-5 border-t border-white/5 relative z-10">
-                        <label className="block text-sm font-semibold text-slate-300 mb-3">Final Diagnosis Confirmation</label>
+                        <label className="block text-sm font-semibold text-slate-300 mb-3">{t("doctor.finalDiagnosisConfirmation", "Final Diagnosis Confirmation")}</label>
 
-                        {/* ICD Search Bar */}
+                        {/* ICD Search Bar with Version Filters */}
                         <div className="mb-4 relative">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-slate-400 font-semibold">{t("doctor.standardReference", "Standard Reference:")}</span>
+                            <div className="flex gap-1.5">
+                              {[
+                                { id: 'all', label: 'All Standards' },
+                                { id: 'icd10', label: 'ICD-10' },
+                                { id: 'icd11', label: 'WHO ICD-11' }
+                              ].map(f => (
+                                <button
+                                  key={f.id}
+                                  type="button"
+                                  onClick={() => setIcdVersionFilter(f.id)}
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all border ${
+                                    icdVersionFilter === f.id
+                                      ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-sm'
+                                      : 'bg-slate-900/40 text-slate-400 border-white/5 hover:text-white'
+                                  }`}
+                                >
+                                  {f.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className="relative">
                             <input
                               type="text"
                               value={icdSearchQuery || ""}
                               onChange={e => setIcdSearchQuery(e.target.value)}
-                              placeholder="Search diagnosis or ICD-10 code (e.g. Hypertension)..."
+                              placeholder="Search disease, rare condition, or code (e.g. Dengue, 1D20, A90, Down Syndrome)..."
                               className={`${inp} pl-10`}
                             />
                             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -771,21 +877,33 @@ const NewConsultation = () => {
 
                           {/* Autocomplete Suggestions */}
                           {icdSuggestions.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                            <div className="absolute z-50 w-full mt-1 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar">
                               {icdSuggestions.map((item, idx) => (
                                 <div
                                   key={`${item.code}-${idx}`}
                                   onClick={() => {
                                     setSelectedDiagnosis(item.description);
                                     setSelectedIcd(item.code);
+                                    setSelectedIcdVersion(item.version || 'ICD-10');
                                     setIcdSuggestions([]);
                                     setIcdSearchQuery('');
                                     setManualDiagnosis('');
                                   }}
                                   className="px-4 py-2.5 hover:bg-slate-800/60 cursor-pointer transition-colors border-b border-white/5 last:border-0 text-sm flex justify-between items-center text-slate-200"
                                 >
-                                  <span className="font-medium">{item.description}</span>
-                                  <span className="text-teal-400 font-mono font-bold text-xs bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800">{item.code}</span>
+                                  <div className="flex items-center gap-2 min-w-0 pr-3">
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border flex-shrink-0 ${
+                                      item.version === 'ICD-11'
+                                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                        : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                                    }`}>
+                                      {item.version || 'ICD-10'}
+                                    </span>
+                                    <span className="font-medium truncate">{item.description}</span>
+                                  </div>
+                                  <span className="text-teal-400 font-mono font-bold text-xs bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 flex-shrink-0">
+                                    {item.code}
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -794,7 +912,7 @@ const NewConsultation = () => {
 
                         {/* Manual Diagnosis */}
                         <div className="mb-4">
-                          <label className="block text-xs font-semibold text-slate-400 mb-2">Manual Diagnosis (If unlisted)</label>
+                          <label className="block text-xs font-semibold text-slate-400 mb-2">Manual Clinician Diagnosis (If unlisted / free-text clinical description)</label>
                           <input
                             type="text"
                             value={manualDiagnosis || ""}
@@ -803,26 +921,38 @@ const NewConsultation = () => {
                               if (e.target.value.trim()) {
                                 setSelectedDiagnosis('');
                                 setSelectedIcd('');
+                                setSelectedIcdVersion('Custom');
                               }
                             }}
-                            placeholder="Enter custom illness..."
+                            placeholder={t("doctor.clinicianCondition", "Enter clinician-entered condition description...")}
                             className={inp}
                           />
                         </div>
 
-                        <div className="flex gap-3">
-                          <input
-                            type="text" value={selectedDiagnosis || ""}
-                            onChange={e => setSelectedDiagnosis(e.target.value)}
-                            placeholder="Diagnosis name"
-                            className={`${inp} flex-1`}
-                          />
-                          <input
-                            type="text" value={selectedIcd || ""}
-                            onChange={e => setSelectedIcd(e.target.value)}
-                            placeholder="ICD Code"
-                            className={`${inp} w-32 uppercase`}
-                          />
+                        <div className="flex gap-3 items-center">
+                          <div className="flex-1 relative">
+                            <input
+                              type="text" value={selectedDiagnosis || ""}
+                              onChange={e => setSelectedDiagnosis(e.target.value)}
+                              placeholder="Diagnosis name"
+                              className={inp}
+                            />
+                          </div>
+                          <div className="w-36 flex items-center gap-1.5">
+                            <span className={`text-[10px] px-1.5 py-1 rounded font-bold border uppercase ${
+                              selectedIcdVersion === 'ICD-11'
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                            }`}>
+                              {selectedIcdVersion || 'ICD-10'}
+                            </span>
+                            <input
+                              type="text" value={selectedIcd || ""}
+                              onChange={e => setSelectedIcd(e.target.value)}
+                              placeholder="Code"
+                              className={`${inp} flex-1 uppercase font-mono`}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -883,6 +1013,89 @@ const NewConsultation = () => {
                       />
                     </div>
 
+                    {/* ── Medication Safety & Reference Verification Status ── */}
+                    {prescriptions.length > 0 && interactionAnalysis && (
+                      <div className="space-y-3" data-testid="medication-safety-panel">
+                        {/* 1. Detected Drug-Drug Interactions or Duplicate Active Ingredients */}
+                        {interactionAnalysis.hasInteraction && Array.isArray(interactionAnalysis.warnings) && interactionAnalysis.warnings.length > 0 && (
+                          <div
+                            data-testid="medication-interaction-alert"
+                            className="p-4 rounded-2xl bg-red-950/45 border border-red-500/40 text-red-100 space-y-2.5"
+                          >
+                            <div className="flex items-center gap-2 font-bold text-red-300 text-sm">
+                              <FiAlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                              <span>Medication Interaction / Duplicate Active Ingredient Alert ({interactionAnalysis.warnings.length})</span>
+                            </div>
+                            <ul className="space-y-2 text-xs text-red-100/95">
+                              {interactionAnalysis.warnings.map((w, idx) => (
+                                <li key={idx} className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/25 flex flex-col gap-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500/25 text-red-200 border border-red-400/30">
+                                      {w.type === 'duplicate_ingredient'
+                                        ? 'Duplicate Active Ingredient'
+                                        : `${(w.severity || 'moderate').toUpperCase()} Interaction`}
+                                    </span>
+                                    <span className="font-semibold text-white">
+                                      {w.drug1} [{w.drug1Strength || 'Unspecified'}, {w.drug1Formulation || 'Unspecified'}]
+                                      {' + '}
+                                      {w.drug2} [{w.drug2Strength || 'Unspecified'}, {w.drug2Formulation || 'Unspecified'}]
+                                    </span>
+                                  </div>
+                                  <p className="text-red-200/90 leading-relaxed">{w.message || w.description}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 2. Incomplete Automated Verification Warning (Unresolved Ingredients) */}
+                        {interactionAnalysis.verificationIncomplete && Array.isArray(interactionAnalysis.unresolvedIngredients) && interactionAnalysis.unresolvedIngredients.length > 0 && (
+                          <div
+                            data-testid="medication-verification-incomplete-alert"
+                            className="p-4 rounded-2xl bg-amber-950/45 border border-amber-500/40 text-amber-100 space-y-2"
+                          >
+                            <div className="flex items-center gap-2 font-bold text-amber-300 text-sm">
+                              <FiAlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                              <span>Automated Interaction Checking Incomplete</span>
+                            </div>
+                            <p className="text-xs text-amber-200/95 leading-relaxed">
+                              {interactionAnalysis.statusMessage}
+                            </p>
+                            {Array.isArray(interactionAnalysis.unresolvedDrugs) && interactionAnalysis.unresolvedDrugs.length > 0 && (
+                              <ul className="text-xs text-amber-200/85 list-disc list-inside space-y-1">
+                                {interactionAnalysis.unresolvedDrugs.map((ud, idx) => (
+                                  <li key={idx}>
+                                    <span className="font-semibold text-amber-100">{ud.drug}</span>
+                                    {' '}
+                                    [{ud.strength || 'Unspecified'}, {ud.formulation || 'Unspecified'}] — unresolved ingredient(s):{' '}
+                                    <span className="font-mono text-amber-300">{(ud.unresolvedIngredients || []).join(', ')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 3. Neutral Reference Dataset Notice (Never displays a green 'Safe' badge) */}
+                        {!interactionAnalysis.hasInteraction && !interactionAnalysis.verificationIncomplete && prescriptions.length >= 2 && (
+                          <div
+                            data-testid="medication-neutral-reference-notice"
+                            className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/60 text-slate-300 flex items-start gap-2.5 text-xs"
+                          >
+                            <FiInfo className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-slate-200">
+                                {interactionAnalysis.statusMessage || 'No interaction found in the available reference dataset.'}
+                              </p>
+                              <p className="text-slate-400 mt-0.5">
+                                Automated lookup checked resolved active ingredients against the reference dataset only. Absence of a reference match does not guarantee clinical safety.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* ── Prescription table ───────────────────────────────── */}
                     {prescriptions.length > 0 && (
                       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
@@ -916,7 +1129,7 @@ const NewConsultation = () => {
                                     </select>
                                   </td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.duration || ""} onChange={e => updatePrescription(idx,'duration',e.target.value)}
+                                    <input type="number" min="1" step="1" aria-label={`Duration in days for ${rx.name}`} value={rx.durationDays ?? ''} onChange={e => updatePrescription(idx,'durationDays',e.target.value === '' ? '' : e.target.valueAsNumber)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
@@ -1092,6 +1305,7 @@ const NewConsultation = () => {
               </AnimatePresence>
             </div>
           </div>
+          </fieldset>
         </PageTransition>
       </AppShell>
     </div>

@@ -1,21 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
+import useModalFocus from '../../hooks/useModalFocus';
+
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, onClose]);
+  const titleId = useId();
+  const dialogRef = useModalFocus(isOpen, onClose);
 
   const sizeClasses = {
     sm: 'max-w-md',
@@ -41,6 +32,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
           {/* Modal Container */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
+              ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -49,9 +41,9 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/5 bg-slate-900/40">
-                <h2 className="text-xl font-bold text-slate-100">{title}</h2>
+                <h2 id={titleId} className="text-xl font-bold text-slate-100">{title}</h2>
                 <button
-                  onClick={onClose}
+                  type="button" aria-label="Close dialog" onClick={onClose}
                   className="p-2 text-slate-400 hover:text-slate-100 hover:bg-white/5 rounded-full transition-all duration-200"
                 >
                   <X className="w-5 h-5" />

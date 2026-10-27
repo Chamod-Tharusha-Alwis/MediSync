@@ -20,6 +20,7 @@ const PrivateRoute = ({ allowedRoles = [] }) => {
       case 'hospital_admin': return <Navigate to="/hospital/dashboard" replace />;
       case 'patient': return <Navigate to="/patient/dashboard" replace />;
       case 'pharmacist': 
+      case 'assistant':
       case 'pharmacy_admin': return <Navigate to="/pharmacy/dashboard" replace />;
       case 'admin': return <Navigate to="/admin/dashboard" replace />;
       default: return <Navigate to="/select-role" replace />;

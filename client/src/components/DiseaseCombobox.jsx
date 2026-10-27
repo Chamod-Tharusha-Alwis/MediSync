@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { FiSearch, FiChevronDown, FiCheck } from 'react-icons/fi';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 
 const DiseaseCombobox = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +10,8 @@ const DiseaseCombobox = ({ value, onChange }) => {
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
+  const listId = useId();
+  const [searchError, setSearchError] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -21,25 +23,28 @@ const DiseaseCombobox = ({ value, onChange }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const searchDiseases = async (searchQuery) => {
+  const searchDiseases = async (searchQuery, signal) => {
+    setSearchError(false);
     if (!searchQuery) {
       setOptions(['All Diseases']);
       return;
     }
     try {
-      const res = await axios.get('/api/public/diseases/search', { params: { q: searchQuery } });
-      setOptions(['All Diseases', ...(res.data.data || [])]);
+      const res = await api.get('/public/diseases/search', { params: { q: searchQuery }, signal });
+      if (!Array.isArray(res.data.data)) throw new Error('Invalid disease search response');
+      if (!signal.aborted) setOptions(['All Diseases', ...res.data.data]);
     } catch (err) {
-      console.error('Failed to fetch diseases', err);
+      if (!signal.aborted) { setOptions(['All Diseases']); setSearchError(true); }
     }
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      searchDiseases(query);
+      searchDiseases(query, controller.signal);
     }, 300);
-    return () => clearTimeout(debounceRef.current);
+    return () => { clearTimeout(debounceRef.current); controller.abort(); };
   }, [query]);
 
   const displayValue = value === 'all' ? 'All Diseases' : value;
@@ -83,7 +88,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
 
   return (
     <div ref={wrapperRef} className="relative w-48 sm:w-64">
-      <div 
+      <button type="button" aria-label="Disease filter" aria-expanded={isOpen} aria-haspopup="listbox" aria-controls={listId}
         className="flex items-center justify-between bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-slate-700/50 transition-colors focus:ring-2 focus:ring-teal-500 focus:outline-none"
         onClick={() => setIsOpen(!isOpen)}
         tabIndex={0}
@@ -91,7 +96,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
       >
         <span className="truncate">{displayValue || 'Select Disease'}</span>
         <FiChevronDown className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
+      </button>
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl ring-1 ring-black/50 overflow-hidden">
@@ -99,6 +104,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
+                aria-label="Search diseases" role="combobox" aria-expanded={isOpen} aria-controls={listId} aria-activedescendant={focusedIndex >= 0 ? `${listId}-${focusedIndex}` : undefined}
                 ref={inputRef}
                 type="text"
                 placeholder="Search..."
@@ -114,7 +120,8 @@ const DiseaseCombobox = ({ value, onChange }) => {
             </div>
           </div>
           
-          <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
+          {searchError && <p role="alert" className="px-3 py-2 text-xs text-rose-300">Disease search unavailable. Please try again.</p>}
+          <div id={listId} role="listbox" className="max-h-60 overflow-y-auto custom-scrollbar p-1">
             {options.length > 0 ? (
               options.map((disease, index) => {
                 const isSelected = disease === displayValue;
@@ -123,6 +130,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
                 
                 return (
                   <div
+                    id={`${listId}-${index}`} role="option" aria-selected={isSelected}
                     key={disease}
                     className={`flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
                       isFocused ? 'bg-slate-700' : ''

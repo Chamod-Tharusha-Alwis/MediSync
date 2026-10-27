@@ -11,6 +11,13 @@
  *   REDIS_URL=redis://127.0.0.1:6379
  */
 
+function requireSecurityStore() {
+  if ((process.env.NODE_ENV === 'production' || process.env.MEDISYNC_LOCAL_REAL_STACK === 'true') && (!redisAvailable || !redisClient)) throw new Error('SECURITY_STORE_UNAVAILABLE');
+}
+function securityStoreFailure() {
+  if (process.env.NODE_ENV === 'production' || process.env.MEDISYNC_LOCAL_REAL_STACK === 'true') throw new Error('SECURITY_STORE_UNAVAILABLE');
+}
+
 let redisClient = null;
 let redisAvailable = false;
 
@@ -19,12 +26,12 @@ const memoryStore = new Map();
 
 /**
  * Initialize Redis connection (called once at app startup).
- * Non-blocking — never throws. Sets `redisAvailable` flag.
+ * Production requires Redis. Test/development may use the explicit memory path.
  */
 async function initRedis() {
   try {
+    const url = require('../security/redisConnectionPolicy').validateRedisConnection(process.env);
     const redis = require('redis');
-    const url = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 
     redisClient = redis.createClient({
       url,
@@ -38,17 +45,12 @@ async function initRedis() {
 
     redisClient.on('error', (err) => {
       if (redisAvailable) {
-        if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
-          console.error('FATAL: [Redis] Connection lost in production:', err.message);
-          process.exit(1);
-        } else {
-          console.warn('[Redis] Connection lost — falling back to in-memory store:', err.message);
-          redisAvailable = false;
-        }
+        redisAvailable = false;
+        console.error('[Redis] Connection unavailable. Security operations are held.');
       }
     });
 
-    redisClient.on('connect', () => {
+    redisClient.on('ready', () => {
       console.log('[Redis] Connected successfully.');
       redisAvailable = true;
     });
@@ -56,18 +58,16 @@ async function initRedis() {
     await redisClient.connect();
     redisAvailable = true;
   } catch (err) {
-    if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
-      console.error('FATAL: [Redis] Connection failed in production environment:', err.message);
-      process.exit(1);
-    }
+    redisAvailable = false;
+    if (process.env.NODE_ENV === 'production' || process.env.MEDISYNC_LOCAL_REAL_STACK === 'true') throw new Error('SECURITY_STORE_UNAVAILABLE');
     console.warn('');
     console.warn('╔══════════════════════════════════════════════════════════════╗');
     console.warn('║  ⚠️  [Redis] Not available — using in-memory OTP store.      ║');
     console.warn('║     OTPs will NOT survive server restarts.                  ║');
-    console.warn('║     Install Redis for production: docker run -p 6379:6379 redis ║');
+    console.warn('║     Install Redis for production: docker run -p 127.0.0.1:6379:6379 redis ║');
     console.warn('╚══════════════════════════════════════════════════════════════╝');
     console.warn('');
-    console.warn('[Redis] Error:', err.message);
+    console.warn('[Redis] Initialization unavailable; development memory fallback selected.');
     redisAvailable = false;
   }
 }
@@ -90,6 +90,7 @@ const COOLDOWN_PREFIX = 'medisync:otp-cooldown:';
  * @param {number} ttlSec — TTL in seconds (default: 600 = 10 minutes)
  */
 async function setOtp(key, data, ttlSec = 600) {
+  requireSecurityStore();
   const fullKey = OTP_PREFIX + key;
 
   if (redisAvailable && redisClient) {
@@ -97,6 +98,7 @@ async function setOtp(key, data, ttlSec = 600) {
       await redisClient.setEx(fullKey, ttlSec, JSON.stringify(data));
       return;
     } catch (err) {
+      securityStoreFailure();
       if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
         throw new Error(`[Redis] setOtp failed in production: ${err.message}`);
       }
@@ -116,6 +118,7 @@ async function setOtp(key, data, ttlSec = 600) {
  * @returns {object|null} — the stored data, or null if expired/missing
  */
 async function getOtp(key) {
+  requireSecurityStore();
   const fullKey = OTP_PREFIX + key;
 
   if (redisAvailable && redisClient) {
@@ -123,6 +126,7 @@ async function getOtp(key) {
       const raw = await redisClient.get(fullKey);
       return raw ? JSON.parse(raw) : null;
     } catch (err) {
+      securityStoreFailure();
       if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
         throw new Error(`[Redis] getOtp failed in production: ${err.message}`);
       }
@@ -142,6 +146,15 @@ async function getOtp(key) {
   return entry.data;
 }
 
+async function consumeOtp(key, expected) {
+  requireSecurityStore();
+  const { createAtomicOtpStore } = require('../security/atomicOtpStore');
+  return createAtomicOtpStore({
+    evaluate: redisAvailable && redisClient ? (script, args) => redisClient.eval(script, args) : null,
+    memory: memoryStore, allowMemory: process.env.NODE_ENV !== 'production'
+  }).consume(key, expected);
+}
+
 /**
  * Delete (consume) an OTP.
  * @param {string} key — unique key
@@ -149,6 +162,7 @@ async function getOtp(key) {
  * @param {boolean} [options.clearAttempts=true] — whether to clear failed attempt counters (true on valid consumption, false on expiry/rollback)
  */
 async function deleteOtp(key, options = {}) {
+  requireSecurityStore();
   const shouldClearAttempts = options.clearAttempts !== false;
   const fullKey = OTP_PREFIX + key;
   const attemptsKey = 'medisync:otp-attempts:' + key;
@@ -163,6 +177,7 @@ async function deleteOtp(key, options = {}) {
       }
       return;
     } catch (err) {
+      securityStoreFailure();
       if (process.env.NODE_ENV === 'production' && process.env.SINGLE_INSTANCE_DEV_MODE !== 'true') {
         throw new Error(`[Redis] deleteOtp failed in production: ${err.message}`);
       }
@@ -184,6 +199,7 @@ async function deleteOtp(key, options = {}) {
  * Clear failed verification attempts and active resend cooldown explicitly (called after valid OTP verification).
  */
 async function clearAttempts(key) {
+  requireSecurityStore();
   const fullKey = 'medisync:otp-attempts:' + key;
   const cooldownKey = COOLDOWN_PREFIX + key;
   const reqAcctKey = 'medisync:otp-attempts:req-acct:' + key;
@@ -193,6 +209,7 @@ async function clearAttempts(key) {
       await redisClient.del(cooldownKey);
       await redisClient.del(reqAcctKey);
     } catch (err) {
+      securityStoreFailure();
       console.warn('[Redis] clearAttempts failed:', err.message);
     }
   }
@@ -205,23 +222,28 @@ async function clearAttempts(key) {
  * Increment failed attempts counter with a TTL.
  */
 async function incrementAttempts(key, ttlSec = 900) {
+  requireSecurityStore();
   const fullKey = 'medisync:otp-attempts:' + key;
   if (redisAvailable && redisClient) {
     try {
-      const current = await redisClient.incr(fullKey);
-      if (current === 1) await redisClient.expire(fullKey, ttlSec);
-      return current;
+      const { INCREMENT_SCRIPT } = require('../security/atomicOtpStore');
+      const count = require('../security/atomicOtpStore').parseAttemptCount(await redisClient.eval(INCREMENT_SCRIPT, { keys: [fullKey], arguments: [String(ttlSec * 1000)] }));
+      if (count < 1) throw new Error('SECURITY_STORE_UNAVAILABLE');
+      return count;
     } catch (err) {
-      console.warn('[Redis] incrementAttempts failed:', err.message);
+      throw new Error('SECURITY_STORE_UNAVAILABLE');
     }
   }
   const existing = memoryStore.get(fullKey);
-  if (!existing || Date.now() > existing.expiresAt) {
+  if (existing && (!Number.isFinite(existing.expiresAt) || existing.data === null)) throw new Error('SECURITY_STORE_UNAVAILABLE');
+  if (!existing || Date.now() >= existing.expiresAt) {
     const fresh = { data: 1, expiresAt: Date.now() + ttlSec * 1000 };
     memoryStore.set(fullKey, fresh);
     return 1;
   }
-  existing.data += 1;
+  const next = require('../security/atomicOtpStore').parseAttemptCount(existing.data) + 1;
+  if (!Number.isSafeInteger(next)) throw new Error('SECURITY_STORE_UNAVAILABLE');
+  existing.data = next;
   memoryStore.set(fullKey, existing);
   return existing.data;
 }
@@ -230,22 +252,25 @@ async function incrementAttempts(key, ttlSec = 900) {
  * Get current failed attempts.
  */
 async function getAttempts(key) {
+  requireSecurityStore();
   const fullKey = 'medisync:otp-attempts:' + key;
   if (redisAvailable && redisClient) {
     try {
       const raw = await redisClient.get(fullKey);
-      return raw ? parseInt(raw, 10) : 0;
+      return require('../security/atomicOtpStore').parseAttemptCount(raw);
     } catch (err) {
-      console.warn('[Redis] getAttempts failed:', err.message);
+      throw new Error('SECURITY_STORE_UNAVAILABLE');
     }
   }
   const entry = memoryStore.get(fullKey);
   if (!entry) return 0;
-  if (Date.now() > entry.expiresAt) {
+  if (!Number.isFinite(entry.expiresAt)) throw new Error('SECURITY_STORE_UNAVAILABLE');
+  if (Date.now() >= entry.expiresAt) {
     memoryStore.delete(fullKey);
     return 0;
   }
-  return entry.data;
+  if (entry.data === null) throw new Error('SECURITY_STORE_UNAVAILABLE');
+  return require('../security/atomicOtpStore').parseAttemptCount(entry.data);
 }
 
 /**
@@ -287,6 +312,7 @@ function normalizeThrottleArgs(arg1, arg2, arg3 = {}) {
  * 4. Enforces per-IP OTP request limit (default 15 per 15 minutes).
  */
 async function checkOtpRequestThrottle(arg1, arg2, arg3) {
+  requireSecurityStore();
   const {
     accountKey,
     ipKey,
@@ -329,6 +355,7 @@ async function checkOtpRequestThrottle(arg1, arg2, arg3) {
           cooldownExpiresAt = Date.now() + ttl * 1000;
         }
       } catch (err) {
+      securityStoreFailure();
         console.warn('[Redis] cooldown ttl check failed:', err.message);
       }
     } else {
@@ -390,6 +417,7 @@ async function checkOtpRequestThrottle(arg1, arg2, arg3) {
  * Call ONLY after at least one email provider accepts the OTP dispatch.
  */
 async function recordOtpRequestSent(arg1, arg2, arg3) {
+  requireSecurityStore();
   const {
     accountKey,
     ipKey,
@@ -409,6 +437,7 @@ async function recordOtpRequestSent(arg1, arg2, arg3) {
         try {
           await redisClient.setEx(cooldownFullKey, cooldownSeconds, '1');
         } catch (err) {
+      securityStoreFailure();
           console.warn('[Redis] set cooldown failed:', err.message);
         }
       } else {
@@ -622,10 +651,23 @@ function isUsingPersistentRedis() {
   return Boolean(redisAvailable && redisClient);
 }
 
+async function closeRedis() {
+  const client = redisClient;
+  redisAvailable = false;
+  redisClient = null;
+  try { if (client?.isOpen) await client.quit(); }
+  catch (_) {
+    try { client?.destroy?.(); } catch (_) { /* Preserve the sanitized failure. */ }
+    throw new Error('SECURITY_STORE_SHUTDOWN_FAILED');
+  }
+}
+
 module.exports = {
+  closeRedis,
   initRedis,
   setOtp,
   getOtp,
+  consumeOtp,
   deleteOtp,
   clearAttempts,
   incrementAttempts,

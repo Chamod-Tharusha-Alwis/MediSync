@@ -5,107 +5,23 @@ const Doctor = require('../models/Doctor');
 const emailService = require('../utils/emailService');
 const { verifyToken } = require('../utils/internalAuth');
 
+// Legacy push endpoints cannot bypass provenance or administrator review.
 exports.triggerAlert = async (req, res) => {
-  try {
-    const internalKey = req.headers['x-internal-key'];
-    if (!verifyToken(internalKey)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const { district, predictedCases, zScore, message, affectedIcdCodes } = req.body;
-
-    const alert = new OutbreakAlert({
-      district,
-      predictedCases,
-      zScore,
-      message,
-      affectedIcdCodes,
-      isActive: true,
-      severity: zScore > 3 ? 'critical' : zScore > 2 ? 'high' : 'moderate'
-    });
-
-    await alert.save();
-
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('outbreak_alert', alert);
-    }
-
-    res.status(201).json({ message: 'Alert triggered and broadcasted', data: alert });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to trigger alert', details: error.message });
-  }
+  if (!verifyToken(req.headers['x-internal-key'])) return res.status(403).json({error:'Forbidden'});
+  try { res.status(202).json(await require('../services/surveillanceService').runAnalysis({mode:'real'})); }
+  catch (_) { res.status(503).json({error:'Surveillance unavailable.'}); }
 };
-
-exports.broadcastAlert = async (req, res) => {
-  try {
-    const { district, message, zScore } = req.body;
-    
-    // Check admin role
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Only admins can broadcast alerts' });
-    }
-
-    if (!district || !message) {
-      return res.status(400).json({ error: 'District and message are required' });
-    }
-
-    // Send emails to all patients in a district
-    const query = district === 'Nationwide' ? {} : { district };
-    const patients = await Patient.find(query).select('email fullName');
-    const emailList = patients.filter(p => p.email).map(p => p.email);
-
-    if (emailList.length > 0) {
-      await emailService.sendOutbreakAlert(emailList, district, message, zScore || 0);
-    }
-
-    // Save to database for history
-    const BroadcastMessage = require('../models/BroadcastMessage');
-    const newBroadcast = new BroadcastMessage({
-      title: req.body.title || 'System Alert',
-      message: message,
-      targetRole: req.body.targetRole || 'patient',
-      targetDistrict: district,
-      sentBy: req.user.id,
-      sentAt: new Date()
-    });
-    await newBroadcast.save();
-
-    // Create Notification records for all targeted patients so it shows up in their bell
-    const Notification = require('../models/Notification');
-    const notifs = patients.map(p => ({
-      userId: p._id,
-      role: 'patient',
-      message: message,
-      type: 'outbreak_alert',
-      createdAt: new Date()
-    }));
-    if (notifs.length > 0) {
-      await Notification.insertMany(notifs);
-    }
-
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('notification', {
-        type: 'outbreak_alert',
-        message: message,
-        read: false,
-        createdAt: new Date()
-      });
-    }
-
-    res.json({ 
-      message: `Broadcasted alert to ${emailList.length} recipients in ${district}`,
-      data: newBroadcast
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to broadcast alert', details: error.message });
-  }
-};
+exports.broadcastAlert = async (req, res) => res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});
 
 exports.getActiveAlerts = async (req, res) => {
   try {
-    const alerts = await OutbreakAlert.find({ status: { $in: ['Active', 'Pending'] } }).sort({ createdAt: -1 });
+    const service=require('../services/surveillanceService');
+    const reviewer=['admin','super_admin','superadmin'].includes(req.user?.role);
+    const simulation=req.query?.mode==='simulation';
+    if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
+    // Clinical public delivery remains gated; reviewers see only verified signals.
+    if(!reviewer)return res.json({data:[]});
+    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : service.realAlertFilter()),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
     res.json({ data: alerts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
@@ -114,35 +30,17 @@ exports.getActiveAlerts = async (req, res) => {
 
 exports.getDiseaseTrends = async (req, res) => {
   try {
-    const { district } = req.query;
-    
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const matchStage = { createdAt: { $gte: thirtyDaysAgo } };
-    if (district) {
-      const patientsInDistrict = await Patient.find({ district }).select('nic');
-      const nics = patientsInDistrict.map(p => p.nic);
-      matchStage.patientNic = { $in: nics };
-    }
-
-    const trends = await Consultation.aggregate([
-      { $match: matchStage },
-      { $group: { _id: "$diagnosis", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-
-    res.json({ data: trends });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch trends', details: error.message });
-  }
+    const {cases}=await require('../services/surveillanceService').loadCases({mode:'real'});
+    const counts=new Map();
+    for(const c of cases)if(!req.query.district || c.district===req.query.district)counts.set(c.diseaseId,(counts.get(c.diseaseId)||0)+1);
+    res.json({data:[...counts].map(([_id,count])=>({_id,count})).sort((a,b)=>b.count-a.count).slice(0,10)});
+  } catch (_) { res.status(503).json({error:'Trends unavailable.'}); }
 };
 
 exports.getLatestBroadcast = async (req, res) => {
   try {
     const BroadcastMessage = require('../models/BroadcastMessage');
-    const latest = await BroadcastMessage.findOne().sort({ sentAt: -1, createdAt: -1 });
+    const latest = null; // Legacy broadcasts have no verified audience/provenance; delivery is gated.
     res.json({ data: latest });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch latest broadcast', details: error.message });
@@ -161,6 +59,10 @@ exports.verifyAlertStatus = async (req, res) => {
     const alert = await OutbreakAlert.findById(id);
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
 
+    const service=require('../services/surveillanceService');
+    if(!['admin','super_admin','superadmin'].includes(req.user?.role))return res.status(403).json({error:'Administrator review required.'});
+    if(service.synthetic(alert) && !await service.canReviewSimulation(req.user))return res.status(403).json({error:'Synthetic reviewer required.'});
+    if(alert.surveillancePolicy!==service.POLICY)return res.status(409).json({error:'Legacy provenance review required.'});
     alert.feedbackStatus = feedbackStatus;
     // Auto-resolve if marked as false_positive
     if (feedbackStatus === 'false_positive') {
@@ -168,26 +70,7 @@ exports.verifyAlertStatus = async (req, res) => {
     }
     await alert.save();
 
-    // Call ML feedback endpoint
-    const axios = require('axios');
-    const { generateToken } = require('../utils/internalAuth');
-    try {
-      await axios.post(
-        `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/api/ml/outbreak-feedback`,
-        {
-          disease: alert.disease,
-          district: alert.location || alert.district || 'Colombo',
-          is_true_outbreak: feedbackStatus === 'confirmed' ? 1 : 0,
-          date: alert.createdAt.toISOString().split('T')[0]
-        },
-        {
-          headers: { 'x-internal-key': generateToken() }
-        }
-      );
-    } catch (mlErr) {
-      console.error('Failed to send feedback to ML Engine:', mlErr.message);
-    }
-
+    // Do not train a live model from simulation or unvalidated review feedback.
     res.json({ message: 'Alert feedback recorded successfully', data: alert });
   } catch (error) {
     res.status(500).json({ error: 'Failed to record feedback', details: error.message });

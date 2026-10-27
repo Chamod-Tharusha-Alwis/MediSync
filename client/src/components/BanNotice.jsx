@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +12,7 @@ import { ShieldBan, AlertTriangle, Clock, Mail } from 'lucide-react';
 const BanNotice = () => {
   const [banData, setBanData] = useState(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const handler = (e) => {
@@ -47,8 +49,8 @@ const BanNotice = () => {
                 <ShieldBan className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-white text-xl font-bold tracking-tight">Account Suspended</h1>
-                <p className="text-red-200 text-sm mt-0.5">MediSync Platform</p>
+                <h1 className="text-white text-xl font-bold tracking-tight">{t("auth.banNoticeTitle", "Account Suspended")}</h1>
+                <p className="text-red-200 text-sm mt-0.5">{t("common.appName", "MediSync Platform")}</p>
               </div>
             </div>
 

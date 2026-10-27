@@ -1,4 +1,9 @@
-require('dotenv').config({ quiet: true });
+require('./security/clinicalEntryPolicy').assertClinicalEntry(process.env);
+
+if (process.env.MEDISYNC_QA_BOOTSTRAPPED !== 'true') {
+  require('dotenv').config({ quiet: true });
+}
+require('./security/clinicalEntryPolicy').assertClinicalEntry(process.env);
 
 // ---------------------------------------------------------------------------
 // ONLY third-party / Node built-ins at the top level.
@@ -33,13 +38,36 @@ const nodeVault  = require('node-vault');
  * Falls back to process.env.ENCRYPTION_KEY when Vault is unreachable.
  */
 async function initializeVault() {
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') {
+    const bootstrap = global.__MEDISYNC_QA_BROWSER_BOOTSTRAP;
+    if (!bootstrap || typeof bootstrap.initializeEncryption !== 'function') throw new Error('Guarded QA encryption bootstrap required');
+    return bootstrap.initializeEncryption();
+  }
   if (process.env.VAULT_TOKEN === 'bypass') {
-    if (process.env.NODE_ENV !== 'test') {
-      console.error('[FATAL] Vault bypass is only allowed in NODE_ENV=test.');
+    if (process.env.NODE_ENV !== 'test' && process.env.MEDISYNC_TEST_MODE !== 'true') {
+      console.error('[FATAL] Vault bypass is only allowed in NODE_ENV=test or MEDISYNC_TEST_MODE=true.');
       process.exit(1);
     }
-    global.ENCRYPTION_KEY = 'medisync-secure-key-123456789012';
-    console.log('[Vault] Bypassed (test mode). Using dummy key.');
+    if (!process.env.ENCRYPTION_KEY) throw new Error('[FATAL] Missing QA encryption key.');
+    global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+    global.ENCRYPTION_KEYS = { "1": global.ENCRYPTION_KEY };
+    global.ACTIVE_KEY_VERSION = 1;
+    console.log('[Vault] Bypassed (test mode). Using configured test encryption key.');
+    return;
+  }
+
+  // Operator-key opt-in for prototype release (no hosted Vault required)
+  if (process.env.MEDISYNC_PROTOTYPE_MODE === 'true' && process.env.MEDISYNC_ALLOW_OPERATOR_KEYS === 'true') {
+    if (process.env.VAULT_TOKEN === 'bypass') {
+      console.error('[FATAL] VAULT_TOKEN=bypass is forbidden in production operator-key mode.');
+      process.exit(1);
+    }
+    const { validateAndLoadOperatorKeys } = require('./security/operatorKeyPolicy');
+    const operatorConfig = validateAndLoadOperatorKeys(process.env);
+    global.ENCRYPTION_KEYS = operatorConfig.keys;
+    global.ACTIVE_KEY_VERSION = operatorConfig.activeVersion;
+    global.ENCRYPTION_KEY = operatorConfig.keys[operatorConfig.activeVersion];
+    console.warn('[SECURITY WARNING] MEDISYNC_PROTOTYPE_MODE active: Booting with operator-supplied encryption keys. Vault bypassed for prototype only.');
     return;
   }
 
@@ -59,21 +87,8 @@ async function initializeVault() {
     }
 
     // Ensure the new versioned keys structure exists
-    let keysSecret;
-    try {
-      keysSecret = await vault.read('secret/data/medisync/keys');
-    } catch (e) {
-      // Doesn't exist, create it using the primary ENCRYPTION_KEY as version 1
-      await vault.write('secret/data/medisync/keys', {
-        data: {
-          activeVersion: 1,
-          versions: {
-            "1": process.env.ENCRYPTION_KEY
-          }
-        }
-      });
-      keysSecret = await vault.read('secret/data/medisync/keys');
-    }
+    // Startup reads existing provisioned secrets; it never creates key material.
+    const keysSecret = await vault.read('secret/data/medisync/keys');
 
     // Publish the keys globally so every model sees it when require()'d below.
     global.ENCRYPTION_KEYS = keysSecret.data.data.versions;
@@ -82,6 +97,7 @@ async function initializeVault() {
     global.ENCRYPTION_KEY = global.ENCRYPTION_KEYS[global.ACTIVE_KEY_VERSION];
 
     console.log(`[Vault] Successfully retrieved AES encryption keys (Active version: ${global.ACTIVE_KEY_VERSION}).`);
+    return keysSecret.data.data.security || null;
   } catch (err) {
     // Vault is offline or misconfigured – degrade gracefully.
     console.error('');
@@ -91,7 +107,7 @@ async function initializeVault() {
     console.error('║     DO NOT use this configuration in production!             ║');
     console.error('╚══════════════════════════════════════════════════════════════╝');
     console.error('');
-    console.error('[Vault] Error details:', err.message);
+    console.error('[Vault] Initialization failed.');
 
     global.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
     global.ENCRYPTION_KEYS = { "1": process.env.ENCRYPTION_KEY };
@@ -115,10 +131,25 @@ async function initializeVault() {
 // Async server bootstrap  –  strict order: Vault → DB → routes → listen
 // ---------------------------------------------------------------------------
 async function startServer() {
+  require('./security/clinicalEntryPolicy').assertClinicalEntry(process.env);
+  const { isAutomatedTestEnvironment, TEST_DB_NAME } = require('./config/dbGuard');
+  const qaMode = isAutomatedTestEnvironment();
+  const clientOrigin = require('./security/clientOriginPolicy').clientOrigin();
+  if (qaMode && (process.env.MEDISYNC_QA_BOOTSTRAPPED !== 'true' || process.env.MONGO_URI)) {
+    throw new Error('[FATAL] Test server requires the isolated QA bootstrap and no loaded MONGO_URI.');
+  }
+  if (!qaMode && (process.env.NODE_ENV !== 'production' || process.env.MEDISYNC_LIVE_START_APPROVED !== 'true')) {
+    throw new Error('[FATAL] Live startup is disabled. Use the isolated Phase 5X QA entry point.');
+  }
   // ── Step 1: Set global.ENCRYPTION_KEY ────────────────────────────────────
   // This MUST finish before any require() that could transitively load a
   // Mongoose model, because fieldEncryption() reads `secret` synchronously.
-  await initializeVault();
+  const securityConfiguration = await initializeVault();
+  const securityRuntime = require('./security/securityRuntime');
+  securityRuntime.initialize(securityConfiguration, {
+    legacyKeys: global.ENCRYPTION_KEYS,
+    otherSecrets: [process.env.JWT_SECRET, process.env.JWT_REFRESH_SECRET]
+  });
 
   // ── Step 2: Internal requires (safe now — key is in global scope) ─────────
   // connectDB  → pure mongoose.connect(), no model imports
@@ -126,89 +157,76 @@ async function startServer() {
   //                see global.ENCRYPTION_KEY already populated
   const connectDB    = require('./config/db');
   const initCronJobs = require('./utils/cronJobs');
+  securityRuntime.assertProtectedCompatibility({
+    Patient: require('./models/Patient'), Consultation: require('./models/Consultation'),
+    fieldPlugin: require('./utils/versionedEncryption'),
+    doctorCreate: require('./controllers/doctorController').createConsultation
+  });
 
   // ── Step 3: Connect to MongoDB ────────────────────────────────────────────
-  await connectDB();
+  const dbInfo = await connectDB();
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') {
+    global.__MEDISYNC_QA_BROWSER_BOOTSTRAP.verifyRuntime(dbInfo);
+  }
+  if (qaMode && (dbInfo?.dbName !== TEST_DB_NAME ||
+    dbInfo?.authenticatedRoles?.length !== 1 ||
+    dbInfo.authenticatedRoles[0]?.role !== 'readWrite' ||
+    dbInfo.authenticatedRoles[0]?.db !== TEST_DB_NAME)) {
+    throw new Error('[FATAL] QA database name or authenticated role was not verified.');
+  }
+
+  // The separately guarded browser child retains its existing drain protocol.
+  const lifecycle = qaMode ? null : require('./security/applicationShutdown').createApplicationShutdown({
+    disconnect: () => require('mongoose').disconnect(),
+    closeRedis: () => require('./config/redis').closeRedis()
+  });
+  try {
 
   // ── Step 3.1: Initialize Redis OTP store (non-blocking) ───────────────────
   const { initRedis } = require('./config/redis');
-  await initRedis();
+  if (process.env.MEDISYNC_QA_BROWSER_RUN !== 'true') await initRedis();
 
-  // ── Step 3.5: Auto-seed Super Admin ───────────────────────────────────────
-  const bcrypt = require('bcryptjs');
-  const Admin = require('./models/Admin');
-  const adminEmail = 'superadmin@medisync.com';
-  const existingAdmin = await Admin.findOne({ email: adminEmail });
-  if (!existingAdmin) {
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    if (!adminPassword) {
-      throw new Error('FATAL: ADMIN_PASSWORD environment variable is not defined.');
-    }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(adminPassword, salt);
-    await Admin.create({
-      fullName: 'Super Administrator',
-      name: 'SuperAdmin',
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'admin',
-      isSuperAdmin: true,
-      isActive: true
-    });
-    console.log('✅ [DB] Super Admin account automatically seeded.');
+  // ── Step 3.5: Auto-seed Super Admin (skip in automated test mode to preserve IR-03 dataset) ─
+  if (!isAutomatedTestEnvironment()) {
+    const Admin = require('./models/Admin');
+    if (!await Admin.exists({ isActive: true, isSuperAdmin: true })) throw new Error('Approved operator account provisioning is required before live startup');
+
+    // ── Step 4: Start background cron jobs (disabled in automated test mode) ─
+    lifecycle?.bind({ jobs: initCronJobs() });
+  } else {
+    console.log('🛡️ [Test Mode] Skipped superadmin auto-seeding and background cron jobs to preserve IR-03 dataset.');
   }
-
-  // ── Step 4: Start background cron jobs ───────────────────────────────────
-  initCronJobs();
 
   // ── Step 5: Build the Express app ────────────────────────────────────────
   const app = express();
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') app.use(global.__MEDISYNC_QA_BROWSER_LIFECYCLE.request);
   app.set('trust proxy', 1);
   const httpServer = http.createServer(app);
+  lifecycle?.bind({ httpServer });
+  if (lifecycle) app.use((req,res,next) => lifecycle.stopping ? res.status(503).json({error:'Service shutting down'}) : next());
 
   // Socket.IO – real-time outbreak alerts & broadcasts
-  const jwt = require('jsonwebtoken');
-  const io = new Server(httpServer, {
+  const io = process.env.MEDISYNC_QA_BROWSER_RUN === 'true' ? global.__MEDISYNC_QA_BROWSER_BOOTSTRAP.socket : qaMode ? {
+    userSocketMap: new Map(),
+    emit() {},
+    to() { return this; },
+    on() {},
+  } : new Server(httpServer, {
+    allowRequest: (request, callback) => callback(null, !request.headers.origin || request.headers.origin === clientOrigin),
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: clientOrigin,
       credentials: true,
     },
   });
   app.set('io', io);
+  lifecycle?.bind({ io });
 
   // Map userId → socketId for targeted real-time pushes
   io.userSocketMap = new Map();
 
-  io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
-
-    // Attempt JWT authentication (graceful – unauthenticated sockets still connect)
-    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId || decoded.id;
-        if (userId) {
-          io.userSocketMap.set(userId.toString(), socket.id);
-          console.log(`[Socket] Mapped user ${userId} → ${socket.id}`);
-        }
-      } catch (err) {
-        console.warn('[Socket] Invalid JWT on connection:', err.message);
-      }
-    }
-
-    socket.on('disconnect', () => {
-      // Remove any mapping that pointed to this socket
-      for (const [uid, sid] of io.userSocketMap.entries()) {
-        if (sid === socket.id) {
-          io.userSocketMap.delete(uid);
-          console.log(`[Socket] Unmapped user ${uid}`);
-          break;
-        }
-      }
-      console.log('Client disconnected:', socket.id);
-    });
-  });
+  if (!qaMode && typeof io.use === 'function') {
+    require('./security/socketAuthorization').installSocketAuthorization(io);
+  }
 
   // Core middleware
   app.use(helmet());
@@ -219,34 +237,57 @@ async function startServer() {
   });
   app.use(
     cors({
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: clientOrigin,
       credentials: true,
     })
   );
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 
+  // Only the separately approved browser entry point installs this guard.
+  // Ordinary QA startup does not qualify for clinical browser testing.
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') {
+    const guard = global.__MEDISYNC_QA_BROWSER_GUARD;
+    if (!qaMode || !guard || guard.owner !== process.env.MEDISYNC_QA_BROWSER_OWNER) throw new Error('Missing browser ownership guard');
+    const lifecycle = global.__MEDISYNC_QA_BROWSER_LIFECYCLE;
+    if(!lifecycle || !global.__MEDISYNC_QA_BROWSER_SHUTDOWN)throw new Error('Missing browser lifecycle');
+    require('../tests/helpers/browserQaControls').registerBrowserQaControls(app, {
+      guard, lifecycle, dbInfo,
+      config: global.__MEDISYNC_QA_BROWSER_BOOTSTRAP.config,
+      shutdown: () => global.__MEDISYNC_QA_BROWSER_SHUTDOWN(httpServer),
+      readOwnedRecipient: email => require('mongoose').connection.db.collection('patients').findOne({ email, phase5xOwner: guard.owner, isSynthetic: true }),
+      capturedEmails: () => global.__MEDISYNC_CAPTURED_TEST_EMAILS || []
+    });
+  }
+
   // Express 5 compatible MongoDB operator sanitizer (mutates req.body/query/params in-place)
   const sanitizeInPlace = (obj) => {
-    if (!obj || typeof obj !== 'object') return;
+    if (!obj || typeof obj !== 'object') return false;
     if (Array.isArray(obj)) {
+      let arrayStripped = false;
       for (let i = 0; i < obj.length; i++) {
         if (typeof obj[i] === 'object' && obj[i] !== null) {
-          sanitizeInPlace(obj[i]);
+          if (sanitizeInPlace(obj[i])) {
+            arrayStripped = true;
+          }
         }
       }
-      return;
+      return arrayStripped;
     }
+    let stripped = false;
     for (const key of Object.keys(obj)) {
       if (key.startsWith('$') || key.includes('.')) {
         delete obj[key];
+        stripped = true;
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-        sanitizeInPlace(obj[key]);
-        if (Object.keys(obj[key]).length === 0) {
+        const childStripped = sanitizeInPlace(obj[key]);
+        if (childStripped && !Array.isArray(obj[key]) && Object.keys(obj[key]).length === 0) {
           delete obj[key];
+          stripped = true;
         }
       }
     }
+    return stripped;
   };
 
   app.use((req, res, next) => {
@@ -269,22 +310,53 @@ async function startServer() {
   // All route files are require()'d here — AFTER global.ENCRYPTION_KEY is
   // set — so the Mongoose models they pull in (directly or transitively) are
   // always registered with the correct encryption secret.
-  app.use('/api/auth',     authLimiter, require('./routes/authRoutes'));
-  app.use('/api/public',               require('./routes/publicRoutes'));
-  app.use('/api/doctor',               require('./routes/doctorRoutes'));
-  app.use('/api/hospital',             require('./routes/hospitalRoutes'));
-  app.use('/api/pharmacy',             require('./routes/pharmacyRoutes'));
-  app.use('/api/patient',              require('./routes/patientRoutes'));
-  app.use('/api/admin',                require('./routes/adminRoutes'));
-  app.use('/api/drugs',                require('./routes/drugRoutes'));
-  app.use('/api/alerts',               require('./routes/alertRoutes'));
-  app.use('/api/tests',                require('./routes/testRoutes'));
-  app.use('/api/prescription',         require('./routes/prescriptionRoutes'));
-  app.use('/api/lab',                  require('./routes/labRoutes'));
-  app.use('/api/notifications',        require('./routes/notificationRoutes'));
-  app.use('/api/users',                require('./routes/userRoutes'));
-  app.use('/api/support',              require('./routes/supportRoutes'));
-  app.use('/api/devices',              require('./routes/deviceRoutes'));
+  // E1 Minimal Profile Check: Exclude ordinary clinical routes during E1 zero-write lifecycle probe
+  const isE1ProbeAttempt = Boolean(qaMode && process.env.MEDISYNC_QA_ATTEMPT_ID?.startsWith('5X-E1'));
+  if (isE1ProbeAttempt) {
+    app.use('/api/qa', require('./routes/qaRoutes'));
+    app.get('/api/patient/e1-denied', (req, res) => {
+      res.status(423).json({
+        error: 'E1 read-only lifecycle lockdown. Patient routes locked.',
+        code: 'QA_E1_ROUTE_LOCKED'
+      });
+    });
+  } else {
+    app.use('/api/auth',     authLimiter, require('./routes/authRoutes'));
+    app.use('/api/public',               require('./routes/publicRoutes'));
+    app.use('/api/doctor',               require('./routes/doctorRoutes'));
+    app.use('/api/hospital',             require('./routes/hospitalRoutes'));
+    app.use('/api/pharmacy',             require('./routes/pharmacyRoutes'));
+    if (qaMode) {
+      app.use('/api/qa', require('./routes/qaRoutes'));
+      app.get('/api/patient/e1-denied', (req, res) => {
+        res.status(423).json({
+          error: 'E1 read-only lifecycle lockdown. Patient routes locked.',
+          code: 'QA_E1_ROUTE_LOCKED'
+        });
+      });
+    }
+    app.use('/api/patient',              require('./routes/patientRoutes'));
+    app.use('/api/admin',                require('./routes/adminRoutes'));
+    app.use('/api/drugs',                require('./routes/drugRoutes'));
+    app.use('/api/alerts',               require('./routes/alertRoutes'));
+    app.use('/api/tests',                require('./routes/testRoutes'));
+    app.use('/api/prescription',         require('./routes/prescriptionRoutes'));
+    app.use('/api/prescriptions',        require('./routes/prescriptionRoutes'));
+    app.use('/api/lab',                  require('./routes/labRoutes'));
+    app.use('/api/notifications',        require('./routes/notificationRoutes'));
+    app.use('/api/users',                require('./routes/userRoutes'));
+    app.use('/api/support',              require('./routes/supportRoutes'));
+    app.use('/api/reviews',              require('./routes/reviewRoutes'));
+    app.use('/api/devices',              require('./routes/deviceRoutes'));
+  }
+
+  // Health check endpoints for Docker / Render / orchestrator
+  app.get(['/health', '/api/health'], require('./security/runtimeHealth').createRuntimeHealth({
+    requireRedis: !qaMode || process.env.MEDISYNC_LOCAL_REAL_STACK === 'true',
+    requireAdmission: !qaMode,
+    admissionReady: () => require('./security/runtimeHealth').hasProductionAdmission(dbInfo),
+    stopping: () => lifecycle?.stopping === true
+  }));
 
   // 404 handler
   app.use((req, res) => {
@@ -292,49 +364,41 @@ async function startServer() {
   });
 
   // Global error handler
-  app.use((err, req, res, next) => {
-    if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
-      return res.status(413).json({ error: 'Payload too large', message: 'Request entity too large' });
-    }
-    if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'Invalid data format', details: err.message });
-    }
-    console.error('Unhandled Error:', err);
-    res.status(err.status || err.statusCode || 500).json({ error: 'Internal server error', details: err.message });
-  });
+  app.use(require('./security/apiErrorHandler').apiErrorHandler);
 
-  // ── Step 7: Background ML Engine check (non-blocking) ───────────────────
-  const axios = require('axios');
-  const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
-  
-  let mlIsReady = null; // null = unknown startup state
-  
-  const checkMLEngine = async () => {
-    try {
-      const resp = await axios.get(`${mlEngineUrl}/health`, { timeout: 60000 });
-      if (resp.status === 200) {
-        if (mlIsReady !== true) {
-          console.log('[Server] ML Engine is online and ready.');
-          mlIsReady = true;
-        }
-      }
-    } catch (err) {
-      if (mlIsReady !== false) {
-        console.warn(`[Server] Warning: ML Engine is currently unreachable at ${mlEngineUrl}. Ensure it is deployed and starting up.`);
-        mlIsReady = false;
-      }
-    }
-  };
-  
-  // Run immediately on boot, then warm-ping every 5 minutes to prevent idle spin-down
-  checkMLEngine();
-  setInterval(checkMLEngine, 5 * 60 * 1000);
+  // Seal only the dedicated QA child, after controls, all routes, 404 and errors.
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') global.__MEDISYNC_QA_BROWSER_LIFECYCLE.instrument(app);
 
+  // ── Step 7: Background ML Engine check (disabled in automated test mode) ──
   const PORT = process.env.PORT || 5000;
-  httpServer.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
+  if (process.env.MEDISYNC_QA_BROWSER_RUN === 'true') {
+    await global.__MEDISYNC_QA_BROWSER_BOOTSTRAP.listen(httpServer, Number(PORT));
+    return { app, httpServer, dbInfo };
+  }
+  const host = qaMode ? '127.0.0.1' : undefined;
+  await require('./security/listenReady').listenReady(httpServer, PORT, host);
+  if (lifecycle) {
+    lifecycle.installSignals();
+    const monitor = require('./security/mlHealthMonitor').createMlHealthMonitor({
+      request: require('axios').get,
+      url: `${(process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace(/\/$/,'')}/health`
+    });
+    lifecycle.bind({ monitor }); monitor.start();
+  }
+  if (qaMode) console.log(`[QA_READY] http://127.0.0.1:${PORT} | db=${dbInfo.dbName} | role=readWrite@${TEST_DB_NAME} | external providers disabled`);
+  else console.log(`[Server] Running on port ${PORT}`);
+  return { app, httpServer, dbInfo, shutdown: lifecycle?.stop };
+  } catch (error) {
+    if (lifecycle) await lifecycle.stop();
+    throw error;
+  }
 }
 
-startServer().catch((err) => {
-  console.error('[FATAL] Server failed to start:', err.stack);
-  process.exit(1);
-});
+if (require.main === module) {
+  startServer().catch((err) => {
+    console.error('[FATAL] Server failed to start:', err.stack);
+    process.exit(1);
+  });
+}
+
+module.exports = { startServer };

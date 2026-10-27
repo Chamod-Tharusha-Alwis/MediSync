@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { MapContainer, GeoJSON } from 'react-leaflet';
 import DiseaseCombobox from '../../components/DiseaseCombobox';
 import 'leaflet/dist/leaflet.css';
@@ -6,7 +7,7 @@ import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FiTrendingUp, FiActivity, FiMap } from 'react-icons/fi';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
-import axios from 'axios';
+import api from '../../api/axiosInstance';
 
 const MapController = ({ data, geoData, getFeatureStyle }) => {
   const geoJsonLayerRef = useRef(null);
@@ -49,6 +50,7 @@ const MapController = ({ data, geoData, getFeatureStyle }) => {
 };
 
 const PublicHealth = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,25 +70,30 @@ const PublicHealth = () => {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
     const fetchStats = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get('/api/public/health-stats', {
-          params: filters
+        const response = await api.get('/public/health-stats', {
+          params: filters, signal: controller.signal
         });
-        setData(response.data.data);
+        if (active) setData(response.data.data);
       } catch (err) {
+        if (!active) return;
         if (err.response && err.response.status === 429) {
           setError('Too many requests. Please wait a minute and try again.');
         } else {
-          setError('Failed to load health statistics.');
+          setData(null);
+          setError(err.response?.status === 503 ? 'Health statistics are temporarily unavailable. No case counts are shown.' : 'Failed to load health statistics.');
         }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchStats();
+    return () => { active = false; controller.abort(); };
   }, [filters]);
 
   const handleFilterChange = (e) => {
@@ -117,7 +124,7 @@ const PublicHealth = () => {
   }, [data]);
 
   return (
-    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 pt-28 pb-12 px-6">
+    <PageTransition className="min-h-screen bg-[#0b1120] text-slate-200 pt-44 xl:pt-28 pb-12 px-6">
       <PublicNavbar />
       <div className="max-w-7xl mx-auto space-y-8">
         
@@ -127,7 +134,7 @@ const PublicHealth = () => {
             <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-2">
               Public Health Dashboard
             </h1>
-            <p className="text-slate-400">Anonymized disease tracking across Sri Lanka</p>
+            <p className="text-slate-400">{t("public.publicHealthSubtitle", "Anonymized disease tracking across Sri Lanka")}</p>
           </div>
           
           {/* Filters */}

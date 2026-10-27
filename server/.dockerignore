@@ -1,7 +1,34 @@
-node_modules
-.venv
-venv
-__pycache__
-npm-debug.log
-.env
-build
+# Production-only context. Tests, proof helpers, uploads and operator runners
+# are never sent to the build; QA continues to use its separate reviewed entry.
+**
+!package.json
+!package-lock.json
+!src/
+!src/**
+!reference-data/
+reference-data/**
+!reference-data/manifest.json
+!reference-data/drugs_clean.json
+!reference-data/interactions_clean.json
+!reference-data/icd10_clean.json
+!reference-data/symptoms.json
+!scripts/
+scripts/**
+!scripts/previewSyntheticOutbreakScenarios.js
+
+# These are operator tools, not clinical server runtime dependencies.
+src/utils/seed*.js
+src/utils/wipe*.js
+src/utils/cleanTestOutbreaks.js
+
+# Apply exclusions after the source allowlist, including nested material.
+**/.env
+**/.env.*
+**/node_modules/**
+**/tests/**
+**/*.test.js
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.p12
+**/*credentials*

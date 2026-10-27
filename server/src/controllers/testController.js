@@ -1,3 +1,4 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const TestOrder = require('../models/TestOrder');
 const Consultation = require('../models/Consultation');
 
@@ -18,6 +19,12 @@ exports.orderTest = async (req, res) => {
       return res.status(403).json({ error: 'Consultation not found or not authorized' });
     }
 
+    consultation.decryptFieldsSync?.();
+    const { normalizeNic } = require('../security/nicBlindIndex');
+    if (!consultation.patientNic || normalizeNic(consultation.patientNic) !== normalizeNic(patientNic)) {
+      return res.status(403).json({ error: 'Consultation patient mismatch' });
+    }
+
     const testOrder = new TestOrder({
       consultationId,
       patientNic,
@@ -35,7 +42,7 @@ exports.orderTest = async (req, res) => {
     await testOrder.save();
     return res.status(201).json({ message: 'Test ordered successfully', data: testOrder });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to order test', details: error.message });
+    return res.status(500).json({ error: 'Failed to order test' });
   }
 };
 
@@ -46,7 +53,7 @@ exports.getPatientTests = async (req, res) => {
     // Patients can only view their own tests — verify against authenticated patient record
     if (req.user.role === 'patient') {
       const Patient = require('../models/Patient');
-      let authNic = req.user.nic || req.user.sub || null;
+      let authNic = null;
       if (req.user.id) {
         const authPatient = await Patient.findById(req.user.id);
         if (authPatient) {
@@ -67,7 +74,12 @@ exports.getPatientTests = async (req, res) => {
     const LabTest = require('../models/LabTest');
     const patientNic_bi = crypto.createHash('sha256').update(nic.trim()).digest('hex');
 
-    const tests = await LabTest.find({ patientNic_bi })
+    if (req.user.role === 'doctor') {
+      if (!req.headers['x-patient-access'] && !req.headers['x-patient-access-token']) return res.status(403).json({ error: 'Patient consent required' });
+      const decision = await require('./patientController').verifyDoctorPatientAuthorization(req, nic, patientNic_bi);
+      if (!decision?.authorized || decision.mode !== 'patient_otp_consent') return res.status(403).json({ error: 'Patient consent required' });
+    } else if (!['patient', 'hospital_admin'].includes(req.user.role)) return res.status(403).json({ error: 'Access denied' });
+    const tests = await LabTest.find({ ...nicFilter(nic), ...(req.user.role === 'hospital_admin' ? { hospitalId: req.user.id } : {}) })
       .sort({ createdAt: -1 });
 
     const sanitizedTests = tests.map((t) => {
@@ -87,8 +99,8 @@ exports.getPatientTests = async (req, res) => {
 
     return res.json({ data: sanitizedTests });
   } catch (error) {
-    console.error('[TEST CONTROLLER] getPatientTests error:', error.message);
-    return res.status(500).json({ error: 'Failed to fetch tests', details: error.message });
+    console.error('[TEST CONTROLLER] Patient test lookup failed.');
+    return res.status(500).json({ error: 'Failed to fetch tests' });
   }
 };
 
@@ -96,43 +108,26 @@ exports.getConsultationTests = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const tests = await TestOrder.find({ consultationId: id })
+    if (!['doctor', 'hospital_admin'].includes(req.user.role)) return res.status(403).json({ error: 'Access denied' });
+    const scope = req.user.role === 'doctor' ? { doctorId: req.user.id } : { hospitalId: req.user.id };
+    const tests = await TestOrder.find({ consultationId: id, ...scope })
       .populate('doctorId', 'fullName')
       .sort({ orderedAt: -1 });
 
-    return res.json({ data: tests });
+    return res.json({ data: tests.map(record => {
+      const data = record.toObject ? record.toObject() : { ...record };
+      for (const field of ['resultFileUrl', 'resultCloudinaryId', 'patientNic', 'keyVersion']) delete data[field];
+      for (const field of Object.keys(data)) if (field.startsWith('__enc_')) delete data[field];
+      return data;
+    }) });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch consultation tests', details: error.message });
+    return res.status(500).json({ error: 'Failed to fetch consultation tests' });
   }
 };
 
 exports.uploadTestResult = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { resultNotes, reportedBy } = req.body;
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    const testOrder = await TestOrder.findById(id);
-    if (!testOrder) {
-      return res.status(404).json({ error: 'Test order not found' });
-    }
-
-    testOrder.resultFileUrl = req.file.path;                 // Cloudinary URL
-    testOrder.resultFileName = req.file.originalname || req.file.filename;
-    testOrder.resultCloudinaryId = req.file.filename;        // public_id from Cloudinary
-    testOrder.resultUploadedAt = new Date();
-    testOrder.resultNotes = resultNotes || '';
-    testOrder.reportedBy = reportedBy || '';
-    testOrder.status = 'completed';
-
-    await testOrder.save();
-    return res.json({ message: 'Result uploaded successfully', data: testOrder });
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to upload result', details: error.message });
-  }
+  // Kept fail-closed for direct callers as well as the disabled HTTP route.
+  return res.status(403).json({ error: 'Use the encrypted laboratory upload workflow' });
 };
 
 exports.updateTestStatus = async (req, res) => {
@@ -145,22 +140,23 @@ exports.updateTestStatus = async (req, res) => {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const testOrder = await TestOrder.findById(id);
+    if (req.user?.role !== 'hospital_admin') return res.status(403).json({ error: 'Access denied' });
+    const testOrder = await TestOrder.findOne({ _id: id, hospitalId: req.user.id });
     if (!testOrder) return res.status(404).json({ error: 'Test order not found' });
 
     // Simple forward-only transition check
     const order = ['ordered', 'sample_collected', 'processing', 'completed'];
     const currentIdx = order.indexOf(testOrder.status);
     const newIdx = order.indexOf(status);
-    if (newIdx < currentIdx) {
+    if (currentIdx < 0 || newIdx < currentIdx) {
       return res.status(400).json({ error: 'Cannot move test backwards in status' });
     }
 
-    testOrder.status = status;
-    await testOrder.save();
-    return res.json({ message: 'Status updated', data: testOrder });
+    const updated = await TestOrder.findOneAndUpdate({ _id: id, hospitalId: req.user.id, status: testOrder.status }, { $set: { status } }, { new: true, runValidators: true });
+    if (!updated) return res.status(409).json({ error: 'Test status changed; refresh before retrying' });
+    return res.json({ message: 'Status updated', data: updated });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to update status', details: error.message });
+    return res.status(500).json({ error: 'Failed to update status' });
   }
 };
 
@@ -179,7 +175,7 @@ exports.cancelTest = async (req, res) => {
     await testOrder.save();
     return res.json({ message: 'Test order cancelled', data: testOrder });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to cancel test', details: error.message });
+    return res.status(500).json({ error: 'Failed to cancel test' });
   }
 };
 
@@ -213,8 +209,8 @@ exports.getHospitalTests = async (req, res) => {
     
     res.json({ data: tests, total, page, pages: Math.ceil(total/limit) });
   } catch (err) {
-    console.error('getHospitalTests error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Hospital test lookup failed.');
+    res.status(500).json({ error: 'Failed to fetch hospital tests' });
   }
 };
 

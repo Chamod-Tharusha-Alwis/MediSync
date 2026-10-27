@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { Star, User, Building2, Pill, ShieldCheck, Lock } from 'lucide-react';
 import api from '../../api/axiosInstance';
@@ -18,9 +19,12 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [publishConsent, setPublishConsent] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!consultation) return;
+    setPublishConsent(false);
 
     const existingReviews = consultation.reviews || [];
     const docReview = existingReviews.find(r => r.targetModel === 'Doctor');
@@ -99,6 +103,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
       });
     }
 
+    if (!publishConsent) return toast.error('Confirm publication consent before submitting feedback.');
     if (submissions.length === 0) {
       return toast.warning('Please rate at least one new entity before submitting.');
     }
@@ -108,7 +113,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
       const promises = submissions.map(sub => 
         api.post('/reviews', {
           ...sub,
-          consultationId: consultation._id
+          consultationId: consultation._id, publishConsent: true
         })
       );
       
@@ -259,7 +264,10 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
         <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row gap-3 items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium select-none">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>HIPAA Compliant & Encrypted</span>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={publishConsent} onChange={e => setPublishConsent(e.target.checked)} />
+              <span>{t('public.reviewPublicationConsent', 'I agree to publish this anonymous feedback. I have not included medical or identifying details.')}</span>
+            </label>
           </div>
           
           {allSubmitted ? (
@@ -269,10 +277,10 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || !publishConsent}
               className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 shadow-[0_4px_12px_rgba(20,184,166,0.2)]"
             >
-              {submitting ? 'Submitting...' : 'Submit Ratings'}
+              {submitting ? t('forms.submitting', 'Submitting...') : t('patient.submitRatings', 'Submit Ratings')}
             </button>
           )}
         </div>

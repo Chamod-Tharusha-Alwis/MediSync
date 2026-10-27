@@ -8,6 +8,17 @@ const cron = require('node-cron');
  * sees a populated secret when each model's plugin is first registered.
  */
 const initCronJobs = () => {
+  // Ordinary API startup grants no background data mutation/delivery scope.
+  if (process.env.MEDISYNC_BACKGROUND_JOBS_APPROVED !== 'true') return { status: 'held', stop() {} };
+  const timezone = process.env.MEDISYNC_CRON_TIMEZONE || 'UTC';
+  new Intl.DateTimeFormat('en', { timeZone: timezone });
+  const tasks = [], active = new Set();
+  let stopping = false;
+  const schedule = (expression, callback) => tasks.push(cron.schedule(expression, async () => {
+    if (stopping) return;
+    const work = Promise.resolve().then(callback); active.add(work);
+    try { await work; } finally { active.delete(work); }
+  }, { timezone }));
   // ── Deferred model imports ────────────────────────────────────────────────
   // These require()s are intentionally inside initCronJobs() — NOT at the top
   // of the file — so they execute only after global.ENCRYPTION_KEY is set.
@@ -17,9 +28,20 @@ const initCronJobs = () => {
   const OTPSession   = require('../models/OTPSession');
   const SessionToken = require('../models/SessionToken');
   const emailService = require('./emailService');
+  const { nicFilter } = require('../security/nicPersistence');
+  if (process.env.MEDISYNC_CLINICAL_OUTBOX_APPROVED === 'true') {
+    let reconciling = false;
+    schedule('* * * * *', async () => {
+      if (reconciling) return;
+      reconciling = true;
+      try { await require('../services/clinicalOutboxWorker').reconcileClinicalCommands(); }
+      catch (_) { console.error('Clinical audit outbox reconciliation unavailable.'); }
+      finally { reconciling = false; }
+    });
+  }
   // ─────────────────────────────────────────────────────────────────────────
   // Job 1 — Expire prescriptions (every hour)
-  cron.schedule('0 * * * *', async () => {
+  schedule('0 * * * *', async () => {
     try {
       const result = await Prescription.updateMany(
         { status: 'issued', expiresAt: { $lt: new Date() } },
@@ -29,12 +51,12 @@ const initCronJobs = () => {
         console.log(`Expired ${result.modifiedCount} prescriptions`);
       }
     } catch (error) {
-      console.error('Error in expire prescriptions cron job:', error);
+      console.error('Prescription expiry job unavailable.');
     }
   });
 
   // Job 2 — Calculate patient risk scores (every 6 hours)
-  cron.schedule('0 */6 * * *', async () => {
+  schedule('0 */6 * * *', async () => {
     try {
       const patients = await Patient.find({});
       for (let patient of patients) {
@@ -56,7 +78,7 @@ const initCronJobs = () => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const consultCount = await Consultation.countDocuments({
-          patientNic: patient.nic,
+          ...nicFilter(patient.nic, { legacyFields: ['nicHash', 'patientNic_bi'], plainFields: ['patientNic'] }),
           createdAt: { $gte: thirtyDaysAgo }
         });
         if (consultCount > 2) {
@@ -65,7 +87,7 @@ const initCronJobs = () => {
 
         // Active prescriptions risk
         const activeRxCount = await Prescription.countDocuments({
-          patientNic: patient.nic,
+          ...nicFilter(patient.nic, { legacyFields: ['nicHash', 'patientNic_bi'], plainFields: ['patientNic'] }),
           status: 'issued'
         });
         if (activeRxCount > 3) {
@@ -82,7 +104,7 @@ const initCronJobs = () => {
       }
       console.log(`Calculated risk scores for ${patients.length} patients`);
     } catch (error) {
-      console.error('Error in risk score cron job:', error);
+      console.error('Patient risk job unavailable.');
     }
   });
 
@@ -96,20 +118,19 @@ const initCronJobs = () => {
   // Isolation: each patient email attempt is wrapped in its own try/catch so
   // that one bad record (missing email, SMTP failure) never kills the whole run.
   // ─────────────────────────────────────────────────────────────────────────
-  cron.schedule('0 8 * * *', async () => {
+  schedule('0 8 * * *', async () => {
+    if (process.env.MEDISYNC_REMINDER_DISPATCH_APPROVED !== 'true') return;
     console.log('[Cron] ── Follow-up Reminder Job started ──');
     try {
       // Build the target date window: exactly 2 days from today (midnight-to-midnight)
-      const twoDaysStart = new Date();
-      twoDaysStart.setHours(0, 0, 0, 0);
-      twoDaysStart.setDate(twoDaysStart.getDate() + 2);   // start of day+2
-
-      const twoDaysEnd = new Date(twoDaysStart);
-      twoDaysEnd.setDate(twoDaysEnd.getDate() + 1);       // start of day+3 (exclusive upper bound)
+      const { createReminderDispatcher, existingReminderStore, followUpWindow } = require('../services/reminderDispatchService');
+      const { start: twoDaysStart, end: twoDaysEnd } = followUpWindow(new Date(), timezone);
 
       console.log(`[Cron] Querying follow-ups between ${twoDaysStart.toISOString()} and ${twoDaysEnd.toISOString()}`);
 
       // Fetch non-synthetic consultations in the 2-day window; populate doctorId for the name
+      const store = await existingReminderStore(require('mongoose').connection.db);
+      const dispatch = createReminderDispatcher({ store });
       const consultations = await Consultation.find({
         followUpDate: { $gte: twoDaysStart, $lt: twoDaysEnd },
         isDemoData: { $ne: true },
@@ -131,7 +152,7 @@ const initCronJobs = () => {
             continue;
           }
 
-          const patient = await Patient.findOne({ nic: consult.patientNic });
+          const patient = await require('../services/recipientLanguageService').clinicalPatientForRecord(consult, { PatientModel: Patient });
           if (!patient) {
             console.warn(`[Cron] Consultation ${consult._id}: patient not found — skipping`);
             skipped++;
@@ -157,6 +178,7 @@ const initCronJobs = () => {
 
           // ── Format the date as a readable string ───────────────────────
           const formattedDate = new Intl.DateTimeFormat('en-GB', {
+            timeZone: timezone,
             weekday: 'long',
             day:     '2-digit',
             month:   'long',
@@ -166,23 +188,24 @@ const initCronJobs = () => {
           const doctorName = consult.doctorId?.fullName || 'Your Doctor';
 
           // ── Send reminder — uses the dedicated 2-day template ───────────
-          const result = await emailService.sendReminderEmail(
+          const result = await dispatch({ appointmentId: String(consult._id), patientId: String(patient._id), scheduledFor: consult.followUpDate }, deliveryOptions => emailService.sendReminderEmail(
             patient.email,
             patient.fullName,
             formattedDate,
-            doctorName
-          );
+            doctorName,
+            { ...require('../services/recipientLanguageService').languageOptionsForRecord('Patient', patient), ...deliveryOptions }
+          ));
 
           if (result && result.providerAccepted) {
             sent++;
           } else {
-            console.error(`[Cron] Reminder email FAILED for consultation ${consult._id}: ${result?.errorCode || result?.error}`);
+            console.error('[Cron] Reminder not confirmed; inspect the durable dispatch journal without automatic retry.');
             failed++;
           }
 
         } catch (recordErr) {
           // Per-record isolation: log and continue — never abort the batch
-          console.error(`[Cron] Error processing consultation ${consult._id}: ${recordErr.message}`);
+          console.error('[Cron] Reminder held; patient binding or dispatch verification failed.');
           failed++;
         }
       }
@@ -190,116 +213,28 @@ const initCronJobs = () => {
       console.log(`[Cron] ── Follow-up Reminder Job complete — sent: ${sent}, skipped: ${skipped}, failed: ${failed} ──`);
 
     } catch (jobErr) {
-      console.error('[Cron] Follow-up Reminder Job fatal error:', jobErr.message);
+      console.error('[Cron] Follow-up reminder job unavailable; no automatic retry.');
     }
   });
 
   // Job 4 — Clean expired OTP sessions (every 30 min)
-  cron.schedule('*/30 * * * *', async () => {
+  schedule('*/30 * * * *', async () => {
     try {
       const result = await OTPSession.deleteMany({ expiresAt: { $lt: new Date() } });
       if (result.deletedCount > 0) {
         console.log(`Cleaned ${result.deletedCount} expired OTP sessions`);
       }
     } catch (error) {
-      console.error('Error in clean OTPs cron job:', error);
+      console.error('Expired OTP cleanup unavailable.');
     }
   });
-  // Job 5 — Automated outbreak detection (daily at 2am)
-  cron.schedule('0 2 * * *', async () => {
-    console.log('[Cron] Starting daily outbreak detection job...');
-    try {
-      const axios = require('axios');
-      const OutbreakAlert = require('../models/OutbreakAlert');
-      const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
-
-      const now = new Date();
-      const sevenDaysAgo  = new Date(now); sevenDaysAgo.setDate(now.getDate() - 7);
-      const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
-
-      // Fetch & auto-decrypt consultations for last 30 days
-      const consultations = await Consultation.find({ createdAt: { $gte: thirtyDaysAgo } });
-
-      if (consultations.length === 0) {
-        console.log('[Cron] No consultation data — skipping outbreak analysis.');
-        return;
-      }
-
-      // Aggregate into buckets: district + disease → recent vs baseline counts
-      const buckets = {};
-      for (const c of consultations) {
-        const disease  = c.diagnosis || c.icdDescription || 'Unknown';
-        const district = c.district  || 'Colombo';
-        const key      = `${district}||${disease}`;
-        const isRecent = new Date(c.createdAt) >= sevenDaysAgo;
-
-        if (!buckets[key]) {
-          buckets[key] = { district, disease, last_7_days: 0, prev_23_days: 0 };
-        }
-        if (isRecent) buckets[key].last_7_days++;
-        else          buckets[key].prev_23_days++;
-      }
-
-      const payload = Object.values(buckets).map(b => ({
-        district:              b.district,
-        disease:               b.disease,
-        last_7_days_count:     b.last_7_days,
-        previous_baseline_avg: parseFloat((b.prev_23_days / 3.29).toFixed(2))
-      }));
-
-      const { generateToken } = require('./internalAuth');
-      const { data: mlResult } = await axios.post(
-        `${ML_ENGINE_URL}/analyze-realtime`,
-        { data: payload },
-        { 
-          timeout: 30000,
-          headers: { 'x-internal-key': generateToken() }
-        }
-      );
-
-      console.log(`[Cron] ML result — anomaly: ${mlResult.anomaly}, disease: ${mlResult.disease}, spike: ${mlResult.spike_percentage}%`);
-
-      // Persist alert and broadcast if anomaly detected
-      if (mlResult.anomaly) {
-        try {
-          const severityMap = { 'Normal': 'Low', 'Low': 'Low', 'Medium': 'Moderate', 'High': 'High' };
-          const mappedSeverity = severityMap[mlResult.risk_level] || (mlResult.spike_percentage >= 600 ? 'Critical' : 'High');
-          
-          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          
-          // Duplicate suppression
-          const existingAlert = await OutbreakAlert.findOne({
-            disease: mlResult.disease,
-            location: mlResult.district,
-            status: { $in: ['Pending', 'Active'] },
-            createdAt: { $gte: twentyFourHoursAgo }
-          });
-          
-          if (!existingAlert) {
-            const alert = await OutbreakAlert.create({
-              disease:        mlResult.disease || 'Unknown',
-              location:       mlResult.district || 'Nationwide',
-              affectedCount:  mlResult.last_7_days_count || 0,
-              severity:       mappedSeverity,
-              status:         'Pending',
-              message:        `[Auto] Outbreak: ${mlResult.disease} in ${mlResult.district}. Spike: +${mlResult.spike_percentage}%`
-            });
-            console.log(`[Cron] ✅ Outbreak alert saved as Pending: ${mlResult.disease} in ${mlResult.district}`);
-            const io = require('../app').get?.('io');
-            if (io) io.emit('outbreak_alert_pending', alert);
-          } else {
-            console.log(`[Cron] ℹ️ Outbreak alert suppressed (already exists): ${mlResult.disease} in ${mlResult.district}`);
-          }
-        } catch (dbErr) {
-          console.error('[Cron] Alert DB save failed:', dbErr.message);
-        }
-      }
-    } catch (err) {
-      console.error('[Cron] Daily outbreak detection error:', err.message);
-    }
+  // Manual and scheduled detection share exactly the same eligibility policy.
+  schedule('0 2 * * *', async () => {
+    try { await require('../services/surveillanceService').runAnalysis({mode:'real'}); }
+    catch (_) { console.error('[Cron] Surveillance unavailable; no broadcast performed.'); }
   });
   // Job 6: Session Expiry — mark inactive sessions as expired (every 15 min)
-  cron.schedule('*/15 * * * *', async () => {
+  schedule('*/15 * * * *', async () => {
     try {
       const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
       const result = await SessionToken.updateMany(
@@ -310,9 +245,15 @@ const initCronJobs = () => {
         console.log(`[Cron] Expired ${result.modifiedCount} inactive sessions`);
       }
     } catch (err) {
-      console.error('[Cron] Session expiry error:', err.message);
+      console.error('[Cron] Session expiry unavailable.');
     }
   });
+  return { status: 'scheduled', timezone, async stop() {
+    stopping = true;
+    const stopped = await Promise.allSettled(tasks.map(async task => { await task?.stop?.(); await task?.destroy?.(); }));
+    await Promise.allSettled([...active]);
+    if (stopped.some(result => result.status === 'rejected')) throw new Error('BACKGROUND_SHUTDOWN_FAILED');
+  } };
 };
 
 module.exports = initCronJobs;

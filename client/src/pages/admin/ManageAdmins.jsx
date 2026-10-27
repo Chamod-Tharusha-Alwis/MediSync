@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { UserCog, Plus, ShieldCheck, Eye, EyeOff } from 'lucide-react';
@@ -6,6 +7,7 @@ import PageTransition from '../../components/common/PageTransition';
 import Modal from '../../components/Modal';
 
 const ManageAdmins = () => {
+  const { t } = useTranslation();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -50,7 +52,7 @@ const ManageAdmins = () => {
     <PageTransition className="p-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">Admin Management</h1>
+          <h1 className="text-3xl font-bold text-gradient-blue tracking-tight">{t('adminManagement.adminRoster') || 'Admin Management'}</h1>
           <p className="text-slate-400 mt-1">Super admin: Manage platform administrator accounts</p>
         </div>
         <button
@@ -65,21 +67,22 @@ const ManageAdmins = () => {
       {/* Admin table */}
       <div className="glass-panel rounded-xl overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-slate-400">Loading admins…</div>
+          <div className="p-10 text-center text-slate-400">{t('common.loading')}</div>
         ) : admins.length === 0 ? (
           <div className="p-10 text-center">
             <ShieldCheck className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400">No admin accounts found</p>
+            <p className="text-slate-400">{t('tables.noRecordsFound')}</p>
           </div>
         ) : (
+          <div className="overflow-x-auto w-full">
           <table className="w-full text-left">
             <thead className="bg-slate-800/80 border-b border-slate-700 text-slate-300">
               <tr>
                 <th className="px-6 py-4 font-medium">Admin Name</th>
-                <th className="px-6 py-4 font-medium">Email</th>
-                <th className="px-6 py-4 font-medium">Role</th>
-                <th className="px-6 py-4 font-medium">Created</th>
-                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">{t('common.email')}</th>
+                <th className="px-6 py-4 font-medium">{t('common.role')}</th>
+                <th className="px-6 py-4 font-medium">{t('common.date')}</th>
+                <th className="px-6 py-4 font-medium">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -94,13 +97,13 @@ const ManageAdmins = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">{admin.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      admin.role === 'super_admin'
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                      (admin.role === 'super_admin' || admin.isSuperAdmin)
                         ? 'bg-purple-500/20 text-purple-400'
                         : 'bg-blue-500/20 text-blue-400'
                     }`}>
-                      {admin.role === 'super_admin' ? '⭐ Super Admin' : 'Admin'}
+                      {(admin.role === 'super_admin' || admin.isSuperAdmin) ? '⭐ Super Admin' : 'Admin'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">
@@ -110,19 +113,20 @@ const ManageAdmins = () => {
                     <span className={`px-2.5 py-1 rounded text-xs font-bold ${
                       admin.isActive !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                     }`}>
-                      {admin.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
+                      {admin.isActive !== false ? t('common.active') : t('common.blocked')}
                     </span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       {/* Create Admin Modal */}
       {showModal && (
-        <Modal title="Create New Admin Account" onClose={() => setShowModal(false)}>
+        <Modal isOpen={showModal} title="Create New Admin Account" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-300 mb-1.5 block">Full Name</label>
@@ -135,7 +139,7 @@ const ManageAdmins = () => {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-300 mb-1.5 block">Email</label>
+              <label className="text-sm font-medium text-slate-300 mb-1.5 block">{t('common.email')}</label>
               <input
                 type="email"
                 value={form.email}
@@ -167,14 +171,14 @@ const ManageAdmins = () => {
                 onClick={() => setShowModal(false)}
                 className="flex-1 py-2.5 rounded-lg border border-slate-600 text-slate-400 hover:text-white text-sm font-medium transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
                 disabled={submitting || !form.fullName || !form.email || !form.password}
                 className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
               >
-                {submitting ? 'Creating…' : 'Create Admin'}
+                {submitting ? t('forms.submitting') : 'Create Admin'}
               </button>
             </div>
           </div>

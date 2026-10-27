@@ -1,4 +1,4 @@
-﻿# Node dependency directories
+# Node dependency directories
 node_modules/
 
 # Local environment variable configuration files
@@ -27,6 +27,11 @@ __pycache__/
 .venv/
 venv/
 ml-engine/data/*.csv
+!ml-engine/data/dataset.csv
+!ml-engine/data/symptom_Description.csv
+!ml-engine/data/symptom_precaution.csv
+!ml-engine/data/Symptom-severity.csv
+!ml-engine/data/srilanka_dengue_weekly.csv
 *.pyc
 
 dist/
@@ -34,3 +39,7 @@ dist/
 ml-engine/medisync.db
 
 
+scratch/
+docs/docs.rar
+client/test-results/
+client/playwright-report/

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import {
@@ -39,6 +40,7 @@ const fadeIn = {
 // TAB 1: Approve Prescribed Tests (OTP Consent + Approval)
 // ─────────────────────────────────────────────────────────────────────────────
 const RegisterNewTest = () => {
+  const { t } = useTranslation();
   const [step, setStep]                 = useState('nic');
   const [nic, setNic]                   = useState('');
   const [patientInfo, setPatientInfo]   = useState(null);
@@ -157,12 +159,12 @@ const RegisterNewTest = () => {
             <div className="w-16 h-16 bg-emerald-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 animate-pulse-subtle">
               <Shield className="w-8 h-8 text-emerald-400" />
             </div>
-            <h3 className="text-xl font-bold text-white">Patient Consent Verification</h3>
-            <p className="text-slate-400 mt-1.5 text-sm">Verify patient identity via National Identity Card (NIC) to send authentication OTP.</p>
+            <h3 className="text-xl font-bold text-white">{t("lab.consentVerification", "Patient Consent Verification")}</h3>
+            <p className="text-slate-400 mt-1.5 text-sm">{t("lab.consentSubtitle", "Verify patient identity via National Identity Card (NIC) to send authentication OTP.")}</p>
           </div>
           <form onSubmit={handleSendOtp} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className={labelClass}>Patient NIC Number</label>
+              <label className={labelClass}>{t("lab.patientNicNumber", "Patient NIC Number")}</label>
               <input
                 type="text"
                 value={nic}
@@ -179,7 +181,7 @@ const RegisterNewTest = () => {
                 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 shadow-lg"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {loading ? 'Requesting Consent OTP...' : 'Send Verification OTP'}
+              {loading ? 'Requesting Consent OTP...' : '{t("common.verify", "Send Verification OTP")}'}
             </button>
           </form>
         </motion.div>
@@ -202,7 +204,7 @@ const RegisterNewTest = () => {
 
           {!otp ? (
             <div className="glass-panel p-8 rounded-2xl border border-white/5 flex flex-col items-center gap-4 text-center">
-              <label className={labelClass}>Enter 6-Digit Consent Code</label>
+              <label className={labelClass}>{t("lab.consentCode", "Enter 6-Digit Consent Code")}</label>
               <OtpInput
                 onSubmit={handleVerifyOtpCode}
                 onResend={handleSendOtp}
@@ -271,15 +273,15 @@ const RegisterNewTest = () => {
             <CheckCircle className="w-8 h-8 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-white">All Tests Approved!</h3>
-            <p className="text-slate-400 text-xs mt-1">Tests have been loaded to the laboratory system roster for active processing.</p>
+            <h3 className="text-2xl font-bold text-white">{t("lab.allTestsApproved", "All Tests Approved!")}</h3>
+            <p className="text-slate-400 text-xs mt-1">{t("lab.testsLoadedRoster", "Tests have been loaded to the laboratory system roster for active processing.")}</p>
           </div>
 
           <div
             onClick={() => handleCopy(lastReportId)}
             className="group cursor-pointer mx-auto max-w-xs p-5 rounded-xl bg-slate-950/40 border-2 border-dashed border-emerald-500/20 hover:border-emerald-500/40 transition-all text-center"
           >
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 select-none">Latest Report ID</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 select-none">{t("lab.reportId", "Latest Report ID")}</p>
             <p className="text-xl font-mono font-bold text-emerald-400 tracking-wider break-all">{lastReportId}</p>
             <span className="text-[10px] text-slate-400 group-hover:text-emerald-400 transition-colors mt-2 block font-semibold">
               {copied ? 'Copied to clipboard' : 'Click code to copy'}
@@ -477,6 +479,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
 // TAB 3: Lab Report Upload Modal Workflow (Search and dropzone)
 // ─────────────────────────────────────────────────────────────────────────────
 const LabAssistantUpload = () => {
+  const { t } = useTranslation();
   const [reportId, setReportId]     = useState('');
   const [testData, setTestData]     = useState(null);
   const [loading, setLoading]       = useState(false);
@@ -552,7 +555,7 @@ const LabAssistantUpload = () => {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Search Bar */}
       <motion.form variants={fadeIn} initial="hidden" animate="visible" onSubmit={handleSearch} className="glass-panel p-6 rounded-2xl border border-white/5">
-        <label className={labelClass}>Report Verification ID</label>
+        <label className={labelClass}>{t("lab.reportVerificationId", "Report Verification ID")}</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -590,7 +593,7 @@ const LabAssistantUpload = () => {
           {/* Quick Details Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Urgency Priority</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t("lab.urgencyPriority", "Urgency Priority")}</span>
               <span className="text-white font-bold mt-1 block capitalize text-sm">{testData.urgency || 'routine'}</span>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
@@ -610,7 +613,7 @@ const LabAssistantUpload = () => {
           {/* Update Status Selector */}
           <div className="flex items-end gap-3 max-w-md">
             <div className="flex-1 flex flex-col gap-1.5">
-              <label className={labelClass}>Operational State</label>
+              <label className={labelClass}>{t("lab.operationalState", "Operational State")}</label>
               <select
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value)}

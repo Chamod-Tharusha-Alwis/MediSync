@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -8,6 +9,7 @@ import { Stethoscope, Building2, ArrowRight } from 'lucide-react';
  * Presents two animated cards: Private Consultation vs Hospital Consultation
  */
 const DoctorRoleSelection = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const options = [
@@ -52,7 +54,7 @@ const DoctorRoleSelection = () => {
           Doctor Portal
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-3">
-          Select Login Type
+          {t('auth.selectLoginType', 'Select Login Type')}
         </h1>
         <p className="text-slate-400 text-lg max-w-md mx-auto">
           Choose how you'd like to access the MediSync platform today.

@@ -1,6 +1,8 @@
+import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, Phone, Calendar, MapPin, ArrowLeft, CheckCircle, ShieldCheck, HeartPulse} from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Phone, Calendar, MapPin, ArrowLeft, CheckCircle, ShieldCheck, HeartPulse, Loader2 } from 'lucide-react';
 import axios from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,7 +20,7 @@ const BLOOD_GROUPS = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-850' };
   let score = 0;
-  if (pass.length >= 8) score++;
+  if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
   if (/[0-9]/.test(pass)) score++;
   if (/[^A-Za-z0-9]/.test(pass)) score++;
@@ -33,6 +35,7 @@ const checkPasswordStrength = (pass) => {
 const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase select-none";
 
 export default function PatientRegister() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,7 @@ export default function PatientRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!passwordAccepted(form.password)) { toast.error(PASSWORD_REQUIREMENTS); return; }
     if (form.password !== form.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -85,13 +89,13 @@ export default function PatientRegister() {
         {/* Header */}
         <div className="text-center mb-6 select-none">
           <Link to="/patient/login" className="inline-flex items-center gap-1 text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider mb-5 transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Login
+            <ArrowLeft className="w-3.5 h-3.5" /> {t('common.back')}
           </Link>
           <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
             <HeartPulse className="w-7 h-7 text-rose-400" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Patient Registration</h1>
-          <p className="text-slate-400 text-xs mt-1.5 font-medium">Join MediSync for a unified healthcare experience</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">{t('roles.patient')} {t('auth.signUpBtn')}</h1>
+          <p className="text-slate-400 text-xs mt-1.5 font-medium">{t('auth.platformSubtitle') || 'Join MediSync for a unified healthcare experience'}</p>
         </div>
 
         {/* Step Indicator */}
@@ -105,7 +109,7 @@ export default function PatientRegister() {
               }`}>
                 {step > 1 ? '✓' : '1'}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>{t('auth.rotateCredentials') || 'Credentials'}</span>
             </div>
             <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
             <div className="flex items-center gap-2">
@@ -116,7 +120,7 @@ export default function PatientRegister() {
               }`}>
                 2
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Profile Detail</span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>{t('patient.profile')}</span>
             </div>
           </div>
         )}
@@ -126,11 +130,11 @@ export default function PatientRegister() {
             <motion.div key="step1"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
               className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl space-y-4">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">Account Credentials</h2>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">{t('auth.adminAccount') || 'Account Credentials'}</h2>
               
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>NIC Number *</label>
+                  <label className={labelCls}>{t('common.identifier')} (NIC) *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                     <input type="text" name="nic" value={form.nic} onChange={set('nic')}
@@ -140,12 +144,12 @@ export default function PatientRegister() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Password *</label>
+                  <label className={labelCls}>{t('auth.password')} *</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
                     <input type={showPw ? 'text' : 'password'} name="password" value={form.password} onChange={set('password')}
                       className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all" 
-                      placeholder="Min 8 characters" required />
+                      placeholder="At least 12 characters" required />
                     <button type="button" onClick={() => setShowPw(!showPw)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -154,7 +158,7 @@ export default function PatientRegister() {
                   {form.password && (
                     <div className="pt-1 select-none">
                       <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
-                        <span>Strength</span>
+                        <span>{t('auth.strength')}</span>
                         <span className="text-slate-350">{strength.text}</span>
                       </div>
                       <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
@@ -165,7 +169,7 @@ export default function PatientRegister() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Confirm Password *</label>
+                  <label className={labelCls}>{t('auth.confirmPassword')} *</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
                     <input type={showCPw ? 'text' : 'password'} name="confirmPassword" value={form.confirmPassword} onChange={set('confirmPassword')}
@@ -177,7 +181,7 @@ export default function PatientRegister() {
                     </button>
                   </div>
                   {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
+                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">{t('forms.passwordMismatch')}</p>
                   )}
                 </div>
               </div>
@@ -199,7 +203,7 @@ export default function PatientRegister() {
             <motion.form key="step2" onSubmit={handleSubmit}
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
               className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl space-y-4">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">Personal Information</h2>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider select-none border-b border-white/5 pb-2">{t('patient.personalInfo')}</h2>
               
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Full Name *</label>
@@ -213,7 +217,7 @@ export default function PatientRegister() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Date of Birth</label>
+                  <label className={labelCls}>{t('patient.dateOfBirth')}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 pointer-events-none" />
                     <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={set('dateOfBirth')}
@@ -235,7 +239,7 @@ export default function PatientRegister() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5 select-none">
-                  <label className={labelCls}>District</label>
+                  <label className={labelCls}>{t('common.district')}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 z-10" />
                     <select value={form.district} onChange={set('district')}
@@ -247,7 +251,7 @@ export default function PatientRegister() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Blood Group</label>
+                  <label className={labelCls}>{t('patient.bloodGroup')}</label>
                   <select value={form.bloodGroup} onChange={set('bloodGroup')}
                     className="block w-full px-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all">
                     <option value="" className="bg-slate-900">Select</option>
@@ -257,7 +261,7 @@ export default function PatientRegister() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Contact Number</label>
+                <label className={labelCls}>{t('patient.contactNumber')}</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
                   <input type="tel" name="contactInfo" value={form.contactInfo} onChange={set('contactInfo')}
@@ -267,7 +271,7 @@ export default function PatientRegister() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Known Allergies <span className="text-[10px] text-slate-500 font-normal lowercase">(comma-separated)</span></label>
+                <label className={labelCls}>{t('patient.knownAllergies')} <span className="text-[10px] text-slate-500 font-normal lowercase">(comma-separated)</span></label>
                 <input type="text" name="email" value={form.email || ''} onChange={set('email')}
                   className="block w-full px-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all" 
                   placeholder="e.g. test@example.com" />
@@ -277,12 +281,12 @@ export default function PatientRegister() {
                 <button type="button" onClick={() => setStep(1)}
                   className="flex-1 py-2.5 rounded-xl border border-white/5 text-slate-400 hover:text-white text-xs font-bold transition-all"
                 >
-                  ← Back
+                  ← {t('common.back')}
                 </button>
                 <button type="submit" disabled={loading}
                   className="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center shadow-[0_0_15px_rgba(244,63,94,0.15)]"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Account'}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('auth.signUpBtn')}
                 </button>
               </div>
             </motion.form>
@@ -296,7 +300,7 @@ export default function PatientRegister() {
                 <ShieldCheck className="w-8 h-8 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Registration Successful!</h2>
+                <h2 className="text-2xl font-bold text-white tracking-tight">{t('common.success')}!</h2>
                 <p className="text-slate-400 text-xs mt-2 leading-relaxed">
                   Your patient account has been created. You can now log in using your National Identity Card (NIC).
                 </p>
@@ -305,7 +309,7 @@ export default function PatientRegister() {
                 onClick={() => navigate('/patient/login')}
                 className="w-full bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)]"
               >
-                Go to Login Portal
+                {t('auth.signInBtn')}
               </button>
             </motion.div>
           )}
@@ -313,7 +317,7 @@ export default function PatientRegister() {
 
         {step < 3 && (
           <p className="text-center text-slate-500 text-xs mt-6 select-none">
-            Already registered? <Link to="/patient/login" className="text-white font-semibold hover:underline">Sign in here</Link>
+            {t('auth.registerPrompt')} <Link to="/patient/login" className="text-white font-semibold hover:underline">{t('auth.signInHere')}</Link>
           </p>
         )}
       </div>

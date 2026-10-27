@@ -1,0 +1,19 @@
+'use strict';
+const crypto=require('crypto'),path=require('path');
+const required=Object.freeze(['server/scripts/phase5xB13R1Preservation.js','server/src/utils/inferenceResponse.js','client/src/utils/inferenceResponse.js','server/scripts/phase5xB11R1Preservation.js','server/src/middleware/auth.js','server/scripts/phase5xMasterPreservation.js',...require('./qaIsolatedParentContract').SOURCES,...require('./qaIsolatedParentContract').DRIVER_FILES,'server/scripts/phase5xD7CSourceChecks.js','server/scripts/phase5xBrowserBackend.js','server/src/app.js','server/tests/helpers/browserLifecycle.js','server/tests/helpers/browserExpressGraph.js','server/tests/helpers/browserOwnedListener.js','server/tests/helpers/browserQaControls.js','server/tests/helpers/browserProviders.js','server/tests/helpers/browserRunConfig.js','server/tests/helpers/browserCleanupProof.js','server/tests/helpers/browserProcessObservation.js','server/tests/helpers/browserSourceProof.js','server/tests/helpers/ownedFixtures.js','server/tests/helpers/qaEnvironment.js','server/tests/helpers/qaEnvironmentContract.js','server/tests/helpers/qaParentEnvironment.js','server/tests/helpers/qaSecretReadGuard.js','server/tests/helpers/strictIr04Axios.js','server/tests/helpers/strictMlFetch.js','server/tests/helpers/ir04FixtureSafety.js','server/src/config/dbGuard.js','server/scripts/phase5wBrowserFixtures.js','server/scripts/phase5xD7CChecks.js','server/package-lock.json','server/node_modules/express/package.json','server/node_modules/express/lib/application.js','server/node_modules/router/package.json','server/node_modules/router/index.js','server/node_modules/router/lib/layer.js','server/node_modules/router/lib/route.js']);
+function verifyBrowserSourceProof(config,{read=filename=>require('fs').readFileSync(filename),root=path.resolve(__dirname,'../../..'),now=Date.now()}={}){
+  require('./e1AttemptIdentity').assertAttempt(config.phase,config.attemptId);
+  const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+  if(!/^5xd7c-inert-[a-z0-9-]+\.json$/.test(config.sourceProofFile||''))throw Error('Unapproved source proof path');
+  const bytes=read(path.join(root,'scratch/phase5x-evidence',config.sourceProofFile));
+  if(sha(bytes)!==config.sourceProofSha256)throw Error('Source proof hash mismatch');
+  const proof=JSON.parse(bytes),age=now-Date.parse(proof.timestamp);
+  require('./e1AttemptIdentity').assertAttempt(proof.protocolPhase,proof.attemptId);
+  if(!Number.isFinite(age)||age<0||age>=1800000||proof.databaseFree!==true||proof.atlasConnections!==0||proof.qaServicesStarted!==0||proof.clinicalExecutions!==0||proof.browserExecutions!==0||proof.failed!==0||proof.passed<96||!proof.allOwnedListenersClosed||!Array.isArray(proof.checks)||proof.checks.length!==proof.passed||proof.checks.some(c=>c.passed!==true))throw Error('Fresh actual D7C inert proof required');
+  for(const file of [...required,'server/tests/helpers/browserOutboundGuard.js','server/src/config/db.js','server/scripts/phase5xE1R2Checks.js','server/tests/helpers/e1AttemptIdentity.js','server/tests/helpers/e1WindowsInventory.js','server/scripts/phase5xE1R3C1Checks.js','server/scripts/phase5xE1Env3Checks.js'])if(!/^[a-f0-9]{64}$/.test(proof.sourceHashes?.[file]||''))throw Error('Incomplete source map');
+  for(const[file,hash]of Object.entries(proof.sourceHashes)){
+    if(!/^(?:server|client)\/[A-Za-z0-9_./-]+\.(?:js|jsx|ts|tsx|json)$/.test(file)||file.split('/').includes('..')||sha(read(path.join(root,file)))!==hash)throw Error('Reviewed source drift');
+  }
+  return true;
+}
+module.exports={verifyBrowserSourceProof,required:Object.freeze([...required,'server/tests/helpers/browserOutboundGuard.js','server/src/config/db.js','server/scripts/phase5xE1R2Checks.js','server/tests/helpers/e1AttemptIdentity.js','server/tests/helpers/e1WindowsInventory.js','server/scripts/phase5xE1R3C1Checks.js','server/scripts/phase5xE1Env3Checks.js'])};

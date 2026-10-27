@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config(); // fallback
@@ -11,20 +12,46 @@ const Prescription = require('../models/Prescription');
 const PharmacyStaff = require('../models/PharmacyStaff');
 const Pharmacy = require('../models/Pharmacy');
 const Patient = require('../models/Patient');
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
 
 async function seedPharmacyMLData() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI);
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-seed) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-seed')) {
+      throw new Error(
+        `[SAFEGUARD] Seeding "${PROD_DB_NAME}" via CLI requires --confirm-production-seed.`
+      );
+    }
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
   }
   console.log('🌱 Seeding Pharmacy Medication Release & ML Analytics Data...');
 
   const pharmacy = await Pharmacy.findOne() || { _id: new mongoose.Types.ObjectId(), name: 'Central City Pharmacy' };
-  const staff = await PharmacyStaff.findOne({ email: 'coctharusha0913@gmail.com' }) || await PharmacyStaff.findOne() || { _id: new mongoose.Types.ObjectId(), fullName: 'Tharusha (Pharmacist)' };
-  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: '200325711121' };
+  const staff = await PharmacyStaff.findOne({ email: 'qa-seed@example.invalid' }) || await PharmacyStaff.findOne() || { _id: new mongoose.Types.ObjectId(), fullName: 'Tharusha (Pharmacist)' };
+  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: 'NIC-SYNTHETIC-DEMO-9999' };
 
   const pharmacyId = pharmacy._id;
   const staffId = staff._id;
-  const patientNic = patient.nic || '200325711121';
+  const patientNic = patient.nic || 'NIC-SYNTHETIC-DEMO-9999';
 
   const medications = [
     { name: 'Amoxicillin 500mg', baseDaily: 15, spikeTrend: 1.8, district: 'Kandy', dosage: '500mg' },

@@ -1,21 +1,66 @@
+import { clearLocalSession, sessionGeneration } from '../utils/sessionCleanup';
 import axios from 'axios';
 import { getDeviceFingerprint, getHardwareModel } from '../utils/deviceFingerprint';
+import { resolveClinicalEndpoints } from '../config/clinicalEndpoints';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const isBrowserLocalhost = () =>
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-export const SOCKET_SERVER_URL =
+const isQa = process.env.REACT_APP_MEDISYNC_QA === 'true';
+if (isQa && typeof window !== 'undefined' &&
+    (window.location.hostname !== '127.0.0.1' || window.location.port !== '3100')) {
+  throw new Error('MediSync QA frontend must run at http://127.0.0.1:3100.');
+}
+
+export const sanitizeRuntimeUrl = (rawUrl, fallbackUrl) => {
+  const trimmed = String(rawUrl || '').trim();
+  if (!trimmed) return fallbackUrl;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(trimmed)) {
+    if (!isBrowserLocalhost()) {
+      return fallbackUrl;
+    }
+    return trimmed.replace(/:5005(\b|\/|$)/, ':5000$1');
+  }
+  return trimmed;
+};
+
+const clinicalEndpoints = process.env.NODE_ENV === 'production' && !isQa
+  ? resolveClinicalEndpoints(process.env.REACT_APP_API_URL, process.env.REACT_APP_SERVER_URL)
+  : null;
+
+export const API_BASE_URL = clinicalEndpoints?.apiBaseUrl || (isQa ? '/api' : (process.env.REACT_APP_API_URL || '/api'));
+
+export const SOCKET_SERVER_URL = clinicalEndpoints?.socketServerUrl || (isQa ? 'http://127.0.0.1:3100' : sanitizeRuntimeUrl(
   process.env.REACT_APP_SERVER_URL ||
-  (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '') : '') ||
-  (typeof window !== 'undefined' ? window.location.origin : '');
+    (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '') : ''),
+  typeof window !== 'undefined' ? window.location.origin : ''
+));
+
+const assertQaRequest = (config) => {
+    for (const value of [config.url, config.baseURL]) {
+      if (!value) continue;
+      const parsed = new URL(value, 'http://127.0.0.1:3100');
+      if (parsed.origin !== 'http://127.0.0.1:3100') {
+        throw new Error('External QA API request blocked.');
+      }
+    }
+    return config;
+};
+if (isQa) {
+  axios.interceptors.request.use(assertQaRequest);
+}
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: sanitizeRuntimeUrl(API_BASE_URL, '/api'),
   withCredentials: true,
 });
+if (isQa) api.interceptors.request.use(assertQaRequest);
 
 // Request interceptor — attach auth + optional patient-access token
 api.interceptors.request.use(
   async (config) => {
+    const requestGeneration = sessionGeneration();
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (token && token !== 'undefined' && token !== 'null') {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -31,14 +76,25 @@ api.interceptors.request.use(
     const hwModel = await getHardwareModel();
     if (hwModel) config.headers['X-Hardware-Model'] = hwModel;
 
+    if (requestGeneration !== sessionGeneration()) throw new Error('Session changed before request dispatch');
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Helper: clear everything and redirect to login
+window.addEventListener('medisync:session-cleared', () => {
+  delete api.defaults.headers.common.Authorization;
+});
+
+// Clear authentication state and redirect to login
+let sessionRedirectInProgress = false;
 const clearSessionAndRedirect = () => {
-  localStorage.clear();
+  // Concurrent failed requests share one refresh, and must also share one
+  // terminal redirect. Repeated hard navigations can abort the login page.
+  if (sessionRedirectInProgress) return;
+  sessionRedirectInProgress = true;
+  clearLocalSession();
   window.location.href = '/select-role';
 };
 
@@ -46,6 +102,8 @@ const clearSessionAndRedirect = () => {
 let refreshTokenPromise = null;
 
 const performTokenRefresh = async () => {
+  if (process.env.REACT_APP_UNIVERSITY_RUNTIME === 'true') { clearLocalSession(); throw new Error('Demonstration session expired. Sign in again.'); }
+  const startedGeneration = sessionGeneration();
   const storedRefreshToken = localStorage.getItem('refreshToken');
   const headers = {};
 
@@ -55,8 +113,10 @@ const performTokenRefresh = async () => {
   const hwModel = await getHardwareModel();
   if (hwModel) headers['X-Hardware-Model'] = hwModel;
 
+  if (startedGeneration !== sessionGeneration()) throw new Error('Session changed before refresh dispatch');
+
   const { data } = await axios.post(
-    `${API_BASE_URL}/auth/refresh`,
+    `${sanitizeRuntimeUrl(API_BASE_URL, '/api')}/auth/refresh`,
     { refreshToken: storedRefreshToken },
     { withCredentials: true, headers }
   );
@@ -70,6 +130,11 @@ const performTokenRefresh = async () => {
     throw missingTokenErr;
   }
 
+  if (startedGeneration !== sessionGeneration()) {
+    const error = new Error('Session changed during refresh');
+    error.isAuthFailure = true;
+    throw error;
+  }
   localStorage.setItem('token', newToken);
   localStorage.setItem('accessToken', newToken);
   if (newRefreshToken) {
@@ -98,7 +163,7 @@ api.interceptors.response.use(
           message: errBody.message,
         }
       }));
-      localStorage.clear();
+      clearLocalSession();
       return Promise.reject(error);
     }
 

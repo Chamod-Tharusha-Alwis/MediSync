@@ -7,7 +7,9 @@ import BanNotice from './components/BanNotice';
 import { initGA, usePageTracking } from './utils/analytics';
 import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
+import PrototypeNotice from './components/common/PrototypeNotice';
 
 // ─── Lazy-loaded route components ──────────────────────────────────────────
 // Each import() creates a separate JS chunk that is only downloaded when
@@ -17,8 +19,7 @@ import IdleTimer from './components/common/IdleTimer';
 // Public / shared pages (lightweight – loaded on first visit)
 const Home              = React.lazy(() => import('./pages/Home'));
 const SelectRole        = React.lazy(() => import('./pages/SelectRole'));
-const Register          = React.lazy(() => import('./pages/auth/Register'));
-const StyleGuide        = React.lazy(() => import('./pages/dev/StyleGuide'));
+const Register          = React.lazy(() => import('./pages/auth/RegistrationEntry'));
 const ResetPassword     = React.lazy(() => import('./pages/common/ResetPassword'));
 
 // Public directory pages
@@ -59,6 +60,50 @@ const PageLoader = () => (
   </div>
 );
 
+// ─── Route Error Boundary (prevents white-screen on render error) ───────────
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[ErrorBoundary] Runtime render error captured (sanitized operational notice)');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="glass-panel rounded-2xl p-8 max-w-md w-full text-center space-y-5 border border-white/10">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl font-bold">
+              !
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white">Something went wrong</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Inner component that lives inside <Router> so hooks can use useLocation ──
 function AppRoutes() {
   // Fires ReactGA.send({ hitType: 'pageview', page: location.pathname }) on
@@ -68,18 +113,22 @@ function AppRoutes() {
 
   return (
     <div className="relative min-h-screen text-slate-200 overflow-x-hidden">
+      <PrototypeNotice />
       <AnimatedBackground />
       <IdleTimer />
       <NotificationToast />
       <BanNotice />
 
-      <Suspense fallback={<PageLoader />}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Home />} />
+      <ErrorBoundary key={location.pathname}>
+        <Suspense fallback={<PageLoader />}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<Home />} />
           <Route path="/select-role" element={<SelectRole />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dev/style-guide" element={<StyleGuide />} />
+          <Route path="/patient/register" element={<Navigate to="/register?role=patient" replace />} />
+          <Route path="/hospital/register" element={<Navigate to="/register?role=hospital_admin" replace />} />
+          <Route path="/pharmacy/register" element={<Navigate to="/register?role=pharmacy" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Public Directories */}
@@ -120,7 +169,7 @@ function AppRoutes() {
             <Route path="/patient/*" element={<PatientDashboard />} />
           </Route>
 
-          <Route element={<PrivateRoute allowedRoles={['pharmacist', 'pharmacy_admin']} />}>
+          <Route element={<PrivateRoute allowedRoles={['pharmacist', 'pharmacy_admin', 'assistant']} />}>
             <Route path="/pharmacy/*" element={<PharmacyDashboard />} />
           </Route>
 
@@ -130,9 +179,10 @@ function AppRoutes() {
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/select-role" replace />} />
-          </Routes>
-        </AnimatePresence>
-      </Suspense>
+            </Routes>
+          </AnimatePresence>
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }
@@ -145,7 +195,9 @@ function App() {
 
   return (
     <Router>
-      <AppRoutes />
+      <LanguageProvider>
+        <AppRoutes />
+      </LanguageProvider>
     </Router>
   );
 }

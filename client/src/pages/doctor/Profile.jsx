@@ -1,3 +1,5 @@
+import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -6,7 +8,7 @@ import {
   FiAward, FiEdit3, FiCamera, FiPlus,
 } from 'react-icons/fi';
 import {
-  LayoutDashboard, Users, Stethoscope, BadgeCheck,
+  LayoutDashboard, BadgeCheck,
   Building2, Loader2, Key, PenTool, CheckCircle, UploadCloud
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
@@ -34,6 +36,7 @@ const Field = ({ label, icon: Icon, children }) => (
 );
 
 const DoctorProfile = () => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
     fullName: '',
@@ -308,7 +311,7 @@ const DoctorProfile = () => {
               <div className="flex items-center justify-between pb-3 border-b border-white/5 select-none">
                 <div className="flex items-center gap-2">
                   <FiEdit3 className="w-4 h-4 text-teal-400" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Practice Information</h3>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('doctor.practiceInformation', 'Practice Information')}</h3>
                 </div>
                 {profile.loginType === 'hospital' && (
                   <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
@@ -519,6 +522,8 @@ const DoctorProfile = () => {
                 </div>
               </div>
             </div>
+
+            <LanguagePreferenceCard />
 
             {/* Read-Only Facility Info */}
             {(profile.licenseNo || profile.email) && (

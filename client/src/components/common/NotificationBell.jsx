@@ -1,84 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../../i18n/LanguageContext';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io as socketIO } from 'socket.io-client';
-import api from '../../api/axiosInstance';
+import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
+import { clearLocalSession, sessionGeneration } from '../../utils/sessionCleanup';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const active = useRef(false);
+  const request = useRef({ id: 0, controller: null });
+  const pendingReads = useRef(new Set());
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    const generation = sessionGeneration();
+    request.current.controller?.abort();
+    const controller = new AbortController(), id = ++request.current.id;
+    request.current.controller = controller;
     try {
-      const res = await api.get('/notifications');
+      const res = await api.get('/notifications', { signal: controller.signal });
+      if (!active.current || controller.signal.aborted || generation !== sessionGeneration() || id !== request.current.id) return;
+      const rows = res.data?.data, count = res.data?.unreadCount;
+      if (!Array.isArray(rows) || !Number.isSafeInteger(count) || count < 0 ||
+          rows.some(row => !row || typeof row._id !== 'string' || !/^[a-f0-9]{24}$/i.test(row._id) || typeof row.message !== 'string' || typeof row.read !== 'boolean' || !Number.isFinite(new Date(row.createdAt).getTime())) ||
+          new Set(rows.map(row => row._id)).size !== rows.length) throw new Error('Invalid notification response');
       setNotifications(res.data.data);
       setUnreadCount(res.data.unreadCount);
+      setLoadError(false);
     } catch (error) {
-      console.error('Failed to fetch notifications', error);
+      if (active.current && !controller.signal.aborted && generation === sessionGeneration() && id === request.current.id) setLoadError(true);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    active.current = true;
+    const reqInstance = request.current;
+    const generation = sessionGeneration();
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000); // Poll every 60s
 
     // Real-time Socket.io listener
-    let socket;
-    const timer = setTimeout(() => {
-      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5005';
+    let socket, timer;
+    const clear = () => {
+      request.current.controller?.abort();
+      request.current.id++;
+      clearTimeout(timer);
+      socket?.disconnect();
+      setNotifications([]); setUnreadCount(0); setIsOpen(false); setLoadError(false);
+    };
+    window.addEventListener('medisync:session-cleared', clear);
+    timer = setTimeout(() => {
+      if (!active.current || generation !== sessionGeneration()) return;
       const token = localStorage.getItem('token');
-      if (token) {
-        socket = socketIO(serverUrl, {
+      if (token && token !== 'undefined') {
+        socket = socketIO(SOCKET_SERVER_URL, {
           auth: { token },
-          transports: ['websocket', 'polling'],
+          transports: ['polling', 'websocket'],
           reconnectionAttempts: 5,
-          reconnectionDelay: 3000 });
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 10000,
+          randomizationFactor: 0.5
+        });
 
-        socket.on('notification', (notification) => {
-          setNotifications((prev) => [notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
+        socket.on('connect_error', (err) => {
+          if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired')) {
+            console.warn('[Socket.IO] Authentication rejected or expired. Halting reconnection.');
+            socket.disconnect();
+          }
+        });
+
+        socket.on('notification', () => {
+          if (generation === sessionGeneration()) fetchNotifications();
         });
 
         socket.on('force_logout', (data) => {
+          if (generation !== sessionGeneration()) return;
           alert(data?.message || 'Your session was terminated by an administrator.');
-          localStorage.clear();
+          clearLocalSession();
           window.location.href = '/select-role';
         });
       }
     }, 500);
 
     return () => {
+      active.current = false;
+      reqInstance.controller?.abort();
+      reqInstance.id++;
+      window.removeEventListener('medisync:session-cleared', clear);
       clearInterval(interval);
       clearTimeout(timer);
       if (socket) {
         socket.disconnect();
       }
     };
-  }, []);
+  }, [fetchNotifications]);
 
   const markAsRead = async (id, e) => {
     e?.stopPropagation();
+    const generation = sessionGeneration(), key = generation + ':' + id;
+    if (pendingReads.current.has(key)) return;
+    pendingReads.current.add(key);
     try {
       await api.put(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {}
+      if (active.current && generation === sessionGeneration()) await fetchNotifications();
+    } catch (err) {
+      if (active.current && generation === sessionGeneration()) setLoadError(true);
+    } finally { pendingReads.current.delete(key); }
   };
 
   const markAllRead = async () => {
+    const generation = sessionGeneration(), key = generation + ':all';
+    if (pendingReads.current.has(key)) return;
+    pendingReads.current.add(key);
     try {
       await api.put('/notifications/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch (err) {}
+      if (active.current && generation === sessionGeneration()) await fetchNotifications();
+    } catch (err) {
+      if (active.current && generation === sessionGeneration()) setLoadError(true);
+    } finally { pendingReads.current.delete(key); }
   };
 
   const handleNotificationClick = (notif) => {
     if (!notif.read) markAsRead(notif._id);
-    if (notif.actionLink) navigate(notif.actionLink);
+    /* eslint-disable-next-line no-control-regex */
+    if (typeof notif.actionLink === 'string' && /^\/(?!\/)/.test(notif.actionLink) && !/[\\\u0000-\u001f]/.test(notif.actionLink)) navigate(notif.actionLink);
     setIsOpen(false);
   };
 
@@ -106,6 +157,9 @@ const NotificationBell = () => {
     <div className="relative z-50">
       <button 
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-label={t('common.notifications', 'Notifications')}
+        title="Notifications"
         className="relative p-2 rounded-full hover:bg-slate-800/50 transition-colors"
       >
         <Bell className="w-5 h-5 text-slate-300" />
@@ -123,27 +177,33 @@ const NotificationBell = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-80 glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl"
+              className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-800/80">
-                <h3 className="text-sm font-bold text-white">Notifications</h3>
+                <h3 className="text-sm font-bold text-white">{t('common.notifications', 'Notifications')}</h3>
                 {unreadCount > 0 && (
                   <button onClick={markAllRead} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Mark all read
+                    <Check className="w-3 h-3" /> {t('notificationStatus.markAll', 'Mark all read')}
                   </button>
                 )}
               </div>
               
               <div className="max-h-96 overflow-y-auto custom-scrollbar bg-slate-900/90">
-                {notifications.length === 0 ? (
+                {loadError ? <div role="alert" className="p-4 text-sm text-amber-200">
+                  <p>{t('notificationStatus.unavailable', 'Notifications unavailable. Please try again.')}</p>
+                  <button onClick={fetchNotifications} className="underline mt-2">{t('serviceStatus.retry', 'Try again')}</button>
+                </div> : notifications.length === 0 ? (
                   <div className="p-8 text-center text-slate-500">
                     <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                    <p className="text-sm">No notifications</p>
+                    <p className="text-sm">{t('common.noNotifications', 'No notifications')}</p>
                   </div>
                 ) : (
                   notifications.map(n => (
                     <div 
                       key={n._id}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={event => { if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) { event.preventDefault(); handleNotificationClick(n); } }}
                       onClick={() => handleNotificationClick(n)}
                       className={`p-3 border-b border-slate-800 flex gap-3 cursor-pointer hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-blue-500/5' : ''}`}
                     >
@@ -158,6 +218,7 @@ const NotificationBell = () => {
                       </div>
                       {!n.read && (
                         <button 
+                          aria-label={t('notificationStatus.markRead', 'Mark notification as read')}
                           onClick={(e) => markAsRead(n._id, e)}
                           className="flex-shrink-0 text-slate-500 hover:text-slate-300"
                         >

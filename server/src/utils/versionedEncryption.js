@@ -70,6 +70,12 @@ function versionedEncryption(schema, options) {
           doc[field] = decrypt(doc[field], secret);
         }
         doc[encryptedFieldName] = false;
+      } else if (typeof doc[field] === 'string' && /^[0-9a-f]{32}:[0-9a-f]+$/i.test(doc[field])) {
+        try {
+          doc[field] = decrypt(doc[field], secret);
+        } catch (e) {
+          // Preserve value if decryption fails
+        }
       }
     }
   }

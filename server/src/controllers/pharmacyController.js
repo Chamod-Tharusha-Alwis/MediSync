@@ -1,3 +1,5 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Pharmacy = require('../models/Pharmacy');
 const PharmacyStaff = require('../models/PharmacyStaff');
@@ -42,7 +44,7 @@ exports.registerPharmacy = async (req, res) => {
     if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
       return res.status(400).json({ error: 'Pharmacy registration number or admin email already exists' });
     }
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.status(500).json({ error: 'Registration failed' });
   }
 };
 
@@ -135,7 +137,7 @@ exports.loginPharmacy = async (req, res) => {
         failedAttempts: priorFailedAttempts,
       });
 
-      const emailResult = await emailService.sendOTPEmail(staff.email, staff.fullName || 'Pharmacist', otp);
+      const emailResult = await emailService.sendOTPEmail(staff.email, staff.fullName || 'Pharmacist', otp, require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff));
       if (!emailResult || !emailResult.providerAccepted) {
         await OTPSession.deleteOne({ _id: otpDoc._id });
         return res.status(emailResult?.statusCode || 503).json({
@@ -275,7 +277,8 @@ exports.loginPharmacy = async (req, res) => {
           networkInfo,
           'Individual Login',
           staff.pharmacyId ? staff.pharmacyId.name : null,
-          isTrusted
+          isTrusted,
+          require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff)
         );
         console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
           provider: resNotification?.provider || null,
@@ -285,7 +288,7 @@ exports.loginPharmacy = async (req, res) => {
           deliveryConfirmed: false,
         });
       } catch (e) {
-        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:', e.message);
+        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:');
       }
     }
 
@@ -309,26 +312,25 @@ exports.loginPharmacy = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Login failed', details: error.message });
+    res.status(500).json({ error: 'Login failed' });
   }
 };
 
 exports.changeFirstPassword = async (req, res) => {
   try {
-    const { staffId, newPassword } = req.body;
+    const { staffId, newPassword, currentPassword } = req.body;
+    if (typeof currentPassword !== 'string' || currentPassword.length > 256 || !mongoose.isObjectIdOrHexString(staffId)) return res.status(401).json({ error: 'Password setup verification required' });
     const staff = await PharmacyStaff.findById(staffId);
-    if (!staff) return res.status(404).json({ error: 'Staff not found' });
+    if (!staff || staff.mustChangePassword !== true || staff.isActive !== true || !await bcrypt.compare(currentPassword, staff.password)) return res.status(401).json({ error: 'Password setup verification required' });
 
     const strength = validatePasswordStrength(newPassword);
-    if (!strength.valid || strength.score < 2) return res.status(400).json({ error: 'Password too weak' });
+    if (!strength.valid || strength.score < 3) return res.status(400).json({ error: 'Password too weak' });
 
-    staff.password = await hashPassword(newPassword);
-    staff.mustChangePassword = false;
-    await staff.save();
+    await require('../services/passwordChangeService').changePasswordAtomic({ user: staff, UserModel: PharmacyStaff, userModel: 'PharmacyStaff', newHash: await hashPassword(newPassword), setup: true });
 
     res.json({ message: 'Password changed successfully. You can now log in.' });
   } catch (error) {
-    res.status(500).json({ error: 'Password change failed', details: error.message });
+    res.status(error.code === 'PASSWORD_CHANGE_CONFLICT' ? 409 : 503).json({ error: 'Password setup could not be completed safely' });
   }
 };
 
@@ -340,7 +342,7 @@ exports.getMe = async (req, res) => {
     if (!staff) return res.status(404).json({ error: 'Staff not found' });
     res.json({ data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get profile', details: error.message });
+    res.status(500).json({ error: 'Failed to get profile' });
   }
 };
 
@@ -367,11 +369,11 @@ exports.addStaff = async (req, res) => {
     });
     await staff.save();
 
-    await emailService.sendTempPasswordEmail(email, name, tempPassword, `${process.env.CLIENT_URL}/pharmacy/login`, admin.pharmacyId.name);
+    await emailService.sendTempPasswordEmail(email, name, tempPassword, `${process.env.CLIENT_URL}/pharmacy/login`, admin.pharmacyId.name, require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff));
 
     res.status(201).json({ message: 'Staff added and email sent' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add staff', details: error.message });
+    res.status(500).json({ error: 'Failed to add staff' });
   }
 };
 
@@ -381,14 +383,16 @@ exports.getStaff = async (req, res) => {
     const staff = await PharmacyStaff.find({ pharmacyId: admin.pharmacyId }).select('-password');
     res.json({ data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get staff', details: error.message });
+    res.status(500).json({ error: 'Failed to get staff' });
   }
 };
 
 exports.toggleStaffStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const staff = await PharmacyStaff.findById(id);
+    const actor = await PharmacyStaff.findById(req.user.id);
+    if (!actor || actor.role !== 'pharmacy_admin' || actor.isActive !== true) return res.status(403).json({ error: 'Pharmacy administrator required' });
+    const staff = await PharmacyStaff.findOne({ _id: id, pharmacyId: actor.pharmacyId });
     if (!staff) return res.status(404).json({ error: 'Staff not found' });
     if (staff._id.toString() === req.user.id) return res.status(400).json({ error: 'Cannot toggle own status' });
 
@@ -396,7 +400,7 @@ exports.toggleStaffStatus = async (req, res) => {
     await staff.save();
     res.json({ message: 'Status toggled', data: staff });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to toggle status', details: error.message });
+    res.status(500).json({ error: 'Failed to toggle status' });
   }
 };
 
@@ -406,126 +410,26 @@ exports.getPendingPrescriptions = async (req, res) => {
     // Use SHA-256 blind index so we never query the encrypted field
     const targetHash = crypto.createHash('sha256').update(nic.trim().toUpperCase()).digest('hex');
     const prescriptions = await Prescription.find({ 
-      nicHash: targetHash, 
+      ...nicFilter(nic.trim().toUpperCase(), { legacyFields: ['nicHash', 'patientNic_bi'] }),
       status: { $in: ['pending', 'issued'] },
       isOTC: { $ne: true },           // Only doctor-issued prescriptions
       expiresAt: { $gt: new Date() }
     }).populate('doctorId', 'fullName').populate('hospitalId', 'name');
     // Fetch the patient profile to display on frontend (do NOT use .lean() or restrict .select() so decryption works)
-    const patientUser = await Patient.findOne({ nic: nic.trim().toUpperCase() });
+    const patientUser = await Patient.findOne(nicFilter(nic.trim().toUpperCase(), { plainFields: ['nic'] }));
     if (patientUser && typeof patientUser.decryptFieldsSync === 'function') {
       patientUser.decryptFieldsSync();
     }
 
-    res.json({ data: { prescriptions, patient: patientUser } });
+    const profile = patientUser ? Object.fromEntries(['_id', 'nic', 'fullName', 'allergies'].filter(key => patientUser[key] !== undefined).map(key => [key, patientUser[key]])) : null;
+    res.json({ data: { prescriptions, patient: profile } });
   } catch (error) {
-    console.error('getPendingPrescriptions error:', error);
-    res.status(500).json({ error: 'Failed to get prescriptions', details: error.message });
+    console.error('getPendingPrescriptions error:');
+    res.status(500).json({ error: 'Failed to get prescriptions' });
   }
 };
 
-exports.dispense = async (req, res) => {
-  try {
-    const { prescriptionId, patientNic, items, notes, isAlternativeDispensed, alternativeDetails } = req.body;
-    const unpopulatedStaff = await PharmacyStaff.findById(req.user.id).lean();
-    const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
-    if (!staff) return res.status(404).json({ error: 'Staff record not found' });
-    
-    // Ensure we always have a valid ObjectId to satisfy Mongoose validation
-    const actualPharmacyId = (unpopulatedStaff && unpopulatedStaff.pharmacyId) 
-      ? unpopulatedStaff.pharmacyId 
-      : '60d5ecb8b392d700153ee6b2';
-    
-    
-    const prescription = await Prescription.findOne({ prescriptionId });
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-    if (prescription.status === 'dispensed') return res.status(400).json({ error: 'Already dispensed' });
-    if (prescription.expiresAt < new Date()) return res.status(400).json({ error: 'Prescription expired' });
-
-    const dispensing = new Dispensing({
-      receiptNumber: generateReceiptNumber(),
-      prescriptionId: prescription._id,
-      pharmacyId: actualPharmacyId,
-      staffId: staff._id,
-      patientNic,
-      items: items || [{ drugName: prescription.drugName, dosage: prescription.dosage || 'N/A', quantityDispensed: prescription.durationDays || 1, status: 'dispensed' }],
-      notes
-    });
-    await dispensing.save();
-
-    // Update prescription status
-    prescription.status = 'dispensed';
-    prescription.dispensedAt = new Date();
-    prescription.dispensedBy = actualPharmacyId;
-    prescription.dispensedByPharmacist = staff.fullName;
-    prescription.dispenserStaffId = staff._id.toString();
-    prescription.pharmacyName = staff.pharmacyId ? staff.pharmacyId.name : 'Unknown Pharmacy';
-    // Save alternative medication flags if provided
-    if (isAlternativeDispensed) {
-      prescription.isAlternativeDispensed = true;
-      prescription.alternativeDetails = alternativeDetails || '';
-    }
-    await prescription.save();
-
-    // Decrypt prescription fields before building email body
-    try {
-      if (typeof prescription.decryptFieldsSync === 'function') prescription.decryptFieldsSync();
-    } catch (_) {}
-
-    // Decrement inventory stock
-    const pharmacy = staff.pharmacyId;
-    if (pharmacy && pharmacy.inventory) {
-      const itemsToDispense = items || [{ drugName: prescription.drugName, quantityDispensed: prescription.durationDays || 1 }];
-      for (const dispenseItem of itemsToDispense) {
-        const name = dispenseItem.drugName?.toLowerCase().trim();
-        const qty = parseInt(dispenseItem.quantityDispensed) || 1;
-        const invItem = pharmacy.inventory.find(i => i.drugName.toLowerCase().trim() === name);
-        if (invItem) {
-          invItem.stock = Math.max(0, invItem.stock - qty);
-        }
-      }
-      await pharmacy.save();
-    }
-
-    // Fire-and-forget: send notification email to patient
-    (async () => {
-      try {
-        const nicHash = crypto.createHash('sha256').update(patientNic.trim().toUpperCase()).digest('hex');
-        const patient = await Patient.findOne({ nic: patientNic.trim().toUpperCase() }).catch(() =>
-          Patient.findOne({ nicHash })
-        );
-        if (patient) {
-          // Decrypt patient fullName if encrypted
-          let patientName = patient.fullName;
-          try { patient.decryptFieldsSync(); patientName = patient.fullName; } catch (_) {}
-          // Build meds string using decrypted prescription.drugName as fallback
-          const meds = items && items.length > 0
-            ? items.map(i => i.drugName).join(', ')
-            : (prescription.medications?.length > 0
-              ? prescription.medications.map(m => m.name).join(', ')
-              : prescription.drugName || 'Medication');
-          const altNote = isAlternativeDispensed && alternativeDetails
-            ? `\n⚠️ Alternative dispensed: ${alternativeDetails}` : '';
-          await emailService.sendDispenseNotificationEmail(
-            patient.email,
-            patientName,
-            pharmacy ? pharmacy.name : 'Unknown Pharmacy',
-            staff.fullName + ' (ID: ' + staff._id.toString() + ')',
-            meds + altNote,
-            new Date().toLocaleString('en-GB')
-          );
-        }
-      } catch (emailErr) {
-        console.warn('[DISPENSE EMAIL] Could not send notification:', emailErr.message);
-      }
-    })();
-
-    res.status(201).json({ message: 'Dispensed successfully', data: { receiptNumber: dispensing.receiptNumber } });
-  } catch (error) {
-    console.error('dispense error:', error);
-    res.status(500).json({ error: 'Failed to dispense', details: error.message });
-  }
-};
+exports.dispense = require('./dispensingController').dispense;
 
 exports.getDispensingHistory = async (req, res) => {
   try {
@@ -557,26 +461,30 @@ exports.getDispensingHistory = async (req, res) => {
     const total = await Dispensing.countDocuments(query);
     res.json({ data: validHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    console.error('[getDispensingHistory Error]:', error.message);
-    res.status(500).json({ error: 'Failed to get history', details: error.message });
+    console.error('[getDispensingHistory Error]:');
+    res.status(500).json({ error: 'Failed to get history' });
   }
 };
 
 exports.getReceipt = async (req, res) => {
   try {
     const { receiptNo } = req.params;
-    const dispensing = await Dispensing.findOne({ receiptNumber: receiptNo })
+    if (typeof receiptNo !== 'string' || !receiptNo.trim() || receiptNo.length > 120) return res.status(400).json({ error: 'Invalid receipt number' });
+    if (!mongoose.isObjectIdOrHexString(req.user?.id)) return res.status(401).json({ error: 'Authentication required' });
+    const staff = await PharmacyStaff.findById(req.user.id).select('pharmacyId role isActive');
+    if (!staff || staff.isActive !== true || !['pharmacist', 'pharmacy_admin', 'assistant'].includes(staff.role) || !mongoose.isObjectIdOrHexString(staff.pharmacyId)) return res.status(403).json({ error: 'Active pharmacy staff required' });
+    const dispensing = await Dispensing.findOne({ receiptNumber: receiptNo, pharmacyId: staff.pharmacyId })
       .populate('pharmacyId', 'name address phone')
       .populate('staffId', 'fullName role')
       .populate({
         path: 'prescriptionId',
         populate: { path: 'doctorId', select: 'fullName' }
       });
-      
+
     if (!dispensing) return res.status(404).json({ error: 'Receipt not found' });
     res.json({ data: dispensing });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch receipt', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch receipt' });
   }
 };
 
@@ -593,7 +501,7 @@ exports.getStats = async (req, res) => {
 
     res.json({ data: { todayDispensed, monthDispensed } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stats', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 };
 
@@ -674,7 +582,7 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       );
       return res.json(mlRes.data);
     } catch (mlErr) {
-      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:', mlErr.message);
+      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:');
       
       const alerts = [];
       for (const [drugName, dailyCounts] of Object.entries(drugTrends)) {
@@ -718,8 +626,8 @@ exports.getDistrictRestockAlerts = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('[getDistrictRestockAlerts]', err.message);
-    res.status(500).json({ error: 'Failed to generate restock alerts', details: err.message });
+    console.error('[getDistrictRestockAlerts]');
+    res.status(500).json({ error: 'Failed to generate restock alerts' });
   }
 };
 
@@ -732,7 +640,7 @@ exports.getInventory = async (req, res) => {
     const pharmacy = await Pharmacy.findById(staff.pharmacyId);
     res.json({ data: pharmacy.inventory || [] });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch inventory', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch inventory' });
   }
 };
 
@@ -766,7 +674,7 @@ exports.updateInventoryItem = async (req, res) => {
     await pharmacy.save();
     res.json({ message: 'Inventory updated successfully', data: pharmacy.inventory });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update inventory', details: error.message });
+    res.status(500).json({ error: 'Failed to update inventory' });
   }
 };
 
@@ -842,130 +750,12 @@ exports.getRestockAnalytics = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[getRestockAnalytics]', error.message);
-    res.status(500).json({ error: 'Failed to fetch restock analytics', details: error.message });
+    console.error('[getRestockAnalytics]');
+    res.status(500).json({ error: 'Failed to fetch restock analytics' });
   }
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
    OTC Direct Dispensing — Pharmacist dispenses without a doctor prescription
    ───────────────────────────────────────────────────────────────────────────── */
-exports.dispenseOTC = async (req, res) => {
-  try {
-    const { patientNic, consultationRef, medications, notes } = req.body;
-
-    if (!patientNic || !medications || !Array.isArray(medications) || medications.length === 0) {
-      return res.status(400).json({ error: 'patientNic and at least one medication are required.' });
-    }
-
-    // Retrieve pharmacist info for the record
-    const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
-    if (!staff) return res.status(404).json({ error: 'Pharmacist staff record not found.' });
-
-    const normalizedNic = patientNic.trim().toUpperCase();
-    // SHA-256 blind index — same algorithm used by the doctor controller
-    const nicHash = crypto.createHash('sha256').update(normalizedNic).digest('hex');
-
-    // 1. Create a single aggregated OTC prescription document
-    const otcDoc = new Prescription({
-      patientNic: normalizedNic,
-      nicHash,
-      isOTC: true,
-      consultationRef: consultationRef || undefined,
-      dispensedBy: staff.pharmacyId?._id || undefined,
-      dispensedByPharmacist: staff.fullName || staff._id.toString(),
-      dispenserStaffId: staff._id.toString(),
-      pharmacyName: staff.pharmacyId?.name || 'MediSync Pharmacy',
-      dispensedAt: new Date(),
-      medications: medications.map(m => ({
-        name:      m.name      || m.drugName || '',
-        dosage:    m.dosage    || 'Standard',
-        frequency: m.frequency || 'As directed',
-      })),
-      drugName:  medications[0]?.name || medications[0]?.drugName || 'OTC Dispensation',
-      dosage:    medications[0]?.dosage    || 'Standard',
-      frequency: medications[0]?.frequency || 'As directed',
-      instructions: notes || 'OTC Dispensation',
-      status: 'dispensed',
-    });
-
-    await otcDoc.save();
-
-    // 2. Create a persistent Dispensing record for analytics and receipt tracking
-    const dispensingItems = medications.map(m => ({
-      drugName: m.name || m.drugName || 'OTC Medication',
-      dosage: m.dosage || 'Standard',
-      quantityDispensed: parseInt(m.quantity || m.quantityDispensed || 1),
-      status: 'dispensed'
-    }));
-
-    const dispensing = new Dispensing({
-      receiptNumber: generateReceiptNumber(),
-      prescriptionId: otcDoc._id,
-      pharmacyId: staff.pharmacyId?._id || staff.pharmacyId,
-      staffId: staff._id,
-      patientNic: normalizedNic,
-      items: dispensingItems,
-      notes: notes || 'Manual OTC Dispensation',
-      dispensedAt: new Date()
-    });
-
-    await dispensing.save();
-
-    // 3. Decrement inventory stock
-    const pharmacy = staff.pharmacyId;
-    if (pharmacy && pharmacy.inventory) {
-      for (const item of dispensingItems) {
-        const name = item.drugName?.toLowerCase().trim();
-        const qty = item.quantityDispensed;
-        const invItem = pharmacy.inventory.find(i => i.drugName.toLowerCase().trim() === name);
-        if (invItem) {
-          invItem.stock = Math.max(0, invItem.stock - qty);
-        }
-      }
-      await pharmacy.save();
-    }
-
-    // 4. Send email notification to patient if email exists in system
-    (async () => {
-      try {
-        const patient = await Patient.findOne({ nic: normalizedNic }) || await Patient.findOne({ patientNic_bi: nicHash });
-        if (patient) {
-          let patientName = patient.fullName;
-          try {
-            if (typeof patient.decryptFieldsSync === 'function') patient.decryptFieldsSync();
-            patientName = patient.fullName;
-          } catch (_) {}
-
-          const emailToSend = patient.email || (typeof patient.contactInfo === 'string' && patient.contactInfo.includes('@') ? patient.contactInfo : null);
-          if (emailToSend) {
-            const medsString = dispensingItems.map(i => `${i.drugName} (Qty: ${i.quantityDispensed})`).join(', ');
-            console.log(`[OTC DISPENSE EMAIL] Dispatching notification (${dispensingItems.length} item(s))`);
-            await emailService.sendDispenseNotificationEmail(
-              emailToSend,
-              patientName,
-              staff.pharmacyId?.name || 'MediSync Pharmacy',
-              staff.fullName || 'Pharmacist',
-              medsString,
-              new Date().toLocaleString('en-GB')
-            );
-          }
-        }
-      } catch (emailErr) {
-        console.warn('[OTC DISPENSE EMAIL ERROR] Failed to send email:', emailErr.message);
-      }
-    })();
-
-    res.status(201).json({
-      message: 'OTC dispensation recorded successfully.',
-      data: {
-        prescriptionId: otcDoc.prescriptionId,
-        receiptNumber: dispensing.receiptNumber,
-        medicationCount: medications.length
-      },
-    });
-  } catch (error) {
-    console.error('[OTC] Dispensing error:', error.message);
-    res.status(500).json({ error: 'OTC dispensing failed.', details: error.message });
-  }
-};
+exports.dispenseOTC = require('./dispensingController').dispenseOTC;

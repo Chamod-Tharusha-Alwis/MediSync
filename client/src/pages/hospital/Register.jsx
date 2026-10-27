@@ -1,3 +1,5 @@
+import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle, MapPin, Hash, ShieldCheck, Building, Loader2 } from 'lucide-react';
@@ -10,7 +12,7 @@ const DISTRICTS = ['Colombo','Gampaha','Kalutara','Kandy','Matale','Nuwara Eliya
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-855' };
   let score = 0;
-  if (pass.length >= 8) score++;
+  if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
   if (/[0-9]/.test(pass)) score++;
   if (/[^A-Za-z0-9]/.test(pass)) score++;
@@ -25,6 +27,7 @@ const checkPasswordStrength = (pass) => {
 const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase select-none";
 
 export default function HospitalRegister() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -39,6 +42,7 @@ export default function HospitalRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!passwordAccepted(form.password)) { toast.error(PASSWORD_REQUIREMENTS); return; }
     if (form.password !== form.confirmPassword) { toast.error('Passwords do not match'); return; }
     setLoading(true);
     try {
@@ -74,7 +78,7 @@ export default function HospitalRegister() {
           <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
             <Building className="w-7 h-7 text-indigo-400" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Hospital Registration</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">{t("auth.imHospital", "Hospital Registration")}</h1>
           <p className="text-slate-400 text-xs mt-1.5 font-medium">Onboard your hospital to the MediSync network platform</p>
         </div>
 

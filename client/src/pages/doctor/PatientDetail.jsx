@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
@@ -5,7 +6,7 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Plus, LayoutDashboard,
-  Activity, FlaskConical, Download, Loader2
+  Activity, FlaskConical, Download
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import MedicalTimeline from '../../components/common/MedicalTimeline';
@@ -20,6 +21,7 @@ import LabDetailModal from '../../components/common/LabDetailModal';
 import { usePatientAccess } from '../../context/PatientAccessContext';
 
 const DoctorPatientDetail = () => {
+  const { t } = useTranslation();
   const { nic } = useParams();
   const navigate = useNavigate();
   const { getPatientToken, setPatientSession } = usePatientAccess();
@@ -44,7 +46,6 @@ const DoctorPatientDetail = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [targetLabTestId, setTargetLabTestId] = useState(null);
-  const [requestingOtp, setRequestingOtp] = useState(false);
   const [downloadOtpError, setDownloadOtpError] = useState('');
 
   const fetchRecords = useCallback(async (token) => {
@@ -66,7 +67,7 @@ const DoctorPatientDetail = () => {
       setPatientSession({ nic, patientName: patientRes.data.data?.fullName || nic, token });
       
     } catch (err) {
-      console.error('fetchRecords failed:', err);
+      console.error('fetchRecords failed: [operational error code: CLINICAL_RECORD_FETCH_FAILED]');
       toast.error('Failed to fetch patient records');
     } finally {
       setLoading(false);
@@ -96,7 +97,6 @@ const DoctorPatientDetail = () => {
 
   // Doctor requests OTP to download lab report
   const handleRequestDownloadOtp = async (labTestId) => {
-    setRequestingOtp(true);
     setDownloadOtpError('');
     try {
       const headers = { 'x-patient-access': patientToken };
@@ -107,7 +107,6 @@ const DoctorPatientDetail = () => {
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to request OTP');
     } finally {
-      setRequestingOtp(false);
     }
   };
 
@@ -319,7 +318,7 @@ const DoctorPatientDetail = () => {
                   <motion.div key="history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
                       <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-xl font-bold text-white">Consultation Timeline</h2>
+                        <h2 className="text-xl font-bold text-white">{t("doctor.consultations", "Consultation Timeline")}</h2>
                         <button 
                           onClick={() => navigate('/doctor/consultation/new')}
                           className="glass-button text-xs px-4 py-2 flex items-center gap-2"
@@ -335,7 +334,7 @@ const DoctorPatientDetail = () => {
                 {activeTab === 'medications' && (
                   <motion.div key="medications" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
-                      <h2 className="text-xl font-bold text-white mb-6">Prescription & Medication History</h2>
+                      <h2 className="text-xl font-bold text-white mb-6">{t("patient.prescriptionsTitle", "Prescription & Medication History")}</h2>
                       {prescriptionsList.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 border border-dashed border-white/5 rounded-xl">
                           <Activity className="w-10 h-10 mx-auto mb-3 opacity-50 text-teal-400" />
@@ -374,7 +373,7 @@ const DoctorPatientDetail = () => {
                 {activeTab === 'labs' && (
                   <motion.div key="labs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <div className="bg-slate-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8">
-                      <h2 className="text-xl font-bold text-white mb-6">Laboratory Tests</h2>
+                      <h2 className="text-xl font-bold text-white mb-6">{t("hospital.labOrders", "Laboratory Tests")}</h2>
                       {tests.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 border border-dashed border-white/5 rounded-xl">
                           <FlaskConical className="w-10 h-10 mx-auto mb-3 opacity-50" />
@@ -403,13 +402,15 @@ const DoctorPatientDetail = () => {
                               <div className="flex items-center gap-3">
                                 <span className="text-xs text-purple-400 font-semibold underline">View Test Details & Findings →</span>
                                 {test.status === 'report_ready' && test.labTestId && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleRequestDownloadOtp(test.labTestId); }}
-                                    disabled={requestingOtp || isDownloading}
-                                    className="inline-flex items-center gap-2 text-sm text-teal-400 hover:text-teal-300 font-bold underline transition-colors disabled:opacity-50 ml-auto"
+                                  <button
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                                    className="inline-flex items-center gap-2 text-sm text-slate-400/60 font-bold opacity-60 cursor-not-allowed ml-auto"
                                   >
-                                    {requestingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                                    Authorize & Download PDF
+                                    <Download className="w-4 h-4" />
+                                    {t("pdfUnavailable", "PDF export temporarily unavailable")}
                                   </button>
                                 )}
                               </div>

@@ -21,6 +21,8 @@ const dispensingSchema = new mongoose.Schema({
     required: true
   },
   items: [{
+    inventoryItemId: { type: mongoose.Schema.Types.ObjectId },
+    unit: String,
     drugName: {
       type: String,
       required: true
@@ -42,6 +44,10 @@ const dispensingSchema = new mongoose.Schema({
   notes: {
     type: String
   },
+  idempotencyKey: String,
+  requestHash: String,
+  // Durable audit evidence commits with the inventory and prescription updates.
+  audit: { actorId: String, actorRole: String, action: String, timestamp: Date, projectedAt: Date },
   dispensedAt: {
     type: Date,
     default: Date.now

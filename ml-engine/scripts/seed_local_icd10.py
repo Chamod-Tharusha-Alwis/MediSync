@@ -98,7 +98,6 @@ def run_seeder():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     symptom_map_path = os.path.join(base_dir, 'data', 'symptom_map.json')
     icd_json_path = os.path.join(base_dir, 'data', 'icd10_clean.json')
-    icd_csv_path = os.path.join(base_dir, 'data', 'ICD10codes.csv')
     db_path = os.path.join(base_dir, 'medisync.db')
     
     print("--- Starting ICD-10 Integration & Database Seeding ---")
@@ -161,7 +160,7 @@ def run_seeder():
                 item.get('base_danger_level', 'Medium')
             ))
             
-    # Load raw ICD-10 codes from JSON (or CSV fallback)
+    # Load raw ICD-10 codes from JSON
     raw_icd_count = 0
     if os.path.exists(icd_json_path):
         with open(icd_json_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -174,18 +173,6 @@ def run_seeder():
                     danger, comm, sev = categorize_icd10_code(code, desc)
                     rows_to_insert.append((desc, code, sev, comm, danger))
                     raw_icd_count += 1
-    elif os.path.exists(icd_csv_path):
-        with open(icd_csv_path, 'r', encoding='utf-8', errors='ignore') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) >= 4:
-                    code = str(row[2]).strip()
-                    desc = str(row[3]).strip()
-                    if desc and desc not in seen_names:
-                        seen_names.add(desc)
-                        danger, comm, sev = categorize_icd10_code(code, desc)
-                        rows_to_insert.append((desc, code, sev, comm, danger))
-                        raw_icd_count += 1
 
     print(f"Prepared {len(rows_to_insert)} total records (Core: {updated_count}, ICD-10: {raw_icd_count}). Inserting...")
     

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, X, Activity, ChevronRight } from 'lucide-react';
+import { clearLocalSession } from '../../utils/sessionCleanup';
 import api from '../../api/axiosInstance';
 import NotificationBell from './NotificationBell';
+import { useTranslation } from '../../i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 /**
  * Sidebar — Premium glassmorphic navigation rail (components/common/Sidebar)
@@ -22,6 +25,7 @@ const Sidebar = ({
   userName,
   userRole,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -36,15 +40,17 @@ const Sidebar = ({
   const accent = accentMap[themePrefix] || accentMap.doctor;
 
   /* ── Logout ───────────────────────────────────────────────────────────── */
+  const logoutBusy = useRef(false);
   const handleLogout = async () => {
+    if (logoutBusy.current) return;
+    logoutBusy.current = true;
     try {
       await api.post('/auth/logout');
     } catch (error) {
       /* swallow 401s or other network errors during logout */
-      console.warn('Logout API failed, forcing local cleanup', error.message);
+      // Local cleanup is required even when logout cannot reach the server.
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
+      clearLocalSession();
       navigate('/select-role');
     }
   };
@@ -84,7 +90,9 @@ const Sidebar = ({
           />
 
           {/* Label */}
-          <span className="flex-1 truncate">{item.label}</span>
+          <span className="flex-1 truncate">
+            {item.labelKey ? t(item.labelKey, item.label) : t(`nav.${(item.label || '').toLowerCase().replace(/[\s-&]/g, '')}`, item.label)}
+          </span>
 
           {/* Trailing chevron on active */}
           {isActive && (
@@ -162,6 +170,14 @@ const Sidebar = ({
           </div>
         )}
 
+        {/* Language Selection */}
+        <div className="flex items-center justify-between px-2 py-1">
+          <span className="text-xs font-semibold text-slate-400">
+            {t('common.selectLanguage', 'Language')}
+          </span>
+          <LanguageSwitcher variant="dark" compact={true} />
+        </div>
+
         {/* Logout */}
         <motion.button
           whileHover={{ x: 2 }}
@@ -175,7 +191,7 @@ const Sidebar = ({
           "
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          <span>Log Out</span>
+          <span>{t('nav.logout', 'Log Out')}</span>
         </motion.button>
       </div>
     </div>

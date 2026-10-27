@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, FileText, CheckCircle, Clock, Loader2, MessageSquare, LifeBuoy } from 'lucide-react';
@@ -8,6 +9,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 
 const PatientSupport = () => {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subject, setSubject] = useState('');
@@ -58,7 +60,7 @@ const PatientSupport = () => {
       <div className="mb-8 flex items-center gap-3">
         <LifeBuoy className="w-8 h-8 text-pink-500" />
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Help & Support</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">{t('common.helpSupport', 'Help & Support')}</h1>
           <p className="text-slate-400 mt-1">Submit support requests or view updates on your existing inquiries.</p>
         </div>
       </div>

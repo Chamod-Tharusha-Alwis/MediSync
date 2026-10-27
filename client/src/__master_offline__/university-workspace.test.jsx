@@ -1,0 +1,18 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import Workspace from '../pages/common/UniversityWorkspace';
+import api from '../api/axiosInstance';
+import { clearLocalSession } from '../utils/sessionCleanup';
+import DoctorModal from '../pages/public/DoctorProfileModal';
+import HospitalModal from '../pages/public/HospitalProfileModal';
+import PharmacyModal from '../pages/public/PharmacyProfileModal';
+jest.mock('../api/axiosInstance',()=>({get:jest.fn(),post:jest.fn()}));
+jest.mock('../utils/sessionCleanup',()=>({clearLocalSession:jest.fn()}));
+jest.mock('../i18n/LanguageContext',()=>({useTranslation:()=>({language:'en',t:(_key,fallback)=>fallback})}));
+beforeEach(()=>{jest.clearAllMocks();delete process.env.REACT_APP_UNIVERSITY_RUNTIME;localStorage.clear();localStorage.setItem('role','patient');});
+afterEach(()=>{delete process.env.REACT_APP_UNIVERSITY_RUNTIME;});
+test('loading state and strict synthetic read-only response contract',async()=>{let resolve;api.get.mockReturnValue(new Promise(r=>{resolve=r;}));render(<Workspace/>);expect(screen.getByRole('status')).toHaveTextContent('Loading');resolve({data:{data:{name:'Synthetic Patient',role:'patient',isSynthetic:true,clinicalWrites:false}}});await screen.findByText('Synthetic Patient');expect(screen.getByTestId('university-role')).toHaveTextContent('patient');expect(screen.queryByText(/Download PDF/)).not.toBeInTheDocument();});
+test.each([{role:'doctor',isSynthetic:true,clinicalWrites:false},{role:'patient',isSynthetic:false,clinicalWrites:false},{role:'patient',isSynthetic:true,clinicalWrites:true}])('foreign/unsafe workspace response never renders success: %p',async data=>{api.get.mockResolvedValue({data:{data}});render(<Workspace/>);await screen.findByRole('alert');expect(screen.queryByTestId('university-role')).not.toBeInTheDocument();});
+test('logout failure does not falsely announce success or clear the local session',async()=>{api.get.mockResolvedValue({data:{data:{name:'Synthetic Patient',role:'patient',isSynthetic:true,clinicalWrites:false}}});api.post.mockRejectedValue(Error('inert unavailable'));render(<Workspace/>);await screen.findByText('Synthetic Patient');fireEvent.click(screen.getByRole('button',{name:'Log out'}));await waitFor(()=>expect(screen.getByRole('alert')).toHaveTextContent('could not be confirmed'));expect(clearLocalSession).not.toHaveBeenCalled();});
+test('confirmed server logout clears the local session',async()=>{api.get.mockResolvedValue({data:{data:{name:'Synthetic Patient',role:'patient',isSynthetic:true,clinicalWrites:false}}});api.post.mockResolvedValue({data:{message:'Logged out'}});render(<Workspace/>);await screen.findByText('Synthetic Patient');fireEvent.click(screen.getByRole('button',{name:'Log out'}));await waitFor(()=>expect(clearLocalSession).toHaveBeenCalledTimes(1));expect(api.post).toHaveBeenCalledWith('/auth/logout');});
+test.each([[DoctorModal,'doctor'],[HospitalModal,'hospital'],[PharmacyModal,'pharmacy']])('demo modal holds reviews/maps and review-write links: %s',async(Component,kind)=>{process.env.REACT_APP_UNIVERSITY_RUNTIME='true';const props={[kind]:{_id:'a'.repeat(24),name:'Synthetic profile',fullName:'Synthetic profile',googleMapsUrl:'https://maps.google.com/maps?q=Kandy&output=embed'},onClose:jest.fn()};const {container}=render(<Component {...props}/>);expect(api.get).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'Map Location'}));expect(container.querySelector('iframe')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Patient Feedback'}));expect(screen.getByRole('alert')).toHaveTextContent('unavailable');expect(screen.queryByText('Write a Patient Review')).not.toBeInTheDocument();});

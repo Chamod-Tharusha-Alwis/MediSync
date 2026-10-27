@@ -13,6 +13,7 @@ const consultationSchema = new mongoose.Schema({
   diagnosis: { type: String, required: true },
   icdCode: String,
   icdDescription: String,
+  icdVersion: { type: String, default: 'ICD-10' },
   notes: String,
   district: String,
   symptoms: [String],

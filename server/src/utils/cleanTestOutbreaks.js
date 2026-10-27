@@ -7,31 +7,57 @@ global.ACTIVE_KEY_VERSION = 1;
 
 const mongoose = require('mongoose');
 const OutbreakAlert = require('../models/OutbreakAlert');
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
 
 async function cleanTestOutbreaks() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI);
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-cleanup) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-cleanup')) {
+      throw new Error(
+        `[SAFEGUARD] Cleaning "${PROD_DB_NAME}" requires explicit --confirm-production-cleanup flag.`
+      );
+    }
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
   }
   console.log('--- CLEANING TEST OUTBREAK ALERTS & BROADCASTS ---');
 
-  // Remove test broadcasts
+  // Remove only explicitly tagged demo/test broadcasts
   const bmColl = mongoose.connection.db.collection('broadcastmessages');
   const delBroadcasts = await bmColl.deleteMany({
     $or: [
-      { message: { $regex: 'Test Broadcast', $options: 'i' } },
-      { title: { $regex: 'E2E Test', $options: 'i' } },
-      { message: { $regex: 'Cholera', $options: 'i' } },
-      { message: { $regex: 'General Infection', $options: 'i' } }
+      { isDemoData: true },
+      { isSynthetic: true },
+      { isTestFixture: true },
+      { message: { $regex: '^\\[DEMO\\]|Test Broadcast', $options: 'i' } },
+      { title: { $regex: 'E2E Test', $options: 'i' } }
     ]
   });
 
-  // Resolve or clean test outbreak alerts
+  // Remove only explicitly tagged demo/synthetic/test outbreak alerts
   const delOutbreaks = await OutbreakAlert.deleteMany({
     $or: [
-      { disease: { $regex: 'Cholera', $options: 'i' } },
-      { disease: { $regex: 'General Infection', $options: 'i' } },
-      { disease: { $regex: 'Common Cold', $options: 'i' } },
-      { status: { $in: ['Pending', 'Resolved', 'Dismissed'] } }
+      { isDemoData: true },
+      { isSynthetic: true },
+      { isTestFixture: true }
     ]
   });
 
@@ -48,7 +74,7 @@ async function cleanTestOutbreaks() {
 
 if (require.main === module) {
   cleanTestOutbreaks().then(() => process.exit(0)).catch(err => {
-    console.error('Cleanup failed:', err);
+    console.error('Cleanup failed:', err.message);
     process.exit(1);
   });
 }

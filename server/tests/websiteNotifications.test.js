@@ -1,0 +1,9 @@
+'use strict';
+const {controllerHarness}=require('./helpers/phase5xD5InertHarness');
+const user={id:'a'.repeat(24),role:'patient'};
+function harness(){const rows=Array.from({length:50},(_,n)=>({_id:n.toString(16).padStart(24,'0'),read:true}));const model={find:jest.fn(()=>({sort:()=>({limit:async()=>rows})})),countDocuments:jest.fn(async()=>101),findOneAndUpdate:jest.fn(async()=>null),updateMany:jest.fn(async()=>({modifiedCount:0}))};return{model,h:controllerHarness('notificationController',{dependencies:{'../models/Notification':model}})};}
+test('unread count includes records beyond the latest50',async()=>{const {h,model}=harness();const r=await h.invoke('getNotifications',{user});expect(r.body.unreadCount).toBe(101);expect(model.countDocuments).toHaveBeenCalledWith({userId:user.id,role:user.role,read:false});});
+test('list is scoped to both authenticated actor and role',async()=>{const {h,model}=harness();await h.invoke('getNotifications',{user});expect(model.find).toHaveBeenCalledWith({userId:user.id,role:user.role});});
+test('mark-read cannot affect another role even for a colliding actor ID',async()=>{const {h,model}=harness();const id='b'.repeat(24);const r=await h.invoke('markAsRead',{user,params:{id}});expect(r.status).toBe(404);expect(model.findOneAndUpdate.mock.calls[0][0]).toEqual({_id:id,userId:user.id,role:user.role});});
+test('malformed notification ID fails400 before any write',async()=>{const {h,model}=harness();const r=await h.invoke('markAsRead',{user,params:{id:'invalid'}});expect(r.status).toBe(400);expect(model.findOneAndUpdate).not.toHaveBeenCalled();});
+test('mark-all scopes exact actor, role and unread state',async()=>{const {h,model}=harness();await h.invoke('markAllAsRead',{user});expect(model.updateMany.mock.calls[0][0]).toEqual({userId:user.id,role:user.role,read:false});});

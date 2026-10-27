@@ -1,3 +1,4 @@
+require('../security/maintenanceAdmission').denyLegacyMaintenance();
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config(); // fallback
@@ -10,18 +11,44 @@ const Consultation = require('../models/Consultation');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
+const {
+  PROD_DB_NAME,
+  TEST_DB_NAME,
+  installDestructiveOpGuards,
+  connectProductionDB,
+  connectAutomatedTestDB
+} = require('../config/dbGuard');
+
+installDestructiveOpGuards();
 
 async function seedOutbreakDemo() {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI);
+    const args = process.argv.slice(2);
+    const targetArg = args.find((a) => a.startsWith('--target-db='));
+    const targetDb = targetArg ? targetArg.split('=')[1] : null;
+    if (!targetDb || ![PROD_DB_NAME, TEST_DB_NAME].includes(targetDb)) {
+      throw new Error(
+        `[SAFEGUARD] Explicit --target-db=${TEST_DB_NAME} (or --target-db=${PROD_DB_NAME} --confirm-production-seed) is required.`
+      );
+    }
+    if (targetDb === PROD_DB_NAME && !args.includes('--confirm-production-seed')) {
+      throw new Error(
+        `[SAFEGUARD] Seeding "${PROD_DB_NAME}" via CLI requires --confirm-production-seed.`
+      );
+    }
+    if (targetDb === TEST_DB_NAME) {
+      await connectAutomatedTestDB();
+    } else {
+      await connectProductionDB();
+    }
   }
   console.log('🌱 Seeding 14-day 3-Tier Outbreak Anomaly Detection Demo data...');
 
-  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: '200325711121' };
+  const patient = await Patient.findOne() || { _id: new mongoose.Types.ObjectId(), nic: 'NIC-SYNTHETIC-DEMO-9999' };
   const doc = await Doctor.findOne() || { _id: new mongoose.Types.ObjectId() };
   const hospital = await Hospital.findOne() || { _id: new mongoose.Types.ObjectId() };
 
-  const patientNic = patient.nic || '200325711121';
+  const patientNic = patient.nic || 'NIC-SYNTHETIC-DEMO-9999';
   const now = new Date();
   const records = [];
   let seq = 1000;

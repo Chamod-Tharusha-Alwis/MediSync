@@ -1,3 +1,5 @@
+import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, ShieldCheck, Award, Activity, Loader2 } from 'lucide-react';
@@ -15,7 +17,7 @@ const SPECIALIZATIONS = [
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-850' };
   let score = 0;
-  if (pass.length >= 8) score++;
+  if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
   if (/[0-9]/.test(pass)) score++;
   if (/[^A-Za-z0-9]/.test(pass)) score++;
@@ -30,6 +32,7 @@ const checkPasswordStrength = (pass) => {
 const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase select-none";
 
 export default function DoctorRegister() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -44,6 +47,7 @@ export default function DoctorRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!passwordAccepted(form.password)) { toast.error(PASSWORD_REQUIREMENTS); return; }
     if (form.password !== form.confirmPassword) { toast.error('Passwords do not match'); return; }
     setLoading(true);
     try {
@@ -79,7 +83,7 @@ export default function DoctorRegister() {
           <div className="w-14 h-14 bg-teal-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.1)]">
             <Activity className="w-7 h-7 text-teal-400" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Doctor Registration</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">{t("auth.imDoctor", "Doctor Registration")}</h1>
           <p className="text-slate-400 text-xs mt-1.5 font-medium">Join the MediSync healthcare provider network</p>
         </div>
 
@@ -134,7 +138,7 @@ export default function DoctorRegister() {
                     <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-555" />
                     <input type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')}
                       className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" 
-                      placeholder="Min 8 characters" required />
+                      placeholder="At least 12 characters" required />
                     <button type="button" onClick={() => setShowPw(!showPw)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-550 hover:text-slate-300">
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

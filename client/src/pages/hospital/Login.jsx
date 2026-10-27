@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Building } from 'lucide-react';
@@ -9,6 +10,7 @@ import GlassButton from '../../components/common/GlassButton';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
 
 const HospitalLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -137,7 +139,7 @@ const HospitalLogin = () => {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">Email Address</label>
+            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">{t("auth.emailAddress", "Email Address")}</label>
             <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 

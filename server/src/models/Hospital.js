@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const hospitalSchema = new mongoose.Schema({
+  preferredLanguage: require('../security/preferredLanguage').preferredLanguageField(),
+  isActive: { type: Boolean, default: true },
+  isVerified: { type: Boolean, default: false },
+  clinicalUseVersion: { type: Number, default: 0 },
   name: { type: String, required: true },
   type: { type: String, enum: ['government', 'private'], default: 'private' },
   district: String,

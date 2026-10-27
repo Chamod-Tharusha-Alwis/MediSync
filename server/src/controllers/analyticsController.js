@@ -5,6 +5,7 @@ const OutbreakAlert = require('../models/OutbreakAlert');
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    if (!['admin', 'super_admin'].includes(req.user?.role)) return res.status(403).json({ error: 'Administrative analytics access required' });
     const hospitalQuery = (req.user.role === 'hospital_admin' && req.user.hospitalId) 
       ? { hospitalId: req.user.hospitalId } 
       : {};
@@ -30,13 +31,28 @@ exports.getDashboardStats = async (req, res) => {
       { $sort: { count: -1 } },
       { $limit: 5 },
       { $lookup: {
+          from: 'doctors',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'doctorDoc'
+      }},
+      { $lookup: {
           from: 'users',
           localField: '_id',
           foreignField: '_id',
-          as: 'doctor'
+          as: 'userDoc'
       }},
-      { $unwind: '$doctor' },
-      { $project: { _id: 1, count: 1, name: '$doctor.fullName' } }
+      { $project: {
+          _id: 1,
+          count: 1,
+          name: {
+            $ifNull: [
+              { $arrayElemAt: ['$doctorDoc.fullName', 0] },
+              { $arrayElemAt: ['$userDoc.fullName', 0] },
+              'Dr. Practitioner'
+            ]
+          }
+      }}
     ]);
 
     // 3. Most Prescribed Drugs & Dispensing Rate
@@ -67,16 +83,14 @@ exports.getDashboardStats = async (req, res) => {
     
     const drugCounts = {};
     recentPrescriptions.forEach(p => {
-      if (typeof p.decryptFieldsSync === 'function') {
-        try { p.decryptFieldsSync(); } catch(e) {}
-      }
-      if (p.medications && Array.isArray(p.medications)) {
+      if (typeof p.decryptFieldsSync === 'function') p.decryptFieldsSync();
+      if (Array.isArray(p.medications) && p.medications.length) {
         p.medications.forEach(m => {
           if (m.name) {
             drugCounts[m.name] = (drugCounts[m.name] || 0) + 1;
           }
         });
-      }
+      } else if (p.drugName) drugCounts[p.drugName] = (drugCounts[p.drugName] || 0) + 1;
     });
 
     const topDrugs = Object.entries(drugCounts)
@@ -85,20 +99,35 @@ exports.getDashboardStats = async (req, res) => {
       .slice(0, 5);
 
     // 4. Recent Outbreak Alerts
-    const alerts = await OutbreakAlert.find({ ...hospitalQuery })
-      .sort({ createdAt: -1 })
-      .limit(5);
+    let alerts = [];
+    try {
+      const surveillanceService = require('../services/surveillanceService');
+      alerts = await OutbreakAlert.find({
+        ...hospitalQuery,
+        surveillancePolicy: surveillanceService.POLICY,
+        ...surveillanceService.realAlertFilter(),
+        status: 'Active'
+      })
+        .sort({ createdAt: -1 })
+        .limit(5);
+    } catch (_) {
+      alerts = [];
+    }
 
     res.json({
       data: {
-        registrationGrowth,
-        topDoctors,
-        dispensingStats: { issuedCount, dispensedCount, dispensingRate },
-        topDrugs,
-        alerts
+        registrationGrowth: Array.isArray(registrationGrowth) ? registrationGrowth : [],
+        topDoctors: Array.isArray(topDoctors) ? topDoctors : [],
+        dispensingStats: {
+          issuedCount: Number(issuedCount) || 0,
+          dispensedCount: Number(dispensedCount) || 0,
+          dispensingRate: Number(dispensingRate) || 0
+        },
+        topDrugs: Array.isArray(topDrugs) ? topDrugs : [],
+        alerts: Array.isArray(alerts) ? alerts : []
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch dashboard stats', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch dashboard stats' });
   }
 };
