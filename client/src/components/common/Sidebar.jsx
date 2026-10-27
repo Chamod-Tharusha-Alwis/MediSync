@@ -90,7 +90,9 @@ const Sidebar = ({
           />
 
           {/* Label */}
-          <span className="flex-1 truncate">{item.label}</span>
+          <span className="flex-1 truncate">
+            {item.labelKey ? t(item.labelKey, item.label) : t(`nav.${(item.label || '').toLowerCase().replace(/[\s-&]/g, '')}`, item.label)}
+          </span>
 
           {/* Trailing chevron on active */}
           {isActive && (

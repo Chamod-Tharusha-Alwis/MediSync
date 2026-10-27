@@ -1,6 +1,6 @@
 // server/src/models/LabTest.js
 const mongoose  = require('mongoose');
-const versionedEncryption = require('../utils/versionedEncryption');
+const versionedEncryption = require('../security/fieldEncryption');
 
 const { Schema } = mongoose;
 
@@ -41,9 +41,10 @@ const LabTestSchema = new Schema(
       type:     String,        // stored encrypted by mongoose-field-encryption
       required: true,
     },
+    patientId: { type: Schema.Types.ObjectId, ref: 'Patient', index: true },
     patientNic_bi: {
       type:     String,        // SHA-256(nic) — blind index for querying, NOT encrypted
-      required: true,
+      required: () => require('../security/securityRuntime').current().nicMode !== 'hmac',
       index:    true,
     },
     patientName: {
@@ -143,6 +144,8 @@ const LabTestSchema = new Schema(
       type:    String,
       default: null,          // AES-256-GCM file key, encrypted with Vault master key
     },
+    reportEnvelopeVersion: { type: Number, enum: [1, 2], default: 1 },
+    fileKeyVersion: { type: Number },
     fileIV: {
       type:    String,
       default: null,          // 12-byte GCM IV stored as hex
@@ -151,6 +154,7 @@ const LabTestSchema = new Schema(
   },
   {
     timestamps: true,         // createdAt, updatedAt
+    optimisticConcurrency: true,
   }
 );
 

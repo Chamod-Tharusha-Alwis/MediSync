@@ -1,0 +1,11 @@
+FROM node:24-alpine@sha256:1200d815de24f8dcca745fbf7651d166034a35adbcad8860a8538ffff44f1420
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY src/ ./src/
+USER node
+EXPOSE 5100
+# Requires an operator-approved manifest mounted separately; no credentials or
+# dataset are baked into the image. Ordinary clinical Dockerfile is unchanged.
+CMD ["node", "src/university.js"]

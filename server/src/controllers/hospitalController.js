@@ -141,7 +141,9 @@ exports.getDoctors = async (req, res) => {
 
 exports.addDoctor = async (req, res) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return res.status(400).json({ error: 'Invalid doctor link request' });
     const { doctorId, email, orgEmail, fullName, specialization, licenseNo, personalEmail } = req.body;
+    if ([doctorId, email, orgEmail, fullName, specialization, licenseNo, personalEmail].some(value => value !== undefined && (typeof value !== 'string' || value.length > 200))) return res.status(400).json({ error: 'Invalid doctor link fields' });
     const hospitalId = req.user.id;
 
     if (!doctorId && !email && !personalEmail) {
@@ -160,6 +162,8 @@ exports.addDoctor = async (req, res) => {
       doctor = await Doctor.findOne({ $or: [{ email: searchEmail }, { personalEmail: searchEmail }] });
     }
 
+    if (doctor && (doctor.isActive !== true || doctor.isVerified !== true)) return res.status(403).json({ error: 'Doctor must be active and administrator verified before linking' });
+    if (!doctor && (typeof licenseNo !== 'string' || licenseNo.trim().length < 3 || licenseNo.trim().length > 80)) return res.status(400).json({ error: 'A supplied professional licence number is required; administrator verification remains mandatory' });
     const tempPassword = generateTempPassword();
     const hashedTemp = await hashPassword(tempPassword);
 
@@ -179,7 +183,8 @@ exports.addDoctor = async (req, res) => {
         email: assignedOrgEmail,
         personalEmail: targetPersonalEmail,
         password: hashedTemp,
-        licenseNo: licenseNo || `SLMC-${Math.floor(10000 + Math.random() * 90000)}`,
+        licenseNo: licenseNo.trim(),
+        isVerified: false,
         specialization: specialization || 'General Practice',
         role: 'doctor',
         loginType: 'hospital',
@@ -197,14 +202,15 @@ exports.addDoctor = async (req, res) => {
 
       try {
         const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
-        await emailService.sendTempPasswordEmail(targetPersonalEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name);
+        await emailService.sendTempPasswordEmail(targetPersonalEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name, require('../services/recipientLanguageService').languageOptionsForRecord('Doctor', doctor));
       } catch (emailErr) {
-        console.error('Email send failed:', emailErr.message);
+        console.error('Doctor invitation provider unavailable.');
       }
 
       return res.status(201).json({
         data: { doctorId: doctor._id, fullName: doctor.fullName, orgEmail: assignedOrgEmail, personalEmail: targetPersonalEmail, hospitalName: hospital.name },
-        message: 'New hospital doctor created and temporary password sent to personal email',
+        verificationStatus: 'pending',
+        message: 'Doctor account created pending administrator verification. Invitation delivery is not confirmed.',
       });
     }
 
@@ -221,17 +227,17 @@ exports.addDoctor = async (req, res) => {
 
     try {
       const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
-      await emailService.sendTempPasswordEmail(targetEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name);
+      await emailService.sendTempPasswordEmail(targetEmail, doctor.fullName, tempPassword, `${clientUrl}/doctor/login?type=hospital`, hospital.name, require('../services/recipientLanguageService').languageOptionsForRecord('Doctor', doctor));
     } catch (emailErr) {
-      console.error('Email send failed:', emailErr.message);
+      console.error('Doctor invitation provider unavailable.');
     }
 
     res.status(201).json({
       data: { doctorId: doctor._id, fullName: doctor.fullName, orgEmail: assignedOrgEmail, hospitalName: hospital.name },
-      message: 'Doctor linked and temporary password sent to email',
+      message: 'Doctor linked. Invitation delivery is not confirmed.',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error linking doctor', details: error.message });
+    res.status(503).json({ error: 'Doctor linking unavailable' });
   }
 };
 
@@ -239,6 +245,7 @@ exports.toggleDoctorStatus = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const hospitalId = req.user.id;
+    if (typeof doctorId !== 'string' || !/^[a-f0-9]{24}$/i.test(doctorId)) return res.status(400).json({ error: 'Invalid doctor identifier' });
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
@@ -250,7 +257,7 @@ exports.toggleDoctorStatus = async (req, res) => {
     await doctor.save();
     res.json({ data: { isActive: doctor.orgLogins[orgIndex].isActive }, message: 'Status updated' });
   } catch (error) {
-    res.status(500).json({ error: 'Error updating doctor status', details: error.message });
+    res.status(500).json({ error: 'Error updating doctor status' });
   }
 };
 

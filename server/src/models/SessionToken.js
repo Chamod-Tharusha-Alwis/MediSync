@@ -17,6 +17,7 @@ const sessionTokenSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  clinicalUseVersion: { type: Number, default: 0 },
   deviceInfo: {
     type: String
   },

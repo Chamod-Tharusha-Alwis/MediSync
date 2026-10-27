@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -51,6 +52,7 @@ const AnimatedTimelineStep = ({ step, index, isEven, currentIcon }) => {
 };
 
 const Home = () => {
+  const { t } = useTranslation();
   const [activeRole, setActiveRole] = useState('Doctor');
   const navigate = useNavigate();
 
@@ -58,7 +60,7 @@ const Home = () => {
     { id: 'Doctor', icon: <Stethoscope className="w-6 h-6" />, label: 'Doctor', path: '/doctor/login', color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/20' },
     { id: 'Pharmacist', icon: <Pill className="w-6 h-6" />, label: 'Pharmacist', path: '/pharmacy/login', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
     { id: 'Patient', icon: <HeartPulse className="w-6 h-6" />, label: 'Patient', path: '/patient/login', color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-    { id: 'Public Health', icon: <Activity className="w-6 h-6" />, label: 'Public Health', path: '/admin/login', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+    { id: 'Hospital', icon: <Building2 className="w-6 h-6" />, label: 'Hospital', path: '/hospital/login', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
     { id: 'Admin', icon: <Building2 className="w-6 h-6" />, label: 'Admin', path: '/admin/login', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' }
   ];
 
@@ -67,32 +69,32 @@ const Home = () => {
       title: 'Unified Clinical Workspace',
       steps: [
         'Log in with your universal MediSync Doctor credentials to access all affiliated hospitals seamlessly.',
-        'Lookup patient files by entering their National Identity Card (NIC) to review historical records instantly.',
-        'Draft and issue e-prescriptions with safety limits, diagnostic annotations, and digital signature records.'
+        'Request patient consent before accessing clinical history.',
+        'Record assessments and prescriptions with consent and medication safety checks.'
       ]
     },
     'Pharmacist': {
       title: 'Secure Prescription Terminal',
       steps: [
         'Verify patient identity via National Identity Card (NIC) lookup to retrieve active prescriptions.',
-        'View complete instruction guides, configure substitute brands, and mark medication as dispensed.',
-        'Prevent double-dispensing through global real-time synchronization updates across all pharmacies.'
+        'Review authorized prescriptions and record dispensing with inventory checks.',
+        'Dispensing requests use transaction and duplicate-request protections.'
       ]
     },
     'Patient': {
       title: 'Personal Patient Dashboard',
       steps: [
-        'Access your longitudinal health dashboard securely using your National Identity Card (NIC).',
+        'Sign in to your account to access your medical history.',
         'Review doctor notes, medical histories, diagnosis records, and lab check statuses.',
-        'Retrieve active prescription QR/barcodes and trace dispensation status on the timeline.'
+        'Review prescription and dispensing status in your medical timeline.'
       ]
     },
-    'Public Health': {
-      title: 'Active Epidemiological Surveillance',
+    'Hospital': {
+      title: 'Hospital Operations',
       steps: [
-        'Monitor regional health logs and telemetry via automated ML outbreak scanners.',
-        'Analyze anomaly signals and compute disease vector Z-Scores compared to baseline averages.',
-        'Receive early threat notifications and dispatch regional alerts to notify clinical networks.'
+        'Sign in to the authorized hospital workspace.',
+        'Manage approved doctor affiliations and laboratory work queues.',
+        'Review laboratory status and results within your facility permissions.'
       ]
     },
     'Admin': {
@@ -145,7 +147,7 @@ const Home = () => {
                 onClick={() => navigate('/select-role')}
                 className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all hover:scale-103"
               >
-                Access Login Portals
+                {t('home.accessPortals', 'Access Login Portals')}
               </button>
               <button
                 onClick={() => navigate('/register?role=patient')}
@@ -164,7 +166,7 @@ const Home = () => {
           <div className="text-center space-y-4">
             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Interactive Workflows</h2>
             <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Select your system profile role below to preview integration workflows and enter respective clinical zones.
+              Choose your role to sign in to MediSync. Access is governed by account permissions and patient consent.
             </p>
           </div>
 

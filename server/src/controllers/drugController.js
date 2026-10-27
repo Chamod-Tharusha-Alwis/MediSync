@@ -1,5 +1,5 @@
 const Drug = require('../models/Drug');
-const { icd10 } = require('../utils/loadDatasets');
+const { icd10, symptoms } = require('../utils/loadDatasets');
 const { escapeRegex, analyzeMedicationSafety } = require('../utils/ingredientResolver');
 const whoIcd11Service = require('../services/whoIcd11Service');
 
@@ -79,26 +79,18 @@ exports.COMMON_DRUGS = COMMON_DRUGS;
 exports.searchDrugs = async (req, res) => {
   try {
     const q = req.query.q;
-    if (!q || typeof q !== 'string' || q.trim().length < 2) return res.json({ data: [] });
+    if (q === undefined || q === '') return res.json({ data: [] });
+    if (typeof q !== 'string' || q.length > 200) return res.status(400).json({ error: 'Invalid drug search' });
+    if (q.trim().length < 2) return res.json({ data: [] });
 
     const regex = new RegExp(escapeRegex(q.trim()), 'i');
     let drugs = await Drug.find({
       $or: [{ name: regex }, { genericName: regex }, { brand: regex }]
     }).limit(10).select('_id name genericName brand category commonDosages');
 
-    // Fallback if Mongoose collection is empty (e.g. 0 documents)
-    if (!drugs || drugs.length === 0) {
-      drugs = COMMON_DRUGS.filter(d => 
-        regex.test(d.name) || regex.test(d.genericName)
-      ).map((d, index) => ({
-        _id: `hc-${index}-${d.name.toLowerCase()}`,
-        ...d
-      }));
-    }
-
     return res.json({ data: drugs });
   } catch (error) {
-    return res.status(500).json({ error: 'Error searching drugs', details: error.message });
+    return res.status(503).json({ error: 'Drug search unavailable' });
   }
 };
 
@@ -116,10 +108,14 @@ exports.searchDrugs = async (req, res) => {
 exports.getICDCodes = async (req, res) => {
   try {
     const q = req.query.q;
-    if (!q || q.trim().length < 2) return res.json({ data: [] });
+    if (q === undefined || q === '') return res.json({ data: [] });
+    if (typeof q !== 'string' || q.length > 200) return res.status(400).json({ error: 'Invalid diagnosis search' });
+    if (q.trim().length < 2) return res.json({ data: [] });
 
     const searchStr = q.trim().toLowerCase();
+    if (req.query.version !== undefined && typeof req.query.version !== 'string') return res.status(400).json({ error: 'Invalid ICD version' });
     const version = (req.query.version || 'all').toLowerCase();
+    if (!['all', 'icd10', 'icd11'].includes(version)) return res.status(400).json({ error: 'Invalid ICD version' });
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 15));
 
     let combinedResults = [];
@@ -145,7 +141,7 @@ exports.getICDCodes = async (req, res) => {
         const icd11Matches = await whoIcd11Service.searchIcd11(searchStr, limit);
         combinedResults.push(...icd11Matches);
       } catch (icd11Err) {
-        console.warn('[ICD-11] Search failed, continuing with ICD-10 results:', icd11Err.message);
+        console.warn('[ICD-11] Reference search unavailable.');
       }
     }
 
@@ -170,7 +166,7 @@ exports.getICDCodes = async (req, res) => {
       totalMatched: combinedResults.length
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Error searching ICD', details: error.message });
+    return res.status(503).json({ error: 'Diagnosis reference search unavailable' });
   }
 };
 
@@ -189,22 +185,14 @@ exports.getWhoIcdStatus = async (req, res) => {
 
 /**
  * GET /api/drugs/symptoms
- * Legacy endpoint previously returned valid symptom strings from symptom_map.json.
- * Since switching to the 71k database without symptom mappings, this now returns
- * a static baseline of generic symptoms so the frontend autocomplete doesn't break.
+ * Canonical symptoms derived from the same dataset/normalization as Flask.
+ * Missing reference files fail during catalog admission, never as fake success.
  */
 exports.getSymptoms = async (req, res) => {
   try {
-    const fallbackSymptoms = [
-      'Abdominal Pain', 'Back Pain', 'Breathlessness', 'Chills', 'Chest Pain',
-      'Cough', 'Diarrhoea', 'Dizziness', 'Fatigue', 'Fever', 'Headache',
-      'High Fever', 'Itching', 'Joint Pain', 'Loss of Appetite', 'Muscle Pain',
-      'Nausea', 'Rash', 'Runny Nose', 'Skin Rash', 'Sneezing', 'Sweating',
-      'Vomiting', 'Weakness', 'Weight Loss', 'Yellow Skin', 'Yellow Urine'
-    ];
-    return res.json({ data: fallbackSymptoms });
+    return res.json({ data: symptoms });
   } catch (error) {
-    return res.status(500).json({ error: 'Error fetching symptoms', details: error.message });
+    return res.status(503).json({ error: 'Symptom reference unavailable' });
   }
 };
 
@@ -249,32 +237,17 @@ exports.checkInteraction = async (req, res) => {
 
 exports.recommendDrugs = async (req, res) => {
   try {
-    const { icdCode } = req.body;
+    const icdCode = req.body?.icdCode;
     if (!icdCode) return res.json({ data: [] });
+    if (typeof icdCode !== 'string' || icdCode.length > 64 || !/^[A-Za-z0-9][A-Za-z0-9. -]*$/.test(icdCode)) return res.status(400).json({ error: 'Invalid diagnosis code' });
 
     let recommendations = await Drug.find({ icdCodes: icdCode })
       .limit(5)
       .select('_id name genericName category commonDosages');
 
-    // Fallback if Mongoose collection is empty
-    if (!recommendations || recommendations.length === 0) {
-      const lowerCode = icdCode.toLowerCase();
-      if (lowerCode.includes('a90') || lowerCode.includes('dengue')) {
-        recommendations = [
-          { _id: 'hc-rec-para', name: 'Paracetamol', genericName: 'Acetaminophen', category: 'Analgesic', commonDosages: ['500mg'] }
-        ];
-      } else {
-        // Return first 3 common drugs
-        recommendations = COMMON_DRUGS.slice(0, 3).map((d, index) => ({
-          _id: `hc-rec-${index}-${d.name.toLowerCase()}`,
-          ...d
-        }));
-      }
-    }
-
     return res.json({ data: recommendations });
   } catch (error) {
-    return res.status(500).json({ error: 'Error getting recommendations', details: error.message });
+    return res.status(503).json({ error: 'Medication reference mappings unavailable' });
   }
 };
 

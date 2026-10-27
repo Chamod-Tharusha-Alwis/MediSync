@@ -1,147 +1,124 @@
 'use strict';
 
-/**
- * MediSync Master Offline Regression Suite Runner
- * Executes all 247 verified offline unit, security, ML, clinical, and cryptographic checks.
- * Zero database, zero network, zero external dependencies.
- */
-
-const cp = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-
+// Current clinical regression only. Each invocation retains its own receipts.
+// These offline checks do not establish Atlas or five-role browser integration.
+const fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
 const root = path.resolve(__dirname, '..');
-
-const PROTECTED_HASHES = {
-  'server/src/middleware/auth.js': '9729d2ca66e842e0df01bbdbb837069da563465209d8d12c189537715163ba24',
-  'server/src/controllers/doctorController.js': 'cec5fb2b7c9b552c28b3d012354caa380550546bd895d4062f1cb4f0b8feb75c',
-  'ml-engine/app.py': '48967c9c4920112e2373fd0055d48b2a69a5fea4e8d87ebd462a6752a8451a11',
-  'ml-engine/evaluate_symptom_model.py': '6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d',
-  'client/src/components/SymptomTagInput.jsx': '1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d',
-  'server/tests/ir04BackendIntegration.test.js': 'adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc',
-  'server/tests/patientProfileOwnedIntegration.test.js': '7335e2a5190d740d2ee7856fe26d2ba5edb7a204a4872d3fa081d52b345345c5',
-  'server/tests/prescriptionDurationOwnedIntegration.test.js': '562ba59f307e2081214f40ff2d674fd3546c82f9828a53b8195796f2d637cbc6',
-  'server/tests/lab.test.js': '227e2faf5424e53f836e5364fa592790d387206011e8264e72bb1cc88d19800c',
-  'server/tests/universityDemoSeedVerify.test.js': 'fc472f5707f96b2514d8ec50097da6a6eb7433ff427200f6d6649452ce463695',
-  'client/tests/ir04-isolated-five-role-e2e.spec.js': '496dbcc2337f2cc48d15fc5af217181c948fdd6d4251f301057e2121c7d9d2ee'
-};
-
-async function run() {
-  console.log('===============================================================');
-  console.log('MEDISYNC MASTER OFFLINE REGRESSION TEST SUITE');
-  console.log('===============================================================\n');
-
-  let passedTotal = 0;
-  let failedTotal = 0;
-
-  // [1/5] Cryptographic Hash Verification (11 files)
-  console.log('[1/5] Verifying 11 Protected Sources & Quarantined Test Suites...');
-  let hashFailures = 0;
-  for (const [file, exp] of Object.entries(PROTECTED_HASHES)) {
-    const fullPath = path.join(root, file);
-    if (!fs.existsSync(fullPath)) {
-      console.error(`  ✗ Missing file: ${file}`);
-      hashFailures++;
-      continue;
-    }
-    const actual = crypto.createHash('sha256').update(fs.readFileSync(fullPath)).digest('hex');
-    if (actual !== exp) {
-      console.error(`  ✗ SHA-256 mismatch: ${file}`);
-      hashFailures++;
-    }
-  }
-  if (hashFailures === 0) {
-    console.log('  ✓ 5/5 protected application sources match canonical hashes byte-for-byte.');
-    console.log('  ✓ 6/6 legacy integration test suites sealed in quarantine.');
-    passedTotal += 11;
-  } else {
-    failedTotal += hashFailures;
-    throw new Error(`Cryptographic hash verification failed: ${hashFailures} errors.`);
-  }
-
-  // [2/5] Server Security & Governance Unit Tests (82 tests)
-  console.log('\n[2/5] Running Server Unit & Governance Suites (82 Tests)...');
-  const serverJestBin = path.join(root, 'server', 'node_modules', 'jest', 'bin', 'jest.js');
-  const serverJest = cp.spawnSync(
-    process.execPath,
-    [serverJestBin, 'tests/qaNativeDriverPolicy.test.js', 'tests/qaTrustLedger.test.js', 'tests/qaEncryptionBootstrap.test.js', 'tests/qaProcessOrchestration.test.js', 'tests/dbGuard.test.js'],
-    { cwd: path.join(root, 'server'), stdio: 'inherit', env: { ...process.env, NODE_ENV: 'test', MEDISYNC_TEST_MODE: 'true' } }
-  );
-  if (serverJest.status !== 0) {
-    console.error('  ✗ Server unit suites failed.');
-    failedTotal++;
-    process.exit(1);
-  } else {
-    console.log('  ✓ Server unit and governance suites passed (82/82 tests).');
-    passedTotal += 82;
-  }
-
-  // [3/5] Client Offline Master Suites (90 tests)
-  console.log('\n[3/5] Running Client Master Offline Suites (90 Tests)...');
-  const clientJestBin = path.join(root, 'client', 'node_modules', 'jest', 'bin', 'jest.js');
-  const clientJest = cp.spawnSync(
-    process.execPath,
-    [clientJestBin, '--config', 'master.offline.jest.cjs'],
-    { cwd: path.join(root, 'client'), stdio: 'inherit', env: { ...process.env, NODE_ENV: 'test', CI: 'true' } }
-  );
-  if (clientJest.status !== 0) {
-    console.error('  ✗ Client master offline suites failed.');
-    failedTotal++;
-    process.exit(1);
-  } else {
-    console.log('  ✓ Client master offline suites passed (90/90 tests).');
-    passedTotal += 90;
-  }
-
-  // [4/5] ML Engine Safety & B13 Scoring Tests (46 checks)
-  console.log('\n[4/5] Running ML Safety & B13 Scoring Checks (46 Checks)...');
-  const mlSafety = cp.spawnSync('python', ['ml-engine/test_medication_safety.py'], { cwd: root, stdio: 'inherit' });
-  if (mlSafety.status !== 0) {
-    console.error('  ✗ ML medication safety tests failed.');
-    failedTotal++;
-    process.exit(1);
-  }
-  passedTotal += 6;
-
-  const receiptPath = path.join(root, 'scratch', `ci_ml_receipt_${Date.now()}.json`);
-  if (fs.existsSync(receiptPath)) fs.unlinkSync(receiptPath);
-  fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
-  const mlScoring = cp.spawnSync('python', ['ml-engine/b13_r2_scoring_checks.py', receiptPath], { cwd: root, stdio: 'inherit' });
-  if (fs.existsSync(receiptPath)) fs.unlinkSync(receiptPath);
-  if (mlScoring.status !== 0) {
-    console.error('  ✗ ML B13 Option D scoring checks failed.');
-    failedTotal++;
-    process.exit(1);
-  }
-  passedTotal += 40;
-  console.log('  ✓ ML medication safety and B13 similarity scoring passed (46/46 checks).');
-
-  // [5/5] Clinical Governance & Transaction Isolation Checks (15 checks)
-  console.log('\n[5/5] Running Clinical Dispensing Governance Checks (15 Checks)...');
-  const tag = `offline-${Date.now()}`;
-  const clinical = cp.spawnSync(process.execPath, ['server/scripts/phase5xMasterClinicalChecks.js', tag], { cwd: root, stdio: 'inherit' });
-  // Clean up scratch receipt
-  const tempReceipt = path.join(root, `scratch/phase5x-evidence/master-clinical-${tag}.json`);
-  if (fs.existsSync(tempReceipt)) fs.unlinkSync(tempReceipt);
-
-  if (clinical.status !== 0) {
-    console.error('  ✗ Clinical governance checks failed.');
-    failedTotal++;
-    process.exit(1);
-  }
-  passedTotal += 15;
-  console.log('  ✓ Clinical dispensing transaction isolation passed (15/15 checks).');
-
-  console.log('\n===============================================================');
-  console.log(`TOTAL OFFLINE REGRESSION CHECKS: ${passedTotal + failedTotal}`);
-  console.log(`PASSED: ${passedTotal}`);
-  console.log(`FAILED: ${failedTotal}`);
-  console.log('VERDICT: ALL_PASSED');
-  console.log('===============================================================');
+const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const baselinePath = 'docs/release/PROTECTED_HASHES.json';
+function isSnapshotFile(file) {
+  return !/^(scratch|research|docs|Python|medisync-qa-evidence)\//.test(file) && !/(^|\/)\.env($|\.)/i.test(file)
+    && /\.(js|jsx|cjs|mjs|json|py|ya?ml|css|html)$|(^|\/)(Dockerfile|\.dockerignore|requirements\.txt|requirements\.lock)$/.test(file);
 }
-
-run().catch(err => {
-  console.error('\n[FATAL] Test runner encountered unhandled error:', err.message);
-  process.exit(1);
-});
+function git(args) {
+  const result = cp.spawnSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+  if (result.status !== 0) throw Error('OFFLINE_GIT_SNAPSHOT_FAILED');
+  return result.stdout;
+}
+function snapshot() {
+  const ledgerPath = path.join(root, baselinePath);
+  if (!fs.existsSync(ledgerPath)) throw Error('PROTECTED_HASH_LEDGER_MISSING');
+  const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+  if (!Array.isArray(ledger.files) || ledger.files.length !== 15) throw Error('PROTECTED_HASH_LEDGER_INVALID');
+  const rows = ledger.files.map(row => {
+    if (!row.path || !row.releaseCandidateSha256) throw Error('PROTECTED_HASH_ROW_INVALID');
+    const fullPath = path.join(root, row.path);
+    if (!fs.existsSync(fullPath)) throw Error('PROTECTED_FILE_MISSING: ' + row.path);
+    const actual = sha(fullPath);
+    return {
+      file: row.path,
+      previousApprovedSha256: row.previousApprovedSha256,
+      expected: row.releaseCandidateSha256,
+      actual,
+      reason: row.reason
+    };
+  });
+  if (rows.some(r => r.actual !== r.expected)) throw Error('PROTECTED_SOURCE_HASH_MISMATCH');
+  const names = [...new Set(git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean))]
+    .filter(file => isSnapshotFile(file) && fs.existsSync(path.join(root, file))).sort();
+  return { at: new Date().toISOString(), branch: git(['branch', '--show-current']).trim(), head: git(['rev-parse', 'HEAD']).trim(), index: git(['diff', '--cached', '--name-only']), files: names.map(file => ({ file, sha256: sha(path.join(root, file)) })), pins: rows };
+}
+function cleanEnvironment() {
+  const env = {};
+  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER']) if (process.env[key]) env[key] = process.env[key];
+  return { ...env, NODE_ENV: 'test', BABEL_ENV: 'test', CI: 'true', TZ: 'UTC', MEDISYNC_OFFLINE_ONLY: 'true', ENCRYPTION_KEY: 'synthetic-offline-key-never-for-real-data', REACT_APP_MEDISYNC_QA: 'true', REACT_APP_API_URL: '/api', REACT_APP_SERVER_URL: 'http://127.0.0.1:5100' };
+}
+async function main() {
+  const nodeMajor = Number(process.versions.node.split('.')[0]);
+  if (![24, 26].includes(nodeMajor)) throw Error('BLOCKED: use the existing reviewed Node 24 runtime; no installation is required');
+  fs.mkdirSync(path.join(root,'scratch'),{recursive:true});
+  const out = fs.mkdtempSync(path.join(root, 'scratch/clinical-offline-'));
+  const save = (name, value) => fs.writeFileSync(path.join(out, name), JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+  const before = snapshot(); save('before.json', before);
+  if (before.pins.some(row => row.actual !== row.expected)) throw Error('PROTECTED_SOURCE_HASH_MISMATCH');
+  const env = cleanEnvironment();
+  const ciProfile = process.env.MEDISYNC_OFFLINE_CI === 'true';
+  const securityOnly = ciProfile && process.env.MEDISYNC_OFFLINE_PROFILE === 'security';
+  if (ciProfile) env.MEDISYNC_OFFLINE_CI = 'true';
+  console.log('Offline regression: inert repositories/providers; no Atlas or clinical browser login. Receipts: ' + out);
+  function run(mode, executable, args, environment = env) {
+    const log = fs.openSync(path.join(out, mode + '-console.txt'), 'wx');
+    return new Promise(resolve => {
+      const child = cp.spawn(executable, args, { cwd: root, env: environment, windowsHide: true, shell: false, stdio: ['ignore', log, log] });
+      let error, timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; child.kill(); }, 180000);
+      child.once('error', failure => { error = failure.code; });
+      child.once('close', (code, signal) => {
+        clearTimeout(timer); fs.closeSync(log);
+        const result = { mode, code, signal, error, timedOut };
+        save(mode + '-exit.json', result); console.log(JSON.stringify(result)); resolve(result);
+      });
+    });
+  }
+  const child = path.join(root, 'scripts/clinicalOfflineChild.cjs');
+  const py = path.join(root, 'ml-engine/.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  const mlEnv = { ...env, PYTHONDONTWRITEBYTECODE: '1', MEDISYNC_ML_QA: 'true', MEDISYNC_OFFLINE_EVIDENCE: out, MEDISYNC_ML_DB_PATH: path.join(out, 'owned_ml_test.db'), INTERNAL_API_KEY: crypto.randomBytes(32).toString('hex'), MPLBACKEND: 'Agg', OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', MKL_NUM_THREADS: '1' };
+  const exits = await Promise.all([
+    ...(securityOnly ? ['backend','email-pdf'] : ['backend', 'client', 'email-pdf']).map(mode => run(mode, process.execPath, [child, mode], { ...env, MEDISYNC_COMBINED_MODE: mode, MEDISYNC_COMBINED_EVIDENCE: out })),
+    ...(!securityOnly ? [run('ml-scoring', py, [path.join(root, 'ml-engine/b13_r2_scoring_checks.py'), path.join(out, 'ml-scoring-results.json')], mlEnv),
+    run('ml-flask', py, [path.join(root, 'ml-engine/scripts/clinical_offline_tests.py')], mlEnv)] : []),
+    run('root', process.execPath, ['--test', '--test-reporter=tap', path.join(root, 'scripts/realLocalStack.test.cjs')])
+  ]);
+  const totals = [];
+  for (const exit of exits) {
+    try {
+      let row;
+      if (['backend', 'client', 'email-pdf'].includes(exit.mode)) {
+        const result = JSON.parse(fs.readFileSync(path.join(out, exit.mode + '-results.json')));
+        row = { mode: exit.mode, passed: result.numPassedTests, failed: result.numFailedTests, skipped: result.numPendingTests, total: result.numTotalTests, suites: result.numTotalTestSuites, success: result.success === true && result.numFailedTestSuites === 0 };
+      } else if (exit.mode === 'ml-scoring') {
+        const result = JSON.parse(fs.readFileSync(path.join(out, 'ml-scoring-results.json')));
+        row = { mode: exit.mode, passed: result.passed, failed: result.failed, skipped: result.skipped, total: result.checks.length, success: result.failed === 0 && result.checks.length === result.passed + result.failed + result.skipped };
+      } else if (exit.mode === 'ml-flask') {
+        const result = JSON.parse(fs.readFileSync(path.join(out, 'ml-flask-results.json')));
+        row = { mode: exit.mode, passed: result.run - result.failures - result.errors - result.skipped, failed: result.failures + result.errors, skipped: result.skipped, total: result.run, success: result.success === true };
+      } else {
+        const tap = fs.readFileSync(path.join(out, 'root-console.txt'), 'utf8');
+        const count = key => { const match = tap.match(new RegExp('^# ' + key + ' (\\d+)\\r?$', 'm')); if (!match) throw Error('MISSING_TAP_TOTAL'); return Number(match[1]); };
+        row = { mode: exit.mode, passed: count('pass'), failed: count('fail'), skipped: count('skipped'), total: count('tests'), success: count('fail') === 0 && count('cancelled') === 0 };
+      }
+      if (!['passed', 'failed', 'skipped', 'total'].every(key => Number.isInteger(row[key]) && row[key] >= 0) || row.passed + row.failed + row.skipped !== row.total) throw Error('INVALID_TEST_TOTALS');
+      row.status = exit.code === 0 && !exit.timedOut && row.success && row.total > 0 && row.skipped === 0 ? 'PASS' : 'FAIL';
+      totals.push(row);
+    } catch (_) { totals.push({ mode: exit.mode, status: 'BLOCKED', reason: 'Missing or invalid result receipt; inspect the retained console and exit receipt.' }); }
+  }
+  const after = snapshot(); save('after.json', after);
+  const frozen = JSON.stringify(before.files) === JSON.stringify(after.files) && before.head === after.head && before.index === after.index && after.pins.every(row => row.actual === row.expected);
+  const summary = { out, node: process.version, scope: 'Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.', totals, passed: totals.reduce((sum, row) => sum + (row.passed || 0), 0), failed: totals.reduce((sum, row) => sum + (row.failed || 0), 0), blockedProfiles: totals.filter(row => row.status === 'BLOCKED').length, sourceFrozen: frozen, protectedAccountedFor: after.pins.length, success: frozen && totals.every(row => row.status === 'PASS') };
+  summary.profile = ciProfile ? (securityOnly ? 'ci-security' : 'ci-offline') : 'local-offline';
+  summary.notRun = ciProfile ? ['Local QA preservation baseline proof (private scratch evidence is not published)',...(securityOnly ? ['Client and ML profiles (covered by the independent full offline job)'] : [])] : [];
+  save('summary.json', summary); console.log(JSON.stringify(summary, null, 2));
+  if (!summary.success) {
+    for (const exit of exits) {
+      if (exit.code !== 0 || exit.timedOut) {
+        console.error(`=== FAILURE LOG FOR ${exit.mode} (code: ${exit.code}, timedOut: ${exit.timedOut}) ===`);
+        try {
+          console.error(fs.readFileSync(path.join(out, exit.mode + '-console.txt'), 'utf8'));
+        } catch (_) {}
+      }
+    }
+  }
+  process.exitCode = summary.success ? 0 : 1;
+}
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
+module.exports = { cleanEnvironment, snapshot, isSnapshotFile };

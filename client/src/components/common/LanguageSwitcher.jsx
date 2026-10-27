@@ -35,7 +35,7 @@ export const LanguageSwitcher = ({ variant = 'light', compact = false }) => {
             title={lang.label}
             aria-label={lang.label}
             aria-pressed={isActive}
-            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all duration-150 ${
+            className={`min-h-[44px] min-w-[32px] px-2 py-1 text-xs font-bold rounded-lg transition-all duration-150 ${
               isActive
                 ? isDark
                   ? 'bg-blue-600 text-white shadow-sm'

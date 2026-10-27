@@ -78,7 +78,7 @@ The doctor receives a ranked list of predicted diagnoses with confidence scores 
 
 **Step 4: Prescription** — Drug search with autocomplete. Real-time **drug-drug interaction checking** (severity levels: mild, moderate, severe, contraindicated). Allergy cross-referencing against patient records.
 
-**Step 5: Release** — NIC-locked PDF e-prescription generated and emailed to patient. Anonymized consultation data sent to ML engine for population-level outbreak surveillance.
+**Step 5: Release** — Electronic prescription PDF generated and emailed to patient with privacy policy notice. Anonymized consultation data sent to ML engine for population-level outbreak surveillance.
 
 ### 2.3 Smart Pharmacy Dispensing
 

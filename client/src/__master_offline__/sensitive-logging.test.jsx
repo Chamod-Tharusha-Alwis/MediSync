@@ -129,7 +129,8 @@ describe('Sensitive Logging & PHI Protection Suite (GOV-R4 Workstream B)', () =>
     );
 
     expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
-    expect(screen.getByText(/Your data is safe—please reload to continue/i)).toBeInTheDocument();
+    expect(screen.getByText(/verify its outcome before submitting again/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your data is safe/i)).not.toBeInTheDocument();
   });
 
   // Case 6: PatientDetail failed API request

@@ -5,9 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "node scripts/startLocalDev.js",
-    "start:mock": "node scripts/startLocalDev.js",
+    "start:check": "node scripts/startLocalDev.js --check",
+    "qa:dev": "node scripts/runDemoQa.cjs",
+    "qa:demo": "node scripts/runDemoQa.cjs",
+    "qa:production": "node scripts/runProductionQa.cjs",
     "test:offline": "node scripts/run_offline_tests.js",
     "build": "npm --prefix client run build",
+    "build:client": "npm --prefix client run build",
+    "build:prod": "npm --prefix client run build",
     "start:redis": "node scripts/refuseUnsafeRootStart.js",
     "start:vault": "node scripts/refuseUnsafeRootStart.js",
     "start:server": "node scripts/refuseUnsafeRootStart.js",
@@ -17,6 +22,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "devDependencies": {
     "concurrently": "^9.2.1"
   },

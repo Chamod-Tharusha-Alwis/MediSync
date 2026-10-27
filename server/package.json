@@ -3,15 +3,20 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
-    "start": "node src/app.js",
+    "start": "node src/production.js",
     "start:qa": "node scripts/phase5xSafeBackend.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
     "seed": "node src/utils/seedData.js",
     "seed:users": "node src/utils/seedUsers.js",
     "seed:drugs": "node src/utils/seedDrugs.js",
-    "seed:admin": "node src/utils/seedAdmin.js"
+    "seed:admin": "node src/utils/seedAdmin.js",
+    "start:university": "node src/university.js"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +31,7 @@
     "@pdfsmaller/pdf-encrypt-lite": "^1.0.2",
     "axios": "^1.15.2",
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -45,13 +50,17 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",
     "node-vault": "^0.12.0",
-    "nodemailer": "^8.0.7",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "redis": "^6.0.0",
     "socket.io": "^4.8.3",
     "speakeasy": "^2.0.0",
     "uuid": "^14.0.0"
+  },
+  "overrides": {
+    "multer-storage-cloudinary": {
+      "cloudinary": "$cloudinary"
+    }
   },
   "jest": {
     "testTimeout": 30000,

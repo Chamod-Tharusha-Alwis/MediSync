@@ -2,6 +2,10 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@tanstack/react-query": "^5.100.6",
@@ -10,7 +14,6 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.15.2",
-    "cloudinary": "^1.41.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
@@ -18,8 +21,6 @@
     "http-proxy-middleware": "^4.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
-    "multer": "^2.1.1",
-    "multer-storage-cloudinary": "^4.0.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-ga4": "^3.0.1",
@@ -38,7 +39,7 @@
   "scripts": {
     "start": "react-scripts start",
     "start:qa": "node scripts/startQa.js",
-    "build": "react-scripts build",
+    "build": "node scripts/buildClinical.cjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -65,5 +66,8 @@
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^3.4.19"
+  },
+  "overrides": {
+    "socket.io-parser": "4.2.7"
   }
 }

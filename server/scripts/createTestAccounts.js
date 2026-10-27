@@ -1,4 +1,5 @@
-// node server/scripts/createTestAccounts.js
+require('../src/security/maintenanceAdmission').denyLegacyMaintenance();
+// Legacy account creation requires a separately approved owned-fixture procedure.
 
 const axios = require('axios');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });

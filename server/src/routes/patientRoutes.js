@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patientController');
-const protect = require('../middleware/auth');
+const protect = require('../middleware/verifiedAuth');
 const rateLimit = require('express-rate-limit');
 
 const loginLimiter = rateLimit({
@@ -29,8 +29,8 @@ router.get('/:nic/prescriptions', protect(['patient', 'doctor', 'admin', 'super_
 router.post('/consultation/:id/rate', protect(['patient']), patientController.rateConsultation);
 
 // Patient privacy — OTP gated access
-router.post('/request-access', protect(['doctor', 'pharmacist', 'hospital_admin']), patientController.requestPatientAccess);
-router.post('/verify-access', protect(['doctor', 'pharmacist', 'hospital_admin']), patientController.verifyPatientAccess);
+router.post('/request-access', protect(['doctor', 'pharmacist', 'pharmacy_admin', 'assistant', 'hospital_admin']), patientController.requestPatientAccess);
+router.post('/verify-access', protect(['doctor', 'pharmacist', 'pharmacy_admin', 'assistant', 'hospital_admin']), patientController.verifyPatientAccess);
 
 // Patient reporting
 router.post('/report', protect(['patient']), patientController.reportUser);

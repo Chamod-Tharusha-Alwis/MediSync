@@ -1,63 +1,50 @@
+const { directoryDto, healthDto, assertMlOrigin, isSyntheticRecord } = require('../security/publicDto');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Pharmacy = require('../models/Pharmacy');
+const PharmacyStaff = require('../models/PharmacyStaff');
 const Review = require('../models/Review');
 const axios = require('axios');
 const { getCache, setCache } = require('../config/redis');
 const internalAuth = require('../utils/internalAuth');
 
+let healthUnavailableUntil = 0;
 exports.getHealthStats = async (req, res) => {
   try {
-    const rangeDays = parseInt(req.query.rangeDays) || 30;
-    const district = req.query.district || 'all';
-    const disease = req.query.disease || 'all';
+    const rangeDays = req.query.rangeDays === undefined ? 30 : Number(req.query.rangeDays);
+    const district = req.query.district || 'all', disease = req.query.disease || 'all';
+    if (!Number.isInteger(rangeDays) || rangeDays < 1 || rangeDays > 365 || [district,disease].some(v => typeof v !== 'string' || v.length > 100 || /[\x00-\x1f]/.test(v))) return res.status(400).json({error:'INVALID_HEALTH_FILTER'});
 
-    const cacheKey = `health-stats:${rangeDays}:${district}:${disease}`;
+    const cacheKey = `medisync:cache:health-stats:${rangeDays}:${district}:${disease}`;
     
+    if (Date.now() < healthUnavailableUntil) throw Error('HEALTH_CIRCUIT_OPEN');
     // 1. Check Cache
     const cachedData = await getCache(cacheKey);
     if (cachedData) {
-      return res.json({ data: cachedData, cached: true });
+      return res.json({ data: healthDto(cachedData), cached: true });
     }
 
     // 2. Fetch from ML Engine (explicitly IPv4 127.0.0.1 to avoid Node localhost IPv6 resolution hangs)
     const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+    assertMlOrigin(mlEngineUrl, process.env);
     const internalToken = internalAuth.generateToken();
 
-    let response;
-    let retries = 3;
-    let delay = 500;
-    while (retries > 0) {
-      try {
-        response = await axios.get(`${mlEngineUrl}/api/internal/health-stats`, {
-          params: { rangeDays, district, disease },
-          headers: {
-            'x-internal-key': internalToken
-          },
-          timeout: 8000 // 8 second strict timeout
-        });
-        break; // Success
-      } catch (err) {
-        if (err.code === 'ECONNREFUSED' && retries > 1) {
-          console.warn(`[PublicController] ML Engine connection refused. Retrying in ${delay}ms... (${retries - 1} retries left)`);
-          await new Promise(r => setTimeout(r, delay));
-          delay *= 2; // Exponential backoff
-          retries--;
-        } else {
-          throw err;
-        }
-      }
-    }
+    const response = await axios.get(`${mlEngineUrl}/api/internal/health-stats`, {
+      params: { rangeDays, district, disease },
+      headers: { 'x-internal-key': internalToken },
+      timeout: 3000, maxRedirects: 0, maxContentLength: 262144
+    });
 
-    const statsData = response.data;
+    const statsData = healthDto(response.data);
 
     // 3. Cache the result for 5 minutes (300 seconds)
     await setCache(cacheKey, statsData, 300);
 
     res.json({ data: statsData, cached: false });
   } catch (error) {
-    console.error('[PublicController] Failed to fetch health stats:', error.message);
-    res.status(500).json({ error: 'Failed to fetch public health statistics', details: error.message });
+    if (healthUnavailableUntil <= Date.now()) healthUnavailableUntil = Date.now() + 5000;
+    console.error('[PublicController] Public health statistics unavailable.');
+    res.status(503).json({ error: 'PUBLIC_HEALTH_UNAVAILABLE', message: 'Health statistics are temporarily unavailable.', data: null });
   }
 };
 
@@ -195,7 +182,8 @@ exports.getDoctors = async (req, res) => {
     const allRecentReviews = await Review.find({ 
       targetId: { $in: doctorIds }, 
       targetModel: 'Doctor', 
-      comment: { $exists: true, $ne: '' } 
+      comment: { $exists: true, $ne: '' },
+      publishConsent: true 
     })
       .sort({ createdAt: -1 })
       .select('targetId rating comment createdAt reviewerName')
@@ -216,47 +204,12 @@ exports.getDoctors = async (req, res) => {
       }
     });
 
-    let enrichedDoctors = doctors.map(doc => {
-      const dId = doc._id.toString();
-      const isSyntheticDemo = Boolean(doc.isSynthetic === true && doc.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
-      return {
-        _id: doc._id,
-        doctorId: doc.doctorId,
-        fullName: doc.fullName,
-        email: doc.email,
-        specialization: doc.specialization || 'General Practice',
-        hospitals: doc.hospitals || [],
-        role: 'doctor',
-        loginType: doc.loginType || 'personal',
-        isActive: doc.isActive === true,
-        isVerified: doc.isVerified === true,
-        isSynthetic: Boolean(doc.isSynthetic),
-        isDemoAccount: Boolean(doc.isDemoAccount),
-        isDemoData: Boolean(doc.isDemoData),
-        ...(isSyntheticDemo
-          ? {
-              datasetVersion: doc.datasetVersion,
-              syntheticLabel: DEMO_DOCTOR_SYNTHETIC_LABEL,
-              verificationNote: 'Synthetic University Demo Profile — Not Real SLMC Registration',
-              slmcRegistered: false
-            }
-          : {}),
-        contactNumber: doc.contactNumber || '',
-        clinicAddress: doc.clinicAddress || '',
-        profilePicture: doc.profilePicture || '',
-        description: doc.description || '',
-        googleMapsUrl: doc.googleMapsUrl || '',
-        averageRating: doc.averageRating || 0,
-        ratingCount: doc.ratingCount || 0,
-        recentReviews: reviewsMap[dId] || [],
-        createdAt: doc.createdAt
-      };
-    });
+    let enrichedDoctors = doctors.map(doc => directoryDto('doctor', { ...doc, recentReviews: reviewsMap[String(doc._id)] || [] }));
 
     const targetId = String(req.query?.id || req.query?.doctorId || '').trim();
     if (targetId) {
       const matchedDoctor = enrichedDoctors.find(
-        d => String(d._id) === targetId || String(d.doctorId || '').toLowerCase() === targetId.toLowerCase()
+        d => String(d._id) === targetId
       );
       if (!matchedDoctor) {
         return res.status(404).json({ error: 'Doctor not found or not publicly available' });
@@ -293,7 +246,7 @@ exports.getDoctors = async (req, res) => {
 
     res.json({ data: enrichedDoctors });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch doctors', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch doctors' });
   }
 };
 
@@ -304,52 +257,46 @@ exports.getDoctorById = async (req, res) => {
 
 exports.getHospitals = async (req, res) => {
   try {
-    const rawHospitals = await Hospital.find().select('-password').lean();
-    const hospitals = rawHospitals.map(h => {
-      const isSynth = Boolean(h.isSynthetic === true || h.isDemoData === true || h.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
-      return {
-        ...h,
-        isSynthetic: isSynth,
-        ...(isSynth ? { syntheticLabel: DEMO_HOSPITAL_SYNTHETIC_LABEL } : {})
-      };
-    });
+    const rawHospitals = await Hospital.find({ isActive: true, isVerified: true, isSynthetic: { $ne: true }, isDemoData: { $ne: true }, isDemoAccount: { $ne: true }, datasetVersion: { $ne: APPROVED_DEMO_DATASET_VERSION } })
+      .select('_id name type district address regNo email emergencyHotline contactPhone website profilePicture description googleMapsUrl pickupLocationAddress averageRating ratingCount isSynthetic isDemoData isDemoAccount datasetVersion')
+      .lean();
+    const hospitals = rawHospitals.filter(row => !isSyntheticRecord(row)).map(row => directoryDto('hospital', row));
     res.json({ data: hospitals });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch hospitals', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch hospitals' });
   }
 };
 
 exports.getPharmacies = async (req, res) => {
   try {
-    const rawPharmacies = await Pharmacy.find().select('-inventory').lean();
-    const pharmacies = rawPharmacies.map(p => {
-      const isSynth = Boolean(p.isSynthetic === true || p.isDemoData === true || p.datasetVersion === APPROVED_DEMO_DATASET_VERSION);
-      return {
-        ...p,
-        isSynthetic: isSynth,
-        ...(isSynth ? { syntheticLabel: DEMO_PHARMACY_SYNTHETIC_LABEL } : {})
-      };
-    });
+    // Publication requires an active verified administrator for this facility.
+    const verifiedAdmins = await PharmacyStaff.find({ role: 'pharmacy_admin', isActive: true, isVerified: true, isSynthetic: { $ne: true }, isDemoData: { $ne: true }, isDemoAccount: { $ne: true }, datasetVersion: { $ne: APPROVED_DEMO_DATASET_VERSION } }).select('pharmacyId isSynthetic isDemoData isDemoAccount datasetVersion').lean();
+    const rawPharmacies = await Pharmacy.find({ isActive: true, isSynthetic: { $ne: true }, isDemoData: { $ne: true }, isDemoAccount: { $ne: true }, datasetVersion: { $ne: APPROVED_DEMO_DATASET_VERSION }, _id: { $in: verifiedAdmins.filter(a => !isSyntheticRecord(a)).map(a => a.pharmacyId).filter(Boolean) } })
+      .select('_id name district address regNo phone email profilePicture description googleMapsUrl pickupLocationAddress averageRating ratingCount isSynthetic isDemoData isDemoAccount datasetVersion')
+      .lean();
+    const pharmacies = rawPharmacies.filter(row => !isSyntheticRecord(row)).map(row => directoryDto('pharmacy', row));
     res.json({ data: pharmacies });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch pharmacies', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch pharmacies' });
   }
 };
 
 exports.searchDiseases = async (req, res) => {
   try {
     const query = req.query.q || '';
+    if (typeof query !== 'string' || query.length > 100) return res.status(400).json({error:'INVALID_REFERENCE_QUERY'});
     if (!query) {
       return res.json({ data: [] });
     }
     
-    const cacheKey = `search-diseases:${query.toLowerCase()}`;
+    const cacheKey = `medisync:cache:search-diseases:${query.toLowerCase()}`;
     const cachedData = await getCache(cacheKey);
     if (cachedData) {
       return res.json({ data: cachedData, cached: true });
     }
     
     const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+    assertMlOrigin(mlEngineUrl, process.env);
     const internalToken = internalAuth.generateToken();
     
     const response = await axios.get(`${mlEngineUrl}/api/internal/search-diseases`, {
@@ -357,7 +304,7 @@ exports.searchDiseases = async (req, res) => {
       headers: {
         'x-internal-key': internalToken
       },
-      timeout: 3000
+      timeout: 3000, maxRedirects: 0, maxContentLength: 262144
     });
     
     const results = response.data.results || [];
@@ -365,7 +312,7 @@ exports.searchDiseases = async (req, res) => {
     
     res.json({ data: results, cached: false });
   } catch (error) {
-    console.error('[PublicController] Failed to search diseases:', error.message);
-    res.status(500).json({ error: 'Failed to search diseases', details: error.message });
+    console.error('[PublicController] Disease reference search unavailable.');
+    res.status(500).json({ error: 'Failed to search diseases' });
   }
 };

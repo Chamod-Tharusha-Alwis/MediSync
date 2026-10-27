@@ -1,0 +1,11 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import Boundary, { qualifiedCapabilities } from '../components/common/UniversityRuntimeBoundary';
+import api from '../api/axiosInstance';
+jest.mock('../api/axiosInstance',()=>({get:jest.fn()}));
+jest.mock('../components/common/UniversityDemoNotice',()=>()=>null);
+const capability={version:'university-readonly-v1',mode:'university-demo',clinicalWrites:false,uploads:false,exports:false,registration:false,providers:false};
+afterEach(()=>{delete process.env.REACT_APP_UNIVERSITY_RUNTIME;jest.clearAllMocks();});
+test('non-demo application keeps the existing route tree without a demo capability request',()=>{render(<Boundary><p>Application route</p></Boundary>);expect(screen.getByText('Application route')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();});
+test.each([{},null,{...capability,version:'old'},{...capability,providers:true},{...capability,clinicalWrites:true}])('incompatible capabilities block before child components mount: %p',async value=>{process.env.REACT_APP_UNIVERSITY_RUNTIME='true';api.get.mockResolvedValue({data:value});const child=jest.fn(()=>null);render(<Boundary>{React.createElement(child)}</Boundary>);await screen.findByText('Demonstration unavailable');expect(child).not.toHaveBeenCalled();expect(qualifiedCapabilities(value)).toBe(false);});
+test('compatible version enables the restricted source route tree',async()=>{process.env.REACT_APP_UNIVERSITY_RUNTIME='true';api.get.mockResolvedValue({data:capability});render(<Boundary><p>Restricted workspace</p></Boundary>);await screen.findByText('Restricted workspace');expect(api.get).toHaveBeenCalledWith('/university/capabilities',expect.objectContaining({timeout:5000}));});

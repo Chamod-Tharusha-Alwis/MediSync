@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const versionedEncryption = require('../utils/versionedEncryption');
+const versionedEncryption = require('../security/fieldEncryption');
 
 const prescriptionSchema = new mongoose.Schema({
   prescriptionId: { type: String, unique: true },

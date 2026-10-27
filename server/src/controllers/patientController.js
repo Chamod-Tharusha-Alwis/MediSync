@@ -1,3 +1,4 @@
+const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
@@ -48,7 +49,7 @@ exports.registerPatient = async (req, res) => {
 
     const normalizedNic = nic.toUpperCase();
 
-    const existing = await Patient.findOne({ $or: [{ nic: normalizedNic }, { email: patientEmail }] });
+    const existing = await Patient.findOne({ $or: [nicFilter(normalizedNic, { plainFields: ['nic'] }), { email: patientEmail }] });
     if (existing) {
       return res.status(400).json({ error: 'NIC or Email already registered' });
     }
@@ -62,6 +63,7 @@ exports.registerPatient = async (req, res) => {
 
     const patient = new Patient({
       nic: normalizedNic,
+      ...writeNicFields(normalizedNic),
       fullName,
       email: patientEmail,
       dateOfBirth,
@@ -95,9 +97,9 @@ exports.registerPatient = async (req, res) => {
     });
 
     try {
-      await emailService.sendWelcomeEmail(patientEmail, fullName, 'patient');
+      await emailService.sendWelcomeEmail(patientEmail, fullName, 'patient', require('../services/recipientLanguageService').languageOptionsForRecord('Patient', patient));
     } catch (e) {
-      console.error('Welcome email failed:', e.message);
+      console.error('Welcome email failed:');
     }
 
     res.status(201).json({ message: 'Patient registered successfully', data: { accessToken, role: 'patient', name: fullName, nic } });
@@ -105,7 +107,7 @@ exports.registerPatient = async (req, res) => {
     if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
       return res.status(400).json({ error: 'NIC or Email already registered' });
     }
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.status(500).json({ error: 'Registration failed' });
   }
 };
 
@@ -120,7 +122,7 @@ exports.loginPatient = async (req, res) => {
     };
     return await authController.login(req, res);
   } catch (error) {
-    return res.status(500).json({ error: 'Login failed', details: error.message });
+    return res.status(500).json({ error: 'Login failed' });
   }
 };
 
@@ -128,7 +130,7 @@ const stripEncryptionMetadata = (obj) => {
   if (!obj || typeof obj !== 'object') return obj;
   const cleaned = { ...obj };
   for (const key of Object.keys(cleaned)) {
-    if (key.startsWith('__enc_') || key === 'keyVersion' || key === 'encryptedFileKey' || key === 'fileIV' || key === 'reportPath' || key === 'reportPublicId') {
+    if (key.startsWith('__enc_') || key === 'keyVersion' || key === 'encryptedFileKey' || key === 'fileIV' || key === 'reportPath' || key === 'reportPublicId' || key === 'patientNic_hmac' || key === 'patientNic_bi' || key === 'nicHash') {
       delete cleaned[key];
     }
   }
@@ -171,7 +173,7 @@ exports.getPatient = async (req, res) => {
       if (!admin || admin.isActive !== true || !['admin','super_admin'].includes(admin.role) ||
           (role === 'super_admin' && admin.isSuperAdmin !== true)) return await deny();
     }
-    const patient = await Patient.findOne({ nic: normalizedNic, ...(role === 'patient' ? {_id:req.user.id} : {}) }).select(profileSelection(role));
+    const patient = await Patient.findOne({ ...nicFilter(normalizedNic, { plainFields: ['nic'] }), ...(role === 'patient' ? {_id:req.user.id} : {}) }).select(profileSelection(role));
     if (!patient) return res.status(404).json({ error: 'Patient not found' });
     patient.decryptFieldsSync();
     await audit(role === 'admin' || role === 'super_admin' ? 'account_management_allowed' : 'clinical_allowed');
@@ -184,33 +186,21 @@ exports.getPatient = async (req, res) => {
 
 exports.updatePatient = async (req, res) => {
   try {
-    const { nic } = req.params;
-    const normalizedNic = nic.toUpperCase();
-    
-    // Patient can only update own profile
-    if (req.user.role === 'patient') {
-      const authNic = await resolveAuthenticatedPatientNic(req.user);
-      if (!authNic || authNic !== normalizedNic) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-    }
-
-    const { bloodGroup, address, district, contactInfo, emergencyContact, chronicConditions, allergies } = req.body;
-    const patient = await Patient.findOne({ nic: normalizedNic });
+    if (req.user?.role !== 'patient' || !req.user.id) return res.status(403).json({ error: 'Access denied' });
+    const { validateProfileUpdate, applyProfileUpdate } = require('../security/patientProfileUpdate');
+    const updates = validateProfileUpdate(req.body, { legacy: true });
+    const normalizedNic = typeof req.params?.nic === 'string' ? req.params.nic.trim().toUpperCase() : '';
+    const authNic = await resolveAuthenticatedPatientNic(req.user);
+    if (!authNic || authNic !== normalizedNic) return res.status(403).json({ error: 'Access denied' });
+    const patient = await Patient.findOne({ ...nicFilter(normalizedNic, { plainFields: ['nic'] }), _id: req.user.id });
     if (!patient) return res.status(404).json({ error: 'Patient not found' });
-
-    if (bloodGroup) patient.bloodGroup = bloodGroup;
-    if (address) patient.address = address;
-    if (district) patient.district = district;
-    if (contactInfo) patient.contactInfo = { ...patient.contactInfo, ...contactInfo };
-    if (emergencyContact) patient.emergencyContact = { ...patient.emergencyContact, ...emergencyContact };
-    if (chronicConditions) patient.chronicConditions = chronicConditions;
-    if (allergies) patient.allergies = allergies;
-
+    applyProfileUpdate(patient, updates);
     await patient.save();
-    res.json({ message: 'Profile updated', data: stripEncryptionMetadata(patient.toObject()) });
+    if (typeof patient.decryptFieldsSync === 'function') patient.decryptFieldsSync();
+    res.json({ message: 'Profile updated', data: projectProfile(patient, 'patient') });
   } catch (error) {
-    res.status(500).json({ error: 'Update failed', details: error.message });
+    if (error.code === 'PROFILE_INPUT_INVALID') return res.status(400).json({ error: 'Invalid profile update' });
+    res.status(500).json({ error: 'Update failed' });
   }
 };
 
@@ -232,10 +222,8 @@ const verifyDoctorPatientAuthorization = async (req, targetNic, targetHash) => {
   }
 
   // 2. Resolve target patient unambiguously
-  const matchingPatients = await Patient.find({
-    $or: [{ nic: targetNic }, { patientNic_bi: targetHash }]
-  })
-    .select('_id nic patientNic_bi reportedDoctors')
+  const matchingPatients = await Patient.find(nicFilter(targetNic, { plainFields: ['nic'] }))
+    .select('_id nic patientNic_bi patientNic_hmac reportedDoctors')
     .lean();
 
   if (matchingPatients.length !== 1) {
@@ -316,7 +304,7 @@ const verifyDoctorPatientAuthorization = async (req, targetNic, targetHash) => {
       return { authorized: false, reason: 'consent_session_missing_metadata_revoked_or_expired' };
     }
 
-    return { authorized: true, mode: 'patient_otp_consent', patientId: targetPatient._id };
+    return { authorized: true, mode: 'patient_otp_consent', patientId: targetPatient._id, consentSessionId: decodedConsent.sessionId };
   }
 
   // 5. Otherwise, require an active, non-expired, non-revoked clinical consultation relationship
@@ -324,8 +312,7 @@ const verifyDoctorPatientAuthorization = async (req, targetNic, targetHash) => {
     doctorId: req.user.id,
     $or: [
       { patientId: targetPatient._id },
-      { nicHash: targetHash },
-      { patientNic_bi: targetHash }
+      nicFilter(targetNic, { legacyFields: ['nicHash', 'patientNic_bi'] })
     ]
   })
     .select('_id status createdAt isFollowUpRequired followUpDate')
@@ -368,6 +355,7 @@ exports.verifyDoctorPatientAuthorization = verifyDoctorPatientAuthorization;
 
 exports.getTimeline = async (req, res) => {
   try {
+    if (!['patient', 'doctor'].includes(req.user?.role)) return res.status(403).json({ error: 'Access denied' });
     // ── Primary identity: Patient._id from the JWT (never encrypted) ──────
     const patientMongoId = req.user.id;
 
@@ -394,19 +382,19 @@ exports.getTimeline = async (req, res) => {
     const targetHash = crypto.createHash('sha256').update(targetNic || '').digest('hex');
 
     const [myPrescriptions, myConsultations, myLabTests, myRatings, myReviews] = await Promise.all([
-      Prescription.find({ patientNic_bi: targetHash })
+      Prescription.find(nicFilter(targetNic))
         .populate('doctorId', 'fullName specialization')
         .populate('hospitalId', 'name')
         .populate('dispensedBy', 'name')
         .sort({ issuedAt: -1 }),
 
-      Consultation.find({ patientNic_bi: targetHash })
+      Consultation.find(nicFilter(targetNic))
         .populate('doctorId', 'fullName specialization')
         .populate('sessionHospitalId', 'name')
         .populate('hospitalId', 'name')
         .sort({ createdAt: -1 }),
 
-      LabTest.find({ patientNic_bi: targetHash })
+      LabTest.find(nicFilter(targetNic))
         .populate('referredBy', 'fullName specialization')
         .populate('hospitalId', 'name')
         .sort({ orderedAt: -1 }),
@@ -493,8 +481,8 @@ exports.getTimeline = async (req, res) => {
 
     res.json({ data: timeline });
   } catch (error) {
-    console.error('[Timeline] ERROR:', error.message);
-    res.status(500).json({ error: 'Failed to fetch timeline', details: error.message });
+    console.error('[Timeline] ERROR:');
+    res.status(500).json({ error: 'Failed to fetch timeline' });
   }
 };
 
@@ -529,12 +517,7 @@ exports.getPrescriptions = async (req, res) => {
 
     const targetHash = crypto.createHash('sha256').update(targetNic).digest('hex');
 
-    const myPrescriptions = await Prescription.find({
-      $or: [
-        { nicHash: targetHash },
-        { patientNic_bi: targetHash }
-      ]
-    })
+    const myPrescriptions = await Prescription.find(nicFilter(targetNic, { legacyFields: ['nicHash', 'patientNic_bi'] }))
       .populate('doctorId', 'fullName specialization')
       .populate('hospitalId', 'name')
       .populate('dispensedBy', 'name')
@@ -587,16 +570,17 @@ exports.rateConsultation = async (req, res) => {
     await newRating.save();
     res.status(201).json({ message: 'Rating submitted successfully', data: newRating });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to submit rating', details: error.message });
+    res.status(500).json({ error: 'Failed to submit rating' });
   }
 };
 
 // ─── NEW: Request OTP-gated access to patient record ─────────────────────────
 exports.requestPatientAccess = async (req, res) => {
   try {
-    const { patientNic, requesterRole, requesterName } = req.body;
+    const { requesterRole, requesterName } = req.body;
+    const patientNic = req.body.patientNic || req.body.nic;
 
-    const patient = await Patient.findOne({ nic: patientNic });
+    const patient = await Patient.findOne(nicFilter(patientNic, { plainFields: ['nic'] }));
     // Always return same message to prevent enumeration
     if (!patient) {
       return res.status(200).json({ message: 'Verification sent if patient exists' });
@@ -652,7 +636,8 @@ exports.requestPatientAccess = async (req, res) => {
     const emailResult = await emailService.sendOTPEmail(
       patient.email,
       patient.fullName,
-      otp
+      otp,
+      require('../services/recipientLanguageService').languageOptionsForRecord('Patient', patient)
     );
 
     if (!emailResult || !emailResult.providerAccepted) {
@@ -679,14 +664,15 @@ exports.requestPatientAccess = async (req, res) => {
       fallbackUsed: Boolean(emailResult.fallbackUsed),
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to request access', details: error.message });
+    return res.status(500).json({ error: 'Failed to request access' });
   }
 };
 
 // ─── NEW: Verify patient access OTP ──────────────────────────────────────────
 exports.verifyPatientAccess = async (req, res) => {
   try {
-    const { sessionId, otp, patientNic } = req.body;
+    const { sessionId, otp } = req.body;
+    const patientNic = req.body.patientNic || req.body.nic;
     const OTPSession = require('../models/OTPSession');
     const jwt = require('jsonwebtoken');
 
@@ -754,10 +740,11 @@ exports.verifyPatientAccess = async (req, res) => {
     const accessGrantedAt = new Date();
     const accessExpiresAt = new Date(accessGrantedAt.getTime() + 15 * 60 * 1000);
     const claimedOtp = await OTPSession.findOneAndUpdate(
-      { _id: otpRecord._id, used: false },
+      { _id: otpRecord._id, userId: otpRecord.userId, purpose: 'patient-access', used: false, expiresAt: { $gt: accessGrantedAt }, failedAttempts: { $lt: 5 }, 'metadata.revoked': false },
       {
         $set: {
           used: true,
+          expiresAt: accessExpiresAt,
           'metadata.accessGrantedAt': accessGrantedAt,
           'metadata.accessExpiresAt': accessExpiresAt
         }
@@ -787,7 +774,7 @@ exports.verifyPatientAccess = async (req, res) => {
 
     return res.status(200).json({ accessToken, patientNic: normalizedPatientNic });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to verify access', details: error.message });
+    return res.status(500).json({ error: 'Failed to verify access' });
   }
 };
 
@@ -808,63 +795,36 @@ exports.reportUser = async (req, res) => {
 
     await patient.save();
 
-    // Emit Socket.IO event to notify admins
+    // Emit Socket.IO event to notify admins (role-scoped to prevent patient leakage)
     const io = req.app.get('io');
-    if (io) {
-      io.emit('new_report', { patientId: patient._id, doctorId: targetId, reason });
+    if (typeof io?.emitToVerifiedAdmins === 'function') {
+      await io.emitToVerifiedAdmins('new_report', { patientId: patient._id, doctorId: targetId });
     }
 
     return res.status(201).json({ message: 'Report submitted. We will review it shortly.' });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to submit report', details: error.message });
+    return res.status(500).json({ error: 'Failed to submit report' });
   }
 };
 
 // ─── Patient self-service profile update (keyed off JWT — no NIC in URL) ──────
+exports.verifyDoctorPatientAuthorization = verifyDoctorPatientAuthorization;
+
 exports.updatePatientProfile = async (req, res) => {
   try {
-    // req.user.sub = NIC embedded in the JWT at login / register time
-    const normalizedNic = req.user.sub.toUpperCase();
-    const patient = await Patient.findOne({ nic: normalizedNic });
+    if (req.user?.role !== 'patient' || !req.user.id) return res.status(403).json({ error: 'Access denied' });
+    const { validateProfileUpdate, applyProfileUpdate } = require('../security/patientProfileUpdate');
+    const updates = validateProfileUpdate(req.body);
+    // Stable account ownership is authoritative; an optional/stale NIC claim
+    // must never choose the record receiving a self-service write.
+    const patient = await Patient.findById(req.user.id);
     if (!patient) return res.status(404).json({ error: 'Patient not found' });
-
-    const {
-      contactInfo,      // phone string
-      bloodGroup,
-      height,           // number (cm)
-      weight,           // number (kg)
-      allergies,        // string[] — replaces the whole array
-      emergencyContact, // { name, relationship, phone }
-    } = req.body;
-
-    if (contactInfo !== undefined) patient.contactInfo = String(contactInfo);
-    if (bloodGroup  !== undefined) patient.bloodGroup  = bloodGroup;
-    if (height      !== undefined) patient.height      = Number(height);
-    if (weight      !== undefined) patient.weight      = Number(weight);
-
-    // Allergies: accept comma-separated string OR array
-    if (allergies !== undefined) {
-      patient.allergies = Array.isArray(allergies)
-        ? allergies.map(a => a.trim()).filter(Boolean)
-        : String(allergies).split(',').map(a => a.trim()).filter(Boolean);
-    }
-
-    // Merge emergency contact subfields (don't overwrite fields that aren't sent)
-    if (emergencyContact) {
-      patient.emergencyContact = {
-        ...(patient.emergencyContact?.toObject?.() || patient.emergencyContact || {}),
-        ...emergencyContact,
-      };
-    }
-
+    applyProfileUpdate(patient, updates);
     await patient.save();
-
-    // Strip password before returning
-    const safe = patient.toObject();
-    delete safe.password;
-
-    res.json({ message: 'Profile updated successfully', data: safe });
+    if (typeof patient.decryptFieldsSync === 'function') patient.decryptFieldsSync();
+    res.json({ message: 'Profile updated successfully', data: projectProfile(patient, 'patient') });
   } catch (error) {
-    res.status(500).json({ error: 'Profile update failed', details: error.message });
+    if (error.code === 'PROFILE_INPUT_INVALID') return res.status(400).json({ error: 'Invalid profile update' });
+    res.status(500).json({ error: 'Profile update failed' });
   }
 };

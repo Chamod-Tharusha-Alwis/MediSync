@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const versionedEncryption = require('../utils/versionedEncryption');
 
 const patientSchema = new mongoose.Schema({
+  preferredLanguage: { type: String, enum: ['en', 'si', 'ta'], default: 'en' },
   nic: { type: String, required: true, unique: true },
   patientNic_bi: { type: String }, // blind index for NIC
   fullName: { type: String, required: true },

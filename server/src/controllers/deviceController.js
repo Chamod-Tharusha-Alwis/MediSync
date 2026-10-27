@@ -18,6 +18,7 @@ const {
   recordOtpRequestSent,
 } = require('../config/redis');
 const { parseDeviceModel } = require('../utils/deviceParser');
+const { ROLE_MODELS, assertAccountState } = require('../security/accountState');
 
 const resolveUserEmail = (user) => {
   if (!user) return null;
@@ -32,26 +33,34 @@ const resolveUserEmail = (user) => {
   return null;
 };
 
-const findUserAndModelById = async (userId, preferredModel = null) => {
-  const models = [
-    { name: 'Doctor', Model: Doctor },
-    { name: 'Patient', Model: Patient },
-    { name: 'PharmacyStaff', Model: PharmacyStaff },
-    { name: 'Hospital', Model: Hospital },
-    { name: 'Admin', Model: Admin }
-  ];
-  if (preferredModel) {
-    const preferred = models.find(m => m.name === preferredModel);
-    if (preferred) {
-      const found = await preferred.Model.findById(userId);
-      if (found) return { user: found, modelName: preferred.name };
-    }
-  }
-  for (const { name, Model } of models) {
-    const found = await Model.findById(userId);
-    if (found) return { user: found, modelName: name };
-  }
-  return { user: null, modelName: null };
+const deviceTrustIdentity = req => {
+  const session = req.session, user = req.user;
+  const modelName = user && Object.hasOwn(ROLE_MODELS, user.role) && ROLE_MODELS[user.role];
+  const id = /^[a-f0-9]{24}$/i;
+  if (!modelName || !id.test(String(user.id)) || !session || !id.test(String(session._id)) ||
+      String(session.userId) !== String(user.id) || session.userModel !== modelName || session.isValid !== true || session.logoutAt ||
+      (session.expiredAt && (!Number.isFinite(new Date(session.expiredAt).getTime()) || new Date(session.expiredAt) <= new Date()))) throw new Error('DEVICE_TRUST_IDENTITY_DENIED');
+  return { modelName, sessionId: String(session._id) };
+};
+const deviceTrustAccount = async (req, device, identity) => {
+  if (String(device.userId) !== String(req.user.id) || device.userModel !== identity.modelName ||
+      typeof device.deviceFingerprint !== 'string' || !device.deviceFingerprint || !/^[a-f0-9]{24}$/i.test(String(device._id))) throw new Error('DEVICE_TRUST_IDENTITY_DENIED');
+  // A missing account in the authenticated model must never select another role.
+  const models = { Doctor, Patient, PharmacyStaff, Hospital, Admin };
+  const user = await models[identity.modelName].findById(req.user.id);
+  try { assertAccountState(req.user, user); } catch (_) { throw new Error('DEVICE_TRUST_IDENTITY_DENIED'); }
+  return user;
+};
+const deviceTrustScope = (req, device, identity) => ({
+  userId: req.user.id, userModel: identity.modelName, purpose: 'device-trust',
+  'metadata.deviceId': String(device._id), 'metadata.deviceFingerprint': device.deviceFingerprint,
+  'metadata.sessionId': identity.sessionId
+});
+const validDeviceOtp = (record, req, device, identity) => {
+  const scope = deviceTrustScope(req, device, identity);
+  return record && String(record.userId) === String(scope.userId) && record.userModel === scope.userModel && record.purpose === scope.purpose &&
+    record.metadata?.deviceId === scope['metadata.deviceId'] && record.metadata?.deviceFingerprint === scope['metadata.deviceFingerprint'] &&
+    record.metadata?.sessionId === scope['metadata.sessionId'] && record.used === false && Number.isInteger(record.failedAttempts) && record.failedAttempts >= 0 && Number.isFinite(new Date(record.expiresAt).getTime()) && new Date(record.expiresAt) > new Date();
 };
 
 // User: get my trusted devices
@@ -60,7 +69,7 @@ exports.getMyDevices = async (req, res) => {
     const devices = await TrustedDevice.find({ userId: req.user.id, isRevoked: false }).sort({ lastSeenAt: -1 });
     res.json({ data: devices });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch devices', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch devices' });
   }
 };
 
@@ -87,16 +96,14 @@ exports.revokeMyDevice = async (req, res) => {
 
     res.json({ message: 'Device trust revoked', data: device });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to revoke device', details: err.message });
+    res.status(500).json({ error: 'Failed to revoke device' });
   }
 };
 
 // User: request a fresh step-up OTP to authorize or restore permanent trust for one of my devices
 exports.requestDeviceTrustOTP = async (req, res) => {
   try {
-    if (!req.user || !req.user.id || !req.session || !req.session.isValid) {
-      return res.status(401).json({ error: 'Valid authenticated session is required' });
-    }
+    const identity = deviceTrustIdentity(req);
 
     const device = await TrustedDevice.findById(req.params.id);
     if (!device) return res.status(404).json({ error: 'Device not found' });
@@ -107,7 +114,7 @@ exports.requestDeviceTrustOTP = async (req, res) => {
 
     if (req.session.deviceFingerprint && req.session.deviceFingerprint !== device.deviceFingerprint) {
       const callerDevice = await TrustedDevice.findOne({
-        userId: req.user.id,
+        userId: req.user.id, userModel: identity.modelName,
         deviceFingerprint: req.session.deviceFingerprint
       });
       if (callerDevice && callerDevice.isRevoked) {
@@ -115,10 +122,8 @@ exports.requestDeviceTrustOTP = async (req, res) => {
       }
     }
 
-    const { user, modelName } = await findUserAndModelById(req.user.id, req.session.userModel);
-    if (!user || !modelName) {
-      return res.status(404).json({ error: 'Authenticated user record not found' });
-    }
+    const user = await deviceTrustAccount(req, device, identity);
+    const { modelName } = identity;
 
     const destEmail = resolveUserEmail(user);
     if (!destEmail) {
@@ -132,10 +137,11 @@ exports.requestDeviceTrustOTP = async (req, res) => {
     }
 
     const latestDeviceOtp = await OTPSession.findOne({
-      userId: user._id,
+      userId: user._id, userModel: modelName,
       purpose: 'device-trust'
     }).sort({ createdAt: -1 });
-    const persistedDeviceFailures = Number(latestDeviceOtp?._doc?.failedAttempts || latestDeviceOtp?.failedAttempts || 0);
+    const persistedDeviceFailures = Number(latestDeviceOtp?._doc?.failedAttempts ?? latestDeviceOtp?.failedAttempts ?? 0);
+    if (!Number.isInteger(persistedDeviceFailures) || persistedDeviceFailures < 0) throw new Error('DEVICE_TRUST_IDENTITY_DENIED');
     if (persistedDeviceFailures >= 5) {
       return res.status(429).json({ error: 'Too many failed step-up OTP attempts. Please try again later.' });
     }
@@ -155,7 +161,7 @@ exports.requestDeviceTrustOTP = async (req, res) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await OTPSession.updateMany(
-      { userId: user._id, purpose: 'device-trust', used: false },
+      { userId: user._id, userModel: modelName, purpose: 'device-trust', used: false },
       { $set: { used: true } }
     );
 
@@ -165,10 +171,11 @@ exports.requestDeviceTrustOTP = async (req, res) => {
       otp: hashedOtp,
       expiresAt,
       purpose: 'device-trust',
-      failedAttempts: persistedDeviceFailures
+      failedAttempts: persistedDeviceFailures,
+      metadata: { deviceId: String(device._id), deviceFingerprint: device.deviceFingerprint, sessionId: identity.sessionId }
     });
 
-    const resOtp = await emailService.sendOTPEmail(destEmail, user.fullName || user.name || 'User', otp);
+    const resOtp = await emailService.sendOTPEmail(destEmail, user.fullName || user.name || 'User', otp, require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user));
     if (!resOtp || !resOtp.providerAccepted) {
       await OTPSession.deleteOne({ _id: otpDoc._id });
       return res.status(resOtp?.statusCode || 503).json({
@@ -196,7 +203,8 @@ exports.requestDeviceTrustOTP = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to send device trust OTP', details: err.message });
+    if (err.message === 'DEVICE_TRUST_IDENTITY_DENIED') return res.status(403).json({ error: 'Device trust verification required' });
+    res.status(500).json({ error: 'Failed to send device trust OTP' });
   }
 };
 
@@ -204,9 +212,7 @@ exports.requestDeviceTrustOTP = async (req, res) => {
 // Requires: (1) authenticated active session, (2) device ownership, (3) fresh step-up OTP (purpose: 'device-trust')
 exports.trustMyDevice = async (req, res) => {
   try {
-    if (!req.user || !req.user.id || !req.session || !req.session.isValid) {
-      return res.status(401).json({ error: 'Valid authenticated session is required' });
-    }
+    const identity = deviceTrustIdentity(req);
 
     const device = await TrustedDevice.findById(req.params.id);
     if (!device) return res.status(404).json({ error: 'Device not found' });
@@ -214,11 +220,12 @@ exports.trustMyDevice = async (req, res) => {
     if (String(device.userId) !== String(req.user.id)) {
       return res.status(403).json({ error: 'Access denied: you do not own this device' });
     }
+    await deviceTrustAccount(req, device, identity);
 
     // If caller session is operating from a different device that is currently revoked, block cross-device trust grant
     if (req.session.deviceFingerprint && req.session.deviceFingerprint !== device.deviceFingerprint) {
       const callerDevice = await TrustedDevice.findOne({
-        userId: req.user.id,
+        userId: req.user.id, userModel: identity.modelName,
         deviceFingerprint: req.session.deviceFingerprint
       });
       if (callerDevice && callerDevice.isRevoked) {
@@ -227,7 +234,7 @@ exports.trustMyDevice = async (req, res) => {
     }
 
     const otp = req.body?.otp;
-    if (!otp || typeof otp !== 'string' && typeof otp !== 'number') {
+    if (!/^[0-9]{6}$/.test(String(otp ?? ''))) {
       return res.status(403).json({
         error: 'Fresh step-up OTP verification is required to authorize or restore permanent device trust'
       });
@@ -240,20 +247,19 @@ exports.trustMyDevice = async (req, res) => {
     }
 
     const otpRecord = await OTPSession.findOne({
-      userId: req.user.id,
-      purpose: { $in: ['device-trust', 'verification'] },
+      ...deviceTrustScope(req, device, identity),
       used: false,
       expiresAt: { $gt: new Date() }
     }).sort({ createdAt: -1 });
 
-    if (!otpRecord) {
+    if (!validDeviceOtp(otpRecord, req, device, identity)) {
       await incrementAttempts(otpKey);
       return res.status(403).json({ error: 'Invalid or expired step-up OTP for device trust' });
     }
 
     const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
     if (persistedFailures >= 5) {
-      await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
+      await OTPSession.updateOne({ _id: otpRecord._id, ...deviceTrustScope(req, device, identity), used: false }, { $set: { used: true } });
       return res.status(429).json({ error: 'Too many failed step-up OTP attempts. Please try again later.' });
     }
 
@@ -262,7 +268,7 @@ exports.trustMyDevice = async (req, res) => {
       const newAttempts = await incrementAttempts(otpKey);
       const nextDocFailures = persistedFailures + 1;
       await OTPSession.collection.updateOne(
-        { _id: otpRecord._id },
+        { _id: otpRecord._id, ...deviceTrustScope(req, device, identity), used: false, expiresAt: { $gt: new Date() }, failedAttempts: { $lt: 5 } },
         {
           $inc: { failedAttempts: 1 },
           ...(newAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
@@ -272,7 +278,7 @@ exports.trustMyDevice = async (req, res) => {
     }
 
     const claimedOtp = await OTPSession.findOneAndUpdate(
-      { _id: otpRecord._id, used: false },
+      { _id: otpRecord._id, ...deviceTrustScope(req, device, identity), used: false, expiresAt: { $gt: new Date() }, failedAttempts: { $lt: 5 } },
       { $set: { used: true } },
       { returnDocument: 'after' }
     );
@@ -281,6 +287,7 @@ exports.trustMyDevice = async (req, res) => {
     }
 
     await clearAttempts(otpKey);
+    await deviceTrustAccount(req, device, identity);
 
     const wasRevoked = Boolean(device.isRevoked);
     device.isTrusted = true;
@@ -290,7 +297,7 @@ exports.trustMyDevice = async (req, res) => {
     await device.save();
 
     await SessionToken.updateMany(
-      { userId: req.user.id, deviceFingerprint: device.deviceFingerprint, isValid: true },
+      { userId: req.user.id, userModel: identity.modelName, deviceFingerprint: device.deviceFingerprint, isValid: true },
       { $set: { isTrusted: true } }
     );
 
@@ -306,7 +313,8 @@ exports.trustMyDevice = async (req, res) => {
       data: device
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to authorize device trust', details: err.message });
+    if (err.message === 'DEVICE_TRUST_IDENTITY_DENIED') return res.status(403).json({ error: 'Device trust verification required' });
+    res.status(500).json({ error: 'Failed to authorize device trust' });
   }
 };
 
@@ -322,7 +330,7 @@ exports.updateMyDeviceLabel = async (req, res) => {
 
     res.json({ message: 'Device label updated', data: device });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update device label', details: err.message });
+    res.status(500).json({ error: 'Failed to update device label' });
   }
 };
 
@@ -394,7 +402,7 @@ exports.getActiveSessions = async (req, res) => {
 
     res.json({ data: enriched });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch sessions', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch sessions' });
   }
 };
 
@@ -410,9 +418,8 @@ exports.forceLogout = async (req, res) => {
     // Emit real-time notification to the target user's browser
     const io = req.app.get('io');
     if (io && session.userId) {
-      const targetSocketId = io.userSocketMap?.get(session.userId.toString());
-      if (targetSocketId) {
-        io.to(targetSocketId).emit('force_logout', {
+      if (typeof io.emitToVerifiedUser === 'function') {
+        await io.emitToVerifiedUser(session.userId, 'force_logout', {
           message: 'Your session was terminated by an administrator.'
         });
       }
@@ -420,7 +427,7 @@ exports.forceLogout = async (req, res) => {
 
     res.json({ message: 'Session terminated', data: { sessionId: session._id } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to force logout', details: err.message });
+    res.status(500).json({ error: 'Failed to force logout' });
   }
 };
 
@@ -443,6 +450,6 @@ exports.revokeDeviceTrust = async (req, res) => {
 
     res.json({ message: 'Device trust revoked and sessions terminated', data: device });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to revoke device trust', details: err.message });
+    res.status(500).json({ error: 'Failed to revoke device trust' });
   }
 };

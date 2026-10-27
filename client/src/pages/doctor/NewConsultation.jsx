@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { requiresWriteReconciliation } from '../../utils/clinicalSaveOutcome';
+import { useTranslation } from '../../i18n/LanguageContext';
+import { pendingClinicalAttempt, beginClinicalAttempt, finishClinicalAttempt } from '../../utils/pendingClinicalAttempt';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
@@ -87,7 +90,7 @@ const STEPS = [
   { id: 1, label: 'Identify Patient', short: 'Patient', icon: FiUser },
   { id: 2, label: 'Medical History',  short: 'History', icon: FiFileText },
   { id: 3, label: 'Symptoms',         short: 'Symptoms',icon: FiActivity },
-  { id: 4, label: 'AI Diagnosis',     short: 'AI Diag', icon: FiActivity },
+  { id: 4, label: 'Reference Matches', short: 'Reference', icon: FiActivity },
   { id: 5, label: 'Rx & Labs',        short: 'Rx/Labs', icon: FiFileText },
 ];
 
@@ -159,6 +162,7 @@ const StepBar = ({ current }) => (
 
 /* ─── Main Component ────────────────────────────────────────────────────────── */
 const NewConsultation = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step,    setStep]   = useState(1);
   const [dir,     setDir]    = useState(1);   // slide direction: +1 = forward, -1 = back
@@ -195,8 +199,13 @@ const NewConsultation = () => {
   const [followUpDate,       setFollowUpDate]      = useState('');
 
   const draftEpoch = useRef(0);
+  const generateConsultIdempotencyKey = () => `consult-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  const initialAttempt = useRef(pendingClinicalAttempt());
+  const consultationIdempotencyKey = useRef(initialAttempt.current.key || generateConsultIdempotencyKey());
+  const [pendingWriteHold, setPendingWriteHold] = useState(initialAttempt.current.blocked);
   const clearClinicalDraft = () => {
     draftEpoch.current++;
+    if (!pendingClinicalAttempt().blocked && !submissionBusy.current && !submissionUncertain.current) consultationIdempotencyKey.current = generateConsultIdempotencyKey();
     inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle');
     setShowOtpModal(false); setStep(1); setLoading(false);
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
@@ -208,6 +217,7 @@ const NewConsultation = () => {
   const patientAccessToken = consent.token, patientData = consent.patient;
   const medicalHistory = consent.history, isHistoryLoading = consent.status === 'loading';
   const submissionBusy = useRef(false);
+  const submissionUncertain = useRef(initialAttempt.current.blocked);
 
   // Re-evaluate medication interactions & ingredient resolution whenever prescriptions change
   useEffect(() => {
@@ -341,13 +351,15 @@ const NewConsultation = () => {
 
 
   const handleSubmit = async () => {
+    if (submissionUncertain.current) return toast.error('Save status is uncertain. Check consultation history with an authorized operator before another submission.');
     if (submissionBusy.current) return;
     if (!patientAccessToken || consent.status !== 'authorized') return toast.error('Verify patient access again');
     if (!selectedDiagnosis && !manualDiagnosis) return toast.error('Select or type a diagnosis');
     submissionBusy.current = true;
     setLoading(true);
     try {
-      await axios.post('/doctor/consultation', {
+      beginClinicalAttempt(consultationIdempotencyKey.current);
+      const response = await axios.post('/doctor/consultation', {
         patientNic, symptoms,
         diagnosis:      manualDiagnosis || selectedDiagnosis,
         icdDescription: selectedIcd ? selectedDiagnosis : '',
@@ -361,11 +373,21 @@ const NewConsultation = () => {
         followUpDate:       followUpDate || null,
         loginType:          localStorage.getItem('loginType'),
         sessionHospitalId:  localStorage.getItem('sessionHospitalId'),
-      }, { headers: { 'x-patient-access': patientAccessToken } });
-      toast.success('Consultation saved & prescription emailed!');
+      }, { headers: { 'x-patient-access': patientAccessToken, 'Idempotency-Key': consultationIdempotencyKey.current } });
+      if (![200, 201].includes(response.status) || !/^[a-f0-9]{24}$/i.test(response.data?.consultationId || '')) throw new Error('CLINICAL_OUTCOME_UNCONFIRMED');
+      finishClinicalAttempt(consultationIdempotencyKey.current);
+      consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+      toast.success('Consultation saved.');
       navigate('/doctor/dashboard');
     } catch (err) {
       if ([401, 403].includes(err.response?.status)) consent.revoke('Authorization ended. Verify patient access again.');
+      if (requiresWriteReconciliation(err)) {
+        submissionUncertain.current = true;
+        setPendingWriteHold(true);
+        return toast.error('Save status is uncertain. Check consultation history with an authorized operator before another submission.');
+      }
+      try { finishClinicalAttempt(consultationIdempotencyKey.current); }
+      catch (_) { submissionUncertain.current = true; setPendingWriteHold(true); }
       toast.error('Unable to save consultation. Review access and retry.');
     } finally { submissionBusy.current = false; setLoading(false); }
   };
@@ -385,13 +407,29 @@ const NewConsultation = () => {
         menuItems={menuItems}
       >
         <PageTransition>
+          {pendingWriteHold && <div role="alert" className="mb-6 rounded-xl border border-amber-500/50 p-4 text-amber-200">
+            <p>{t('doctor.pendingSaveHold', 'A previous save is unconfirmed. Check its outcome before another submission.')}</p>
+            <button type="button" className="mt-3 underline" disabled={loading} onClick={async () => {
+              if (loading) return;
+              setLoading(true);
+              try {
+                const key = consultationIdempotencyKey.current;
+                const result = await axios.get(`/doctor/consultation-command/${encodeURIComponent(key)}`);
+                if (result.data?.state !== 'committed' || result.data?.operationKey !== key || !/^[a-f0-9]{24}$/i.test(result.data?.consultationId || '')) throw new Error('UNCONFIRMED');
+                finishClinicalAttempt(key); submissionUncertain.current = false; setPendingWriteHold(false);
+                toast.success('Previous consultation save confirmed.'); navigate('/doctor/dashboard');
+              } catch (_) { toast.error('Save outcome remains unconfirmed. Contact an authorized operator before another submission.'); }
+              finally { setLoading(false); }
+            }}>{t('doctor.checkPreviousSave', 'Check previous save')}</button>
+          </div>}
+          <fieldset disabled={pendingWriteHold} className="min-w-0 border-0 p-0 m-0">
           {/* ── Page header ── */}
           <div className="mb-8 flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 tracking-tight">
                 New Consultation
               </h1>
-              <p className="text-slate-400 mt-1 text-sm">Complete the wizard to record a clinical assessment.</p>
+              <p className="text-slate-400 mt-1 text-sm">{t("doctor.newConsultationSubtitle", "Complete the wizard to record a clinical assessment.")}</p>
             </div>
             {step > 1 && (
               <motion.button
@@ -426,7 +464,7 @@ const NewConsultation = () => {
                         <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center neumorphic-flat">
                           <FiUser className="w-7 h-7 text-teal-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Identify Patient</h2>
+                        <h2 className="text-2xl font-bold text-white">{t("doctor.identifyPatient", "Identify Patient")}</h2>
                         <p className="text-slate-400 mt-1.5 text-sm">Enter the patient's NIC number to begin the consultation.</p>
                       </div>
 
@@ -493,7 +531,7 @@ const NewConsultation = () => {
                       {patientData && (
                         <div className="grid md:grid-cols-2 gap-4 mb-6">
                           <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Basic Info</p>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">{t("doctor.basicInfo", "Basic Info")}</p>
                             <p className="text-lg font-bold text-white">{patientData.fullName}</p>
                             <p className="text-sm text-slate-400">
                               Age: {patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : (patientData.age || '—')} yrs | Blood: <span className="text-red-400 font-semibold">{patientData.bloodGroup || 'Unknown'}</span>
@@ -501,14 +539,14 @@ const NewConsultation = () => {
                           </div>
                           
                           <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/20">
-                            <p className="text-xs text-orange-500/70 font-bold uppercase tracking-wider mb-1">Known Allergies</p>
+                            <p className="text-xs text-orange-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.knownAllergies", "Known Allergies")}</p>
                             <p className="text-orange-400 font-semibold text-sm">
                               {patientData.allergies?.length > 0 ? patientData.allergies.join(', ') : 'No known allergies'}
                             </p>
                           </div>
                           
                           <div className="bg-purple-500/10 p-4 rounded-xl border border-purple-500/20 md:col-span-2">
-                            <p className="text-xs text-purple-500/70 font-bold uppercase tracking-wider mb-1">Chronic Conditions</p>
+                            <p className="text-xs text-purple-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.chronicConditions", "Chronic Conditions")}</p>
                             <p className="text-purple-400 font-semibold text-sm">
                               {patientData.chronicConditions?.length > 0 ? patientData.chronicConditions.join(', ') : 'None reported'}
                             </p>
@@ -518,7 +556,7 @@ const NewConsultation = () => {
 
                       {!isHistoryLoading && medicalHistory.length > 0 && (
                         <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 mb-6">
-                          <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">Recent / Active Medications</p>
+                          <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.recentMedications", "Recent / Active Medications")}</p>
                           {(() => {
                             const recentMeds = medicalHistory
                               .filter(h => h.type === 'consultation' && h.data?.prescriptions?.length > 0)
@@ -546,7 +584,7 @@ const NewConsultation = () => {
                       {isHistoryLoading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                           <div className="w-8 h-8 border-4 border-teal-500/30 border-t-teal-400 rounded-full animate-spin mb-4" />
-                          <p className="text-slate-400 text-sm">Loading historical records...</p>
+                          <p className="text-slate-400 text-sm">{t("doctor.loadingHistory", "Loading historical records...")}</p>
                         </div>
                       ) : medicalHistory.length === 0 ? (
                         <div className="py-12 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10">
@@ -579,25 +617,25 @@ const NewConsultation = () => {
                                   <div className="space-y-4 pt-4">
                                     {item.data.diagnosis && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Diagnosis</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("common.diagnosis", "Diagnosis")}</p>
                                         <p className="text-emerald-400 font-semibold">{item.data.diagnosis} {item.data.icdCode ? `(${item.data.icdCode})` : ''}</p>
                                       </div>
                                     )}
                                     {item.data.symptoms?.length > 0 && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Symptoms</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.symptoms", "Symptoms")}</p>
                                         <p className="text-slate-300">{item.data.symptoms.join(', ')}</p>
                                       </div>
                                     )}
                                     {item.data.clinicalNotes && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Clinical Notes</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.clinicalNotes", "Clinical Notes")}</p>
                                         <p className="text-slate-300 italic">"{item.data.clinicalNotes}"</p>
                                       </div>
                                     )}
                                     {item.data.prescriptions?.length > 0 && (
                                       <div>
-                                        <p className="text-xs text-slate-500 mb-1">Prescribed Drugs</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t("doctor.prescribedDrugs", "Prescribed Drugs")}</p>
                                         <ul className="list-disc list-inside text-slate-300">
                                           {item.data.prescriptions.map((rx, idx) => (
                                             <li key={idx}>{rx.name} - {rx.dosage} ({rx.frequency})</li>
@@ -684,7 +722,7 @@ const NewConsultation = () => {
                         onClick={() => goTo(4)}
                         className="glass-button px-8 py-3 flex items-center gap-2"
                       >
-                        Continue to AI Diagnosis <FiChevronRight />
+                        Continue to Reference Matches <FiChevronRight />
                       </motion.button>
                     </div>
                   </motion.div>
@@ -703,7 +741,7 @@ const NewConsultation = () => {
                         <p className="font-bold text-white">{patientData?.fullName}</p>
                       </div>
                       <div>
-                        <p className="label-caps mb-1">Symptoms</p>
+                        <p className="label-caps mb-1">{t("doctor.symptoms", "Symptoms")}</p>
                         <p className="text-teal-400 font-medium text-sm">{symptoms.length > 0 ? symptoms.join(', ') : '—'}</p>
                       </div>
                     </div>
@@ -717,7 +755,7 @@ const NewConsultation = () => {
                           <span className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center">
                             <FiActivity className="text-teal-400 animate-pulse" />
                           </span>
-                          AI Diagnosis Engine
+                          Symptom Reference Matching
                         </h3>
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
@@ -730,6 +768,10 @@ const NewConsultation = () => {
                             : 'Analyze Symptoms'}
                         </motion.button>
                       </div>
+
+                      <p role="note" className="mb-5 text-sm text-amber-200/90 relative z-10">
+                        Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.
+                      </p>
 
                       {diagnosesOptions.length > 0 ? (
                         <div className="space-y-3 relative z-10 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
@@ -789,12 +831,12 @@ const NewConsultation = () => {
 
                       {/* Manual confirmation */}
                       <div className="mt-6 pt-5 border-t border-white/5 relative z-10">
-                        <label className="block text-sm font-semibold text-slate-300 mb-3">Final Diagnosis Confirmation</label>
+                        <label className="block text-sm font-semibold text-slate-300 mb-3">{t("doctor.finalDiagnosisConfirmation", "Final Diagnosis Confirmation")}</label>
 
                         {/* ICD Search Bar with Version Filters */}
                         <div className="mb-4 relative">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-slate-400 font-semibold">Standard Reference:</span>
+                            <span className="text-xs text-slate-400 font-semibold">{t("doctor.standardReference", "Standard Reference:")}</span>
                             <div className="flex gap-1.5">
                               {[
                                 { id: 'all', label: 'All Standards' },
@@ -882,7 +924,7 @@ const NewConsultation = () => {
                                 setSelectedIcdVersion('Custom');
                               }
                             }}
-                            placeholder="Enter clinician-entered condition description..."
+                            placeholder={t("doctor.clinicianCondition", "Enter clinician-entered condition description...")}
                             className={inp}
                           />
                         </div>
@@ -1263,6 +1305,7 @@ const NewConsultation = () => {
               </AnimatePresence>
             </div>
           </div>
+          </fieldset>
         </PageTransition>
       </AppShell>
     </div>

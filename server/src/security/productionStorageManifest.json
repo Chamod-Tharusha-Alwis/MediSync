@@ -1,0 +1,871 @@
+{
+  "schemaVersion": 1,
+  "database": "medisync_prod",
+  "profile": "current-model-contract-no-migration",
+  "metadataOnly": true,
+  "collections": [
+    {
+      "name": "accountinvitations",
+      "model": "AccountInvitation",
+      "source": "server/src/models/AccountInvitation.js",
+      "purpose": "Cross-role email reservation and invitation replay prevention",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "emailDigest_1",
+          "key": {
+            "emailDigest": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "accountsecurityevents",
+      "model": "AccountSecurityEvent",
+      "source": "server/src/models/AccountSecurityEvent.js",
+      "purpose": "Durable account-security history",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "admins",
+      "model": "Admin",
+      "source": "server/src/models/Admin.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "email_1",
+          "key": {
+            "email": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "auditlogs",
+      "model": "AuditLog",
+      "source": "server/src/models/AuditLog.js",
+      "purpose": "Existing capped audit projection; durable clinical evidence remains in clinicalcommands/dispensings; retention is not qualified",
+      "capped": {
+        "size": 104857600,
+        "max": 100000
+      },
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "banrecords",
+      "model": "BanRecord",
+      "source": "server/src/models/BanRecord.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "targetId_1_isActive_1",
+          "key": {
+            "targetId": 1,
+            "isActive": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "isActive_1_expiresAt_1",
+          "key": {
+            "isActive": 1,
+            "expiresAt": 1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "broadcastmessages",
+      "model": "BroadcastMessage",
+      "source": "server/src/models/BroadcastMessage.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "clinicalcommands",
+      "model": "ClinicalCommand",
+      "source": "server/src/models/ClinicalCommand.js",
+      "purpose": "Atomic clinical command idempotency and durable outbox (deterministic _id)",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "consultations",
+      "model": "Consultation",
+      "source": "server/src/models/Consultation.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "consultationId_1",
+          "key": {
+            "consultationId": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_bi_1",
+          "key": {
+            "patientNic_bi": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "nicHash_1",
+          "key": {
+            "nicHash": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientId_1",
+          "key": {
+            "patientId": 1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "consultationratings",
+      "model": "ConsultationRating",
+      "source": "server/src/models/ConsultationRating.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "dispensings",
+      "model": "Dispensing",
+      "source": "server/src/models/Dispensing.js",
+      "purpose": "Transactional dispensing receipt; deterministic _id for retries",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "receiptNumber_1",
+          "key": {
+            "receiptNumber": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "doctors",
+      "model": "Doctor",
+      "source": "server/src/models/Doctor.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "doctorId_1",
+          "key": {
+            "doctorId": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "email_1",
+          "key": {
+            "email": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "drugs",
+      "model": "Drug",
+      "source": "server/src/models/Drug.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "name_1",
+          "key": {
+            "name": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "hospitals",
+      "model": "Hospital",
+      "source": "server/src/models/Hospital.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "regNo_1",
+          "key": {
+            "regNo": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "email_1",
+          "key": {
+            "email": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "icdcodes",
+      "model": "ICDCode",
+      "source": "server/src/models/ICDCode.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "code_1",
+          "key": {
+            "code": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "labtests",
+      "model": "LabTest",
+      "source": "server/src/models/LabTest.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "labTestId_1",
+          "key": {
+            "labTestId": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "consultationId_1",
+          "key": {
+            "consultationId": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "consultationRef_1",
+          "key": {
+            "consultationRef": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientId_1",
+          "key": {
+            "patientId": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_bi_1",
+          "key": {
+            "patientNic_bi": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "reportId_1",
+          "key": {
+            "reportId": 1
+          },
+          "unique": true,
+          "sparse": true
+        },
+        {
+          "name": "patientNic_hmac_1",
+          "key": {
+            "patientNic_hmac": 1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "notifications",
+      "model": "Notification",
+      "source": "server/src/models/Notification.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "otpsessions",
+      "model": "OTPSession",
+      "source": "server/src/models/OTPSession.js",
+      "purpose": "Consent/authentication OTP state with declared expiry",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "expiresAt_1",
+          "key": {
+            "expiresAt": 1
+          },
+          "unique": false,
+          "sparse": false,
+          "expireAfterSeconds": 0
+        }
+      ]
+    },
+    {
+      "name": "outbreakalerts",
+      "model": "OutbreakAlert",
+      "source": "server/src/models/OutbreakAlert.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "patients",
+      "model": "Patient",
+      "source": "server/src/models/Patient.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "nic_1",
+          "key": {
+            "nic": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "email_1",
+          "key": {
+            "email": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "pharmacies",
+      "model": "Pharmacy",
+      "source": "server/src/models/Pharmacy.js",
+      "purpose": "Embedded inventory participates in dispensing transactions",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "regNo_1",
+          "key": {
+            "regNo": 1
+          },
+          "unique": true,
+          "sparse": true
+        }
+      ]
+    },
+    {
+      "name": "pharmacystaffs",
+      "model": "PharmacyStaff",
+      "source": "server/src/models/PharmacyStaff.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "email_1",
+          "key": {
+            "email": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "prescriptions",
+      "model": "Prescription",
+      "source": "server/src/models/Prescription.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "prescriptionId_1",
+          "key": {
+            "prescriptionId": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_bi_1",
+          "key": {
+            "patientNic_bi": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "nicHash_1",
+          "key": {
+            "nicHash": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientId_1",
+          "key": {
+            "patientId": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_hmac_1",
+          "key": {
+            "patientNic_hmac": 1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "recoverytokens",
+      "model": "RecoveryToken",
+      "source": "server/src/models/RecoveryToken.js",
+      "purpose": "One-use account recovery",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "reviews",
+      "model": "Review",
+      "source": "server/src/models/Review.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "consultationId_1",
+          "key": {
+            "consultationId": 1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "sessiontokens",
+      "model": "SessionToken",
+      "source": "server/src/models/SessionToken.js",
+      "purpose": "Authentication sessions and revocation",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "supporttickets",
+      "model": "SupportTicket",
+      "source": "server/src/models/SupportTicket.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "testorders",
+      "model": "TestOrder",
+      "source": "server/src/models/TestOrder.js",
+      "purpose": "Existing five-role application model",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_hmac_1",
+          "key": {
+            "patientNic_hmac": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientNic_1_orderedAt_-1",
+          "key": {
+            "patientNic": 1,
+            "orderedAt": -1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "trusteddevices",
+      "model": "TrustedDevice",
+      "source": "server/src/models/TrustedDevice.js",
+      "purpose": "Device binding uniqueness",
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "userId_1",
+          "key": {
+            "userId": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "userId_1_deviceFingerprint_1",
+          "key": {
+            "userId": 1,
+            "deviceFingerprint": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    },
+    {
+      "name": "reminderdispatches",
+      "source": "server/src/services/reminderDispatchService.js",
+      "purpose": "Durable one-winner reminder claims; only required when both existing activation gates are enabled",
+      "whenAll": [
+        "MEDISYNC_BACKGROUND_JOBS_APPROVED",
+        "MEDISYNC_REMINDER_DISPATCH_APPROVED"
+      ],
+      "capped": false,
+      "validator": {
+        "$jsonSchema": {
+          "bsonType": "object",
+          "required": [
+            "_id",
+            "appointmentId",
+            "patientId",
+            "scheduledFor",
+            "templateVersion",
+            "ownerToken",
+            "state",
+            "createdAt"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_id": {
+              "bsonType": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "appointmentId": {
+              "bsonType": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            },
+            "patientId": {
+              "bsonType": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            },
+            "scheduledFor": {
+              "bsonType": "date"
+            },
+            "templateVersion": {
+              "enum": [
+                "followup-v1"
+              ]
+            },
+            "ownerToken": {
+              "bsonType": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+            },
+            "state": {
+              "enum": [
+                "reserved",
+                "dispatching",
+                "accepted",
+                "unconfirmed",
+                "uncertain"
+              ]
+            },
+            "createdAt": {
+              "bsonType": "date"
+            },
+            "attemptStartedAt": {
+              "bsonType": "date"
+            },
+            "completedAt": {
+              "bsonType": "date"
+            },
+            "providerAccepted": {
+              "bsonType": "bool"
+            }
+          }
+        }
+      },
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        }
+      ]
+    }
+  ]
+}
