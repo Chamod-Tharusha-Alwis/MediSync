@@ -1,6 +1,9 @@
 'use strict';
 
 const { isTargetAllowed, redactUri } = require('../scripts/bootstrapSyntheticAccounts');
+let priorEnv;
+beforeEach(() => { priorEnv = process.env; process.env = require('./helpers/gate3OperatorEnvironment').production(); });
+afterEach(() => { process.env = priorEnv; });
 
 describe('Bootstrap Synthetic Accounts Safety & Policy', () => {
   test('isTargetAllowed strictly accepts allowlisted targets and rejects forbidden ones', () => {
@@ -38,19 +41,15 @@ describe('Bootstrap Synthetic Accounts Safety & Policy', () => {
 
   test('bootstrapSyntheticData refuses execution if target is not allowlisted', async () => {
     const { bootstrapSyntheticData } = require('../scripts/bootstrapSyntheticAccounts');
-    await expect(bootstrapSyntheticData({
-      uri: 'mongodb+srv://u:p@p7hjket.mongodb.net/test',
-      isApply: false
-    })).rejects.toThrow(/not in the allowlist/i);
+    process.env.MONGO_URI = 'mongodb+srv://inert:inert@p7hjket.mongodb.net/test';
+    await expect(bootstrapSyntheticData({ isApply: false })).rejects.toThrow('PRODUCTION_EXISTING_CLUSTER_AND_DATABASE_REQUIRED');
   });
 
   test('bootstrapSyntheticData in apply mode fails closed if passwords are missing', async () => {
     const { bootstrapSyntheticData } = require('../scripts/bootstrapSyntheticAccounts');
     await expect(bootstrapSyntheticData({
-      uri: 'mongodb+srv://u:p@medisync.p7hjket.mongodb.net/medisync_prod',
       isApply: true,
-      passwords: {},
-      skipConnection: true
+      passwords: {}
     })).rejects.toThrow(/Missing required password environment variables/i);
   });
 
@@ -67,7 +66,6 @@ describe('Bootstrap Synthetic Accounts Safety & Policy', () => {
   test('bootstrapSyntheticData fails closed if .local email is provided', async () => {
     const { bootstrapSyntheticData } = require('../scripts/bootstrapSyntheticAccounts');
     await expect(bootstrapSyntheticData({
-      uri: 'mongodb+srv://u:p@medisync.p7hjket.mongodb.net/medisync_prod',
       isApply: false,
       emails: { admin: 'forbidden@domain.local' }
     })).rejects.toThrow(/forbidden "\.local"/i);

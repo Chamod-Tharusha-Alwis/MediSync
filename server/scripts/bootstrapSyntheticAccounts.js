@@ -17,6 +17,11 @@
 const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Before any model is compiled or any connection is opened: neither dry-run
+// nor apply may implicitly provision storage. DDL belongs to the reviewed tool.
+const { disableAutomaticModelDdl } = require('../src/security/productionAtlasPolicy');
+disableAutomaticModelDdl(mongoose);
+const { selectOperatorDatabase, verifyOperatorIdentity } = require('./operatorDatabaseMode');
 
 // Ensure global encryption key dictionary is initialized for Mongoose field encryption plugins
 if (!global.ENCRYPTION_KEYS) {
@@ -57,7 +62,7 @@ const ALLOWED_TARGETS = [
 
 function isTargetAllowed(host, database) {
   if (database === 'test') return false;
-  return ALLOWED_TARGETS.some(t => host.includes(t.hostSubstr) && database === t.database);
+  return ALLOWED_TARGETS.some(t => host === t.hostSubstr && database === t.database);
 }
 
 function redactUri(uriString) {
@@ -88,16 +93,17 @@ async function bootstrapSyntheticData(options = {}) {
   const {
     isApply = false,
     isQa = false,
-    uri = (options.isQa ? process.env.MONGO_URI_TEST : (process.env.MONGO_URI || process.env.MONGO_URI_TEST)),
     passwords = {
       admin: options.passwords?.admin || process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.SEED_TEST_PASSWORD,
       doctor: options.passwords?.doctor || process.env.BOOTSTRAP_DOCTOR_PASSWORD || process.env.SEED_TEST_PASSWORD,
       hospital: options.passwords?.hospital || process.env.BOOTSTRAP_HOSPITAL_PASSWORD || process.env.SEED_TEST_PASSWORD,
       pharmacy: options.passwords?.pharmacy || process.env.BOOTSTRAP_PHARMACY_PASSWORD || process.env.SEED_TEST_PASSWORD,
       patient: options.passwords?.patient || process.env.BOOTSTRAP_PATIENT_PASSWORD || process.env.SEED_TEST_PASSWORD
-    },
-    skipConnection = false // for unit testing with already-connected mongoose
+    }
   } = options;
+  if (Object.hasOwn(options, 'uri') || Object.hasOwn(options, 'skipConnection')) throw new Error('BOOTSTRAP_CONNECTION_OVERRIDE_FORBIDDEN');
+  const target = selectOperatorDatabase(process.env, isQa);
+  const uri = target.uri;
 
   // Validate all synthetic emails BEFORE any connection
   const emails = {
@@ -108,17 +114,7 @@ async function bootstrapSyntheticData(options = {}) {
     patient: validateSyntheticEmail(options.emails?.patient || process.env.BOOTSTRAP_PATIENT_EMAIL || 'patient.synth@medisync.synthetic', 'patient')
   };
 
-  if (!uri && !skipConnection) {
-    throw new Error('BOOTSTRAP_ERROR: No MongoDB connection string provided in MONGO_URI or MONGO_URI_TEST.');
-  }
-
-  const { host, database } = redactUri(uri || 'mongodb://in-memory/test');
-
-  if (!skipConnection) {
-    if (!isTargetAllowed(host, database)) {
-      throw new Error(`BOOTSTRAP_GUARD: Target host '${host}' and database '${database}' is not in the allowlist. Operation aborted.`);
-    }
-  }
+  const { host, database } = redactUri(uri);
 
   console.log('================================================================');
   console.log('  MEDISYNC SYNTHETIC BASELINE BOOTSTRAP');
@@ -140,12 +136,44 @@ async function bootstrapSyntheticData(options = {}) {
     throw new Error(`BOOTSTRAP_ERROR: Missing required password environment variables in apply mode: ${missingPasswords.join(', ')}`);
   }
 
-  if (!skipConnection && mongoose.connection.readyState !== 1) {
-    await mongoose.connect(uri, {
-      dbName: database,
-      serverSelectionTimeoutMS: 5000
-    });
+  if (mongoose.connection.readyState !== 0) throw new Error('BOOTSTRAP_EXISTING_CONNECTION_FORBIDDEN');
+  disableAutomaticModelDdl(mongoose);
+  let session, failure;
+  try {
+    await mongoose.connect(uri, { ...target.connectionOptions, autoCreate: false, autoIndex: false });
+    await verifyOperatorIdentity(mongoose.connection.db, target);
+    if (isApply) {
+      session = await mongoose.startSession();
+      session.startTransaction({ readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, readPreference: 'primary' });
+    }
+    const report = await bootstrapBaseline({ isApply, emails, passwords, session });
+    if (session) {
+      try { await session.commitTransaction(); }
+      catch (_) { throw new Error('BOOTSTRAP_COMMIT_UNCERTAIN: stop and inspect; do not automatically rerun.'); }
+    }
+    return report;
+  } catch (error) {
+    failure = error;
+    if (session && !error.message.startsWith('BOOTSTRAP_COMMIT_UNCERTAIN') && session.inTransaction()) {
+      try { await session.abortTransaction(); }
+      catch (_) { failure = new Error('BOOTSTRAP_ABORT_UNVERIFIED: stop and inspect; do not automatically rerun.'); }
+    }
+    throw failure;
+  } finally {
+    let shutdownFailed = false;
+    try { if (session) await session.endSession(); } catch (_) { shutdownFailed = true; }
+    try { await mongoose.disconnect(); } catch (_) { shutdownFailed = true; }
+    if (shutdownFailed) {
+      if (failure) failure.message += '; BOOTSTRAP_SHUTDOWN_UNVERIFIED';
+      else throw new Error('BOOTSTRAP_SHUTDOWN_UNVERIFIED: stop and inspect; do not automatically rerun.');
+    }
   }
+}
+
+async function bootstrapBaseline({ isApply, emails, passwords, session }) {
+  const queryOptions = session ? { session } : {};
+  const find = (Model, filter) => Model.findOne(filter, null, queryOptions);
+  const save = document => document.save(queryOptions);
 
   const report = {
     plan: [],
@@ -166,7 +194,33 @@ async function bootstrapSyntheticData(options = {}) {
   const pharmacyRegNo = 'PHARM-SYNTH-001';
 
   // 1. Super Admin
-  const existingAdmin = await Admin.findOne({ email: adminEmail });
+  // Read and validate all existing baseline records before the first save.
+  // Apply reads and creates share one snapshot transaction. Existing records
+  // are never reconciled, elevated, reactivated or refreshed.
+  const consultationId = 'CON-SYNTH-001', prescriptionId = 'RX-SYNTH-001', labTestId = 'LAB-SYNTH-001';
+  const existingAdmin = await find(Admin, { email: adminEmail });
+  let hospital = await find(Hospital, { regNo: hospitalRegNo });
+  let doctor = await find(Doctor, { doctorId });
+  let pharmacy = await find(Pharmacy, { regNo: pharmacyRegNo });
+  let staff = await find(PharmacyStaff, { email: pharmacyStaffEmail });
+  let patient = await find(Patient, { nic: patientNic });
+  let con = await find(Consultation, { consultationId });
+  const rx = await find(Prescription, { prescriptionId });
+  const lab = await find(LabTest, { labTestId });
+  const existingAlert = await find(OutbreakAlert, { disease: 'Dengue', location: 'Colombo' });
+  if (existingAdmin && (existingAdmin.isSuperAdmin !== true || existingAdmin.isActive !== true)) throw new Error('BOOTSTRAP_EXISTING_ADMIN_NOT_STARTUP_READY: existing accounts are never elevated or reactivated automatically.');
+  const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+  if (rx) {
+    const expiry = rx.expiresAt instanceof Date ? rx.expiresAt.getTime() : NaN;
+    const medication = rx.medications?.[0];
+    const validExpiry = !rx.$errors?.expiresAt && Number.isFinite(expiry) && expiry > Date.now();
+    const sameDrug = rx.drugName === 'Amoxicillin 500mg' && rx.dosage === '1 capsule' && rx.frequency === '8 hourly' && rx.durationDays === 5;
+    const sameMedication = rx.medications?.length === 1 && medication?.name === 'Amoxicillin 500mg' && medication?.dosage === '1 capsule' && medication?.frequency === '8 hourly';
+    const sameOwnership = sameId(rx.patientId, patient?._id) && sameId(rx.doctorId, doctor?._id) && sameId(rx.consultationId, con?._id) && rx.consultationRef === consultationId;
+    if (!validExpiry || !sameDrug || !sameMedication || !sameOwnership) {
+      throw new Error('BOOTSTRAP_EXISTING_PRESCRIPTION_INCOMPATIBLE: baseline left unchanged; no automatic reconciliation.');
+    }
+  }
   if (existingAdmin) {
     report.skippedExisting.push(`Admin: ${adminEmail}`);
   } else {
@@ -178,15 +232,15 @@ async function bootstrapSyntheticData(options = {}) {
         email: adminEmail,
         password: hash,
         role: 'super_admin',
+        isSuperAdmin: true,
         isActive: true
       });
-      await admin.save();
+      await save(admin);
       report.created.push(`Admin: ${adminEmail}`);
     }
   }
 
   // 2. Hospital
-  let hospital = await Hospital.findOne({ regNo: hospitalRegNo });
   if (hospital) {
     report.skippedExisting.push(`Hospital: ${hospitalRegNo}`);
   } else {
@@ -205,13 +259,12 @@ async function bootstrapSyntheticData(options = {}) {
         isVerified: true,
         isActive: true
       });
-      await hospital.save();
+      await save(hospital);
       report.created.push(`Hospital: ${hospitalRegNo}`);
     }
   }
 
   // 3. Doctor
-  let doctor = await Doctor.findOne({ doctorId });
   if (doctor) {
     report.skippedExisting.push(`Doctor: ${doctorId}`);
   } else {
@@ -231,13 +284,12 @@ async function bootstrapSyntheticData(options = {}) {
         isVerified: true,
         isActive: true
       });
-      await doctor.save();
+      await save(doctor);
       report.created.push(`Doctor: ${doctorId}`);
     }
   }
 
   // 4. Pharmacy & Pharmacy Staff
-  let pharmacy = await Pharmacy.findOne({ regNo: pharmacyRegNo });
   if (pharmacy) {
     report.skippedExisting.push(`Pharmacy: ${pharmacyRegNo}`);
   } else {
@@ -257,12 +309,11 @@ async function bootstrapSyntheticData(options = {}) {
           { drugName: 'Cetirizine 10mg', stock: 50, reorderLevel: 10, unit: 'tablets' }
         ]
       });
-      await pharmacy.save();
+      await save(pharmacy);
       report.created.push(`Pharmacy: ${pharmacyRegNo}`);
     }
   }
 
-  let staff = await PharmacyStaff.findOne({ email: pharmacyStaffEmail });
   if (staff) {
     report.skippedExisting.push(`PharmacyStaff: ${pharmacyStaffEmail}`);
   } else {
@@ -279,13 +330,12 @@ async function bootstrapSyntheticData(options = {}) {
         isActive: true,
         mustChangePassword: false
       });
-      await staff.save();
+      await save(staff);
       report.created.push(`PharmacyStaff: ${pharmacyStaffEmail}`);
     }
   }
 
   // 5. Patient
-  let patient = await Patient.findOne({ nic: patientNic });
   if (patient) {
     report.skippedExisting.push(`Patient: ${patientNic}`);
   } else {
@@ -307,15 +357,13 @@ async function bootstrapSyntheticData(options = {}) {
         preferredLanguage: 'en',
         isActive: true
       });
-      await patient.save();
+      await save(patient);
       report.created.push(`Patient: ${patientNic}`);
     }
   }
 
   // 6. Baseline Clinical Records (Consultation, Prescription, Lab, Outbreak)
   if (isApply) {
-    const consultationId = 'CON-SYNTH-001';
-    let con = await Consultation.findOne({ consultationId });
     if (!con && doctor && patient) {
       con = new Consultation({
         consultationId,
@@ -328,14 +376,12 @@ async function bootstrapSyntheticData(options = {}) {
         status: 'completed',
         consultationDate: new Date()
       });
-      await con.save();
+      await save(con);
       report.created.push(`Consultation: ${consultationId}`);
     }
 
-    const prescriptionId = 'RX-SYNTH-001';
-    let rx = await Prescription.findOne({ prescriptionId });
     if (!rx && doctor && patient) {
-      rx = new Prescription({
+      const createdPrescription = new Prescription({
         prescriptionId,
         consultationId: con?._id || null,
         consultationRef: consultationId,
@@ -354,29 +400,12 @@ async function bootstrapSyntheticData(options = {}) {
         status: 'pending',
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       });
-      await rx.save();
+      await save(createdPrescription);
       report.created.push(`Prescription: ${prescriptionId}`);
-    } else if (rx && isApply) {
-      let changed = false;
-      if (!rx.expiresAt || rx.expiresAt <= new Date()) {
-        rx.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        changed = true;
-      }
-      if (rx.drugName === 'Paracetamol 500mg' || (Array.isArray(rx.medications) && rx.medications.some(m => m.name.includes('Paracetamol')))) {
-        rx.medications = [{ name: 'Amoxicillin 500mg', dosage: '1 capsule', frequency: '8 hourly' }];
-        rx.drugName = 'Amoxicillin 500mg';
-        changed = true;
-      }
-      if (changed) {
-        await rx.save();
-        report.updated.push(`Prescription: ${prescriptionId} (reconciled safety fields)`);
-      }
     }
 
-    const labTestId = 'LAB-SYNTH-001';
-    let lab = await LabTest.findOne({ labTestId });
     if (!lab && patient) {
-      lab = new LabTest({
+      const createdLab = new LabTest({
         labTestId,
         testName: 'Full Blood Count (FBC)',
         testCategory: 'Haematology',
@@ -388,11 +417,10 @@ async function bootstrapSyntheticData(options = {}) {
         hospitalId: hospital?._id || null,
         status: 'pending'
       });
-      await lab.save();
+      await save(createdLab);
       report.created.push(`LabTest: ${labTestId}`);
     }
 
-    const existingAlert = await OutbreakAlert.findOne({ disease: 'Dengue', location: 'Colombo' });
     if (!existingAlert) {
       const alert = new OutbreakAlert({
         disease: 'Dengue',
@@ -401,7 +429,7 @@ async function bootstrapSyntheticData(options = {}) {
         affectedCount: 42,
         status: 'Active'
       });
-      await alert.save();
+      await save(alert);
       report.created.push('OutbreakAlert: Dengue (Colombo)');
     }
   }

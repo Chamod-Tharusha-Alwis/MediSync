@@ -66,5 +66,8 @@
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^3.4.19"
+  },
+  "overrides": {
+    "socket.io-parser": "4.2.7"
   }
 }

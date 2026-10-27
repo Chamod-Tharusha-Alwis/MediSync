@@ -10,3 +10,4 @@ module.exports.testMatch.push('<rootDir>/tests/postR2LocalReadiness.test.js');
 module.exports.testMatch.push('<rootDir>/tests/realIntegrationTransport.test.js');
 module.exports.testMatch.push('<rootDir>/tests/antigravityPublicHealthPrivacy.test.js');
 module.exports.testMatch.push('<rootDir>/tests/productionAccountAndProfile.test.js','<rootDir>/tests/productionPublicIsolation.test.js');
+module.exports.testMatch.push(...['gate3StorageRepair', 'gate3BootstrapRepair', 'gate3DatabaseMode', 'provisionProductionStorage', 'bootstrapSyntheticAccounts', 'preflightProduction', 'operatorKeyPolicy'].map(name => `<rootDir>/tests/${name}.test.js`));

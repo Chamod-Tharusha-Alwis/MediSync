@@ -145,20 +145,18 @@ async function runLiveConnectivityPreflight(env = process.env) {
 
     // Probe 2: Read-only inventory of collections and indexes
     console.log('Probing collections and indexes against productionStorageManifest.json...');
-    const collectionsCursor = await db.listCollections({}, { authorizedCollections: true, nameOnly: true });
-    const existingCollections = await collectionsCursor.toArray();
-    const existingCollectionNames = existingCollections.map(c => c.name);
+    const collectionsCursor = db.listCollections({}, { authorizedCollections: false, nameOnly: false, maxTimeMS: 5000 });
+    let existingCollections;
+    try { existingCollections = await collectionsCursor.toArray(); }
+    finally { if (typeof collectionsCursor.close === 'function') await collectionsCursor.close(); }
 
     const existingIndexes = {};
-    for (const collName of existingCollectionNames) {
-      try {
-        existingIndexes[collName] = await db.collection(collName).indexes();
-      } catch (_) {
-        existingIndexes[collName] = [];
-      }
+    for (const collection of existingCollections) {
+      existingIndexes[collection.name] = await db.collection(collection.name).indexes();
     }
 
-    const storageComparison = compareStorageWithManifest(existingCollectionNames, existingIndexes, manifest);
+    const storageComparison = compareStorageWithManifest(existingCollections, existingIndexes, manifest, env);
+    if (storageComparison.incompatibilities.length) throw new Error('PREFLIGHT_STORAGE_INCOMPATIBLE');
     console.log(`[STORAGE AUDIT] Compliant collections: ${storageComparison.alreadyCompliantCollections}/${storageComparison.totalRequiredCollections}, Compliant indexes: ${storageComparison.alreadyCompliantIndexes}/${storageComparison.totalRequiredIndexes}`);
 
     return {
