@@ -2,7 +2,7 @@
 
 27 October 2026. Synthetic prototype only; real clinical production remains NO-GO. Windows PowerShell only. This document authorizes no Atlas, account, Redis, hosting, merge or deployment operation.
 
-**Review gate:** baseline commit cf4a24cb9ac8d4dea4387b19f7c66b6d698ee65b has historical green CI. Use this seven-file follow-up only after its authorized source commit, fresh-clone verification and exact-head CI pass. The baseline commit alone does not implement all checks below. Source commit/push approval does not authorize database access, merge or deployment.
+**Current source/deployment state:** the operator reports that PR #6 merged the runtime changes into main on 27 October 2026 as 096a601 and Render auto-deployed it. MediSync-ML is live; MediSync backend failed with old environment settings. The release-branch source follow-up df39d1d has historical green CI, but CI does not verify hosted configuration/readiness. This docs-only release-branch correction does not merge anything into main or authorize database/hosting operations. Steps 5-8 describe the operator's configuration repair and manual redeploy of the already-merged code.
 
 ## 0 — tools, settings, network and recovery
 
@@ -25,14 +25,14 @@ expected: Node v24.x; all tool checks exit 0.
 
 If PowerShell reports NativeCommandError for normal Git diagnostic output, run the commands in a normal PowerShell window, not PowerShell ISE. Check the actual Git exit code with $LASTEXITCODE; stderr text alone does not prove command failure. Do not suppress genuine nonzero exits or use a force operation to bypass them.
 
-Existing targets only: GitHub Chamod-Tharusha-Alwis/MediSync; Vercel medi-sync, team chamod-tharusha-s-projects, ID prj_FLv5iD60XwYnLIoUCsjYMo4xPdMR, domain medisync.chamodtharusha.com.lk; Render medisync-ml-service and medisync-wabc. No replacement projects or DNS changes.
+Existing targets only: GitHub Chamod-Tharusha-Alwis/MediSync; Vercel medi-sync, team chamod-tharusha-s-projects, ID prj_FLv5iD60XwYnLIoUCsjYMo4xPdMR, domain medisync.chamodtharusha.com.lk; Render MediSync-ML (https://medisync-ml.onrender.com) and MediSync (https://medisync-wabc.onrender.com). No replacement projects or DNS changes.
 
 For EACH Render service read/report actual **status, live SHA, linked repository, deploy branch, Auto-Deploy mode, Root Directory, Dockerfile path and build context**. Also record build filters, pre-deploy command, health-check path and environment-group NAMES.
 
-| Service | Expected branch | Expected root | Expected Dockerfile/context |
+| Service | Operator-reported branch / Auto-Deploy | Expected root | Expected Dockerfile/context |
 |---|---|---|---|
-| ML | expected: main | expected: ml-engine | expected: ./Dockerfile / . relative to root |
-| Backend | expected: main | expected: server | expected: ./Dockerfile / . relative to root |
+| MediSync-ML | main / Auto-Deploy enabled | expected: ml-engine | expected: ./Dockerfile / . relative to root |
+| MediSync | main / Auto-Deploy enabled | expected: server | expected: ./Dockerfile / . relative to root |
 
 Verify Vercel production branch main, CRA/root client, Node 24, install npm install, build npm run build, output build. Record a real previous known-good PRODUCTION deployment ID/SHA and a separately approved medisync_prod recovery snapshot. Missing settings/rollback candidates remain NOT_VERIFIED.
 
@@ -92,7 +92,7 @@ $env:MEDISYNC_ATLAS_ROTATION_CONFIRMED = 'true'
 $env:ACTIVE_KEY_VERSION = '1'
 $env:CLIENT_URL = 'https://medisync.chamodtharusha.com.lk'
 $env:CORS_ORIGIN = $env:CLIENT_URL
-$env:ML_ENGINE_URL = 'https://medisync-ml-service.onrender.com'
+$env:ML_ENGINE_URL = 'https://medisync-ml.onrender.com'
 foreach ($Name in @('MONGO_URI','REDIS_URL','ENCRYPTION_KEYS','JWT_SECRET','JWT_REFRESH_SECRET','SESSION_SECRET','INTERNAL_API_KEY')) { Read-SessionSecret $Name }
 node scripts/preflightProduction.js
 if ($LASTEXITCODE -ne 0) { throw 'OFFLINE_PREFLIGHT_FAILED' }
@@ -110,7 +110,7 @@ operatorKeyPolicy.js:68-86 reads MEDISYNC_PROTOTYPE_MODE, MEDISYNC_ALLOW_OPERATO
 - The current operator-key backend initializes a LEGACY NIC/field runtime (app.js:147-152; securityRuntime.js:19). Legacy NIC lookup uses unkeyed SHA-256 (nicPersistence.js:6-11); there is NO extra NIC blind-index secret in this profile. Do not invent NIC/HMAC environment variables or claim keyed HMAC/GCM has been enabled. Migration profiles need their own separate keys/configuration and approval.
 - JWT_SECRET/JWT_REFRESH_SECRET are read by authentication and token refresh (authController.js:454-455,1690-1699). INTERNAL_API_KEY is consumed by the ML service boundary. CLIENT_URL is the actual CORS/origin value (clientOriginPolicy.js:4-7) and is also used in application links.
 - SESSION_SECRET is UNUSED by the deployed server runtime: no server/src consumer exists. It remains REQUIRED by the existing preflight length check at preflightProduction.js:91, preserved for compatibility rather than falsely described as active Express-session signing. Do not remove that check without separate review.
-- CORS_ORIGIN is UNUSED by server runtime and preflight. The setting above is a compatibility/no-op value; actual CORS uses CLIENT_URL. The older RELEASE_ENV_CONTRACT.md descriptions of SESSION_SECRET/CORS_ORIGIN do not prove consumers. ENCRYPTION_KEY_1 is also unused in this selected profile.
+- CORS_ORIGIN is UNUSED by server runtime and preflight. The setting above is a compatibility/no-op value; actual CORS uses CLIENT_URL. RELEASE_ENV_CONTRACT.md now labels SESSION_SECRET as preflight-only and CORS_ORIGIN as unused. ENCRYPTION_KEY_1 is also unused in this selected profile.
 - NODE_ENV, the live-start/rotation and operator-mode flags, MONGO_URI and REDIS_URL are admission inputs. ML_ENGINE_URL and PORT are runtime configuration. No additional encryption or blind-index secret is required for this LEGACY operator profile.
 
 expected: eight [PASS] offline gates.
@@ -133,7 +133,7 @@ expected: [PASS] Active super-admin exists: isActive=true, isSuperAdmin=true
 expected: [PASS] TLS Redis PING: PONG (no data commands)
 expected: [PREFLIGHT CONNECT COMPLETE] All read-only probes finished successfully.
 
-Missing storage/admin FAILS even this initial check. Stop and record failure. For absent prerequisites, obtain a separate additive-repair authorization before resuming Step 4; that does not confer merge eligibility. The FINAL repeat must pass every check. Never bypass identity/target/credential failures.
+Missing storage/admin FAILS even this initial check. Stop and record failure. For absent prerequisites, obtain a separate additive-repair authorization before resuming Step 4; that does not confer deployment readiness. The FINAL repeat must pass every check. Never bypass identity/target/credential failures.
 
 Legacy backup needs separate approval: FIRST create a **TEMPORARY Atlas database user** with built-in role **read on database test ONLY**. No readWrite/readAnyDatabase/dbAdmin/admin roles. Delete it immediately after the backup attempt, including failure; record deletion. These are operator instructions, not Codex account operations. Never use compromised/application credentials.
 
@@ -149,7 +149,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $BackupRoot 'test'))) { t
 
 Encrypt/verify the backup via the approved recovery system and record location privately. It is NOT a medisync_prod recovery snapshot. Never publish it, restore it into production or alter/delete test.
 
-## 4 — approved provisioning/bootstrap and FINAL pre-merge check
+## 4 — approved provisioning/bootstrap and FINAL pre-deploy check
 
 Keep services held and other writers idle. Preserve the approved medisync_prod recovery point. Review exact options/identities before separate apply approval. Provision/bootstrap dry-runs connect but must not write. No migration or blanket cleanup.
 
@@ -167,9 +167,9 @@ if ($LASTEXITCODE -ne 0) { throw 'BOOTSTRAP_DRY_RUN_FAILED' }
 # STOP: inspect synthetic plan and obtain apply authorization.
 node scripts/bootstrapSyntheticAccounts.js --apply
 if ($LASTEXITCODE -ne 0) { throw 'BOOTSTRAP_APPLY_FAILED' }
-# MANDATORY after BOTH tools and BEFORE merging:
+# MANDATORY after BOTH tools and BEFORE manual redeployment:
 node scripts/preflightProduction.js --connect
-if ($LASTEXITCODE -ne 0) { throw 'FINAL_PREMERGE_PREFLIGHT_FAILED' }
+if ($LASTEXITCODE -ne 0) { throw 'FINAL_PREDEPLOY_PREFLIGHT_FAILED' }
 ~~~
 
 Provisioning is additive: audit capped size 104857600/max 100000, OTP expiresAt TTL 0, strict unique/sparse/compound-order checks. Never drop/recreate/alter incompatible storage. Default requirements: 28 collections/65 indexes; 29/66 only when BOTH MEDISYNC_BACKGROUND_JOBS_APPROVED=true and MEDISYNC_REMINDER_DISPATCH_APPROVED=true are separately approved. This procedure does not set those optional flags.
@@ -180,7 +180,7 @@ expected: [DRY-RUN COMPLETE] No changes were written to the database.
 expected: [APPLY COMPLETE] All missing collections and indexes created additively.
 expected: [VERIFY PASS] Database storage is 100% compliant with productionStorageManifest.json.
 expected: [BOOTSTRAP PROCESS COMPLETED]
-expected: final preflight prints EVERY Step 3 PASS line and exits 0. Partial success does not permit merge.
+expected: final preflight prints EVERY Step 3 PASS line and exits 0. Partial success does not permit deployment readiness or smoke testing.
 
 ### Empty-database recovery — NEW medisync_prod only
 
@@ -235,36 +235,64 @@ These are default bootstrap identities ONLY, not proof they exist. BOOTSTRAP_*_E
 
 The patient API also accepts synthetic NIC 199512345678; doctor ID DOC-SYNTH-001 and hospital registration HOSP-SYNTH-001 are API alternatives. Use the emails above in the browser forms. PHARM-SYNTH-001 identifies the pharmacy organization, not its staff login. App.js routes :142-148 and authController.js:201-254 are source evidence, not executed login receipts.
 
-## 5 — ALL environments saved BEFORE merge; ML first
+## 5 — save ALL current environments with Save only; ML first
 
-Operator only after gates. Recheck/report branch, Auto-Deploy, root and Dockerfile/context. If Auto-Deploy is On Commit/After CI Checks Pass, save ALL Render variables BEFORE main merge: ML first, backend second, then Vercel. Check inherited environment-group NAMES without exposing values.
+Operator-supplied dashboard evidence, 27 October 2026: both MediSync-ML and MediSync use Auto-Deploy from main. PR #6 (release branch into main) is ALREADY merged as 096a601. Render already auto-deployed that code: MediSync-ML succeeded and is live; MediSync failed with the generic production fatal while its old environment settings remained. These are operator-reported facts, not independently captured hosting/health results from this documentation change.
+
+After the preceding authorized configuration/storage/bootstrap/preflight gates, save ALL intended environment variables using **Save only**, first on **MediSync-ML**, then on **MediSync**. Check inherited environment-group NAMES for stale or conflicting settings without exposing values. Save the complete configuration before initiating either manual deployment; do not deploy after individual variable edits.
 
 | Target | Names/nonsecret settings |
 |---|---|
-| ML | INTERNAL_API_KEY matching backend; Render PORT; PYTHONPATH=.; no Atlas/Redis/provider secrets. |
-| Backend | NODE_ENV=production; MEDISYNC_DEPLOYMENT_MODE=clinical; MEDISYNC_PROTOTYPE_MODE=true; MEDISYNC_ALLOW_OPERATOR_KEYS=true; truthful MEDISYNC_LIVE_START_APPROVED=true and MEDISYNC_ATLAS_ROTATION_CONFIRMED=true; MONGO_URI; REDIS_URL; ENCRYPTION_KEYS; ACTIVE_KEY_VERSION=1; JWT_SECRET; JWT_REFRESH_SECRET; SESSION_SECRET; INTERNAL_API_KEY; CLIENT_URL; CORS_ORIGIN; ML_ENGINE_URL; Render PORT. |
+| MediSync-ML — https://medisync-ml.onrender.com | INTERNAL_API_KEY matching backend; Render PORT; PYTHONPATH=.; no Atlas/Redis/provider secrets. |
+| MediSync — https://medisync-wabc.onrender.com | NODE_ENV=production; MEDISYNC_DEPLOYMENT_MODE=clinical; MEDISYNC_PROTOTYPE_MODE=true; MEDISYNC_ALLOW_OPERATOR_KEYS=true; truthful MEDISYNC_LIVE_START_APPROVED=true and MEDISYNC_ATLAS_ROTATION_CONFIRMED=true; MONGO_URI; REDIS_URL; ENCRYPTION_KEYS; ACTIVE_KEY_VERSION selecting an existing approved key; JWT_SECRET; JWT_REFRESH_SECRET; SESSION_SECRET (preflight-only compatibility requirement); INTERNAL_API_KEY; CLIENT_URL; ML_ENGINE_URL=https://medisync-ml.onrender.com; Render PORT. CORS_ORIGIN is unused and not required. |
 | Approved optional providers | RESEND_API_KEY/RESEND_FROM_ADDRESS; BREVO_API_KEY/BREVO_FROM_ADDRESS; CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET. Verify sender/upload access separately. |
 | Vercel Production | REACT_APP_API_URL=https://medisync-wabc.onrender.com/api; REACT_APP_SERVER_URL=https://medisync-wabc.onrender.com; approved public REACT_APP_CARTO_API_KEY; optional REACT_APP_GA_MEASUREMENT_ID. No backend secrets. |
 
-Prefer Render Save only, followed by approved NEW-commit deployment immediately after merge. Save and deploy/rebuild before main changes redeploys OLD code. If Save only is unavailable, coordinate save and new-code deployment back to back. An old-code restart is not verification. Codex does not resume services.
+Main already contains the new runtime code. The former instruction to wait for a future PR merge is obsolete. Save only avoids a deployment with partially updated settings. Leave Auto-Deploy enabled on main; do not create another project or change branches. Codex performs no save, deployment or service action.
 
-## 6 — PR base/main and separate merge approval
+## 6 — verify existing main and complete environment readiness; no PR step
 
-Only after final preflight/environment gates: operator edits existing PR #5 base to main, confirms the PR page says release/medisync-v1-final-integration INTO main, reviews full diff/exact-head CI and obtains merge approval. Do not assume the original base chore/safe-localhost-development changed. Opening a replacement PR also needs separate approval. Codex has made no PR changes.
+PR #6 was merged on 27 October 2026, merge commit 096a601, according to the operator. Do NOT open, retarget, edit or merge any PR for this environment correction. A release-branch documentation push is not a main merge and is not needed to place the already-merged runtime code on Render.
 
-Record the actual merged main SHA from GitHub; merge/squash may differ from release head. No direct main push; CI-green alone does not authorize merge.
+Before manual deployment, record the actual main HEAD/full SHA and compare it with the service's linked repository/branch. Require 096a601 or a verified later descendant on main, never 64abeaa. Reconfirm BOTH services' Auto-Deploy-from-main setting, Root Directory, Dockerfile path/context and complete saved environment. Do not infer later ancestry from a timestamp alone. Missing source/settings evidence remains NOT_VERIFIED.
 
-## 7 — deploy the MERGED SHA, not 64abeaa
+Run the clean clone's OFFLINE preflight with the exact production variable names from Step 2. Every offline configuration gate must pass. Any separately authorized read-only dependency/storage/admin verification required by earlier steps must also pass; CI alone does not prove those live checks.
 
-Operator checks Vercel Production Source/Build Logs and each Render Events/Deploys entry. Render initial checkout/build log (Checking out commit ... in branch main) and commit link/details MUST identify the approved full NEW main SHA, not 64abeaa / 64abeaac17cf8bd4bab23812ed02268c73b2e8db. Green service status alone is insufficient.
+## 7 — one manual Deploy latest commit per service, using the already-merged new code
 
-expected: ML, backend and Vercel source/deploy details show the approved NEW merged main SHA.
+After ALL variables have been saved with Save only on both services:
 
-If Render does not auto-deploy (Off/filters/no qualifying check): existing service > Manual Deploy > Deploy a specific commit > paste NEW merged SHA > Deploy Commit. ML first, verify it, then backend. Deploy latest commit is allowed only when verified main HEAD equals intended SHA. Record Auto-Deploy behavior afterward. Suspended-service resume needs separate operator approval. Restart is not a new-code deploy.
+1. Open the existing **MediSync-ML** service > **Manual Deploy > Deploy latest commit** ONCE. Its primary URL is https://medisync-ml.onrender.com.
+2. On the deployment page and initial checkout/build log, confirm branch main and commit **096a601 or a verified later main descendant**, never 64abeaa. Record the full SHA and deployment ID. Require successful deployment and the authorized ML health check at https://medisync-ml.onrender.com/health.
+3. Open the existing **MediSync** backend > **Manual Deploy > Deploy latest commit** ONCE. Its URL remains https://medisync-wabc.onrender.com.
+4. Verify the backend deployment page/checkout log shows **096a601 or a verified later main descendant**, never 64abeaa. Record its full SHA/deployment ID; then require successful boot and the authorized backend health check.
+
+Both services already track main, so this deploys the new code with the completed environment. No PR or additional source merge is needed for this manual redeployment. Do not use Restart as a substitute. If a deployment fails or identifies an unexpected branch/SHA, STOP and diagnose; do not loop redeploys, change guards or deploy an arbitrary older commit.
+
+expected: each deployment page/checkout log identifies main and 096a601 or a verified later descendant.
+expected: MediSync-ML deploy succeeds before MediSync backend readiness is accepted.
+expected: no deployment uses old 64abeaa.
 
 ## 8 — source-derived boot diagnostics
 
 All following lines are expected, not captured hosted output. production.js:20 masks exceptions with generic fatal; internal codes may not appear in hosted logs.
+
+### Ordered response to the generic fatal
+
+1. Interpret `[FATAL] Production server failed to start. Check admission and dependency configuration.` as the sanitized catch-all at server/src/production.js:18-21. It does NOT identify the failing gate. The operator reports this failure on the new backend deployment with old environment settings; it is not evidence that main still contains old code.
+2. Confirm the service is **MediSync**, branch main, deployment commit **096a601 or later**, not 64abeaa. Record the actual full SHA and the preceding sanitized log lines. Do not guess a fix or change a guard from the generic line alone.
+3. Use the CLEAN clone outside OneDrive from Step 1, Node 24, no .env files or QA variables. Follow Step 2's private current-session input with the SAME production settings intended for Render. Exact names: NODE_ENV, MEDISYNC_DEPLOYMENT_MODE, MEDISYNC_PROTOTYPE_MODE, MEDISYNC_ALLOW_OPERATOR_KEYS, MEDISYNC_LIVE_START_APPROVED, MEDISYNC_ATLAS_ROTATION_CONFIRMED, MONGO_URI, REDIS_URL, ENCRYPTION_KEYS, ACTIVE_KEY_VERSION, CLIENT_URL, ML_ENGINE_URL, JWT_SECRET, JWT_REFRESH_SECRET, SESSION_SECRET (preflight-only), INTERNAL_API_KEY. Never paste or print their secret values. CORS_ORIGIN is unused; ENCRYPTION_KEY_1 is not a replacement for ENCRYPTION_KEYS.
+4. Run ONLY the OFFLINE command below to surface the specific local configuration `[FAIL]` gate/error. It does not connect to Atlas/Redis, start Express or create records. Correct that named configuration in the session and Render's Save-only settings; do not add test/default keys, QA fallback variables or a Vault bypass.
+
+~~~powershell
+node scripts/preflightProduction.js
+if ($LASTEXITCODE -ne 0) { throw 'OFFLINE_PREFLIGHT_FAILED_FIX_REPORTED_GATE' }
+~~~
+
+expected: a specific [FAIL] gate/error when configuration is wrong, or all eight [PASS] gates and [PREFLIGHT OFFLINE COMPLETE] when local configuration is valid.
+
+5. Offline PASS does not prove live network, authenticated-role, storage, super-admin or Redis readiness. If boot still fails after all offline gates pass, STOP for the separately authorized read-only dependency checks; do not claim the offline command diagnosed a network/storage failure.
+6. Once the approved gates pass, complete ALL Save-only settings ML first/backend second and use Step 7's single Deploy latest commit on each service. Require the new SHA and health results before smoke testing. No Render action was executed by Codex for this docs-only correction.
 
 | Condition | Expected diagnostic / correction |
 |---|---|
@@ -283,7 +311,7 @@ All following lines are expected, not captured hosted output. production.js:20 m
 Only after NEW deployments finish. No login/clinical writes until separately approved smoke scope.
 
 ~~~powershell
-$MlHealth = Invoke-WebRequest -Uri 'https://medisync-ml-service.onrender.com/health' -TimeoutSec 30
+$MlHealth = Invoke-WebRequest -Uri 'https://medisync-ml.onrender.com/health' -TimeoutSec 30
 if ($MlHealth.StatusCode -ne 200 -or ($MlHealth.Content | ConvertFrom-Json).status -ne 'ready') { throw 'ML_NOT_READY' }
 Write-Output "captured [$Stamp] ML HTTP $($MlHealth.StatusCode): $($MlHealth.Content)"
 $ApiHealth = Invoke-WebRequest -Uri 'https://medisync-wabc.onrender.com/health' -TimeoutSec 30
