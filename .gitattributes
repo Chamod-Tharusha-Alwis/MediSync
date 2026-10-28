@@ -7,12 +7,17 @@ client/src/components/SymptomTagInput.jsx text eol=lf
 server/tests/ir04BackendIntegration.test.js text eol=lf
 server/tests/patientProfileOwnedIntegration.test.js text eol=lf
 server/tests/prescriptionDurationOwnedIntegration.test.js text eol=lf
-server/tests/lab.test.js text eol=lf
+# This protected historical blob contains CRLF. Preserve its approved bytes.
+server/tests/lab.test.js -text
 server/tests/universityDemoSeedVerify.test.js text eol=lf
 client/tests/ir04-isolated-five-role-e2e.spec.js text eol=lf
 server/src/config/dbGuard.js text eol=lf
 server/src/models/Consultation.js text eol=lf
 server/src/models/Patient.js text eol=lf
 server/src/utils/versionedEncryption.js text eol=lf
+# Historical storage-admission receipts bind these canonical LF source bytes.
+server/src/security/productionAtlasPolicy.js text eol=lf
+server/src/security/productionStorageAdmission.js text eol=lf
+server/src/security/productionStorageManifest.json text eol=lf
 ml-engine/data/* -text
 server/reference-data/* -text

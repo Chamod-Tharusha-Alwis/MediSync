@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const baselinePath = 'docs/release/PROTECTED_HASHES.json';
 function isSnapshotFile(file) {
+  if (/^\.github\/context-mode\/sessions\/stats-pid-\d+\.json$/.test(file)) return false;
   return !/^(scratch|research|docs|Python|medisync-qa-evidence)\//.test(file) && !/(^|\/)\.env($|\.)/i.test(file)
     && /\.(js|jsx|cjs|mjs|json|py|ya?ml|css|html)$|(^|\/)(Dockerfile|\.dockerignore|requirements\.txt|requirements\.lock)$/.test(file);
 }
