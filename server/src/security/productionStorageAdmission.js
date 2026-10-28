@@ -87,13 +87,16 @@ async function verifyProductionStorage(db,environment){
         const details=[...incompatibleCollections.map(c=>`${c.collection}:${c.reason}`),...incompatibleIndexes.map(i=>`${i.collection}:${i.reason}`)].join(', ');
         console.error(`[FATAL][STORAGE-ADMISSION] Storage incompatible: ${details}`);
       }
+      const isAutoProvision=environment?.MEDISYNC_AUTO_PROVISION_STORAGE==='true'&&incompatibleCollections.length===0&&incompatibleIndexes.length===0;
       if(missingCollections.length>0||missingIndexes.length>0){
-        console.error(`[FATAL][STORAGE-ADMISSION] Missing storage detected: ${missingCollections.length} collections, ${missingIndexes.length} indexes missing.`);
-        if(missingCollections.length>0)console.error(`[FATAL][STORAGE-ADMISSION] Missing collections: ${missingCollections.join(', ')}`);
-        if(missingIndexes.length>0)console.error(`[FATAL][STORAGE-ADMISSION] Missing indexes: ${missingIndexes.map(i=>`${i.collection}.${i.name||JSON.stringify(i.key)}`).join(', ')}`);
+        const logFn=isAutoProvision?console.log:console.error;
+        const prefix=isAutoProvision?'[STORAGE-ADMISSION]':'[FATAL][STORAGE-ADMISSION]';
+        logFn(`${prefix} Missing storage detected: ${missingCollections.length} collections, ${missingIndexes.length} indexes missing.`);
+        if(missingCollections.length>0)logFn(`${prefix} Missing collections: ${missingCollections.join(', ')}`);
+        if(missingIndexes.length>0)logFn(`${prefix} Missing indexes: ${missingIndexes.map(i=>`${i.collection}.${i.name||JSON.stringify(i.key)}`).join(', ')}`);
       }
 
-      if(environment?.MEDISYNC_AUTO_PROVISION_STORAGE==='true'&&incompatibleCollections.length===0&&incompatibleIndexes.length===0){
+      if(isAutoProvision){
         console.log('[STORAGE-ADMISSION] MEDISYNC_AUTO_PROVISION_STORAGE active: creating missing storage additively...');
         for(const collName of missingCollections){
           if(typeof db.createCollection!=='function')fail();

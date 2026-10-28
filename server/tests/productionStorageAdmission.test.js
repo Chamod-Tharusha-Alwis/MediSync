@@ -216,10 +216,18 @@ test('storage admission creates missing collections and indexes additively when 
   })
  }));
  const environment={...env(),MEDISYNC_AUTO_PROVISION_STORAGE:'true'};
- const result=await verifyProductionStorage(f.db,environment);
- expect(result).toMatchObject({verifiedCollections:28,verifiedRequiredIndexes:65});
- expect(createdColls.map(c=>c.name)).toContain('clinicalcommands');
- expect(createdIndexes.map(i=>`${i.collection}.${i.opts.name}`)).toContain('patients.email_1');
+ const errSpy=jest.spyOn(console,'error').mockImplementation(()=>{});
+ const logSpy=jest.spyOn(console,'log').mockImplementation(()=>{});
+ try{
+  const result=await verifyProductionStorage(f.db,environment);
+  expect(result).toMatchObject({verifiedCollections:28,verifiedRequiredIndexes:65});
+  expect(createdColls.map(c=>c.name)).toContain('clinicalcommands');
+  expect(createdIndexes.map(i=>`${i.collection}.${i.opts.name}`)).toContain('patients.email_1');
+  expect(errSpy).not.toHaveBeenCalled();
+  const logged=logSpy.mock.calls.flat().join(' ');
+  expect(logged).toContain('[STORAGE-ADMISSION] Missing storage detected');
+  expect(logged).toContain('[STORAGE-ADMISSION] MEDISYNC_AUTO_PROVISION_STORAGE active');
+ }finally{errSpy.mockRestore();logSpy.mockRestore();}
 });
 
 test('auto-provision refuses to run when incompatible collection options exist',async()=>{
