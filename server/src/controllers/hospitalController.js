@@ -70,11 +70,11 @@ exports.registerHospital = async (req, res) => {
     await hospital.save();
     res.status(201).json({ message: 'Hospital registered successfully', data: { hospitalId: hospital._id } });
   } catch (error) {
-    console.error('registerHospital error:', error);
+    console.error('Hospital registration unavailable.');
     if (error.code === 11000 || (error.message && error.message.includes('11000'))) {
       return res.status(400).json({ error: 'Hospital email or Registration Number already exists' });
     }
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.status(500).json({ error: 'Registration failed', details: 'Request could not be completed.' });
   }
 };
 
@@ -89,7 +89,7 @@ exports.loginHospital = async (req, res) => {
     };
     return await authController.login(req, res);
   } catch (error) {
-    return res.status(500).json({ error: 'Login failed', details: error.message });
+    return res.status(500).json({ error: 'Login failed', details: 'Request could not be completed.' });
   }
 };
 
@@ -117,7 +117,7 @@ exports.getStats = async (req, res) => {
       message: 'Hospital stats fetched successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching hospital stats', details: error.message });
+    res.status(500).json({ error: 'Error fetching hospital stats', details: 'Request could not be completed.' });
   }
 };
 
@@ -135,7 +135,7 @@ exports.getDoctors = async (req, res) => {
     });
     res.json({ data: formattedDoctors, message: 'Doctor roster fetched successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching doctor roster', details: error.message });
+    res.status(500).json({ error: 'Error fetching doctor roster', details: 'Request could not be completed.' });
   }
 };
 
@@ -282,7 +282,7 @@ exports.updateSettings = async (req, res) => {
     if (!updated) return res.status(404).json({ error: 'Hospital not found' });
     res.json({ data: updated, message: 'Settings updated' });
   } catch (error) {
-    res.status(500).json({ error: 'Error updating settings', details: error.message });
+    res.status(500).json({ error: 'Error updating settings', details: 'Request could not be completed.' });
   }
 };
 
@@ -293,7 +293,7 @@ exports.getProfile = async (req, res) => {
     if (!hospital) return res.status(404).json({ error: 'Hospital not found' });
     res.json({ data: hospital, message: 'Profile fetched' });
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching profile', details: error.message });
+    res.status(500).json({ error: 'Error fetching profile', details: 'Request could not be completed.' });
   }
 };
 
@@ -306,7 +306,7 @@ exports.getPatients = async (req, res) => {
     
     res.json({ data: patients });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch patients', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch patients', details: 'Request could not be completed.' });
   }
 };
 
@@ -329,7 +329,7 @@ exports.updatePatientRecords = async (req, res) => {
     await patient.save();
     res.json({ message: 'Patient medical records updated', data: patient });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update patient', details: error.message });
+    res.status(500).json({ error: 'Failed to update patient', details: 'Request could not be completed.' });
   }
 };
 
@@ -361,8 +361,8 @@ exports.getHospitalStaff = async (req, res) => {
     });
     res.json({ data: staffWithStatus });
   } catch (error) {
-    console.error('getHospitalStaff error:', error);
-    res.status(500).json({ error: 'Failed to fetch hospital staff', details: error.message });
+    console.error('Hospital staff lookup unavailable.');
+    res.status(500).json({ error: 'Failed to fetch hospital staff', details: 'Request could not be completed.' });
   }
 };
 
@@ -401,7 +401,7 @@ exports.getHospitalPatientHistory = async (req, res) => {
       message: 'Hospital patient history fetched successfully'
     });
   } catch (error) {
-    console.error('getHospitalPatientHistory error:', error);
-    res.status(500).json({ error: 'Failed to fetch hospital patient history', details: error.message });
+    console.error('Hospital patient history unavailable.');
+    res.status(500).json({ error: 'Failed to fetch hospital patient history', details: 'Request could not be completed.' });
   }
 };
