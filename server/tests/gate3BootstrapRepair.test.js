@@ -3,7 +3,7 @@ jest.mock('dotenv', () => ({ config: jest.fn(() => ({ parsed: {} })) }));
 const { production, qa, identity } = require('./helpers/gate3OperatorEnvironment');
 let mongoose, bootstrap, models, compilationFlags, priorEnv, priorDb;
 let records, pending, session, active, failSave, failCommit;
-const passwords = Object.fromEntries(['admin','doctor','hospital','pharmacy','patient'].map(role => [role,'Synthetic-Only-Password-2026!']));
+const passwords = Object.fromEntries(['admin','doctor','hospital','pharmacy','patient'].map(role => [role,`Synthetic-Only-${role}-Password-2026!`]));
 const priorKey=global.ENCRYPTION_KEY, priorKeys=global.ENCRYPTION_KEYS, priorVersion=global.ACTIVE_KEY_VERSION;
 
 beforeAll(() => {
@@ -44,6 +44,10 @@ beforeEach(() => {
   for(const Model of models){
     jest.spyOn(Model,'findOne').mockImplementation(async (_filter,_projection,options) => {
       if(active) expect(options.session).toBe(session);
+      if (_filter.email?.$in) {
+        const row = records.get(Model.modelName);
+        return row && _filter.email.$in.includes(row.email) ? row : null;
+      }
       return records.get(Model.modelName)||null;
     });
     jest.spyOn(Model.prototype,'save').mockImplementation(async function(options){
