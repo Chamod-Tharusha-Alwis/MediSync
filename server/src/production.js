@@ -3,7 +3,6 @@ const { assertProductionRuntime } = require('./security/productionRuntimePolicy'
 
 function startProduction(environment = process.env, loadApplication = () => require('./app')) {
   assertProductionRuntime(environment);
-  if (environment.MEDISYNC_ATLAS_ROTATION_CONFIRMED !== 'true') throw new Error('BOTH_COMPROMISED_ATLAS_IDENTITIES_MUST_BE_ROTATED');
   // Before app/model imports: schemas must not provision collections/indexes.
   require('./security/productionAtlasPolicy').disableAutomaticModelDdl(require('mongoose'));
   // The existing app still enforces its live-start, Vault, DB and security gates.

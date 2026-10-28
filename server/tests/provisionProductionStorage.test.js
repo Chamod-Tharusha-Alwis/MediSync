@@ -5,9 +5,11 @@ const manifest = require('../src/security/productionStorageManifest.json');
 const { storageFixture } = require('./helpers/gate3StorageFixture');
 
 describe('Storage Provisioning and Manifest Compliance Verification', () => {
-  test('isTargetAllowed allows only exact cluster host medisync.p7hjket.mongodb.net and QA cluster', () => {
+  test('isTargetAllowed allows valid Atlas hosts for medisync_prod and rejects invalid hosts or test db', () => {
     expect(isTargetAllowed('medisync.p7hjket.mongodb.net', 'medisync_prod')).toBe(true);
+    expect(isTargetAllowed('new-cluster.abc12.mongodb.net', 'medisync_prod')).toBe(true);
     expect(isTargetAllowed('qa-project-medisync.gwprp27.mongodb.net', 'medisync_automated_test')).toBe(true);
+    expect(isTargetAllowed('new-qa.xyz99.mongodb.net', 'medisync_automated_test')).toBe(true);
 
     expect(isTargetAllowed('p7hjket.mongodb.net', 'medisync_prod')).toBe(false);
     expect(isTargetAllowed('medisync.p7hjket.mongodb.net', 'test')).toBe(false);

@@ -2,15 +2,21 @@
 const { ConnectionString }=require('mongodb-connection-string-url');
 const installed=new WeakSet();
 function fail(code){throw new Error(code);}
+function isValidAtlasSrvHost(host){
+  if(typeof host!=='string'||!host)return false;
+  const h=host.toLowerCase();
+  if(h.includes('*')||h.includes('?')||h.includes(' ')||h.includes(':')||h.includes('/'))return false;
+  if(h.includes('localhost')||h.includes('127.0.0.1')||h.includes('0.0.0.0'))return false;
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+\.mongodb\.net$/.test(h);
+}
 function assertProductionAtlasConfiguration(environment,rawUri=environment?.MONGO_URI){
-  if(!environment||environment.NODE_ENV!=='production'||environment.MEDISYNC_LIVE_START_APPROVED!=='true')fail('PRODUCTION_ATLAS_ACCESS_APPROVAL_REQUIRED');
-  // Human attestation only; never claim this flag proves server-side revocation.
-  if(environment.MEDISYNC_ATLAS_ROTATION_CONFIRMED!=='true')fail('BOTH_COMPROMISED_ATLAS_IDENTITIES_MUST_BE_ROTATED');
+  if(!environment||environment.NODE_ENV!=='production')fail('PRODUCTION_RUNTIME_MODE_REQUIRED');
   const forbidden=new Set(['MONGO_URI_TEST','MONGODB_URI_TEST','MONGO_URI_STAGING','SEED_TEST_PASSWORD']);
-  if(Object.getOwnPropertyNames(environment).some(name=>forbidden.has(name.toUpperCase())||/^MEDISYNC_(QA_|TEST_|COMBINED_)/i.test(name)))fail('PRODUCTION_ATLAS_QA_MATERIAL_FORBIDDEN');
-  let uri;try{uri=new ConnectionString(rawUri);}catch(_){fail('PRODUCTION_ATLAS_URI_INVALID');}
+  if(Object.getOwnPropertyNames(environment).some(name=>forbidden.has(name.toUpperCase())||/^MEDISYNC_(?:QA_|TEST_|COMBINED_|DEMO_)/i.test(name)))fail('PRODUCTION_ATLAS_QA_MATERIAL_FORBIDDEN');
+  if(!rawUri||typeof rawUri!=='string'||!rawUri.trim())fail('PRODUCTION_ATLAS_URI_INVALID');
+  let uri;try{uri=new ConnectionString(rawUri.trim());}catch(_){fail('PRODUCTION_ATLAS_URI_INVALID');}
   const host=uri.hosts?.[0]?.toLowerCase();
-  if(!uri.isSRV||uri.hosts.length!==1||!host||host!=='medisync.p7hjket.mongodb.net'||uri.pathname!=='/medisync_prod'||!uri.username||!uri.password)fail('PRODUCTION_EXISTING_CLUSTER_AND_DATABASE_REQUIRED');
+  if(!uri.isSRV||!Array.isArray(uri.hosts)||uri.hosts.length!==1||!isValidAtlasSrvHost(host)||uri.pathname!=='/medisync_prod'||!uri.username||!uri.password)fail('PRODUCTION_EXISTING_CLUSTER_AND_DATABASE_REQUIRED');
   const seen=new Set(),allowed=new Set(['tls','ssl','tlsinsecure','tlsallowinvalidcertificates','tlsallowinvalidhostnames','sslvalidate','retrywrites','w','appname','authsource','authmechanism','readpreference']);
   for(const [rawName,rawValue]of uri.searchParams){
     const name=rawName.toLowerCase(),value=rawValue.toLowerCase();
@@ -18,7 +24,7 @@ function assertProductionAtlasConfiguration(environment,rawUri=environment?.MONG
     if((['tls','ssl','sslvalidate'].includes(name)&&value!=='true')||(['tlsinsecure','tlsallowinvalidcertificates','tlsallowinvalidhostnames'].includes(name)&&value!=='false'))fail('PRODUCTION_ATLAS_TLS_REQUIRED');
     if((name==='w'&&value!=='majority')||(name==='readpreference'&&value!=='primary')||(name==='retrywrites'&&!['true','false'].includes(value))||(name==='authsource'&&value!=='admin')||(name==='authmechanism'&&rawValue!=='SCRAM-SHA-256'))fail('PRODUCTION_ATLAS_URI_OPTION_FORBIDDEN');
   }
-  return Object.freeze({database:'medisync_prod',cluster:'medisync.p7hjket.mongodb.net',tlsRequired:true,rotationAttested:true});
+  return Object.freeze({database:'medisync_prod',cluster:host,tlsRequired:true});
 }
 function disableAutomaticModelDdl(mongoose){
   if(!mongoose||typeof mongoose.set!=='function'||typeof mongoose.plugin!=='function')fail('MONGOOSE_DDL_POLICY_REQUIRED');

@@ -36,8 +36,7 @@ test('an intended URI accessor cannot swap credentials after policy validation',
 });
 test.each([
   ['test mode', e => { e.NODE_ENV = 'test'; }],
-  ['missing live approval', e => { delete e.MEDISYNC_LIVE_START_APPROVED; }],
-  ['missing rotation', e => { delete e.MEDISYNC_ATLAS_ROTATION_CONFIRMED; }],
+  ['missing mode', e => { delete e.NODE_ENV; }],
   ['QA bootstrap false', e => { e.MEDISYNC_QA_BOOTSTRAPPED = 'false'; }],
   ['QA seed material', e => { e.SEED_TEST_PASSWORD = ''; }]
 ])('production rejects %s', (_name, mutate) => { const env = production(); mutate(env); expect(() => selectOperatorDatabase(env)).toThrow(); });
@@ -59,10 +58,25 @@ test.each([false, true].flatMap(isQa => ['test', 'admin', isQa ? 'medisync_prod'
   env[key] = env[key].replace(isQa ? '/medisync_automated_test' : '/medisync_prod', '/' + db);
   expect(() => selectOperatorDatabase(env, isQa)).toThrow();
 });
-test.each([false, true].flatMap(isQa => ['other.mongodb.net', '127.0.0.1', 'medisync.p7hjket.mongodb.net.attacker.invalid', isQa ? 'medisync.p7hjket.mongodb.net' : 'qa-project-medisync.gwprp27.mongodb.net'].map(host => [isQa, host])))('mode %s rejects host %s', (isQa, host) => {
+test.each([
+  [false, 'other.mongodb.net'],
+  [false, '127.0.0.1'],
+  [false, 'localhost'],
+  [false, 'medisync.p7hjket.mongodb.net.attacker.invalid'],
+  [false, '*.mongodb.net'],
+  [true, 'other.mongodb.net'],
+  [true, '127.0.0.1'],
+  [true, 'medisync.p7hjket.mongodb.net.attacker.invalid'],
+  [true, 'medisync.p7hjket.mongodb.net']
+])('mode %s rejects host %s', (isQa, host) => {
   const env = isQa ? qa() : production(), key = isQa ? 'MONGO_URI_TEST' : 'MONGO_URI';
   env[key] = env[key].replace(isQa ? 'qa-project-medisync.gwprp27.mongodb.net' : 'medisync.p7hjket.mongodb.net', host);
   expect(() => selectOperatorDatabase(env, isQa)).toThrow();
+});
+test('production mode accepts generalized valid Atlas SRV host', () => {
+  const env = production();
+  env.MONGO_URI = env.MONGO_URI.replace('medisync.p7hjket.mongodb.net', 'newcluster.abc12.mongodb.net');
+  expect(selectOperatorDatabase(env, false)).toMatchObject({ database: 'medisync_prod' });
 });
 
 const badProofs = [

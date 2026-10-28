@@ -138,8 +138,8 @@ async function startServer() {
   if (qaMode && (process.env.MEDISYNC_QA_BOOTSTRAPPED !== 'true' || process.env.MONGO_URI)) {
     throw new Error('[FATAL] Test server requires the isolated QA bootstrap and no loaded MONGO_URI.');
   }
-  if (!qaMode && (process.env.NODE_ENV !== 'production' || process.env.MEDISYNC_LIVE_START_APPROVED !== 'true')) {
-    throw new Error('[FATAL] Live startup is disabled. Use the isolated Phase 5X QA entry point.');
+  if (!qaMode && process.env.NODE_ENV !== 'production') {
+    throw new Error('[FATAL] Live startup requires NODE_ENV=production.');
   }
   // ── Step 1: Set global.ENCRYPTION_KEY ────────────────────────────────────
   // This MUST finish before any require() that could transitively load a

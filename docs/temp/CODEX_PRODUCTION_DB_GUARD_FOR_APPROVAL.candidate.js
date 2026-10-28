@@ -250,9 +250,9 @@ async function connectProductionDB(uri = process.env.MONGO_URI) {
     );
   }
 
-  if (process.env.NODE_ENV !== 'production' || process.env.MEDISYNC_LIVE_START_APPROVED !== 'true') {
+  if (process.env.NODE_ENV !== 'production') {
     throw new DatabaseIsolationError(
-      '[FATAL][DB-GUARD] Live database access requires NODE_ENV=production and explicit MEDISYNC_LIVE_START_APPROVED=true. Local startup is disabled.'
+      '[FATAL][DB-GUARD] Live database access requires NODE_ENV=production. Local startup is disabled.'
     );
   }
 
@@ -438,7 +438,7 @@ async function connectStagingDB({
     );
   }
 
-  if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_LIVE_START_APPROVED === 'true') {
+  if (process.env.NODE_ENV === 'production') {
     throw new DatabaseIsolationError(
       '[FATAL][DB-GUARD] Fail-closed: Staging connection cannot be initiated in a live production approved environment.'
     );

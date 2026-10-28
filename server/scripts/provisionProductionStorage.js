@@ -20,16 +20,27 @@ const manifest = require('../src/security/productionStorageManifest.json');
 const { collectionCompatible, indexesCompatible, verifyProductionStorage } = require('../src/security/productionStorageAdmission');
 const { selectOperatorDatabase, verifyOperatorIdentity } = require('./operatorDatabaseMode');
 
-const ALLOWED_TARGETS = [
-  { hostSubstr: 'medisync.p7hjket.mongodb.net', database: 'medisync_prod' },
-  { hostSubstr: 'qa-project-medisync.gwprp27.mongodb.net', database: 'medisync_automated_test' }
-];
+function isValidAtlasHost(host) {
+  if (typeof host !== 'string' || !host.trim()) return false;
+  const h = host.trim().toLowerCase();
+  if (h.includes('*') || h.includes('?') || h.includes(' ') || h.includes(':') || h.includes('/')) return false;
+  if (h.includes('localhost') || h.includes('127.0.0.1') || h.includes('0.0.0.0')) return false;
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+\.mongodb\.net$/.test(h);
+}
+
+const ALLOWED_TARGETS = Object.freeze([
+  { database: 'medisync_prod' },
+  { database: 'medisync_automated_test' }
+]);
 
 function isTargetAllowed(host, database) {
   if (database === 'test') {
     return false; // Strictly refuse old "test" database
   }
-  return ALLOWED_TARGETS.some(t => host === t.hostSubstr && database === t.database);
+  if (!ALLOWED_TARGETS.some(t => database === t.database)) {
+    return false;
+  }
+  return isValidAtlasHost(host);
 }
 
 function redactUri(uriString) {
@@ -250,6 +261,44 @@ async function runProvisioning(options = {}) {
   }
 }
 
+async function provisionMissingStorage(db, environment = process.env) {
+  const plan = await inspectStorage(db);
+  if (plan.incompatibilities.length) {
+    const details = plan.incompatibilities.map(row => `${row.collection}:${row.reason}`).join(', ');
+    console.error(`[FATAL][STORAGE-ADMISSION] Existing storage incompatible: ${details}`);
+    throw new Error('PROVISIONING_EXISTING_STORAGE_INCOMPATIBLE: ' + details);
+  }
+
+  if (plan.collectionsToCreate.length > 0 || plan.indexesToCreate.length > 0) {
+    console.log(`[STORAGE-ADMISSION] Missing storage detected: ${plan.collectionsToCreate.length} collections, ${plan.indexesToCreate.length} indexes missing.`);
+    if (plan.collectionsToCreate.length > 0) {
+      console.log(`[STORAGE-ADMISSION] Missing collections: ${plan.collectionsToCreate.join(', ')}`);
+    }
+    if (plan.indexesToCreate.length > 0) {
+      console.log(`[STORAGE-ADMISSION] Missing indexes: ${plan.indexesToCreate.map(i => `${i.collection}.${i.name || JSON.stringify(i.key)}`).join(', ')}`);
+    }
+
+    // Additive collection creation
+    for (const collName of plan.collectionsToCreate) {
+      console.log(`[STORAGE-ADMISSION] Creating missing collection '${collName}'...`);
+      const spec = manifest.collections.find(row => row.name === collName);
+      await db.createCollection(collName, collectionCreationOptions(spec));
+    }
+
+    // Additive index creation
+    for (const item of plan.indexesToCreate) {
+      if (item.key && Object.keys(item.key).length === 1 && item.key._id) {
+        continue;
+      }
+      console.log(`[STORAGE-ADMISSION] Creating missing index on '${item.collection}': ${JSON.stringify(item.key)}...`);
+      const coll = db.collection(item.collection);
+      await coll.createIndex(item.key, indexCreationOptions(item));
+    }
+  }
+
+  return plan;
+}
+
 if (require.main === module) {
   const { isApply, isVerify, isQa } = parseArgs();
   runProvisioning({ isApply, isVerify, isQa }).catch(err => {
@@ -264,5 +313,10 @@ module.exports = {
   compareStorageWithManifest,
   redactUri,
   ALLOWED_TARGETS,
-  isTargetAllowed
+  isTargetAllowed,
+  isValidAtlasHost,
+  inspectStorage,
+  provisionMissingStorage,
+  collectionCreationOptions,
+  indexCreationOptions
 };

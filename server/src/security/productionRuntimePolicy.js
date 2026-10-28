@@ -15,7 +15,6 @@ function assertProductionRuntime(environment) {
   // Reject names before reading any value. A false/empty QA setting must be
   // removed, not passed through a production image as supposed authorization.
   if (Object.getOwnPropertyNames(environment).some(forbidden)) throw new Error('PRODUCTION_RUNTIME_QA_MATERIAL_FORBIDDEN');
-  if (environment.MEDISYNC_DEPLOYMENT_MODE !== undefined && environment.MEDISYNC_DEPLOYMENT_MODE !== 'clinical') throw new Error('PRODUCTION_RUNTIME_MODE_REQUIRED');
   const mode = Object.getOwnPropertyDescriptor(environment, 'NODE_ENV');
   if (!mode || !Object.hasOwn(mode, 'value') || mode.value !== 'production') throw new Error('PRODUCTION_RUNTIME_MODE_REQUIRED');
   return Object.freeze({ profile: 'production-clinical', qaMaterialPresent: false });

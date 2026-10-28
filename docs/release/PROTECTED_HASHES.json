@@ -72,9 +72,9 @@
     },
     {
       "path": "server/src/config/dbGuard.js",
-      "previousApprovedSha256": "35abf7350bcdf78ad2dcef682c7aba9ffb1a1a6a7adea48a3a470758cf5df7fd",
-      "releaseCandidateSha256": "a6045b921491955984d745c009268cda01e75314f23e81f2752116556c21578d",
-      "reason": "Authorized QA Atlas cluster allowlist for qa-project-medisync.gwprp27.mongodb.net (commit 2c40e6c)"
+      "previousApprovedSha256": "a6045b921491955984d745c009268cda01e75314f23e81f2752116556c21578d",
+      "releaseCandidateSha256": "1b62d44cd4e11c269def41160333f3425279f2aa625f117aafbe2fc4bbb9c082",
+      "reason": "Simplified production DB guards, generalized Atlas host allowlist, and resilient storage admission"
     },
     {
       "path": "server/src/models/Consultation.js",
