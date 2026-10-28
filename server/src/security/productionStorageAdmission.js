@@ -69,12 +69,15 @@ async function verifyProductionStorage(db,environment){
         continue;
       }
       const indexes=await metadata(db.collection(spec.name).listIndexes({maxTimeMS:5000,batchSize:100}));
-      if(!indexesCompatible(indexes,spec.indexes)){
-        for(const reqIdx of spec.indexes){
-          if(!indexes.some(idx=>keyOf(idx)===keyOf(reqIdx))){
-            missingIndexes.push({collection:spec.name,...reqIdx});
-          }
+      const presentRequired=[];
+      for(const reqIdx of spec.indexes){
+        if(indexes.some(idx=>keyOf(idx)===keyOf(reqIdx))){
+          presentRequired.push(reqIdx);
+        }else{
+          missingIndexes.push({collection:spec.name,...reqIdx});
         }
+      }
+      if(!indexesCompatible(indexes,presentRequired)){
         incompatibleIndexes.push({collection:spec.name,reason:'INDEX_INCOMPATIBLE'});
       }
     }
@@ -90,9 +93,10 @@ async function verifyProductionStorage(db,environment){
         if(missingIndexes.length>0)console.error(`[FATAL][STORAGE-ADMISSION] Missing indexes: ${missingIndexes.map(i=>`${i.collection}.${i.name||JSON.stringify(i.key)}`).join(', ')}`);
       }
 
-      if(environment?.MEDISYNC_AUTO_PROVISION_STORAGE==='true'&&incompatibleCollections.length===0&&typeof db.createCollection==='function'){
+      if(environment?.MEDISYNC_AUTO_PROVISION_STORAGE==='true'&&incompatibleCollections.length===0&&incompatibleIndexes.length===0){
         console.log('[STORAGE-ADMISSION] MEDISYNC_AUTO_PROVISION_STORAGE active: creating missing storage additively...');
         for(const collName of missingCollections){
+          if(typeof db.createCollection!=='function')fail();
           const spec=manifest.collections.find(row=>row.name===collName);
           const options={};
           if(spec.capped)Object.assign(options,{capped:true,size:spec.capped.size,max:spec.capped.max});
@@ -102,13 +106,12 @@ async function verifyProductionStorage(db,environment){
         for(const item of missingIndexes){
           if(item.name==='_id_'||(item.key&&Object.keys(item.key).length===1&&item.key._id))continue;
           const coll=db.collection(item.collection);
-          if(typeof coll?.createIndex==='function'){
-            const options={name:item.name};
-            if(item.unique)options.unique=true;
-            if(item.sparse)options.sparse=true;
-            if(Object.hasOwn(item,'expireAfterSeconds'))options.expireAfterSeconds=item.expireAfterSeconds;
-            await coll.createIndex(item.key,options);
-          }
+          if(typeof coll?.createIndex!=='function')fail();
+          const options={name:item.name};
+          if(item.unique)options.unique=true;
+          if(item.sparse)options.sparse=true;
+          if(Object.hasOwn(item,'expireAfterSeconds'))options.expireAfterSeconds=item.expireAfterSeconds;
+          await coll.createIndex(item.key,options);
         }
         let postCount=0;
         for(const spec of required){

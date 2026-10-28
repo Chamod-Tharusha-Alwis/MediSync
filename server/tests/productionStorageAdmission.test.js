@@ -234,3 +234,33 @@ test('auto-provision refuses to run when incompatible collection options exist',
  }finally{errSpy.mockRestore();}
 });
 
+test('storage admission does not log storage incompatible when only missing indexes exist',async()=>{
+ const f=fake();
+ f.collections.get('patients').indexes=f.collections.get('patients').indexes.filter(i=>i.name==='_id_');
+ const errSpy=jest.spyOn(console,'error').mockImplementation(()=>{});
+ try{
+  await expect(verifyProductionStorage(f.db,env())).rejects.toThrow('PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED');
+  const logged=errSpy.mock.calls.flat().join(' ');
+  expect(logged).toContain('[FATAL][STORAGE-ADMISSION] Missing storage detected');
+  expect(logged).not.toContain('Storage incompatible');
+ }finally{errSpy.mockRestore();}
+});
+
+test('auto-provision refuses to run when incompatible index definition exists',async()=>{
+ const f=fake();
+ f.collections.delete('clinicalcommands');
+ const patientIndexes=f.collections.get('patients').indexes;
+ const emailIdx=patientIndexes.find(i=>i.name==='email_1');
+ if(emailIdx)emailIdx.unique=false; // Corrupted index uniqueness
+ f.db.createCollection=jest.fn();
+ const environment={...env(),MEDISYNC_AUTO_PROVISION_STORAGE:'true'};
+ const errSpy=jest.spyOn(console,'error').mockImplementation(()=>{});
+ try{
+  await expect(verifyProductionStorage(f.db,environment)).rejects.toThrow('PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED');
+  expect(f.db.createCollection).not.toHaveBeenCalled();
+  const logged=errSpy.mock.calls.flat().join(' ');
+  expect(logged).toContain('[FATAL][STORAGE-ADMISSION] Storage incompatible: patients:INDEX_INCOMPATIBLE');
+ }finally{errSpy.mockRestore();}
+});
+
+
