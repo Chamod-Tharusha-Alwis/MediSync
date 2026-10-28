@@ -49,15 +49,92 @@ async function verifyProductionStorage(db,environment){
     const hello=await db.command({hello:1},{maxTimeMS:5000});
     if(hello?.isWritablePrimary!==true||!Number.isFinite(hello.logicalSessionTimeoutMinutes)||hello.logicalSessionTimeoutMinutes<=0||!Number.isInteger(hello.maxWireVersion)||hello.maxWireVersion<7||(!hello.setName&&hello.msg!=='isdbgrid'))fail();
     const required=manifest.collections.filter(row=>!row.whenAll||row.whenAll.every(flag=>environment[flag]==='true'));
-    let indexCount=0;
+
+    const missingCollections=[];
+    const incompatibleCollections=[];
+    const missingIndexes=[];
+    const incompatibleIndexes=[];
+
     for(const spec of required){
       const rows=await metadata(db.listCollections({name:spec.name},{nameOnly:false,authorizedCollections:false,maxTimeMS:5000,batchSize:100}));
-      if(!Array.isArray(rows)||rows.length!==1||!collectionCompatible(rows[0],spec))fail();
+      if(!Array.isArray(rows)||rows.length===0){
+        missingCollections.push(spec.name);
+        for(const idx of spec.indexes){
+          missingIndexes.push({collection:spec.name,...idx});
+        }
+        continue;
+      }
+      if(rows.length!==1||!collectionCompatible(rows[0],spec)){
+        incompatibleCollections.push({collection:spec.name,reason:'COLLECTION_INCOMPATIBLE'});
+        continue;
+      }
       const indexes=await metadata(db.collection(spec.name).listIndexes({maxTimeMS:5000,batchSize:100}));
-      if(!indexesCompatible(indexes,spec.indexes))fail();
+      if(!indexesCompatible(indexes,spec.indexes)){
+        for(const reqIdx of spec.indexes){
+          if(!indexes.some(idx=>keyOf(idx)===keyOf(reqIdx))){
+            missingIndexes.push({collection:spec.name,...reqIdx});
+          }
+        }
+        incompatibleIndexes.push({collection:spec.name,reason:'INDEX_INCOMPATIBLE'});
+      }
+    }
+
+    if(missingCollections.length>0||missingIndexes.length>0||incompatibleCollections.length>0||incompatibleIndexes.length>0){
+      if(incompatibleCollections.length>0||incompatibleIndexes.length>0){
+        const details=[...incompatibleCollections.map(c=>`${c.collection}:${c.reason}`),...incompatibleIndexes.map(i=>`${i.collection}:${i.reason}`)].join(', ');
+        console.error(`[FATAL][STORAGE-ADMISSION] Storage incompatible: ${details}`);
+      }
+      if(missingCollections.length>0||missingIndexes.length>0){
+        console.error(`[FATAL][STORAGE-ADMISSION] Missing storage detected: ${missingCollections.length} collections, ${missingIndexes.length} indexes missing.`);
+        if(missingCollections.length>0)console.error(`[FATAL][STORAGE-ADMISSION] Missing collections: ${missingCollections.join(', ')}`);
+        if(missingIndexes.length>0)console.error(`[FATAL][STORAGE-ADMISSION] Missing indexes: ${missingIndexes.map(i=>`${i.collection}.${i.name||JSON.stringify(i.key)}`).join(', ')}`);
+      }
+
+      if(environment?.MEDISYNC_AUTO_PROVISION_STORAGE==='true'&&incompatibleCollections.length===0&&typeof db.createCollection==='function'){
+        console.log('[STORAGE-ADMISSION] MEDISYNC_AUTO_PROVISION_STORAGE active: creating missing storage additively...');
+        for(const collName of missingCollections){
+          const spec=manifest.collections.find(row=>row.name===collName);
+          const options={};
+          if(spec.capped)Object.assign(options,{capped:true,size:spec.capped.size,max:spec.capped.max});
+          if(spec.validator)Object.assign(options,{validator:structuredClone(spec.validator),validationLevel:'strict',validationAction:'error'});
+          await db.createCollection(collName,options);
+        }
+        for(const item of missingIndexes){
+          if(item.name==='_id_'||(item.key&&Object.keys(item.key).length===1&&item.key._id))continue;
+          const coll=db.collection(item.collection);
+          if(typeof coll?.createIndex==='function'){
+            const options={name:item.name};
+            if(item.unique)options.unique=true;
+            if(item.sparse)options.sparse=true;
+            if(Object.hasOwn(item,'expireAfterSeconds'))options.expireAfterSeconds=item.expireAfterSeconds;
+            await coll.createIndex(item.key,options);
+          }
+        }
+        let postCount=0;
+        for(const spec of required){
+          const rows=await metadata(db.listCollections({name:spec.name},{nameOnly:false,authorizedCollections:false,maxTimeMS:5000,batchSize:100}));
+          if(!Array.isArray(rows)||rows.length!==1||!collectionCompatible(rows[0],spec))fail();
+          const indexes=await metadata(db.collection(spec.name).listIndexes({maxTimeMS:5000,batchSize:100}));
+          if(!indexesCompatible(indexes,spec.indexes))fail();
+          postCount+=spec.indexes.length;
+        }
+        return Object.freeze({storageProfile:manifest.profile,verifiedCollections:required.length,verifiedRequiredIndexes:postCount,transactionTopologyVerified:true});
+      }
+
+      fail();
+    }
+
+    let indexCount=0;
+    for(const spec of required){
       indexCount+=spec.indexes.length;
     }
     return Object.freeze({storageProfile:manifest.profile,verifiedCollections:required.length,verifiedRequiredIndexes:indexCount,transactionTopologyVerified:true});
   }catch(_){fail();}
 }
-module.exports={verifyProductionStorage,manifest,indexesCompatible,collectionCompatible};
+
+async function provisionMissingStorage(db,environment=process.env){
+  return verifyProductionStorage(db,{...environment,MEDISYNC_AUTO_PROVISION_STORAGE:'true'});
+}
+
+module.exports={verifyProductionStorage,manifest,indexesCompatible,collectionCompatible,provisionMissingStorage};
+

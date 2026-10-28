@@ -186,3 +186,51 @@ test('exact patch reconstructs only the candidate and binds every dependency whi
   expect([fs.readFileSync(path.join(root,proposal.candidate),'utf8').replace(/\r\n/g,'\n').trim(),fs.readFileSync(path.join(root,'server/src/config/dbGuard.js'),'utf8').replace(/\r\n/g,'\n').trim()]).toContain(fs.readFileSync(path.join(root,proposal.target),'utf8').replace(/\r\n/g,'\n').trim());
  }
 });
+
+test('storage admission logs explicit missing collections and indexes without crashing silently',async()=>{
+ const f=fake();f.collections.delete('clinicalcommands');f.collections.get('patients').indexes=f.collections.get('patients').indexes.filter(i=>i.name==='_id_');
+ const errSpy=jest.spyOn(console,'error').mockImplementation(()=>{});
+ try{
+  await expect(verifyProductionStorage(f.db,env())).rejects.toThrow('PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED');
+  const logged=errSpy.mock.calls.flat().join(' ');
+  expect(logged).toContain('[FATAL][STORAGE-ADMISSION] Missing storage detected');
+  expect(logged).toContain('clinicalcommands');
+  expect(logged).toContain('patients.nic_1');
+ }finally{errSpy.mockRestore();}
+});
+
+test('storage admission creates missing collections and indexes additively when auto-provision is enabled',async()=>{
+ const f=fake();
+ // Delete a collection and an index
+ f.collections.delete('clinicalcommands');
+ const patientIndexes=f.collections.get('patients').indexes;
+ f.collections.get('patients').indexes=patientIndexes.filter(i=>i.name!=='email_1');
+ const createdColls=[];const createdIndexes=[];
+ f.db.createCollection=jest.fn(async(name,opts)=>{createdColls.push({name,opts});f.collections.set(name,{rows:[{name,type:'collection',options:{}}],indexes:[{name:'_id_',key:{_id:1}}]});});
+ const origColl=f.db.collection;
+ f.db.collection=jest.fn(name=>({
+  ...origColl(name),
+  createIndex:jest.fn(async(key,opts)=>{
+   createdIndexes.push({collection:name,key,opts});
+   f.collections.get(name)?.indexes.push({name:opts.name,key,unique:opts.unique===true,sparse:opts.sparse===true});
+  })
+ }));
+ const environment={...env(),MEDISYNC_AUTO_PROVISION_STORAGE:'true'};
+ const result=await verifyProductionStorage(f.db,environment);
+ expect(result).toMatchObject({verifiedCollections:28,verifiedRequiredIndexes:65});
+ expect(createdColls.map(c=>c.name)).toContain('clinicalcommands');
+ expect(createdIndexes.map(i=>`${i.collection}.${i.opts.name}`)).toContain('patients.email_1');
+});
+
+test('auto-provision refuses to run when incompatible collection options exist',async()=>{
+ const f=fake();f.collections.delete('clinicalcommands');
+ f.collections.get('auditlogs').rows[0].options.capped=false; // Incompatible capped schema
+ f.db.createCollection=jest.fn();
+ const environment={...env(),MEDISYNC_AUTO_PROVISION_STORAGE:'true'};
+ const errSpy=jest.spyOn(console,'error').mockImplementation(()=>{});
+ try{
+  await expect(verifyProductionStorage(f.db,environment)).rejects.toThrow('PRODUCTION_STORAGE_PREREQUISITES_NOT_VERIFIED');
+  expect(f.db.createCollection).not.toHaveBeenCalled();
+ }finally{errSpy.mockRestore();}
+});
+
