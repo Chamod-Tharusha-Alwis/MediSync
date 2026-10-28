@@ -138,7 +138,7 @@ describe('Read-only preflight uses real runtime policies with inert transports',
 
 describe('Bootstrap/operator encryption contract — real model hooks, inert repositories', () => {
   let priorEnv, priorGlobals, mongoose, bootstrap, models, rows, environment, policy, runtime, nicFilter;
-  const passwords = Object.fromEntries(['admin','doctor','hospital','pharmacy','patient'].map(role => [role, 'Synthetic-Only-Password-For-Key-Contract!']));
+  const passwords = Object.fromEntries(['admin','doctor','hospital','pharmacy','patient'].map(role => [role, `Synthetic-Only-${role}-Password-For-Key-Contract!`]));
   beforeEach(() => {
     priorEnv = process.env;
     priorGlobals = { keys: global.ENCRYPTION_KEYS, version: global.ACTIVE_KEY_VERSION, key: global.ENCRYPTION_KEY };
@@ -227,7 +227,7 @@ describe('Bootstrap/operator encryption contract — real model hooks, inert rep
     expect(mongoose.connect).not.toHaveBeenCalled(); expect(rows.size).toBe(0);
   });
   test('production apply accepts all five passwords at the 12-character boundary', async () => {
-    await expect(bootstrap.bootstrapSyntheticData({ isApply: true, passwords: Object.fromEntries(Object.keys(passwords).map(role => [role, 'Aa1!Bb2@Cc3#'])) })).resolves.toMatchObject({ updated: [] });
+    await expect(bootstrap.bootstrapSyntheticData({ isApply: true, passwords: Object.fromEntries(Object.keys(passwords).map((role,index) => [role, `Aa1!Bb2@Cc${index}#`])) })).resolves.toMatchObject({ updated: [] });
     expect(rows.size).toBe(10); expect(mongoose.connect).toHaveBeenCalledTimes(1);
   });
   test('production dry-run still permits absent passwords and creates no records', async () => {
@@ -243,7 +243,7 @@ describe('COLD START — production bootstrap with no pre-set key globals', () =
     const keys = { '1': require('crypto').randomBytes(32).toString('hex'), '2': require('crypto').randomBytes(32).toString('hex') };
     const records = new Map(); let coldMongoose, coldBootstrap, coldModels, policy;
     const passwordNames = ['ADMIN','DOCTOR','HOSPITAL','PHARMACY','PATIENT'].map(role => 'BOOTSTRAP_'+role+'_PASSWORD');
-    process.env = { ...require('./helpers/gate3OperatorEnvironment').production(), ENCRYPTION_KEYS: JSON.stringify(keys), ACTIVE_KEY_VERSION: activeVersion, ...Object.fromEntries(passwordNames.map(name => [name, 'Synthetic-Cold-Start-Only-Password!'])) };
+    process.env = { ...require('./helpers/gate3OperatorEnvironment').production(), ENCRYPTION_KEYS: JSON.stringify(keys), ACTIVE_KEY_VERSION: activeVersion, ...Object.fromEntries(passwordNames.map(name => [name, `Synthetic-Cold-Start-${name}-Only-Password!`])) };
     process.argv = [priorArgv[0], require('path').resolve(__dirname, '../scripts/bootstrapSyntheticAccounts.js'), '--apply'];
     delete global.ENCRYPTION_KEYS; delete global.ACTIVE_KEY_VERSION; delete global.ENCRYPTION_KEY;
     try {
@@ -287,7 +287,7 @@ describe('COLD START — production bootstrap with no pre-set key globals', () =
         // of the encryption save hook assigning a version later.
         expect(new Model({}).keyVersion).toBe(Number(activeVersion));
       }
-      const checks = [['Patient','fullName','Kamal Gunaratne'],['Consultation','diagnosis','Seasonal Viral Pyrexia'],['Doctor','licenseNo','SLMC-SYNTH-001'],['Prescription','drugName','Amoxicillin 500mg'],['LabTest','patientName','Kamal Gunaratne']];
+      const checks = [['Patient','fullName','Synthetic Demo Patient'],['Consultation','diagnosis','Seasonal Viral Pyrexia'],['Doctor','licenseNo','SLMC-SYNTH-001'],['Prescription','drugName','Amoxicillin 500mg'],['LabTest','patientName','Synthetic Demo Patient']];
       const config = policy.validateAndLoadOperatorKeys(process.env);
       // Retain ONLY the selected version to prove the other key is not needed.
       global.ENCRYPTION_KEYS = { [activeVersion]: config.keys[activeVersion] };

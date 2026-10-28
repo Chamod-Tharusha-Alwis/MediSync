@@ -45,7 +45,7 @@ function loadBootstrapEncryption(isQa) {
   if (!global.ACTIVE_KEY_VERSION) global.ACTIVE_KEY_VERSION = process.env.ACTIVE_KEY_VERSION || 1;
 }
 
-const { hashPassword } = require('../src/utils/passwordUtils');
+const { hashPassword, validatePasswordStrength } = require('../src/utils/passwordUtils');
 const { writeNicFields } = require('../src/security/nicPersistence');
 
 // Models
@@ -89,8 +89,9 @@ function validateSyntheticEmail(email, role) {
   }
   const trimmed = email.trim().toLowerCase();
   if (trimmed.endsWith('.local') || trimmed.includes('@medisync.local') || trimmed.endsWith('.internal')) {
-    throw new Error(`BOOTSTRAP_ERROR: Email "${email}" uses forbidden ".local" or ".internal" domain. Use a valid synthetic email domain (e.g., @medisync.synthetic or configure via BOOTSTRAP_${role.toUpperCase()}_EMAIL).`);
+    throw new Error(`BOOTSTRAP_ERROR: Email for ${role} uses forbidden ".local" or ".internal" domain.`);
   }
+  if (trimmed.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) throw new Error(`BOOTSTRAP_ERROR: Invalid email address provided for ${role}.`);
   return trimmed;
 }
 
@@ -118,6 +119,7 @@ async function bootstrapSyntheticData(options = {}) {
     pharmacy: validateSyntheticEmail(options.emails?.pharmacy || process.env.BOOTSTRAP_PHARMACY_EMAIL || 'pharmacist.synth@medisync.synthetic', 'pharmacy'),
     patient: validateSyntheticEmail(options.emails?.patient || process.env.BOOTSTRAP_PATIENT_EMAIL || 'patient.synth@medisync.synthetic', 'patient')
   };
+  if (new Set(Object.values(emails)).size !== 5) throw new Error('BOOTSTRAP_EMAIL_COLLISION: five distinct role email addresses are required.');
 
   const { host, database } = redactUri(uri);
 
@@ -140,6 +142,10 @@ async function bootstrapSyntheticData(options = {}) {
 
   if (isApply && missingPasswords.length > 0) {
     throw new Error(`BOOTSTRAP_ERROR: Missing required password environment variables in apply mode (minimum ${minimumPasswordLength} characters each): ${missingPasswords.join(', ')}`);
+  }
+  if (isApply && !isQa) {
+    if (new Set(requiredRoles.map(role => passwords[role])).size !== requiredRoles.length) throw new Error('BOOTSTRAP_PASSWORD_COLLISION: five distinct role passwords are required.');
+    if (requiredRoles.some(role => !validatePasswordStrength(passwords[role]).valid)) throw new Error('BOOTSTRAP_PASSWORD_POLICY_REJECTED: all role passwords must satisfy the application password policy.');
   }
 
   loadBootstrapEncryption(isQa);
@@ -215,6 +221,14 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
   const rx = await find(Prescription, { prescriptionId });
   const lab = await find(LabTest, { labTestId });
   const existingAlert = await find(OutbreakAlert, { disease: 'Dengue', location: 'Colombo' });
+  // Read the other-role email candidates before the first write, in the same
+  // transaction as apply. Never repurpose an identity from another role.
+  // An exclusive operator write window is still required: per-collection
+  // indexes cannot provide a cross-collection uniqueness guarantee.
+  for (const [Model, ownEmail] of [[Admin, adminEmail], [Doctor, doctorEmail], [Hospital, hospitalEmail], [PharmacyStaff, pharmacyStaffEmail], [Patient, patientEmail]]) {
+    const otherEmails = Object.values(emails).filter(email => email !== ownEmail);
+    if (await find(Model, { email: { $in: otherEmails } })) throw new Error('BOOTSTRAP_EXISTING_CROSS_ROLE_EMAIL_COLLISION: existing identities remain unchanged; operator review required.');
+  }
   if (existingAdmin && (existingAdmin.isSuperAdmin !== true || existingAdmin.isActive !== true)) throw new Error('BOOTSTRAP_EXISTING_ADMIN_NOT_STARTUP_READY: existing accounts are never elevated or reactivated automatically.');
   const sameId = (a, b) => a != null && b != null && String(a) === String(b);
   if (rx) {
@@ -255,7 +269,7 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
     if (isApply) {
       const hash = await hashPassword(passwords.hospital);
       hospital = new Hospital({
-        name: 'National Hospital Colombo',
+        name: 'Synthetic Demo Hospital',
         regNo: hospitalRegNo,
         email: hospitalEmail,
         password: hash,
@@ -279,7 +293,7 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
     if (isApply) {
       const hash = await hashPassword(passwords.doctor);
       doctor = new Doctor({
-        fullName: 'Dr. Sandun Perera',
+        fullName: 'Synthetic Demo Doctor',
         doctorId: doctorId,
         email: doctorEmail,
         password: hash,
@@ -328,7 +342,7 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
     if (isApply) {
       const hash = await hashPassword(passwords.pharmacy);
       staff = new PharmacyStaff({
-        fullName: 'Kavinda Silva',
+        fullName: 'Synthetic Demo Pharmacist',
         email: pharmacyStaffEmail,
         password: hash,
         role: 'pharmacist',
@@ -350,7 +364,7 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
     if (isApply) {
       const hash = await hashPassword(passwords.patient);
       patient = new Patient({
-        fullName: 'Kamal Gunaratne',
+        fullName: 'Synthetic Demo Patient',
         email: patientEmail,
         password: hash,
         nic: patientNic,
@@ -418,7 +432,7 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
         testCategory: 'Haematology',
         patientId: patient._id,
         patientNic: patientNic,
-        patientName: 'Kamal Gunaratne',
+        patientName: 'Synthetic Demo Patient',
         patientEmail: patientEmail,
         ...writeNicFields(patientNic),
         hospitalId: hospital?._id || null,
@@ -443,13 +457,9 @@ async function bootstrapBaseline({ isApply, emails, passwords, session }) {
 
   console.log('--- BOOTSTRAP SUMMARY ---');
   console.log(`Skipped existing: ${report.skippedExisting.length}`);
-  if (report.skippedExisting.length > 0) console.log('  -> ' + report.skippedExisting.join(', '));
   console.log(`Planned items:    ${report.plan.length}`);
-  if (report.plan.length > 0) console.log('  -> ' + report.plan.join(', '));
   console.log(`Created items:    ${report.created.length}`);
-  if (report.created.length > 0) console.log('  -> ' + report.created.join(', '));
   console.log(`Updated items:    ${report.updated.length}`);
-  if (report.updated.length > 0) console.log('  -> ' + report.updated.join(', '));
   console.log('-------------------------');
 
   return report;
@@ -463,9 +473,22 @@ if (require.main === module) {
     console.log('[BOOTSTRAP PROCESS COMPLETED]');
     process.exit(0);
   }).catch(err => {
-    console.error('[FATAL] Bootstrap failed:', err.message);
+    // Library errors can contain URI credentials or document values. Never
+    // forward their text to the terminal. Preserve only known fixed categories.
+    const safeCode = safeBootstrapFailureCode(err);
+    console.error('[FATAL] Bootstrap failed:', safeCode, 'Stop and inspect privately; do not automatically retry.');
     process.exit(1);
   });
+}
+
+function safeBootstrapFailureCode(error) {
+  const known = ['BOOTSTRAP_COMMIT_UNCERTAIN', 'BOOTSTRAP_ABORT_UNVERIFIED', 'BOOTSTRAP_SHUTDOWN_UNVERIFIED',
+    'BOOTSTRAP_EMAIL_COLLISION', 'BOOTSTRAP_PASSWORD_COLLISION', 'BOOTSTRAP_PASSWORD_POLICY_REJECTED',
+    'BOOTSTRAP_EXISTING_CROSS_ROLE_EMAIL_COLLISION', 'BOOTSTRAP_EXISTING_ADMIN_NOT_STARTUP_READY',
+    'BOOTSTRAP_EXISTING_PRESCRIPTION_INCOMPATIBLE', 'BOOTSTRAP_EXISTING_CONNECTION_FORBIDDEN',
+    'BOOTSTRAP_CONNECTION_OVERRIDE_FORBIDDEN', 'BOOTSTRAP_SECURITY_PROFILE_UNSUPPORTED', 'BOOTSTRAP_ERROR', 'OPERATOR_KEY_ERROR'];
+  const message = error && typeof error.message === 'string' ? error.message : '';
+  return known.find(code => message === code || message.startsWith(code + ':')) || 'BOOTSTRAP_OPERATION_UNVERIFIED';
 }
 
 module.exports = {
@@ -473,5 +496,6 @@ module.exports = {
   isTargetAllowed,
   redactUri,
   validateSyntheticEmail,
+  safeBootstrapFailureCode,
   ALLOWED_TARGETS
 };
