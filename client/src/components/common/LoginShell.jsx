@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import ActiveOutbreakBanner from './ActiveOutbreakBanner';
 import GlassCard from './GlassCard';
 
 const LoginShell = ({
@@ -45,7 +44,6 @@ const LoginShell = ({
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col justify-between p-4 relative overflow-hidden">
-      <ActiveOutbreakBanner />
       
       <div className="flex-1 flex items-center justify-center relative">
         {/* Background glow matching theme */}

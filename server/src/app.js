@@ -396,8 +396,8 @@ async function startServer() {
 
 if (require.main === module) {
   startServer().catch((err) => {
-    console.error('[FATAL] Server failed to start:', err.stack);
-    process.exit(1);
+    try { require('./security/safeFailureDiagnostic').reportFailure(err, 'application_startup'); }
+    finally { process.exit(1); }
   });
 }
 

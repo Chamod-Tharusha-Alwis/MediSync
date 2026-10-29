@@ -197,6 +197,7 @@ exports.registerPharmacyStaff = async (_req, res) => {
 };
 
 exports.login = async (req, res) => {
+  let failureStep = 'login_lookup';
   try {
     const { email, identifier, nic, regNo, doctorId, password, role, loginType } = req.body;
     let cleanId, emailPattern;
@@ -301,6 +302,7 @@ exports.login = async (req, res) => {
     catch (_) { return res.status(403).json({ error: 'Account verification required' }); }
 
     // Password validation (support orgLogin tempPassword / hospital password)
+    failureStep = 'password_compare';
     let isMatch = false;
     if (matchingOrgLogin) {
       if (matchingOrgLogin.tempPassword) {
@@ -319,6 +321,7 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     // Check if the incoming device fingerprint belongs to a revoked device
+    failureStep = 'device_lookup';
     const loginFingerprint = req.headers['x-device-fingerprint'] || null;
     let existingDeviceRecord = null;
     if (loginFingerprint) {
@@ -335,6 +338,7 @@ exports.login = async (req, res) => {
     );
 
     if (hasTwoFactor || isRevokedDeviceLogin) {
+      failureStep = 'otp';
       const authOtpKey = 'auth:' + String(user._id);
       const verifyLockoutCount = await getAttempts(authOtpKey);
       if (verifyLockoutCount >= 5) {
@@ -451,9 +455,12 @@ exports.login = async (req, res) => {
     if (modelName === 'Patient' && user.nic) {
       tokenPayload.nic = user.nic;
     }
+    failureStep = 'token_access';
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    failureStep = 'token_refresh';
     const refreshToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
+    failureStep = 'session_persistence';
     const sessionResult = await createSession(user._id, modelName, accessToken, req, { refreshToken });
 
     // Record security audit event for untrusted or newly seen device logins (never log raw tokens/OTPs)
@@ -469,6 +476,7 @@ exports.login = async (req, res) => {
     }
 
     // Track last login
+    failureStep = 'account_last_login';
     user.lastLoginAt = new Date();
     await user.save();
 
@@ -499,6 +507,7 @@ exports.login = async (req, res) => {
     }
 
 
+    failureStep = 'response';
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
@@ -525,6 +534,10 @@ exports.login = async (req, res) => {
     });
 
   } catch (err) {
+    // Exceptions may contain credentials or patient fields. The diagnostic
+    // formatter emits only fixed categories/messages and the failing stage.
+    try { require('../security/safeFailureDiagnostic').reportFailure(err, failureStep); }
+    catch (_) { console.error('[Failure] Login diagnostic unavailable.'); }
     return res.status(500).json({ error: "Login failed" });
   }
 };

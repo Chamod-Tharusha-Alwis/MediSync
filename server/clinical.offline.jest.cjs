@@ -14,3 +14,4 @@ module.exports.testMatch.push(...['gate3StorageRepair', 'gate3BootstrapRepair', 
 module.exports.testMatch.push(...['productionAtlasDiagnostic', 'productionRecoveryStorage', 'renderRedisRecovery', 'bootstrapRecoverySafety', 'syntheticReviewRecovery'].map(name => `<rootDir>/tests/${name}.test.js`));
 module.exports.testMatch.push('<rootDir>/tests/hardeningHospitalErrors.test.js');
 module.exports.testMatch.push('<rootDir>/tests/auditAppendOnlyHardening.test.js');
+module.exports.testMatch.push('<rootDir>/tests/phase0SafeDiagnostics.test.js', '<rootDir>/tests/phase0LoginDiagnostics.test.js');
