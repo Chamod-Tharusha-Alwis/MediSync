@@ -30,7 +30,10 @@ async function executeClinicalWrite(req, { standalone = false, command = require
       if (!patient || normalizeNic(patient.nic) !== nic) throw new Error('CLINICAL_PATIENT_DENIED');
       patient.decryptFieldsSync?.();
       for (const name of names) if (allergyCheck(name, patient.allergies || []).hasConflict) throw new Error('ALLERGY_CONFLICT');
-      if (names.length) assertMedicationResult(await analyze([...(await existingMedicines(patient._id, { session, PrescriptionModel: models.Prescription })), ...names]));
+      if (names.length) {
+        const allMeds = [...(await existingMedicines(patient._id, { session, PrescriptionModel: models.Prescription })), ...names];
+        assertMedicationResult(await analyze(allMeds), allMeds.length);
+      }
       let consultation;
       const events = [], prescriptionIds = [], labTestIds = [];
       if (!standalone) {

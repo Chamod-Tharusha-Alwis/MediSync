@@ -25,8 +25,15 @@ function createClinicalWriteAuthorization({ verify = (req, nic, hash) => require
         const names = list.map(m => require('../utils/medicationName').canonicalMedicationName(m));
         const existing = await getExisting(decision.patientId);
         if (!Array.isArray(existing)) return res.status(409).json({ error: 'MEDICATION_RECONCILIATION_REQUIRED' });
-        const result = await medicationCheck([...existing, ...names]);
-        if (!result || result.verificationIncomplete !== false || result.hasInteraction !== false || result.duplicateIngredients?.length) return res.status(409).json({ error: 'MEDICATION_REVIEW_REQUIRED' });
+        const allMeds = [...existing, ...names];
+        const result = await medicationCheck(allMeds);
+        const isSingleResolvedSafe = (names.length === 1 && existing.length === 0) &&
+          result &&
+          result.hasInteraction === false &&
+          (!result.duplicateIngredients || result.duplicateIngredients.length === 0) &&
+          (result.statusMessage?.includes('at least two valid medications are required') ||
+           (Array.isArray(result.unresolvedIngredients) && result.unresolvedIngredients.length === 0 && Array.isArray(result.duplicateIngredients)));
+        if (!result || (result.verificationIncomplete !== false && !isSingleResolvedSafe) || result.hasInteraction !== false || (result.duplicateIngredients && result.duplicateIngredients.length > 0)) return res.status(409).json({ error: 'MEDICATION_REVIEW_REQUIRED' });
       }
       req.clinicalAuthorization = { patientId: String(decision.patientId), consentSessionId: decision.consentSessionId };
       return next();

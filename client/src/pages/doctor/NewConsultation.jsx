@@ -233,6 +233,29 @@ const NewConsultation = () => {
   const medicalHistory = consent.history, isHistoryLoading = consent.status === 'loading';
   const submissionBusy = useRef(false);
   const submissionUncertain = useRef(initialAttempt.current.blocked);
+  const submissionFailedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      submissionFailedRef.current &&
+      !pendingClinicalAttempt().blocked &&
+      !submissionBusy.current &&
+      !submissionUncertain.current
+    ) {
+      consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+      submissionFailedRef.current = false;
+    }
+  }, [
+    symptoms,
+    manualDiagnosis,
+    selectedDiagnosis,
+    selectedIcd,
+    selectedIcdVersion,
+    clinicalNotes,
+    prescriptions,
+    labTests,
+    followUpDate,
+  ]);
 
   // Re-evaluate medication interactions & ingredient resolution whenever prescriptions change
   useEffect(() => {
@@ -567,14 +590,47 @@ const NewConsultation = () => {
       toast.success('Consultation saved.');
       navigate('/doctor/dashboard');
     } catch (err) {
-      if ([401, 403].includes(err.response?.status)) consent.revoke('Authorization ended. Verify patient access again.');
+      const status = err.response?.status;
+      const errCode = err.response?.data?.error;
+      const errMsg = err.response?.data?.message;
+
+      if ([401, 403].includes(status)) {
+        consent.revoke('Authorization ended. Verify patient access again.');
+        return;
+      }
       if (requiresWriteReconciliation(err)) {
         submissionUncertain.current = true;
         setPendingWriteHold(true);
         return toast.error('Save status is uncertain. Check consultation history with an authorized operator before another submission.');
       }
       try { finishClinicalAttempt(consultationIdempotencyKey.current); }
-      catch (_) { submissionUncertain.current = true; setPendingWriteHold(true); }
+      catch (_) { submissionUncertain.current = true; setPendingWriteHold(true); return; }
+
+      // Mark failure so subsequent form edits regenerate the key
+      submissionFailedRef.current = true;
+
+      if (status === 409) {
+        if (errCode === 'CLINICAL_IDEMPOTENCY_CONFLICT') {
+          // Immediately regenerate key on collision
+          consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+          submissionFailedRef.current = false;
+          return toast.error('Submission conflict: This consultation key collided. Idempotency key refreshed — please review changes and submit again.', { duration: 6000 });
+        }
+        if (errCode === 'MEDICATION_REVIEW_REQUIRED') {
+          return toast.error('Medication Safety Conflict: Prescribed drugs conflict with patient active medications or safety rules. Review the Medication Safety panel.', { duration: 6000 });
+        }
+        if (errCode === 'MEDICATION_RECONCILIATION_REQUIRED') {
+          return toast.error('Medication Reconciliation Required: Active patient prescriptions must be reconciled before adding new medications.', { duration: 6000 });
+        }
+        consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+        submissionFailedRef.current = false;
+        return toast.error('Consultation conflict occurred. Idempotency key refreshed — please review and retry.', { duration: 5000 });
+      }
+
+      if (status === 400) {
+        return toast.error(errMsg || (errCode ? `Validation error: ${errCode}` : 'Please review prescription durations and entries and retry.'));
+      }
+
       toast.error('Unable to save consultation. Review access and retry.');
     } finally { submissionBusy.current = false; setLoading(false); }
   };
@@ -1560,20 +1616,23 @@ const NewConsultation = () => {
                     <div className="flex justify-between items-center pt-2">
                       <motion.button
                         whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => goTo(2)}
+                        onClick={() => goTo(4)}
                         className="glass-button-ghost px-6 py-3 flex items-center gap-2"
                       >
                         <FiChevronLeft /> Back
                       </motion.button>
                       <motion.button
-                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={handleSubmit} disabled={loading}
-                        className="glass-button px-8 py-3 flex items-center gap-2 disabled:opacity-60"
+                        whileHover={loading ? {} : { scale: 1.03 }}
+                        whileTap={loading ? {} : { scale: 0.97 }}
+                        onClick={handleSubmit}
+                        disabled={loading || pendingWriteHold}
+                        aria-busy={loading}
+                        className="glass-button px-8 py-3 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {loading
                           ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           : <FiSave className="w-4 h-4" />}
-                        Complete Consultation
+                        <span>{loading ? 'Saving Consultation…' : 'Complete Consultation'}</span>
                       </motion.button>
                     </div>
 

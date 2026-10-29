@@ -16,7 +16,12 @@ async function currentMedicationNames(patientId, { session = null, PrescriptionM
   }
   return names;
 }
-function assertMedicationResult(result) {
-  if (!result || result.verificationIncomplete !== false || result.hasInteraction !== false || result.duplicateIngredients?.length) throw new Error('MEDICATION_REVIEW_REQUIRED');
+function assertMedicationResult(result, totalCount = 2) {
+  const isSingleResolvedSafe = (totalCount === 1 || (totalCount === 2 && result?.statusMessage?.includes('at least two valid medications are required') && (!result.unresolvedDrugs || result.unresolvedDrugs.length === 0))) &&
+    result &&
+    result.hasInteraction === false &&
+    (!result.duplicateIngredients || result.duplicateIngredients.length === 0) &&
+    (!result.unresolvedIngredients || result.unresolvedIngredients.length === 0);
+  if (!result || (result.verificationIncomplete !== false && !isSingleResolvedSafe) || result.hasInteraction !== false || (result.duplicateIngredients && result.duplicateIngredients.length > 0)) throw new Error('MEDICATION_REVIEW_REQUIRED');
 }
 module.exports = { currentMedicationNames, assertMedicationResult };
