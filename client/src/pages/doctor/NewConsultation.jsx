@@ -194,12 +194,21 @@ const NewConsultation = () => {
   const [icdSearchQuery,     setIcdSearchQuery]    = useState('');
   const [icdSuggestions,     setIcdSuggestions]    = useState([]);
   const [isIcdLoading,       setIsIcdLoading]      = useState(false);
+  const [icdActiveIndex,     setIcdActiveIndex]    = useState(-1);
+  const [isIcdOpen,          setIsIcdOpen]         = useState(false);
+  const icdWrapperRef = useRef(null);
+  const icdListRef = useRef(null);
+
   const [prescriptions,      setPrescriptions]     = useState([]);
   const [interactionAnalysis, setInteractionAnalysis] = useState(null);
   const [labTests,           setLabTests]          = useState([]);
   const [labTestInput,       setLabTestInput]      = useState('');
 
   const [labSuggestions,     setLabSuggestions]    = useState([]);
+  const [labActiveIndex,     setLabActiveIndex]    = useState(-1);
+  const [isLabOpen,          setIsLabOpen]         = useState(false);
+  const labWrapperRef = useRef(null);
+  const labListRef = useRef(null);
   const [followUpDate,       setFollowUpDate]      = useState('');
 
   const draftEpoch = useRef(0);
@@ -215,8 +224,9 @@ const NewConsultation = () => {
     setShowOtpModal(false); setStep(1); setLoading(false);
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
     setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
+    setIsIcdOpen(false); setIcdActiveIndex(-1);
     setPrescriptions([]); setInteractionAnalysis(null); setLabTests([]); setLabTestInput('');
-    setLabSuggestions([]); setFollowUpDate('');
+    setLabSuggestions([]); setIsLabOpen(false); setLabActiveIndex(-1); setFollowUpDate('');
   };
   const consent = usePatientConsent(axios, patientNic, clearClinicalDraft);
   const patientAccessToken = consent.token, patientData = consent.patient;
@@ -255,21 +265,63 @@ const NewConsultation = () => {
     return () => { cancelled = true; };
   }, [prescriptions]);
 
+  // Click-outside listener for ICD Autocomplete
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (icdWrapperRef.current && !icdWrapperRef.current.contains(e.target)) {
+        setIsIcdOpen(false);
+        setIcdActiveIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  // Click-outside listener for Lab Test Autocomplete
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (labWrapperRef.current && !labWrapperRef.current.contains(e.target)) {
+        setIsLabOpen(false);
+        setLabActiveIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
   // Fetch ICD-10 & WHO ICD-11 suggestions debounced
   useEffect(() => {
     const controller = new AbortController();
     let current = true;
     if (icdSearchQuery.trim().length < 2) {
       setIcdSuggestions([]);
+      setIsIcdOpen(false);
+      setIcdActiveIndex(-1);
       return;
     }
     const delayDebounce = setTimeout(async () => {
       setIsIcdLoading(true);
       try {
         const res = await axios.get(`/drugs/icd/search?q=${encodeURIComponent(icdSearchQuery)}&version=${icdVersionFilter}`, { signal: controller.signal });
-        if (current) setIcdSuggestions(res.data.data || []);
+        if (current) {
+          setIcdSuggestions(res.data.data || []);
+          setIsIcdOpen(true);
+          setIcdActiveIndex(-1);
+        }
       } catch (error) {
-        if (current) setIcdSuggestions([]);
+        if (current) {
+          setIcdSuggestions([]);
+          setIsIcdOpen(true);
+          setIcdActiveIndex(-1);
+        }
       } finally {
         if (current) setIsIcdLoading(false);
       }
@@ -361,12 +413,82 @@ const NewConsultation = () => {
   const removePrescription = (i)         => setPrescriptions(p => p.filter((_, idx) => idx !== i));
   const updatePrescription = (i, f, val) => setPrescriptions(p => p.map((rx, idx) => idx === i ? { ...rx, [f]: val } : rx));
 
+  /* ── ICD selection & keydown helpers ── */
+  const selectIcdItem = (item) => {
+    setSelectedDiagnosis(item.description);
+    setSelectedIcd(item.code);
+    setSelectedIcdVersion(item.version || 'ICD-10');
+    setIcdSuggestions([]);
+    setIsIcdOpen(false);
+    setIcdSearchQuery('');
+    setManualDiagnosis('');
+    setIcdActiveIndex(-1);
+  };
+
+  const handleIcdKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isIcdOpen && icdSuggestions.length > 0) {
+        setIsIcdOpen(true);
+        setIcdActiveIndex(0);
+      } else if (icdSuggestions.length > 0) {
+        setIcdActiveIndex(prev => (prev < icdSuggestions.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (isIcdOpen && icdSuggestions.length > 0) {
+        setIcdActiveIndex(prev => (prev > 0 ? prev - 1 : icdSuggestions.length - 1));
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsIcdOpen(false);
+      setIcdActiveIndex(-1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = (icdSearchQuery || '').trim();
+      if (!trimmed) return;
+
+      if (isIcdOpen && icdActiveIndex >= 0 && icdActiveIndex < icdSuggestions.length) {
+        selectIcdItem(icdSuggestions[icdActiveIndex]);
+        return;
+      }
+
+      const exactMatch = icdSuggestions.find(
+        s => s.code.toLowerCase() === trimmed.toLowerCase() || s.description.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exactMatch) {
+        selectIcdItem(exactMatch);
+        return;
+      }
+
+      // Set as clinician manual diagnosis if unlisted
+      setManualDiagnosis(trimmed);
+      setSelectedDiagnosis('');
+      setSelectedIcd('');
+      setSelectedIcdVersion('Custom');
+      setIcdSuggestions([]);
+      setIsIcdOpen(false);
+      setIcdSearchQuery('');
+      setIcdActiveIndex(-1);
+    }
+  };
+
   /* ── Lab test helpers ── */
   const handleLabInput = (val) => {
     setLabTestInput(val);
-    if (val.trim().length < 2) { setLabSuggestions([]); return; }
-    const q = val.toLowerCase();
-    setLabSuggestions(LAB_TEST_SUGGESTIONS.filter(t => t.toLowerCase().includes(q) && !labTests.includes(t)).slice(0, 8));
+    setLabActiveIndex(-1);
+    const trimmed = (val || '').trim();
+    if (trimmed.length < 2) {
+      setLabSuggestions([]);
+      setIsLabOpen(false);
+      return;
+    }
+    const q = trimmed.toLowerCase();
+    const filtered = LAB_TEST_SUGGESTIONS
+      .filter(t => t.toLowerCase().includes(q) && !labTests.includes(t))
+      .slice(0, 8);
+    setLabSuggestions(filtered);
+    setIsLabOpen(true);
   };
   const addLabTest = (name) => {
     const trimmed = (typeof name === 'string' ? name : labTestInput).trim();
@@ -374,8 +496,36 @@ const NewConsultation = () => {
     if (labTests.includes(trimmed)) { toast.error('Already added'); return; }
     setLabTests(prev => [...prev, trimmed]);
     setLabTestInput('');
-
     setLabSuggestions([]);
+    setIsLabOpen(false);
+    setLabActiveIndex(-1);
+  };
+  const handleLabKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isLabOpen && labSuggestions.length > 0) {
+        setIsLabOpen(true);
+        setLabActiveIndex(0);
+      } else if (labSuggestions.length > 0) {
+        setLabActiveIndex(prev => (prev < labSuggestions.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (isLabOpen && labSuggestions.length > 0) {
+        setLabActiveIndex(prev => (prev > 0 ? prev - 1 : labSuggestions.length - 1));
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsLabOpen(false);
+      setLabActiveIndex(-1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isLabOpen && labActiveIndex >= 0 && labActiveIndex < labSuggestions.length) {
+        addLabTest(labSuggestions[labActiveIndex]);
+        return;
+      }
+      addLabTest();
+    }
   };
   const removeLabTest = (i) => setLabTests(t => t.filter((_, idx) => idx !== i));
 
@@ -885,7 +1035,7 @@ const NewConsultation = () => {
                         <label className="block text-sm font-semibold text-slate-300 mb-3">{t("doctor.finalDiagnosisConfirmation", "Final Diagnosis Confirmation")}</label>
 
                         {/* ICD Search Bar with Version Filters */}
-                        <div className="mb-4 relative">
+                        <div className="mb-4 relative" ref={icdWrapperRef}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs text-slate-400 font-semibold">{t("doctor.standardReference", "Standard Reference:")}</span>
                             <div className="flex gap-1.5">
@@ -913,50 +1063,94 @@ const NewConsultation = () => {
                           <div className="relative">
                             <input
                               type="text"
+                              role="combobox"
+                              aria-autocomplete="list"
+                              aria-expanded={isIcdOpen}
+                              aria-controls="icd-suggestions-list"
+                              aria-activedescendant={icdActiveIndex >= 0 ? `icd-opt-${icdActiveIndex}` : undefined}
                               value={icdSearchQuery || ""}
                               onChange={e => setIcdSearchQuery(e.target.value)}
+                              onKeyDown={handleIcdKeyDown}
+                              onFocus={() => { if ((icdSearchQuery || '').trim().length >= 2) setIsIcdOpen(true); }}
                               placeholder="Search disease, rare condition, or code (e.g. Dengue, 1D20, A90, Down Syndrome)..."
-                              className={`${inp} pl-10`}
+                              className={`${inp} pl-10 pr-10`}
+                              autoComplete="off"
                             />
                             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             {isIcdLoading && (
-                              <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                                 <div className="w-4 h-4 border-2 border-teal-500/30 border-t-teal-400 rounded-full animate-spin" />
                               </div>
                             )}
                           </div>
 
-                          {/* Autocomplete Suggestions */}
-                          {icdSuggestions.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar">
-                              {icdSuggestions.map((item, idx) => (
-                                <div
-                                  key={`${item.code}-${idx}`}
-                                  onClick={() => {
-                                    setSelectedDiagnosis(item.description);
-                                    setSelectedIcd(item.code);
-                                    setSelectedIcdVersion(item.version || 'ICD-10');
-                                    setIcdSuggestions([]);
-                                    setIcdSearchQuery('');
-                                    setManualDiagnosis('');
-                                  }}
-                                  className="px-4 py-2.5 hover:bg-slate-800/60 cursor-pointer transition-colors border-b border-white/5 last:border-0 text-sm flex justify-between items-center text-slate-200"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0 pr-3">
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border flex-shrink-0 ${
-                                      item.version === 'ICD-11'
-                                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                                        : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                                    }`}>
-                                      {item.version || 'ICD-10'}
-                                    </span>
-                                    <span className="font-medium truncate">{item.description}</span>
-                                  </div>
-                                  <span className="text-teal-400 font-mono font-bold text-xs bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 flex-shrink-0">
-                                    {item.code}
-                                  </span>
+                          {/* Autocomplete Suggestions with Keyboard Navigation & Empty State */}
+                          {isIcdOpen && (icdSearchQuery || '').trim().length >= 2 && (
+                            <div
+                              ref={icdListRef}
+                              id="icd-suggestions-list"
+                              role="listbox"
+                              className="absolute z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"
+                            >
+                              {isIcdLoading && (
+                                <div className="p-3 text-xs text-slate-400 flex items-center justify-center gap-2" role="status">
+                                  <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                                  <span>Searching ICD reference catalog...</span>
                                 </div>
-                              ))}
+                              )}
+
+                              {!isIcdLoading && icdSuggestions.length > 0 && icdSuggestions.map((item, idx) => {
+                                const isHighlighted = icdActiveIndex === idx;
+                                return (
+                                  <div
+                                    key={`${item.code}-${idx}`}
+                                    id={`icd-opt-${idx}`}
+                                    role="option"
+                                    aria-selected={isHighlighted}
+                                    data-index={idx}
+                                    onClick={() => selectIcdItem(item)}
+                                    onMouseEnter={() => setIcdActiveIndex(idx)}
+                                    className={`px-4 py-2.5 cursor-pointer transition-colors border-b border-white/5 last:border-0 text-sm flex justify-between items-center ${
+                                      isHighlighted ? 'bg-teal-500/20 text-white' : 'hover:bg-slate-800/60 text-slate-200'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0 pr-3">
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border flex-shrink-0 ${
+                                        item.version === 'ICD-11'
+                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                          : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                                      }`}>
+                                        {item.version || 'ICD-10'}
+                                      </span>
+                                      <span className="font-medium truncate">{item.description}</span>
+                                    </div>
+                                    <span className="text-teal-400 font-mono font-bold text-xs bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 flex-shrink-0">
+                                      {item.code}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+
+                              {!isIcdLoading && icdSuggestions.length === 0 && (
+                                <div className="p-3 text-xs text-slate-400 text-center flex flex-col items-center gap-1.5" role="status">
+                                  <span>No matching diagnoses found in catalog for "{icdSearchQuery.trim()}".</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setManualDiagnosis(icdSearchQuery.trim());
+                                      setSelectedDiagnosis('');
+                                      setSelectedIcd('');
+                                      setSelectedIcdVersion('Custom');
+                                      setIsIcdOpen(false);
+                                      setIcdSearchQuery('');
+                                      setIcdSuggestions([]);
+                                    }}
+                                    className="text-teal-400 hover:text-teal-300 font-semibold underline text-xs"
+                                  >
+                                    Use "{icdSearchQuery.trim()}" as manual clinician diagnosis (Enter)
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1214,44 +1408,73 @@ const NewConsultation = () => {
                       <p className="text-xs text-slate-500 mb-4 pl-10">Type to search from common tests or enter a custom test name.</p>
 
                       {/* Auto-suggest input */}
-                      <div className="relative">
+                      <div className="relative" ref={labWrapperRef}>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
                             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none" />
                             <input
                               id="lab-test-input"
                               type="text"
+                              role="combobox"
+                              aria-autocomplete="list"
+                              aria-expanded={isLabOpen}
+                              aria-controls="lab-suggestions-list"
+                              aria-activedescendant={labActiveIndex >= 0 ? `lab-opt-${labActiveIndex}` : undefined}
                               value={labTestInput || ""}
                               onChange={e => handleLabInput(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') { e.preventDefault(); addLabTest(); }
-                                if (e.key === 'Escape') setLabSuggestions([]);
-                              }}
+                              onKeyDown={handleLabKeyDown}
+                              onFocus={() => { if ((labTestInput || '').trim().length >= 2) setIsLabOpen(true); }}
                               placeholder="e.g. Blood, Thyroid, Chest X-Ray…"
                               className={`${inp} pl-10`}
                               autoComplete="off"
                             />
                             {/* Dropdown suggestions */}
                             <AnimatePresence>
-                              {labSuggestions.length > 0 && (
+                              {isLabOpen && (labTestInput || '').trim().length >= 2 && (
                                 <motion.div
+                                  ref={labListRef}
+                                  id="lab-suggestions-list"
+                                  role="listbox"
                                   initial={{ opacity: 0, y: -6 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -6 }}
                                   transition={{ duration: 0.15 }}
-                                  className="absolute z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+                                  className="absolute z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"
                                 >
-                                  {labSuggestions.map((s, i) => (
-                                    <button
-                                      key={`${s}-${i}`}
-                                      type="button"
-                                      onClick={() => addLabTest(s)}
-                                      className="w-full text-left px-4 py-2.5 text-sm text-slate-200 hover:bg-purple-500/10 hover:text-purple-300 transition-colors border-b border-white/5 last:border-0 flex items-center gap-2"
-                                    >
-                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
-                                      {s}
-                                    </button>
-                                  ))}
+                                  {labSuggestions.length > 0 ? (
+                                    labSuggestions.map((s, i) => {
+                                      const isHighlighted = labActiveIndex === i;
+                                      return (
+                                        <button
+                                          key={`${s}-${i}`}
+                                          id={`lab-opt-${i}`}
+                                          type="button"
+                                          role="option"
+                                          aria-selected={isHighlighted}
+                                          data-index={i}
+                                          onClick={() => {
+                                            addLabTest(s);
+                                            setIsLabOpen(false);
+                                            setLabActiveIndex(-1);
+                                          }}
+                                          onMouseEnter={() => setLabActiveIndex(i)}
+                                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-white/5 last:border-0 flex items-center gap-2 ${
+                                            isHighlighted ? 'bg-purple-500/20 text-purple-200' : 'text-slate-200 hover:bg-purple-500/10 hover:text-purple-300'
+                                          }`}
+                                        >
+                                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                                          {s}
+                                        </button>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="p-3 text-xs text-slate-400 flex items-center justify-between" role="status">
+                                      <span>No matching standard tests for "{labTestInput.trim()}".</span>
+                                      <span className="text-[10px] text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                                        Press Enter or Add to add custom
+                                      </span>
+                                    </div>
+                                  )}
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -1259,7 +1482,11 @@ const NewConsultation = () => {
                           <motion.button
                             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                             type="button"
-                            onClick={() => addLabTest()}
+                            onClick={() => {
+                              addLabTest();
+                              setIsLabOpen(false);
+                              setLabActiveIndex(-1);
+                            }}
                             className="px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-colors flex items-center gap-1.5 flex-shrink-0"
                           >
                             <FiPlus className="w-4 h-4" /> Add
