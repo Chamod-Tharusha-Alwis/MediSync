@@ -145,6 +145,7 @@ async function startServer() {
   // This MUST finish before any require() that could transitively load a
   // Mongoose model, because fieldEncryption() reads `secret` synchronously.
   const securityConfiguration = await initializeVault();
+  require('./security/keyringDiagnostic').reportKeyring(global.ENCRYPTION_KEYS, global.ACTIVE_KEY_VERSION, console.log);
   const securityRuntime = require('./security/securityRuntime');
   securityRuntime.initialize(securityConfiguration, {
     legacyKeys: global.ENCRYPTION_KEYS,

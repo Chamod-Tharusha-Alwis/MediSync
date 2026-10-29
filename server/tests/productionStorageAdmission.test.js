@@ -148,6 +148,7 @@ async function actualStartup(c){
   if(name==='dotenv')return{config(){}};
   if(name==='node-vault')return()=>({read:async()=>({data:{data:{versions:{1:'offline-key'},activeVersion:1}}})});
   if(name==='./security/clientOriginPolicy')return{clientOrigin:()=> 'https://offline.invalid'};
+  if(name==='./security/keyringDiagnostic')return require('../src/security/keyringDiagnostic');
   if(name==='./security/securityRuntime')return{initialize(){},assertProtectedCompatibility(){}};
   if(name==='./config/dbGuard')return c.guard;if(name==='./config/db')return dbModule.exports;
   if(name==='./utils/cronJobs')return()=>calls.push('cron');

@@ -48,6 +48,7 @@ async function probe(environment, { completeStorage = false } = {}) {
       if (name.endsWith('/productionAtlasPolicy')) return policy;
       if (name.endsWith('/productionStorageAdmission')) return instrumentedStorage;
       if (name.endsWith('/operatorKeyPolicy')) return real('security/operatorKeyPolicy');
+      if (name.endsWith('/keyringDiagnostic')) return real('security/keyringDiagnostic');
       if (name.endsWith('/securityRuntime')) return load('security/securityRuntime.js');
       if (name === './nicBlindIndex') return real('security/nicBlindIndex');
       if (name === './authenticatedFields') return real('security/authenticatedFields');

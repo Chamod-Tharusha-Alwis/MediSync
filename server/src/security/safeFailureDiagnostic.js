@@ -12,6 +12,24 @@ const steps = new Set([
 const names = new Set(['Error', 'TypeError', 'RangeError', 'ReferenceError',
   'SyntaxError', 'JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError',
   'ValidationError', 'CastError', 'MongoServerError', 'MongooseError', 'DatabaseIsolationError']);
+// Finite public Patient/Doctor schema paths. Never forward a path supplied by
+// an arbitrary exception: map keys can contain identifiers or rejected input.
+const validationPathNames = new Set([
+  'preferredLanguage', 'nic', 'patientNic_bi', 'fullName', 'dateOfBirth', 'gender',
+  'district', 'contactInfo', 'address', 'email', 'bloodGroup', 'allergies', 'password',
+  'isActive', 'reportedDoctors', 'reportedDoctors.doctorId', 'reportedDoctors.reason',
+  'reportedDoctors.reportedAt', 'reportedDoctors.status', 'emergencyContact.name',
+  'emergencyContact.relationship', 'emergencyContact.phone', 'insurance.provider',
+  'insurance.policyNumber', 'insurance.expiryDate', 'chronicConditions', 'riskScore',
+  'riskLevel', 'height', 'weight', 'profilePicture', 'twoFactorEnabled', 'keyVersion',
+  'lastLoginAt', 'lastSignOutAt', 'doctorId', 'specialization', 'licenseNo', 'hospitals',
+  'role', 'loginType', 'otpSecret', 'personalEmail', 'contactNumber', 'clinicAddress',
+  'orgLogins', 'orgLogins.hospitalId', 'orgLogins.orgEmail', 'orgLogins.tempPassword',
+  'orgLogins.mustChangePassword', 'orgLogins.isActive', 'passwordChangedAt',
+  'description', 'googleMapsUrl', 'averageRating', 'ratingCount', 'isVerified',
+  'clinicalUseVersion', 'isSynthetic', 'isDemoData', 'isDemoAccount', 'datasetVersion',
+  'verificationSource'
+]);
 const messages = Object.freeze({
   PRODUCTION_RUNTIME_CONFIGURATION_INVALID: 'Production runtime configuration is invalid.',
   PRODUCTION_RUNTIME_QA_MATERIAL_FORBIDDEN: 'Production runtime contains forbidden QA settings.',
@@ -30,8 +48,8 @@ const messages = Object.freeze({
 });
 function safeFailureDiagnostic(error, step) {
   let name, message;
-  try { name = error?.name; message = error?.message; } catch (_) { /* Redact hostile accessors too. */ }
-  return {
+  try { name = error?.name; if (name !== 'ValidationError') message = error?.message; } catch (_) { /* Redact hostile accessors too. */ }
+  const diagnostic = {
     step: steps.has(step) ? step : 'unknown',
     errorName: names.has(name) ? name : 'Error',
     message: typeof message === 'string' && Object.hasOwn(messages, message) ? messages[message]
@@ -39,6 +57,19 @@ function safeFailureDiagnostic(error, step) {
         ? 'Encryption key for stored record version is unavailable.'
         : 'Failure details redacted.'
   };
+  if (name === 'ValidationError') {
+    delete diagnostic.message;
+    diagnostic.validationPaths = [];
+    try {
+      const errors = error.errors;
+      if (errors && typeof errors === 'object') {
+        diagnostic.validationPaths = [...new Set(Object.keys(errors)
+          .map(field => field.replace(/\.[0-9]+(?=\.|$)/g, ''))
+          .filter(field => validationPathNames.has(field)))].sort();
+      }
+    } catch (_) { /* Never inspect individual validation errors or values. */ }
+  }
+  return diagnostic;
 }
 function reportFailure(error, step, logger = console.error) {
   const diagnostic = safeFailureDiagnostic(error, step);
