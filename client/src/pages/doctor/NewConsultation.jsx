@@ -175,12 +175,16 @@ const NewConsultation = () => {
   const [clinicalNotes,      setClinicalNotes]     = useState('');
   const [diagnosesOptions,   setDiagnosesOptions]  = useState([]);
   const [inferenceStatus, setInferenceStatus] = useState('idle');
-  const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true);
+  const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true), inferenceRetryTimer = useRef(null);
   useEffect(() => {
     const infMntRef = inferenceMounted;
     const infReqRef = inferenceRequest;
     infMntRef.current = true;
-    return () => { infMntRef.current = false; infReqRef.current++; };
+    return () => {
+      infMntRef.current = false;
+      infReqRef.current++;
+      if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
+    };
   }, []);
   const [selectedDiagnosis,  setSelectedDiagnosis] = useState('');
   const [selectedIcd,        setSelectedIcd]       = useState('');
@@ -206,6 +210,7 @@ const NewConsultation = () => {
   const clearClinicalDraft = () => {
     draftEpoch.current++;
     if (!pendingClinicalAttempt().blocked && !submissionBusy.current && !submissionUncertain.current) consultationIdempotencyKey.current = generateConsultIdempotencyKey();
+    if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
     inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle');
     setShowOtpModal(false); setStep(1); setLoading(false);
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
@@ -297,15 +302,47 @@ const NewConsultation = () => {
     if (await consent.authorize(token)) goTo(2);
   };
 
+  const isColdStartError = (err) => {
+    const status = err?.response?.status;
+    const code = err?.code;
+    const msg = String(err?.message || '');
+    return (
+      status === 503 ||
+      status === 502 ||
+      status === 504 ||
+      code === 'ECONNABORTED' ||
+      code === 'ERR_NETWORK' ||
+      msg.includes('timeout') ||
+      msg.includes('Network Error')
+    );
+  };
+
   const getDiagnosisSuggestions = async () => {
     if (symptoms.length === 0) return toast.error('Add at least one symptom');
     if (inferenceBusy.current) return;
+    if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
     const epoch = draftEpoch.current, requestId = ++inferenceRequest.current;
     const current = () => inferenceMounted.current && epoch === draftEpoch.current && requestId === inferenceRequest.current;
     inferenceBusy.current = true;
     setLoading(true); setDiagnosesOptions([]); setInferenceStatus('loading');
+    const RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 50 : 2500;
     try {
-      const res = await axios.post('/doctor/predict-disease', { symptoms });
+      let res;
+      try {
+        res = await axios.post('/doctor/predict-disease', { symptoms });
+      } catch (firstErr) {
+        if (!current()) return;
+        if (isColdStartError(firstErr)) {
+          setInferenceStatus('waking');
+          await new Promise(resolve => {
+            inferenceRetryTimer.current = setTimeout(resolve, RETRY_DELAY_MS);
+          });
+          if (!current()) return;
+          res = await axios.post('/doctor/predict-disease', { symptoms });
+        } else {
+          throw firstErr;
+        }
+      }
       if (!current()) return;
       const predictions = inferencePredictions(res.data);
       setDiagnosesOptions(predictions);
@@ -764,7 +801,7 @@ const NewConsultation = () => {
                           className="glass-button px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-50"
                         >
                           {loading
-                            ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Analyzing…</>
+                            ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {inferenceStatus === 'waking' ? 'Waking up…' : 'Analyzing…'}</>
                             : 'Analyze Symptoms'}
                         </motion.button>
                       </div>
@@ -815,16 +852,30 @@ const NewConsultation = () => {
                           ))}
                         </div>
                       ) : (
-                        <div className="relative z-10 py-14 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10">
-                          <FiActivity className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                          <p className="text-sm text-slate-500 max-w-xs mx-auto">
-                            {inferenceStatus === 'unavailable'
-                              ? 'AI suggestions unavailable. Existing manual clinician entry remains available.'
-                              : inferenceStatus === 'empty'
-                                ? 'No AI suggestions returned. Existing manual clinician entry remains available.'
-                                : inferenceStatus === 'loading'
-                                  ? 'Requesting AI suggestions…'
-                                  : 'Click "Analyze Symptoms" to request suggestions. Scores are not calibrated disease probabilities.'}
+                        <div className="relative z-10 py-14 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/10 min-h-[200px] flex flex-col items-center justify-center">
+                          {inferenceStatus === 'waking' ? (
+                            <div className="relative w-10 h-10 mx-auto mb-3 flex items-center justify-center">
+                              <div className="w-10 h-10 border-2 border-amber-500/20 border-t-amber-400 rounded-full animate-spin absolute" />
+                              <FiActivity className="w-5 h-5 text-amber-400 animate-pulse" />
+                            </div>
+                          ) : inferenceStatus === 'loading' ? (
+                            <div className="relative w-10 h-10 mx-auto mb-3 flex items-center justify-center">
+                              <div className="w-10 h-10 border-2 border-teal-500/20 border-t-teal-400 rounded-full animate-spin absolute" />
+                              <FiActivity className="w-5 h-5 text-teal-400 animate-pulse" />
+                            </div>
+                          ) : (
+                            <FiActivity className={`w-10 h-10 mx-auto mb-3 ${inferenceStatus === 'unavailable' ? 'text-red-400/60' : 'text-slate-700'}`} />
+                          )}
+                          <p className={`text-sm max-w-md mx-auto ${inferenceStatus === 'waking' ? 'text-amber-300 font-medium' : inferenceStatus === 'unavailable' ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {inferenceStatus === 'waking'
+                              ? 'Analysis service is waking up, retrying... Existing manual clinician entry remains available.'
+                              : inferenceStatus === 'unavailable'
+                                ? 'AI suggestions unavailable. Existing manual clinician entry remains available.'
+                                : inferenceStatus === 'empty'
+                                  ? 'No AI suggestions returned. Existing manual clinician entry remains available.'
+                                  : inferenceStatus === 'loading'
+                                    ? 'Requesting AI suggestions…'
+                                    : 'Click "Analyze Symptoms" to request suggestions. Scores are not calibrated disease probabilities.'}
                           </p>
                         </div>
                       )}
