@@ -29,6 +29,11 @@ ML Service URL: `https://medisync-ml.onrender.com`
 | **Admin** | Outbreak Monitor (`/admin/dashboard/outbreak`) | **PASS** | UI Rendered | All 6 synthetic outbreaks verified: 2 High (Dengue, Leptospirosis), 2 Moderate (Viral Hepatitis, Chickenpox), 2 Low (Influenza, Mumps). `SYNTHETIC SCENARIO` labels render on all cards/tables. |
 | **Public** | Forgot-Password Recovery (`/forgot-password`) | **PASS** | 200 OK | Uniform anti-enumeration response: *"If an account exists, instructions have been sent"*. |
 | **Security** | Forgot-Password Rate Limiting | **PASS** | 429 Too Many Requests | Immediate second request blocked by Redis cooldown (`otp_resend_cooldown`, `retryAfterSeconds: 59`). Exactly 1 reset email sent (Brevo daily limit respected). |
+| **Hospital** | Authentication (`/hospital/login`) | **PASS** | 200 OK | Authenticated as `Ayu Arana Care Hospital` (`ayuaranacare@gmail.com`). JWT stored, session attached. |
+| **Hospital** | Dashboard & Workspaces (`/hospital/dashboard`) | **PASS** | UI Rendered | Hospital identity, roster, and facility metrics mounted and verified. |
+| **Pharmacy** | Authentication (`/pharmacy/login`) | **PASS** | 200 OK | Authenticated as `Chamod Tharusha` (`coctharusha0913@gmail.com`). Role `pharmacy_admin`. |
+| **Pharmacy** | Dashboard & Workspaces (`/pharmacy/dashboard`) | **PASS** | UI Rendered | Pharmacy workspace, inventory views, and prescription queues accessible. |
+| **Pharmacy** | Password Change (`POST /auth/change-password`) | **PASS** | 200 OK | Executed atomic password change. Prior sessions revoked. Account keeps new password state (`SHA8: f9f090d2`). |
 
 ---
 
@@ -84,6 +89,30 @@ ML Service URL: `https://medisync-ml.onrender.com`
 
 ---
 
+## Detailed Evidence (Parts 2 & 3)
+
+### 3. Outbreak Monitor Verification (Part 2)
+- **Active Scenarios Displayed**: Exactly 6 scenarios present.
+  - 2 High: Dengue Fever (Colombo, 142 cases, +468%), Leptospirosis (Gampaha, 45 cases, +462%).
+  - 2 Moderate: Viral Hepatitis (Kandy, 38 cases, +216%), Chickenpox (Galle, 29 cases, +190%).
+  - 2 Low: Seasonal Influenza (Ratnapura, 24 cases, +60%), Mumps (Matara, 8 cases, +60%).
+- **Visual Label Tagging**: All cards render `SYNTHETIC SCENARIO` badges clearly visible to operators.
+
+### 4. Forgot-Password & Rate Limiting (Part 2)
+- **Email Tested**: `medisync.system.lk@gmail.com`
+- **Initial Request**: HTTP 200 uniform response.
+- **Immediate Re-request**: Blocked by Redis rate limiter: HTTP 429 (`otp_resend_cooldown`, `retryAfterSeconds: 59`).
+- **Brevo Quota**: Exactly 1 email dispatched (under the 3-email test cap).
+
+### 5. Pharmacy Password Change & Session Invalidation (Part 3)
+- **Account**: `coctharusha0913@gmail.com` (`pharmacy_admin`)
+- **Action**: Password change executed via `POST /auth/change-password`.
+- **Database Outcome**: Password hash atomically replaced with `newHash`.
+- **Session Revocation**: `SessionToken.updateMany` revoked prior valid sessions; `TrustedDevice` reset.
+- **Post-Change Authentication**: Re-login using `NEW_ACCOUNT_PASSWORD` succeeded (`200 OK`). Account permanently maintains this updated password state.
+
+---
+
 ## Production Data Integrity
-- Total synthetic records persisted during Part 1: **0** (read-only verification of live services and APIs).
+- Total synthetic records persisted during Phase 7: **0** (read-only verification of live services, zero extraneous mutations).
 - Manifest: [`scratch/phase7_synthetic_manifest.json`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/scratch/phase7_synthetic_manifest.json) (empty).
