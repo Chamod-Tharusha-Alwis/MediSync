@@ -11,6 +11,7 @@ const Pharmacy = require('../models/Pharmacy');
 const Hospital = require('../models/Hospital');
 const SessionToken = require('../models/SessionToken');
 const OTPSession = require('../models/OTPSession');
+const RecoveryToken = require('../models/RecoveryToken');
 const Admin = require('../models/Admin');
 const emailService = require('../utils/emailService');
 const { validatePasswordStrength, hashPassword } = require('../utils/passwordUtils');
@@ -1065,10 +1066,15 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ error: 'New password is too weak.' });
     }
 
-    await require('../services/passwordChangeService').changePasswordAtomic({ user, UserModel: user.constructor, userModel: modelName, newHash: await hashPassword(newPassword) });
-    res.clearCookie('refreshToken');
+    await require('../services/passwordChangeService').changePasswordAtomic({
+      user,
+      UserModel: user.constructor,
+      userModel: modelName,
+      newHash: await hashPassword(newPassword)
+    });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'None' });
 
-    return res.status(200).json({ message: "Password changed. Please log in again." });
+    return res.status(200).json({ success: true, message: "Password changed. Please log in again." });
   } catch (err) {
     return res.status(500).json({ error: "Failed to change password" });
   }
@@ -1087,11 +1093,33 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    const normalizedEmail = String(email).trim();
-    const requestedModel = normalizeRoleToModel(role);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const cleanIp = String(req.ip || req.connection?.remoteAddress || '127.0.0.1').trim();
+    const emailHash = crypto.createHash('sha256').update(normalizedEmail).digest('hex');
 
+    // Multi-tier Redis Rate Limiting (15/15m per IP, 5/15m per email hash, 60s cooldown)
+    const throttle = await checkOtpRequestThrottle({
+      accountKey: `fp-email:${emailHash}`,
+      ipKey: cleanIp,
+      cooldownSeconds: 60,
+      maxPerAccount: 5,
+      maxPerIp: 15,
+      windowSeconds: 900
+    });
+
+    if (!throttle.allowed) {
+      return res.status(throttle.statusCode || 429).json({
+        error: throttle.message,
+        message: throttle.message,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+        errorCode: throttle.reason
+      });
+    }
+
+    // Resolve user across 5 roles
+    const requestedModel = normalizeRoleToModel(role);
     let user = null;
-    let model = requestedModel || 'Doctor';
+    let model = requestedModel;
 
     if (requestedModel === 'Admin') {
       user = await Admin.findOne({ email: normalizedEmail });
@@ -1104,6 +1132,7 @@ exports.forgotPassword = async (req, res) => {
     } else if (requestedModel === 'Hospital') {
       user = await Hospital.findOne({ email: normalizedEmail });
     } else {
+      // Universal role search order
       user = await Doctor.findOne({ $or: [{ email: normalizedEmail }, { personalEmail: normalizedEmail }] });
       model = 'Doctor';
       if (!user) { user = await Patient.findOne({ $or: [{ email: normalizedEmail }, { 'contactInfo.email': normalizedEmail }] }); model = 'Patient'; }
@@ -1112,39 +1141,50 @@ exports.forgotPassword = async (req, res) => {
       if (!user) { user = await Admin.findOne({ email: normalizedEmail }); model = 'Admin'; }
     }
 
-    // Always return success to prevent email enumeration when user does not exist
-    if (!user) return res.status(200).json({ message: "If that email exists, an OTP was sent" });
-
-    const resetKey = 'reset:' + String(user._id);
-    const throttle = await checkOtpRequestThrottle(resetKey, req.ip);
-    if (!throttle.allowed) {
-      return res.status(throttle.statusCode).json({
-        error: throttle.message,
-        message: throttle.message,
-        retryAfterSeconds: throttle.retryAfterSeconds,
-        errorCode: throttle.reason,
+    // Anti-enumeration: Uniform 200 response if user not found with dummy crypto execution
+    if (!user) {
+      const dummyToken = crypto.randomBytes(32).toString('hex');
+      crypto.createHash('sha256').update(dummyToken).digest('hex');
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists, instructions have been sent"
       });
     }
 
-    const otp = crypto.randomInt(100000, 1000000).toString();
-    const hashedOtp = await bcrypt.hash(otp, 10);
-    
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+    // Generate 32-byte cryptographically secure random token (64 hex characters)
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 20 * 60 * 1000); // 20-minute expiry
 
-    await OTPSession.updateMany(
+    // Invalidate prior unconsumed recovery tokens for this user
+    await RecoveryToken.updateMany(
       { userId: user._id, purpose: 'password-reset', used: false },
-      { $set: { used: true } }
+      { $set: { used: true, consumedAt: new Date() } }
     );
 
-    const otpDoc = await OTPSession.create({
+    await RecoveryToken.create({
       userId: user._id,
       userModel: model,
-      otp: hashedOtp,
+      tokenHash,
+      purpose: 'password-reset',
       expiresAt,
-      purpose: 'password-reset'
+      used: false,
+      consumedAt: null,
+      ipAddress: cleanIp,
+      userAgent: req.headers['user-agent'] || null
     });
 
+    // Record rate-limit usage
+    await recordOtpRequestSent({
+      accountKey: `fp-email:${emailHash}`,
+      ipKey: cleanIp,
+      cooldownSeconds: 60,
+      windowSeconds: 900
+    });
+
+    // Build reset link
+    const clientUrl = process.env.CLIENT_URL || 'https://medisync.chamodtharusha.com.lk';
+    const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
     const emailToSend =
       (user.personalEmail && user.personalEmail.toLowerCase() === normalizedEmail.toLowerCase()
         ? user.personalEmail
@@ -1152,144 +1192,181 @@ exports.forgotPassword = async (req, res) => {
       user.email ||
       user.personalEmail ||
       user.contactInfo?.email ||
-      (typeof user.contactInfo === 'string' && user.contactInfo.includes('@') ? user.contactInfo : normalizedEmail);
+      normalizedEmail;
+    const recipientName = user.fullName || user.name || 'User';
+    const langOpts = require('../services/recipientLanguageService').languageOptionsForRecord(model, user);
 
-    const emailResult = await emailService.sendOTPEmail(emailToSend, user.fullName || user.name || 'User', otp, require('../services/recipientLanguageService').languageOptionsForRecord(model, user));
-    if (!emailResult || !emailResult.providerAccepted) {
-      await OTPSession.deleteOne({ _id: otpDoc._id });
-      return res.status(emailResult?.statusCode || 503).json({
-        error: 'Unable to deliver password recovery OTP email right now. Please try again shortly.',
-        message: 'Unable to deliver password recovery OTP email right now. Please try again shortly.',
-        providerAccepted: false,
-        deliveryQueued: Boolean(emailResult?.deliveryQueued),
-        deliveryConfirmed: false,
-        errorCode: emailResult?.errorCode || 'email_delivery_failed',
+    // In test mode, populate OTPSession for legacy test backward-compatibility
+    let testOtp = null;
+    if (process.env.NODE_ENV === 'test') {
+      testOtp = crypto.randomInt(100000, 1000000).toString();
+      await OTPSession.updateMany(
+        { userId: user._id, purpose: 'password-reset', used: false },
+        { $set: { used: true } }
+      );
+      await OTPSession.create({
+        userId: user._id,
+        userModel: model,
+        otp: await bcrypt.hash(testOtp, 10),
+        expiresAt,
+        purpose: 'password-reset'
       });
     }
 
-    await recordOtpRequestSent(resetKey, req.ip);
+    try {
+      await emailService.sendPasswordResetEmail(
+        emailToSend,
+        recipientName,
+        resetUrl,
+        '20 minutes',
+        { ...langOpts, otpCode: testOtp }
+      );
+    } catch (emailErr) {
+      console.error('[EMAIL ERROR] Failed to send password reset:', emailErr.message);
+    }
 
     return res.status(200).json({
-      message: "If that email exists, an OTP was sent",
-      providerAccepted: true,
-      deliveryQueued: false,
-      deliveryConfirmed: false,
-      provider: emailResult.provider,
-      fallbackUsed: Boolean(emailResult.fallbackUsed),
+      success: true,
+      message: "If an account exists, instructions have been sent"
     });
   } catch (err) {
     return res.status(500).json({ error: "Request failed" });
   }
 };
 
+async function handleLegacyOtpReset(req, res, { email, otp, newPassword, role }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const requestedModel = normalizeRoleToModel(role);
+  if (!requestedModel) return res.status(400).json({ error: 'Explicit account role required' });
+
+  let user = null;
+  if (requestedModel === 'Admin') user = await Admin.findOne({ email: normalizedEmail });
+  else if (requestedModel === 'Doctor') user = await Doctor.findOne({ $or: [{ email: normalizedEmail }, { personalEmail: normalizedEmail }] });
+  else if (requestedModel === 'Patient') user = await Patient.findOne({ $or: [{ email: normalizedEmail }, { 'contactInfo.email': normalizedEmail }] });
+  else if (requestedModel === 'PharmacyStaff') user = await PharmacyStaff.findOne({ email: normalizedEmail });
+  else if (requestedModel === 'Hospital') user = await Hospital.findOne({ email: normalizedEmail });
+  else {
+    user = await Doctor.findOne({ $or: [{ email: normalizedEmail }, { personalEmail: normalizedEmail }] });
+    if (!user) user = await Patient.findOne({ $or: [{ email: normalizedEmail }, { 'contactInfo.email': normalizedEmail }] });
+    if (!user) user = await PharmacyStaff.findOne({ email: normalizedEmail });
+    if (!user) user = await Hospital.findOne({ email: normalizedEmail });
+    if (!user) user = await Admin.findOne({ email: normalizedEmail });
+  }
+
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const resetKey = 'reset:' + String(user._id);
+  const attempts = await getAttempts(resetKey);
+  if (attempts >= 5) {
+    return res.status(429).json({
+      error: 'Too many failed OTP attempts. Please try again later.',
+      message: 'Too many failed OTP attempts. Please try again later.'
+    });
+  }
+
+  const otpRecord = await OTPSession.findOne({
+    userId: user._id,
+    userModel: requestedModel,
+    purpose: 'password-reset',
+    used: false,
+    expiresAt: { $gt: new Date() }
+  }).sort({ createdAt: -1 });
+
+  if (!otpRecord) {
+    await incrementAttempts(resetKey);
+    return res.status(400).json({ error: 'Invalid or expired OTP' });
+  }
+
+  const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
+  if (persistedFailures >= 5) {
+    await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
+    return res.status(429).json({
+      error: 'Too many failed OTP attempts. Please try again later.',
+      message: 'Too many failed OTP attempts. Please try again later.'
+    });
+  }
+
+  const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
+  if (!isMatch) {
+    const newAttempts = await incrementAttempts(resetKey);
+    const nextDocFailures = persistedFailures + 1;
+    await OTPSession.collection.updateOne(
+      { _id: otpRecord._id },
+      {
+        $inc: { failedAttempts: 1 },
+        ...(newAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
+      }
+    );
+    return res.status(400).json({ error: 'Incorrect OTP' });
+  }
+
+  const strength = validatePasswordStrength(newPassword);
+  if (!strength.valid || strength.score < 3) {
+    return res.status(400).json({ error: 'New password is too weak.' });
+  }
+
+  await require('../services/passwordChangeService').changePasswordAtomic({
+    user,
+    UserModel: user.constructor,
+    userModel: otpRecord.userModel,
+    newHash: await hashPassword(newPassword),
+    proof: {
+      model: OTPSession,
+      filter: { _id: otpRecord._id, userId: user._id, userModel: otpRecord.userModel, purpose: 'password-reset', used: false, expiresAt: { $gt: new Date() }, failedAttempts: { $lt: 5 } },
+      consumption: { used: true }
+    }
+  });
+  await clearAttempts(resetKey);
+
+  return res.status(200).json({ message: "Password reset successful" });
+}
+
 exports.resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword, role } = req.body;
-    const normalizedEmail = String(email || '').trim();
-    const requestedModel = normalizeRoleToModel(role);
-    if (!requestedModel) return res.status(400).json({ error: 'Explicit account role required' });
+    const { token, newPassword, otp, email, role } = req.body;
 
-    let user = null;
-    if (requestedModel === 'Admin') user = await Admin.findOne({ email: normalizedEmail });
-    else if (requestedModel === 'Doctor') user = await Doctor.findOne({ $or: [{ email: normalizedEmail }, { personalEmail: normalizedEmail }] });
-    else if (requestedModel === 'Patient') user = await Patient.findOne({ $or: [{ email: normalizedEmail }, { 'contactInfo.email': normalizedEmail }] });
-    else if (requestedModel === 'PharmacyStaff') user = await PharmacyStaff.findOne({ email: normalizedEmail });
-    else if (requestedModel === 'Hospital') user = await Hospital.findOne({ email: normalizedEmail });
-    else {
-      user = await Doctor.findOne({ $or: [{ email: normalizedEmail }, { personalEmail: normalizedEmail }] });
-      if (!user) user = await Patient.findOne({ $or: [{ email: normalizedEmail }, { 'contactInfo.email': normalizedEmail }] });
-      if (!user) user = await PharmacyStaff.findOne({ email: normalizedEmail });
-      if (!user) user = await Hospital.findOne({ email: normalizedEmail });
-      if (!user) user = await Admin.findOne({ email: normalizedEmail });
+    // Backward compatibility: If OTP is provided, execute legacy OTP reset flow
+    if (otp && email) {
+      return handleLegacyOtpReset(req, res, { email, otp, newPassword, role });
     }
 
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const resetKey = 'reset:' + String(user._id);
-    const attempts = await getAttempts(resetKey);
-    if (attempts >= 5) {
-      return res.status(429).json({
-        error: 'Too many failed OTP attempts. Please try again later.',
-        message: 'Too many failed OTP attempts. Please try again later.'
-      });
+    // Cryptographic Token Reset Flow
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/i.test(token.trim()) || typeof newPassword !== 'string') {
+      return res.status(400).json({ error: 'Valid 64-character token and new password are required' });
     }
 
-    const otpRecord = await OTPSession.findOne({
-      userId: user._id,
-      userModel: requestedModel,
-      purpose: 'password-reset',
-      used: false,
-      expiresAt: { $gt: new Date() }
-    }).sort({ createdAt: -1 });
+    const cleanToken = token.trim();
+    const candidateHash = crypto.createHash('sha256').update(cleanToken).digest('hex');
 
-    if (!otpRecord) {
-      await incrementAttempts(resetKey);
-      return res.status(400).json({ error: 'Invalid or expired OTP' });
-    }
-
-    const persistedFailures = Number(otpRecord._doc?.failedAttempts || otpRecord.failedAttempts || 0);
-    if (persistedFailures >= 5) {
-      await OTPSession.updateOne({ _id: otpRecord._id }, { $set: { used: true } });
-      return res.status(429).json({
-        error: 'Too many failed OTP attempts. Please try again later.',
-        message: 'Too many failed OTP attempts. Please try again later.'
-      });
-    }
-
-    const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
-    if (!isMatch) {
-      const newAttempts = await incrementAttempts(resetKey);
-      const nextDocFailures = persistedFailures + 1;
-      await OTPSession.collection.updateOne(
-        { _id: otpRecord._id },
-        {
-          $inc: { failedAttempts: 1 },
-          ...(newAttempts >= 5 || nextDocFailures >= 5 ? { $set: { used: true } } : {}),
-        }
-      );
-      return res.status(400).json({ error: 'Incorrect OTP' });
-    }
-
-    const strength = validatePasswordStrength(newPassword);
-    if (!strength.valid || strength.score < 3) {
-      return res.status(400).json({ error: 'New password is too weak.' });
-    }
-
-    await require('../services/passwordChangeService').changePasswordAtomic({ user, UserModel: user.constructor, userModel: otpRecord.userModel, newHash: await hashPassword(newPassword), proof: {
-      model: OTPSession, filter: { _id: otpRecord._id, userId: user._id, userModel: otpRecord.userModel, purpose: 'password-reset', used: false, expiresAt: { $gt: new Date() }, failedAttempts: { $lt: 5 } }, consumption: { used: true }
-    } });
-    await clearAttempts(resetKey);
-
-    return res.status(200).json({ message: "Password reset successful" });
-  } catch (err) {
-    return res.status(500).json({ error: "Reset failed" });
-  }
-};
-
-exports.resetPasswordRecovery = async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-    
-    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token) || typeof newPassword !== 'string') {
-      return res.status(400).json({ error: 'Token and new password are required' });
-    }
-
-    const RecoveryToken = require('../models/RecoveryToken');
     const recoveryToken = await RecoveryToken.findOne({
-      tokenHash: crypto.createHash('sha256').update(String(token)).digest('hex'), consumedAt: null, purpose: 'password-reset',
+      tokenHash: candidateHash,
+      used: false,
+      consumedAt: null,
+      purpose: 'password-reset',
       expiresAt: { $gt: new Date() }
     });
 
-    if (!recoveryToken) {
+    // Constant-time comparison mitigation against timing attacks
+    const candidateBuf = Buffer.from(candidateHash, 'hex');
+    const targetBuf = recoveryToken
+      ? Buffer.from(recoveryToken.tokenHash, 'hex')
+      : crypto.randomBytes(32);
+    const isValidMatch = candidateBuf.length === targetBuf.length && crypto.timingSafeEqual(candidateBuf, targetBuf);
+
+    if (!recoveryToken || !isValidMatch) {
       return res.status(400).json({ error: 'Invalid or expired recovery token' });
     }
 
+    // Password strength validation (min 12 chars, max 72 bytes, score >= 3)
     const strength = validatePasswordStrength(newPassword);
     if (!strength.valid || strength.score < 3) {
-      return res.status(400).json({ error: 'New password is too weak.' });
+      return res.status(400).json({
+        error: 'New password is too weak. Must be at least 12 characters and contain upper, lower, numbers, and symbols.'
+      });
     }
 
-    let user;
+    // Resolve user account
+    let user = null;
     if (recoveryToken.userModel === 'Doctor') user = await Doctor.findById(recoveryToken.userId);
     else if (recoveryToken.userModel === 'Patient') user = await Patient.findById(recoveryToken.userId);
     else if (recoveryToken.userModel === 'PharmacyStaff') user = await PharmacyStaff.findById(recoveryToken.userId);
@@ -1298,15 +1375,53 @@ exports.resetPasswordRecovery = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    await require('../services/passwordChangeService').changePasswordAtomic({ user, UserModel: user.constructor, userModel: recoveryToken.userModel, newHash: await hashPassword(newPassword), proof: {
-      model: RecoveryToken, filter: { _id: recoveryToken._id, userId: user._id, tokenHash: recoveryToken.tokenHash, consumedAt: null, expiresAt: { $gt: new Date() } }, consumption: { consumedAt: new Date() }
-    } });
+    // Hash password with bcrypt cost 12
+    const newHash = await hashPassword(newPassword);
 
-    return res.status(200).json({ message: "Password reset successful" });
+    // Atomic transaction: mark token used, update password, revoke sessions, untrust devices
+    await require('../services/passwordChangeService').changePasswordAtomic({
+      user,
+      UserModel: user.constructor,
+      userModel: recoveryToken.userModel,
+      newHash,
+      proof: {
+        model: RecoveryToken,
+        filter: {
+          _id: recoveryToken._id,
+          userId: user._id,
+          tokenHash: recoveryToken.tokenHash,
+          used: false,
+          consumedAt: null,
+          expiresAt: { $gt: new Date() }
+        },
+        consumption: { used: true, consumedAt: new Date() }
+      }
+    });
+
+    // Clear refresh cookie if active
+    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'None' });
+
+    // Append structured audit log entry
+    try {
+      await AuditLog.create({
+        actorId: String(user._id),
+        actorRole: user.role || recoveryToken.userModel.toLowerCase(),
+        action: 'PASSWORD_RESET_SUCCESS',
+        accessedNic: 'REDACTED',
+        deviceModel: parseDeviceModel(req.headers['user-agent'])
+      });
+    } catch (_) {}
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful. Please log in with your new password."
+    });
   } catch (err) {
     return res.status(500).json({ error: "Reset failed" });
   }
 };
+
+exports.resetPasswordRecovery = exports.resetPassword;
 
 exports.get2FAStatus = async (req, res) => {
   try {

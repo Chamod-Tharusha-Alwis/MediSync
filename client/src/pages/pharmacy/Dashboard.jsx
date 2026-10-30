@@ -17,6 +17,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
+import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import { formatDoctorName } from '../../utils/doctorName';
 
 const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
@@ -1279,11 +1280,6 @@ const PharmacySettings = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Password rotation states
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [rotatingPassword, setRotatingPassword] = useState(false);
 
   useEffect(() => {
     api.get('/pharmacy/staff/me')
@@ -1335,24 +1331,6 @@ const PharmacySettings = () => {
     }
   };
 
-  const handlePasswordRotate = async (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      return toast.error('New credentials do not match.');
-    }
-    setRotatingPassword(true);
-    try {
-      await api.post('/auth/change-password', { currentPassword, newPassword });
-      toast.success('Credentials rotated successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to rotate credentials');
-    } finally {
-      setRotatingPassword(false);
-    }
-  };
 
   if (loading) return <div className="p-8"><Skeleton.Card /></div>;
 
@@ -1442,56 +1420,7 @@ const PharmacySettings = () => {
           <LanguagePreferenceCard />
 
           {/* Password Rotation Card */}
-          <form onSubmit={handlePasswordRotate} className="glass-card p-6 rounded-2xl space-y-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
-              <Key className="w-4 h-4 text-teal-400" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Rotate Credentials</h3>
-            </div>
-
-            <div className="grid sm:grid-cols-3 gap-5">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">Current Password</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={e => setCurrentPassword(e.target.value)}
-                  className="glass-input text-sm"
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="glass-input text-sm"
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold uppercase text-slate-400">Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="glass-input text-sm"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t border-white/5">
-              <button
-                type="submit"
-                disabled={rotatingPassword}
-                className="glass-button text-xs py-2.5 px-6"
-              >
-                {rotatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-                {rotatingPassword ? 'Updating...' : 'Rotate Password'}
-              </button>
-            </div>
-          </form>
+          <ChangePasswordCard />
         </div>
 
         {/* Unavailable integration: do not present sample credentials as provisioned. */}

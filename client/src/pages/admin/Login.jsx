@@ -1,12 +1,13 @@
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, ShieldAlert, Loader2 } from 'lucide-react';
+import { Mail, ShieldAlert, Loader2 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import LoginShell from '../../components/common/LoginShell';
 import GlassInput from '../../components/common/GlassInput';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
+import PasswordInput from '../../components/common/PasswordInput';
 
 const AdminLogin = () => {
   const { t } = useTranslation();
@@ -145,8 +146,17 @@ const AdminLogin = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">Password Key</label>
-            <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <div className="flex items-center justify-between ml-1 select-none">
+              <label htmlFor="admin-password" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password Key</label>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password?role=admin')}
+                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+              >
+                Forgot key?
+              </button>
+            </div>
+            <PasswordInput id="admin-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
           <button

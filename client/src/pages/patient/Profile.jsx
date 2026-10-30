@@ -8,6 +8,7 @@ import {
   AlertCircle, Stethoscope, Weight, Ruler, X, Plus, Camera, Smartphone
 } from 'lucide-react';
 import TrustedDevices from '../../components/TrustedDevices';
+import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
@@ -137,10 +138,6 @@ const PatientProfile = () => {
     name: '', relationship: '', phone: '',
   });
 
-  const [passwords, setPasswords] = useState({
-    current: '', newPassword: '', confirmPassword: '',
-  });
-
   const nic = localStorage.getItem('nic')
     || (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').nic; } catch { return ''; } })();
 
@@ -202,31 +199,6 @@ const PatientProfile = () => {
     }
   };
 
-  /* ── Change password ── */
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    if (passwords.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.post('/auth/change-password', {
-        currentPassword: passwords.current,
-        newPassword:     passwords.newPassword,
-      });
-      toast.success('Password updated successfully!');
-      setPasswords({ current: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to change password');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const getRiskColor = (level) => {
     if (level === 'high')   return 'text-red-400 bg-red-500/20 border-red-500/30';
@@ -631,51 +603,9 @@ const PatientProfile = () => {
             TAB: Security
             ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'security' && (
-          <motion.form
-            key="security"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.22 }}
-            onSubmit={handleChangePassword}
-            className="glass-panel rounded-2xl p-6"
-          >
-            <h3 className="text-lg font-bold text-white mb-1">{t("auth.resetPassword", "Change Password")}</h3>
-            <p className="text-slate-500 text-xs mb-6">Use a strong password — at least 8 characters with mixed case and numbers.</p>
-
-            <div className="space-y-5 max-w-md">
-              {[
-                { id: 'pw-current', label: 'Current Password', key: 'current',         placeholder: '••••••••' },
-                { id: 'pw-new',     label: 'New Password',     key: 'newPassword',     placeholder: '••••••••' },
-                { id: 'pw-confirm', label: 'Confirm Password', key: 'confirmPassword', placeholder: '••••••••' },
-              ].map(({ id, label, key, placeholder }) => (
-                <div key={key}>
-                  <label htmlFor={id} className={labelCls}>{label}</label>
-                  <input
-                    id={id}
-                    type="password"
-                    required
-                    value={passwords[key]}
-                    onChange={e => setPasswords(p => ({ ...p, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className={inputCls}
-                  />
-                </div>
-              ))}
-
-              <div className="pt-2 border-t border-slate-700/50">
-                <button
-                  id="change-password-btn"
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2.5 px-7 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 shadow-[0_4px_20px_rgba(244,63,94,0.30)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                  {saving ? 'Updating…' : 'Update Password'}
-                </button>
-              </div>
-            </div>
-          </motion.form>
+          <div className="max-w-xl">
+            <ChangePasswordCard />
+          </div>
         )}
 
         {/* ═════════════════════════════════════════════════════════════════

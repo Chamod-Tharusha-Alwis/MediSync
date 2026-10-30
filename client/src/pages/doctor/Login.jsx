@@ -1,13 +1,14 @@
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, Stethoscope } from 'lucide-react';
+import { Mail, Stethoscope } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import LoginShell from '../../components/common/LoginShell';
 import GlassInput from '../../components/common/GlassInput';
 import GlassButton from '../../components/common/GlassButton';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
+import PasswordInput from '../../components/common/PasswordInput';
 import { selectDoctorWorkspace } from '../../utils/doctorWorkspace';
 
 const DoctorLogin = () => {
@@ -187,8 +188,17 @@ const DoctorLogin = () => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="doctor-password" className="text-xs font-semibold uppercase text-slate-300 ml-1">Password</label>
-            <GlassInput id="doctor-password" type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <div className="flex items-center justify-between ml-1">
+              <label htmlFor="doctor-password" className="text-xs font-semibold uppercase text-slate-300">Password</label>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password?role=doctor')}
+                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+              >
+                Forgot credentials?
+              </button>
+            </div>
+            <PasswordInput id="doctor-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
           <GlassButton type="submit" isLoading={loading} className="w-full mt-4">{t('auth.signInBtn', 'Sign In')}</GlassButton>

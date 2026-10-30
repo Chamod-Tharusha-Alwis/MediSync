@@ -1,4 +1,4 @@
-import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { passwordAccepted, PASSWORD_REQUIREMENTS, evaluatePasswordStrength } from '../../utils/passwordPolicy';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -12,17 +12,8 @@ import GlassButton from '../../components/common/GlassButton';
 
 const checkPasswordStrength = (pass) => {
   if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
-  let score = 0;
-  if (pass.length >= 12) score++;
-  if (/[A-Z]/.test(pass)) score++;
-  if (/[0-9]/.test(pass)) score++;
-  if (/[^A-Za-z0-9]/.test(pass)) score++;
-
-  if (score === 1) return { score: 25, text: 'Weak', color: 'bg-rose-500' };
-  if (score === 2) return { score: 50, text: 'Moderate', color: 'bg-amber-500' };
-  if (score === 3) return { score: 75, text: 'Good', color: 'bg-blue-500' };
-  if (score === 4) return { score: 100, text: 'Strong', color: 'bg-emerald-500' };
-  return { score: 10, text: 'Very Weak', color: 'bg-rose-600' };
+  const res = evaluatePasswordStrength(pass);
+  return { score: res.percent, text: res.label, color: res.color };
 };
 
 const Register = () => {

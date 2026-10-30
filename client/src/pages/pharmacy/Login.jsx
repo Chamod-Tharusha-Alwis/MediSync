@@ -1,13 +1,14 @@
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Pill } from 'lucide-react';
+import { Mail, Pill } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import LoginShell from '../../components/common/LoginShell';
 import GlassInput from '../../components/common/GlassInput';
 import GlassButton from '../../components/common/GlassButton';
 import LoginOtpStep from '../../components/common/LoginOtpStep';
+import PasswordInput from '../../components/common/PasswordInput';
 
 const PharmacyLogin = () => {
   const { t } = useTranslation();
@@ -141,8 +142,17 @@ const PharmacyLogin = () => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">Password</label>
-            <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <div className="flex items-center justify-between ml-1">
+              <label htmlFor="pharmacy-password" className="text-xs font-semibold uppercase text-slate-500">Password</label>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password?role=pharmacy')}
+                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <PasswordInput id="pharmacy-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
           <GlassButton type="submit" isLoading={loading} className="w-full mt-4">Sign In</GlassButton>

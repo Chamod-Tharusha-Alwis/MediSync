@@ -9,13 +9,14 @@ import {
 } from 'react-icons/fi';
 import {
   LayoutDashboard, BadgeCheck,
-  Building2, Loader2, Key, PenTool, CheckCircle, UploadCloud
+  Building2, Loader2, PenTool, CheckCircle, UploadCloud
 } from 'lucide-react';
 import PageTransition from '../../components/common/PageTransition';
 import axios from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import TrustedDevices from '../../components/TrustedDevices';
+import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import { formatDoctorName } from '../../utils/doctorName';
 
 const initials = (name = '') =>
@@ -55,12 +56,6 @@ const DoctorProfile = () => {
   const [uploadingPic, setUploadingPic] = useState(false);
   const [uploadPicProgress, setUploadPicProgress] = useState(0);
   const [isDraggingPic, setIsDraggingPic] = useState(false);
-
-  // Password Rotation States
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [rotatingPassword, setRotatingPassword] = useState(false);
 
   // Digital Signature States
   const [digitalSignature, setDigitalSignature] = useState(localStorage.getItem('digitalSignature') || '');
@@ -144,32 +139,6 @@ const DoctorProfile = () => {
     }
   };
 
-  // Password Rotation Submit
-  const handlePasswordRotate = async (e) => {
-    e.preventDefault();
-    if (!currentPassword || !newPassword) {
-      return toast.error('All password fields are required.');
-    }
-    if (newPassword !== confirmPassword) {
-      return toast.error('New password and confirm password do not match.');
-    }
-
-    setRotatingPassword(true);
-    try {
-      await axios.post('/auth/change-password', {
-        currentPassword,
-        newPassword
-      });
-      toast.success('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to rotate password');
-    } finally {
-      setRotatingPassword(false);
-    }
-  };
 
   const handleChange = (field, val) => {
     setForm(prev => ({ ...prev, [field]: val }));
@@ -409,56 +378,7 @@ const DoctorProfile = () => {
             </form>
 
             {/* Password Rotation Card */}
-            <form onSubmit={handlePasswordRotate} className="glass-card rounded-2xl p-6 space-y-6">
-              <div className="flex items-center gap-2 pb-3 border-b border-white/5 select-none">
-                <Key className="w-4 h-4 text-teal-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Credential Security</h3>
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-slate-400 font-semibold uppercase">Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                    className="glass-input text-sm"
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-slate-400 font-semibold uppercase">New Password</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    className="glass-input text-sm"
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-slate-400 font-semibold uppercase">Confirm Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    className="glass-input text-sm"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-white/5">
-                <button
-                  type="submit"
-                  disabled={rotatingPassword}
-                  className="glass-button text-xs py-2.5 px-6 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 disabled:opacity-40"
-                >
-                  {rotatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-                  {rotatingPassword ? 'Updating...' : 'Rotate Password'}
-                </button>
-              </div>
-            </form>
+            <ChangePasswordCard />
 
             {/* Digital Signature Drop Zone */}
             <div className="glass-card rounded-2xl p-6 space-y-6">

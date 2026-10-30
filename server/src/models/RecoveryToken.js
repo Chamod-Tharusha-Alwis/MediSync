@@ -7,21 +7,39 @@ const recoveryTokenSchema = new mongoose.Schema({
   },
   userModel: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Admin', 'Doctor', 'Patient', 'PharmacyStaff', 'Hospital']
   },
   tokenHash: {
     type: String,
     required: true
   },
-  consumedAt: { type: Date, default: null },
+  used: {
+    type: Boolean,
+    default: false
+  },
+  consumedAt: {
+    type: Date,
+    default: null
+  },
   purpose: {
     type: String,
-    required: true
+    required: true,
+    default: 'password-reset'
   },
   expiresAt: {
     type: Date,
     required: true
+  },
+  ipAddress: {
+    type: String,
+    default: null
+  },
+  userAgent: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 
 module.exports = mongoose.model('RecoveryToken', recoveryTokenSchema);
+

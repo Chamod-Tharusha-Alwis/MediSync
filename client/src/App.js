@@ -20,7 +20,8 @@ import PrototypeNotice from './components/common/PrototypeNotice';
 const Home              = React.lazy(() => import('./pages/Home'));
 const SelectRole        = React.lazy(() => import('./pages/SelectRole'));
 const Register          = React.lazy(() => import('./pages/auth/RegistrationEntry'));
-const ResetPassword     = React.lazy(() => import('./pages/common/ResetPassword'));
+const ForgotPassword    = React.lazy(() => import('./pages/public/ForgotPassword'));
+const ResetPassword     = React.lazy(() => import('./pages/public/ResetPassword'));
 
 // Public directory pages
 const DoctorDirectory   = React.lazy(() => import('./pages/public/DoctorDirectory'));
@@ -129,6 +130,7 @@ function AppRoutes() {
           <Route path="/patient/register" element={<Navigate to="/register?role=patient" replace />} />
           <Route path="/hospital/register" element={<Navigate to="/register?role=hospital_admin" replace />} />
           <Route path="/pharmacy/register" element={<Navigate to="/register?role=pharmacy" replace />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Public Directories */}

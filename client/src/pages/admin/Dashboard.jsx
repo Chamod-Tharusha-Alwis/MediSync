@@ -1,4 +1,5 @@
 import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
+import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -601,6 +602,7 @@ const AdminSettingsPage = () => {
       </div>
       <div className="max-w-4xl space-y-8">
         <LanguagePreferenceCard />
+        <ChangePasswordCard />
       </div>
     </PageTransition>
   );
