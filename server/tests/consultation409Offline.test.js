@@ -488,4 +488,91 @@ describe('Phase 3 Backend: Consultation 409 & Idempotency Specification', () => 
       }, 2);
     }).toThrow('MEDICATION_REVIEW_REQUIRED');
   });
+
+  test('15. Two resolved drugs with verificationIncomplete true must block with 409 MEDICATION_REVIEW_REQUIRED', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    const middleware = createClinicalWriteAuthorization({
+      verify: async () => ({ authorized: true, mode: 'patient_otp_consent', patientId: ids.patient }),
+      getExisting: async () => [],
+      getDoctor: async () => ({ orgLogins: [] }),
+      medicationCheck: async () => ({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: []
+      })
+    });
+
+    const req = {
+      user: { id: ids.doctor, role: 'doctor' },
+      headers: { 'x-patient-access': 'valid-proof' },
+      body: {
+        patientNic: nic,
+        prescriptions: [
+          { drugName: 'Paracetamol 500mg', durationDays: 3 },
+          { drugName: 'Amoxicillin 500mg', durationDays: 5 }
+        ]
+      }
+    };
+
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'MEDICATION_REVIEW_REQUIRED' });
+    expect(next).not.toHaveBeenCalled();
+
+    expect(() => {
+      assertMedicationResult({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: []
+      }, 2);
+    }).toThrow('MEDICATION_REVIEW_REQUIRED');
+  });
+
+  test('16. One resolved prescribed drug plus one existing medication follows full verification and blocks if incomplete', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    const middleware = createClinicalWriteAuthorization({
+      verify: async () => ({ authorized: true, mode: 'patient_otp_consent', patientId: ids.patient }),
+      getExisting: async () => ['Metformin 500mg'],
+      getDoctor: async () => ({ orgLogins: [] }),
+      medicationCheck: async () => ({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: []
+      })
+    });
+
+    const req = {
+      user: { id: ids.doctor, role: 'doctor' },
+      headers: { 'x-patient-access': 'valid-proof' },
+      body: {
+        patientNic: nic,
+        prescriptions: [
+          { drugName: 'Paracetamol 500mg', durationDays: 3 }
+        ]
+      }
+    };
+
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'MEDICATION_REVIEW_REQUIRED' });
+    expect(next).not.toHaveBeenCalled();
+
+    expect(() => {
+      assertMedicationResult({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: []
+      }, 2);
+    }).toThrow('MEDICATION_REVIEW_REQUIRED');
+  });
 });

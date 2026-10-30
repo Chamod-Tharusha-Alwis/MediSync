@@ -123,7 +123,8 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     if (!patient || String(patient.nic).trim().toUpperCase() !== nic) fail('PATIENT_NOT_FOUND', 'A matching registered patient record is required for allergy checks.', 404);
     if (String(patient._id) !== consent.patientId) fail('FORBIDDEN', 'Consent is bound to a different patient.', 403);
     if (patient.__enc_allergies) fail('PATIENT_RECORD_UNAVAILABLE', 'Patient allergy data could not be read safely.', 503);
-    assertMedicationResult(analyzeMedicationSafety([...(await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: rx?._id })), ...items.map(item => item.name)]));
+    const dispensingMeds = [...(await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: rx?._id })), ...items.map(item => item.name)];
+    assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
     const updates = new Map();
     for (const item of items) {
       const candidates = pharmacy.inventory.filter(i => item.inventoryItemId ? String(i._id) === item.inventoryItemId : normalize(i.drugName) === normalize(item.name));

@@ -16,12 +16,12 @@ async function currentMedicationNames(patientId, { session = null, PrescriptionM
   }
   return names;
 }
-function assertMedicationResult(result, totalCount = 2) {
+function assertMedicationResult(result, totalCount) {
   const hasNoUnresolved = Array.isArray(result?.unresolvedIngredients) &&
     result.unresolvedIngredients.length === 0 &&
     Array.isArray(result?.unresolvedDrugs) &&
     result.unresolvedDrugs.length === 0;
-  const isSingleResolvedSafe = (totalCount === 1 || totalCount === 2) &&
+  const isSingleResolvedSafe = totalCount === 1 &&
     hasNoUnresolved &&
     result &&
     result.hasInteraction === false &&
