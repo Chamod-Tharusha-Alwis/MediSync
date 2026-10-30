@@ -24,6 +24,11 @@ ML Service URL: `https://medisync-ml.onrender.com`
 | **Patient** | Dashboard Overview (`/patient/dashboard`) | **PASS** | UI Rendered | Patient identity and dashboard cards rendered cleanly. |
 | **Patient** | Medical Timeline View | **PASS** | UI Rendered | Timeline view accessible and mounted. |
 | **Patient** | Language Switcher (EN $\to$ SI $\to$ TA) | **PASS** | UI Verified | Dynamic switching confirmed: Sinhala (Unicode `[\u0D80-\u0DFF]`) and Tamil (`[\u0B80-\u0BFF]`) rendered, English cleanly restored. |
+| **Admin** | Authentication (`/admin/login`) | **PASS** | 200 OK | Authenticated as `Administrator` (`medisync.system.lk@gmail.com`). JWT stored. |
+| **Admin** | Dashboard & System Health (`/admin/dashboard`) | **PASS** | UI Rendered | Overview statistics, active widgets, and system monitors verified. |
+| **Admin** | Outbreak Monitor (`/admin/dashboard/outbreak`) | **PASS** | UI Rendered | All 6 synthetic outbreaks verified: 2 High (Dengue, Leptospirosis), 2 Moderate (Viral Hepatitis, Chickenpox), 2 Low (Influenza, Mumps). `SYNTHETIC SCENARIO` labels render on all cards/tables. |
+| **Public** | Forgot-Password Recovery (`/forgot-password`) | **PASS** | 200 OK | Uniform anti-enumeration response: *"If an account exists, instructions have been sent"*. |
+| **Security** | Forgot-Password Rate Limiting | **PASS** | 429 Too Many Requests | Immediate second request blocked by Redis cooldown (`otp_resend_cooldown`, `retryAfterSeconds: 59`). Exactly 1 reset email sent (Brevo daily limit respected). |
 
 ---
 
