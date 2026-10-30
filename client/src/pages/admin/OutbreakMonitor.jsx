@@ -396,9 +396,16 @@ const OutbreakMonitor = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {isLive && <PulseRing color={isCrit ? 'bg-red-500' : 'bg-amber-500'} />}
-                          <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
+                          <div>
+                            <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
                             {alert.disease || 'Unknown'}
-                          </span>
+                            </span>
+                            {alert.syntheticLabel && (
+                              <span className="block text-[10px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
+                                {alert.syntheticLabel}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-400 font-semibold">

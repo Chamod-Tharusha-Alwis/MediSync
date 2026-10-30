@@ -404,6 +404,9 @@ const AlertSettings = () => {
                   <AlertSquareIcon className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                   <div className="text-xs">
                     <p className="text-slate-200 font-semibold">{a.message}</p>
+                      {a.syntheticLabel && (
+                        <p className="text-[10px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">{a.syntheticLabel}</p>
+                      )}
                     <p className="text-slate-500 mt-1 font-mono text-[10px]">Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -442,6 +445,11 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         <div>
           <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">{t('outbreak.surveillanceTitle', 'Active System Outbreak Alert')}</h3>
           <p className="text-slate-200 text-xs font-semibold mt-1">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
+            {activeAlerts[0].syntheticLabel && (
+              <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold uppercase tracking-wider">
+                {activeAlerts[0].syntheticLabel}
+              </span>
+            )}
         </div>
       </div>
     )}

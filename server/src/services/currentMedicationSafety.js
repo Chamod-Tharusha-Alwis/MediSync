@@ -17,11 +17,15 @@ async function currentMedicationNames(patientId, { session = null, PrescriptionM
   return names;
 }
 function assertMedicationResult(result, totalCount = 2) {
-  const isSingleResolvedSafe = (totalCount === 1 || (totalCount === 2 && result?.statusMessage?.includes('at least two valid medications are required') && (!result.unresolvedDrugs || result.unresolvedDrugs.length === 0))) &&
+  const hasNoUnresolved = Array.isArray(result?.unresolvedIngredients) &&
+    result.unresolvedIngredients.length === 0 &&
+    Array.isArray(result?.unresolvedDrugs) &&
+    result.unresolvedDrugs.length === 0;
+  const isSingleResolvedSafe = (totalCount === 1 || totalCount === 2) &&
+    hasNoUnresolved &&
     result &&
     result.hasInteraction === false &&
-    (!result.duplicateIngredients || result.duplicateIngredients.length === 0) &&
-    (!result.unresolvedIngredients || result.unresolvedIngredients.length === 0);
+    (!result.duplicateIngredients || result.duplicateIngredients.length === 0);
   if (!result || (result.verificationIncomplete !== false && !isSingleResolvedSafe) || result.hasInteraction !== false || (result.duplicateIngredients && result.duplicateIngredients.length > 0)) throw new Error('MEDICATION_REVIEW_REQUIRED');
 }
 module.exports = { currentMedicationNames, assertMedicationResult };

@@ -364,4 +364,128 @@ describe('Phase 3 Backend: Consultation 409 & Idempotency Specification', () => 
       }, 1);
     }).not.toThrow();
   });
+
+  test('12. Single unresolved drug prescription blocks with 409 MEDICATION_REVIEW_REQUIRED', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    const middleware = createClinicalWriteAuthorization({
+      verify: async () => ({ authorized: true, mode: 'patient_otp_consent', patientId: ids.patient }),
+      getExisting: async () => [],
+      getDoctor: async () => ({ orgLogins: [] }),
+      medicationCheck: async () => ({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: ['UnlistedHerb123'],
+        unresolvedDrugs: [{ drug: 'UnlistedHerb123' }]
+      })
+    });
+
+    const req = {
+      user: { id: ids.doctor, role: 'doctor' },
+      headers: { 'x-patient-access': 'valid-proof' },
+      body: { patientNic: nic, prescriptions: [{ drugName: 'UnlistedHerb123', durationDays: 3 }] }
+    };
+
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'MEDICATION_REVIEW_REQUIRED' });
+    expect(next).not.toHaveBeenCalled();
+
+    expect(() => {
+      assertMedicationResult({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: ['UnlistedHerb123'],
+        unresolvedDrugs: [{ drug: 'UnlistedHerb123' }]
+      }, 1);
+    }).toThrow('MEDICATION_REVIEW_REQUIRED');
+  });
+
+  test('13. Two drugs with one unresolved block with 409 MEDICATION_REVIEW_REQUIRED', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    const middleware = createClinicalWriteAuthorization({
+      verify: async () => ({ authorized: true, mode: 'patient_otp_consent', patientId: ids.patient }),
+      getExisting: async () => [],
+      getDoctor: async () => ({ orgLogins: [] }),
+      medicationCheck: async () => ({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: ['UnlistedHerb123'],
+        unresolvedDrugs: [{ drug: 'UnlistedHerb123' }]
+      })
+    });
+
+    const req = {
+      user: { id: ids.doctor, role: 'doctor' },
+      headers: { 'x-patient-access': 'valid-proof' },
+      body: {
+        patientNic: nic,
+        prescriptions: [
+          { drugName: 'Paracetamol 500mg', durationDays: 3 },
+          { drugName: 'UnlistedHerb123', durationDays: 3 }
+        ]
+      }
+    };
+
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'MEDICATION_REVIEW_REQUIRED' });
+    expect(next).not.toHaveBeenCalled();
+
+    expect(() => {
+      assertMedicationResult({
+        hasInteraction: false,
+        verificationIncomplete: true,
+        duplicateIngredients: [],
+        unresolvedIngredients: ['UnlistedHerb123'],
+        unresolvedDrugs: [{ drug: 'UnlistedHerb123' }]
+      }, 2);
+    }).toThrow('MEDICATION_REVIEW_REQUIRED');
+  });
+
+  test('14. Known drug-drug interaction blocks with 409 MEDICATION_REVIEW_REQUIRED', async () => {
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    const middleware = createClinicalWriteAuthorization({
+      verify: async () => ({ authorized: true, mode: 'patient_otp_consent', patientId: ids.patient }),
+      getExisting: async () => ['Aspirin 75mg'],
+      getDoctor: async () => ({ orgLogins: [] }),
+      medicationCheck: async () => ({
+        hasInteraction: true,
+        verificationIncomplete: false,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: [],
+        warnings: [{ type: 'drug_interaction', severity: 'high' }]
+      })
+    });
+
+    const req = {
+      user: { id: ids.doctor, role: 'doctor' },
+      headers: { 'x-patient-access': 'valid-proof' },
+      body: {
+        patientNic: nic,
+        prescriptions: [{ drugName: 'Warfarin 5mg', durationDays: 5 }]
+      }
+    };
+
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'MEDICATION_REVIEW_REQUIRED' });
+    expect(next).not.toHaveBeenCalled();
+
+    expect(() => {
+      assertMedicationResult({
+        hasInteraction: true,
+        verificationIncomplete: false,
+        duplicateIngredients: [],
+        unresolvedIngredients: [],
+        unresolvedDrugs: []
+      }, 2);
+    }).toThrow('MEDICATION_REVIEW_REQUIRED');
+  });
 });
