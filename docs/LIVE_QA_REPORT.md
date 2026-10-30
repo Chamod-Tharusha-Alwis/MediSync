@@ -115,4 +115,4 @@ ML Service URL: `https://medisync-ml.onrender.com`
 
 ## Production Data Integrity
 - Total synthetic records persisted during Phase 7: **0** (read-only verification of live services, zero extraneous mutations).
-- Manifest: [`scratch/phase7_synthetic_manifest.json`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/scratch/phase7_synthetic_manifest.json) (empty).
+- Manifest: `scratch/phase7_synthetic_manifest.json` (empty).
