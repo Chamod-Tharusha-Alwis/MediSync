@@ -14,6 +14,7 @@ function resolveLang(options, fallback = 'en') {
 }
 
 const axios = require('axios');
+const { formatDoctorName, stripDoctorPrefix } = require('./doctorName');
 const {
   getDailyEmailCount,
   incrementDailyEmailCount,
@@ -1244,7 +1245,7 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
           <p style="font-size: 16px; color: #333333;">Hello ${patientName},</p>
           <p style="font-size: 16px; color: #333333;">This is a friendly reminder for your upcoming medical follow-up.</p>
           <div style="margin: 30px 0; padding: 20px; border-left: 4px solid #3B82F6; background-color: #f4f7f6;">
-            <p style="margin: 0 0 10px 0; font-size: 16px; color: #333333;"><strong>Doctor:</strong> ${doctorName}</p>
+            <p style="margin: 0 0 10px 0; font-size: 16px; color: #333333;"><strong>Doctor:</strong> ${formatDoctorName(doctorName, 'Medical Professional')}</p>
             <p style="margin: 0; font-size: 16px; color: #333333;"><strong>Date:</strong> ${date}</p>
           </div>
           <p style="font-size: 14px; color: #777777;">Please contact the clinic if you need to reschedule.</p>
@@ -1395,7 +1396,9 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
 
   const lang = resolveLang(options);
   const safePatientName = escapeHtml(patientName || 'Patient');
-  const safeDoctorName = escapeHtml(doctorName || 'Your Doctor');
+  const cleanName = stripDoctorPrefix(doctorName || 'Your Doctor');
+  const safeDoctorName = escapeHtml(formatDoctorName(cleanName));
+  const safeCleanName = escapeHtml(cleanName);
   const safeDate = escapeHtml(formattedDate);
   const subjects = {
     en: `MediSync — Appointment Reminder: ${formattedDate}`,
@@ -1403,9 +1406,9 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
     ta: `MediSync — சந்திப்பு நினைவூட்டல்: ${formattedDate}`
   };
   const notices = {
-    en: `This is a reminder that you have a scheduled consultation with <strong>Dr. ${safeDoctorName}</strong> on <strong>${safeDate}</strong>.`,
-    si: `ඔබ වෙනුවෙන් <strong>දොස්තර ${safeDoctorName}</strong> සමඟ <strong>${safeDate}</strong> දින වෛද්‍ය හමුවක් නියමිත බව කරුණාවෙන් සිහිපත් කරමු.`,
-    ta: `<strong>மருத்துவர் ${safeDoctorName}</strong> உடன் <strong>${safeDate}</strong> அன்று உங்களுக்கு ஆலோசனை சந்திப்பு திட்டமிடப்பட்டுள்ளது என்பதை நினைவூட்டுகிறோம்.`
+    en: `This is a reminder that you have a scheduled consultation with <strong>${safeDoctorName}</strong> on <strong>${safeDate}</strong>.`,
+    si: `ඔබ වෙනුවෙන් <strong>දොස්තර ${safeCleanName}</strong> සමඟ <strong>${safeDate}</strong> දින වෛද්‍ය හමුවක් නියමිත බව කරුණාවෙන් සිහිපත් කරමු.`,
+    ta: `<strong>மருத்துவர் ${safeCleanName}</strong> உடன் <strong>${safeDate}</strong> அன்று உங்களுக்கு ஆலோசனை சந்திப்பு திட்டமிடப்பட்டுள்ளது என்பதை நினைவூட்டுகிறோம்.`
   };
 
   return sendMail({
@@ -2042,7 +2045,10 @@ exports.sendPasswordResetEmail = async (to, name, resetUrl, expiresAt = '15 minu
 exports.sendPatientAccessRequestEmail = async (to, patientName, doctorName, clinicName, options = {}) => {
   const lang = resolveLang(options);
   const safePatientName = escapeHtml(patientName);
-  const safeDoctorName = escapeHtml(doctorName);
+  const cleanDoc = stripDoctorPrefix(doctorName || 'Doctor');
+  const formattedDoctorName = formatDoctorName(cleanDoc);
+  const safeDoctorName = escapeHtml(formattedDoctorName);
+  const safeCleanDoc = escapeHtml(cleanDoc);
   const safeClinicName = escapeHtml(clinicName || 'Medical Facility');
 
   const subjects = {
@@ -2057,9 +2063,9 @@ exports.sendPatientAccessRequestEmail = async (to, patientName, doctorName, clin
   };
 
   const plainTexts = {
-    en: `Hello ${patientName},\n\nDr. ${doctorName} at ${clinicName || 'authorized clinic'} has requested access to your clinical timeline.\n\nPlease log in to grant or deny consent.`,
-    si: `ආයුබෝවන් ${patientName},\n\n${clinicName || 'බලයලත් සායනය'} හි වෛද්‍ය ${doctorName} ඔබගේ සායනික කාලරේඛාව වෙත ප්‍රවේශය ඉල්ලා ඇත.\n\nකරුණාකර කැමැත්ත ලබා දීමට හෝ ප්‍රතික්ෂේප කිරීමට පිවිසෙන්න.`,
-    ta: `வணக்கம் ${patientName},\n\n${clinicName || 'அங்கீகரிக்கப்பட்ட கிளினிக்'} இல் உள்ள மருத்துவர் ${doctorName} உங்கள் மருத்துவப் பதிவுகள் அணுகலைக் கோரியுள்ளார்.\n\nஅனுமதிக்க அல்லது மறுக்க உள்நுழையவும்.`
+    en: `Hello ${patientName},\n\n${formattedDoctorName} at ${clinicName || 'authorized clinic'} has requested access to your clinical timeline.\n\nPlease log in to grant or deny consent.`,
+    si: `ආයුබෝවන් ${patientName},\n\n${clinicName || 'බලයලත් සායනය'} හි වෛද්‍ය ${safeCleanDoc} ඔබගේ සායනික කාලරේඛාව වෙත ප්‍රවේශය ඉල්ලා ඇත.\n\nකරුණාකර කැමැත්ත ලබා දීමට හෝ ප්‍රතික්ෂේප කිරීමට පිවිසෙන්න.`,
+    ta: `வணக்கம் ${patientName},\n\n${clinicName || 'அங்கீகரிக்கப்பட்ட கிளினிக்'} இல் உள்ள மருத்துவர் ${safeCleanDoc} உங்கள் மருத்துவப் பதிவுகள் அணுகலைக் கோரியுள்ளார்.\n\nஅனுமதிக்க அல்லது மறுக்க உள்நுழையவும்.`
   };
 
   return sendMail({
@@ -2071,9 +2077,9 @@ exports.sendPatientAccessRequestEmail = async (to, patientName, doctorName, clin
       preheader: `${safeDoctorName} requested access to your health timeline`,
       bodyHtml: `
         <p>Hello <strong>${safePatientName}</strong>,</p>
-        <p><strong>Dr. ${safeDoctorName}</strong> (${safeClinicName}) has requested time-bounded access to your MediSync health records for consultation and diagnosis support.</p>
+        <p><strong>${safeDoctorName}</strong> (${safeClinicName}) has requested time-bounded access to your MediSync health records for consultation and diagnosis support.</p>
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 16px 0;">
-          <p style="margin: 0 0 6px 0; font-size: 13px;"><strong>Clinician:</strong> Dr. ${safeDoctorName}</p>
+          <p style="margin: 0 0 6px 0; font-size: 13px;"><strong>Clinician:</strong> ${safeDoctorName}</p>
           <p style="margin: 0; font-size: 13px;"><strong>Access Scope:</strong> Past Consultations, Prescriptions &amp; Lab Reports</p>
         </div>
         <p>You can grant consent via OTP challenge in your patient dashboard or during your in-person visit.</p>
@@ -2089,7 +2095,10 @@ exports.sendConsentStatusEmail = async (to, patientName, doctorName, status = 'g
   const lang = resolveLang(options);
   const isGranted = String(status).toLowerCase() === 'granted';
   const safePatientName = escapeHtml(patientName);
-  const safeDoctorName = escapeHtml(doctorName);
+  const cleanDoc = stripDoctorPrefix(doctorName || 'Doctor');
+  const formattedDoctorName = formatDoctorName(cleanDoc);
+  const safeDoctorName = escapeHtml(formattedDoctorName);
+  const safeCleanDoc = escapeHtml(cleanDoc);
 
   const subjects = {
     en: `MediSync Security Notice — Clinical Access ${isGranted ? 'Granted' : 'Revoked'}`,
@@ -2098,9 +2107,9 @@ exports.sendConsentStatusEmail = async (to, patientName, doctorName, status = 'g
   };
 
   const plainTexts = {
-    en: `Hello ${patientName},\n\nClinical access for Dr. ${doctorName} was ${isGranted ? 'granted' : 'revoked'}.\n\nTimestamp: ${new Date().toISOString()}`,
-    si: `ආයුබෝවන් ${patientName},\n\nවෛද්‍ය ${doctorName} සඳහා සායනික ප්‍රවේශය ${isGranted ? 'බලය පවරන ලදී' : 'අවලංගු කරන ලදී'}.\n\nවේලාව: ${new Date().toISOString()}`,
-    ta: `வணக்கம் ${patientName},\n\nமருத்துவர் ${doctorName} க்கான மருத்துவ அணுகல் ${isGranted ? 'வழங்கப்பட்டது' : 'ரத்து செய்யப்பட்டது'}.\n\nநேரம்: ${new Date().toISOString()}`
+    en: `Hello ${patientName},\n\nClinical access for ${formattedDoctorName} was ${isGranted ? 'granted' : 'revoked'}.\n\nTimestamp: ${new Date().toISOString()}`,
+    si: `ආයුබෝවන් ${patientName},\n\nවෛද්‍ය ${safeCleanDoc} සඳහා සායනික ප්‍රවේශය ${isGranted ? 'බලය පවරන ලදී' : 'අවලංගු කරන ලදී'}.\n\nවේලාව: ${new Date().toISOString()}`,
+    ta: `வணக்கம் ${patientName},\n\nமருத்துவர் ${safeCleanDoc} க்கான மருத்துவ அணுகல் ${isGranted ? 'வழங்கப்பட்டது' : 'ரத்து செய்யப்பட்டது'}.\n\nநேரம்: ${new Date().toISOString()}`
   };
 
   return sendMail({
@@ -2109,10 +2118,10 @@ exports.sendConsentStatusEmail = async (to, patientName, doctorName, status = 'g
     text: plainTexts[lang] || plainTexts.en,
     html: renderBrandEmailHtml({
       title: `Clinical Access Consent ${isGranted ? 'Activated' : 'Revoked'}`,
-      preheader: `Health record access for Dr. ${safeDoctorName} was updated`,
+      preheader: `Health record access for ${safeDoctorName} was updated`,
       bodyHtml: `
         <p>Hello <strong>${safePatientName}</strong>,</p>
-        <p>This confirmation confirms that clinical timeline access for <strong>Dr. ${safeDoctorName}</strong> has been <span style="font-weight: 700; color: ${isGranted ? '#0d9488' : '#e11d48'};">${isGranted ? 'AUTHORIZED' : 'TERMINATED'}</span>.</p>
+        <p>This confirmation confirms that clinical timeline access for <strong>${safeDoctorName}</strong> has been <span style="font-weight: 700; color: ${isGranted ? '#0d9488' : '#e11d48'};">${isGranted ? 'AUTHORIZED' : 'TERMINATED'}</span>.</p>
         <p style="font-size: 13px; color: #64748b;">Event logged to immutable audit ledger at: ${new Date().toLocaleString()}</p>
       `,
       lang

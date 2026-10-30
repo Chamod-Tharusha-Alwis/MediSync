@@ -16,6 +16,7 @@ import PatientSupport from './Support';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { isActivePrescription, patientDashboardTimeline } from '../../utils/patientPrescriptionStatus';
+import { formatDoctorName } from '../../utils/doctorName';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Overview — the landing page of the patient dashboard
@@ -272,7 +273,7 @@ export const Overview = ({ data }) => {
                       <p className="text-white font-bold text-lg">
                         {rx.medications?.length > 0 ? rx.medications[0].name : rx.drugName || 'Prescription'}
                       </p>
-                      <p className="text-slate-400 text-sm">Dr. {rx.doctorId?.fullName || 'Doctor'}</p>
+                      <p className="text-slate-400 text-sm">{formatDoctorName(rx.doctorId?.fullName, 'Doctor')}</p>
                     </div>
                     <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded uppercase">
                       Awaiting dispensing
@@ -327,7 +328,7 @@ export const Overview = ({ data }) => {
                     {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                   <p className="text-white font-medium text-lg">{c.diagnosis || 'General Checkup'}</p>
-                  <p className="text-slate-400 text-sm mt-1">Dr. {c.doctorId?.fullName || 'Unknown'}</p>
+                  <p className="text-slate-400 text-sm mt-1">{formatDoctorName(c.doctorId?.fullName, 'Unknown')}</p>
                   {c.symptoms?.length > 0 && (
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {c.symptoms.slice(0, 3).map((sym, i) => (

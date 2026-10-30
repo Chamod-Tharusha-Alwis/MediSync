@@ -9,6 +9,7 @@ import {
 import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 import { toast } from 'react-toastify';
+import { formatDoctorName } from '../../utils/doctorName';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PDF Download helper — streams the prescription PDF and triggers browser save
@@ -70,7 +71,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
               </span>
             )}
           </div>
-          <p className="text-sm text-teal-400 mt-0.5">Dr. {rx.doctorName || 'Unknown'}</p>
+          <p className="text-sm text-teal-400 mt-0.5">{formatDoctorName(rx.doctorName, 'Unknown')}</p>
           {rx.hospitalName && (
             <p className="text-xs text-slate-500 mt-0.5">{rx.hospitalName}</p>
           )}

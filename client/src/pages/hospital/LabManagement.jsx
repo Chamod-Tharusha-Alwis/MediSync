@@ -12,6 +12,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import OtpInput from '../../components/ui/OtpInput';
 import Modal from '../../components/ui/Modal';
 import Skeleton from '../../components/ui/Skeleton';
+import { formatDoctorName } from '../../utils/doctorName';
 
 // ── Urgency badge ────────────────────────────────────────────────────────────
 const UrgencyBadge = ({ urgency }) => {
@@ -227,7 +228,7 @@ const RegisterNewTest = () => {
                           <h5 className="text-white font-bold text-sm truncate">{test.testName}</h5>
                           <UrgencyBadge urgency={test.urgency || 'routine'} />
                         </div>
-                        <p className="text-slate-400 text-xs mt-1">Referred: Dr. {test.referredBy?.fullName || 'Practitioner'}</p>
+                        <p className="text-slate-400 text-xs mt-1">Referred: {formatDoctorName(test.referredBy?.fullName, 'Practitioner')}</p>
                       </div>
                       <button
                         onClick={() => handleApprove(test)}
@@ -417,7 +418,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>Referring Doctor:</span>
-                    <span className="text-slate-300">Dr. {t.referredBy?.fullName || 'Practitioner'}</span>
+                    <span className="text-slate-300">{formatDoctorName(t.referredBy?.fullName, 'Practitioner')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Date Prescribed:</span>

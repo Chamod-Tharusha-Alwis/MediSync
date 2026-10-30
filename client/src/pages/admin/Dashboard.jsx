@@ -646,10 +646,12 @@ const AdminDashboard = () => {
       });
 
       socket.on('connect_error', (err) => {
-        if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired')) {
+        if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired') || err?.data?.code === 'SOCKET_AUTH_DENIED') {
           console.warn('[Socket.IO Admin] Authentication rejected or expired. Halting reconnection.');
           socket.disconnect();
+          return;
         }
+        // Silent fallback: degrade without console error spam
       });
 
       socket.on('outbreak_alert', (data) => {
@@ -678,6 +680,7 @@ const AdminDashboard = () => {
     return () => {
       clearTimeout(timer);
       if (socket) {
+        socket.off(); // Detach listeners first
         socket.disconnect();
       }
     };

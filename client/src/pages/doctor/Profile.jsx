@@ -16,6 +16,7 @@ import axios from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import TrustedDevices from '../../components/TrustedDevices';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const initials = (name = '') =>
   name
@@ -227,7 +228,7 @@ const DoctorProfile = () => {
     <div className="doctor-theme">
       <AppShell
         role="doctor"
-        userName={form.fullName || profile.fullName}
+        userName={formatDoctorName(form.fullName || profile.fullName)}
         userRole="Medical Professional"
         menuItems={MENU_ITEMS}
       >
@@ -294,7 +295,7 @@ const DoctorProfile = () => {
 
               <div className="min-w-0 flex-1 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                  <h2 className="text-xl font-bold text-white truncate">Dr. {form.fullName || profile.fullName}</h2>
+                  <h2 className="text-xl font-bold text-white truncate">{formatDoctorName(form.fullName || profile.fullName)}</h2>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-bold uppercase tracking-wider select-none">
                     <BadgeCheck className="w-3.5 h-3.5" /> Active license
                   </span>

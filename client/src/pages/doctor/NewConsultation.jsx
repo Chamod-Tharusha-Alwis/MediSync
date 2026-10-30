@@ -20,6 +20,7 @@ import { inferencePredictions } from '../../utils/inferenceResponse';
 import usePatientConsent from '../../hooks/usePatientConsent';
 import { prescriptionPayload } from '../../utils/prescriptionDuration';
 import { LayoutDashboard, FlaskConical } from 'lucide-react';
+import { formatDoctorName } from '../../utils/doctorName';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -103,7 +104,7 @@ const slideVariants = {
 
 /* ─── Step Progress Bar ─────────────────────────────────────────────────────── */
 const StepBar = ({ current }) => (
-  <div className="flex items-center px-6 md:px-10 py-5 border-b border-white/5 relative bg-slate-950/20">
+  <div role="navigation" aria-label="Consultation Steps" className="flex items-center px-6 md:px-10 py-5 border-b border-white/5 relative bg-slate-950/20">
     {/* Animated progress fill */}
     <div
       className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-teal-500 via-cyan-400 to-emerald-400 transition-all duration-500 ease-out"
@@ -116,7 +117,7 @@ const StepBar = ({ current }) => (
       const Icon   = step.icon;
       return (
         <React.Fragment key={step.id}>
-          <div className="flex items-center gap-3 flex-1 justify-center md:justify-start">
+          <div aria-current={active ? 'step' : undefined} className="flex items-center gap-3 flex-1 justify-center md:justify-start">
             {/* Circle */}
             <motion.div
               animate={{
@@ -133,18 +134,18 @@ const StepBar = ({ current }) => (
             >
               {done
                 ? <FiCheck className="w-4 h-4 text-white" strokeWidth={3} />
-                : <Icon className={`w-4 h-4 ${active ? 'text-teal-400' : 'text-slate-600'}`} />}
+                : <Icon className={`w-4 h-4 ${active ? 'text-teal-400' : 'text-slate-400'}`} />}
             </motion.div>
 
             {/* Desktop label */}
             <span className={`hidden md:inline text-sm font-semibold transition-colors duration-200 ${
-              active ? 'text-white' : done ? 'text-teal-400' : 'text-slate-600'
+              active ? 'text-white' : done ? 'text-teal-400' : 'text-slate-400'
             }`}>
               {step.label}
             </span>
             {/* Mobile label */}
             <span className={`md:hidden text-xs font-semibold transition-colors ${
-              active ? 'text-white' : done ? 'text-teal-400' : 'text-slate-600'
+              active ? 'text-white' : done ? 'text-teal-400' : 'text-slate-400'
             }`}>
               {step.short}
             </span>
@@ -207,6 +208,8 @@ const NewConsultation = () => {
   const [labSuggestions,     setLabSuggestions]    = useState([]);
   const [labActiveIndex,     setLabActiveIndex]    = useState(-1);
   const [isLabOpen,          setIsLabOpen]         = useState(false);
+  const [isLabFlipped,       setIsLabFlipped]      = useState(false);
+  const [isIcdFlipped,       setIsIcdFlipped]      = useState(false);
   const labWrapperRef = useRef(null);
   const labListRef = useRef(null);
   const [followUpDate,       setFollowUpDate]      = useState('');
@@ -319,6 +322,26 @@ const NewConsultation = () => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
+
+  // Dynamic viewport flip-above detection for ICD search dropdown
+  useEffect(() => {
+    if (isIcdOpen && icdWrapperRef.current && typeof window !== 'undefined') {
+      const rect = icdWrapperRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      setIsIcdFlipped(spaceBelow < 260 && spaceAbove > spaceBelow);
+    }
+  }, [isIcdOpen, icdSuggestions]);
+
+  // Dynamic viewport flip-above detection for Lab Tests search dropdown
+  useEffect(() => {
+    if (isLabOpen && labWrapperRef.current && typeof window !== 'undefined') {
+      const rect = labWrapperRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      setIsLabFlipped(spaceBelow < 260 && spaceAbove > spaceBelow);
+    }
+  }, [isLabOpen, labSuggestions]);
 
   // Fetch ICD-10 & WHO ICD-11 suggestions debounced
   useEffect(() => {
@@ -645,7 +668,7 @@ const NewConsultation = () => {
     <div className="doctor-theme">
       <AppShell
         role="doctor"
-        userName={`Dr. ${doctorName}`}
+        userName={formatDoctorName(doctorName)}
         userRole="Verified Doctor"
         menuItems={menuItems}
       >
@@ -1091,7 +1114,7 @@ const NewConsultation = () => {
                         <label className="block text-sm font-semibold text-slate-300 mb-3">{t("doctor.finalDiagnosisConfirmation", "Final Diagnosis Confirmation")}</label>
 
                         {/* ICD Search Bar with Version Filters */}
-                        <div className="mb-4 relative" ref={icdWrapperRef}>
+                        <div className="mb-4 relative z-20" ref={icdWrapperRef}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs text-slate-400 font-semibold">{t("doctor.standardReference", "Standard Reference:")}</span>
                             <div className="flex gap-1.5">
@@ -1146,7 +1169,9 @@ const NewConsultation = () => {
                               ref={icdListRef}
                               id="icd-suggestions-list"
                               role="listbox"
-                              className="absolute z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"
+                              className={`absolute z-50 w-full bg-slate-900 border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto custom-scrollbar ${
+                                isIcdFlipped ? 'bottom-full mb-1' : 'top-full mt-1'
+                              }`}
                             >
                               {isIcdLoading && (
                                 <div className="p-3 text-xs text-slate-400 flex items-center justify-center gap-2" role="status">
@@ -1452,7 +1477,7 @@ const NewConsultation = () => {
                     )}
 
                     {/* ── Lab Tests ────────────────────────────────────────── */}
-                    <div className="glass-card rounded-2xl p-6 border border-purple-500/10 relative">
+                    <div className="glass-card rounded-2xl p-6 border border-purple-500/10 relative z-20">
                       {/* Section header */}
                       <h3 className="font-bold text-white mb-1 flex items-center gap-2 text-base">
                         <span className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center">
@@ -1464,7 +1489,7 @@ const NewConsultation = () => {
                       <p className="text-xs text-slate-500 mb-4 pl-10">Type to search from common tests or enter a custom test name.</p>
 
                       {/* Auto-suggest input */}
-                      <div className="relative" ref={labWrapperRef}>
+                      <div className="relative z-30" ref={labWrapperRef}>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
                             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none" />
@@ -1491,11 +1516,13 @@ const NewConsultation = () => {
                                   ref={labListRef}
                                   id="lab-suggestions-list"
                                   role="listbox"
-                                  initial={{ opacity: 0, y: -6 }}
+                                  initial={{ opacity: 0, y: isLabFlipped ? 6 : -6 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -6 }}
+                                  exit={{ opacity: 0, y: isLabFlipped ? 6 : -6 }}
                                   transition={{ duration: 0.15 }}
-                                  className="absolute z-50 w-full mt-1 bg-slate-900/98 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"
+                                  className={`absolute z-50 w-full bg-slate-900 border border-slate-700/80 rounded-xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto custom-scrollbar ${
+                                    isLabFlipped ? 'bottom-full mb-1' : 'top-full mt-1'
+                                  }`}
                                 >
                                   {labSuggestions.length > 0 ? (
                                     labSuggestions.map((s, i) => {
@@ -1580,7 +1607,7 @@ const NewConsultation = () => {
                     </div>
 
                     {/* ── Follow-up Date ───────────────────────────────────── */}
-                    <div className="glass-card rounded-2xl p-6 border border-teal-500/10">
+                    <div className="glass-card rounded-2xl p-6 border border-teal-500/10 relative z-10">
                       <h3 className="font-bold text-white mb-1 flex items-center gap-2 text-base">
                         <span className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/25 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1595,6 +1622,7 @@ const NewConsultation = () => {
                         <input
                           type="date"
                           id="follow-up-date"
+                          aria-label="Next Consultation or Follow-up Date"
                           value={followUpDate || ""}
                           onChange={e => setFollowUpDate(e.target.value)}
                           min={new Date().toISOString().split('T')[0]}

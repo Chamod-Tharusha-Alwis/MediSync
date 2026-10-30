@@ -3,6 +3,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, X, Download, Calendar, User, Building2, FileText } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const LabDetailModal = ({ isOpen, onClose, labTest }) => {
   const { t } = useTranslation();
@@ -18,7 +19,8 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
 
   const reportId = labTest.reportId || labTest._id || labTest.data?.reportId || 'LAB-' + Date.now().toString().slice(-6);
   const orderedDate = labTest.createdAt || labTest.date || labTest.data?.createdAt || new Date().toISOString();
-  const doctorName = labTest.doctorName || labTest.doctorId?.fullName || labTest.data?.doctorId?.fullName || 'Attending Physician';
+  const rawDoctor = labTest.doctorName || labTest.doctorId?.fullName || labTest.data?.doctorId?.fullName;
+  const doctorName = formatDoctorName(rawDoctor, 'Attending Physician');
   const hospitalName = labTest.hospitalName || labTest.hospitalId?.name || labTest.data?.hospitalId?.name || 'MediSync Central Laboratory';
   const notes = labTest.notes || labTest.remarks || labTest.data?.notes || 'Sample processed under standard clinical protocol.';
 

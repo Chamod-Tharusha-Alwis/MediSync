@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, Star, MapPin, Building2, MessageSquare, Quote, BookOpen } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import { formatDoctorName } from '../../utils/doctorName';
 
 
 
@@ -98,7 +99,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
               )}
             </div>
             <div className="text-left">
-              <h2 id="doctor-modal-title" className="text-xl font-bold text-white mb-0.5">{doctor.fullName}</h2>
+              <h2 id="doctor-modal-title" className="text-xl font-bold text-white mb-0.5">{formatDoctorName(doctor.fullName)}</h2>
               <p className="text-blue-400 font-bold text-sm">{doctor.specialization || 'General Practitioner'}</p>
               
               <div className="flex flex-wrap items-center gap-2 mt-2">

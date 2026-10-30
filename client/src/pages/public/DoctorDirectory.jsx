@@ -7,6 +7,7 @@ import DirectoryLoadError from '../../components/common/DirectoryLoadError';
 import DoctorProfileModal from './DoctorProfileModal';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const DoctorDirectory = () => {
   const { t } = useTranslation();
@@ -112,7 +113,7 @@ const DoctorDirectory = () => {
                     </div>
                     
                     <h3 className="text-base font-bold text-white mb-1 group-hover:text-blue-400 transition-colors line-clamp-1">
-                      {doc.fullName}
+                      {formatDoctorName(doc.fullName)}
                     </h3>
                     <p className="text-blue-400 font-bold text-xs mb-2">{doc.specialization || 'General Practitioner'}</p>
                     {(doc.isSynthetic || doc.slmcRegistered === false) && (

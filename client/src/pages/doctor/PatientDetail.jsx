@@ -19,6 +19,7 @@ import Modal from '../../components/ui/Modal';
 import LabDetailModal from '../../components/common/LabDetailModal';
 
 import { usePatientAccess } from '../../context/PatientAccessContext';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const DoctorPatientDetail = () => {
   const { t } = useTranslation();
@@ -198,7 +199,7 @@ const DoctorPatientDetail = () => {
     <div className="doctor-theme">
       <AppShell
         role="doctor"
-        userName={`Dr. ${doctorName}`}
+        userName={formatDoctorName(doctorName)}
         userRole="Verified Doctor"
         menuItems={menuItems}
       >
@@ -359,7 +360,7 @@ const DoctorPatientDetail = () => {
                                 )}
                               </div>
                               <div className="text-left md:text-right border-t md:border-t-0 pt-3 md:pt-0 border-white/5">
-                                <p className="text-xs font-semibold text-slate-300">Dr. {rx.doctorId?.fullName || 'Prescribing Doctor'}</p>
+                                <p className="text-xs font-semibold text-slate-300">{formatDoctorName(rx.doctorId?.fullName, 'Prescribing Doctor')}</p>
                                 <p className="text-[11px] text-slate-500 mt-0.5">{new Date(rx.issuedAt || rx.createdAt).toLocaleDateString()}</p>
                               </div>
                             </div>

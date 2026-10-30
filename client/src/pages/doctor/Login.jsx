@@ -180,15 +180,15 @@ const DoctorLogin = () => {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">
+            <label htmlFor="doctor-email" className="text-xs font-semibold uppercase text-slate-300 ml-1">
               {loginType === 'hospital' ? 'Hospital Org Email' : 'Personal Email'}
             </label>
-            <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+            <GlassInput id="doctor-email" type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">Password</label>
-            <GlassInput type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <label htmlFor="doctor-password" className="text-xs font-semibold uppercase text-slate-300 ml-1">Password</label>
+            <GlassInput id="doctor-password" type="password" required icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </div>
 
           <GlassButton type="submit" isLoading={loading} className="w-full mt-4">{t('auth.signInBtn', 'Sign In')}</GlassButton>

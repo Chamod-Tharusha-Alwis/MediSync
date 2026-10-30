@@ -69,10 +69,12 @@ const NotificationBell = () => {
         });
 
         socket.on('connect_error', (err) => {
-          if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired')) {
+          if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired') || err?.data?.code === 'SOCKET_AUTH_DENIED') {
             console.warn('[Socket.IO] Authentication rejected or expired. Halting reconnection.');
             socket.disconnect();
+            return;
           }
+          // Silent fallback: network drops or server restarts degrade gracefully to HTTP polling interval
         });
 
         socket.on('notification', () => {
@@ -96,7 +98,8 @@ const NotificationBell = () => {
       clearInterval(interval);
       clearTimeout(timer);
       if (socket) {
-        socket.disconnect();
+        if (typeof socket.off === 'function') socket.off(); // Detach all listeners before disconnect to prevent unmounted state updates
+        if (typeof socket.disconnect === 'function') socket.disconnect();
       }
     };
   }, [fetchNotifications]);

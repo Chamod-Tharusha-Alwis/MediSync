@@ -81,7 +81,11 @@ const LoginShell = ({
             </div>
 
             {error && (
-              <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-semibold text-center select-none">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-semibold text-center select-none"
+              >
                 {error}
               </div>
             )}

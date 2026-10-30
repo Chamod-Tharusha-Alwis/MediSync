@@ -15,6 +15,13 @@ export const PROTOTYPE_NOTICES = {
 
 export default function PrototypeNotice() {
   const { language } = useTranslation();
+
+  // Controlled via build-time environment variable.
+  // Defaults to hidden (null) on live Vercel without causing layout shift.
+  if (process.env.REACT_APP_SHOW_PROTOTYPE_BANNER !== 'true') {
+    return null;
+  }
+
   const currentNotice = PROTOTYPE_NOTICES[language] || PROTOTYPE_NOTICES.en;
 
   return (

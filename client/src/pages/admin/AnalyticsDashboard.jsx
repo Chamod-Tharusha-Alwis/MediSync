@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Activity, Pill, Users, TrendingUp, AlertTriangle, RefreshCw } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const INITIAL_ANALYTICS = Object.freeze({
   registrationGrowth: [],
@@ -30,7 +31,7 @@ const AnalyticsDashboard = () => {
 
       const normalized = {
         registrationGrowth: Array.isArray(payload.registrationGrowth) ? payload.registrationGrowth : [],
-        topDoctors: Array.isArray(payload.topDoctors) ? payload.topDoctors : [],
+        topDoctors: Array.isArray(payload.topDoctors) ? payload.topDoctors.map(d => ({ ...d, name: formatDoctorName(d.name) })) : [],
         dispensingStats: {
           issuedCount: Number(payload.dispensingStats?.issuedCount) || 0,
           dispensedCount: Number(payload.dispensingStats?.dispensedCount) || 0,

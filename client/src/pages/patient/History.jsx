@@ -18,6 +18,7 @@ import Modal from '../../components/ui/Modal';
 
 import LabDetailModal from '../../components/common/LabDetailModal';
 import LabReportDownloadButton from '../../components/common/LabReportDownloadButton';
+import { formatDoctorName } from '../../utils/doctorName';
 
 /* ─── Framer Motion stagger variants ─────────────────────────────────────── */
 const feedVariants = {
@@ -287,7 +288,7 @@ const HistoryCard = ({ event, onRate }) => {
                 {details.doctorId?.fullName && (
                   <span className="flex items-center gap-1 text-xs text-slate-400">
                     <User className="w-3 h-3" />
-                    Dr. {details.doctorId.fullName}
+                    {formatDoctorName(details.doctorId.fullName)}
                   </span>
                 )}
                 {isOTC && details.dispensedByPharmacist && (

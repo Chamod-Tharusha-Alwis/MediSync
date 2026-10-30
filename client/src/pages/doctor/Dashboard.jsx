@@ -15,6 +15,7 @@ import AppShell from '../../components/ui/AppShell';
 import Skeleton from '../../components/ui/Skeleton';
 import { usePatientAccess } from '../../context/PatientAccessContext';
 import { useTranslation } from '../../i18n/LanguageContext';
+import { formatDoctorName } from '../../utils/doctorName';
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ label, value, icon: Icon, color }) => (
@@ -78,7 +79,7 @@ export default function DoctorDashboard() {
     <div className="doctor-theme">
       <AppShell
         role="doctor"
-        userName={`Dr. ${doctorName}`}
+        userName={formatDoctorName(doctorName)}
         userRole="Verified Doctor"
         menuItems={menuItems}
       >
@@ -89,7 +90,7 @@ export default function DoctorDashboard() {
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 tracking-tight">
-                Dr. {doctorName}
+                {formatDoctorName(doctorName)}
               </h1>
               {/* Verified Badge */}
               <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">

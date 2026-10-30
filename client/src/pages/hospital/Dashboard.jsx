@@ -14,6 +14,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
 import LabManagement from './LabManagement';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
+import { formatDoctorName } from '../../utils/doctorName';
 
 // ─── DOCTOR ROSTER ───────────────────────────────────────────────────────────
 export const DoctorRoster = () => {
@@ -128,7 +129,7 @@ export const DoctorRoster = () => {
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                 {doctors.map(doc => (
                   <tr key={doc._id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 font-bold text-white">{doc.fullName}</td>
+                    <td className="px-6 py-4 font-bold text-white">{formatDoctorName(doc.fullName)}</td>
                     <td className="px-6 py-4 text-slate-300 font-medium">{doc.specialization}</td>
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{doc.orgEmail}</td>
                     <td className="px-6 py-4">

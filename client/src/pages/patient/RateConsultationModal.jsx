@@ -4,6 +4,7 @@ import { Star, User, Building2, Pill, ShieldCheck, Lock } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import Modal from '../../components/ui/Modal';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
   const [ratings, setRatings] = useState({
@@ -233,7 +234,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
           {hasDoctor && renderRatingSection(
             'Doctor', 
             'Doctor', 
-            doctor.fullName || 'Consulting Doctor', 
+            formatDoctorName(doctor.fullName, 'Consulting Doctor'), 
             doctor.specialization || 'Medical Specialist', 
             User, 
             'text-blue-400', 

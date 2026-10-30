@@ -200,7 +200,7 @@ export default function DoctorRegister() {
                   <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
                   <input type="text" value={form.fullName} onChange={set('fullName')}
                     className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" 
-                    placeholder="Dr. Full Name" required />
+                    placeholder="Full Name (e.g. Chamod Alwis)" required />
                 </div>
               </div>
 

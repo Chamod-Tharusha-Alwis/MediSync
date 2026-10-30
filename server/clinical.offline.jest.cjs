@@ -18,3 +18,5 @@ module.exports.testMatch.push('<rootDir>/tests/phase0SafeDiagnostics.test.js', '
 module.exports.testMatch.push('<rootDir>/tests/keyringValidationDiagnostics.test.js');
 module.exports.testMatch.push('<rootDir>/tests/drugReferenceDataOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/consultation409Offline.test.js');
+module.exports.testMatch.push('<rootDir>/tests/doctorNameOffline.test.js');
+

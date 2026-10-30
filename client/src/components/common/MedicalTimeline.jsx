@@ -11,6 +11,7 @@ import Modal from '../ui/Modal';
 import OtpInput from '../ui/OtpInput';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
+import { formatDoctorName } from '../../utils/doctorName';
 
 /* ─── Stagger variants ────────────────────────────────────────────────────── */
 const containerVariants = {
@@ -294,7 +295,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                 <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-800/30">
                   <span className="flex items-center gap-1.5 text-xs text-slate-400">
                     <User className="w-3.5 h-3.5 text-blue-400" />
-                    {data.doctorId?.fullName || 'Doctor'}
+                    {formatDoctorName(data.doctorId?.fullName, 'Doctor')}
                   </span>
                   <span className="flex items-center gap-1.5 text-xs text-slate-400">
                     <Building2 className="w-3.5 h-3.5 text-indigo-400" />
@@ -318,7 +319,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                 <div className="flex items-center justify-between pt-2 border-t border-slate-800/30">
                   <span className="flex items-center gap-1.5 text-xs text-slate-400">
                     <User className="w-3.5 h-3.5 text-emerald-400" />
-                    Issued by {data.doctorId?.fullName || 'Doctor'}
+                    Issued by {formatDoctorName(data.doctorId?.fullName, 'Doctor')}
                   </span>
                   <span className={`text-[10px] font-black px-2.5 py-0.5 rounded border ${
                     data.status === 'dispensed'

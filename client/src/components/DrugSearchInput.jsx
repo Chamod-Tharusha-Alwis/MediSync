@@ -55,6 +55,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isFlipped, setIsFlipped] = useState(false);
   const [interactionWarning, setInteractionWarning] = useState(null);
   const [verificationWarning, setVerificationWarning] = useState(null);
 
@@ -76,6 +77,16 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
+
+  // Dynamic viewport flip-above detection when opening near bottom of viewport
+  useEffect(() => {
+    if (isOpen && wrapperRef.current && typeof window !== 'undefined') {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      setIsFlipped(spaceBelow < 280 && spaceAbove > spaceBelow);
+    }
+  }, [isOpen, results]);
 
   // Debounced search with race-condition guard
   useEffect(() => {
@@ -308,7 +319,9 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
           ref={listRef}
           id="medication-suggestions-list"
           role="listbox"
-          className="absolute top-full left-0 right-0 z-50 w-full mt-1.5 bg-slate-900/98 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"
+          className={`absolute left-0 right-0 z-50 w-full bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar ${
+            isFlipped ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          }`}
         >
           {isLoading && (
             <div className="p-3 text-xs text-slate-400 flex items-center justify-center gap-2" role="status" data-testid="catalog-loading-indicator">

@@ -17,6 +17,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import PageTransition from '../../components/common/PageTransition';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
+import { formatDoctorName } from '../../utils/doctorName';
 
 const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
 const requiresPatientConsent = error => error.response?.status === 403 &&
@@ -243,7 +244,7 @@ const Dispense = () => {
                       </div>
                     )}
                     <p className="text-xs text-slate-500 mb-4 border-t border-white/5 pt-3 select-none">
-                      Referred by <span className="text-slate-300 font-bold">Dr. {rx.doctorId?.fullName || 'Practitioner'}</span>
+                      Referred by <span className="text-slate-300 font-bold">{formatDoctorName(rx.doctorId?.fullName, 'Practitioner')}</span>
                     </p>
                   </div>
                   <button

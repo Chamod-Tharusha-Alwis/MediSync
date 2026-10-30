@@ -1125,7 +1125,22 @@ exports.doctorRequestOtp = async (req, res) => {
     // Get doctor name for email
     const Doctor = require('../models/Doctor');
     const doctor = await Doctor.findById(userId);
-    const doctorName = doctor ? doctor.fullName : 'Doctor';
+    let doctorName = doctor ? doctor.fullName : 'Doctor';
+    try {
+      const dn = require('../utils/doctorName');
+      if (typeof dn.formatDoctorName === 'function') {
+        const candidate = dn.formatDoctorName(doctorName);
+        if (typeof candidate === 'string') {
+          doctorName = candidate;
+        }
+      }
+    } catch (_) {
+      const clean = String(doctorName).trim();
+      if (!/\b(laboratory|hospital|administrator|medisync)\b/i.test(clean)) {
+        const stripped = clean.replace(/^(?:(?:dr|doctor)\b[.\s]*)+/i, '').trim();
+        doctorName = stripped ? `Dr. ${stripped}` : 'Dr. Doctor';
+      }
+    }
 
     // Generate 6-digit OTP, valid for 10 minutes
     const otp       = speakeasy.totp({ secret: speakeasy.generateSecret().base32, digits: 6 });
@@ -1147,10 +1162,10 @@ exports.doctorRequestOtp = async (req, res) => {
 
     const emailResult = await sendEmail({
       to:      patientEmail,
-      subject: `MediSync — Dr. ${doctorName} is requesting access to your lab report`,
+      subject: `MediSync — ${doctorName} is requesting access to your lab report`,
       html: `
         <p>Dear Patient,</p>
-        <p>Dr. <strong>${doctorName}</strong> is requesting access to your lab report <strong>${labTest.labTestId}</strong>.</p>
+        <p><strong>${doctorName}</strong> is requesting access to your lab report <strong>${labTest.labTestId}</strong>.</p>
         <p>If you authorize this, please provide the doctor with the following OTP:</p>
         <h2 style="letter-spacing:8px;font-size:32px;color:#0D9488">${otp}</h2>
         <p>This OTP expires in <strong>10 minutes</strong>. Do not share it if you do not authorize access.</p>

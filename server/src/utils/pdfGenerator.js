@@ -1,5 +1,6 @@
 const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
 const crypto = require('crypto');
+const { formatDoctorName } = require('./doctorName');
 
 
 function resolvePdfLang(options, fallback = 'en') {
@@ -171,7 +172,7 @@ function drawHeader(page, { title, subtitle, doctorName, refLabel, refValue, dat
   });
 
   if (doctorName) {
-    const formattedDoc = doctorName.startsWith('Dr.') || doctorName.includes('Laboratory') ? doctorName : `Dr. ${doctorName}`;
+    const formattedDoc = formatDoctorName(doctorName);
     page.drawText(formattedDoc, {
       x: 40, y: height - 80,
       size: 10, font: fontBold, color: WHITE,
@@ -846,7 +847,8 @@ exports.generateConsultationSummaryPDF = async (
   const resolvedGender = patientDetails.gender || consultationData.patientGender || 'N/A';
 
   // 2. Resolve Doctor Info
-  const doctorName = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Dr. Medical Professional';
+  const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Medical Professional';
+  const doctorName = formatDoctorName(rawDoctor);
   const slmcReg = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber || 'SLMC-REG-VERIFIED';
 
   const now = new Date();
