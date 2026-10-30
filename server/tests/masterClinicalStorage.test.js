@@ -5,6 +5,7 @@ function metadata({ rows=[{name:'clinicalcommands',type:'collection',options:{}}
  return {databaseName:'medisync_automated_test',listCollections:jest.fn(()=>({toArray:async()=>{if(fail)throw Error('private driver detail');return rows;}})),collection:jest.fn(name=>{expect(name).toBe('clinicalcommands');return{listIndexes:()=>({toArray:async()=>indexes})};})};
 }
 test('existing non-capped journal with primary key is admitted using metadata reads only',async()=>{const db=metadata();await expect(assertClinicalCommandStorage(db)).resolves.toBeUndefined();expect(db.listCollections).toHaveBeenCalledWith({name:'clinicalcommands'},{nameOnly:false});});
+test('medisync_prod production database name is admitted',async()=>{const db=metadata();db.databaseName='medisync_prod';await expect(assertClinicalCommandStorage(db)).resolves.toBeUndefined();});
 test('actual production command factory cannot start a transaction without its existing recovery journal',async()=>{
  const mongoose=require('mongoose'),prior=mongoose.connection.db;mongoose.connection.db=metadata({rows:[]});
  const service=require('../src/services/dispensingService'),transact=jest.spyOn(service,'runTransaction');

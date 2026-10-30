@@ -3,7 +3,7 @@ const { ClinicalCommandError } = require('./clinicalErrors');
 // Metadata only: never create a missing recovery journal implicitly in a write.
 async function assertClinicalCommandStorage(db) {
   try {
-    if (!db || !['test', 'medisync_automated_test'].includes(db.databaseName)) throw Error();
+    if (!db || !['test', 'medisync_automated_test', 'medisync_prod'].includes(db.databaseName)) throw Error();
     const rows = await db.listCollections({ name: 'clinicalcommands' }, { nameOnly: false }).toArray();
     if (rows.length !== 1 || rows[0].name !== 'clinicalcommands' || rows[0].type !== 'collection' || rows[0].options?.capped === true || rows[0].options?.expireAfterSeconds !== undefined) throw Error();
     const indexes = await db.collection('clinicalcommands').listIndexes().toArray();
