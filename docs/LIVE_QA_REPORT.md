@@ -123,3 +123,25 @@ ML Service URL: `https://medisync-ml.onrender.com`
 The earlier Phase 7b pharmacy consent step used a script that reset an OTP session directly and fabricated a successful consent-request response. **The genuine pharmacy consent path is NOT VERIFIED.** Any earlier claim that this step verified consent is withdrawn. Pharmacy authentication, dashboard navigation and password-change observations above do not establish consent or dispensing acceptance.
 
 A new pharmacy pass must request consent through the unmodified application, use only the operator-supplied OTP, and obtain separate operator approval before dispensing. No session reset, fabricated response or consent bypass may be used. The Phase 7 data-integrity statement above describes its earlier checkpoint; it does not inventory the later Phase 7b records or establish that the OTP reset made no database change.
+
+## Independent Phase 7b Reconciliation and Re-check (1 November 2026)
+
+One authorized read-only production connection completed and disconnected. No writes were dispatched by that reconciliation. The external manifest was read in place and was not copied into the repository or OneDrive.
+
+| Record type | Existing for the selected Patient | Listed by manifest |
+|---|---:|---:|
+| Consultations | 2 | 2 |
+| Prescriptions | 1 | 1 |
+| Lab tests | 1 | 1 |
+| Dispensing records | 0 | 0 |
+| Stock entries | NOT VERIFIED | 0 |
+
+By stored creation ordering, the first manifest consultation is older and has no prescription or lab-test child. The second is newer and has the listed prescription and lab test. Each has one committed clinical-command reference. This is consistent with an earlier completed consultation remaining alongside the newer one; it does not establish whether a browser crashed after a successful commit. No partial database save was demonstrated. Stock is embedded in pharmacy inventory without a Patient link, and the manifest contains no stock identifier; an exact owned stock count cannot be inferred safely.
+
+The Doctor re-check made one login attempt and received **HTTP 401**. No retry was made. New Consultation, Patient lookup, the genuine consent OTP modal and Medical History rendering remain **BLOCKED / NOT EXERCISED** by this re-check. No Medical History screenshot was produced. The login used an identifier read locally from the earlier private two-record recovery archive and the current `TEMP_ACCOUNT_PASSWORD` environment variable; the archive identifier was not independently compared with the transient identifier from the completed reconciliation. The 401 alone therefore does not establish a new application defect or distinguish an account-identifier mismatch from a password mismatch. No further Atlas connection or authentication attempt is authorized by this result.
+
+An additional offline check found that the inherited `TEMP_ACCOUNT_PASSWORD` differs from the same variable in local `server/.env`. The inherited value does not match the archived Doctor password hash; the local-file value does. This is evidence of a local credential-input mismatch, not verification of the current production password. Neither source was changed, no password or hash was disclosed, and no login retry was made. The inherited and local-file `NEW_ACCOUNT_PASSWORD` values also differ; resolve that source ambiguity privately before the separate pharmacy pass.
+
+Provider usage reported before this pass was 16 emails today. No successful email-send response or consent request was observed. The conservative testing budget reserves one slot for the login attempt: **17/30**, while the last provider-confirmed total remains **16**. Reconfirm the provider total before any pharmacy dispense approval; the reserved slot is not evidence of delivery. Pharmacy dispensing and cleanup were not attempted.
+
+Current-source local offline regression: **2,254 passed, 0 failed, 0 skipped**, exit 0. The isolated production build exited 0. All **15/15** protected files matched the current ledger. These offline results do not establish live clinical acceptance.
