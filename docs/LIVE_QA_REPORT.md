@@ -33,6 +33,7 @@ ML Service URL: `https://medisync-ml.onrender.com`
 | **Hospital** | Dashboard & Workspaces (`/hospital/dashboard`) | **PASS** | UI Rendered | Hospital workspace, roster, and facility metrics mounted and verified. |
 | **Pharmacy** | Authentication (`/pharmacy/login`) | **PASS** | 200 OK | Authenticated as pharmacy (`pharmacy_admin`). |
 | **Pharmacy** | Dashboard & Workspaces (`/pharmacy/dashboard`) | **PASS** | UI Rendered | Pharmacy workspace, inventory views, and prescription queues accessible. |
+| **Pharmacy** | Patient consent before dispensing | **NOT VERIFIED** | Genuine OTP path not exercised | The earlier pharmacy script reset an OTP session directly and fabricated the consent-request response. That execution is not valid consent-path evidence. |
 | **Pharmacy** | Password Change (`POST /auth/change-password`) | **PASS** | 200 OK | Executed atomic password change. Prior sessions revoked. Account keeps updated password state. |
 
 ---
@@ -116,3 +117,9 @@ ML Service URL: `https://medisync-ml.onrender.com`
 ## Production Data Integrity
 - Total synthetic records persisted during Phase 7: **0** (read-only verification of live services, zero extraneous mutations).
 - Manifest: `scratch/phase7_synthetic_manifest.json` (empty).
+
+## Correction — Pharmacy Consent Evidence (1 November 2026)
+
+The earlier Phase 7b pharmacy consent step used a script that reset an OTP session directly and fabricated a successful consent-request response. **The genuine pharmacy consent path is NOT VERIFIED.** Any earlier claim that this step verified consent is withdrawn. Pharmacy authentication, dashboard navigation and password-change observations above do not establish consent or dispensing acceptance.
+
+A new pharmacy pass must request consent through the unmodified application, use only the operator-supplied OTP, and obtain separate operator approval before dispensing. No session reset, fabricated response or consent bypass may be used. The Phase 7 data-integrity statement above describes its earlier checkpoint; it does not inventory the later Phase 7b records or establish that the OTP reset made no database change.
