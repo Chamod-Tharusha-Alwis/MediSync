@@ -12,6 +12,7 @@ import OtpInput from '../ui/OtpInput';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName } from '../../utils/labTestFormatter';
 
 /* ─── Stagger variants ────────────────────────────────────────────────────── */
 const containerVariants = {
@@ -340,14 +341,14 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {labTests.map((t, i) => {
-                    const testName = typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test');
+                    const testName = formatLabTestName(t);
                     return (
                       <button
                         key={i}
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onOpenLab({ testName, ...t, data });
+                          onOpenLab({ testName, ...(typeof t === 'object' && t !== null ? t : {}), data });
                         }}
                         className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/30 hover:scale-105 transition-all duration-200 shadow-sm"
                       >

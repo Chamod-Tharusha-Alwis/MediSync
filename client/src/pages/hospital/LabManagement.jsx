@@ -13,6 +13,7 @@ import OtpInput from '../../components/ui/OtpInput';
 import Modal from '../../components/ui/Modal';
 import Skeleton from '../../components/ui/Skeleton';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName } from '../../utils/labTestFormatter';
 
 // ── Urgency badge ────────────────────────────────────────────────────────────
 const UrgencyBadge = ({ urgency }) => {
@@ -225,7 +226,7 @@ const RegisterNewTest = () => {
                     <div key={test._id} className="glass-panel p-5 rounded-xl border border-white/5 flex flex-col justify-between">
                       <div className="mb-4">
                         <div className="flex justify-between items-start gap-2 mb-2">
-                          <h5 className="text-white font-bold text-sm truncate">{test.testName}</h5>
+                          <h5 className="text-white font-bold text-sm truncate">{formatLabTestName(test)}</h5>
                           <UrgencyBadge urgency={test.urgency || 'routine'} />
                         </div>
                         <p className="text-slate-400 text-xs mt-1">Referred: {formatDoctorName(test.referredBy?.fullName, 'Practitioner')}</p>
@@ -253,7 +254,7 @@ const RegisterNewTest = () => {
               <div className="space-y-2">
                 {approvedTests.map((t) => (
                   <div key={t._id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-950/40 border border-white/5">
-                    <span className="text-white text-xs font-bold truncate flex-1">{t.testName}</span>
+                    <span className="text-white text-xs font-bold truncate flex-1">{formatLabTestName(t)}</span>
                     <button
                       onClick={() => handleCopy(t.reportId)}
                       className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors bg-white/5 border border-white/5 px-2 py-1 rounded"
@@ -334,8 +335,8 @@ const LabWorkQueue = ({ onOpenUpload }) => {
       /* completed */ ['report_ready', 'delivered'].includes(t.status);
 
     const matchesSearch = searchNic.trim()
-      ? t.labTestId.toLowerCase().includes(searchNic.toLowerCase()) ||
-        t.testName.toLowerCase().includes(searchNic.toLowerCase()) ||
+      ? (t.labTestId && String(t.labTestId).toLowerCase().includes(searchNic.toLowerCase())) ||
+        formatLabTestName(t).toLowerCase().includes(searchNic.toLowerCase()) ||
         t.patientName?.toLowerCase().includes(searchNic.toLowerCase())
       : true;
 
@@ -405,7 +406,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
               <div>
                 <div className="flex justify-between items-start gap-2 mb-3">
                   <div className="min-w-0">
-                    <h5 className="text-white font-bold text-sm truncate">{t.testName}</h5>
+                    <h5 className="text-white font-bold text-sm truncate">{formatLabTestName(t)}</h5>
                     <p className="text-[10px] text-slate-500 font-mono mt-1">{t.labTestId}</p>
                   </div>
                   <StatusBadge status={t.status} />
@@ -585,7 +586,7 @@ const LabAssistantUpload = () => {
         <motion.div variants={fadeIn} initial="hidden" animate="visible" className="glass-panel p-6 rounded-2xl border border-white/5 space-y-6">
           <div className="flex justify-between items-start gap-4">
             <div>
-              <h3 className="text-lg font-bold text-white">{testData.testName}</h3>
+              <h3 className="text-lg font-bold text-white">{formatLabTestName(testData)}</h3>
               <p className="text-xs text-slate-400 mt-1">{testData.testCategory || 'General Diagnostics'} • ID: {testData.labTestId}</p>
             </div>
             <StatusBadge status={testData.status} />
@@ -793,7 +794,7 @@ const LabManagement = () => {
         {modalTest && (
           <div className="space-y-6">
             <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5 flex flex-col gap-1 text-xs">
-              <span className="font-bold text-white text-sm">{modalTest.testName}</span>
+              <span className="font-bold text-white text-sm">{formatLabTestName(modalTest)}</span>
               <span className="text-slate-500 mt-1 font-mono">Test ID: {modalTest.labTestId}</span>
               <span className="text-slate-400">Patient: {modalTest.patientName || 'Anonymous'}</span>
             </div>

@@ -21,6 +21,8 @@ import usePatientConsent from '../../hooks/usePatientConsent';
 import { prescriptionPayload } from '../../utils/prescriptionDuration';
 import { LayoutDashboard, FlaskConical } from 'lucide-react';
 import { formatDoctorName } from '../../utils/doctorName';
+import HistoryErrorBoundary from '../../components/common/HistoryErrorBoundary';
+import { formatLabTestName, formatLabTestStatus, getPrescriptionDrugName } from '../../utils/labTestFormatter';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -820,7 +822,8 @@ const NewConsultation = () => {
                         </div>
                       )}
 
-                      {!isHistoryLoading && medicalHistory.length > 0 && (
+                      <HistoryErrorBoundary onProceed={() => goTo(3)}>
+                        {!isHistoryLoading && medicalHistory.length > 0 && (
                         <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 mb-6">
                           <p className="text-xs text-blue-500/70 font-bold uppercase tracking-wider mb-1">{t("patient.recentMedications", "Recent / Active Medications")}</p>
                           {(() => {
@@ -836,7 +839,7 @@ const NewConsultation = () => {
                               <div className="flex flex-wrap gap-2 mt-2">
                                 {recentMeds.map((med, i) => (
                                   <span key={i} className="text-xs font-semibold bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded border border-blue-500/30">
-                                    {med.name} {med.dosage ? `(${med.dosage})` : ''}
+                                    {getPrescriptionDrugName(med)} {med.dosage ? `(${med.dosage})` : ''}
                                   </span>
                                 ))}
                               </div>
@@ -904,7 +907,9 @@ const NewConsultation = () => {
                                         <p className="text-xs text-slate-500 mb-1">{t("doctor.prescribedDrugs", "Prescribed Drugs")}</p>
                                         <ul className="list-disc list-inside text-slate-300">
                                           {item.data.prescriptions.map((rx, idx) => (
-                                            <li key={idx}>{rx.name} - {rx.dosage} ({rx.frequency})</li>
+                                            <li key={idx}>
+                                              {getPrescriptionDrugName(rx)}{rx.dosage ? ` - ${rx.dosage}` : ''}{rx.frequency ? ` (${rx.frequency})` : ''}
+                                            </li>
                                           ))}
                                         </ul>
                                       </div>
@@ -912,9 +917,14 @@ const NewConsultation = () => {
                                     {item.data.labTests?.length > 0 && (
                                       <div>
                                         <p className="text-xs text-slate-500 mb-1">Lab Tests</p>
-                                        <ul className="list-disc list-inside text-slate-300">
+                                        <ul className="list-disc list-inside text-slate-300 space-y-1">
                                           {item.data.labTests.map((t, idx) => (
-                                            <li key={idx}>{t}</li>
+                                            <li key={idx} className="flex items-center gap-2">
+                                              <span className="font-medium text-slate-200">{formatLabTestName(t)}</span>
+                                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                                {formatLabTestStatus(t)}
+                                              </span>
+                                            </li>
                                           ))}
                                         </ul>
                                       </div>
@@ -926,6 +936,7 @@ const NewConsultation = () => {
                           ))}
                         </div>
                       )}
+                      </HistoryErrorBoundary>
                     </div>
                     
                     <div className="flex justify-between items-center pt-4 border-t border-white/5">
@@ -1585,14 +1596,14 @@ const NewConsultation = () => {
                         >
                           {labTests.map((t, i) => (
                             <motion.span
-                              key={`${t}-${i}`}
+                              key={`${formatLabTestName(t)}-${i}`}
                               initial={{ scale: 0.8, opacity: 0 }}
                               animate={{ scale: 1,   opacity: 1 }}
                               exit={{ scale: 0.7, opacity: 0 }}
                               className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 rounded-lg text-xs font-semibold"
                             >
                               <FlaskConical className="w-3 h-3 text-purple-400" />
-                              {t}
+                              {formatLabTestName(t)}
                               <button
                                 type="button"
                                 onClick={() => removeLabTest(i)}

@@ -20,6 +20,7 @@ import LabDetailModal from '../../components/common/LabDetailModal';
 
 import { usePatientAccess } from '../../context/PatientAccessContext';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName } from '../../utils/labTestFormatter';
 
 const DoctorPatientDetail = () => {
   const { t } = useTranslation();
@@ -392,7 +393,7 @@ const DoctorPatientDetail = () => {
                                 <div>
                                   <h3 className="font-bold text-white flex items-center gap-2">
                                     <FlaskConical className="w-4 h-4 text-purple-400" />
-                                    {test.testName}
+                                    {formatLabTestName(test)}
                                   </h3>
                                   <p className="text-xs text-slate-400 mt-1">Ordered: {new Date(test.createdAt).toLocaleDateString()}</p>
                                 </div>

@@ -17,6 +17,7 @@ import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { isActivePrescription, patientDashboardTimeline } from '../../utils/patientPrescriptionStatus';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName } from '../../utils/labTestFormatter';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Overview — the landing page of the patient dashboard
@@ -290,7 +291,7 @@ export const Overview = ({ data }) => {
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {rx.labTests.map((t, i) => (
                         <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-[10px] font-bold">
-                          <FlaskConical className="w-2.5 h-2.5" />{typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test')}
+                          <FlaskConical className="w-2.5 h-2.5" />{formatLabTestName(t)}
                         </span>
                       ))}
                     </div>
@@ -344,7 +345,7 @@ export const Overview = ({ data }) => {
                     <div className="flex gap-1.5 mt-2 flex-wrap">
                       {c.labTests.map((t, i) => (
                         <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-[10px] font-bold">
-                          <FlaskConical className="w-2.5 h-2.5" />{typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test')}
+                          <FlaskConical className="w-2.5 h-2.5" />{formatLabTestName(t)}
                         </span>
                       ))}
                     </div>

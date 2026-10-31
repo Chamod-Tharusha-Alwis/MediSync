@@ -4,25 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, X, Download, Calendar, User, Building2, FileText } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestSummary } from '../../utils/labTestFormatter';
 
 const LabDetailModal = ({ isOpen, onClose, labTest }) => {
   const { t } = useTranslation();
   if (!isOpen || !labTest) return null;
 
-  const testName = typeof labTest === 'string'
-    ? labTest
-    : (labTest.testName || labTest.name || labTest.data?.testName || 'Lab Test Record');
-
-  const status = typeof labTest === 'string'
-    ? 'Pending'
-    : (labTest.status || labTest.data?.status || 'Pending');
-
-  const reportId = labTest.reportId || labTest._id || labTest.data?.reportId || 'LAB-' + Date.now().toString().slice(-6);
-  const orderedDate = labTest.createdAt || labTest.date || labTest.data?.createdAt || new Date().toISOString();
-  const rawDoctor = labTest.doctorName || labTest.doctorId?.fullName || labTest.data?.doctorId?.fullName;
-  const doctorName = formatDoctorName(rawDoctor, 'Attending Physician');
-  const hospitalName = labTest.hospitalName || labTest.hospitalId?.name || labTest.data?.hospitalId?.name || 'MediSync Central Laboratory';
-  const notes = labTest.notes || labTest.remarks || labTest.data?.notes || 'Sample processed under standard clinical protocol.';
+  const summary = formatLabTestSummary(labTest);
+  const testName = summary.testName || 'Lab Test Record';
+  const status = summary.status;
+  const reportId = summary.reportId !== '—' ? summary.reportId : 'LAB-' + Date.now().toString().slice(-6);
+  const orderedDate = (typeof labTest === 'object' && (labTest?.createdAt || labTest?.date || labTest?.data?.createdAt)) || new Date().toISOString();
+  const rawDoctor = typeof labTest === 'object' ? (labTest?.doctorName || labTest?.doctorId?.fullName || labTest?.data?.doctorId?.fullName) : null;
+  const doctorName = formatDoctorName(rawDoctor, summary.doctorName || 'Attending Physician');
+  const hospitalName = summary.hospitalName || 'MediSync Central Laboratory';
+  const notes = summary.notes || 'Sample processed under standard clinical protocol.';
 
   return (
     <AnimatePresence>

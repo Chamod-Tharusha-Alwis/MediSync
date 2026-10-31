@@ -10,6 +10,7 @@ import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 import { toast } from 'react-toastify';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName } from '../../utils/labTestFormatter';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PDF Download helper — streams the prescription PDF and triggers browser save
@@ -119,7 +120,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
                 key={i}
                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/12 border border-purple-500/25 text-purple-300 text-[10px] font-bold"
               >
-                <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />{t}
+                <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />{formatLabTestName(t)}
               </span>
             ))}
           </div>

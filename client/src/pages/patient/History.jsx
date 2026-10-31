@@ -19,6 +19,7 @@ import Modal from '../../components/ui/Modal';
 import LabDetailModal from '../../components/common/LabDetailModal';
 import LabReportDownloadButton from '../../components/common/LabReportDownloadButton';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatLabTestName, formatLabTestSummary } from '../../utils/labTestFormatter';
 
 /* ─── Framer Motion stagger variants ─────────────────────────────────────── */
 const feedVariants = {
@@ -101,7 +102,7 @@ const LabTestTags = ({ tests, tc, limit = 4, onSelectLab }) => {
           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide cursor-pointer hover:scale-105 transition-all ${tc.labTagBg}`}
         >
           <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />
-          {typeof t === 'string' ? t : (t.testName || t.name || 'Lab Test')}
+          {formatLabTestName(t)}
         </button>
       ))}
       {overflow > 0 && (
@@ -399,8 +400,8 @@ const HistoryCard = ({ event, onRate }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {details.prescriptions.map((p, pIdx) => {
                             const rxMeds = p.medications && p.medications.length > 0
-                              ? p.medications
-                              : [{ name: p.drugName, dosage: p.dosage, frequency: p.frequency }];
+                              ? p.medications.map(m => ({ name: m.name || m.drugName, dosage: m.dosage, frequency: m.frequency }))
+                              : [{ name: p.drugName || p.name, dosage: p.dosage, frequency: p.frequency }];
 
                             const isDispensed = p.status === 'dispensed';
                             const statusPill = <StatusBadge status={p.status} className="ml-2" />;
@@ -471,9 +472,10 @@ const HistoryCard = ({ event, onRate }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {labTests.map((labDoc, idx) => {
                             const isString = typeof labDoc === 'string';
-                            const name = isString ? labDoc : (labDoc.testName || labDoc.name || 'Lab Test');
-                            const status = isString ? 'Pending' : (labDoc.status || 'Pending');
-                            const reportId = !isString ? labDoc.reportId : null;
+                            const summary = formatLabTestSummary(labDoc);
+                            const name = summary.testName;
+                            const status = summary.status;
+                            const reportId = !isString ? (summary.reportId !== '—' ? summary.reportId : null) : null;
 
                             return (
                               <div key={idx} className="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-white/5">
