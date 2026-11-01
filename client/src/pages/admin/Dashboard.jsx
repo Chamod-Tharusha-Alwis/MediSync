@@ -9,6 +9,7 @@ import {
   Settings, Loader2, Monitor, Server, Database, Key, ShieldCheck, Mail
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { safeDisconnectSocket } from '../../utils/safeSocketDisconnect';
 import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
@@ -645,9 +646,13 @@ const AdminDashboard = () => {
   useEffect(() => {
     let socket;
     const timer = setTimeout(() => {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const rawToken = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      if (!rawToken || rawToken === 'undefined' || rawToken === 'null' || !rawToken.trim()) {
+        return;
+      }
+      const token = rawToken.trim();
       socket = io(SOCKET_SERVER_URL, {
-        auth: { token: token && token !== 'undefined' ? token : undefined },
+        auth: { token },
         transports: ['polling', 'websocket'],
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
@@ -658,7 +663,7 @@ const AdminDashboard = () => {
       socket.on('connect_error', (err) => {
         if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired') || err?.data?.code === 'SOCKET_AUTH_DENIED') {
           console.warn('[Socket.IO Admin] Authentication rejected or expired. Halting reconnection.');
-          socket.disconnect();
+          safeDisconnectSocket(socket);
           return;
         }
         // Silent fallback: degrade without console error spam
@@ -690,8 +695,8 @@ const AdminDashboard = () => {
     return () => {
       clearTimeout(timer);
       if (socket) {
-        socket.off(); // Detach listeners first
-        socket.disconnect();
+        safeDisconnectSocket(socket);
+
       }
     };
   }, []);
