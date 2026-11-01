@@ -122,6 +122,9 @@ exports.downloadPrescriptionPdf = async (req, res) => {
     return res.send(pdfBuffer);
   } catch (err) {
     console.error('[PDF Download] Generation unavailable.');
+    if (err?.code === 'SECURITY_HOLD') {
+      return res.status(503).json({ code: 'PDF_EXPORT_UNAVAILABLE' });
+    }
     res.status(500).json({ error: 'Failed to generate PDF' });
   }
 };

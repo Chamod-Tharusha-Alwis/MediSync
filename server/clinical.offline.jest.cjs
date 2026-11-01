@@ -21,4 +21,5 @@ module.exports.testMatch.push('<rootDir>/tests/consultation409Offline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/doctorNameOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/passwordRecoveryAuthOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/brevoFallback429Offline.test.js');
+module.exports.testMatch.push('<rootDir>/tests/prescriptionPdfHoldResponse.test.js');
 
