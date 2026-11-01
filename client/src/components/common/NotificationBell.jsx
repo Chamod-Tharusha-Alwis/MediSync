@@ -1,5 +1,5 @@
 import { useTranslation } from '../../i18n/LanguageContext';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io as socketIO } from 'socket.io-client';
@@ -8,16 +8,17 @@ import { useNavigate } from 'react-router-dom';
 import { clearLocalSession, sessionGeneration } from '../../utils/sessionCleanup';
 import { safeDisconnectSocket } from '../../utils/safeSocketDisconnect';
 
-const NotificationBell = () => {
+const NotificationContext = createContext(null);
+
+export const useNotifications = () => useContext(NotificationContext);
+
+export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const active = useRef(false);
   const request = useRef({ id: 0, controller: null });
   const pendingReads = useRef(new Set());
-  const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const fetchNotifications = useCallback(async () => {
     const generation = sessionGeneration();
@@ -54,7 +55,7 @@ const NotificationBell = () => {
       clearInterval(interval);
       clearTimeout(timer);
       safeDisconnectSocket(socket);
-      setNotifications([]); setUnreadCount(0); setIsOpen(false); setLoadError(false);
+      setNotifications([]); setUnreadCount(0); setLoadError(false);
     };
     window.addEventListener('medisync:session-cleared', clear);
     timer = setTimeout(() => {
@@ -101,7 +102,6 @@ const NotificationBell = () => {
       clearTimeout(timer);
       if (socket) {
         safeDisconnectSocket(socket);
-
       }
     };
   }, [fetchNotifications]);
@@ -130,6 +130,36 @@ const NotificationBell = () => {
       if (active.current && generation === sessionGeneration()) setLoadError(true);
     } finally { pendingReads.current.delete(key); }
   };
+
+  const contextValue = {
+    notifications,
+    unreadCount,
+    loadError,
+    fetchNotifications,
+    markAsRead,
+    markAllRead,
+  };
+
+  return (
+    <NotificationContext.Provider value={contextValue}>
+      {children}
+    </NotificationContext.Provider>
+  );
+};
+
+const NotificationBellView = () => {
+  const {
+    notifications,
+    unreadCount,
+    loadError,
+    fetchNotifications,
+    markAsRead,
+    markAllRead,
+  } = useNotifications();
+
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleNotificationClick = (notif) => {
     if (!notif.read) markAsRead(notif._id);
@@ -239,6 +269,18 @@ const NotificationBell = () => {
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+const NotificationBell = (props) => {
+  const ctx = useContext(NotificationContext);
+  if (ctx) {
+    return <NotificationBellView {...props} />;
+  }
+  return (
+    <NotificationProvider>
+      <NotificationBellView {...props} />
+    </NotificationProvider>
   );
 };
 

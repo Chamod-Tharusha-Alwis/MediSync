@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../common/Sidebar';
-import NotificationBell from '../common/NotificationBell';
+import NotificationBell, { NotificationProvider } from '../common/NotificationBell';
 import { useTranslation } from '../../i18n/LanguageContext';
 
 const AppShell = ({
@@ -29,6 +29,7 @@ const AppShell = ({
   const current = roleConfig[role.toLowerCase()] || roleConfig.doctor;
 
   return (
+    <NotificationProvider>
     <div className={`flex min-h-screen bg-transparent text-slate-100 font-sans overflow-x-hidden ${current.theme}-theme`}>
       {/* Sidebar Rail */}
       <Sidebar
@@ -80,6 +81,7 @@ const AppShell = ({
         </main>
       </div>
     </div>
+    </NotificationProvider>
   );
 };
 
