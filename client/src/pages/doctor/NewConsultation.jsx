@@ -406,14 +406,18 @@ const NewConsultation = () => {
     const status = err?.response?.status;
     const code = err?.code;
     const msg = String(err?.message || '');
+    const dataErr = String(err?.response?.data?.error || '');
+    const availability = err?.response?.data?.availability;
     return (
       status === 503 ||
       status === 502 ||
       status === 504 ||
       code === 'ECONNABORTED' ||
       code === 'ERR_NETWORK' ||
-      msg.includes('timeout') ||
-      msg.includes('Network Error')
+      availability === 'waking_up' ||
+      dataErr.toLowerCase().includes('waking') ||
+      msg.toLowerCase().includes('timeout') ||
+      msg.toLowerCase().includes('network error')
     );
   };
 
@@ -1117,6 +1121,16 @@ const NewConsultation = () => {
                                     ? 'Requesting AI suggestions…'
                                     : 'Click "Analyze Symptoms" to request suggestions. Scores are not calibrated disease probabilities.'}
                           </p>
+                          {inferenceStatus === 'unavailable' && (
+                            <button
+                              type="button"
+                              onClick={getDiagnosisSuggestions}
+                              disabled={loading || symptoms.length === 0}
+                              className="mt-4 px-4 py-2 rounded-lg bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 border border-teal-500/40 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50"
+                            >
+                              <FiActivity className="w-3.5 h-3.5" /> Retry Analysis
+                            </button>
+                          )}
                         </div>
                       )}
 
