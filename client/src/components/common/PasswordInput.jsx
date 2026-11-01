@@ -18,6 +18,7 @@ const PasswordInput = forwardRef(({
   className,
   inputClassName,
   describedBy,
+  'aria-describedby': ariaDescribedBy,
   autoComplete = 'current-password',
   required = false,
   disabled = false,
@@ -25,6 +26,8 @@ const PasswordInput = forwardRef(({
 }, ref) => {
   const generatedId = useId();
   const inputId = explicitId || `password-input-${generatedId.replace(/:/g, '')}`;
+  const errorId = `${inputId}-error`;
+  const descriptionIds = [describedBy, ariaDescribedBy, error ? errorId : null].filter(Boolean).join(' ') || undefined;
   const [showPassword, setShowPassword] = useState(false);
 
   const toggleVisibility = () => {
@@ -73,7 +76,7 @@ const PasswordInput = forwardRef(({
           disabled={disabled}
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
-          aria-describedby={describedBy}
+          aria-describedby={descriptionIds}
           className={cn(
             "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-slate-200 placeholder:text-slate-400 text-sm",
             "focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:bg-white/10 focus:border-white/20 transition-all duration-300",
@@ -112,7 +115,7 @@ const PasswordInput = forwardRef(({
       </div>
 
       {error && (
-        <p className="mt-1 text-xs text-red-400 pl-1" role="alert">
+        <p id={errorId} className="mt-1 text-xs text-red-400 pl-1" role="alert">
           {error}
         </p>
       )}

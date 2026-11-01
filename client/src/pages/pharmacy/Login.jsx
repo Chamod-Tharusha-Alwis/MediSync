@@ -137,8 +137,8 @@ const PharmacyLogin = () => {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase text-slate-500 ml-1">{t("auth.emailAddress", "Email Address")}</label>
-            <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+            <label htmlFor="pharmacy-email" className="text-xs font-semibold uppercase text-slate-500 ml-1">{t("auth.emailAddress", "Email Address")}</label>
+            <GlassInput id="pharmacy-email" type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 
           <div className="flex flex-col gap-1.5">

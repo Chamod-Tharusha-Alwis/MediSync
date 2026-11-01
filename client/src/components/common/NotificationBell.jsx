@@ -50,6 +50,7 @@ const NotificationBell = () => {
     const clear = () => {
       request.current.controller?.abort();
       request.current.id++;
+      clearInterval(interval);
       clearTimeout(timer);
       socket?.disconnect();
       setNotifications([]); setUnreadCount(0); setIsOpen(false); setLoadError(false);

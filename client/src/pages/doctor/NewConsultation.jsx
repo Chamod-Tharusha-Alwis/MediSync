@@ -1154,6 +1154,7 @@ const NewConsultation = () => {
                             <input
                               type="text"
                               role="combobox"
+                              aria-label="Search disease reference codes"
                               aria-autocomplete="list"
                               aria-expanded={isIcdOpen}
                               aria-controls="icd-suggestions-list"
@@ -1249,8 +1250,9 @@ const NewConsultation = () => {
 
                         {/* Manual Diagnosis */}
                         <div className="mb-4">
-                          <label className="block text-xs font-semibold text-slate-400 mb-2">Manual Clinician Diagnosis (If unlisted / free-text clinical description)</label>
+                          <label htmlFor="manual-clinician-diagnosis" className="block text-xs font-semibold text-slate-400 mb-2">Manual Clinician Diagnosis (If unlisted / free-text clinical description)</label>
                           <input
+                            id="manual-clinician-diagnosis"
                             type="text"
                             value={manualDiagnosis || ""}
                             onChange={e => {
@@ -1456,11 +1458,11 @@ const NewConsultation = () => {
                                 >
                                   <td className="px-4 py-3 font-bold text-white">{rx.name}</td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.dosage || ""} onChange={e => updatePrescription(idx,'dosage',e.target.value)}
+                                    <input aria-label={`Dosage for ${rx.name}`} value={rx.dosage || ""} onChange={e => updatePrescription(idx,'dosage',e.target.value)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
-                                    <select value={rx.frequency || "OD"} onChange={e => updatePrescription(idx,'frequency',e.target.value)}
+                                    <select aria-label={`Frequency for ${rx.name}`} value={rx.frequency || "OD"} onChange={e => updatePrescription(idx,'frequency',e.target.value)}
                                       className="w-24 glass-input py-1.5 px-2 text-xs appearance-none">
                                       {['OD','BD','TDS','QID','SOS'].map(f => <option key={f}>{f}</option>)}
                                     </select>
@@ -1470,11 +1472,11 @@ const NewConsultation = () => {
                                       className="w-24 glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
-                                    <input value={rx.instructions || ""} onChange={e => updatePrescription(idx,'instructions',e.target.value)}
+                                    <input aria-label={`Instructions for ${rx.name}`} value={rx.instructions || ""} onChange={e => updatePrescription(idx,'instructions',e.target.value)}
                                       className="w-full min-w-[140px] glass-input py-1.5 px-2 text-xs" />
                                   </td>
                                   <td className="px-3 py-3">
-                                    <button onClick={() => removePrescription(idx)}
+                                    <button aria-label={`Remove ${rx.name} from prescription`} onClick={() => removePrescription(idx)}
                                       className="glass-button-danger p-2 rounded-lg">
                                       <FiTrash2 size={14} />
                                     </button>
@@ -1506,6 +1508,7 @@ const NewConsultation = () => {
                             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none" />
                             <input
                               id="lab-test-input"
+                              aria-label="Search laboratory tests"
                               type="text"
                               role="combobox"
                               aria-autocomplete="list"

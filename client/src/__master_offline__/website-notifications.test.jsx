@@ -42,3 +42,31 @@ test('unmount aborts its pending fetch, disconnects its socket and stops poll re
  expect(api.get).toHaveBeenCalledTimes(1);
  expect(screen.queryByText(row.message)).not.toBeInTheDocument();
 });
+
+test('session clearing stops active polling and ignores pending fetches and stale socket events',async()=>{
+ localStorage.setItem('token','owned-offline-session');
+ await act(async()=>render(<NotificationBell/>));
+ expect(api.get).toHaveBeenCalledTimes(1);
+ await act(async()=>jest.advanceTimersByTime(60000));
+ expect(api.get).toHaveBeenCalledTimes(2); // The normal 60-second poll remains active before clearing.
+ const priorNotification=mockHandlers.notification;
+ expect(priorNotification).toBeDefined();
+ let resolve;
+ api.get.mockImplementationOnce(()=>new Promise(r=>{resolve=r;}));
+ await act(async()=>jest.advanceTimersByTime(60000));
+ expect(api.get).toHaveBeenCalledTimes(3);
+ const signal=api.get.mock.calls[2][1].signal;
+ await act(async()=>clearLocalSession());
+ expect(signal.aborted).toBe(true);
+ expect(mockDisconnect).toHaveBeenCalledTimes(1);
+ await act(async()=>{
+  resolve({data:{data:[row],unreadCount:1}});
+  priorNotification();
+ });
+ await act(async()=>jest.advanceTimersByTime(120001));
+ expect(api.get).toHaveBeenCalledTimes(3);
+ fireEvent.click(screen.getByRole('button',{name:'Notifications'}));
+ expect(screen.getByText('No notifications')).toBeInTheDocument();
+ expect(screen.queryByText(row.message)).not.toBeInTheDocument();
+ expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});

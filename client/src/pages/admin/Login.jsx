@@ -141,8 +141,8 @@ const AdminLogin = () => {
       ) : (
         <>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">{t('auth.adminEmail', 'Admin Email')}</label>
-            <GlassInput type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+            <label htmlFor="admin-email" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">{t('auth.adminEmail', 'Admin Email')}</label>
+            <GlassInput id="admin-email" type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 
           <div className="space-y-1">
