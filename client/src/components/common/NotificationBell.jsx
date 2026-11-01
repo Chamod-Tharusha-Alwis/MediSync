@@ -60,7 +60,7 @@ const NotificationBell = () => {
     timer = setTimeout(() => {
       if (!active.current || generation !== sessionGeneration()) return;
       const token = localStorage.getItem('token');
-      if (token && token !== 'undefined') {
+      if (token && token !== 'undefined' && token !== 'null' && token.trim()) {
         socket = socketIO(SOCKET_SERVER_URL, {
           auth: { token },
           transports: ['polling', 'websocket'],
