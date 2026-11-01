@@ -323,22 +323,6 @@ function classifyResendError(apiErr) {
     };
   }
 
-  // Rule 2: Explicit quota / rate-limit rejection -> eligible for Brevo HTTPS fallback
-  const isQuotaOrRateLimit =
-    status === 429 ||
-    errName.includes('quota') ||
-    errName.includes('rate_limit') ||
-    /quota|rate limit|too many requests/i.test(rawMsg);
-
-  if (isQuotaOrRateLimit) {
-    return {
-      eligibleForFallback: true,
-      statusCode: 429,
-      errorCode: errName.includes('quota') ? errName : 'daily_quota_exceeded',
-      error: `Resend quota or rate limit exceeded (${errMsg})`,
-    };
-  }
-
   // Rule 5b: Resend 401/403 authentication or sender-domain configuration errors -> NO fallback
   if (status === 401 || status === 403 || errName === 'invalid_api_key' || errName === 'restricted_api_key') {
     const configErrorCode =
@@ -370,6 +354,22 @@ function classifyResendError(apiErr) {
       statusCode: status || 422,
       errorCode: 'permanent_validation_failure',
       error: `Resend permanent validation failure: ${errMsg}`,
+    };
+  }
+
+  // Rule 2: Quota text must never override a permanent validation or configuration rejection.
+  const isQuotaOrRateLimit =
+    status === 429 ||
+    errName.includes('quota') ||
+    errName.includes('rate_limit') ||
+    /quota|rate limit|too many requests/i.test(rawMsg);
+
+  if (isQuotaOrRateLimit) {
+    return {
+      eligibleForFallback: true,
+      statusCode: 429,
+      errorCode: errName.includes('quota') ? errName : 'daily_quota_exceeded',
+      error: `Resend quota or rate limit exceeded (${errMsg})`,
     };
   }
 
