@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Feature A5 Live-Verified & Complete
-**Active Feature**: A6 (Consolidate duplicate notification instances in `AppShell.jsx` & `Sidebar.jsx`)
+**Current Status**: Feature A6 Live-Verified & Complete (Group A Finished)
+**Active Feature**: B1 (ML Service 503 During Consultation)
 **Last Updated**: 2026-11-01
 
 ---
@@ -17,15 +17,16 @@
 | A3 | Safe socket disconnection to eliminate "WebSocket is closed before the connection is established" console warning | `fd39fce` | Green (runs 41301035888 & 41301035679) | Yes (0 WS warnings across public routes and rapid unmount/navigation in live browser) | 2026-11-01 |
 | A4 | Audit provenance of `feature_collector.js` deprecated parameters warning | Documented | N/A | Yes (Confirmed 100% external origin; zero matches in repo/node_modules) | 2026-11-01 |
 | A5 | Guard socket initialization on missing or invalid token in Admin Dashboard and NotificationBell | `b99e54b`, `64e92e6` | Green (runs 41304021647 & 41304735203) | Yes (0 socket calls dispatched on empty, 'undefined', or 'null' tokens in live browser) | 2026-11-01 |
+| A6 | Consolidate duplicate notification lifecycles via shared NotificationProvider in AppShell | `e246778` | Green (runs 41306696014 & 41306696013) | Yes (Single fetch to /notifications, single socket connection, 0 extra connections on mobile drawer toggle) | 2026-11-01 |
 
 ---
 
 ## 2. Next 5 Features
-1. **A6**: Consolidate duplicate notification instances (`AppShell.jsx` & `Sidebar.jsx`).
-2. **B1**: ML service 503 during consultation.
-3. **B2**: Empty medication suggestions.
-4. **B3**: 409 on saving consultation.
-5. **B4**: Lab dropdown overlap in consultation form.
+1. **B1**: ML service 503 during consultation.
+2. **B2**: Empty medication suggestions.
+3. **B3**: 409 on saving consultation.
+4. **B4**: Lab dropdown overlap in consultation form.
+5. **B5**: Duplicated "Dr." prefix in doctor names.
 
 ---
 
@@ -36,18 +37,19 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-A3`: RESOLVED in commit `fd39fce`, verified live.
 - `BUG-A4`: RESOLVED (provenance audit confirmed external origin).
 - `BUG-A5`: RESOLVED in commits `b99e54b` & `64e92e6`, verified live.
-- `BUG-A6`: Duplicate notification bell lifecycles in `AppShell.jsx` and `Sidebar.jsx`.
+- `BUG-A6`: RESOLVED in commit `e246778`, verified live.
 
 ---
 
 ## 4. Last Live-Test Result
-- Feature A3 (`fd39fce`):
+- Feature A6 (`e246778`):
   - Headless Chromium (Playwright) tested against `https://medisync.chamodtharusha.com.lk`:
-  - Rapid navigation across public routes (`/`, `/select-role`, `/public-health`, `/patient/login`, `/doctor/login`): 0 WebSocket warnings.
-  - Stress navigation with rapid route transitions during 500ms socket timer (simulating rapid component unmount): 0 "WebSocket closed before connection established" warnings.
-  - Live chunk `305.75888904.chunk.js` verified serving `skipReconnect: true` and `safeDisconnectSocket`.
+  - Verified 1 single initial request dispatched to `/notifications` on mount.
+  - Verified 1 single Socket.IO connection established for the entire page lifecycle.
+  - Verified mobile drawer toggle triggers zero additional fetches and zero additional socket handshakes.
+  - Badges across header bell and mobile sidebar drawer update in lockstep.
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Feature A2 complete. Starting Feature A3.
+- Group A completed. Starting Feature B1 (ML service 503 during consultation).

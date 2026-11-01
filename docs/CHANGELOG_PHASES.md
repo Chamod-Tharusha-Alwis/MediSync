@@ -30,3 +30,10 @@
   - Added safe socket disconnection via `safeDisconnectSocket` on unmount.
   - Added unit and regression suite `client/src/__master_offline__/admin-dashboard-socket.test.jsx`.
   - Verified live: 0 socket requests dispatched on empty, `'undefined'`, or `'null'` tokens.
+- **A6**: `fix(client): consolidate duplicate notification lifecycles via shared NotificationProvider` (`e246778`)
+  - Resolved duplicate polling (60s timer) and duplicate Socket.IO connections caused by independent `NotificationBell` mounts in `AppShell.jsx` (header) and `Sidebar.jsx` (mobile/sidebar drawer).
+  - Created root-level `NotificationProvider` and `useNotifications` hook in `client/src/components/common/NotificationBell.jsx`.
+  - Wrapped `AppShell.jsx` main layout in `<NotificationProvider>`, allowing all bell instances to consume unified state.
+  - Maintained backward-compatibility standalone fallback for unit tests and isolated components.
+  - Added regression suite `client/src/__master_offline__/consolidated-notifications.test.jsx`.
+  - Verified live: 1 single fetch to `/notifications`, 1 socket connection, 0 additional connections during mobile drawer toggles.
