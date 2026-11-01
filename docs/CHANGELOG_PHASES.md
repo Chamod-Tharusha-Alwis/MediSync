@@ -15,3 +15,12 @@
   - Preserved private `protect([...])` middleware on `GET /alerts/broadcasts/latest`.
   - Expanded regression suite in `client/src/__master_offline__/phase0-login-banner.test.jsx`.
   - Verified live: 0 broadcast calls on public routes; 401 retained on unauthenticated API calls.
+- **A3**: `fix(client): safe socket disconnection to eliminate websocket closed warning` (`fd39fce`)
+  - Captured exact browser initiator trace where `socket.disconnect()` invoked during in-flight WebSocket handshakes triggered Blink console warnings.
+  - Implemented `safeDisconnectSocket` in `client/src/utils/safeSocketDisconnect.js` to suppress auto-reconnect, detach listeners, and await handshake completion before closing connecting transports.
+  - Integrated safe disconnection into `NotificationBell.jsx`.
+  - Added unit and regression suite `client/src/__master_offline__/safe-socket-disconnect.test.js`.
+  - Verified live: 0 WebSocket warnings across public and rapid-navigation routes.
+- **A4**: `docs: audit provenance of feature_collector.js warning`
+  - Performed comprehensive audit across repository, frontend, backend, ML engine, and dependencies.
+  - Confirmed `feature_collector.js` is 100% external, originating from browser extensions or external Wasm-pack glue code. Zero occurrences in MediSync codebase.
