@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Feature A3 Live-Verified & Complete; Feature A4 Provenance Audited
-**Active Feature**: A5 (Admin Dashboard socket undefined token early-return and regression tests)
+**Current Status**: Feature A5 Live-Verified & Complete
+**Active Feature**: A6 (Consolidate duplicate notification instances in `AppShell.jsx` & `Sidebar.jsx`)
 **Last Updated**: 2026-11-01
 
 ---
@@ -16,15 +16,16 @@
 | A2 | Resolve GET /broadcasts/latest 401 on unauthenticated calls without weakening private auth | `88b07a4` | Green (runs 41298550380 & 41298550390) | Yes (0 broadcast calls on public routes, 401 retained on unauthenticated API) | 2026-11-01 |
 | A3 | Safe socket disconnection to eliminate "WebSocket is closed before the connection is established" console warning | `fd39fce` | Green (runs 41301035888 & 41301035679) | Yes (0 WS warnings across public routes and rapid unmount/navigation in live browser) | 2026-11-01 |
 | A4 | Audit provenance of `feature_collector.js` deprecated parameters warning | Documented | N/A | Yes (Confirmed 100% external origin; zero matches in repo/node_modules) | 2026-11-01 |
+| A5 | Guard socket initialization on missing or invalid token in Admin Dashboard and NotificationBell | `b99e54b`, `64e92e6` | Green (runs 41304021647 & 41304735203) | Yes (0 socket calls dispatched on empty, 'undefined', or 'null' tokens in live browser) | 2026-11-01 |
 
 ---
 
 ## 2. Next 5 Features
-1. **A5**: Admin Dashboard socket undefined token early-return and regression tests.
-2. **A6**: Consolidate duplicate notification instances (`AppShell.jsx` & `Sidebar.jsx`).
-3. **B1**: ML service 503 during consultation.
-4. **B2**: Empty medication suggestions.
-5. **B3**: 409 on saving consultation.
+1. **A6**: Consolidate duplicate notification instances (`AppShell.jsx` & `Sidebar.jsx`).
+2. **B1**: ML service 503 during consultation.
+3. **B2**: Empty medication suggestions.
+4. **B3**: 409 on saving consultation.
+5. **B4**: Lab dropdown overlap in consultation form.
 
 ---
 
@@ -34,7 +35,7 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-A2`: RESOLVED in commit `88b07a4`, verified live.
 - `BUG-A3`: RESOLVED in commit `fd39fce`, verified live.
 - `BUG-A4`: RESOLVED (provenance audit confirmed external origin).
-- `BUG-A5`: Admin Dashboard initializes socket when auth token is undefined.
+- `BUG-A5`: RESOLVED in commits `b99e54b` & `64e92e6`, verified live.
 - `BUG-A6`: Duplicate notification bell lifecycles in `AppShell.jsx` and `Sidebar.jsx`.
 
 ---

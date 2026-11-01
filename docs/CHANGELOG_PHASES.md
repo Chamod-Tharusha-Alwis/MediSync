@@ -24,3 +24,9 @@
 - **A4**: `docs: audit provenance of feature_collector.js warning`
   - Performed comprehensive audit across repository, frontend, backend, ML engine, and dependencies.
   - Confirmed `feature_collector.js` is 100% external, originating from browser extensions or external Wasm-pack glue code. Zero occurrences in MediSync codebase.
+- **A5**: `fix(admin): guard socket initialization on missing or undefined token` (`b99e54b`, `64e92e6`)
+  - Enforced strict client token guard before calling `io(SOCKET_SERVER_URL, ...)` in `client/src/pages/admin/Dashboard.jsx` and `client/src/components/common/NotificationBell.jsx`.
+  - Prevented invalid `'null'` or `'undefined'` string tokens from triggering unauthenticated socket connections and `SOCKET_AUTH_DENIED` errors.
+  - Added safe socket disconnection via `safeDisconnectSocket` on unmount.
+  - Added unit and regression suite `client/src/__master_offline__/admin-dashboard-socket.test.jsx`.
+  - Verified live: 0 socket requests dispatched on empty, `'undefined'`, or `'null'` tokens.
