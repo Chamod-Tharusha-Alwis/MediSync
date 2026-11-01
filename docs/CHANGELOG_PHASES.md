@@ -10,7 +10,8 @@
   - Added retry state and action in `client/src/pages/public/PublicHealth.jsx` with accessible alert banner.
   - Enforced zero fake counts rendering during unavailable states.
   - Added regression test `client/src/__master_offline__/public-health-retry.test.jsx`.
-- **A2**: `fix(alerts): prevent unauthenticated broadcast requests without weakening private endpoint auth`
+- **A2**: `fix(alerts): prevent unauthenticated broadcast requests without weakening private endpoint auth` (`88b07a4`)
   - Guarded `ActiveOutbreakBanner.jsx` against missing, `'undefined'`, or `'null'` tokens.
   - Preserved private `protect([...])` middleware on `GET /alerts/broadcasts/latest`.
   - Expanded regression suite in `client/src/__master_offline__/phase0-login-banner.test.jsx`.
+  - Verified live: 0 broadcast calls on public routes; 401 retained on unauthenticated API calls.
