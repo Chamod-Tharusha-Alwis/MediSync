@@ -3,34 +3,84 @@ import axios from '../api/axiosInstance';
 import { FiSearch, FiAlertTriangle, FiInfo, FiPlus } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Curated offline fallback catalog with name, genericName, brand, category, commonDosages
+// Curated offline fallback catalog with name, genericName, brand, category, commonDosages, and trilingual labels
 const FALLBACK_DRUGS = [
-  { _id: 'd1', name: 'Paracetamol', genericName: 'Acetaminophen', brand: 'Panadol', category: 'analgesic', commonDosages: ['500mg', '1000mg'] },
-  { _id: 'd2', name: 'Amoxicillin', genericName: 'Amoxicillin', brand: 'Amoxil', category: 'antibiotic', commonDosages: ['250mg', '500mg'] },
-  { _id: 'd3', name: 'Ibuprofen', genericName: 'Ibuprofen', brand: 'Advil', category: 'analgesic', commonDosages: ['200mg', '400mg'] },
-  { _id: 'd4', name: 'Omeprazole', genericName: 'Omeprazole', brand: 'Prilosec', category: 'antacid', commonDosages: ['20mg', '40mg'] },
-  { _id: 'd5', name: 'Metformin', genericName: 'Metformin', brand: 'Glucophage', category: 'antidiabetic', commonDosages: ['500mg', '850mg'] },
-  { _id: 'd6', name: 'Atorvastatin', genericName: 'Atorvastatin', brand: 'Lipitor', category: 'other', commonDosages: ['10mg', '20mg'] },
-  { _id: 'd7', name: 'Amlodipine', genericName: 'Amlodipine', brand: 'Norvasc', category: 'antihypertensive', commonDosages: ['5mg', '10mg'] },
+  { _id: 'd1', name: 'Paracetamol', genericName: 'Acetaminophen', brand: 'Panadol', category: 'analgesic', commonDosages: ['500mg', '1000mg'], si: 'පැරසිටමෝල්', ta: 'பராசிட்டமால்' },
+  { _id: 'd2', name: 'Amoxicillin', genericName: 'Amoxicillin', brand: 'Amoxil', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'ඇමොක්සිසිලින්', ta: 'அமோக்சிசிலின்' },
+  { _id: 'd3', name: 'Ibuprofen', genericName: 'Ibuprofen', brand: 'Advil', category: 'analgesic', commonDosages: ['200mg', '400mg'], si: 'අයිබියුප්රොෆෙන්', ta: 'ஐபுப்ரோஃபென்' },
+  { _id: 'd4', name: 'Omeprazole', genericName: 'Omeprazole', brand: 'Prilosec', category: 'antacid', commonDosages: ['20mg', '40mg'], si: 'ඔමිප්‍රසෝල්', ta: 'ஒமேபிரசோல்' },
+  { _id: 'd5', name: 'Metformin', genericName: 'Metformin', brand: 'Glucophage', category: 'antidiabetic', commonDosages: ['500mg', '850mg'], si: 'මෙට්ෆෝමින්', ta: 'மெட்பார்மின்' },
+  { _id: 'd6', name: 'Atorvastatin', genericName: 'Atorvastatin', brand: 'Lipitor', category: 'other', commonDosages: ['10mg', '20mg'], si: 'ඇටෝර්වාස්ටැටින්', ta: 'அடோர்வாஸ்டேட்டின்' },
+  { _id: 'd7', name: 'Amlodipine', genericName: 'Amlodipine', brand: 'Norvasc', category: 'antihypertensive', commonDosages: ['5mg', '10mg'], si: 'ඇම්ලොඩිපින්', ta: 'அம்லோடிபைன்' },
   { _id: 'd8', name: 'Loratadine', genericName: 'Loratadine', brand: 'Claritin', category: 'antihistamine', commonDosages: ['10mg'] },
-  { _id: 'd9', name: 'Salbutamol', genericName: 'Albuterol', brand: 'Ventolin', category: 'respiratory', commonDosages: ['100mcg/dose'] },
-  { _id: 'd10', name: 'Losartan', genericName: 'Losartan', brand: 'Cozaar', category: 'antihypertensive', commonDosages: ['50mg', '100mg'] },
-  { _id: 'd11', name: 'Aspirin', genericName: 'Acetylsalicylic acid', brand: 'Disprin', category: 'analgesic', commonDosages: ['75mg', '300mg'] },
-  { _id: 'd12', name: 'Ciprofloxacin', genericName: 'Ciprofloxacin', brand: 'Cipro', category: 'antibiotic', commonDosages: ['250mg', '500mg'] },
-  { _id: 'd13', name: 'Azithromycin', genericName: 'Azithromycin', brand: 'Zithromax', category: 'antibiotic', commonDosages: ['250mg', '500mg'] },
-  { _id: 'd14', name: 'Cetirizine', genericName: 'Cetirizine', brand: 'Zyrtec', category: 'antihistamine', commonDosages: ['10mg'] }
+  { _id: 'd9', name: 'Salbutamol', genericName: 'Albuterol', brand: 'Ventolin', category: 'respiratory', commonDosages: ['100mcg/dose'], si: 'සැල්බියුටමෝල්', ta: 'சல்பூட்டமால்' },
+  { _id: 'd10', name: 'Losartan', genericName: 'Losartan', brand: 'Cozaar', category: 'antihypertensive', commonDosages: ['50mg', '100mg'], si: 'ලොසාර්ටන්', ta: 'லோசார்டன்' },
+  { _id: 'd11', name: 'Aspirin', genericName: 'Acetylsalicylic acid', brand: 'Disprin', category: 'analgesic', commonDosages: ['75mg', '300mg'], si: 'ඇස්පිරින්', ta: 'ஆஸ்பிரින්' },
+  { _id: 'd12', name: 'Ciprofloxacin', genericName: 'Ciprofloxacin', brand: 'Cipro', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'සිප්රොෆ්ලොක්සැසින්', ta: 'சிப்ரோப்ளோக்சசின்' },
+  { _id: 'd13', name: 'Azithromycin', genericName: 'Azithromycin', brand: 'Zithromax', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'ඇසිට්රොමයිසින්', ta: 'அசித்ரோமைசின்' },
+  { _id: 'd14', name: 'Cetirizine', genericName: 'Cetirizine', brand: 'Zyrtec', category: 'antihistamine', commonDosages: ['10mg'], si: 'සෙටිරිසින්', ta: 'செடிரிசைன்' }
 ];
+
+// Trilingual / phonetic transliteration dictionary for essential medications
+const TRANSLITERATION_MAP = {
+  'පැරසිටමෝල්': 'paracetamol',
+  'පැනඩෝල්': 'panadol',
+  'ඇමොක්සිසිලින්': 'amoxicillin',
+  'අයිබියුප්රොෆෙන්': 'ibuprofen',
+  'ඔමිප්‍රසෝල්': 'omeprazole',
+  'මෙට්ෆෝමින්': 'metformin',
+  'සෙටිරිසින්': 'cetirizine',
+  'සැල්බියුටමෝල්': 'salbutamol',
+  'ඇස්පිරින්': 'aspirin',
+  'ලොසාර්ටන්': 'losartan',
+  'ඇටෝර්වාස්ටැටින්': 'atorvastatin',
+  'ඇම්ලොඩිපින්': 'amlodipine',
+  'සිප්රොෆ්ලොක්සැසින්': 'ciprofloxacin',
+  'ඇසිට්රොමයිසින්': 'azithromycin',
+  'பராசிட்டமால்': 'paracetamol',
+  'பனடோல்': 'panadol',
+  'அமோக்சிசிலின்': 'amoxicillin',
+  'ஐபுப்ரோஃபென்': 'ibuprofen',
+  'ஒமேபிரசோல்': 'omeprazole',
+  'மெட்பார்மின்': 'metformin',
+  'செடிரிசைன்': 'cetirizine',
+  'சல்பூட்டமால்': 'salbutamol',
+  'ஆஸ்பிரின்': 'aspirin',
+  'லோசார்டன்': 'losartan',
+  'அடோர்வாஸ்டேட்டின்': 'atorvastatin',
+  'அம்லோடிபைன்': 'amlodipine',
+  'சிப்ரோப்ளோக்சசின்': 'ciprofloxacin',
+  'அசித்ரோமைசின்': 'azithromycin'
+};
+
+const resolveTransliteration = (str) => {
+  if (!str) return '';
+  const s = str.trim().toLowerCase();
+  for (const [nonLatin, latin] of Object.entries(TRANSLITERATION_MAP)) {
+    if (s.includes(nonLatin) || nonLatin.includes(s)) {
+      return latin;
+    }
+  }
+  return s;
+};
 
 // Helper to filter and rank medication matches: prefix matches first, then substring matches
 const rankMedicationMatches = (items, searchStr) => {
   if (!Array.isArray(items)) return [];
-  const q = searchStr.toLowerCase();
+  const rawQ = searchStr.trim().toLowerCase();
+  const latinQ = resolveTransliteration(rawQ);
   return items
     .filter(d => {
       const n = (d.name || '').toLowerCase();
       const g = (d.genericName || '').toLowerCase();
       const b = (d.brand || '').toLowerCase();
-      return n.includes(q) || g.includes(q) || b.includes(q);
+      const si = (d.si || '').toLowerCase();
+      const ta = (d.ta || '').toLowerCase();
+      return (
+        n.includes(rawQ) || g.includes(rawQ) || b.includes(rawQ) ||
+        si.includes(rawQ) || ta.includes(rawQ) ||
+        (latinQ && (n.includes(latinQ) || g.includes(latinQ) || b.includes(latinQ)))
+      );
     })
     .sort((a, b) => {
       const aName = (a.name || '').toLowerCase();
@@ -40,8 +90,10 @@ const rankMedicationMatches = (items, searchStr) => {
       const bBrand = (b.brand || '').toLowerCase();
       const bGen = (b.genericName || '').toLowerCase();
 
-      const aPref = aName.startsWith(q) || aBrand.startsWith(q) || aGen.startsWith(q);
-      const bPref = bName.startsWith(q) || bBrand.startsWith(q) || bGen.startsWith(q);
+      const aPref = aName.startsWith(rawQ) || aBrand.startsWith(rawQ) || aGen.startsWith(rawQ) ||
+                    (latinQ && (aName.startsWith(latinQ) || aBrand.startsWith(latinQ) || aGen.startsWith(latinQ)));
+      const bPref = bName.startsWith(rawQ) || bBrand.startsWith(rawQ) || bGen.startsWith(rawQ) ||
+                    (latinQ && (bName.startsWith(latinQ) || bBrand.startsWith(latinQ) || bGen.startsWith(latinQ)));
 
       if (aPref && !bPref) return -1;
       if (!aPref && bPref) return 1;
@@ -106,7 +158,15 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
         const res = await axios.get(`/drugs/search?q=${encodeURIComponent(trimmed)}`);
         if (!isCurrent) return;
         const incoming = res.data?.data || [];
-        const sorted = rankMedicationMatches(incoming, trimmed);
+        let pool = incoming;
+        if (!incoming.length) {
+          pool = FALLBACK_DRUGS;
+        } else {
+          const names = new Set(incoming.map(d => (d.name || '').toLowerCase()));
+          const extra = FALLBACK_DRUGS.filter(d => !names.has((d.name || '').toLowerCase()));
+          pool = [...incoming, ...extra];
+        }
+        const sorted = rankMedicationMatches(pool, trimmed);
         setResults(sorted);
         setIsOpen(true);
         setActiveIndex(-1);
