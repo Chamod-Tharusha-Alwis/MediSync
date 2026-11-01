@@ -26,7 +26,8 @@ test('dashboard banner retains authenticated broadcast lookup', async () => {
   expect(api.get).toHaveBeenCalledTimes(1);
 });
 
-test('banner without an authenticated token does not contact protected API', async () => {
+test.each([null, '', 'undefined', 'null'])('banner without a valid token (%s) does not contact protected API', async token => {
+  if (token !== null) localStorage.setItem('token', token);
   render(<ActiveOutbreakBanner />);
   await Promise.resolve();
   expect(api.get).not.toHaveBeenCalled();

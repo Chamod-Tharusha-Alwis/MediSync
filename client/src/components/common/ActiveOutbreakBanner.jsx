@@ -20,8 +20,11 @@ const ActiveOutbreakBanner = () => {
   useEffect(() => {
     const fetchBroadcast = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        const token = (localStorage.getItem('token') || localStorage.getItem('accessToken') || '').trim();
+        if (!token || token === 'undefined' || token === 'null') {
+          setLoading(false);
+          return;
+        }
         const res = await api.get('/alerts/broadcasts/latest');
         if (res.data?.data) {
           const b       = res.data.data;
