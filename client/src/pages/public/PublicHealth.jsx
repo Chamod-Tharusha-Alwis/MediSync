@@ -55,6 +55,7 @@ const PublicHealth = () => {
   const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [filters, setFilters] = useState({
     rangeDays: 30,
     district: 'all',
@@ -94,7 +95,11 @@ const PublicHealth = () => {
     };
     fetchStats();
     return () => { active = false; controller.abort(); };
-  }, [filters]);
+  }, [filters, retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   const handleFilterChange = (e) => {
     setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -158,8 +163,19 @@ const PublicHealth = () => {
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-lg">
-            {error}
+          <div role="alert" className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-medium">{error}</p>
+              <p className="text-xs text-red-300/80 mt-1">Please try again or select a different time range.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={loading}
+              className="px-4 py-1.5 rounded-lg bg-red-500/30 hover:bg-red-500/40 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            >
+              {loading ? 'Retrying...' : 'Retry'}
+            </button>
           </div>
         )}
 

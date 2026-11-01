@@ -32,7 +32,7 @@ exports.getHealthStats = async (req, res) => {
     const response = await axios.get(`${mlEngineUrl}/api/internal/health-stats`, {
       params: { rangeDays, district, disease },
       headers: { 'x-internal-key': internalToken },
-      timeout: 3000, maxRedirects: 0, maxContentLength: 262144
+      timeout: process.env.ML_HEALTH_STATS_TIMEOUT_MS ? Number(process.env.ML_HEALTH_STATS_TIMEOUT_MS) : (process.env.NODE_ENV === 'production' ? 60000 : 3000), maxRedirects: 0, maxContentLength: 262144
     });
 
     const statsData = healthDto(response.data);
