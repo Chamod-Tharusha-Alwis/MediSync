@@ -6,6 +6,7 @@ import { io as socketIO } from 'socket.io-client';
 import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { clearLocalSession, sessionGeneration } from '../../utils/sessionCleanup';
+import { safeDisconnectSocket } from '../../utils/safeSocketDisconnect';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
@@ -52,7 +53,7 @@ const NotificationBell = () => {
       request.current.id++;
       clearInterval(interval);
       clearTimeout(timer);
-      socket?.disconnect();
+      safeDisconnectSocket(socket);
       setNotifications([]); setUnreadCount(0); setIsOpen(false); setLoadError(false);
     };
     window.addEventListener('medisync:session-cleared', clear);
@@ -72,7 +73,7 @@ const NotificationBell = () => {
         socket.on('connect_error', (err) => {
           if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired') || err?.data?.code === 'SOCKET_AUTH_DENIED') {
             console.warn('[Socket.IO] Authentication rejected or expired. Halting reconnection.');
-            socket.disconnect();
+            safeDisconnectSocket(socket);
             return;
           }
           // Silent fallback: network drops or server restarts degrade gracefully to HTTP polling interval
@@ -99,8 +100,8 @@ const NotificationBell = () => {
       clearInterval(interval);
       clearTimeout(timer);
       if (socket) {
-        if (typeof socket.off === 'function') socket.off(); // Detach all listeners before disconnect to prevent unmounted state updates
-        if (typeof socket.disconnect === 'function') socket.disconnect();
+        safeDisconnectSocket(socket);
+
       }
     };
   }, [fetchNotifications]);
