@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Feature A6 Live-Verified & Complete (Group A Finished)
-**Active Feature**: B1 (ML Service 503 During Consultation)
+**Current Status**: Feature B1 Live-Verified & Complete
+**Active Feature**: B2 (Empty Medication Suggestions)
 **Last Updated**: 2026-11-01
 
 ---
@@ -18,15 +18,16 @@
 | A4 | Audit provenance of `feature_collector.js` deprecated parameters warning | Documented | N/A | Yes (Confirmed 100% external origin; zero matches in repo/node_modules) | 2026-11-01 |
 | A5 | Guard socket initialization on missing or invalid token in Admin Dashboard and NotificationBell | `b99e54b`, `64e92e6` | Green (runs 41304021647 & 41304735203) | Yes (0 socket calls dispatched on empty, 'undefined', or 'null' tokens in live browser) | 2026-11-01 |
 | A6 | Consolidate duplicate notification lifecycles via shared NotificationProvider in AppShell | `e246778` | Green (runs 41306696014 & 41306696013) | Yes (Single fetch to /notifications, single socket connection, 0 extra connections on mobile drawer toggle) | 2026-11-01 |
+| B1 | Handle ML service 503 cold-start with retry action and unblocked manual diagnosis | `63a2675` | Green (runs 41308994040 & 41308993936) | Yes (Live chunk 921.034a6ca3 verified serving Retry button & waking_up classification; /health 200 OK) | 2026-11-01 |
 
 ---
 
 ## 2. Next 5 Features
-1. **B1**: ML service 503 during consultation.
-2. **B2**: Empty medication suggestions.
-3. **B3**: 409 on saving consultation.
-4. **B4**: Lab dropdown overlap in consultation form.
-5. **B5**: Duplicated "Dr." prefix in doctor names.
+1. **B2**: Empty medication suggestions.
+2. **B3**: 409 on saving consultation.
+3. **B4**: Lab dropdown overlap in consultation form.
+4. **B5**: Duplicated "Dr." prefix in doctor names.
+5. **B6**: Complete Patient -> Doctor -> Pharmacy prescription flow.
 
 ---
 
@@ -38,18 +39,18 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-A4`: RESOLVED (provenance audit confirmed external origin).
 - `BUG-A5`: RESOLVED in commits `b99e54b` & `64e92e6`, verified live.
 - `BUG-A6`: RESOLVED in commit `e246778`, verified live.
+- `BUG-B1`: RESOLVED in commit `63a2675`, verified live.
 
 ---
 
 ## 4. Last Live-Test Result
-- Feature A6 (`e246778`):
-  - Headless Chromium (Playwright) tested against `https://medisync.chamodtharusha.com.lk`:
-  - Verified 1 single initial request dispatched to `/notifications` on mount.
-  - Verified 1 single Socket.IO connection established for the entire page lifecycle.
-  - Verified mobile drawer toggle triggers zero additional fetches and zero additional socket handshakes.
-  - Badges across header bell and mobile sidebar drawer update in lockstep.
+- Feature B1 (`63a2675`):
+  - Backend & ML service health: `GET /health` returned 200 OK (`status: ready`).
+  - Endpoint security: Unauthenticated `POST /api/doctor/predict-disease` and `GET /api/doctor/predict-disease/health` rejected with 401; ML direct route rejected with 403 without HMAC token.
+  - Production chunk: `https://medisync.chamodtharusha.com.lk/static/js/921.034a6ca3.chunk.js` (HTTP 200) verified containing `Retry Analysis` button and `waking_up` classification.
+  - Headless Chromium loaded `/doctor/login` cleanly with 0 console errors.
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Group A completed. Starting Feature B1 (ML service 503 during consultation).
+- Feature B1 complete. Starting Feature B2 (Empty medication suggestions).

@@ -4,7 +4,7 @@
 - **Commit `3a36494`**: `fix(client): resolve react error #31 with shared lab test formatter and history error boundary`
 - **Authorized Audit**: Local read-only comparison of pharmacy account candidate passwords against stored bcrypt hash in production database. Verified both Candidate 1 and Candidate 2 match.
 
-## Master Run - Phase A: Live Bugs
+## Master Run - Phase A: Live Bugs (Completed)
 - **A1**: `fix(public): resolve public-health 503 with adaptive cold-start timeout and retry degradation` (`7cc6947`)
   - Added adaptive timeout in `server/src/controllers/publicController.js` (60s in production for Render ML cold start, 3s in test).
   - Added retry state and action in `client/src/pages/public/PublicHealth.jsx` with accessible alert banner.
@@ -37,3 +37,11 @@
   - Maintained backward-compatibility standalone fallback for unit tests and isolated components.
   - Added regression suite `client/src/__master_offline__/consolidated-notifications.test.jsx`.
   - Verified live: 1 single fetch to `/notifications`, 1 socket connection, 0 additional connections during mobile drawer toggles.
+
+## Master Run - Phase B: Doctor & Pharmacy Flow
+- **B1**: `fix(doctor): handle ML service 503 cold-start with retry action and unblocked manual diagnosis` (`63a2675`)
+  - Extended cold-start error classifier (`isColdStartError`) in `client/src/pages/doctor/NewConsultation.jsx` to recognize `waking_up` availability payload and status phrases.
+  - Added accessible inline "Retry Analysis" button inside the unavailable state container for direct clinician retry.
+  - Verified manual clinician diagnosis and ICD entry are never blocked by ML downtime, permitting immediate advancement to prescription construction.
+  - Added offline regression suite `client/src/__master_offline__/b1-ml-503-resilience.test.jsx` (2/2 passing).
+  - Verified live: production chunk `921.034a6ca3.chunk.js` serving `Retry Analysis` button and `waking_up` classification; `/health` endpoints returning 200 OK.
