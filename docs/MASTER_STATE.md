@@ -1,6 +1,6 @@
 # MediSync Master State
 
-**Current Status**: Features B3, B4, B5 Verified & Complete
+**Current Status**: Features B3, B4, B5 Verified & Complete; Test OTP Harness Deployed
 **Active Feature**: B6 (Complete Patient -> Doctor -> Pharmacy Prescription Flow)
 **Last Updated**: 2026-11-02
 
@@ -57,8 +57,12 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
   - Production chunk: `https://medisync.chamodtharusha.com.lk/static/js/921.a9650740.chunk.js` (HTTP 200) verified containing `Saving Consultation…`, `CLINICAL_IDEMPOTENCY_CONFLICT`, `isLabFlipped` flip logic (`bottom-full mb-1`), and `lab-test-input`.
   - Offline test suites passed 100%: `consultation-409-resilience.test.jsx` (8/8), `consultation409Offline.test.js` (16/16), `new-consultation-stress.test.jsx` (7/7), `phase4-ui-polish.test.jsx` (14/14), `doctorNameOffline.test.js` (9/9).
   - Production client build passed cleanly.
+- Security-Controlled Test OTP Harness (`7946bf1`):
+  - GitHub Actions CI runs `41456100092` & `41456099989` passed 100% green.
+  - Full offline suite: 2,332 passed, 0 failed across backend, client, email/PDF, ML scoring, Flask, and root lifecycle.
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Features B1 to B5 complete. Starting Feature B6 (Complete Patient -> Doctor -> Pharmacy prescription flow).
+- Features B1 to B5 complete. Temporary test OTP security harness implemented and deployed (commit `7946bf1`, CI green).
+- Ready for Feature B6: Complete Patient -> Doctor -> Pharmacy prescription flow.
