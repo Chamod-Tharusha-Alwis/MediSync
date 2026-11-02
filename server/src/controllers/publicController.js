@@ -1,4 +1,5 @@
 const { directoryDto, healthDto, assertMlOrigin, isSyntheticRecord } = require('../security/publicDto');
+const { calculate14DayForecast } = require('../utils/outbreakForecasting');
 const Doctor = require('../models/Doctor');
 const Hospital = require('../models/Hospital');
 const Pharmacy = require('../models/Pharmacy');
@@ -35,7 +36,11 @@ exports.getHealthStats = async (req, res) => {
       timeout: process.env.ML_HEALTH_STATS_TIMEOUT_MS ? Number(process.env.ML_HEALTH_STATS_TIMEOUT_MS) : (process.env.NODE_ENV === 'production' ? 60000 : 3000), maxRedirects: 0, maxContentLength: 262144
     });
 
-    const statsData = healthDto(response.data);
+    const forecastResult = calculate14DayForecast(response.data?.trend || []);
+    const statsData = healthDto({
+      ...response.data,
+      forecast: forecastResult.forecast
+    });
 
     // 3. Cache the result for 5 minutes (300 seconds)
     await setCache(cacheKey, statsData, 300);

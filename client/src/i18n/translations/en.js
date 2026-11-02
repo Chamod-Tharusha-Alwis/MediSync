@@ -550,7 +550,15 @@ export const en = {
     "loadingTestimonials": "Loading testimonials...",
     "noTestimonials": "No patient testimonials logged yet.",
     "pickupLocation": "Pickup Location",
-    "rating": "Rating:"
+    "rating": "Rating:",
+    "forecastTitle": "14-Day Outbreak Forecast",
+    "forecastSubtitle": "Epidemiological time-series projection with 95% confidence bands",
+    "confidenceBand": "95% Confidence Interval",
+    "predictedCases": "Predicted Cases",
+    "insufficientData": "Insufficient historical data to compute 14-day outbreak forecast (minimum 3 days required).",
+    "caseTrend": "Case Trend",
+    "viewHistorical": "Historical Trend",
+    "viewForecast": "14-Day Forecast"
   },
   "home": {
     "heroTitle": "Decentralized Healthcare Platform",

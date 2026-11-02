@@ -31,6 +31,7 @@ function controllerHarness(name, options={}) {
     if(name==='../utils/patientProfilePolicy')return require('../../src/utils/patientProfilePolicy');
     if(name==='../utils/prescriptionDuration')return require('../../src/utils/prescriptionDuration');
     if(name==='../security/nicPersistence')return require('../../src/security/nicPersistence');
+    if(name==='../utils/outbreakForecasting')return require('../../src/utils/outbreakForecasting');
     return new Proxy({}, {get:()=>mutation});
   };
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,`../../src/controllers/${name}.js`),'utf8'),{exports,require:dependency,process:{env:{JWT_SECRET:secret}},console:{error:()=>{},log:()=>{},warn:()=>{}},Buffer,fetch:mutation},{filename:`inert-actual-${name}.js`});

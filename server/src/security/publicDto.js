@@ -25,7 +25,21 @@ function healthDto(row) {
   const count = value => { if (!Number.isSafeInteger(value) || value < 0) throw Error('INVALID_AGGREGATE'); return value; };
   const label = value => { if (typeof value !== 'string' || value.length > 120) throw Error('INVALID_AGGREGATE'); return value; };
   const list = (value, project) => { if (!Array.isArray(value) || value.length > 1000) throw Error('INVALID_AGGREGATE'); return value.map(project); };
-  return { totalCases: count(row?.totalCases), byDistrict: list(row.byDistrict, r => ({district:label(r.district),totalCases:count(r.totalCases),topDisease:label(r.topDisease || 'Unknown')})), byDisease:list(row.byDisease,r=>({disease:label(r.disease),totalCases:count(r.totalCases)})), trend:list(row.trend,r=>({date:label(r.date),count:count(r.count)})) };
+  const result = {
+    totalCases: count(row?.totalCases),
+    byDistrict: list(row?.byDistrict, r => ({ district: label(r.district), totalCases: count(r.totalCases), topDisease: label(r.topDisease || 'Unknown') })),
+    byDisease: list(row?.byDisease, r => ({ disease: label(r.disease), totalCases: count(r.totalCases) })),
+    trend: list(row?.trend, r => ({ date: label(r.date), count: count(r.count) }))
+  };
+  if (Array.isArray(row?.forecast)) {
+    result.forecast = list(row.forecast, r => ({
+      date: label(r.date),
+      predicted: count(r.predicted),
+      lower: count(r.lower),
+      upper: count(r.upper)
+    }));
+  }
+  return result;
 }
 function assertMlOrigin(raw, environment) {
   const endpoint = new URL(raw);
