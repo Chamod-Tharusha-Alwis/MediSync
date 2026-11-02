@@ -1,8 +1,8 @@
 # MediSync Master State
 
-**Current Status**: Features B3, B4, B5 Verified & Complete; Test OTP Harness Deployed
-**Active Feature**: B6 (Complete Patient -> Doctor -> Pharmacy Prescription Flow)
-**Last Updated**: 2026-11-02
+**Current Status**: Target Feature B6 Verified & Complete; Group B Complete; Ready for Phase C (Outbreak Analytics & Trilingual UI)
+**Active Feature**: C1 (Outbreak alert notifications & forecasting integration)
+**Last Updated**: 2026-11-03
 
 ---
 
@@ -23,15 +23,16 @@
 | B3 | 409 consultation save resilience: idempotency key refresh, UI button locking, safe replay | `7e9319f` | Green | Yes (Live chunk 921.a9650740 serving key collision refresh, Saving Consultation… button, 200 replay) | 2026-11-02 |
 | B4 | Lab dropdown stacking context & dynamic viewport flip detection | `6e16bf0` | Green | Yes (Live chunk 921.a9650740 serving z-50 dropdown, isLabFlipped bottom-full mb-1 logic, 0px shift) | 2026-11-02 |
 | B5 | Eliminate duplicated "Dr." prefix in doctor name formatting across client and server | `6e16bf0` | Green | Yes (formatDoctorName regex collapses redundant titles, preserves valid names and organizations) | 2026-11-02 |
+| B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `baea9af` | Green (runs 41525169917 & 41525169643) | Yes (17/17 steps passed, Doctor outcome RX-20261102-701110, Pharmacy REC-8060a6081c164c9e3c8ad92d, stock decremented 100->99, independent read verified) | 2026-11-03 |
 
 ---
 
 ## 2. Next 5 Features
-1. **B6**: Complete Patient -> Doctor -> Pharmacy prescription flow.
-2. **C1**: Outbreak alert notifications & forecasting integration.
-3. **C2**: Outbreak multi-disease map & clustering.
-4. **C3**: Trilingual UI completion across all roles.
-5. **C4**: Doctor AI diagnostic assistance resilience.
+1. **C1**: Outbreak alert notifications & forecasting integration (Phase 5A).
+2. **C2**: Outbreak multi-disease map & clustering (Phase 5B).
+3. **C3**: Trilingual UI completion across all roles (Phase 5C).
+4. **C4**: Doctor AI diagnostic assistance resilience (Phase 5D).
+5. **Group D**: Full platform security audit.
 
 ---
 
@@ -48,21 +49,26 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-B3`: RESOLVED in commit `7e9319f`, verified live.
 - `BUG-B4`: RESOLVED in commit `6e16bf0`, verified live.
 - `BUG-B5`: RESOLVED in commit `6e16bf0`, verified live.
+- `BUG-B6`: RESOLVED in commit `baea9af`, verified live.
 
 ---
 
 ## 4. Last Live-Test Result
-- Features B3, B4, B5 (`7e9319f`, `6e16bf0`):
+- Target Feature B6 (`baea9af`, `scripts/verify_b6_flow_live.cjs`):
   - Backend & ML service health: `GET /health` returned 200 OK (`status: ready`).
-  - Production chunk: `https://medisync.chamodtharusha.com.lk/static/js/921.a9650740.chunk.js` (HTTP 200) verified containing `Saving Consultation…`, `CLINICAL_IDEMPOTENCY_CONFLICT`, `isLabFlipped` flip logic (`bottom-full mb-1`), and `lab-test-input`.
-  - Offline test suites passed 100%: `consultation-409-resilience.test.jsx` (8/8), `consultation409Offline.test.js` (16/16), `new-consultation-stress.test.jsx` (7/7), `phase4-ui-polish.test.jsx` (14/14), `doctorNameOffline.test.js` (9/9).
-  - Production client build passed cleanly.
-- Security-Controlled Test OTP Harness (`7946bf1`):
-  - GitHub Actions CI runs `41456100092` & `41456099989` passed 100% green.
-  - Full offline suite: 2,332 passed, 0 failed across backend, client, email/PDF, ML scoring, Flask, and root lifecycle.
+  - GitHub Actions CI: Runs `41525169917` & `41525169643` passed 100% green.
+  - Live execution: 17/17 steps passed with 0 failures (`docs/live_b6_verification_log.json`, run `B6-RUN-1793652613294-E10ADAF1`).
+  - Doctor Outcome: Consultation `6ae8f7a36065a37820342bcb` created, prescription `RX-20261102-701110` issued with status "pending".
+  - Pharmacy Outcome: Dispensing receipt `REC-8060a6081c164c9e3c8ad92d` created, prescription status updated to "dispensed", pharmacy inventory stock decremented from 100 to 99.
+  - Independent Patient Verification: `GET /api/patient/:nic/prescriptions` confirmed status="dispensed", dispensedAt recorded, and consultation linkage intact.
+  - Independent Pharmacy Verification: `GET /api/pharmacy/receipt/:receiptNo` confirmed receipt in history and stock decrement verified.
+  - Zero Real Email Audit: Intercepted via `testOtpHarness` (`provider: 'test-harness'`, `deliveryQueued: false`, `deliveryConfirmed: false`), zero real emails sent.
+  - Secret sanitization: 0 passwords, 0 raw OTPs, 0 unmasked NICs leaked in execution logs.
+  - Offline test suite: 2,331 passed, 0 failed across all suites.
+  - Production client build: passed cleanly (0 errors).
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Features B1 to B5 complete. Temporary test OTP security harness implemented and deployed (commit `7946bf1`, CI green).
-- Ready for Feature B6: Complete Patient -> Doctor -> Pharmacy prescription flow.
+- Group A (A1 to A6) and Group B (B1 to B6) fully verified, complete, and accepted live.
+- Ready to begin Feature C1: Outbreak alert notifications & forecasting integration (Phase 5A).

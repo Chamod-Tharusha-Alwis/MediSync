@@ -68,3 +68,10 @@
   - Implemented `formatDoctorName` regex collapsing repeated titles (`/^(dr\.?|doctor)\s+/i`), preserving valid names, and bypassing institutional names (`Asiri Laboratory`, etc.). Added `stripDoctorPrefix`.
   - Unified doctor name formatting across 60+ UI call sites and backend email/PDF services.
   - Verified with offline suites `phase4-ui-polish.test.jsx` (14/14) and `doctorNameOffline.test.js` (9/9).
+- **B6**: `feat(qa): live verification runner for complete patient to doctor to pharmacy flow` (`baea9af`)
+  - Implemented automated 17-step end-to-end live flow across Patient, Doctor, and Pharmacy roles on production.
+  - Deployed security-controlled `testOtpHarness` (commit `7946bf1`), guaranteeing zero real email dispatch and preventing quota exhaustion.
+  - Doctor authenticated, requested patient clinical access, verified OTP, evaluated medication safety, issued consultation `6ae8f7a36065a37820342bcb` and prescription `RX-20261102-701110` (Amoxicillin 500mg, status "pending").
+  - Pharmacy authenticated, verified stock (>= 10), requested patient access, verified OTP, dispensed prescription, issued immutable receipt `REC-8060a6081c164c9e3c8ad92d`, and atomically decremented inventory (100 -> 99).
+  - Independent reads verified: Patient prescription status="dispensed" with valid timestamps; Pharmacy receipt ledger verified.
+  - Passed GitHub Actions CI runs `41525169917` & `41525169643`. All 15 protected file hashes verified 100% intact.
