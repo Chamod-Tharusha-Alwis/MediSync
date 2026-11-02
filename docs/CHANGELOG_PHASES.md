@@ -45,3 +45,9 @@
   - Verified manual clinician diagnosis and ICD entry are never blocked by ML downtime, permitting immediate advancement to prescription construction.
   - Added offline regression suite `client/src/__master_offline__/b1-ml-503-resilience.test.jsx` (2/2 passing).
   - Verified live: production chunk `921.034a6ca3.chunk.js` serving `Retry Analysis` button and `waking_up` classification; `/health` endpoints returning 200 OK.
+- **B2**: `fix(client): enrich medication search with catalog fallback and trilingual transliteration` (`a3726ec`)
+  - Enhanced `client/src/components/DrugSearchInput.jsx` to seamlessly check and merge the curated catalog of essential medications (`FALLBACK_DRUGS`) even when the remote database search responds with empty arrays (`data: []`).
+  - Added Sinhala and Tamil phonetic transliteration mapping (`TRANSLITERATION_MAP`) and labels (`si`, `ta`) so that searches in national scripts (e.g. "පැරසිටමෝල්", "அமோக்சிசிலின்") resolve immediately to appropriate drugs.
+  - Preserved prefix-first matching and free-text custom/unlisted medication entry.
+  - Added regression suite `client/src/__master_offline__/b2-drug-suggestions-trilingual.test.jsx` (5/5 passing, all 18 drug search tests passing).
+  - Verified live: production chunk `921.a9650740.chunk.js` active with Panadol/Acetaminophen catalog fallback and custom addition; `/health` 200 OK.
