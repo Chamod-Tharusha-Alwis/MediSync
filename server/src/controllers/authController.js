@@ -636,9 +636,14 @@ exports.verifyLoginOTP = async (req, res) => {
     }
 
     const otpRecord = latestOtpRecord;
-    const { verifyTestOtp } = require('../security/testOtpHarness');
-    const userEmail = user.email || user.personalEmail || user.contactInfo?.email;
-    let isMatch = verifyTestOtp(userEmail, otp);
+    let isMatch = false;
+    if (process.env.TEST_OTP_ENABLED === 'true') {
+      try {
+        const { verifyTestOtp } = require('../security/testOtpHarness');
+        const userEmail = user.email || user.personalEmail || user.contactInfo?.email;
+        isMatch = verifyTestOtp(userEmail, otp);
+      } catch (_) {}
+    }
     if (!isMatch) {
       isMatch = await bcrypt.compare(String(otp).trim(), otpRecord.otp);
     }

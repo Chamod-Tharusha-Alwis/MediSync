@@ -1070,15 +1070,19 @@ exports.sendMail = sendMail;
 // 1. ONE-TIME PASSWORD (OTP) EMAIL
 // -----------------------------------------------------------------------------
 exports.sendOTPEmail = async (to, name, otp, options = {}) => {
-  const { shouldInterceptOtpEmail } = require('../security/testOtpHarness');
-  if (shouldInterceptOtpEmail(to)) {
-    return {
-      providerAccepted: true,
-      deliveryQueued: false,
-      deliveryConfirmed: false,
-      provider: 'test-harness',
-      fallbackUsed: false,
-    };
+  if (process.env.TEST_OTP_ENABLED === 'true') {
+    try {
+      const { shouldInterceptOtpEmail } = require('../security/testOtpHarness');
+      if (shouldInterceptOtpEmail(to)) {
+        return {
+          providerAccepted: true,
+          deliveryQueued: false,
+          deliveryConfirmed: false,
+          provider: 'test-harness',
+          fallbackUsed: false,
+        };
+      }
+    } catch (_) {}
   }
   const lang = resolveLang(options);
   const subjects = {
