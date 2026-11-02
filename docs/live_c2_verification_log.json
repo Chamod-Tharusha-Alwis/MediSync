@@ -1,0 +1,104 @@
+{
+  "timestamp": "2026-11-02T23:14:27.040Z",
+  "overallResult": "PASS",
+  "steps": [
+    {
+      "stepCode": "GATE_PROTECTED_HASHES",
+      "description": "All 15 protected files match pinned baseline 100%",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:24.877Z",
+      "details": {
+        "count": 15
+      }
+    },
+    {
+      "stepCode": "LIVE_BACKEND_HEALTH",
+      "description": "Production Express backend /health is ready (200 OK)",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:25.249Z",
+      "details": {
+        "status": "ready",
+        "service": "medisync-express"
+      }
+    },
+    {
+      "stepCode": "LIVE_ML_HEALTH",
+      "description": "Production Python ML engine /health is ready (200 OK)",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:25.595Z",
+      "details": {
+        "references": {
+          "clinicalValidation": "not_established",
+          "files": 7,
+          "icd10Concepts": 71704
+        },
+        "status": "ready"
+      }
+    },
+    {
+      "stepCode": "LIVE_HEALTH_STATS_ENDPOINT",
+      "description": "Live /api/public/health-stats returned 200 with complete schema including forecast",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:26.054Z",
+      "details": {
+        "totalCases": 0,
+        "trendPoints": 0,
+        "forecastPoints": 0,
+        "cached": true
+      }
+    },
+    {
+      "stepCode": "FORECAST_MATH_PROOF",
+      "description": "14-day projection verified: bounds 0 <= lower <= predicted <= upper strictly maintained",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:26.054Z",
+      "details": {
+        "slope": 2.6786,
+        "standardError": 0.7121,
+        "day1": {
+          "date": "2026-11-01",
+          "predicted": 30,
+          "lower": 28,
+          "upper": 32,
+          "bandRange": 4
+        },
+        "day14": {
+          "date": "2026-11-14",
+          "predicted": 65,
+          "lower": 60,
+          "upper": 70,
+          "bandRange": 10
+        }
+      }
+    },
+    {
+      "stepCode": "GRACEFUL_DEGRADATION",
+      "description": "Empty / insufficient historical data gracefully returns hasSufficientData=false without crash",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:26.054Z",
+      "details": {}
+    },
+    {
+      "stepCode": "TRILINGUAL_LOCALIZATION",
+      "description": "All required forecasting keys present across EN, SI, and TA dictionaries",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:26.057Z",
+      "details": {
+        "keysVerified": 6,
+        "enTitle": "14-Day Outbreak Forecast",
+        "siTitle": "දින 14 ක වසංගත පුරෝකථනය",
+        "taTitle": "14 நாட்கள் வெடிப்பு முன்னறிவிப்பு"
+      }
+    },
+    {
+      "stepCode": "LIVE_FRONTEND_PAGE",
+      "description": "Production Public Health page is live and serving (200 OK)",
+      "status": "PASS",
+      "timestamp": "2026-11-02T23:14:27.040Z",
+      "details": {
+        "url": "https://medisync.chamodtharusha.com.lk/public-health",
+        "htmlLength": 657
+      }
+    }
+  ]
+}

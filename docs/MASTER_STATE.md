@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Target Feature C1 Verified & Complete; Group B & C1 Complete; Ready for Feature C2 (14-day outbreak forecasting accuracy / display)
-**Active Feature**: C2 (14-day outbreak forecasting accuracy & display on Public Health dashboard)
+**Current Status**: Target Feature C2 Verified & Complete; Group B, C1, & C2 Complete; Ready for Feature C3 (Multi-disease outbreak map & clustering)
+**Active Feature**: C3 (Multi-disease outbreak map & clustering)
 **Last Updated**: 2026-11-03
 
 ---
@@ -25,15 +25,16 @@
 | B5 | Eliminate duplicated "Dr." prefix in doctor name formatting across client and server | `6e16bf0` | Green | Yes (formatDoctorName regex collapses redundant titles, preserves valid names and organizations) | 2026-11-02 |
 | B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `baea9af` | Green (runs 41525169917 & 41525169643) | Yes (17/17 steps passed, Doctor outcome RX-20261102-701110, Pharmacy REC-8060a6081c164c9e3c8ad92d, stock decremented 100->99, independent read verified) | 2026-11-03 |
 | C1 | Outbreak alert notifications wired to notification service for Doctor, Hospital, and Admin roles | `9e0f6c8` | Green (runs 41534722808 & 41534722649) | Yes (15/15 live verification steps passed, Doctor/Hospital/Admin notification endpoints verified, trilingual UI dictionary verified) | 2026-11-03 |
+| C2 | 14-day outbreak forecasting accuracy & display with 95% confidence bands and graceful degradation | `8bc0cf4` | Green (runs 41542998109 & 41542998105) | Yes (8/8 live verification steps passed: live /health OK, live endpoint schema verified with forecast, mathematical bounds proof passed, empty trend degradation verified, trilingual keys verified, Vercel chunk main.1532b63a.js verified) | 2026-11-03 |
 
 ---
 
 ## 2. Next 5 Features
-1. **C2**: 14-day outbreak forecasting accuracy & display on Public Health dashboard.
-2. **C3**: Multi-disease outbreak map & clustering.
-3. **C4**: Seed realistic Sri Lanka outbreak demo dataset (`scripts/seed-demo-outbreak.js`).
-4. **Group D**: Full platform security audit.
-5. **Group E**: Full platform QA pass (all 5 roles in EN/Sinhala/Tamil).
+1. **C3**: Multi-disease outbreak map & clustering.
+2. **C4**: Seed realistic Sri Lanka outbreak demo dataset (`scripts/seed-demo-outbreak.js`).
+3. **Group D**: Full platform security audit.
+4. **Group E**: Full platform QA pass (all 5 roles in EN/Sinhala/Tamil).
+5. **Group F**: Lecturer demo outbreak dataset & presentation guide (`docs/DEMO_GUIDE.md`).
 
 ---
 
@@ -52,24 +53,25 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-B5`: RESOLVED in commit `6e16bf0`, verified live.
 - `BUG-B6`: RESOLVED in commit `baea9af`, verified live.
 - `BUG-C1`: RESOLVED in commit `9e0f6c8`, verified live.
+- `BUG-C2`: RESOLVED in commit `8bc0cf4`, verified live.
 
 ---
 
 ## 4. Last Live-Test Result
-- Target Feature C1 (`9e0f6c8`, `scripts/verify_c1_flow_live.cjs`):
+- Target Feature C2 (`8bc0cf4`, `scripts/verify_c2_flow_live.cjs`):
   - Backend & ML service health: `GET /health` returned 200 OK (`status: ready`).
-  - GitHub Actions CI: Runs `41534722808` & `41534722649` passed 100% green.
-  - Live execution: 15/15 steps passed with 0 failures (`docs/live_c1_verification_log.json`).
-  - Doctor Notification Outcome: Authenticated with zero real email dispatch, queried `/api/notifications` (200 OK, unread count tracked, outbreak alert schema valid, actionLink `/public-health`).
-  - Hospital Notification Outcome: Authenticated, queried `/api/notifications` (200 OK, actionLink `/public-health`).
-  - Admin Notification Outcome: Authenticated, triggered outbreak detection (`POST /api/admin/outbreak/trigger` 200 OK), queried `/api/alerts/active` (6 active/pending alerts), queried `/api/notifications` (200 OK, actionLink `/admin/dashboard/outbreak`).
-  - Trilingual UI Keys: Verified in `client/src/i18n/translations/` (`en.js`, `si.js`, `ta.js` notificationStatus present).
-  - Secret sanitization: 0 passwords, 0 raw OTPs, 0 unmasked NICs leaked in execution logs.
-  - Offline test suite: 2,338 passed, 0 failed across all 83 backend suites, 48 client suites, email-pdf, ml-scoring, ml-flask, and root.
+  - GitHub Actions CI: Runs `41542998109` & `41542998105` passed 100% green.
+  - Live execution: 8/8 steps passed with 0 failures (`docs/live_c2_verification_log.json`).
+  - Production Endpoint: `GET /api/public/health-stats` returned HTTP 200 containing `totalCases`, `byDistrict`, `byDisease`, `trend`, and `forecast`.
+  - Mathematical Invariants: 14 projected days strictly bounded by `0 <= lower <= predicted <= upper`, with expanding 95% confidence interval cone.
+  - Graceful Degradation: Empty historical trend (< 3 data points) returns `hasSufficientData=false` and displays clean informative banner without NaN or broken charts.
+  - Trilingual UI Keys: Verified in `client/src/i18n/translations/` (`en.js`, `si.js`, `ta.js` forecasting keys present).
+  - Production Frontend: Vercel bundle `main.1532b63a.js` serving updated forecasting UI.
+  - Offline test suite: 2,341 passed, 0 failed across all suites.
   - Production client build: passed cleanly (0 errors).
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Group A (A1 to A6), Group B (B1 to B6), and Feature C1 fully verified, complete, and accepted live.
-- Ready to begin Feature C2: 14-day outbreak forecasting accuracy / display (Phase 5B).
+- Group A (A1 to A6), Group B (B1 to B6), Feature C1, and Feature C2 fully verified, complete, and accepted live.
+- Ready to begin Feature C3: Multi-disease outbreak map & clustering.

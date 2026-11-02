@@ -84,3 +84,13 @@
   - Added Mongoose `post('save')` lifecycle hook on `OutbreakAlert` model and wired notification trigger inside `surveillanceService.runAnalysis` and `adminController.approveAlert`.
   - Added offline regression test suite `server/tests/outbreakNotificationPipeline.test.js` (6/6 passing).
   - Verified live: 15/15 steps passed in `scripts/verify_c1_flow_live.cjs` on production backend (`live_c1_verification_log.json`). Both CI runs `41534722808` & `41534722649` passed green.
+
+### Feature C2: 14-Day Outbreak Forecasting Accuracy & Display (2026-11-03)
+- **Mathematical Forecasting Utility**: Implemented `calculate14DayForecast` in `server/src/utils/outbreakForecasting.js` and `client/src/utils/outbreakForecasting.js` using Ordinary Least Squares (OLS) regression and prediction standard error for 95% confidence intervals.
+- **DTO Projection**: Updated `healthDto` in `server/src/security/publicDto.js` to project and validate the 14-day forecast array (`date`, `predicted`, `lower`, `upper`) while enforcing aggregate privacy guards.
+- **Controller Integration**: Updated `getHealthStats` in `server/src/controllers/publicController.js` to augment health stats with the 14-day outbreak forecast before caching and response delivery.
+- **UI Forecast Display**: Enriched `PublicHealth.jsx` with a dual-view trend widget (Historical Trend / 14-Day Forecast) in the left column and a dedicated full-width 14-Day Outbreak Forecast card below the map with confidence band visualization.
+- **Graceful Degradation**: Handled empty or insufficient historical data (< 3 points) by returning clean status flags and rendering informative messaging without NaN, canvas errors, or broken charts.
+- **Trilingual Localization**: Added forecast titles, confidence interval badges, and degradation messages to `en.js`, `si.js`, and `ta.js`.
+- **Offline & Build Verification**: Added `server/tests/outbreakForecasting.test.js` (5/5 passed) and `client/src/__master_offline__/outbreak-forecast.test.jsx` (3/3 passed). Full offline suite: 2,341 passed (0 failed). Production build compiled cleanly with 0 errors.
+- **Live Verification**: 8/8 gates passed on production in `scripts/verify_c2_flow_live.cjs` (`docs/live_c2_verification_log.json`). Live Vercel chunk `main.1532b63a.js` and Render backend `/api/public/health-stats` verified in production.
