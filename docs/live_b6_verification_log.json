@@ -1,0 +1,36 @@
+{
+  "runId": "B6-RUN-1793652613294-E10ADAF1",
+  "timestamp": "2026-11-02T20:50:13.295Z",
+  "backendUrl": "https://medisync-wabc.onrender.com",
+  "frontendUrl": "https://medisync.chamodtharusha.com.lk",
+  "protectedHashesVerified": true,
+  "zeroEmailAuditPassed": true,
+  "doctorOutcome": {
+    "accepted": true,
+    "consultationId": "6ae8f7a36065a37820342bcb",
+    "prescriptionObjectId": "6ae8f7a36065a37820342bcc",
+    "prescriptionCustomId": "RX-20261102-701110",
+    "drugName": "Amoxicillin 500mg",
+    "dosage": "500mg",
+    "initialStatus": "pending",
+    "durationDays": 5,
+    "replayed": false
+  },
+  "pharmacyOutcome": {
+    "accepted": true,
+    "receiptNumber": "REC-8060a6081c164c9e3c8ad92d",
+    "prescriptionId": "6ae8f7a36065a37820342bcc",
+    "prescriptionCustomId": "RX-20261102-701110",
+    "medicationCount": 1,
+    "replayed": false
+  },
+  "independentVerification": {
+    "patientConfirmedStatus": "dispensed",
+    "patientDispensedAt": "2026-11-02T20:51:09.331Z",
+    "receiptNumber": "REC-8060a6081c164c9e3c8ad92d",
+    "stockBefore": 100,
+    "stockAfter": 99,
+    "inventoryDecremented": true
+  },
+  "success": true
+}
