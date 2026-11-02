@@ -1,0 +1,17 @@
+{
+  "feature": "C1",
+  "executionDate": "2026-11-02T22:27:46.517Z",
+  "backendUrl": "https://medisync-wabc.onrender.com",
+  "frontendUrl": "https://medisync.chamodtharusha.com.lk",
+  "verdict": "ACCEPTED",
+  "stepsTotal": 15,
+  "stepsPassed": 15,
+  "stepsFailed": 0,
+  "outcomes": {
+    "protectedHashesIntact": true,
+    "doctorNotificationsReady": true,
+    "hospitalNotificationsReady": true,
+    "adminNotificationsReady": true,
+    "zeroRealEmailsSent": true
+  }
+}

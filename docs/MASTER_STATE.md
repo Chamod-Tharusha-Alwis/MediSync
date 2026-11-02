@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Target Feature B6 Verified & Complete; Group B Complete; Ready for Phase C (Outbreak Analytics & Trilingual UI)
-**Active Feature**: C1 (Outbreak alert notifications & forecasting integration)
+**Current Status**: Target Feature C1 Verified & Complete; Group B & C1 Complete; Ready for Feature C2 (14-day outbreak forecasting accuracy / display)
+**Active Feature**: C2 (14-day outbreak forecasting accuracy & display on Public Health dashboard)
 **Last Updated**: 2026-11-03
 
 ---
@@ -24,15 +24,16 @@
 | B4 | Lab dropdown stacking context & dynamic viewport flip detection | `6e16bf0` | Green | Yes (Live chunk 921.a9650740 serving z-50 dropdown, isLabFlipped bottom-full mb-1 logic, 0px shift) | 2026-11-02 |
 | B5 | Eliminate duplicated "Dr." prefix in doctor name formatting across client and server | `6e16bf0` | Green | Yes (formatDoctorName regex collapses redundant titles, preserves valid names and organizations) | 2026-11-02 |
 | B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `baea9af` | Green (runs 41525169917 & 41525169643) | Yes (17/17 steps passed, Doctor outcome RX-20261102-701110, Pharmacy REC-8060a6081c164c9e3c8ad92d, stock decremented 100->99, independent read verified) | 2026-11-03 |
+| C1 | Outbreak alert notifications wired to notification service for Doctor, Hospital, and Admin roles | `9e0f6c8` | Green (runs 41534722808 & 41534722649) | Yes (15/15 live verification steps passed, Doctor/Hospital/Admin notification endpoints verified, trilingual UI dictionary verified) | 2026-11-03 |
 
 ---
 
 ## 2. Next 5 Features
-1. **C1**: Outbreak alert notifications & forecasting integration (Phase 5A).
-2. **C2**: Outbreak multi-disease map & clustering (Phase 5B).
-3. **C3**: Trilingual UI completion across all roles (Phase 5C).
-4. **C4**: Doctor AI diagnostic assistance resilience (Phase 5D).
-5. **Group D**: Full platform security audit.
+1. **C2**: 14-day outbreak forecasting accuracy & display on Public Health dashboard.
+2. **C3**: Multi-disease outbreak map & clustering.
+3. **C4**: Seed realistic Sri Lanka outbreak demo dataset (`scripts/seed-demo-outbreak.js`).
+4. **Group D**: Full platform security audit.
+5. **Group E**: Full platform QA pass (all 5 roles in EN/Sinhala/Tamil).
 
 ---
 
@@ -50,25 +51,25 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - `BUG-B4`: RESOLVED in commit `6e16bf0`, verified live.
 - `BUG-B5`: RESOLVED in commit `6e16bf0`, verified live.
 - `BUG-B6`: RESOLVED in commit `baea9af`, verified live.
+- `BUG-C1`: RESOLVED in commit `9e0f6c8`, verified live.
 
 ---
 
 ## 4. Last Live-Test Result
-- Target Feature B6 (`baea9af`, `scripts/verify_b6_flow_live.cjs`):
+- Target Feature C1 (`9e0f6c8`, `scripts/verify_c1_flow_live.cjs`):
   - Backend & ML service health: `GET /health` returned 200 OK (`status: ready`).
-  - GitHub Actions CI: Runs `41525169917` & `41525169643` passed 100% green.
-  - Live execution: 17/17 steps passed with 0 failures (`docs/live_b6_verification_log.json`, run `B6-RUN-1793652613294-E10ADAF1`).
-  - Doctor Outcome: Consultation `6ae8f7a36065a37820342bcb` created, prescription `RX-20261102-701110` issued with status "pending".
-  - Pharmacy Outcome: Dispensing receipt `REC-8060a6081c164c9e3c8ad92d` created, prescription status updated to "dispensed", pharmacy inventory stock decremented from 100 to 99.
-  - Independent Patient Verification: `GET /api/patient/:nic/prescriptions` confirmed status="dispensed", dispensedAt recorded, and consultation linkage intact.
-  - Independent Pharmacy Verification: `GET /api/pharmacy/receipt/:receiptNo` confirmed receipt in history and stock decrement verified.
-  - Zero Real Email Audit: Intercepted via `testOtpHarness` (`provider: 'test-harness'`, `deliveryQueued: false`, `deliveryConfirmed: false`), zero real emails sent.
+  - GitHub Actions CI: Runs `41534722808` & `41534722649` passed 100% green.
+  - Live execution: 15/15 steps passed with 0 failures (`docs/live_c1_verification_log.json`).
+  - Doctor Notification Outcome: Authenticated with zero real email dispatch, queried `/api/notifications` (200 OK, unread count tracked, outbreak alert schema valid, actionLink `/public-health`).
+  - Hospital Notification Outcome: Authenticated, queried `/api/notifications` (200 OK, actionLink `/public-health`).
+  - Admin Notification Outcome: Authenticated, triggered outbreak detection (`POST /api/admin/outbreak/trigger` 200 OK), queried `/api/alerts/active` (6 active/pending alerts), queried `/api/notifications` (200 OK, actionLink `/admin/dashboard/outbreak`).
+  - Trilingual UI Keys: Verified in `client/src/i18n/translations/` (`en.js`, `si.js`, `ta.js` notificationStatus present).
   - Secret sanitization: 0 passwords, 0 raw OTPs, 0 unmasked NICs leaked in execution logs.
-  - Offline test suite: 2,331 passed, 0 failed across all suites.
+  - Offline test suite: 2,338 passed, 0 failed across all 83 backend suites, 48 client suites, email-pdf, ml-scoring, ml-flask, and root.
   - Production client build: passed cleanly (0 errors).
 
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Group A (A1 to A6) and Group B (B1 to B6) fully verified, complete, and accepted live.
-- Ready to begin Feature C1: Outbreak alert notifications & forecasting integration (Phase 5A).
+- Group A (A1 to A6), Group B (B1 to B6), and Feature C1 fully verified, complete, and accepted live.
+- Ready to begin Feature C2: 14-day outbreak forecasting accuracy / display (Phase 5B).

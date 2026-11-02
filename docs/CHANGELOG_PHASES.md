@@ -75,3 +75,12 @@
   - Pharmacy authenticated, verified stock (>= 10), requested patient access, verified OTP, dispensed prescription, issued immutable receipt `REC-8060a6081c164c9e3c8ad92d`, and atomically decremented inventory (100 -> 99).
   - Independent reads verified: Patient prescription status="dispensed" with valid timestamps; Pharmacy receipt ledger verified.
   - Passed GitHub Actions CI runs `41525169917` & `41525169643`. All 15 protected file hashes verified 100% intact.
+
+## Master Run - Phase C: Outbreak Analytics, Alerts & Trilingual UI
+- **C1**: `feat(outbreak): wire outbreak alert creation to notification service across doctor, hospital, and admin roles` (`9e0f6c8`)
+  - Implemented `notifyOutbreakAlert` in `server/src/services/notificationService.js` to automatically dispatch in-app notifications to Doctor (`role: 'doctor'`, `actionLink: '/public-health'`), Hospital (`role: 'hospital_admin'`, `actionLink: '/public-health'`), and Admin (`role: 'admin'`, `actionLink: '/admin/dashboard/outbreak'`) users.
+  - Added duplicate notification suppression per `referenceId` (alertId) to ensure idempotent alert creation and triggers without spam.
+  - Added Socket.IO real-time emission via `io.emitToVerifiedUser` and administrative alert broadcast via `io.emitToVerifiedAdmins`.
+  - Added Mongoose `post('save')` lifecycle hook on `OutbreakAlert` model and wired notification trigger inside `surveillanceService.runAnalysis` and `adminController.approveAlert`.
+  - Added offline regression test suite `server/tests/outbreakNotificationPipeline.test.js` (6/6 passing).
+  - Verified live: 15/15 steps passed in `scripts/verify_c1_flow_live.cjs` on production backend (`live_c1_verification_log.json`). Both CI runs `41534722808` & `41534722649` passed green.
