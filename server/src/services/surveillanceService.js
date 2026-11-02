@@ -46,7 +46,7 @@ async function loadCases(options) {
   } }).toArray();
   return selectCases(docs, {...options,now});
 }
-async function runAnalysis({mode='real', now=new Date()} = {}) {
+async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   if (!['real','simulation'].includes(mode)) throw new Error('Invalid surveillance mode');
   const selection = await loadCases({mode,now});
   const buckets = new Map();
@@ -68,14 +68,21 @@ async function runAnalysis({mode='real', now=new Date()} = {}) {
     if(!b || r.anomaly !== true)continue;
     const ids=[...b.sourceConsultationIds].sort();
     const _id=new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,b.district,b.disease,ids])).digest('hex').slice(0,24));
-    await OutbreakAlert.updateOne({_id},{$setOnInsert:{disease:b.disease,location:b.district,affectedCount:b.last_7_days_count,
+    const alertData = {disease:b.disease,location:b.district,affectedCount:b.last_7_days_count,
       severity:({low:'Low',medium:'Moderate',high:'High'})[String(r.severity).toLowerCase()] || 'Moderate',status:'Pending',
       surveillancePolicy:POLICY,sourceConsultationIds:ids,isSimulation:mode==='simulation',isDemoData:mode==='simulation',
-      message:`${mode==='simulation'?'[SIMULATION] ':''}Unreviewed statistical signal. Not a confirmed outbreak.`}},{upsert:true});
+      message:`${mode==='simulation'?'[SIMULATION] ':''}Unreviewed statistical signal. Not a confirmed outbreak.`};
+    await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
     summary.results.push({...r,alertId:String(_id),status:'Pending',isSimulation:mode==='simulation'});
+
+    try {
+      const { notifyOutbreakAlert } = require('./notificationService');
+      await notifyOutbreakAlert({ _id, ...alertData }, { io });
+    } catch (notifErr) {
+      console.error('[Surveillance] Notification trigger error (non-fatal):', notifErr.message);
+    }
   }
-  // Intentionally no socket, email, notification or BroadcastMessage side effects.
-  // Simulation results are available only to authenticated synthetic reviewers.
+  // In-app notifications dispatched for doctor, hospital, and admin review; external email delivery remains gated.
   return summary;
 }
 async function canReviewSimulation(user) {

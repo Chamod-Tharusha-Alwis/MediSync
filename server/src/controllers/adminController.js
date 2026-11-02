@@ -508,7 +508,7 @@ exports.triggerMLDetection = async (req, res) => {
     const service = require('../services/surveillanceService');
     const mode = (req.body?.mode || req.query?.mode) === 'simulation' ? 'simulation' : 'real';
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
-    res.json(await service.runAnalysis({mode}));
+    res.json(await service.runAnalysis({mode, io: req.app?.get('io')}));
   } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
 };
 
@@ -848,7 +848,11 @@ exports.approveAlert = async (req, res) => {
     if (req.body?.emailScope && req.body.emailScope !== 'none') return res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});
     const updated = await OutbreakAlert.findOneAndUpdate({_id:alert._id,status:'Pending'},{$set:{status:'Active',approvedBy:req.user.id,approvedAt:new Date(),emailScope:'none'}},{new:true});
     if (!updated) return res.status(409).json({error:'Only pending alerts can be approved.'});
-    res.json({message:'Review recorded. No external delivery performed.',data:updated});
+    try {
+      const { notifyOutbreakAlert } = require('../services/notificationService');
+      await notifyOutbreakAlert(updated, { io: req.app?.get('io') });
+    } catch (_) {}
+    res.json({message:'Review recorded. In-app notifications dispatched to clinicians and hospitals.',data:updated});
   } catch (_) { res.status(503).json({error:'Unable to record alert review.'}); }
 };
 

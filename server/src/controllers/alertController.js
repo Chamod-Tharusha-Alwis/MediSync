@@ -8,7 +8,7 @@ const { verifyToken } = require('../utils/internalAuth');
 // Legacy push endpoints cannot bypass provenance or administrator review.
 exports.triggerAlert = async (req, res) => {
   if (!verifyToken(req.headers['x-internal-key'])) return res.status(403).json({error:'Forbidden'});
-  try { res.status(202).json(await require('../services/surveillanceService').runAnalysis({mode:'real'})); }
+  try { res.status(202).json(await require('../services/surveillanceService').runAnalysis({mode:'real', io: req.app?.get('io')})); }
   catch (_) { res.status(503).json({error:'Surveillance unavailable.'}); }
 };
 exports.broadcastAlert = async (req, res) => res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});

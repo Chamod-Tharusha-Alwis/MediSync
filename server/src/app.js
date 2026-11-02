@@ -220,6 +220,7 @@ async function startServer() {
     },
   });
   app.set('io', io);
+  global.io = io;
   lifecycle?.bind({ io });
 
   // Map userId → socketId for targeted real-time pushes

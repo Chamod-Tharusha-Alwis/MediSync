@@ -84,4 +84,13 @@ const outbreakAlertSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+outbreakAlertSchema.post('save', async function(doc) {
+  try {
+    const { notifyOutbreakAlert } = require('../services/notificationService');
+    await notifyOutbreakAlert(doc);
+  } catch (err) {
+    console.error('[OutbreakAlert] Notification hook error (non-fatal):', err.message);
+  }
+});
+
 module.exports = mongoose.model('OutbreakAlert', outbreakAlertSchema);

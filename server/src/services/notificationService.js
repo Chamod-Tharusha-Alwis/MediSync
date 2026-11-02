@@ -47,4 +47,112 @@ async function getUnreadCount(userId) {
   return Notification.countDocuments({ userId, read: false });
 }
 
-module.exports = { sendNotification, getUnreadCount };
+/**
+ * notifyOutbreakAlert
+ *
+ * Dispatches notifications to Doctor, Hospital, and Admin users when an outbreak alert is created or activated.
+ * Avoids duplicate notifications for the same alert referenceId.
+ * Emits real-time socket events if Socket.io server instance is available.
+ *
+ * @param {Object} alert - The OutbreakAlert document or object
+ * @param {Object} [opts]
+ * @param {import('socket.io').Server} [opts.io] - Optional Socket.io instance
+ * @returns {Promise<{ createdCount: number, recipientsCount: number, alertId: string }>}
+ */
+async function notifyOutbreakAlert(alert, { io } = {}) {
+  if (!alert) return { createdCount: 0, recipientsCount: 0, alertId: null };
+
+  const alertId = alert._id ? String(alert._id) : (alert.id ? String(alert.id) : null);
+  const disease = alert.disease || 'Unknown Disease';
+  const location = alert.location || alert.district || 'Nationwide';
+  const severity = alert.severity || 'Moderate';
+  const isSimulation = Boolean(alert.isSimulation);
+
+  let Doctor, Hospital, Admin;
+  try { Doctor = require('../models/Doctor'); } catch (_) {}
+  try { Hospital = require('../models/Hospital'); } catch (_) {}
+  try { Admin = require('../models/Admin'); } catch (_) {}
+
+  const [doctors, hospitals, admins] = await Promise.all([
+    Doctor?.find ? Doctor.find({ isActive: { $ne: false } }, { _id: 1 }).lean().catch(() => []) : [],
+    Hospital?.find ? Hospital.find({ isActive: { $ne: false } }, { _id: 1 }).lean().catch(() => []) : [],
+    Admin?.find ? Admin.find({ isActive: { $ne: false } }, { _id: 1, role: 1 }).lean().catch(() => []) : []
+  ]);
+
+  const recipients = [
+    ...(Array.isArray(doctors) ? doctors : []).map(d => ({ userId: d._id, role: 'doctor', actionLink: '/public-health' })),
+    ...(Array.isArray(hospitals) ? hospitals : []).map(h => ({ userId: h._id, role: 'hospital_admin', actionLink: '/public-health' })),
+    ...(Array.isArray(admins) ? admins : []).map(a => ({ userId: a._id, role: a.role || 'admin', actionLink: '/admin/dashboard/outbreak' }))
+  ];
+
+  if (recipients.length === 0) {
+    return { createdCount: 0, recipientsCount: 0, alertId };
+  }
+
+  let existingUserIds = new Set();
+  if (alertId) {
+    try {
+      const existing = await Notification.find({
+        type: 'outbreak_alert',
+        referenceId: alertId
+      }, { userId: 1 }).lean();
+      if (Array.isArray(existing)) {
+        existingUserIds = new Set(existing.map(e => String(e.userId)));
+      }
+    } catch (_) {}
+  }
+
+  const titlePrefix = isSimulation ? '[SIMULATION] ' : '';
+  const title = `${titlePrefix}Outbreak Alert: ${disease} (${location})`;
+  const message = alert.message || `${severity} outbreak alert: Elevated case frequency for ${disease} detected in ${location}.`;
+
+  const docsToInsert = recipients
+    .filter(r => !existingUserIds.has(String(r.userId)))
+    .map(r => ({
+      userId: r.userId,
+      role: r.role,
+      title,
+      message,
+      type: 'outbreak_alert',
+      referenceId: alertId,
+      actionLink: r.actionLink,
+      read: false,
+      createdAt: new Date()
+    }));
+
+  let inserted = [];
+  if (docsToInsert.length > 0) {
+    inserted = await Notification.insertMany(docsToInsert);
+  }
+
+  const socketServer = io || global.io;
+  if (socketServer) {
+    for (const notif of inserted) {
+      if (typeof socketServer.emitToVerifiedUser === 'function') {
+        try {
+          await socketServer.emitToVerifiedUser(notif.userId, 'notification', notif);
+        } catch (_) {}
+      }
+    }
+    if (typeof socketServer.emitToVerifiedAdmins === 'function') {
+      try {
+        await socketServer.emitToVerifiedAdmins('outbreak_alert', {
+          alertId,
+          disease,
+          location,
+          severity,
+          isSimulation,
+          message
+        });
+      } catch (_) {}
+    }
+  }
+
+  return {
+    createdCount: inserted.length,
+    recipientsCount: recipients.length,
+    alertId
+  };
+}
+
+module.exports = { sendNotification, getUnreadCount, notifyOutbreakAlert };
