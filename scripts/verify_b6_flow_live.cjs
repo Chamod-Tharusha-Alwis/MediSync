@@ -119,7 +119,7 @@ class VerificationLogger {
     text = text.replace(/Bearer\s+ey[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+/g, 'Bearer [REDACTED_JWT]');
     // Scrub OTP codes in JSON strings
     text = text.replace(/(?<="otp":\s*")[0-9]{6}(?=")/g, '[TEST_OTP_INTERCEPTED]');
-    // Scrub unmasked 12-digit NICs (e.g. 200325711121 -> 2003****1121)
+    // Scrub unmasked 12-digit NICs (e.g. 199012345678 -> 1990****5678)
     text = text.replace(/([0-9]{4})[0-9]{4}([0-9]{4})/g, '$1****$2');
     // Scrub unmasked 10-char legacy NICs
     text = text.replace(/([0-9]{2})[0-9]{4}([0-9]{3}[vVxX])/gi, '$1****$2');
