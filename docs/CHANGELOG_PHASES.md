@@ -51,3 +51,20 @@
   - Preserved prefix-first matching and free-text custom/unlisted medication entry.
   - Added regression suite `client/src/__master_offline__/b2-drug-suggestions-trilingual.test.jsx` (5/5 passing, all 18 drug search tests passing).
   - Verified live: production chunk `921.a9650740.chunk.js` active with Panadol/Acetaminophen catalog fallback and custom addition; `/health` 200 OK.
+- **B3**: `fix(diag): resolve 409 consultation save error and improve idempotency` (`7e9319f`)
+  - Resolved 409 idempotency conflict on rapid double-clicks and edits by adding submit button locking (`submissionBusy.current`), visual spinner + "Saving Consultation…", and automatic idempotency key regeneration upon form modification.
+  - Implemented immediate idempotency key refresh when a 409 `CLINICAL_IDEMPOTENCY_CONFLICT` occurs, notifying clinician to retry cleanly without collision loops.
+  - Added single-drug safety allowance (`isSingleResolvedSafe`) in `server/src/middleware/clinicalWriteAuthorization.js` and `server/src/services/currentMedicationSafety.js` so a single resolved safe drug does not trip false-positive `MEDICATION_REVIEW_REQUIRED` (409).
+  - Verified safe replay on identical payloads (returns 200 OK without duplicate writes).
+  - Back button on Step 5 verified navigating to Step 4 (Diagnosis & Reference Matches) instead of Step 2.
+  - Verified with offline suites `consultation-409-resilience.test.jsx` (8/8) and `consultation409Offline.test.js` (16/16).
+  - Verified live: production chunk `921.a9650740.chunk.js` active with key refresh and button locking logic.
+- **B4**: `fix(ui): resolve lab test autocomplete dropdown overlap and stacking context` (`6e16bf0`)
+  - Resolved dropdown overlap and clipping by implementing dynamic flip calculation (`isLabFlipped`) in `client/src/pages/doctor/NewConsultation.jsx` (`spaceBelow < 260 && spaceAbove > spaceBelow`), toggling `bottom-full mb-1` vs `top-full mt-1`.
+  - Ordered stacking contexts: dropdown `z-50`, input wrapper `z-30`, lab card `z-20`, follow-up card `z-10`.
+  - Verified with stress suite `new-consultation-stress.test.jsx` (7/7, specifically 0px displacement invariant).
+  - Verified live: production chunk `921.a9650740.chunk.js` serving `isLabFlipped` flip logic.
+- **B5**: `fix(ui): normalize doctor names and eliminate duplicate "Dr." prefixes` (`6e16bf0`)
+  - Implemented `formatDoctorName` regex collapsing repeated titles (`/^(dr\.?|doctor)\s+/i`), preserving valid names, and bypassing institutional names (`Asiri Laboratory`, etc.). Added `stripDoctorPrefix`.
+  - Unified doctor name formatting across 60+ UI call sites and backend email/PDF services.
+  - Verified with offline suites `phase4-ui-polish.test.jsx` (14/14) and `doctorNameOffline.test.js` (9/9).
