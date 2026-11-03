@@ -786,6 +786,9 @@ async function main() {
 
     // Candidate list of safe, reviewed essential medications from COMMON_DRUGS
     const drugCandidates = [
+      { name: 'Ranitidine 150mg', dosage: '150mg', frequency: 'Twice daily', durationDays: 14, instructions: 'Take 1 tablet twice daily before meals.' },
+      { name: 'Metformin 500mg', dosage: '500mg', frequency: 'Twice daily', durationDays: 14, instructions: 'Take 1 tablet with meals.' },
+      { name: 'Amlodipine 5mg', dosage: '5mg', frequency: 'Daily', durationDays: 14, instructions: 'Take 1 tablet in the morning.' },
       { name: 'Salbutamol Inhaler', dosage: '100mcg/dose', frequency: 'As needed', durationDays: 14, instructions: 'Inhale 2 puffs as needed for shortness of breath.' },
       { name: 'Zinc Sulfate 20mg', dosage: '20mg', frequency: 'Daily', durationDays: 14, instructions: 'Take 1 tablet daily.' },
       { name: 'Amoxicillin 500mg', dosage: '500mg', frequency: 'Three times a day', durationDays: 5, instructions: 'Take 1 capsule every 8 hours after meals.' },
@@ -799,19 +802,27 @@ async function main() {
     let chosenDrug = drugCandidates.find(c => {
       if (activeDrugNames.some(active => active.includes(c.name.toLowerCase().split(' ')[0]))) return false;
       const safety = analyzeMedicationSafety([...activeDrugNames, c.name], [], COMMON_DRUGS);
-      return safety && safety.hasInteraction === false && (!safety.duplicateIngredients || safety.duplicateIngredients.length === 0);
+      return safety && safety.hasInteraction === false && (!safety.duplicateIngredients || safety.duplicateIngredients.length === 0) && safety.verificationIncomplete === false;
     });
-    if (!chosenDrug) chosenDrug = drugCandidates[0]; // fallback
+    if (!chosenDrug) {
+      chosenDrug = drugCandidates.find(c => !activeDrugNames.some(active => active.includes(c.name.toLowerCase().split(' ')[0]))) || drugCandidates[0];
+    }
 
     // ── STEP 11: Doctor Consultation & Prescription Issuance (Doctor Outcome) ──
     const consultationIdempKey = `b6-con-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    const isRanitidine = chosenDrug.name.includes('Ranitidine');
+    const isMetformin = chosenDrug.name.includes('Metformin');
     const consultationPayload = {
       patientNic,
-      diagnosis: 'Seasonal Allergic Rhinitis (B6 Live Flow Acceptance)',
-      icdCode: 'J30.1',
-      icdDescription: 'Allergic rhinitis due to pollen',
+      diagnosis: isRanitidine ? 'Gastroesophageal Reflux Disease (B6 Live Flow Acceptance)' :
+                 isMetformin ? 'Type 2 Diabetes Mellitus (B6 Live Flow Acceptance)' :
+                 'Seasonal Allergic Rhinitis (B6 Live Flow Acceptance)',
+      icdCode: isRanitidine ? 'K21.9' : isMetformin ? 'E11.9' : 'J30.1',
+      icdDescription: isRanitidine ? 'Gastro-esophageal reflux disease without oesophagitis' :
+                      isMetformin ? 'Type 2 diabetes mellitus without complications' : 'Allergic rhinitis due to pollen',
       icdVersion: 'ICD-10',
-      symptoms: ['Sneezing', 'Nasal Congestion', 'Watery Eyes'],
+      symptoms: isRanitidine ? ['Heartburn', 'Acid Regurgitation', 'Dyspepsia'] :
+                isMetformin ? ['Polyuria', 'Polydipsia', 'Fatigue'] : ['Sneezing', 'Nasal Congestion', 'Watery Eyes'],
       notes: `Automated live verification consultation ${runId}`,
       isFollowUpRequired: false,
       prescriptions: [

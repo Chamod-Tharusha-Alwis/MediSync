@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Step 0 State Reconciliation in progress; B2–B5 downgraded to bundle check only pending real browser verification; C2 status set to "plumbing live; forecast not yet verified on live data"; B6 live 20-step verification pending execution.
-**Active Feature**: Step 0: State Reconciliation (B6 runner expansion to 20 steps, B2–B5 & C2 status reconciliation); Next: Step 1 (Feature F: Demo Outbreak Seed Script)
+**Current Status**: Step 0 State Reconciliation Complete; B2–B5 downgraded to bundle check only pending real browser verification; C2 status set to "plumbing live; forecast not yet verified on live data"; B6 live 20-step verification 100% passed (20/20); Ready for Step 1 (Feature F: Demo Outbreak Seed Script)
+**Active Feature**: Step 1 (Feature F: Demo Outbreak Seed Script `scripts/seed-demo-outbreak.js`)
 **Last Updated**: 2026-11-03
 
 ---
@@ -23,7 +23,7 @@
 | B3 | 409 consultation save resilience: idempotency key refresh, UI button locking, safe replay | `7e9319f` | Green | bundle check only (browser interaction steps pending: 409 save behavior & idempotency key refresh) | 2026-11-02 |
 | B4 | Lab dropdown stacking context & dynamic viewport flip detection | `6e16bf0` | Green | bundle check only (browser interaction steps pending: lab dropdown placement near viewport bottom) | 2026-11-02 |
 | B5 | Eliminate duplicated "Dr." prefix in doctor name formatting across client and server | `6e16bf0` | Green | bundle check only (browser interaction steps pending: doctor name shown once with single "Dr.") | 2026-11-02 |
-| B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `baea9af` | Green (runs 41525169917 & 41525169643) | Yes (20-step live re-verification pending live execution: pre-consent 403, idempotency replay, wrong-role 403) | 2026-11-03 |
+| B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `0f19236` | Green | Yes (20/20 steps passed: pre-consent 403, consultation `6ae954ea2dbef1fd5e7828af`, prescription `RX-20261103-415547`, idempotency replay 200, receipt `REC-e5a8f8f0ab212bafbf50bda8`, stock decremented 100->99, wrong-role 403) | 2026-11-03 |
 | C1 | Outbreak alert notifications wired to notification service for Doctor, Hospital, and Admin roles | `9e0f6c8` | Green (runs 41534722808 & 41534722649) | Yes (15/15 live verification steps passed, Doctor/Hospital/Admin notification endpoints verified, trilingual UI dictionary verified) | 2026-11-03 |
 | C2 | 14-day outbreak forecasting accuracy & display with 95% confidence bands and graceful degradation | `8bc0cf4` | Green (runs 41542998109 & 41542998105) | plumbing live; forecast not yet verified on live data (re-verification pending after Step 1 seed) | 2026-11-03 |
 
@@ -84,9 +84,9 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 ---
 
 ## 5. In-Progress / Half-Done Work
-- Step 0 (State Reconciliation) active:
+- Step 0 (State Reconciliation) complete:
   - B2 to B5 downgraded to "bundle check only" pending real browser tests.
   - C2 status updated to "plumbing live; forecast not yet verified on live data" (re-verification scheduled after Step 1 seed).
-  - B6 live verification runner enhanced to 20 steps (adding pre-consent 403, idempotency replay duplicate prevention, and wrong-role 403 checks); live rerun pending.
+  - B6 live verification runner enhanced to 20 steps (adding pre-consent 403, idempotency replay duplicate prevention, and wrong-role 403 checks) and verified live with 20/20 passes (Consultation `6ae954ea2dbef1fd5e7828af`, Prescription `RX-20261103-415547`, Receipt `REC-e5a8f8f0ab212bafbf50bda8`).
   - Confirmed duplicate file `TEMP_TEST_HARNESS_1.md` does not exist in repository.
 - Next: Step 1 (Feature F: Demo Outbreak Seed Script `scripts/seed-demo-outbreak.js`).
