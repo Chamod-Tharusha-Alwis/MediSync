@@ -25,9 +25,9 @@ The older checkpoints below are preserved as history and do not supersede this c
 - Stray root items preserved: `%SystemDrive%/` and the garbled `e candidate source…` filename. No cleanup authorization is assumed.
 - Next: obtain approval of the protected ingest revision and operator read-only inventory receipt; then implement the companion seeder and read-only-verifier guards. Protected proposal: docs/temp/CODEX_INGEST_SNAPSHOT_R3_FOR_APPROVAL_20261103.patch; 17 detached SQLite checks PASS (auth decorator unchanged, stubbed only in isolated tests), no source applied. Offline seed reconstruction at 2026-11-03T12:00Z yields 6,309 consultations, 878 daily rows, 6,309 total cases and 5,090 within the current 30-day date window. The reported 10,180 equals twice 5,090, consistent with additive replay but not independent proof of production contents. Safe operator-only inventory/remediation handoff is documented separately. Do not run production repair or re-accept C2/C3 until approved repair and fresh browser evidence exist. Work as one agent only.
 
-**Current Status**: Step 3 (Feature C3: Multi-Disease Outbreak Map & 25-District Clustering) Complete; 2,367 offline tests pass, client build clean, CI green (`edf99f6`), live verified across Desktop & Mobile 375px in EN/SI/TA; Ready for Step 4 (Features C4 through C7 Feature Delivery)
-**Active Feature**: Step 4 (Features C4 through C7 Feature Delivery)
-**Last Updated**: 2026-11-03
+**Current Status**: Step 3 (Feature C3: Multi-Disease Outbreak Map & 25-District Clustering) Complete; 2,438 offline tests pass, client build clean, CI green (`86d5876`), live verified across Desktop & Mobile 375px in EN/SI/TA; Ready for Feature C4 (Doctor AI Resilience)
+**Active Feature**: Feature C4: Doctor AI Resilience (W1)
+**Last Updated**: 2026-11-04
 
 ---
 
