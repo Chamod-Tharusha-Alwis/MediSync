@@ -561,7 +561,8 @@ export const en = {
     "insufficientData": "Insufficient historical data to compute 14-day outbreak forecast (minimum 3 days required).",
     "caseTrend": "Case Trend",
     "viewHistorical": "Historical Trend",
-    "viewForecast": "14-Day Forecast"
+    "viewForecast": "14-Day Forecast",
+    "forecastDisclaimer": "Statistical projection for demonstration and epidemiological trend evaluation; not clinically validated diagnostic advice."
   },
   "home": {
     "heroTitle": "Decentralized Healthcare Platform",

@@ -1,6 +1,6 @@
 'use strict';
 
-const { calculate14DayForecast } = require('../src/utils/outbreakForecasting');
+const { calculate14DayForecast, getTCrit } = require('../src/utils/outbreakForecasting');
 
 describe('Epidemiological 14-Day Outbreak Forecasting Suite', () => {
   test('returns empty forecast and hasSufficientData=false on empty or non-array inputs', () => {
@@ -107,5 +107,49 @@ describe('Epidemiological 14-Day Outbreak Forecasting Suite', () => {
     expect(result.hasSufficientData).toBe(true);
     expect(result.forecast.length).toBe(14);
     expect(result.forecast[0].predicted).toBeGreaterThanOrEqual(0);
+  });
+
+  test('computes exact Student t critical values for small sample sizes', () => {
+    expect(getTCrit(1)).toBe(12.71);
+    expect(getTCrit(5)).toBe(2.57);
+    expect(getTCrit(10)).toBe(2.23);
+    expect(getTCrit(25)).toBe(1.96);
+  });
+
+  test('executes 7-day holdout backtest when trend >= 14 days', () => {
+    const trend = Array.from({ length: 20 }, (_, i) => ({
+      date: `2026-10-${(i + 1).toString().padStart(2, '0')}`,
+      count: 10 + i * 2 + (i % 2 === 0 ? 1 : -1)
+    }));
+
+    const result = calculate14DayForecast(trend);
+    expect(result.backtest).toBeDefined();
+    expect(result.backtest.evaluated).toBe(true);
+    expect(result.backtest.holdoutDays).toBe(7);
+    expect(typeof result.backtest.mae).toBe('number');
+    expect(result.backtest.mae).toBeGreaterThan(0);
+    expect(result.backtest.empiricalCoverage).toBeGreaterThanOrEqual(0);
+    expect(result.backtest.empiricalCoverage).toBeLessThanOrEqual(100);
+  });
+
+  test('evaluates polynomial quadratic alternative without diverging', () => {
+    const curve = [
+      { date: '2026-10-01', count: 10 },
+      { date: '2026-10-02', count: 25 },
+      { date: '2026-10-03', count: 45 },
+      { date: '2026-10-04', count: 60 },
+      { date: '2026-10-05', count: 70 },
+      { date: '2026-10-06', count: 75 },
+      { date: '2026-10-07', count: 77 }
+    ];
+
+    const result = calculate14DayForecast(curve);
+    expect(result.hasSufficientData).toBe(true);
+    expect(result.forecast.length).toBe(14);
+    result.forecast.forEach(pt => {
+      expect(pt.lower).toBeLessThanOrEqual(pt.predicted);
+      expect(pt.predicted).toBeLessThanOrEqual(pt.upper);
+      expect(pt.lower).toBeGreaterThanOrEqual(0);
+    });
   });
 });

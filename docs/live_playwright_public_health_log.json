@@ -1,0 +1,20 @@
+{
+  "url": "https://medisync.chamodtharusha.com.lk/public-health",
+  "timestamp": "2026-11-03T08:03:39.133Z",
+  "desktop": {
+    "bannerVisible": true,
+    "bannerText": "Demonstration Data Active\nDEMONSTRATION\n\nDemonstration Data Active — This dashboard currently displays synthetic epidemiological data for simulation and evaluation purposes.",
+    "totalCases": "5,097",
+    "topDisease": "Dengue\n\nCase Trend\nHistorical Trend",
+    "chartVisible": true,
+    "screenshot": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\docs\\screenshots\\live_public_health_desktop.png"
+  },
+  "mobile": {
+    "bannerVisible": true,
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "noHorizontalOverflow": true,
+    "screenshot": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\docs\\screenshots\\live_public_health_mobile_375px.png"
+  },
+  "passed": true
+}

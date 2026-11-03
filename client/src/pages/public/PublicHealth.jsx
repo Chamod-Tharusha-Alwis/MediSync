@@ -252,7 +252,7 @@ const PublicHealth = () => {
                 </div>
 
                 {/* Trend Chart with View Switcher */}
-                <div className="glass-panel p-4 rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-md h-72 flex flex-col">
+                <div className="glass-panel p-4 rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-md min-h-72 flex flex-col">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-slate-300 font-medium flex items-center gap-2 text-sm sm:text-base">
                       <FiTrendingUp className="text-teal-400" />
@@ -336,6 +336,11 @@ const PublicHealth = () => {
                       </div>
                     ))}
                   </div>
+                  {trendView === 'forecast' && (
+                    <p className="text-[11px] text-purple-300/80 mt-2.5 text-center italic" data-testid="forecast-disclaimer">
+                      {t('public.forecastDisclaimer', 'Statistical projection for demonstration and epidemiological trend evaluation; not clinically validated diagnostic advice.')}
+                    </p>
+                  )}
                 </div>
 
                 {/* Disease Breakdown */}
