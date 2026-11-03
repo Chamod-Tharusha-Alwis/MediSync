@@ -118,3 +118,10 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - Step 3 (Feature C3: Multi-Disease Outbreak Map and Clustering) complete:
   - 25-district BFS spatial clustering, disease filter dropdown, dynamic legend, accessible table view, and cluster halos implemented and live verified (`scripts/verify_m2_step23_live.cjs`).
 - Next: Step 4 (Features C4 through C7 Feature Delivery).
+
+### Post-task checkpoint
+
+- Finished evidence integration is local commit `751b4d0`; tracked source/tests are clean. Secret scan of its exact staged diff: zero findings; full offline 2,382 PASS and build PASS. No push/deployment has occurred during the read-only investigation.
+- First investigation is blocked at the protected-file and production-metadata boundaries, not marked complete: latest captured public aggregate is zero, exact production batch rows remain unavailable, and unsafe historical verifier routes must not run. New findings are recorded in BUGS.md.
+- Review handoff: `docs/temp/CODEX_OUTBREAK_TOTALS_READONLY_AND_APPROVAL_20261103_6a7022.md` contains the exact read-only Render Shell command and preserves both stray filenames. Current protected proposal is R3 only; previous proposal artifacts are historical. No dedupe/reset command is executable until stored attribution is verified; never delete unclassified rows on assumption.
+- Await explicit approval before modifying protected ml-engine/app.py; source approval does not authorize DDL, data repair, deployment or credential access. Companion seeder idempotency and read-only verifier guard remain unfinished and explicitly held for the next implementation stage. No subsequent v3 work is claimed complete.
