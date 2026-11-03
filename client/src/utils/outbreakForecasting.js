@@ -1,15 +1,53 @@
 /**
  * Two-tailed Student's t critical values for alpha = 0.05 (95% CI) and alpha = 0.01 (99% CI)
- * for degrees of freedom 1 to 30. For df > 30, converges to standard normal z.
+ * for degrees of freedom 1 to 30. For df > 30, converges smoothly to standard normal z.
  */
 export function getTCrit(df, confidenceLevel = 0.95) {
   const safeDf = Math.max(1, Math.floor(df));
   if (confidenceLevel === 0.99) {
-    const t99 = [63.66, 9.92, 5.84, 4.60, 4.03, 3.71, 3.50, 3.36, 3.25, 3.17, 3.11, 3.05, 3.01, 2.98, 2.95, 2.92, 2.90, 2.88, 2.86, 2.85];
-    return safeDf <= 20 ? (t99[safeDf - 1] || 2.85) : 2.576;
+    const t99 = [
+      63.66, 9.92, 5.84, 4.60, 4.03, 3.71, 3.50, 3.36, 3.25, 3.17,
+      3.11, 3.05, 3.01, 2.98, 2.95, 2.92, 2.90, 2.88, 2.86, 2.85,
+      2.831, 2.819, 2.807, 2.797, 2.787, 2.779, 2.771, 2.763, 2.756, 2.750
+    ];
+    return safeDf <= 30 ? (t99[safeDf - 1] || 2.75) : 2.576;
   }
-  const t95 = [12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09, 2.09];
-  return safeDf <= 20 ? (t95[safeDf - 1] || 2.09) : 1.96;
+  const t95 = [
+    12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23,
+    2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09, 2.09,
+    2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042
+  ];
+  return safeDf <= 30 ? (t95[safeDf - 1] || 2.042) : 1.96;
+}
+
+/**
+ * Fits log-linear model ln(y + 1) = alpha + beta * x for exponential surge detection.
+ */
+export function fitLogLinear(x, y) {
+  const n = x.length;
+  if (n < 3) return null;
+
+  const z = y.map(v => Math.log(Math.max(0, v) + 1));
+  const xMean = x.reduce((a, b) => a + b, 0) / n;
+  const zMean = z.reduce((a, b) => a + b, 0) / n;
+
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (x[i] - xMean) * (z[i] - zMean);
+    den += (x[i] - xMean) * (x[i] - xMean);
+  }
+
+  const beta = den === 0 ? 0 : num / den;
+  const alpha = zMean - beta * xMean;
+
+  let ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const yHat = Math.max(0, Math.exp(alpha + beta * x[i]) - 1);
+    ssRes += (y[i] - yHat) * (y[i] - yHat);
+  }
+
+  return { alpha, beta, ssRes };
 }
 
 /**
@@ -74,13 +112,46 @@ export function evaluateHoldoutBacktest(cleanData, options = {}) {
   const mae = totalAbsoluteError / holdoutDays;
   const empiricalCoverage = (insideBandsCount / holdoutDays) * 100;
 
+  // Log-linear alternative evaluation on holdout
+  const logLinFit = fitLogLinear(xTrain, yTrain);
+  let logLinMae = null;
+  let logLinCoverage = null;
+  let logLinInside = 0;
+
+  if (logLinFit && logLinFit.beta > 0) {
+    let logLinAe = 0;
+    const maxTrainY = Math.max(...yTrain);
+    for (let k = 0; k < holdoutDays; k++) {
+      const futureX = (nTrain - 1) + (k + 1);
+      const rawLogPred = Math.min(Math.max(0, Math.exp(logLinFit.alpha + logLinFit.beta * futureX) - 1), maxTrainY * 3);
+      const pred = Math.max(0, Math.round(rawLogPred));
+      const sePred = se * Math.sqrt(1 + 1 / nTrain + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
+      const margin = Math.round(tCrit * sePred);
+      const lower = Math.min(pred, Math.max(0, Math.round(rawLogPred - margin)));
+      const upper = Math.max(pred, Math.round(rawLogPred + margin));
+
+      const actual = holdoutData[k].count;
+      logLinAe += Math.abs(actual - pred);
+      if (actual >= lower && actual <= upper) {
+        logLinInside++;
+      }
+    }
+    logLinMae = Number((logLinAe / holdoutDays).toFixed(2));
+    logLinCoverage = Number(((logLinInside / holdoutDays) * 100).toFixed(1));
+  }
+
   return {
     evaluated: true,
     holdoutDays,
     mae: Number(mae.toFixed(2)),
     empiricalCoverage: Number(empiricalCoverage.toFixed(1)),
     insideBandsCount,
-    totalHoldout: holdoutDays
+    totalHoldout: holdoutDays,
+    logLinear: logLinMae !== null ? {
+      mae: logLinMae,
+      empiricalCoverage: logLinCoverage,
+      insideBandsCount: logLinInside
+    } : null
   };
 }
 
@@ -141,15 +212,15 @@ export function fitQuadratic(x, y) {
 }
 
 /**
- * Calculates a 14-day epidemiological outbreak forecast with 95% confidence interval
+ * Calculates a 14-day epidemiological outbreak forecast with 95% prediction interval
  * using Ordinary Least Squares (OLS) linear trend regression and prediction variance.
  *
  * Implements:
  * - Variance prediction term: sePred = se * sqrt(1 + 1/n + (x - xMean)^2 / Sxx)
- * - Exact Student's t critical values for small degrees of freedom
+ * - Exact Student's t critical values for df 1 to 30
  * - Strict structural invariant: 0 <= lower <= predicted <= upper
  * - 7-day holdout backtesting for empirical coverage and MAE
- * - Polynomial alternative fit evaluation
+ * - Gated alternative model evaluation (Log-Linear for exponential surges, Quadratic for deceleration)
  */
 export function calculate14DayForecast(trend, options = {}) {
   const forecastDays = Math.max(1, Math.min(60, Number(options.forecastDays) || 14));
@@ -208,20 +279,42 @@ export function calculate14DayForecast(trend, options = {}) {
 
   const tCrit = getTCrit(df, confidenceLevel);
 
-  // Polynomial quadratic alternative evaluation
+  // 7-day holdout backtesting
+  const backtest = evaluateHoldoutBacktest(clean, { confidenceLevel });
+
+  // Gated model selection:
+  // 1. Log-linear alternative if accelerating growth and holdout backtest shows >10% MAE improvement
+  const logLinFit = fitLogLinear(x, y);
   const quadFit = fitQuadratic(x, y);
-  const modelType = (quadFit && quadFit.ssRes < ssRes * 0.75 && quadFit.a < 0) ? 'polynomial_quad' : 'ols_linear';
+  let modelType = 'ols_linear';
+
+  if (
+    logLinFit &&
+    logLinFit.beta > 0.05 &&
+    backtest?.evaluated &&
+    backtest?.logLinear &&
+    backtest.logLinear.mae < backtest.mae * 0.90 &&
+    backtest.logLinear.empiricalCoverage >= 70
+  ) {
+    modelType = 'log_linear';
+  } else if (quadFit && quadFit.ssRes < ssRes * 0.75 && quadFit.a < 0) {
+    // 2. Quadratic deceleration alternative
+    modelType = 'polynomial_quad';
+  }
 
   const lastDateRaw = clean[clean.length - 1].date;
   const lastDate = new Date(lastDateRaw.includes('T') ? lastDateRaw : `${lastDateRaw}T00:00:00Z`);
 
+  const maxObservedY = Math.max(...y);
   const forecast = [];
   for (let k = 1; k <= forecastDays; k++) {
     const futureX = (n - 1) + k;
     let rawPredicted = slope * futureX + intercept;
 
-    // If quadratic model indicates deceleration with better fit, apply damped trajectory
-    if (modelType === 'polynomial_quad' && quadFit) {
+    if (modelType === 'log_linear' && logLinFit) {
+      const logPred = Math.exp(logLinFit.alpha + logLinFit.beta * futureX) - 1;
+      rawPredicted = Math.min(Math.max(0, logPred), maxObservedY * 3); // Damped safety ceiling
+    } else if (modelType === 'polynomial_quad' && quadFit) {
       const quadPred = quadFit.a * futureX * futureX + quadFit.b * futureX + quadFit.c;
       if (quadPred >= 0 && quadPred <= rawPredicted * 1.5) {
         rawPredicted = quadPred * 0.5 + rawPredicted * 0.5; // Smooth ensemble
@@ -251,9 +344,6 @@ export function calculate14DayForecast(trend, options = {}) {
       bandRange
     });
   }
-
-  // 7-day holdout backtesting
-  const backtest = evaluateHoldoutBacktest(clean, { confidenceLevel });
 
   return {
     forecast,

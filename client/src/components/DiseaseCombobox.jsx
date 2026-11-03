@@ -2,11 +2,21 @@ import React, { useState, useRef, useEffect, useId } from 'react';
 import { FiSearch, FiChevronDown, FiCheck } from 'react-icons/fi';
 import api from '../api/axiosInstance';
 
+export const DEFAULT_SURVEILLANCE_DISEASES = [
+  'All Diseases',
+  'Dengue',
+  'Leptospirosis',
+  'Diarrhoeal disease',
+  'Influenza',
+  'Chikungunya',
+  'COVID-19'
+];
+
 const DiseaseCombobox = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [options, setOptions] = useState(['All Diseases']);
+  const [options, setOptions] = useState(DEFAULT_SURVEILLANCE_DISEASES);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
@@ -26,7 +36,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
   const searchDiseases = async (searchQuery, signal) => {
     setSearchError(false);
     if (!searchQuery) {
-      setOptions(['All Diseases']);
+      setOptions(DEFAULT_SURVEILLANCE_DISEASES);
       return;
     }
     try {
@@ -34,7 +44,10 @@ const DiseaseCombobox = ({ value, onChange }) => {
       if (!Array.isArray(res.data.data)) throw new Error('Invalid disease search response');
       if (!signal.aborted) setOptions(['All Diseases', ...res.data.data]);
     } catch (err) {
-      if (!signal.aborted) { setOptions(['All Diseases']); setSearchError(true); }
+      if (!signal.aborted) {
+        setOptions(DEFAULT_SURVEILLANCE_DISEASES);
+        setSearchError(true);
+      }
     }
   };
 
@@ -89,13 +102,13 @@ const DiseaseCombobox = ({ value, onChange }) => {
   return (
     <div ref={wrapperRef} className="relative w-48 sm:w-64">
       <button type="button" aria-label="Disease filter" aria-expanded={isOpen} aria-haspopup="listbox" aria-controls={listId}
-        className="flex items-center justify-between bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-slate-700/50 transition-colors focus:ring-2 focus:ring-teal-500 focus:outline-none"
+        className="flex items-center justify-between w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-slate-700/50 transition-colors focus:ring-2 focus:ring-teal-500 focus:outline-none"
         onClick={() => setIsOpen(!isOpen)}
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
         <span className="truncate">{displayValue || 'Select Disease'}</span>
-        <FiChevronDown className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <FiChevronDown className={`transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -120,7 +133,7 @@ const DiseaseCombobox = ({ value, onChange }) => {
             </div>
           </div>
           
-          {searchError && <p role="alert" className="px-3 py-2 text-xs text-rose-300">Disease search unavailable. Please try again.</p>}
+          {searchError && <p role="alert" className="px-3 py-2 text-xs text-rose-300">Disease search unavailable. Default options shown.</p>}
           <div id={listId} role="listbox" className="max-h-60 overflow-y-auto custom-scrollbar p-1">
             {options.length > 0 ? (
               options.map((disease, index) => {

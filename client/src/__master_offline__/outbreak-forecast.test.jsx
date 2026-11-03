@@ -61,7 +61,7 @@ describe('Public Health 14-Day Outbreak Forecasting UI & Degradation Suite', () 
     expect(document.body.innerHTML).not.toContain('NaN');
   });
 
-  test('renders 14-day forecast with confidence interval badges when historical trend is provided', async () => {
+  test('renders 14-day forecast with prediction interval badges and disclaimer footer when trend is provided', async () => {
     const historicalTrend = [
       { date: '2026-10-25', count: 10 },
       { date: '2026-10-26', count: 12 },
@@ -92,12 +92,17 @@ describe('Public Health 14-Day Outbreak Forecasting UI & Degradation Suite', () 
 
     // Dedicated 14-day forecast section rendered
     expect(screen.getAllByText('14-Day Outbreak Forecast').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('95% Confidence Interval').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/95% (Prediction|Confidence) Interval/).length).toBeGreaterThan(0);
     expect(screen.getByText('Predicted Cases')).toBeInTheDocument();
 
     // Chart container rendered
     const charts = screen.getAllByTestId('recharts-area-chart');
     expect(charts.length).toBeGreaterThanOrEqual(1);
+
+    // Dedicated full-width forecast disclaimer footer rendered
+    const disclaimer = screen.getByTestId('full-forecast-disclaimer');
+    expect(disclaimer).toBeInTheDocument();
+    expect(disclaimer).toHaveTextContent(/Statistical projection for demonstration, not clinically validated/i);
   });
 
   test('toggles between Historical Trend and 14-Day Forecast in widget', async () => {
@@ -124,12 +129,12 @@ describe('Public Health 14-Day Outbreak Forecasting UI & Degradation Suite', () 
       expect(screen.getByText('Total Cases')).toBeInTheDocument();
     });
 
-    const forecastBtn = screen.getByRole('button', { name: 'Forecast' });
-    const trendBtn = screen.getByRole('button', { name: 'Trend' });
+    const forecastBtn = screen.getByRole('button', { name: '14-Day Forecast' });
+    const trendBtn = screen.getByRole('button', { name: 'Historical Trend' });
 
     // Switch to Forecast
     fireEvent.click(forecastBtn);
-    expect(screen.getAllByText(/14-Day Forecast/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/14-Day Outbreak Forecast/i).length).toBeGreaterThan(0);
 
     // Switch back to Trend
     fireEvent.click(trendBtn);

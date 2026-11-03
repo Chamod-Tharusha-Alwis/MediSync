@@ -25,3 +25,4 @@ module.exports.testMatch.push('<rootDir>/tests/prescriptionPdfHoldResponse.test.
 
 module.exports.testMatch.push('<rootDir>/tests/testOtpHarnessOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/outbreakNotificationPipeline.test.js');
+module.exports.testMatch.push('<rootDir>/tests/outbreakForecasting.test.js');

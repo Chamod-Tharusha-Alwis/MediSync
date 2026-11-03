@@ -1,0 +1,349 @@
+{
+  "title": "MediSync C2 Outbreak Forecasting 7-Day Holdout Backtest Receipt",
+  "generatedAt": "2026-11-03T09:10:59.907Z",
+  "seed": 2026,
+  "passCriteria": {
+    "coverageThreshold": 70,
+    "passed": true
+  },
+  "primaryBenchmark": {
+    "baseline_60d_coverage": 85.7,
+    "baseline_60d_mae": 3.29,
+    "colombo_dengue_coverage": 100,
+    "ampara_clean_coverage": 100
+  },
+  "scenarios": {
+    "baseline_60d": {
+      "name": "Baseline 60-Day Surveillance Window (Days 89..30)",
+      "sampleSize": 60,
+      "trainDays": 53,
+      "holdoutDays": 7,
+      "mae": 3.29,
+      "empiricalCoverage": 85.7,
+      "insideCount": 6,
+      "isPrimaryBenchmark": true,
+      "passed": true,
+      "points": [
+        {
+          "day": 1,
+          "date": "2026-09-28",
+          "actual": 34,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": false,
+          "absoluteError": 14
+        },
+        {
+          "day": 2,
+          "date": "2026-09-29",
+          "actual": 20,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 3,
+          "date": "2026-09-30",
+          "actual": 24,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 4
+        },
+        {
+          "day": 4,
+          "date": "2026-10-01",
+          "actual": 23,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 3
+        },
+        {
+          "day": 5,
+          "date": "2026-10-02",
+          "actual": 20,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 6,
+          "date": "2026-10-03",
+          "actual": 21,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 7,
+          "date": "2026-10-04",
+          "actual": 21,
+          "predicted": 20,
+          "lower": 10,
+          "upper": 30,
+          "inBand": true,
+          "absoluteError": 1
+        }
+      ]
+    },
+    "colombo_dengue_baseline": {
+      "name": "Colombo Dengue Baseline (60 Days)",
+      "sampleSize": 60,
+      "trainDays": 53,
+      "holdoutDays": 7,
+      "mae": 0.71,
+      "empiricalCoverage": 100,
+      "insideCount": 7,
+      "isPrimaryBenchmark": true,
+      "passed": true,
+      "points": [
+        {
+          "day": 1,
+          "date": "2026-09-28",
+          "actual": 6,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 2,
+          "date": "2026-09-29",
+          "actual": 5,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 3,
+          "date": "2026-09-30",
+          "actual": 6,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 4,
+          "date": "2026-10-01",
+          "actual": 6,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-10-02",
+          "actual": 4,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 6,
+          "date": "2026-10-03",
+          "actual": 6,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 7,
+          "date": "2026-10-04",
+          "actual": 5,
+          "predicted": 5,
+          "lower": 3,
+          "upper": 7,
+          "inBand": true,
+          "absoluteError": 0
+        }
+      ]
+    },
+    "ampara_clean_30d": {
+      "name": "Ampara Low-Incidence Baseline (30 Days)",
+      "sampleSize": 30,
+      "trainDays": 23,
+      "holdoutDays": 7,
+      "mae": 0.29,
+      "empiricalCoverage": 100,
+      "insideCount": 7,
+      "isPrimaryBenchmark": true,
+      "passed": true,
+      "points": [
+        {
+          "day": 1,
+          "date": "2026-10-28",
+          "actual": 0,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 2,
+          "date": "2026-10-29",
+          "actual": 1,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 3,
+          "date": "2026-10-30",
+          "actual": 0,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 4,
+          "date": "2026-10-31",
+          "actual": 0,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 5,
+          "date": "2026-11-01",
+          "actual": 1,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 1
+        },
+        {
+          "day": 6,
+          "date": "2026-11-02",
+          "actual": 0,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-11-03",
+          "actual": 0,
+          "predicted": 0,
+          "lower": 0,
+          "upper": 1,
+          "inBand": true,
+          "absoluteError": 0
+        }
+      ]
+    },
+    "total_90d": {
+      "name": "Total Trajectory (90 Days - Includes Spike Phase)",
+      "sampleSize": 90,
+      "trainDays": 83,
+      "holdoutDays": 7,
+      "mae": 607.86,
+      "empiricalCoverage": 0,
+      "insideCount": 0,
+      "isPrimaryBenchmark": false,
+      "passed": false,
+      "points": [
+        {
+          "day": 1,
+          "date": "2026-10-28",
+          "actual": 638,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 611
+        },
+        {
+          "day": 2,
+          "date": "2026-10-29",
+          "actual": 649,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 622
+        },
+        {
+          "day": 3,
+          "date": "2026-10-30",
+          "actual": 625,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 598
+        },
+        {
+          "day": 4,
+          "date": "2026-10-31",
+          "actual": 629,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 602
+        },
+        {
+          "day": 5,
+          "date": "2026-11-01",
+          "actual": 651,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 624
+        },
+        {
+          "day": 6,
+          "date": "2026-11-02",
+          "actual": 633,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 606
+        },
+        {
+          "day": 7,
+          "date": "2026-11-03",
+          "actual": 619,
+          "predicted": 27,
+          "lower": 16,
+          "upper": 38,
+          "inBand": false,
+          "absoluteError": 592
+        }
+      ]
+    }
+  }
+}
