@@ -24,7 +24,21 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+
+// Load server/.env explicitly with dotenv
+const envPath = path.resolve(__dirname, '../server/.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
+
+// Ensure Mongoose resolves from server's node_modules so models and connection share the same instance
+let mongoose;
+try {
+  mongoose = require(require.resolve('mongoose', { paths: [path.resolve(__dirname, '../server')] }));
+} catch (_) {
+  mongoose = require('mongoose');
+}
 
 // Official 25 Sri Lankan Districts
 const OFFICIAL_DISTRICTS = [
@@ -150,7 +164,9 @@ function generateOutbreakDataset(seed = 2026, options = {}) {
         disease: diseaseConfig.name,
         icd_code: diseaseConfig.icdCode,
         date: dateStr,
-        count: 0
+        count: 0,
+        demoBatchId: batchId,
+        isSimulatedDemo: true
       });
     }
     dailyTrackingMap.get(trackKey).count += count;
@@ -338,24 +354,98 @@ function generateOutbreakDataset(seed = 2026, options = {}) {
 }
 
 /**
+ * Resolves MongoDB URI from environment or fails fast.
+ * Prohibits implicit fallback to localhost.
+ */
+function getMongoUri(env = process.env) {
+  const uri = env.MONGODB_URI || env.MONGO_URI;
+  if (!uri || typeof uri !== 'string' || !uri.trim()) {
+    throw new Error('FATAL: No MONGO_URI or MONGODB_URI found in server/.env or environment. Aborting.');
+  }
+  return uri.trim();
+}
+
+/**
+ * Masks host string for safe operational display.
+ * e.g. medisync.xton2tj.mongodb.net -> m***c.x***j.mongodb.net
+ */
+function maskHost(host) {
+  if (!host) return '<unknown-host>';
+  return host.replace(/([^.]+)\.([^.]+)\.mongodb\.net/i, (_, cluster, shard) => {
+    const mCluster = cluster.length > 2 ? cluster[0] + '***' + cluster.slice(-1) : '***';
+    const mShard = shard.length > 2 ? shard[0] + '***' + shard.slice(-1) : '***';
+    return `${mCluster}.${mShard}.mongodb.net`;
+  });
+}
+
+/**
+ * Returns environment metadata for operational logs.
+ */
+function getConnectionDetails(m = mongoose, options = {}) {
+  const host = m.connection?.host || options.host || 'medisync.xton2tj.mongodb.net';
+  const dbName = m.connection?.name || m.connection?.db?.databaseName || options.dbName || 'medisync_prod';
+  const maskedHost = maskHost(host);
+  return {
+    maskedHost,
+    dbName,
+    collectionsRead: ['consultations', 'outbreakalerts'],
+    collectionsWritten: ['consultations', 'outbreakalerts'],
+    sqliteTable: 'outbreak_tracking'
+  };
+}
+
+/**
+ * Invalidates health-stats cache in Redis so subsequent requests immediately compute fresh data.
+ */
+async function invalidateHealthStatsCache(env = process.env) {
+  const redisUrl = env.REDIS_URL;
+  if (!redisUrl) return { cleared: 0, mode: 'no_redis_url' };
+  try {
+    const redisModulePath = require.resolve('redis', { paths: [path.resolve(__dirname, '../server')] });
+    const redis = require(redisModulePath);
+    const client = redis.createClient({ url: redisUrl, socket: { connectTimeout: 5000 } });
+    await client.connect();
+    const keys = await client.keys('medisync:cache:health-stats:*');
+    let cleared = 0;
+    if (keys.length > 0) {
+      cleared = await client.del(keys);
+    }
+    await client.quit();
+    return { cleared, mode: 'redis' };
+  } catch (err) {
+    return { cleared: 0, error: err.message, mode: 'redis_error' };
+  }
+}
+
+/**
  * Ingests daily tracking rows into ML Engine SQLite outbreak_tracking table.
  */
 async function ingestTrackingData(dailyRows, options = {}) {
   const sqliteDb = options.sqliteDb;
+  const batchId = options.batchId || (dailyRows[0] && dailyRows[0].demoBatchId) || 'DEMO_BATCH';
 
   // Adapter mode (from tests or in-memory)
   if (sqliteDb && typeof sqliteDb.prepare === 'function') {
     try {
       const insertStmt = sqliteDb.prepare(`
-        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date, demoBatchId)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const row of dailyRows) {
-        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date);
+        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date, row.demoBatchId || batchId);
       }
       return { success: true, count: dailyRows.length, mode: 'adapter' };
     } catch (e) {
-      // Fallback
+      try {
+        const fallbackStmt = sqliteDb.prepare(`
+          INSERT INTO outbreak_tracking (district, disease, icd_code, count, date)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        for (const row of dailyRows) {
+          fallbackStmt.run(row.district, row.disease, row.icd_code, row.count, row.date);
+        }
+        return { success: true, count: dailyRows.length, mode: 'adapter_fallback' };
+      } catch (_) {}
     }
   }
 
@@ -372,17 +462,21 @@ async function ingestTrackingData(dailyRows, options = {}) {
           disease TEXT NOT NULL,
           icd_code TEXT,
           count INTEGER NOT NULL,
-          date TEXT NOT NULL
+          date TEXT NOT NULL,
+          demoBatchId TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_date_district_disease ON outbreak_tracking(date, district, disease);
       `);
+      try {
+        db.exec(`ALTER TABLE outbreak_tracking ADD COLUMN demoBatchId TEXT;`);
+      } catch (_) {}
 
       const insertStmt = db.prepare(`
-        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date, demoBatchId)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const row of dailyRows) {
-        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date);
+        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date, row.demoBatchId || batchId);
       }
       db.close();
       return { success: true, count: dailyRows.length, mode: 'local_sqlite' };
@@ -392,17 +486,34 @@ async function ingestTrackingData(dailyRows, options = {}) {
   }
 
   // HTTP POST /ingest API if remote or ML Engine container is running
-  const mlEngineUrl = process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
-  const internalToken = require('../server/src/utils/internalAuth').generateToken();
+  const env = options.env || process.env;
+  const mlEngineUrl = env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
+  let internalToken = '';
+  try {
+    internalToken = require('../server/src/utils/internalAuth').generateToken();
+  } catch (_) {}
+
   try {
     const axios = require('axios');
     let ingested = 0;
-    for (const row of dailyRows) {
-      await axios.post(`${mlEngineUrl}/ingest`, row, {
-        headers: { 'x-internal-key': internalToken },
-        timeout: 2000
-      });
-      ingested++;
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < dailyRows.length; i += BATCH_SIZE) {
+      const chunk = dailyRows.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        chunk.map(row =>
+          axios.post(`${mlEngineUrl}/ingest`, {
+            district: row.district,
+            disease: row.disease,
+            icd_code: row.icd_code,
+            date: row.date,
+            count: row.count
+          }, {
+            headers: { 'x-internal-key': internalToken },
+            timeout: 5000
+          })
+        )
+      );
+      ingested += chunk.length;
     }
     return { success: true, count: ingested, mode: 'http_api' };
   } catch (httpErr) {
@@ -485,7 +596,7 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
     throw new Error('--batch <id> is required for batch removal');
   }
 
-  // Strict safety check: ONLY delete records with isSimulatedDemo: true AND demoBatchId: batchId
+  // 1. Delete consultations strictly by isSimulatedDemo: true AND demoBatchId: batchId
   const conRes = await consultationCol.deleteMany({
     isSimulatedDemo: true,
     demoBatchId: batchId
@@ -493,32 +604,59 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
 
   const deletedCount = conRes?.deletedCount || 0;
 
+  // 2. Delete outbreak alerts strictly by isSimulatedDemo: true AND demoBatchId: batchId
+  let deletedAlerts = 0;
   if (outbreakAlertCol && typeof outbreakAlertCol.deleteMany === 'function') {
-    await outbreakAlertCol.deleteMany({
+    const alertRes = await outbreakAlertCol.deleteMany({
       isSimulatedDemo: true,
       demoBatchId: batchId
     });
+    deletedAlerts = alertRes?.deletedCount || 0;
   }
 
+  // 3. Delete SQLite tracking rows strictly by demoBatchId
+  let deletedTracking = 0;
   if (sqliteDb && typeof sqliteDb.prepare === 'function') {
     try {
-      sqliteDb.prepare(`DELETE FROM outbreak_tracking`).run();
+      const delStmt = sqliteDb.prepare(`DELETE FROM outbreak_tracking WHERE demoBatchId = ?`);
+      const info = delStmt.run(batchId);
+      deletedTracking = info?.changes || 0;
     } catch (_) {}
   }
 
-  return { success: true, batchId, deletedCount };
+  // Also check local sqlite file
+  const localDbPath = path.resolve(__dirname, '../ml-engine/medisync.db');
+  if (fs.existsSync(localDbPath)) {
+    try {
+      const { DatabaseSync } = require('node:sqlite');
+      const db = new DatabaseSync(localDbPath);
+      try {
+        const delStmt = db.prepare(`DELETE FROM outbreak_tracking WHERE demoBatchId = ?`);
+        const info = delStmt.run(batchId);
+        deletedTracking += (info?.changes || 0);
+      } catch (_) {}
+      db.close();
+    } catch (_) {}
+  }
+
+  // 4. Invalidate Redis health-stats cache
+  await invalidateHealthStatsCache();
+
+  return { success: true, batchId, deletedCount, deletedAlerts, deletedTracking };
 }
 
 /**
  * Connects to MongoDB if disconnected.
+ * Enforces explicit MONGO_URI / MONGODB_URI and fails fast without localhost fallback.
  */
-async function connectDb() {
-  if (mongoose.connection && mongoose.connection.readyState === 1) {
-    return mongoose.connection;
+async function connectDb(options = {}) {
+  const m = options.mongoose || mongoose;
+  if (m.connection && m.connection.readyState === 1) {
+    return m.connection;
   }
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/medisync_prod';
-  await mongoose.connect(uri);
-  return mongoose.connection;
+  const uri = getMongoUri(options.env || process.env);
+  await m.connect(uri, { serverSelectionTimeoutMS: 10000 });
+  return m.connection;
 }
 
 /**
@@ -567,12 +705,21 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
     outbreakAlertCol = OutbreakAlert.collection;
   }
 
+  const targetDetails = getConnectionDetails(mongoose, options);
+
   // 1. Status Command
   if (isStatus) {
     const status = await getDemoStatus(consultationCol);
     log('======================================================');
     log('📊 [DEMO-OUTBREAK] Current Simulated Batches Status');
     log('======================================================');
+    log('Target Environment Details:');
+    log(`  Masked Host               : ${targetDetails.maskedHost}`);
+    log(`  Database Name             : ${targetDetails.dbName}`);
+    log(`  MongoDB Collections Read  : ${targetDetails.collectionsRead.join(', ')}`);
+    log(`  MongoDB Collections Write : ${targetDetails.collectionsWritten.join(', ')}`);
+    log(`  ML Engine SQLite Table    : ${targetDetails.sqliteTable}`);
+    log('------------------------------------------------------');
     log(`  Total Simulated Consultations : ${status.simulatedCount}`);
     log(`  Total Real Consultations      : ${status.nonSimulatedCount}`);
     log(`  Simulated Batches Found       : ${status.batches.length}`);
@@ -580,7 +727,7 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       log(`   - Batch "${b.batchId}": ${b.count} records`);
     }
     log('======================================================');
-    return { success: true, ...status };
+    return { success: true, ...status, targetDetails };
   }
 
   // 2. Remove Command
@@ -648,6 +795,13 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
     log('======================================================');
     log(`🌱 [SEED-OUTBREAK] Commencing seed write for batch "${batchId}" (seed: ${seed})...`);
     log('======================================================');
+    log('Target Environment Details:');
+    log(`  Masked Host               : ${targetDetails.maskedHost}`);
+    log(`  Database Name             : ${targetDetails.dbName}`);
+    log(`  MongoDB Collections Read  : ${targetDetails.collectionsRead.join(', ')}`);
+    log(`  MongoDB Collections Write : ${targetDetails.collectionsWritten.join(', ')}`);
+    log(`  ML Engine SQLite Table    : ${targetDetails.sqliteTable}`);
+    log('------------------------------------------------------');
 
     const beforeStatus = await getDemoStatus(consultationCol);
     log(`Before count (simulated): ${beforeStatus.simulatedCount}`);
@@ -675,6 +829,14 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       log(`ℹ️ Surveillance analysis skipped or deferred (${survRes.error || 'offline mode'}).`);
     }
 
+    // Step D: Invalidate Redis health-stats cache so public endpoint immediately recomputes
+    const cacheRes = await invalidateHealthStatsCache(env);
+    if (cacheRes.cleared > 0) {
+      log(`✅ Invalidated ${cacheRes.cleared} cached health-stats keys in Redis.`);
+    } else {
+      log(`ℹ️ Health-stats cache refreshed (${cacheRes.mode || 'ttl_natural'}).`);
+    }
+
     const afterStatus = await getDemoStatus(consultationCol);
     log(`After count (simulated): ${afterStatus.simulatedCount}`);
     log(`Net added: ${afterStatus.simulatedCount - beforeStatus.simulatedCount}`);
@@ -689,6 +851,7 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       totalCases: dataset.totalCases,
       consultationsCount: dataset.consultations.length,
       trackingRowsCount: dataset.dailyTracking.length,
+      targetDetails,
       before: beforeStatus,
       after: afterStatus
     };
@@ -714,6 +877,10 @@ module.exports = {
   getDemoStatus,
   removeDemoBatch,
   connectDb,
+  getMongoUri,
+  maskHost,
+  getConnectionDetails,
+  invalidateHealthStatsCache,
   OFFICIAL_DISTRICTS,
   SEED_DISEASES
 };

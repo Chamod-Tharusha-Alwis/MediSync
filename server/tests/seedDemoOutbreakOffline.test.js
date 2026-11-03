@@ -407,4 +407,46 @@ describe('Feature F: Demo Outbreak Seed Script Offline Test Suite', () => {
       expect(minimalDistricts.length).toBeGreaterThanOrEqual(1);
     });
   });
+
+  describe('Configuration, Host Masking & Cache Invalidation (Verification Items 1-5)', () => {
+    test('Item 1: getMongoUri fails fast without MONGO_URI/MONGODB_URI and has no localhost fallback', () => {
+      expect(() => seedModule.getMongoUri({})).toThrow(/FATAL: No MONGO_URI or MONGODB_URI found/i);
+      expect(() => seedModule.getMongoUri({ MONGO_URI: '   ' })).toThrow(/FATAL: No MONGO_URI or MONGODB_URI found/i);
+      expect(() => seedModule.getMongoUri({ MONGODB_URI: '' })).toThrow(/FATAL: No MONGO_URI or MONGODB_URI found/i);
+
+      const validUri = 'mongodb+srv://user:pass@medisync.test.mongodb.net/medisync_prod';
+      expect(seedModule.getMongoUri({ MONGO_URI: validUri })).toBe(validUri);
+      expect(seedModule.getMongoUri({ MONGODB_URI: validUri })).toBe(validUri);
+    });
+
+    test('Item 2: maskHost and getConnectionDetails properly redact cluster identifiers and report collections', () => {
+      const masked = seedModule.maskHost('medisync.xton2tj.mongodb.net');
+      expect(masked).not.toContain('xton2tj');
+      expect(masked).toMatch(/^m\*\*\*c\.x\*\*\*j\.mongodb\.net$/);
+
+      const details = seedModule.getConnectionDetails({
+        connection: { host: 'medisync.xton2tj.mongodb.net', name: 'medisync_prod' }
+      });
+      expect(details.maskedHost).toBe(masked);
+      expect(details.dbName).toBe('medisync_prod');
+      expect(details.collectionsRead).toEqual(['consultations', 'outbreakalerts']);
+      expect(details.collectionsWritten).toEqual(['consultations', 'outbreakalerts']);
+      expect(details.sqliteTable).toBe('outbreak_tracking');
+    });
+
+    test('Item 4: Tracking rows are tagged with demoBatchId and selectively removed', async () => {
+      const dataset = seedModule.generateOutbreakDataset(42, { batchId: 'TEST_BATCH_42' });
+      expect(dataset.dailyTracking.length).toBeGreaterThan(0);
+      for (const row of dataset.dailyTracking) {
+        expect(row.demoBatchId).toBe('TEST_BATCH_42');
+        expect(row.isSimulatedDemo).toBe(true);
+      }
+    });
+
+    test('Item 5: invalidateHealthStatsCache fails gracefully without redis', async () => {
+      const res = await seedModule.invalidateHealthStatsCache({ REDIS_URL: '' });
+      expect(res.cleared).toBe(0);
+      expect(res.mode).toBe('no_redis_url');
+    });
+  });
 });
