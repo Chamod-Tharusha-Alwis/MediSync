@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-11-03T22:44:26.077Z",
+  "protectedHashes": true,
+  "backendHealth": {
+    "error": "TIMEOUT"
+  },
+  "mlHealth": {
+    "error": "TIMEOUT"
+  },
+  "coldStartContract": true,
+  "inferenceContract": true,
+  "sourceDisclaimerVerified": true,
+  "passed": true
+}

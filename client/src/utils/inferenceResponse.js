@@ -8,6 +8,26 @@ export function inferencePredictions(payload) {
         (row.icd_code !== undefined && typeof row.icd_code !== 'string') ||
         (row.recommendedSpecialist !== undefined && typeof row.recommendedSpecialist !== 'string') ||
         (row.urgent !== undefined && typeof row.urgent !== 'boolean')) throw new Error('Invalid inference response');
+    // Return only the established fields used by the clinician's suggestion display.
     return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
   });
+}
+
+export function isColdStartError(err) {
+  const status = err?.response?.status;
+  const code = err?.code;
+  const msg = String(err?.message || '');
+  const dataErr = String(err?.response?.data?.error || '');
+  const availability = err?.response?.data?.availability;
+  return (
+    status === 503 ||
+    status === 502 ||
+    status === 504 ||
+    code === 'ECONNABORTED' ||
+    code === 'ERR_NETWORK' ||
+    availability === 'waking_up' ||
+    dataErr.toLowerCase().includes('waking') ||
+    msg.toLowerCase().includes('timeout') ||
+    msg.toLowerCase().includes('network error')
+  );
 }

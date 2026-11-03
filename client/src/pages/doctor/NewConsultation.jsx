@@ -16,7 +16,7 @@ import PageTransition from '../../components/common/PageTransition';
 import SymptomTagInput from '../../components/SymptomTagInput';
 import DrugSearchInput from '../../components/DrugSearchInput';
 import PatientAccessModal from '../../components/PatientAccessModal';
-import { inferencePredictions } from '../../utils/inferenceResponse';
+import { inferencePredictions, isColdStartError } from '../../utils/inferenceResponse';
 import usePatientConsent from '../../hooks/usePatientConsent';
 import { prescriptionPayload } from '../../utils/prescriptionDuration';
 import { LayoutDashboard, FlaskConical } from 'lucide-react';
@@ -400,25 +400,6 @@ const NewConsultation = () => {
   const handleOtpSuccess = async (token) => {
     setShowOtpModal(false);
     if (await consent.authorize(token)) goTo(2);
-  };
-
-  const isColdStartError = (err) => {
-    const status = err?.response?.status;
-    const code = err?.code;
-    const msg = String(err?.message || '');
-    const dataErr = String(err?.response?.data?.error || '');
-    const availability = err?.response?.data?.availability;
-    return (
-      status === 503 ||
-      status === 502 ||
-      status === 504 ||
-      code === 'ECONNABORTED' ||
-      code === 'ERR_NETWORK' ||
-      availability === 'waking_up' ||
-      dataErr.toLowerCase().includes('waking') ||
-      msg.toLowerCase().includes('timeout') ||
-      msg.toLowerCase().includes('network error')
-    );
   };
 
   const getDiagnosisSuggestions = async () => {
@@ -1050,8 +1031,9 @@ const NewConsultation = () => {
                         </motion.button>
                       </div>
 
-                      <p role="note" className="mb-5 text-sm text-amber-200/90 relative z-10">
-                        Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.
+                      <p role="note" data-testid="clinical-validation-disclaimer" className="mb-5 text-sm text-amber-200/90 relative z-10 flex flex-wrap items-center gap-2">
+                        <span data-testid="clinical-validation-badge" className="text-[11px] font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">clinicalValidation: not_established</span>
+                        <span>Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.</span>
                       </p>
 
                       {diagnosesOptions.length > 0 ? (

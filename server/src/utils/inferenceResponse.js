@@ -13,4 +13,24 @@ function inferencePredictions(payload) {
     return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
   });
 }
-module.exports={inferencePredictions};
+
+function isColdStartError(err) {
+  const status = err?.response?.status;
+  const code = err?.code;
+  const msg = String(err?.message || '');
+  const dataErr = String(err?.response?.data?.error || '');
+  const availability = err?.response?.data?.availability;
+  return (
+    status === 503 ||
+    status === 502 ||
+    status === 504 ||
+    code === 'ECONNABORTED' ||
+    code === 'ERR_NETWORK' ||
+    availability === 'waking_up' ||
+    dataErr.toLowerCase().includes('waking') ||
+    msg.toLowerCase().includes('timeout') ||
+    msg.toLowerCase().includes('network error')
+  );
+}
+
+module.exports = { inferencePredictions, isColdStartError };

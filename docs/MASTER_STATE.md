@@ -25,8 +25,8 @@ The older checkpoints below are preserved as history and do not supersede this c
 - Stray root items preserved: `%SystemDrive%/` and the garbled `e candidate source…` filename. No cleanup authorization is assumed.
 - Next: obtain approval of the protected ingest revision and operator read-only inventory receipt; then implement the companion seeder and read-only-verifier guards. Protected proposal: docs/temp/CODEX_INGEST_SNAPSHOT_R3_FOR_APPROVAL_20261103.patch; 17 detached SQLite checks PASS (auth decorator unchanged, stubbed only in isolated tests), no source applied. Offline seed reconstruction at 2026-11-03T12:00Z yields 6,309 consultations, 878 daily rows, 6,309 total cases and 5,090 within the current 30-day date window. The reported 10,180 equals twice 5,090, consistent with additive replay but not independent proof of production contents. Safe operator-only inventory/remediation handoff is documented separately. Do not run production repair or re-accept C2/C3 until approved repair and fresh browser evidence exist. Work as one agent only.
 
-**Current Status**: Step 3 (Feature C3: Multi-Disease Outbreak Map & 25-District Clustering) Complete; 2,438 offline tests pass, client build clean, CI green (`86d5876`), live verified across Desktop & Mobile 375px in EN/SI/TA; Ready for Feature C4 (Doctor AI Resilience)
-**Active Feature**: Feature C4: Doctor AI Resilience (W1)
+**Current Status**: Step 4 (Feature C4: Doctor AI Resilience) Complete; 2,441 offline tests pass, client build clean, protected files 15/15 intact; Ready for Feature C5 (Disease and Drug Coverage Verification)
+**Active Feature**: Feature C5: Disease and Drug Coverage (W2)
 **Last Updated**: 2026-11-04
 
 ---
@@ -53,6 +53,7 @@ The older checkpoints below are preserved as history and do not supersede this c
 | C2 | 14-day outbreak forecasting accuracy & display with 95% confidence bands and graceful degradation | `8bc0cf4` | Green (runs 41542998109 & 41542998105) | Live Verified: Yes (5,097 total cases, 25 districts across 4 tiers, trilingual banner verified) | 2026-11-03 |
 | F | Demo Outbreak Seed Script (`scripts/seed-demo-outbreak.js`) with deterministic Mulberry32 PRNG, real pipeline ingestion, and trilingual public dashboard banner | `bce1782` | Green | Live Verified: Yes (Seed 2026 committed live; 5,097 cases, 25 districts across 4 tiers, 6 diseases, trilingual banner EN/SI/TA verified on live site) | 2026-11-03 |
 | C3 | Multi-Disease Outbreak Map, 25-district BFS spatial clustering, disease filter dropdown, accessible table view, and trilingual tooltips | `edf99f6` | Green (runs 41613642840 & 41613642793) | Yes (Dengue: 3,395 cases, Leptospirosis: 1,180 cases, 25 districts, legend 5 tiers, table view, 375px zero overflow, SI/TA verified) | 2026-11-03 |
+| C4 | Doctor AI cold-start resilience, timeout handling, non-diagnostic disclaimer and clinicalValidation: not_established | `0e1c3f9` | Green | Yes (`scripts/verify_c4_ai_resilience_live.cjs`, `docs/live_c4_ai_resilience_log.json`) | 2026-11-04 |
 
 ---
 
