@@ -1,7 +1,7 @@
 {
   "feature": "C3 (Multi-Disease Outbreak Map & Clustering)",
   "url": "https://medisync.chamodtharusha.com.lk/public-health",
-  "timestamp": "2026-11-03T11:21:46.796Z",
+  "timestamp": "2026-11-03T11:34:32.980Z",
   "desktop": {
     "demonstrationBanner": true,
     "initialTotalCases": 5132,
@@ -24,7 +24,7 @@
       "#E0BC00"
     ],
     "tableRows": 25,
-    "selectedDistrictCard": false,
+    "selectedDistrictCard": true,
     "screenshot": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\docs\\screenshots\\live_c3_map_desktop.png"
   },
   "mobile": {

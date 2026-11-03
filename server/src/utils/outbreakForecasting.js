@@ -352,31 +352,56 @@ function calculate14DayForecast(trend, options = {}) {
     lastDate = new Date();
   }
 
+  let seZ = 0;
+  if (logLinFit) {
+    const zFull = y.map(v => Math.log(Math.max(0, v) + 1));
+    let ssResZ = 0;
+    for (let i = 0; i < n; i++) {
+      const zHat = logLinFit.alpha + logLinFit.beta * x[i];
+      ssResZ += Math.pow(zFull[i] - zHat, 2);
+    }
+    const dfZ = Math.max(1, n - 2);
+    seZ = Math.sqrt(ssResZ / dfZ);
+  }
+
   const maxObservedY = Math.max(...y);
+  const ceiling = Math.max(10, maxObservedY * 3);
   const forecast = [];
   for (let k = 1; k <= forecastDays; k++) {
     const futureX = (n - 1) + k;
-    let rawPredicted = slope * futureX + intercept;
+    let predicted, lower, upper;
 
     if (modelType === 'log_linear' && logLinFit) {
       const zPred = logLinFit.alpha + logLinFit.beta * futureX;
-      rawPredicted = Math.min(Math.max(0, Math.exp(zPred) - 1), maxObservedY * 3);
-    } else if (modelType === 'polynomial_quad' && quadFit) {
-      const quadPred = quadFit.a * futureX * futureX + quadFit.b * futureX + quadFit.c;
-      if (quadPred >= 0 && quadPred <= rawPredicted * 1.5) {
-        rawPredicted = quadPred * 0.5 + rawPredicted * 0.5; // Smooth ensemble
+      const rawLogPred = Math.min(Math.max(0, Math.exp(zPred) - 1), ceiling);
+      predicted = Math.max(0, Math.round(rawLogPred));
+
+      const sePredZ = seZ * Math.sqrt(1 + 1 / n + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
+      const marginZ = tCrit * sePredZ;
+
+      const rawLower = Math.max(0, Math.exp(zPred - marginZ) - 1);
+      const rawUpper = Math.max(0, Math.exp(zPred + marginZ) - 1);
+
+      lower = Math.min(predicted, Math.max(0, Math.round(rawLower)));
+      const safeUpper = Number.isFinite(rawUpper) ? Math.min(Number.MAX_SAFE_INTEGER, Math.round(rawUpper)) : Number.MAX_SAFE_INTEGER;
+      upper = Math.max(predicted, safeUpper);
+    } else {
+      let rawPredicted = slope * futureX + intercept;
+      if (modelType === 'polynomial_quad' && quadFit) {
+        const quadPred = quadFit.a * futureX * futureX + quadFit.b * futureX + quadFit.c;
+        if (quadPred >= 0 && quadPred <= rawPredicted * 1.5) {
+          rawPredicted = quadPred * 0.5 + rawPredicted * 0.5; // Smooth ensemble
+        }
       }
+
+      predicted = Math.max(0, Math.round(rawPredicted));
+      const sePred = se * Math.sqrt(1 + 1 / n + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
+      const margin = Math.round(tCrit * sePred);
+
+      lower = Math.min(predicted, Math.max(0, Math.round(rawPredicted - margin)));
+      upper = Math.max(predicted, Math.round(rawPredicted + margin));
     }
 
-    const predicted = Math.max(0, Math.round(rawPredicted));
-
-    // Prediction standard error includes variance of regression line and future observation variance
-    const sePred = se * Math.sqrt(1 + 1 / n + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
-    const margin = Math.round(tCrit * sePred);
-
-    // Strict structural invariant: 0 <= lower <= predicted <= upper
-    const lower = Math.min(predicted, Math.max(0, Math.round(rawPredicted - margin)));
-    const upper = Math.max(predicted, Math.round(rawPredicted + margin));
     const bandRange = upper - lower;
 
     const fDate = new Date(lastDate);
