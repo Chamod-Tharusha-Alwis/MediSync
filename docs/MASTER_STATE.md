@@ -1,7 +1,7 @@
 # MediSync Master State
 
-**Current Status**: Step 0 State Reconciliation Complete; B2–B5 downgraded to bundle check only pending real browser verification; C2 status set to "plumbing live; forecast not yet verified on live data"; B6 live 20-step verification 100% passed (20/20); Ready for Step 1 (Feature F: Demo Outbreak Seed Script)
-**Active Feature**: Step 1 (Feature F: Demo Outbreak Seed Script `scripts/seed-demo-outbreak.js`)
+**Current Status**: Step 1 (Feature F Outbreak Seed & Live Public Health Verification) Complete; Feature C2 and Feature F upgraded to "Live Verified: Yes" (5,097 cases, 25 districts across 4 risk tiers, trilingual banner verified live); Ready for Step 2 (Feature C2 Hardening: Prediction Intervals & Backtesting)
+**Active Feature**: Step 2 (Feature C2 Hardening: Prediction Intervals & Backtesting)
 **Last Updated**: 2026-11-03
 
 ---
@@ -25,7 +25,8 @@
 | B5 | Eliminate duplicated "Dr." prefix in doctor name formatting across client and server | `6e16bf0` | Green | bundle check only (browser interaction steps pending: doctor name shown once with single "Dr.") | 2026-11-02 |
 | B6 | Complete Patient -> Doctor -> Pharmacy prescription flow with test OTP harness | `0f19236` | Green | Yes (20/20 steps passed: pre-consent 403, consultation `6ae954ea2dbef1fd5e7828af`, prescription `RX-20261103-415547`, idempotency replay 200, receipt `REC-e5a8f8f0ab212bafbf50bda8`, stock decremented 100->99, wrong-role 403) | 2026-11-03 |
 | C1 | Outbreak alert notifications wired to notification service for Doctor, Hospital, and Admin roles | `9e0f6c8` | Green (runs 41534722808 & 41534722649) | Yes (15/15 live verification steps passed, Doctor/Hospital/Admin notification endpoints verified, trilingual UI dictionary verified) | 2026-11-03 |
-| C2 | 14-day outbreak forecasting accuracy & display with 95% confidence bands and graceful degradation | `8bc0cf4` | Green (runs 41542998109 & 41542998105) | plumbing live; forecast not yet verified on live data (re-verification pending after Step 1 seed) | 2026-11-03 |
+| C2 | 14-day outbreak forecasting accuracy & display with 95% confidence bands and graceful degradation | `8bc0cf4` | Green (runs 41542998109 & 41542998105) | Live Verified: Yes (5,097 total cases, 25 districts across 4 tiers, trilingual banner verified) | 2026-11-03 |
+| F | Demo Outbreak Seed Script (`scripts/seed-demo-outbreak.js`) with deterministic Mulberry32 PRNG, real pipeline ingestion, and trilingual public dashboard banner | `bce1782` | Green | Live Verified: Yes (Seed 2026 committed live; 5,097 cases, 25 districts across 4 tiers, 6 diseases, trilingual banner EN/SI/TA verified on live site) | 2026-11-03 |
 
 ---
 
@@ -68,18 +69,27 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 ---
 
 ## 4. Last Live-Test Result
-- Target Feature C2 (`8bc0cf4`, `scripts/verify_c2_flow_live.cjs`):
-  - *Status Update (Step 0c)*: Status set to "plumbing live; forecast not yet verified on live data". Contract and mathematical bounds verified offline and in plumbing tests; live forecast verification pending non-zero seeded outbreak dataset in Step 1.
-  - Backend & ML service health: `GET /health` returned 200 OK (`status: ready`).
-  - GitHub Actions CI: Runs `41542998109` & `41542998105` passed 100% green.
-  - Live execution: 8/8 steps passed with 0 failures (`docs/live_c2_verification_log.json`).
-  - Production Endpoint: `GET /api/public/health-stats` returned HTTP 200 containing `totalCases`, `byDistrict`, `byDisease`, `trend`, and `forecast`.
-  - Mathematical Invariants: 14 projected days strictly bounded by `0 <= lower <= predicted <= upper`, with expanding 95% confidence interval cone.
-  - Graceful Degradation: Empty historical trend (< 3 data points) returns `hasSufficientData=false` and displays clean informative banner without NaN or broken charts.
-  - Trilingual UI Keys: Verified in `client/src/i18n/translations/` (`en.js`, `si.js`, `ta.js` forecasting keys present).
-  - Production Frontend: Vercel bundle `main.1532b63a.js` serving updated forecasting UI.
-  - Offline test suite: 2,341 passed, 0 failed across all suites.
-  - Production client build: passed cleanly (0 errors).
+- Target Features F & C2 (`bce1782`, `scripts/verify_public_health_live.cjs`):
+  - *Status Update (Step 1)*: Upgraded to "Live Verified: Yes". Full end-to-end live production browser and API verification passed across Desktop (1280x800) and Mobile (375x667) viewports with 100% trilingual parity.
+  - Production Backend Endpoint: `GET /api/public/health-stats` returned HTTP 200 OK, `isSimulatedDemo: true`, `totalCases: 5,097`, 25 districts, 6 diseases, 31 trend days, and 14-day forecast with non-zero projection.
+  - Outbreak Risk Tier Coverage: All 4 tiers verified in live API & visibly rendered on Outbreak Map with matching colors:
+    - Critical (>1,000 cases): Colombo = 1,212 cases (Dengue, `#9B2C2C`), Gampaha = 1,124 cases, Kandy = 1,061 cases.
+    - High (>500 cases): Kalutara = 603 cases (Leptospirosis, `#C53030`), Ratnapura = 582 cases.
+    - Moderate (>100 cases): Galle = 185 cases (Diarrhoeal disease, `#DD6B20`), Matara = 154 cases.
+    - Low (>10 cases): Badulla = 46 cases (Influenza, `#D69E2E`), Jaffna = 34 cases.
+    - Minimal (<=10 cases): 16 clean districts with 6 cases each (COVID-19 / Chikungunya, `#319795`).
+  - Forecast Mathematical Invariant: 14 projected days strictly bounded by `0 <= lower <= predicted <= upper` across all points.
+  - Demonstration Data Banner: Verified prominent banner with `role="status"`, `[data-testid="demonstration-data-banner"]`, badge "DEMONSTRATION", and title "Demonstration Data Active".
+  - Trilingual Parity:
+    - English (EN): "Demonstration Data Active" + "DEMONSTRATION".
+    - Sinhala (SI): "ආදර්ශන දත්ත සක්‍රීයයි" + "ආදර්ශන".
+    - Tamil (TA): "விளக்கக்காட்சி தரவு செயலில் உள்ளது" + "விளக்கக்காட்சி".
+  - Mobile Responsiveness: Clean banner and chart rendering on 375x667 viewport with 0 errors.
+  - Evidence Artifacts:
+    - `docs/public_health_live_desktop_en.png`
+    - `docs/public_health_live_desktop_si.png`
+    - `docs/public_health_live_desktop_ta.png`
+    - `docs/public_health_live_mobile_375.png`
 
 ---
 
@@ -87,6 +97,11 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 - Step 0 (State Reconciliation) complete:
   - B2 to B5 downgraded to "bundle check only" pending real browser tests.
   - C2 status updated to "plumbing live; forecast not yet verified on live data" (re-verification scheduled after Step 1 seed).
-  - B6 live verification runner enhanced to 20 steps (adding pre-consent 403, idempotency replay duplicate prevention, and wrong-role 403 checks) and verified live with 20/20 passes (Consultation `6ae954ea2dbef1fd5e7828af`, Prescription `RX-20261103-415547`, Receipt `REC-e5a8f8f0ab212bafbf50bda8`).
+  - B6 live verification runner enhanced to 20 steps and verified live with 20/20 passes.
   - Confirmed duplicate file `TEMP_TEST_HARNESS_1.md` does not exist in repository.
-- Next: Step 1 (Feature F: Demo Outbreak Seed Script `scripts/seed-demo-outbreak.js`).
+- Step 1 (Feature F: Demo Outbreak Seed Script & Public Health Live Verification) complete:
+  - `scripts/seed-demo-outbreak.js` deterministic seed script authored, offline tested (10/10), and executed live with `--confirm --seed 2026`.
+  - Frontend demonstration data banner added with trilingual i18n support.
+  - Live production browser verification passed (`scripts/verify_public_health_live.cjs`) across Desktop and Mobile viewports with full trilingual parity.
+  - Features C2 and F upgraded to "Live Verified: Yes".
+- Next: Step 2 (Feature C2 Hardening: Prediction Intervals & Backtesting).
