@@ -61,7 +61,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     message:'Verified episode counts only. Model signals require administrator review; external delivery is disabled.'};
   if(!payload.length)return summary;
   const {data}=await require('axios').post(`${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`,payload,
-    {timeout:30000,headers:{'x-internal-key':require('../utils/internalAuth').generateToken()}});
+    {timeout:process.env.ML_OUTBREAK_TIMEOUT_MS ? Number(process.env.ML_OUTBREAK_TIMEOUT_MS) : 60000,headers:{'x-internal-key':require('../utils/internalAuth').generateToken()}});
   const OutbreakAlert=require('../models/OutbreakAlert');
   for(const r of data.results || []) {
     const b=buckets.get(`${r.district}|${r.disease}`);

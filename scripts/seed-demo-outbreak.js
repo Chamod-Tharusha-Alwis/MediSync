@@ -397,7 +397,10 @@ function getConnectionDetails(m = mongoose, options = {}) {
 /**
  * Invalidates health-stats cache in Redis so subsequent requests immediately compute fresh data.
  */
-async function invalidateHealthStatsCache(env = process.env) {
+async function invalidateHealthStatsCache(env = process.env, options = {}) {
+  if (options.consultationCollection || options.sqliteDb || options.offline) {
+    return { cleared: 0, mode: 'offline_noop' };
+  }
   const redisUrl = env.REDIS_URL;
   if (!redisUrl) return { cleared: 0, mode: 'no_redis_url' };
   try {
@@ -415,6 +418,39 @@ async function invalidateHealthStatsCache(env = process.env) {
   } catch (err) {
     return { cleared: 0, error: err.message, mode: 'redis_error' };
   }
+}
+
+/**
+ * Warms up ML Engine by pinging /health until HTTP 200 ready.
+ */
+async function warmUpMlEngine(mlEngineUrl, options = {}) {
+  if (!mlEngineUrl || mlEngineUrl.includes('127.0.0.1')) {
+    return { success: true, mode: 'local_noop' };
+  }
+  const maxRetries = options.maxRetries || 12;
+  const retryDelay = options.retryDelay || 3000;
+  let axios;
+  try {
+    const axiosPath = require.resolve('axios', { paths: [path.resolve(__dirname, '../server')] });
+    axios = require(axiosPath);
+  } catch (_) {
+    axios = require('axios');
+  }
+
+  for (let i = 1; i <= maxRetries; i++) {
+    try {
+      const res = await axios.get(`${mlEngineUrl}/health`, { timeout: 8000 });
+      if (res.status === 200) {
+        return { success: true, attempts: i, data: res.data };
+      }
+    } catch (err) {
+      if (i === maxRetries) {
+        return { success: false, attempts: i, error: err.message };
+      }
+      await new Promise(r => setTimeout(r, retryDelay));
+    }
+  }
+  return { success: false, attempts: maxRetries, error: 'timeout' };
 }
 
 /**
@@ -449,7 +485,49 @@ async function ingestTrackingData(dailyRows, options = {}) {
     }
   }
 
-  // Native node:sqlite check for local database file
+  const env = options.env || process.env;
+  const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+  const isRemote = mlEngineUrl && !mlEngineUrl.includes('127.0.0.1');
+
+  // 2. HTTP POST /ingest API if remote ML Engine configured (e.g. Render) or forced
+  if (isRemote || options.forceHttp) {
+    if (options.warmUp !== false) {
+      await warmUpMlEngine(mlEngineUrl, options);
+    }
+    let internalToken = '';
+    try {
+      internalToken = require('../server/src/utils/internalAuth').generateToken();
+    } catch (_) {}
+
+    try {
+      const axios = require('axios');
+      let ingested = 0;
+      const BATCH_SIZE = 15;
+      for (let i = 0; i < dailyRows.length; i += BATCH_SIZE) {
+        const chunk = dailyRows.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          chunk.map(row =>
+            axios.post(`${mlEngineUrl}/ingest`, {
+              district: row.district,
+              disease: row.disease,
+              icd_code: row.icd_code,
+              date: row.date,
+              count: row.count
+            }, {
+              headers: { 'x-internal-key': internalToken },
+              timeout: 10000
+            })
+          )
+        );
+        ingested += chunk.length;
+      }
+      return { success: true, count: ingested, mode: 'http_api', url: mlEngineUrl };
+    } catch (httpErr) {
+      return { success: false, error: httpErr.message, mode: 'http_error' };
+    }
+  }
+
+  // 3. Native node:sqlite check for local database file (only for local stack)
   const localDbPath = path.resolve(__dirname, '../ml-engine/medisync.db');
   if (fs.existsSync(localDbPath)) {
     try {
@@ -481,45 +559,11 @@ async function ingestTrackingData(dailyRows, options = {}) {
       db.close();
       return { success: true, count: dailyRows.length, mode: 'local_sqlite' };
     } catch (err) {
-      // Continue to HTTP fallback
+      return { success: false, error: err.message, mode: 'local_sqlite_error' };
     }
   }
 
-  // HTTP POST /ingest API if remote or ML Engine container is running
-  const env = options.env || process.env;
-  const mlEngineUrl = env.ML_ENGINE_URL || 'http://127.0.0.1:5001';
-  let internalToken = '';
-  try {
-    internalToken = require('../server/src/utils/internalAuth').generateToken();
-  } catch (_) {}
-
-  try {
-    const axios = require('axios');
-    let ingested = 0;
-    const BATCH_SIZE = 10;
-    for (let i = 0; i < dailyRows.length; i += BATCH_SIZE) {
-      const chunk = dailyRows.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        chunk.map(row =>
-          axios.post(`${mlEngineUrl}/ingest`, {
-            district: row.district,
-            disease: row.disease,
-            icd_code: row.icd_code,
-            date: row.date,
-            count: row.count
-          }, {
-            headers: { 'x-internal-key': internalToken },
-            timeout: 5000
-          })
-        )
-      );
-      ingested += chunk.length;
-    }
-    return { success: true, count: ingested, mode: 'http_api' };
-  } catch (httpErr) {
-    // Non-fatal if offline
-    return { success: false, error: httpErr.message, mode: 'unreachable' };
-  }
+  return { success: false, error: 'no_target_available', mode: 'none' };
 }
 
 /**
@@ -531,6 +575,12 @@ async function triggerSurveillanceAnalysis(batchId, consultationIds, options = {
     return { success: false, error: 'offline_or_mock_mode' };
   }
   try {
+    const env = options.env || process.env;
+    const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+    if (options.warmUp !== false) {
+      await warmUpMlEngine(mlEngineUrl, options);
+    }
+
     const surveillanceService = require('../server/src/services/surveillanceService');
     const OutbreakAlert = require('../server/src/models/OutbreakAlert');
 
@@ -538,8 +588,16 @@ async function triggerSurveillanceAnalysis(batchId, consultationIds, options = {
 
     // Tag alerts with isSimulatedDemo: true and demoBatchId
     if (OutbreakAlert && OutbreakAlert.collection) {
+      const alertIds = (summary?.results || [])
+        .map(r => r.alertId && mongoose.Types.ObjectId.isValid(r.alertId) ? new mongoose.Types.ObjectId(r.alertId) : null)
+        .filter(Boolean);
+
+      const filter = alertIds.length > 0
+        ? { _id: { $in: alertIds } }
+        : { isSimulation: true };
+
       await OutbreakAlert.collection.updateMany(
-        { isSimulation: true, sourceConsultationIds: { $in: consultationIds } },
+        filter,
         { $set: { isSimulatedDemo: true, demoBatchId: batchId } }
       );
 
@@ -591,10 +649,13 @@ async function getDemoStatus(consultationCol) {
 /**
  * Deletes a simulated batch safely without touching non-simulated records.
  */
-async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqliteDb) {
+async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqliteDb, options = {}) {
   if (!batchId || typeof batchId !== 'string') {
     throw new Error('--batch <id> is required for batch removal');
   }
+  const env = options.env || process.env;
+  const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+  const isRemote = mlEngineUrl && !mlEngineUrl.includes('127.0.0.1');
 
   // 1. Delete consultations strictly by isSimulatedDemo: true AND demoBatchId: batchId
   const conRes = await consultationCol.deleteMany({
@@ -614,7 +675,7 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
     deletedAlerts = alertRes?.deletedCount || 0;
   }
 
-  // 3. Delete SQLite tracking rows strictly by demoBatchId
+  // 3. Delete SQLite tracking rows strictly by demoBatchId (local adapter)
   let deletedTracking = 0;
   if (sqliteDb && typeof sqliteDb.prepare === 'function') {
     try {
@@ -639,10 +700,48 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
     } catch (_) {}
   }
 
-  // 4. Invalidate Redis health-stats cache
-  await invalidateHealthStatsCache();
+  // 4. Reverse/compensate remote ML Engine tracking counts if remote (and not offline test harness)
+  let remoteCompensated = 0;
+  const isTestHarness = Boolean(sqliteDb || options.consultationCollection);
+  if (!isTestHarness && (isRemote || options.forceHttp)) {
+    try {
+      if (options.warmUp !== false) {
+        await warmUpMlEngine(mlEngineUrl, options);
+      }
+      const seedMatch = batchId.match(/DEMO_OUTBREAK_(\d+)/);
+      const seedNum = seedMatch ? parseInt(seedMatch[1], 10) : 2026;
+      const plan = generateOutbreakDataset(seedNum, { batchId });
+      let internalToken = '';
+      try {
+        internalToken = require('../server/src/utils/internalAuth').generateToken();
+      } catch (_) {}
+      const axios = require('axios');
+      const BATCH_SIZE = 15;
+      for (let i = 0; i < plan.dailyTracking.length; i += BATCH_SIZE) {
+        const chunk = plan.dailyTracking.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          chunk.map(row =>
+            axios.post(`${mlEngineUrl}/ingest`, {
+              district: row.district,
+              disease: row.disease,
+              icd_code: row.icd_code,
+              date: row.date,
+              count: -row.count
+            }, {
+              headers: { 'x-internal-key': internalToken },
+              timeout: 10000
+            }).catch(() => {})
+          )
+        );
+        remoteCompensated += chunk.length;
+      }
+    } catch (_) {}
+  }
 
-  return { success: true, batchId, deletedCount, deletedAlerts, deletedTracking };
+  // 5. Invalidate Redis health-stats cache
+  await invalidateHealthStatsCache(env, options);
+
+  return { success: true, batchId, deletedCount, deletedAlerts, deletedTracking, remoteCompensated };
 }
 
 /**
@@ -677,7 +776,8 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
   const isConfirm = argv.includes('--confirm');
   const isStatus = argv.includes('--status');
   const isRemove = argv.includes('--remove');
-  const isDryRun = !isConfirm && !isStatus && !isRemove; // Dry-run by default
+  const isSyncMl = argv.includes('--sync-ml');
+  const isDryRun = !isConfirm && !isStatus && !isRemove && !isSyncMl; // Dry-run by default
 
   const seedArg = argv.find(a => a.startsWith('--seed=') || a === '--seed');
   const seed = parseInt(
@@ -808,13 +908,21 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
 
     const dataset = generateOutbreakDataset(seed, { batchId, now: options.now });
 
-    // Step A: Insert individual consultation documents into MongoDB in chunks
-    const CHUNK_SIZE = 500;
-    for (let i = 0; i < dataset.consultations.length; i += CHUNK_SIZE) {
-      const chunk = dataset.consultations.slice(i, i + CHUNK_SIZE);
-      await consultationCol.insertMany(chunk);
+    // Step A: Insert individual consultation documents into MongoDB in chunks (if not already present)
+    const existingCount = await consultationCol.countDocuments({
+      isSimulatedDemo: true,
+      demoBatchId: batchId
+    });
+    if (existingCount > 0) {
+      log(`ℹ️ Batch "${batchId}" consultations already exist in MongoDB (${existingCount} records). Skipping duplicate consultation insertion.`);
+    } else {
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < dataset.consultations.length; i += CHUNK_SIZE) {
+        const chunk = dataset.consultations.slice(i, i + CHUNK_SIZE);
+        await consultationCol.insertMany(chunk);
+      }
+      log(`✅ Inserted ${dataset.consultations.length} synthetic clinical consultations into MongoDB.`);
     }
-    log(`✅ Inserted ${dataset.consultations.length} synthetic clinical consultations into MongoDB.`);
 
     // Step B: Ingest daily tracking counts into ML Engine SQLite
     const trackingRes = await ingestTrackingData(dataset.dailyTracking, options);
@@ -830,7 +938,7 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
     }
 
     // Step D: Invalidate Redis health-stats cache so public endpoint immediately recomputes
-    const cacheRes = await invalidateHealthStatsCache(env);
+    const cacheRes = await invalidateHealthStatsCache(env, options);
     if (cacheRes.cleared > 0) {
       log(`✅ Invalidated ${cacheRes.cleared} cached health-stats keys in Redis.`);
     } else {
@@ -854,6 +962,96 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       targetDetails,
       before: beforeStatus,
       after: afterStatus
+    };
+  }
+
+  // 5. Sync ML Mode (--sync-ml)
+  if (isSyncMl) {
+    if (String(env.DEMO_SEED_ALLOW || '').trim() !== '1') {
+      const errMsg = 'FATAL: Sync operation blocked. DEMO_SEED_ALLOW=1 required to execute --sync-ml.';
+      errorLog(`❌ ${errMsg}`);
+      throw new Error(errMsg);
+    }
+
+    log('======================================================');
+    log(`🔄 [SYNC-ML] Ingesting tracking rows & triggering surveillance for batch "${batchId}"...`);
+    log('======================================================');
+    log('Target Environment Details:');
+    log(`  Masked Host               : ${targetDetails.maskedHost}`);
+    log(`  Database Name             : ${targetDetails.dbName}`);
+    log(`  MongoDB Collections Read  : ${targetDetails.collectionsRead.join(', ')}`);
+    log(`  MongoDB Collections Write : ${targetDetails.collectionsWritten.join(', ')}`);
+    log(`  ML Engine SQLite Table    : ${targetDetails.sqliteTable}`);
+    log('------------------------------------------------------');
+
+    const dataset = generateOutbreakDataset(seed, { batchId, now: options.now });
+
+    // Verify existing consultation documents in MongoDB
+    const existingCount = await consultationCol.countDocuments({
+      isSimulatedDemo: true,
+      demoBatchId: batchId
+    });
+    log(`MongoDB verified: found ${existingCount} existing simulated consultations for batch "${batchId}".`);
+
+    // Step A: Warm up ML Engine
+    const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
+    log(`Warming up ML Engine at ${mlEngineUrl}...`);
+    const warmRes = await warmUpMlEngine(mlEngineUrl, options);
+    if (warmRes.success) {
+      log(`✅ ML Engine is ready and responsive (${warmRes.mode || 'status 200'}).`);
+    } else {
+      log(`⚠️ ML Engine warm-up warning: ${warmRes.error || 'unreachable'}`);
+    }
+
+    // Step B: Ingest daily tracking counts into ML Engine SQLite
+    log(`Ingesting ${dataset.dailyTracking.length} daily tracking rows into ML Engine...`);
+    const trackingRes = await ingestTrackingData(dataset.dailyTracking, { ...options, forceHttp: true });
+    log(`✅ Ingested ${trackingRes.count || 0} tracking rows (${trackingRes.mode}).`);
+
+    // Step C: Trigger surveillance analysis
+    log('Triggering surveillance simulation analysis...');
+    let consultationIds = [];
+    if (existingCount > 0 && typeof consultationCol.find === 'function') {
+      try {
+        const conDocs = await consultationCol.find(
+          { isSimulatedDemo: true, demoBatchId: batchId },
+          { projection: { _id: 1 } }
+        ).toArray();
+        consultationIds = conDocs.map(c => String(c._id));
+      } catch (_) {
+        consultationIds = dataset.consultations.map(c => String(c._id));
+      }
+    } else {
+      consultationIds = dataset.consultations.map(c => String(c._id));
+    }
+
+    const survRes = await triggerSurveillanceAnalysis(batchId, consultationIds, options);
+    if (survRes.success) {
+      log('✅ Triggered surveillanceService simulation analysis. Outbreak alerts generated & tagged.');
+    } else {
+      log(`ℹ️ Surveillance analysis skipped or deferred (${survRes.error || 'offline mode'}).`);
+    }
+
+    // Step D: Invalidate Redis health-stats cache
+    const cacheRes = await invalidateHealthStatsCache(env, options);
+    if (cacheRes.cleared > 0) {
+      log(`✅ Invalidated ${cacheRes.cleared} cached health-stats keys in Redis.`);
+    } else {
+      log(`ℹ️ Health-stats cache refreshed (${cacheRes.mode || 'ttl_natural'}).`);
+    }
+
+    log('======================================================');
+    log('🎉 ML Engine sync and surveillance analysis complete!');
+    log('======================================================');
+
+    return {
+      success: true,
+      syncMl: true,
+      batchId,
+      existingConsultations: existingCount,
+      trackingRowsCount: trackingRes.count || 0,
+      surveillanceSuccess: survRes.success,
+      surveillanceSummary: survRes.summary || null
     };
   }
 }
@@ -881,6 +1079,7 @@ module.exports = {
   maskHost,
   getConnectionDetails,
   invalidateHealthStatsCache,
+  warmUpMlEngine,
   OFFICIAL_DISTRICTS,
   SEED_DISEASES
 };
