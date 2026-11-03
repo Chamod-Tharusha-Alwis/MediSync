@@ -4,7 +4,7 @@ import { MapContainer, GeoJSON } from 'react-leaflet';
 import DiseaseCombobox from '../../components/DiseaseCombobox';
 import 'leaflet/dist/leaflet.css';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { FiTrendingUp, FiActivity, FiMap } from 'react-icons/fi';
+import { FiTrendingUp, FiActivity, FiMap, FiInfo } from 'react-icons/fi';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
 import api from '../../api/axiosInstance';
@@ -198,6 +198,38 @@ const PublicHealth = () => {
         {/* Content */}
         {!error && (
           <div className="space-y-6">
+            {/* Demonstration Data Banner (Requirement R2) */}
+            {(data?.isSimulatedDemo || data?.isSynthetic) && (
+              <aside
+                role="status"
+                aria-live="polite"
+                data-testid="demonstration-data-banner"
+                className="glass-panel p-4 sm:p-5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/10 backdrop-blur-md text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20"
+              >
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="p-2.5 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-300 shrink-0">
+                    <FiInfo className="text-xl sm:text-2xl" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-bold text-amber-300 text-sm sm:text-base tracking-wide">
+                        {t("public.simulatedNoticeTitle", "Demonstration Data Active")}
+                      </h2>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                        {t("public.simulatedBadge", "DEMONSTRATION")}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed">
+                      {t(
+                        "public.simulatedNotice",
+                        "Demonstration Data Active — This dashboard currently displays synthetic epidemiological data for simulation and evaluation purposes."
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </aside>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
               {/* Left Column: Stats & Trend */}

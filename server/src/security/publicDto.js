@@ -39,6 +39,9 @@ function healthDto(row) {
       upper: count(r.upper)
     }));
   }
+  if (row?.isSimulatedDemo === true || row?.isSynthetic === true) {
+    result.isSimulatedDemo = true;
+  }
   return result;
 }
 function assertMlOrigin(raw, environment) {

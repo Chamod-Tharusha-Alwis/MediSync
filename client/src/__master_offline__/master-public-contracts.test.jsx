@@ -24,3 +24,18 @@ test('public-health API uses the configured backend client; unmount aborts its o
 test('review service failure is visible and cannot become an empty-review success',async()=>{
  localStorage.setItem('role','patient');api.get.mockRejectedValue(Error('inert unavailable service'));render(<DoctorProfileModal doctor={{_id:'000000000000000000000001',fullName:'Synthetic Doctor'}} onClose={()=>{}}/>);fireEvent.click(screen.getByRole('button',{name:'Patient Feedback'}));await waitFor(()=>expect(screen.getByRole('alert')).toBeInTheDocument());expect(screen.getByRole('link',{name:/Review a verified visit/})).toHaveAttribute('href','/patient/dashboard/history');expect(api.post).not.toHaveBeenCalled();
 });
+test('public health renders demonstration banner when isSimulatedDemo is true, hides when omitted',async()=>{
+ api.get.mockResolvedValueOnce({data:{data:{totalCases:1200,byDistrict:[],byDisease:[],trend:[],isSimulatedDemo:true}}});
+ const {unmount}=render(<PublicHealth/>);
+ const banner=await screen.findByTestId('demonstration-data-banner');
+ expect(banner).toBeInTheDocument();
+ expect(screen.getByRole('status')).toBeInTheDocument();
+ expect(banner).toHaveTextContent('Demonstration Data Active');
+ expect(banner).toHaveTextContent('DEMONSTRATION');
+ unmount();
+
+ api.get.mockResolvedValueOnce({data:{data:{totalCases:50,byDistrict:[],byDisease:[],trend:[]}}});
+ render(<PublicHealth/>);
+ await screen.findByText('Total Cases');
+ expect(screen.queryByTestId('demonstration-data-banner')).toBeNull();
+});

@@ -8,6 +8,8 @@ const Review = require('../models/Review');
 const axios = require('axios');
 const { getCache, setCache } = require('../config/redis');
 const internalAuth = require('../utils/internalAuth');
+const mongoose = require('mongoose');
+const Consultation = require('../models/Consultation');
 
 let healthUnavailableUntil = 0;
 exports.getHealthStats = async (req, res) => {
@@ -36,10 +38,23 @@ exports.getHealthStats = async (req, res) => {
       timeout: process.env.ML_HEALTH_STATS_TIMEOUT_MS ? Number(process.env.ML_HEALTH_STATS_TIMEOUT_MS) : (process.env.NODE_ENV === 'production' ? 60000 : 3000), maxRedirects: 0, maxContentLength: 262144
     });
 
+    let hasSimulatedRecords = false;
+    try {
+      if (mongoose.connection && mongoose.connection.readyState === 1 && Consultation?.collection) {
+        hasSimulatedRecords = Boolean(await Consultation.collection.findOne(
+          { isSimulatedDemo: true },
+          { projection: { _id: 1 } }
+        ));
+      }
+    } catch (_) {
+      hasSimulatedRecords = false;
+    }
+
     const forecastResult = calculate14DayForecast(response.data?.trend || []);
     const statsData = healthDto({
       ...response.data,
-      forecast: forecastResult.forecast
+      forecast: forecastResult.forecast,
+      isSimulatedDemo: Boolean(response.data?.isSimulatedDemo || hasSimulatedRecords)
     });
 
     // 3. Cache the result for 5 minutes (300 seconds)
@@ -53,7 +68,6 @@ exports.getHealthStats = async (req, res) => {
   }
 };
 
-const mongoose = require('mongoose');
 const BanRecord = require('../models/BanRecord');
 const { isAutomatedTestEnvironment, TEST_DB_NAME, PROD_DB_NAME } = require('../config/dbGuard');
 
