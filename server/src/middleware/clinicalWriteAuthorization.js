@@ -19,6 +19,19 @@ function createClinicalWriteAuthorization({ verify = (req, nic, hash) => require
         const doctor = await getDoctor(req.user.id);
         if (!doctor?.orgLogins?.some(org => String(org.hospitalId) === String(hospitalId) && org.isActive === true && org.mustChangePassword !== true)) return res.status(403).json({ error: 'Hospital workspace verification required' });
       }
+
+      // Idempotency replay fast-path: if command was already committed, bypass medication duplicate check
+      const idempKey = req.headers['idempotency-key'];
+      if (typeof idempKey === 'string' && /^[A-Za-z0-9:_-]{16,128}$/.test(idempKey)) {
+        const { digest } = require('../services/clinicalCommandService');
+        const commandId = digest({ domain: 'clinical-command-v1', actorId: String(req.user.id), role: req.user.role, kind: 'consultation', idempotencyKey: idempKey }).slice(0, 24);
+        const previous = await require('../models/ClinicalCommand').findById(commandId).select('_id requestHash').lean();
+        if (previous) {
+          req.clinicalAuthorization = { patientId: String(decision.patientId), consentSessionId: decision.consentSessionId };
+          return next();
+        }
+      }
+
       const list = req.body.prescriptions === undefined ? (req.body.drugName ? [req.body] : []) : req.body.prescriptions;
       if (!Array.isArray(list)) return res.status(400).json({ error: 'Invalid medication list' });
       if (list.length) {

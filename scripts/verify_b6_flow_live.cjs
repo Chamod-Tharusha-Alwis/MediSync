@@ -170,20 +170,23 @@ class VerificationLogger {
     return entry;
   }
 
-  writeSummary({ doctorOutcomeAccepted, pharmacyOutcomeAccepted, zeroEmailAuditPassed, protectedHashesVerified, independentVerificationPassed }) {
-    const passed = doctorOutcomeAccepted && pharmacyOutcomeAccepted && zeroEmailAuditPassed && protectedHashesVerified && independentVerificationPassed;
+  writeSummary({ doctorOutcomeAccepted, pharmacyOutcomeAccepted, zeroEmailAuditPassed, protectedHashesVerified, independentVerificationPassed, preConsentDenialVerified, idempotencyReplayVerified, rbacDenialsVerified }) {
+    const passed = doctorOutcomeAccepted && pharmacyOutcomeAccepted && zeroEmailAuditPassed && protectedHashesVerified && independentVerificationPassed && preConsentDenialVerified && idempotencyReplayVerified && rbacDenialsVerified;
     const summary = [
       '\n====================================================================================================',
       'VERIFICATION ACCEPTANCE SUMMARY — TARGET FEATURE B6',
       '====================================================================================================',
       `15 Protected Hashes Verified Intact   : ${protectedHashesVerified ? 'YES (PASS)' : 'NO (FAIL)'}`,
       `Zero Real Email Guarantee Audit Passed: ${zeroEmailAuditPassed ? 'YES (PASS)' : 'NO (FAIL)'}`,
+      `Pre-Consent Patient Lookup Denied (403): ${preConsentDenialVerified ? 'YES (PASS)' : 'NO (FAIL)'}`,
       `Doctor Consultation Outcome Accepted : ${doctorOutcomeAccepted ? 'YES (PASS)' : 'NO (FAIL)'}`,
+      `Consultation Idempotency Replay (200): ${idempotencyReplayVerified ? 'YES (PASS)' : 'NO (FAIL)'}`,
       `Pharmacy Dispensation Outcome Accepted: ${pharmacyOutcomeAccepted ? 'YES (PASS)' : 'NO (FAIL)'}`,
       `Independent Read Outcomes Verified    : ${independentVerificationPassed ? 'YES (PASS)' : 'NO (FAIL)'}`,
+      `Wrong-Role RBAC Denials Verified (403): ${rbacDenialsVerified ? 'YES (PASS)' : 'NO (FAIL)'}`,
       `Total Verification Steps Executed     : ${this.entries.length}`,
       `Failed Steps                          : ${this.entries.filter(e => e.assertion === 'FAIL').length}`,
-      `Overall Acceptance Verdict            : ${passed ? 'TARGET FEATURE B6 VERIFIED AND ACCEPTED' : 'VERIFICATION REJECTED'}`,
+      `Overall Acceptance Verdict            : ${passed && this.entries.length === 20 ? 'TARGET FEATURE B6 VERIFIED AND ACCEPTED (20/20 PASSES)' : 'VERIFICATION REJECTED'}`,
       '====================================================================================================\n'
     ].join('\n');
 
@@ -619,9 +622,14 @@ async function main() {
     frontendUrl: LIVE_FRONTEND_URL,
     protectedHashesVerified: false,
     zeroEmailAuditPassed: false,
+    preConsentDenialVerified: false,
     doctorOutcome: null,
+    idempotencyReplayVerified: false,
     pharmacyOutcome: null,
     independentVerification: null,
+    rbacDenialsVerified: false,
+    totalSteps: 0,
+    stepsPassed: 0,
     success: false
   };
 
@@ -724,14 +732,49 @@ async function main() {
     // ── STEP 7: Pharmacy Authentication ─────────────────────────────────────────
     await authenticateRole(pharmacySession, password, testOtpCode, '/pharmacy/login', {}, logger, 7, 'PHARMACY_AUTH');
 
-    // ── STEP 8: Doctor Patient Access Request & Verify ──────────────────────────
+    // ── STEP 8 (NEW PASS 1): Doctor Patient Lookup Prior to Consent (403 Denial) ─
+    const unconsentedNic = '199512345678';
+    const preConsentLookupRes = await requestWithRetry(`${LIVE_API_URL}/patient/${unconsentedNic}`, {
+      method: 'GET'
+    }, doctorSession);
+
+    if (preConsentLookupRes.status !== 403) {
+      logger.logStep({
+        step: 8,
+        stepCode: 'DOCTOR_LOOKUP_PRE_CONSENT_DENIAL',
+        actor: 'DOCTOR',
+        description: 'Verify doctor patient lookup prior to consent returns HTTP 403 Forbidden',
+        endpoint: `GET /api/patient/${maskNic(unconsentedNic)}`,
+        httpStatus: preConsentLookupRes.status,
+        latencyMs: preConsentLookupRes.latencyMs,
+        assertion: 'FAIL',
+        details: `Expected HTTP 403 Forbidden prior to consent, got HTTP ${preConsentLookupRes.status}`
+      });
+      throw new Error(`PRE_CONSENT_DENIAL_FAILED: Expected HTTP 403, got ${preConsentLookupRes.status}`);
+    }
+
+    logger.logStep({
+      step: 8,
+      stepCode: 'DOCTOR_LOOKUP_PRE_CONSENT_DENIAL',
+      actor: 'DOCTOR',
+      description: 'Verify doctor patient lookup prior to consent returns HTTP 403 Forbidden',
+      endpoint: `GET /api/patient/${maskNic(unconsentedNic)}`,
+      httpStatus: preConsentLookupRes.status,
+      latencyMs: preConsentLookupRes.latencyMs,
+      recordIds: { unconsentedNicMasked: maskNic(unconsentedNic) },
+      assertion: 'PASS',
+      details: 'Doctor patient lookup prior to consent rejected with HTTP 403 Forbidden. Consent gating strictly enforced.'
+    });
+    manifest.preConsentDenialVerified = true;
+
+    // ── STEP 9 & 10: Doctor Patient Access Request & Verify ─────────────────────
     await requestAndVerifyPatientConsent(
       doctorSession, patientNic, testOtpCode, 'Dr. Chamod Alwis',
-      logger, 8, 9, 'DOCTOR_PATIENT_ACCESS_REQUEST', 'DOCTOR_PATIENT_ACCESS_VERIFY'
+      logger, 9, 10, 'DOCTOR_PATIENT_ACCESS_REQUEST', 'DOCTOR_PATIENT_ACCESS_VERIFY'
     );
     manifest.zeroEmailAuditPassed = true;
 
-    // ── STEP 10: Dynamic Clinical Drug Selection to Avoid 409 Conflict ──────────
+    // ── Dynamic Clinical Drug Selection to Avoid 409 Conflict ──────────────────
     // Pre-flight check patient active prescriptions to prevent duplicate active ingredient conflict
     const activeRxRes = await requestWithRetry(`${LIVE_API_URL}/patient/${patientNic}/prescriptions`, {
       method: 'GET'
@@ -742,9 +785,10 @@ async function main() {
     const activeDrugNames = activeRxs.map(r => (r.drugName || '').toLowerCase().trim());
 
     // Candidate list of safe, reviewed essential medications from COMMON_DRUGS
-        const drugCandidates = [
+    const drugCandidates = [
+      { name: 'Salbutamol Inhaler', dosage: '100mcg/dose', frequency: 'As needed', durationDays: 14, instructions: 'Inhale 2 puffs as needed for shortness of breath.' },
+      { name: 'Zinc Sulfate 20mg', dosage: '20mg', frequency: 'Daily', durationDays: 14, instructions: 'Take 1 tablet daily.' },
       { name: 'Amoxicillin 500mg', dosage: '500mg', frequency: 'Three times a day', durationDays: 5, instructions: 'Take 1 capsule every 8 hours after meals.' },
-      { name: 'Omeprazole 20mg', dosage: '20mg', frequency: 'Daily', durationDays: 14, instructions: 'Take 1 capsule before breakfast.' },
       { name: 'Cetirizine 10mg', dosage: '10mg', frequency: 'Daily', durationDays: 7, instructions: 'Take 1 tablet at bedtime.' },
       { name: 'Paracetamol 500mg', dosage: '500mg', frequency: 'Three times a day', durationDays: 5, instructions: 'Take 1 tablet after meals.' }
     ];
@@ -759,35 +803,37 @@ async function main() {
     });
     if (!chosenDrug) chosenDrug = drugCandidates[0]; // fallback
 
-    // ── STEP 10: Doctor Consultation & Prescription Issuance (Doctor Outcome) ──
+    // ── STEP 11: Doctor Consultation & Prescription Issuance (Doctor Outcome) ──
     const consultationIdempKey = `b6-con-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    const consultationPayload = {
+      patientNic,
+      diagnosis: 'Seasonal Allergic Rhinitis (B6 Live Flow Acceptance)',
+      icdCode: 'J30.1',
+      icdDescription: 'Allergic rhinitis due to pollen',
+      icdVersion: 'ICD-10',
+      symptoms: ['Sneezing', 'Nasal Congestion', 'Watery Eyes'],
+      notes: `Automated live verification consultation ${runId}`,
+      isFollowUpRequired: false,
+      prescriptions: [
+        {
+          name: chosenDrug.name,
+          dosage: chosenDrug.dosage,
+          frequency: chosenDrug.frequency,
+          durationDays: chosenDrug.durationDays,
+          instructions: chosenDrug.instructions
+        }
+      ]
+    };
+
     const consultRes = await requestWithRetry(`${LIVE_API_URL}/doctor/consultation`, {
       method: 'POST',
       headers: { 'Idempotency-Key': consultationIdempKey },
-      body: {
-        patientNic,
-        diagnosis: 'Seasonal Allergic Rhinitis (B6 Live Flow Acceptance)',
-        icdCode: 'J30.1',
-        icdDescription: 'Allergic rhinitis due to pollen',
-        icdVersion: 'ICD-10',
-        symptoms: ['Sneezing', 'Nasal Congestion', 'Watery Eyes'],
-        notes: `Automated live verification consultation ${runId}`,
-        isFollowUpRequired: false,
-        prescriptions: [
-          {
-            name: chosenDrug.name,
-            dosage: chosenDrug.dosage,
-            frequency: chosenDrug.frequency,
-            durationDays: chosenDrug.durationDays,
-            instructions: chosenDrug.instructions
-          }
-        ]
-      }
+      body: consultationPayload
     }, doctorSession);
 
     if (![200, 201].includes(consultRes.status)) {
       logger.logStep({
-        step: 10,
+        step: 11,
         stepCode: 'DOCTOR_CONSULTATION_ISSUE',
         actor: 'DOCTOR',
         description: 'Issue doctor consultation & prescription',
@@ -839,7 +885,7 @@ async function main() {
     };
 
     logger.logStep({
-      step: 10,
+      step: 11,
       stepCode: 'DOCTOR_CONSULTATION_ISSUE',
       actor: 'DOCTOR',
       description: 'Issue consultation and prescription outcome (Doctor Outcome)',
@@ -855,7 +901,70 @@ async function main() {
       details: `Doctor Outcome Accepted. Created consultation ${consultationId} with pending prescription ${targetRxCustomId} (${chosenDrug.name}).`
     });
 
-    // ── STEP 11: Pharmacy Pre-flight Inventory Check & Restock Guarantee ────────
+    // ── STEP 12 (NEW PASS 2): Double-Click Consultation Idempotency Replay ─────
+    const replayRes = await requestWithRetry(`${LIVE_API_URL}/doctor/consultation`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': consultationIdempKey },
+      body: consultationPayload
+    }, doctorSession);
+
+    if (replayRes.status !== 200) {
+      logger.logStep({
+        step: 12,
+        stepCode: 'DOCTOR_CONSULTATION_IDEMPOTENCY_REPLAY',
+        actor: 'DOCTOR',
+        description: 'Verify double-click consultation resubmission with same Idempotency-Key returns HTTP 200 replay with identical IDs',
+        endpoint: 'POST /api/doctor/consultation',
+        httpStatus: replayRes.status,
+        latencyMs: replayRes.latencyMs,
+        assertion: 'FAIL',
+        details: `Expected HTTP 200 on idempotency replay, got HTTP ${replayRes.status}: ${JSON.stringify(replayRes.data)}`
+      });
+      throw new Error(`IDEMPOTENCY_REPLAY_FAILED: Expected HTTP 200, got ${replayRes.status}`);
+    }
+
+    const replayData = replayRes.data;
+    if (replayData.replayed !== true) {
+      throw new Error('IDEMPOTENCY_REPLAY_FAILED: Expected replayed === true on replay response');
+    }
+    if (replayData.consultationId !== consultationId) {
+      throw new Error(`IDEMPOTENCY_REPLAY_FAILED: consultationId mismatch (expected ${consultationId}, got ${replayData.consultationId})`);
+    }
+    const replayRxs = replayData.prescriptions || [];
+    if (!replayRxs.length || replayRxs[0]._id !== targetRxObjectId || replayRxs[0].prescriptionId !== targetRxCustomId) {
+      throw new Error('IDEMPOTENCY_REPLAY_FAILED: Replay returned mismatched prescription object or custom ID');
+    }
+
+    // Verify patient prescription count did not increment
+    const postReplayRxRes = await requestWithRetry(`${LIVE_API_URL}/patient/${patientNic}/prescriptions`, {
+      method: 'GET'
+    }, patientSession);
+    const postReplayRxs = postReplayRxRes.data?.data || [];
+    const matchingCustomRxCount = postReplayRxs.filter(r => r.prescriptionId === targetRxCustomId).length;
+    if (matchingCustomRxCount !== 1) {
+      throw new Error(`IDEMPOTENCY_DUPLICATE_DETECTED: Found ${matchingCustomRxCount} prescriptions matching ${targetRxCustomId}`);
+    }
+
+    logger.logStep({
+      step: 12,
+      stepCode: 'DOCTOR_CONSULTATION_IDEMPOTENCY_REPLAY',
+      actor: 'DOCTOR',
+      description: 'Verify double-click consultation resubmission with same Idempotency-Key returns HTTP 200 replay with identical IDs',
+      endpoint: 'POST /api/doctor/consultation',
+      httpStatus: replayRes.status,
+      latencyMs: replayRes.latencyMs,
+      recordIds: {
+        consultationId: replayData.consultationId,
+        prescriptionId: targetRxCustomId,
+        rxObjectId: targetRxObjectId,
+        replayed: 'true'
+      },
+      assertion: 'PASS',
+      details: `Double-click consultation idempotency replay confirmed (HTTP 200, replayed: true). Identical consultationId=${consultationId} and prescriptionId=${targetRxCustomId}. Zero duplicates created.`
+    });
+    manifest.idempotencyReplayVerified = true;
+
+    // ── STEP 13: Pharmacy Pre-flight Inventory Check & Restock Guarantee ────────
     const invRes = await requestWithRetry(`${LIVE_API_URL}/pharmacy/inventory`, { method: 'GET' }, pharmacySession);
     let inventoryItems = invRes.data?.data || invRes.data || [];
     let matchedItem = inventoryItems.find(i => (i.drugName || '').toLowerCase().trim() === chosenDrug.name.toLowerCase().trim());
@@ -877,7 +986,7 @@ async function main() {
     const stockBefore = matchedItem.stock;
 
     logger.logStep({
-      step: 11,
+      step: 13,
       stepCode: 'PHARMACY_INVENTORY_ENSURE',
       actor: 'PHARMACY',
       description: `Verify and ensure sufficient inventory stock for ${chosenDrug.name}`,
@@ -889,13 +998,13 @@ async function main() {
       details: `Inventory verified. Drug: ${chosenDrug.name}, available stock: ${stockBefore} units.`
     });
 
-    // ── STEP 12 & 13: Pharmacy Patient Access Request & Verify ──────────────────
+    // ── STEP 14 & 15: Pharmacy Patient Access Request & Verify ──────────────────
     await requestAndVerifyPatientConsent(
       pharmacySession, patientNic, testOtpCode, 'MediSync Pharmacist',
-      logger, 12, 13, 'PHARMACY_PATIENT_ACCESS_REQUEST', 'PHARMACY_PATIENT_ACCESS_VERIFY'
+      logger, 14, 15, 'PHARMACY_PATIENT_ACCESS_REQUEST', 'PHARMACY_PATIENT_ACCESS_VERIFY'
     );
 
-    // ── STEP 14: Pharmacy Discovery of Pending Prescription ─────────────────────
+    // ── STEP 16: Pharmacy Discovery of Pending Prescription ─────────────────────
     const pendingRes = await requestWithRetry(`${LIVE_API_URL}/pharmacy/prescriptions/pending/${patientNic}`, {
       method: 'GET'
     }, pharmacySession);
@@ -909,7 +1018,7 @@ async function main() {
     }
 
     logger.logStep({
-      step: 14,
+      step: 16,
       stepCode: 'PHARMACY_PENDING_DISCOVERY',
       actor: 'PHARMACY',
       description: `Discover pending prescription for patient ${maskNic(patientNic)}`,
@@ -921,7 +1030,7 @@ async function main() {
       details: `Pending prescription found in pharmacy discovery pipeline with status "${foundPending.status}".`
     });
 
-    // ── STEP 15: Pharmacy Medication Dispensation (Pharmacy Outcome) ────────────
+    // ── STEP 17: Pharmacy Medication Dispensation (Pharmacy Outcome) ────────────
     const dispenseIdempKey = `rx:${targetRxObjectId}`;
     const dispenseRes = await requestWithRetry(`${LIVE_API_URL}/pharmacy/dispense`, {
       method: 'POST',
@@ -943,7 +1052,7 @@ async function main() {
 
     if (![200, 201].includes(dispenseRes.status)) {
       logger.logStep({
-        step: 15,
+        step: 17,
         stepCode: 'PHARMACY_DISPENSE_CHECKOUT',
         actor: 'PHARMACY',
         description: 'Execute medication dispensation',
@@ -977,7 +1086,7 @@ async function main() {
     };
 
     logger.logStep({
-      step: 15,
+      step: 17,
       stepCode: 'PHARMACY_DISPENSE_CHECKOUT',
       actor: 'PHARMACY',
       description: 'Execute medication dispensation and receipt creation (Pharmacy Outcome)',
@@ -992,7 +1101,7 @@ async function main() {
       details: `Pharmacy Outcome Accepted. Created immutable dispensing receipt ${receiptNumber} and updated status to "dispensed".`
     });
 
-    // ── STEP 16: Independent Patient Timeline Read Verification ─────────────────
+    // ── STEP 18: Independent Patient Timeline Read Verification ─────────────────
     const patientTimelineRes = await requestWithRetry(`${LIVE_API_URL}/patient/${patientNic}/prescriptions`, {
       method: 'GET'
     }, patientSession);
@@ -1018,7 +1127,7 @@ async function main() {
     }
 
     logger.logStep({
-      step: 16,
+      step: 18,
       stepCode: 'INDEPENDENT_PATIENT_TIMELINE',
       actor: 'PATIENT',
       description: 'Independent verification of dispensed prescription via Patient timeline',
@@ -1033,7 +1142,7 @@ async function main() {
       details: `Patient timeline reflects status="dispensed", dispensedAt="${verifiedPatientRx.dispensedAt}", and consultation linkage intact.`
     });
 
-    // ── STEP 17: Independent Pharmacy Receipt & Inventory Decrement Verification ─
+    // ── STEP 19: Independent Pharmacy Receipt & Inventory Decrement Verification ─
     const receiptRes = await requestWithRetry(`${LIVE_API_URL}/pharmacy/receipt/${receiptNumber}`, {
       method: 'GET'
     }, pharmacySession);
@@ -1066,7 +1175,7 @@ async function main() {
     };
 
     logger.logStep({
-      step: 17,
+      step: 19,
       stepCode: 'INDEPENDENT_PHARMACY_RECEIPT',
       actor: 'PHARMACY',
       description: 'Independent verification of receipt and inventory stock decrement',
@@ -1082,20 +1191,94 @@ async function main() {
       details: `Receipt ${receiptNumber} confirmed in pharmacy history. Inventory decremented from ${stockBefore} to ${postMatchedItem.stock}.`
     });
 
+    // ── STEP 20 (NEW PASS 3): Wrong-Role Access RBAC Denials ────────────────────
+    // A. Patient attempting Doctor Consultation endpoint
+    const wrongRoleConsultRes = await requestWithRetry(`${LIVE_API_URL}/doctor/consultation`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': `wrong-role-con-${Date.now()}` },
+      body: {
+        patientNic,
+        diagnosis: 'Unauthorized Consultation Attempt',
+        prescriptions: []
+      }
+    }, patientSession);
+
+    if (wrongRoleConsultRes.status !== 403) {
+      logger.logStep({
+        step: 20,
+        stepCode: 'WRONG_ROLE_RBAC_DENIAL',
+        actor: 'PATIENT',
+        description: 'Verify wrong-role access returns HTTP 403 Forbidden across clinician and pharmacy routes',
+        endpoint: 'POST /api/doctor/consultation & POST /api/pharmacy/dispense',
+        httpStatus: wrongRoleConsultRes.status,
+        latencyMs: wrongRoleConsultRes.latencyMs,
+        assertion: 'FAIL',
+        details: `Patient calling POST /api/doctor/consultation expected HTTP 403 Forbidden, got HTTP ${wrongRoleConsultRes.status}`
+      });
+      throw new Error(`WRONG_ROLE_RBAC_DENIAL_FAILED: Doctor consultation route returned HTTP ${wrongRoleConsultRes.status}`);
+    }
+
+    // B. Patient attempting Pharmacy Dispense endpoint
+    const wrongRoleDispenseRes = await requestWithRetry(`${LIVE_API_URL}/pharmacy/dispense`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': `wrong-role-rx-${Date.now()}` },
+      body: {
+        prescriptionId: targetRxObjectId,
+        items: []
+      }
+    }, patientSession);
+
+    if (wrongRoleDispenseRes.status !== 403) {
+      logger.logStep({
+        step: 20,
+        stepCode: 'WRONG_ROLE_RBAC_DENIAL',
+        actor: 'PATIENT',
+        description: 'Verify wrong-role access returns HTTP 403 Forbidden across clinician and pharmacy routes',
+        endpoint: 'POST /api/doctor/consultation & POST /api/pharmacy/dispense',
+        httpStatus: wrongRoleDispenseRes.status,
+        latencyMs: wrongRoleDispenseRes.latencyMs,
+        assertion: 'FAIL',
+        details: `Patient calling POST /api/pharmacy/dispense expected HTTP 403 Forbidden, got HTTP ${wrongRoleDispenseRes.status}`
+      });
+      throw new Error(`WRONG_ROLE_RBAC_DENIAL_FAILED: Pharmacy dispense route returned HTTP ${wrongRoleDispenseRes.status}`);
+    }
+
+    logger.logStep({
+      step: 20,
+      stepCode: 'WRONG_ROLE_RBAC_DENIAL',
+      actor: 'PATIENT',
+      description: 'Verify wrong-role access returns HTTP 403 Forbidden across clinician and pharmacy routes',
+      endpoint: 'POST /api/doctor/consultation & POST /api/pharmacy/dispense',
+      httpStatus: 403,
+      latencyMs: wrongRoleConsultRes.latencyMs + wrongRoleDispenseRes.latencyMs,
+      recordIds: {
+        doctorConsultStatus: wrongRoleConsultRes.status,
+        pharmacyDispenseStatus: wrongRoleDispenseRes.status
+      },
+      assertion: 'PASS',
+      details: 'Wrong-role access attempts strictly blocked with HTTP 403 Forbidden. RBAC policy enforced for non-doctor and non-pharmacist tokens.'
+    });
+    manifest.rbacDenialsVerified = true;
+
     // ── Summary & Final Acceptance ──────────────────────────────────────────────
     const allPassed = logger.writeSummary({
       doctorOutcomeAccepted: Boolean(manifest.doctorOutcome?.accepted),
       pharmacyOutcomeAccepted: Boolean(manifest.pharmacyOutcome?.accepted),
       zeroEmailAuditPassed: manifest.zeroEmailAuditPassed,
       protectedHashesVerified: manifest.protectedHashesVerified,
-      independentVerificationPassed: Boolean(manifest.independentVerification)
+      independentVerificationPassed: Boolean(manifest.independentVerification),
+      preConsentDenialVerified: manifest.preConsentDenialVerified,
+      idempotencyReplayVerified: manifest.idempotencyReplayVerified,
+      rbacDenialsVerified: manifest.rbacDenialsVerified
     });
 
     manifest.success = allPassed;
+    manifest.totalSteps = logger.entries.length;
+    manifest.stepsPassed = logger.entries.filter(e => e.assertion === 'PASS').length;
     fs.writeFileSync(JSON_REPORT_PATH, JSON.stringify(manifest, null, 2), 'utf8');
     console.log(`[MANIFEST] JSON verification run manifest written to ${JSON_REPORT_PATH}`);
 
-    process.exit(allPassed ? 0 : 1);
+    process.exit(allPassed && logger.entries.length === 20 ? 0 : 1);
 
   } catch (err) {
     console.error(`\n[FATAL ERROR] B6 Verification Execution Halted: ${err.message}`);
@@ -1116,7 +1299,10 @@ async function main() {
       pharmacyOutcomeAccepted: Boolean(manifest.pharmacyOutcome?.accepted),
       zeroEmailAuditPassed: manifest.zeroEmailAuditPassed,
       protectedHashesVerified: manifest.protectedHashesVerified,
-      independentVerificationPassed: false
+      independentVerificationPassed: false,
+      preConsentDenialVerified: manifest.preConsentDenialVerified,
+      idempotencyReplayVerified: manifest.idempotencyReplayVerified,
+      rbacDenialsVerified: manifest.rbacDenialsVerified
     });
 
     manifest.success = false;
