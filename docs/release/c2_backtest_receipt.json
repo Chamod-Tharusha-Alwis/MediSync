@@ -1,6 +1,6 @@
 {
   "title": "MediSync C2 Outbreak Forecasting 7-Day Holdout Backtest Receipt",
-  "generatedAt": "2026-11-03T12:01:20.434Z",
+  "generatedAt": "2026-11-03T12:39:01.708Z",
   "seed": 2026,
   "passCriteria": {
     "coverageThreshold": 70,

@@ -70,27 +70,22 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
 ---
 
 ## 4. Last Live-Test Result
-- Target Features F & C2 (`bce1782`, `scripts/verify_public_health_live.cjs`):
-  - *Status Update (Step 1)*: Upgraded to "Live Verified: Yes". Full end-to-end live production browser and API verification passed across Desktop (1280x800) and Mobile (375x667) viewports with 100% trilingual parity.
-  - Production Backend Endpoint: `GET /api/public/health-stats` returned HTTP 200 OK, `isSimulatedDemo: true`, `totalCases: 5,097`, 25 districts, 6 diseases, 31 trend days, and 14-day forecast with non-zero projection.
-  - Outbreak Risk Tier Coverage: All 4 tiers verified in live API & visibly rendered on Outbreak Map with matching colors:
-    - Critical (>1,000 cases): Colombo = 1,212 cases (Dengue, `#9B2C2C`), Gampaha = 1,124 cases, Kandy = 1,061 cases.
-    - High (>500 cases): Kalutara = 603 cases (Leptospirosis, `#C53030`), Ratnapura = 582 cases.
-    - Moderate (>100 cases): Galle = 185 cases (Diarrhoeal disease, `#DD6B20`), Matara = 154 cases.
-    - Low (>10 cases): Badulla = 46 cases (Influenza, `#D69E2E`), Jaffna = 34 cases.
-    - Minimal (<=10 cases): 16 clean districts with 6 cases each (COVID-19 / Chikungunya, `#319795`).
-  - Forecast Mathematical Invariant: 14 projected days strictly bounded by `0 <= lower <= predicted <= upper` across all points.
-  - Demonstration Data Banner: Verified prominent banner with `role="status"`, `[data-testid="demonstration-data-banner"]`, badge "DEMONSTRATION", and title "Demonstration Data Active".
-  - Trilingual Parity:
-    - English (EN): "Demonstration Data Active" + "DEMONSTRATION".
-    - Sinhala (SI): "ආදර්ශන දත්ත සක්‍රීයයි" + "ආදර්ශන".
-    - Tamil (TA): "விளக்கக்காட்சி தரவு செயலில் உள்ளது" + "விளக்கக்காட்சி".
-  - Mobile Responsiveness: Clean banner and chart rendering on 375x667 viewport with 0 errors.
+- Target Features C2 (Forecasting Hardening) & C3 (Multi-Disease Outbreak Map and Clustering) (`scripts/verify_m2_step23_live.cjs`):
+  - *Status Update (Milestone 2)*: Upgraded to "Live Verified: Yes". Full end-to-end live production browser and API verification passed across Desktop (1280x800) and Mobile (375x667) viewports with 100% trilingual parity.
+  - Production Backend Endpoint: `GET /api/public/health-stats` returned HTTP 200 OK, `isSimulatedDemo: true`, 25 districts, 6 diseases, and 14-day forecast with mathematical invariant `0 <= lower <= predicted <= upper` strictly satisfied across all points.
+  - Dynamic 4/5-Tier Legend: District counts in legend badges sum exactly to 25 districts across all risk tiers.
+  - Contiguous Outbreak Clusters & Halos: Active Regional Outbreak Clusters card renders contiguous Western province cluster (Colombo, Gampaha, Kalutara, Ratnapura) with gold halo borders (`#F6E05E`) verified on Leaflet SVG district polygons.
+  - Interactive Tooltips: Hovering over district polygons renders custom tooltips showing district name, case count, and top disease.
+  - Disease Filter: Switching between Dengue, Leptospirosis, and All Diseases alters totals consistently.
+  - Accessible Table View: 25 district rows rendered with case counts, risk tiers, top diseases, and cluster status.
+  - C2 Forecasting Hardening: 14-day projection curves, 95% prediction intervals, and full-width disclaimer footer (`[data-testid="full-forecast-disclaimer"]`) verified in English, Sinhala ("නිරූපණය සඳහා වූ සංඛ්‍යානමය ප්‍රක්ෂේපණයකි, සායනිකව වලංගු කර නොමැත"), and Tamil ("விளக்கக்காட்சிக்கான புள்ளிவிவர கணிப்பு, மருத்துவ ரீதியாக சரிபார்க்கப்படவில்லை").
+  - Mobile Responsiveness: 375x667 viewport verified with zero horizontal scroll (`scrollWidth <= innerWidth`).
   - Evidence Artifacts:
-    - `docs/public_health_live_desktop_en.png`
-    - `docs/public_health_live_desktop_si.png`
-    - `docs/public_health_live_desktop_ta.png`
-    - `docs/public_health_live_mobile_375.png`
+    - `docs/c3_map_clusters_desktop_en.png`
+    - `docs/c3_map_clusters_desktop_si.png`
+    - `docs/c3_map_clusters_desktop_ta.png`
+    - `docs/c3_map_clusters_mobile_375.png`
+    - `docs/c3_map_table_view.png`
 
 ---
 
@@ -105,4 +100,9 @@ See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync
   - Frontend demonstration data banner added with trilingual i18n support.
   - Live production browser verification passed (`scripts/verify_public_health_live.cjs`) across Desktop and Mobile viewports with full trilingual parity.
   - Features C2 and F upgraded to "Live Verified: Yes".
-- Next: Step 2 (Feature C2 Hardening: Prediction Intervals & Backtesting).
+- Step 2 (Feature C2 Hardening: Prediction Intervals & Backtesting) complete:
+  - 14-day forecast prediction intervals implemented and backtested (7-day holdout MAE and coverage verified).
+  - Trilingual forecast disclaimer added to UI and verified.
+- Step 3 (Feature C3: Multi-Disease Outbreak Map and Clustering) complete:
+  - 25-district BFS spatial clustering, disease filter dropdown, dynamic legend, accessible table view, and cluster halos implemented and live verified (`scripts/verify_m2_step23_live.cjs`).
+- Next: Step 4 (Features C4 through C7 Feature Delivery).
