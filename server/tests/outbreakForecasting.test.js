@@ -134,6 +134,60 @@ describe('Epidemiological 14-Day Outbreak Forecasting Suite', () => {
     expect(result.forecast[0].predicted).toBeGreaterThanOrEqual(0);
   });
 
+  test('strictly sanitizes dirty chaotic inputs with malformed dates at start, middle, and end without RangeError', () => {
+    // Malformed date at the end of the array
+    const endMalformed = [
+      { date: '2026-11-01', count: 10 },
+      { date: '2026-11-02', count: 12 },
+      { date: '2026-11-03', count: 14 },
+      { date: 'invalid-date', count: 999 }
+    ];
+    const resEnd = calculate14DayForecast(endMalformed);
+    expect(resEnd.hasSufficientData).toBe(true);
+    expect(resEnd.forecast.length).toBe(14);
+    expect(resEnd.forecast[0].date).toBe('2026-11-04');
+
+    // Malformed date at the start and middle
+    const mixedMalformed = [
+      { date: 'not-a-date', count: 50 },
+      { date: '2026-11-01', count: 10 },
+      null,
+      { date: '', count: 20 },
+      { date: '   ', count: 25 },
+      { date: '2026-11-02', count: 15 },
+      undefined,
+      { date: 'NaN', count: 30 },
+      { date: ' 2026-11-03 ', count: 20 }
+    ];
+    const resMixed = calculate14DayForecast(mixedMalformed);
+    expect(resMixed.hasSufficientData).toBe(true);
+    expect(resMixed.forecast.length).toBe(14);
+    expect(resMixed.forecast[0].date).toBe('2026-11-04');
+    expect(resMixed.forecast[13].date).toBe('2026-11-17');
+
+    // Entirely malformed dates gracefully returns hasSufficientData=false
+    const allMalformed = [
+      { date: 'bad-1', count: 10 },
+      { date: 'bad-2', count: 20 },
+      { date: 'bad-3', count: 30 }
+    ];
+    const resAll = calculate14DayForecast(allMalformed);
+    expect(resAll.hasSufficientData).toBe(false);
+    expect(resAll.forecast).toEqual([]);
+  });
+
+  test('handles non-ISO and slash date formats without triggering RangeError on UTC expansion', () => {
+    const nonIsoTrend = [
+      { date: '2026/10/01', count: 10 },
+      { date: '2026/10/02', count: 15 },
+      { date: '2026/10/03', count: 20 }
+    ];
+    const result = calculate14DayForecast(nonIsoTrend);
+    expect(result.hasSufficientData).toBe(true);
+    expect(result.forecast.length).toBe(14);
+    expect(result.forecast[0].date).toBe('2026-10-04');
+  });
+
   test('computes exact Student t critical values for df 1 to 30 and handles convergence to normal z', () => {
     // 95% confidence level
     expect(getTCrit(1)).toBe(12.71);
@@ -216,14 +270,18 @@ describe('Epidemiological 14-Day Outbreak Forecasting Suite', () => {
     expect(result.hasSufficientData).toBe(true);
     // On steep exponential growth, log-linear captures the curvature significantly better
     expect(result.backtest.evaluated).toBe(true);
-    if (result.backtest.logLinear && result.backtest.logLinear.mae < result.backtest.mae * 0.90) {
-      expect(result.modelType).toBe('log_linear');
-    }
+    expect(result.backtest.logLinear).toBeDefined();
+    expect(result.backtest.logLinear.mae).toBeLessThan(result.backtest.mae * 0.90);
+    expect(result.modelType).toBe('log_linear');
     // Invariants must strictly hold regardless of model
     result.forecast.forEach(pt => {
       expect(pt.lower).toBeGreaterThanOrEqual(0);
       expect(pt.predicted).toBeGreaterThanOrEqual(pt.lower);
       expect(pt.upper).toBeGreaterThanOrEqual(pt.predicted);
+      expect(pt.bandRange).toBe(pt.upper - pt.lower);
+      expect(Number.isSafeInteger(pt.predicted)).toBe(true);
+      expect(Number.isSafeInteger(pt.lower)).toBe(true);
+      expect(Number.isSafeInteger(pt.upper)).toBe(true);
     });
   });
 

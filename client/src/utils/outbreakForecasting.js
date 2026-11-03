@@ -119,16 +119,30 @@ export function evaluateHoldoutBacktest(cleanData, options = {}) {
   let logLinInside = 0;
 
   if (logLinFit && logLinFit.beta > 0) {
+    const zTrain = yTrain.map(v => Math.log(Math.max(0, v) + 1));
+    let ssResZ = 0;
+    for (let i = 0; i < nTrain; i++) {
+      const zHat = logLinFit.alpha + logLinFit.beta * xTrain[i];
+      ssResZ += (zTrain[i] - zHat) * (zTrain[i] - zHat);
+    }
+    const dfZ = Math.max(1, nTrain - 2);
+    const seZ = Math.sqrt(ssResZ / dfZ);
+
     let logLinAe = 0;
-    const maxTrainY = Math.max(...yTrain);
     for (let k = 0; k < holdoutDays; k++) {
       const futureX = (nTrain - 1) + (k + 1);
-      const rawLogPred = Math.min(Math.max(0, Math.exp(logLinFit.alpha + logLinFit.beta * futureX) - 1), maxTrainY * 3);
+      const zPred = logLinFit.alpha + logLinFit.beta * futureX;
+      const rawLogPred = Math.max(0, Math.exp(zPred) - 1);
       const pred = Math.max(0, Math.round(rawLogPred));
-      const sePred = se * Math.sqrt(1 + 1 / nTrain + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
-      const margin = Math.round(tCrit * sePred);
-      const lower = Math.min(pred, Math.max(0, Math.round(rawLogPred - margin)));
-      const upper = Math.max(pred, Math.round(rawLogPred + margin));
+
+      const sePredZ = seZ * Math.sqrt(1 + 1 / nTrain + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
+      const marginZ = tCrit * sePredZ;
+
+      const rawLower = Math.max(0, Math.exp(zPred - marginZ) - 1);
+      const rawUpper = Math.max(0, Math.exp(zPred + marginZ) - 1);
+
+      const lower = Math.min(pred, Math.max(0, Math.round(rawLower)));
+      const upper = Math.max(pred, Math.round(rawUpper));
 
       const actual = holdoutData[k].count;
       logLinAe += Math.abs(actual - pred);
@@ -234,11 +248,33 @@ export function calculate14DayForecast(trend, options = {}) {
     };
   }
 
-  // Filter and sort by date ascending
+  // Filter and sort by date ascending with robust date sanitization
   const clean = trend
-    .filter(p => p && typeof p.date === 'string' && Number.isFinite(Number(p.count)) && Number(p.count) >= 0)
-    .map(p => ({ date: p.date, count: Math.round(Number(p.count)) }))
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .filter(p => {
+      if (!p || typeof p.date !== 'string') return false;
+      const trimmed = p.date.trim();
+      if (!trimmed) return false;
+      const count = Number(p.count);
+      if (!Number.isFinite(count) || count < 0) return false;
+
+      const normalized = trimmed.replace(/\//g, '-');
+      const isoStr = normalized.includes('T') ? normalized : `${normalized}T00:00:00Z`;
+      let d = new Date(isoStr);
+      if (!Number.isNaN(d.getTime())) return true;
+      d = new Date(trimmed);
+      if (Number.isNaN(d.getTime())) return false;
+      return /\b\d{4}\b/.test(trimmed) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(trimmed);
+    })
+    .map(p => ({ date: p.date.trim(), count: Math.round(Number(p.count)) }))
+    .sort((a, b) => {
+      const parseMs = s => {
+        const norm = s.replace(/\//g, '-');
+        const iso = norm.includes('T') ? norm : `${norm}T00:00:00Z`;
+        const dIso = new Date(iso);
+        return !Number.isNaN(dIso.getTime()) ? dIso.getTime() : new Date(s).getTime();
+      };
+      return parseMs(a.date) - parseMs(b.date);
+    });
 
   if (clean.length < 3) {
     return {
@@ -293,8 +329,7 @@ export function calculate14DayForecast(trend, options = {}) {
     logLinFit.beta > 0.05 &&
     backtest?.evaluated &&
     backtest?.logLinear &&
-    backtest.logLinear.mae < backtest.mae * 0.90 &&
-    backtest.logLinear.empiricalCoverage >= 70
+    backtest.logLinear.mae < backtest.mae * 0.90
   ) {
     modelType = 'log_linear';
   } else if (quadFit && quadFit.ssRes < ssRes * 0.75 && quadFit.a < 0) {
@@ -303,7 +338,14 @@ export function calculate14DayForecast(trend, options = {}) {
   }
 
   const lastDateRaw = clean[clean.length - 1].date;
-  const lastDate = new Date(lastDateRaw.includes('T') ? lastDateRaw : `${lastDateRaw}T00:00:00Z`);
+  const isoCandidate = lastDateRaw.replace(/\//g, '-');
+  let lastDate = new Date(isoCandidate.includes('T') ? isoCandidate : `${isoCandidate}T00:00:00Z`);
+  if (Number.isNaN(lastDate.getTime())) {
+    lastDate = new Date(lastDateRaw);
+  }
+  if (Number.isNaN(lastDate.getTime())) {
+    lastDate = new Date();
+  }
 
   const maxObservedY = Math.max(...y);
   const forecast = [];
@@ -312,8 +354,8 @@ export function calculate14DayForecast(trend, options = {}) {
     let rawPredicted = slope * futureX + intercept;
 
     if (modelType === 'log_linear' && logLinFit) {
-      const logPred = Math.exp(logLinFit.alpha + logLinFit.beta * futureX) - 1;
-      rawPredicted = Math.min(Math.max(0, logPred), maxObservedY * 3); // Damped safety ceiling
+      const zPred = logLinFit.alpha + logLinFit.beta * futureX;
+      rawPredicted = Math.min(Math.max(0, Math.exp(zPred) - 1), maxObservedY * 3); // Damped safety ceiling
     } else if (modelType === 'polynomial_quad' && quadFit) {
       const quadPred = quadFit.a * futureX * futureX + quadFit.b * futureX + quadFit.c;
       if (quadPred >= 0 && quadPred <= rawPredicted * 1.5) {
@@ -334,7 +376,9 @@ export function calculate14DayForecast(trend, options = {}) {
 
     const fDate = new Date(lastDate);
     fDate.setUTCDate(fDate.getUTCDate() + k);
-    const dateStr = fDate.toISOString().split('T')[0];
+    const dateStr = !Number.isNaN(fDate.getTime())
+      ? fDate.toISOString().split('T')[0]
+      : new Date(Date.now() + k * 86400000).toISOString().split('T')[0];
 
     forecast.push({
       date: dateStr,

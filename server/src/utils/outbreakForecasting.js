@@ -23,6 +23,36 @@ function getTCrit(df, confidenceLevel = 0.95) {
 }
 
 /**
+ * Fits log-linear model ln(y + 1) = alpha + beta * x for exponential surge detection.
+ */
+function fitLogLinear(x, y) {
+  const n = x.length;
+  if (n < 3) return null;
+
+  const z = y.map(v => Math.log(Math.max(0, v) + 1));
+  const xMean = x.reduce((a, b) => a + b, 0) / n;
+  const zMean = z.reduce((a, b) => a + b, 0) / n;
+
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (x[i] - xMean) * (z[i] - zMean);
+    den += (x[i] - xMean) * (x[i] - xMean);
+  }
+
+  const beta = den === 0 ? 0 : num / den;
+  const alpha = zMean - beta * xMean;
+
+  let ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const yHat = Math.max(0, Math.exp(alpha + beta * x[i]) - 1);
+    ssRes += (y[i] - yHat) * (y[i] - yHat);
+  }
+
+  return { alpha, beta, ssRes };
+}
+
+/**
  * Evaluates a 7-day holdout on historical time-series data to measure
  * Mean Absolute Error (MAE) and empirical confidence interval coverage.
  */
@@ -84,13 +114,60 @@ function evaluateHoldoutBacktest(cleanData, options = {}) {
   const mae = totalAbsoluteError / holdoutDays;
   const empiricalCoverage = (insideBandsCount / holdoutDays) * 100;
 
+  // Log-linear alternative evaluation on holdout
+  const logLinFit = fitLogLinear(xTrain, yTrain);
+  let logLinMae = null;
+  let logLinCoverage = null;
+  let logLinInside = 0;
+
+  if (logLinFit && logLinFit.beta > 0) {
+    const zTrain = yTrain.map(v => Math.log(Math.max(0, v) + 1));
+    let ssResZ = 0;
+    for (let i = 0; i < nTrain; i++) {
+      const zHat = logLinFit.alpha + logLinFit.beta * xTrain[i];
+      ssResZ += (zTrain[i] - zHat) * (zTrain[i] - zHat);
+    }
+    const dfZ = Math.max(1, nTrain - 2);
+    const seZ = Math.sqrt(ssResZ / dfZ);
+
+    let logLinAe = 0;
+    for (let k = 0; k < holdoutDays; k++) {
+      const futureX = (nTrain - 1) + (k + 1);
+      const zPred = logLinFit.alpha + logLinFit.beta * futureX;
+      const rawLogPred = Math.max(0, Math.exp(zPred) - 1);
+      const pred = Math.max(0, Math.round(rawLogPred));
+
+      const sePredZ = seZ * Math.sqrt(1 + 1 / nTrain + (den === 0 ? 0 : Math.pow(futureX - xMean, 2) / den));
+      const marginZ = tCrit * sePredZ;
+
+      const rawLower = Math.max(0, Math.exp(zPred - marginZ) - 1);
+      const rawUpper = Math.max(0, Math.exp(zPred + marginZ) - 1);
+
+      const lower = Math.min(pred, Math.max(0, Math.round(rawLower)));
+      const upper = Math.max(pred, Math.round(rawUpper));
+
+      const actual = holdoutData[k].count;
+      logLinAe += Math.abs(actual - pred);
+      if (actual >= lower && actual <= upper) {
+        logLinInside++;
+      }
+    }
+    logLinMae = Number((logLinAe / holdoutDays).toFixed(2));
+    logLinCoverage = Number(((logLinInside / holdoutDays) * 100).toFixed(1));
+  }
+
   return {
     evaluated: true,
     holdoutDays,
     mae: Number(mae.toFixed(2)),
     empiricalCoverage: Number(empiricalCoverage.toFixed(1)),
     insideBandsCount,
-    totalHoldout: holdoutDays
+    totalHoldout: holdoutDays,
+    logLinear: logLinMae !== null ? {
+      mae: logLinMae,
+      empiricalCoverage: logLinCoverage,
+      insideBandsCount: logLinInside
+    } : null
   };
 }
 
@@ -163,7 +240,7 @@ function fitQuadratic(x, y) {
  * - Exact Student's t critical values for small degrees of freedom
  * - Strict structural invariant: 0 <= lower <= predicted <= upper
  * - 7-day holdout backtesting for empirical coverage and MAE
- * - Polynomial alternative fit evaluation
+ * - Gated alternative model evaluation (Log-Linear for exponential surges, Quadratic for deceleration)
  */
 function calculate14DayForecast(trend, options = {}) {
   const forecastDays = Math.max(1, Math.min(60, Number(options.forecastDays) || 14));
@@ -177,11 +254,33 @@ function calculate14DayForecast(trend, options = {}) {
     };
   }
 
-  // Filter and sort by date ascending
+  // Filter and sort by date ascending with robust date sanitization
   const clean = trend
-    .filter(p => p && typeof p.date === 'string' && Number.isFinite(Number(p.count)) && Number(p.count) >= 0)
-    .map(p => ({ date: p.date, count: Math.round(Number(p.count)) }))
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .filter(p => {
+      if (!p || typeof p.date !== 'string') return false;
+      const trimmed = p.date.trim();
+      if (!trimmed) return false;
+      const count = Number(p.count);
+      if (!Number.isFinite(count) || count < 0) return false;
+
+      const normalized = trimmed.replace(/\//g, '-');
+      const isoStr = normalized.includes('T') ? normalized : `${normalized}T00:00:00Z`;
+      let d = new Date(isoStr);
+      if (!Number.isNaN(d.getTime())) return true;
+      d = new Date(trimmed);
+      if (Number.isNaN(d.getTime())) return false;
+      return /\b\d{4}\b/.test(trimmed) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(trimmed);
+    })
+    .map(p => ({ date: p.date.trim(), count: Math.round(Number(p.count)) }))
+    .sort((a, b) => {
+      const parseMs = s => {
+        const norm = s.replace(/\//g, '-');
+        const iso = norm.includes('T') ? norm : `${norm}T00:00:00Z`;
+        const dIso = new Date(iso);
+        return !Number.isNaN(dIso.getTime()) ? dIso.getTime() : new Date(s).getTime();
+      };
+      return parseMs(a.date) - parseMs(b.date);
+    });
 
   if (clean.length < 3) {
     return {
@@ -222,20 +321,47 @@ function calculate14DayForecast(trend, options = {}) {
 
   const tCrit = getTCrit(df, confidenceLevel);
 
-  // Polynomial quadratic alternative evaluation
+  // 7-day holdout backtesting
+  const backtest = evaluateHoldoutBacktest(clean, { confidenceLevel });
+
+  // Gated model selection:
+  // 1. Log-linear alternative if accelerating growth and holdout backtest shows >10% MAE improvement
+  const logLinFit = fitLogLinear(x, y);
   const quadFit = fitQuadratic(x, y);
-  const modelType = (quadFit && quadFit.ssRes < ssRes * 0.75 && quadFit.a < 0) ? 'polynomial_quad' : 'ols_linear';
+  let modelType = 'ols_linear';
+
+  if (
+    logLinFit &&
+    logLinFit.beta > 0.05 &&
+    backtest?.evaluated &&
+    backtest?.logLinear &&
+    backtest.logLinear.mae < backtest.mae * 0.90
+  ) {
+    modelType = 'log_linear';
+  } else if (quadFit && quadFit.ssRes < ssRes * 0.75 && quadFit.a < 0) {
+    modelType = 'polynomial_quad';
+  }
 
   const lastDateRaw = clean[clean.length - 1].date;
-  const lastDate = new Date(lastDateRaw.includes('T') ? lastDateRaw : `${lastDateRaw}T00:00:00Z`);
+  const isoCandidate = lastDateRaw.replace(/\//g, '-');
+  let lastDate = new Date(isoCandidate.includes('T') ? isoCandidate : `${isoCandidate}T00:00:00Z`);
+  if (Number.isNaN(lastDate.getTime())) {
+    lastDate = new Date(lastDateRaw);
+  }
+  if (Number.isNaN(lastDate.getTime())) {
+    lastDate = new Date();
+  }
 
+  const maxObservedY = Math.max(...y);
   const forecast = [];
   for (let k = 1; k <= forecastDays; k++) {
     const futureX = (n - 1) + k;
     let rawPredicted = slope * futureX + intercept;
 
-    // If quadratic model indicates deceleration with better fit, apply damped trajectory
-    if (modelType === 'polynomial_quad' && quadFit) {
+    if (modelType === 'log_linear' && logLinFit) {
+      const zPred = logLinFit.alpha + logLinFit.beta * futureX;
+      rawPredicted = Math.min(Math.max(0, Math.exp(zPred) - 1), maxObservedY * 3);
+    } else if (modelType === 'polynomial_quad' && quadFit) {
       const quadPred = quadFit.a * futureX * futureX + quadFit.b * futureX + quadFit.c;
       if (quadPred >= 0 && quadPred <= rawPredicted * 1.5) {
         rawPredicted = quadPred * 0.5 + rawPredicted * 0.5; // Smooth ensemble
@@ -255,7 +381,9 @@ function calculate14DayForecast(trend, options = {}) {
 
     const fDate = new Date(lastDate);
     fDate.setUTCDate(fDate.getUTCDate() + k);
-    const dateStr = fDate.toISOString().split('T')[0];
+    const dateStr = !Number.isNaN(fDate.getTime())
+      ? fDate.toISOString().split('T')[0]
+      : new Date(Date.now() + k * 86400000).toISOString().split('T')[0];
 
     forecast.push({
       date: dateStr,
@@ -265,9 +393,6 @@ function calculate14DayForecast(trend, options = {}) {
       bandRange
     });
   }
-
-  // 7-day holdout backtesting
-  const backtest = evaluateHoldoutBacktest(clean, { confidenceLevel });
 
   return {
     forecast,
@@ -285,5 +410,6 @@ module.exports = {
   calculate14DayForecast,
   getTCrit,
   evaluateHoldoutBacktest,
-  fitQuadratic
+  fitQuadratic,
+  fitLogLinear
 };

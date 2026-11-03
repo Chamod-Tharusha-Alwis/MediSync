@@ -554,7 +554,11 @@ const PublicHealth = () => {
                           const cluster = districtClusterMap.get(normName);
 
                           return (
-                            <tr key={district} className="hover:bg-slate-800/40 transition-colors">
+                            <tr
+                              key={district}
+                              onClick={() => setSelectedDistrict({ district, totalCases: cases, topDisease, tier, cluster })}
+                              className="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                            >
                               <td className="py-2 px-3 font-medium text-white">{district}</td>
                               <td className="py-2 px-3 text-right font-semibold text-teal-300">
                                 {districtData ? cases.toLocaleString() : '< 5'}
@@ -639,31 +643,31 @@ const PublicHealth = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
 
-                    {/* Touch / Selected District Summary Card (Mobile Friendly) */}
-                    {selectedDistrict && (
-                      <div className="p-3 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs" data-testid="selected-district-card">
-                        <div>
-                          <strong className="text-white text-sm">{selectedDistrict.district}</strong>
-                          <span className="ml-2 text-teal-300 font-semibold">{selectedDistrict.totalCases.toLocaleString()} cases</span>
-                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: selectedDistrict.tier.color }}>
-                            {selectedDistrict.tier.label}
-                          </span>
-                          {selectedDistrict.cluster && (
-                            <span className="ml-2 text-amber-300 font-semibold">
-                              📍 {selectedDistrict.cluster.id} ({selectedDistrict.cluster.isContiguousCluster ? 'Contiguous Cluster' : 'Hotspot'})
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDistrict(null)}
-                          className="text-slate-400 hover:text-white px-2 py-1 rounded"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
+                {/* Touch / Selected District Summary Card (Mobile Friendly) */}
+                {selectedDistrict && (
+                  <div className="p-3 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs" data-testid="selected-district-card">
+                    <div>
+                      <strong className="text-white text-sm">{selectedDistrict.district}</strong>
+                      <span className="ml-2 text-teal-300 font-semibold">{selectedDistrict.totalCases.toLocaleString()} cases</span>
+                      <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: selectedDistrict.tier.color }}>
+                        {selectedDistrict.tier.label}
+                      </span>
+                      {selectedDistrict.cluster && (
+                        <span className="ml-2 text-amber-300 font-semibold">
+                          📍 {selectedDistrict.cluster.id} ({selectedDistrict.cluster.isContiguousCluster ? 'Contiguous Cluster' : 'Hotspot'})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDistrict(null)}
+                      className="text-slate-400 hover:text-white px-2 py-1 rounded"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
               </div>
