@@ -1,3 +1,4 @@
+require('./liveVerificationReadOnly.cjs').install();
 'use strict';
 
 /**

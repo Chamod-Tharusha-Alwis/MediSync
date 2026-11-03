@@ -1,5 +1,14 @@
 # MediSync Test Log
 
+## Captured local conditional ingest revision — 2026-11-04
+
+- Focused four-suite Jest command: 57 PASS, 0 FAIL, exit 0. Actual in-memory SQLite exercises producer snapshot/replay/rollback behavior; read-only transport/import policy tests are inert and send no network requests.
+- `node scripts/run_offline_tests.js`: 2,438 PASS / 0 FAIL / 0 SKIP, exit 0, sourceFrozen=true, protectedAccountedFor=15. Backend 1,830; client 471; email/PDF 31; ML scoring 40; actual Flask 26; root 40. Receipt: `scratch/clinical-offline-yv96Ev/summary.json`; runtime Node v26.4.0. Counts include 14 existing seed cases newly registered, 14 new producer cases, 16 new guard cases and 12 new Flask cases, relative to the prior 2,382 total.
+- The 12 new Flask cases use the real HMAC decorator and owned SQLite only, including concurrent same-key replay, missing/invalid input, missing schema, ambiguous rows and cleanup; 14 existing Flask checks also pass. No claim of Atlas/browser persistence from mocks.
+- `npm run build`: exit 0, compiled with existing ESLint warnings, 116 clinical entry modules and demoImported=false. Final exact-candidate scan is recorded in the summarized receipt. No new CI, live verifier, login, Atlas/Redis operation, seed, ingest, trigger, cache clear or data repair was run for this implementation. Source/pin/seeder form one local candidate; push is held pending operator caller-list and actual SQLite inventory review.
+- Evidence and complete line-level caller inventory: `docs/temp/CODEX_INGEST_CONDITIONAL_REVIEW_20261104_42ea16.md` and `docs/temp/CODEX_INGEST_CALLER_INVENTORY_20261104.json`. Earlier C2/C3 live results below are historical and require fresh read-only reacceptance after an authorized repair.
+
+
 | Date | Feature | Commit | Offline Tests | Production Build | Live Verification Results | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-31 | React Error #31 Regression & History Boundary | `3a36494` | PASS (2,254/2,254) | PASS | PASS (Doctor lookup past OTP renders Step 2 without crash) | `scratch/browser_step2_verified.png` |

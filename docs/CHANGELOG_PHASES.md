@@ -1,5 +1,10 @@
 # MediSync Phase Changelog
 
+## Local conditional ingest repair — 2026-11-04 (not pushed or deployed)
+- Security/Fixes: batch-owned snapshot replacement under SQLite write locking; companion payload and persisted-date replay; ambiguous/missing storage fails closed, no automatic DDL. Legacy remote subtraction is blocked before removal.
+- Verification: ten tracked live runners install read-only fences. 2,438 offline checks pass (Node v26.4.0); focused 57/57 and Flask 26/26 pass. Other 14 protected files and ledger rows are unchanged; app.py's individually approved pin is updated with its source.
+- Known issues/gates: operator caller-list and production inventory review pending; actual SQLite persistence and storage attribution NOT VERIFIED; old live C2/C3 evidence is historical. No dedupe/reload/surveillance/cache operation, new real E2E, push or deployment was performed.
+
 ## Phase 7b (Completed)
 - **Commit `3a36494`**: `fix(client): resolve react error #31 with shared lab test formatter and history error boundary`
 - **Authorized Audit**: Local read-only comparison of pharmacy account candidate passwords against stored bcrypt hash in production database. Verified both Candidate 1 and Candidate 2 match.

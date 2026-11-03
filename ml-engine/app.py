@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import json
 import sqlite3
+from urllib.parse import quote
 import hmac
 import hashlib
 from datetime import datetime, timezone, timedelta
@@ -516,44 +517,52 @@ def predict_disease():
 @app.route('/ingest', methods=['POST'])
 @require_internal_auth
 def ingest_data():
-    """
-    Ingest route to save tracking data to SQLite DB.
-    Expected JSON:
-    { "district": "Colombo", "disease": "Dengue", "icd_code": "A90", "date": "2023-10-01" }
-    """
-    data = request.json
-    if not data or 'district' not in data:
-        return jsonify({'error': 'Missing required fields (district)'}), 400
-        
-    district = data['district']
-    disease = data.get('disease') or data.get('drugCategory', 'Unknown')
-    icd_code = data.get('icd_code', '')
-    date_str = data.get('date', datetime.now().strftime('%Y-%m-%d'))
-    count = data.get('count', 1)
-    
+    """Replace one explicitly batch-owned daily snapshot; never increment on replay."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'INVALID_TRACKING_SNAPSHOT'}), 400
+    district, disease, day, batch = (data.get(k) for k in ('district', 'disease', 'date', 'demoBatchId'))
+    count, icd = data.get('count'), data.get('icd_code', '')
+    if (any(not isinstance(v, str) or not v or len(v) > 100 or any(ord(c) < 32 for c in v) for v in (district, disease, day, batch))
+            or not batch.isascii() or not all(c.isalnum() or c in '_-' for c in batch)
+            or not isinstance(icd, str) or len(icd) > 32
+            or isinstance(count, bool) or not isinstance(count, int) or not 0 <= count <= 2147483647):
+        return jsonify({'error': 'INVALID_TRACKING_SNAPSHOT'}), 400
     try:
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        
-        # Check if entry already exists for this district, disease, and date
-        c.execute('SELECT id, count FROM outbreak_tracking WHERE district=? AND disease=? AND date=?', 
-                 (district, disease, date_str))
-        row = c.fetchone()
-        
-        if row:
-            # Update
-            new_count = row[1] + count
-            c.execute('UPDATE outbreak_tracking SET count=? WHERE id=?', (new_count, row[0]))
+        if datetime.strptime(day, '%Y-%m-%d').strftime('%Y-%m-%d') != day:
+            raise ValueError()
+    except ValueError:
+        return jsonify({'error': 'INVALID_TRACKING_SNAPSHOT'}), 400
+    conn = None
+    try:
+        # mode=rw refuses to create a missing database; no automatic schema changes.
+        conn = sqlite3.connect('file:' + quote(os.path.abspath(db_path), safe='/') + '?mode=rw', uri=True, timeout=5)
+        if 'demoBatchId' not in {row[1] for row in conn.execute('PRAGMA table_info(outbreak_tracking)')}:
+            return jsonify({'error': 'TRACKING_STORAGE_PREREQUISITES_UNVERIFIED'}), 503
+        conn.execute('BEGIN IMMEDIATE')
+        unattributed = conn.execute("SELECT 1 FROM outbreak_tracking WHERE date=? AND district=? AND disease=? AND (demoBatchId IS NULL OR demoBatchId='') LIMIT 1", (day, district, disease)).fetchone()
+        if unattributed:
+            return jsonify({'error': 'TRACKING_PROVENANCE_UNVERIFIED'}), 503
+        rows = conn.execute('SELECT id FROM outbreak_tracking WHERE date=? AND district=? AND disease=? AND demoBatchId=? LIMIT 2',
+                            (day, district, disease, batch)).fetchall()
+        if len(rows) > 1:
+            return jsonify({'error': 'TRACKING_STORAGE_PREREQUISITES_UNVERIFIED'}), 503
+        if rows:
+            conn.execute('UPDATE outbreak_tracking SET count=?, icd_code=? WHERE id=?', (count, icd, rows[0][0]))
         else:
-            # Insert
-            c.execute('INSERT INTO outbreak_tracking (district, disease, icd_code, count, date) VALUES (?, ?, ?, ?, ?)',
-                     (district, disease, icd_code, count, date_str))
-                     
+            conn.execute('INSERT INTO outbreak_tracking (date,district,disease,demoBatchId,count,icd_code) VALUES (?,?,?,?,?,?)',
+                         (day, district, disease, batch, count, icd))
         conn.commit()
-        conn.close()
-        return jsonify({'message': 'Data ingested successfully'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': 'Data ingested successfully', 'mode': 'snapshot'}), 200 if rows else 201
+    except (sqlite3.Error, OSError):
+        return jsonify({'error': 'TRACKING_STORAGE_UNAVAILABLE'}), 503
+    finally:
+        if conn is not None:
+            try:
+                if conn.in_transaction:
+                    conn.rollback()
+            finally:
+                conn.close()
 
 
 # Startup must not train a forecasting model on fabricated historical data.

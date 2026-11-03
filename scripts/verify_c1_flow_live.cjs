@@ -1,3 +1,4 @@
+require('./liveVerificationReadOnly.cjs').install();
 /**
  * verify_c1_flow_live.cjs
  *

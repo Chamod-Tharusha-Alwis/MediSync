@@ -1,7 +1,8 @@
 # Verbatim byte-level preservation for the 15 cryptographically verified files
 server/src/middleware/auth.js text eol=lf
 server/src/controllers/doctorController.js text eol=lf
-ml-engine/app.py text eol=lf
+# Preserve the historical mixed-ending ML blob and its authorized raw-byte pin.
+ml-engine/app.py -text whitespace=cr-at-eol
 ml-engine/evaluate_symptom_model.py text eol=lf
 client/src/components/SymptomTagInput.jsx text eol=lf
 server/tests/ir04BackendIntegration.test.js text eol=lf

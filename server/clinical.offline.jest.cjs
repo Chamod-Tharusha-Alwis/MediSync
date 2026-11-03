@@ -27,3 +27,4 @@ module.exports.testMatch.push('<rootDir>/tests/testOtpHarnessOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/outbreakNotificationPipeline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/outbreakForecasting.test.js');
 module.exports.testMatch.push('<rootDir>/tests/adversarialOutbreakSeedVerification.test.js');
+module.exports.testMatch.push('<rootDir>/tests/seedDemoOutbreakOffline.test.js', '<rootDir>/tests/seedSnapshotIdempotency.test.js', '<rootDir>/tests/liveVerificationReadOnly.test.js');

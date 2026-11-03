@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+from urllib.parse import urlsplit, unquote, parse_qs
 
 root = pathlib.Path(__file__).resolve().parents[2]
 out = pathlib.Path(os.environ['MEDISYNC_OFFLINE_EVIDENCE']).resolve()
@@ -30,8 +31,15 @@ def audit(event, args):
         raise RuntimeError('OFFLINE_ENV_VALUE_READ_DENIED')
     if event in {'socket.connect', 'socket.bind', 'socket.getaddrinfo', 'subprocess.Popen', 'os.system'}:
         raise RuntimeError('OFFLINE_NETWORK_OR_CHILD_DENIED')
-    if event == 'sqlite3.connect' and pathlib.Path(str(args[0])).resolve() != out / 'owned_ml_test.db':
-        raise RuntimeError('OFFLINE_UNOWNED_SQLITE_DENIED')
+    if event == 'sqlite3.connect':
+        target = str(args[0])
+        if target.startswith('file:'):
+            uri = urlsplit(target)
+            if uri.netloc or parse_qs(uri.query) != {'mode': ['rw']}:
+                raise RuntimeError('OFFLINE_UNOWNED_SQLITE_DENIED')
+            target = unquote(uri.path)
+        if pathlib.Path(target).resolve() != out / 'owned_ml_test.db':
+            raise RuntimeError('OFFLINE_UNOWNED_SQLITE_DENIED')
 
 
 sys.addaudithook(audit)
@@ -40,9 +48,11 @@ dotenv.load_dotenv = lambda *args, **kwargs: False
 sys.path.insert(0, str(root / 'ml-engine'))
 import test_medication_safety
 import test_reference_catalog
+import test_outbreak_ingestion
 
 suite = unittest.defaultTestLoader.loadTestsFromModule(test_medication_safety)
 suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_reference_catalog))
+suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_outbreak_ingestion))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 (out / 'ml-flask-results.json').write_text(json.dumps({
     'run': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors),

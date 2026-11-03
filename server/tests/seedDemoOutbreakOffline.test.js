@@ -35,23 +35,26 @@ class InMemoryDatabaseHarness {
   constructor() {
     this.consultations = [];
     this.outbreakAlerts = [];
-    this.outbreakTrackingRows = [];
+    this.trackingDb = null;
   }
 
   async setup() {
-    // Pure in-memory harness: instant startup, 100% offline, zero subprocess timeout
+    const { DatabaseSync } = require('node:sqlite');
+    this.trackingDb = new DatabaseSync(':memory:');
+    this.trackingDb.exec('CREATE TABLE outbreak_tracking(id INTEGER PRIMARY KEY,date TEXT,district TEXT,disease TEXT,demoBatchId TEXT,count INTEGER,icd_code TEXT)');
+    // Real owned in-memory SQLite; no file or network connection.
   }
 
   async teardown() {
     this.consultations = [];
     this.outbreakAlerts = [];
-    this.outbreakTrackingRows = [];
+    this.trackingDb.close();
   }
 
   async reset() {
     this.consultations = [];
     this.outbreakAlerts = [];
-    this.outbreakTrackingRows = [];
+    this.trackingDb.exec('DELETE FROM outbreak_tracking');
   }
 
   // Returns Native-compatible Collection Mock
@@ -113,37 +116,14 @@ class InMemoryDatabaseHarness {
     };
   }
 
-  // Returns SQLite-compatible database adapter
-  getSqliteAdapter() {
-    const self = this;
-    return {
-      exec(_sql) {},
-      prepare(sql) {
-        return {
-          run(...params) {
-            if (/INSERT INTO outbreak_tracking/i.test(sql)) {
-              self.outbreakTrackingRows.push({
-                district: params[0],
-                disease: params[1],
-                icd_code: params[2],
-                count: params[3],
-                date: params[4]
-              });
-            } else if (/DELETE FROM outbreak_tracking/i.test(sql)) {
-              self.outbreakTrackingRows = [];
-            }
-            return { changes: 1 };
-          },
-          all(..._params) {
-            return self.outbreakTrackingRows;
-          },
-          get(..._params) {
-            return { count: self.outbreakTrackingRows.length };
-          }
-        };
-      }
-    };
+  get outbreakTrackingRows() {
+    return this.trackingDb.prepare('SELECT * FROM outbreak_tracking').all();
   }
+
+  getSqliteAdapter() {
+    return this.trackingDb;
+  }
+
 }
 
 describe('Feature F: Demo Outbreak Seed Script Offline Test Suite', () => {

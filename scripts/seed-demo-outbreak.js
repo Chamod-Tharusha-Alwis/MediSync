@@ -26,9 +26,9 @@ const path = require('path');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 
-// Load server/.env explicitly with dotenv
+// CLI compatibility only. Importing the planner/verifier must not load credentials.
 const envPath = path.resolve(__dirname, '../server/.env');
-if (fs.existsSync(envPath)) {
+if (require.main === module && fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
@@ -456,32 +456,57 @@ async function warmUpMlEngine(mlEngineUrl, options = {}) {
 /**
  * Ingests daily tracking rows into ML Engine SQLite outbreak_tracking table.
  */
+function validateTrackingRows(dailyRows, batchId) {
+  if (!Array.isArray(dailyRows) || !dailyRows.length || !/^[A-Za-z0-9_-]{1,100}$/.test(batchId || '')) throw Error('TRACKING_BATCH_REQUIRED');
+  const keys = new Set();
+  for (const row of dailyRows) {
+    if (!row || row.demoBatchId !== batchId || row.isSimulatedDemo !== true ||
+        !OFFICIAL_DISTRICTS.includes(row.district) || !Object.values(SEED_DISEASES).some(d => d.name === row.disease && d.icdCode === row.icd_code) ||
+        typeof row.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(Date.parse(row.date)) || new Date(row.date).toISOString().slice(0,10) !== row.date ||
+        !Number.isSafeInteger(row.count) || row.count < 0 || row.count > 2147483647) throw Error('INVALID_TRACKING_SNAPSHOT');
+    const key = JSON.stringify([row.date,row.district,row.disease,batchId]);
+    if (keys.has(key)) throw Error('DUPLICATE_TRACKING_SNAPSHOT_KEY');
+    keys.add(key);
+  }
+}
+
+function writeTrackingSnapshots(db, dailyRows, batchId) {
+  validateTrackingRows(dailyRows, batchId);
+  if (!db || typeof db.exec !== 'function' || typeof db.prepare !== 'function') throw Error('TRACKING_STORAGE_PREREQUISITES_UNVERIFIED');
+  const columns = db.prepare('PRAGMA table_info(outbreak_tracking)').all();
+  if (!columns.some(row => row.name === 'demoBatchId')) throw Error('TRACKING_STORAGE_PREREQUISITES_UNVERIFIED');
+  let transaction = false;
+  try {
+    db.exec('BEGIN IMMEDIATE'); transaction = true;
+    const legacy = db.prepare("SELECT id FROM outbreak_tracking WHERE date=? AND district=? AND disease=? AND (demoBatchId IS NULL OR demoBatchId='') LIMIT 1");
+    const existing = db.prepare('SELECT id FROM outbreak_tracking WHERE date=? AND district=? AND disease=? AND demoBatchId=? LIMIT 2');
+    const update = db.prepare('UPDATE outbreak_tracking SET count=?, icd_code=? WHERE id=?');
+    const insert = db.prepare('INSERT INTO outbreak_tracking (date,district,disease,demoBatchId,count,icd_code) VALUES (?,?,?,?,?,?)');
+    for (const row of dailyRows) {
+      if (legacy.get(row.date,row.district,row.disease)) throw Error('TRACKING_PROVENANCE_UNVERIFIED');
+      const rows = existing.all(row.date,row.district,row.disease,batchId);
+      if (rows.length > 1) throw Error('TRACKING_STORAGE_PREREQUISITES_UNVERIFIED');
+      if (rows.length) update.run(row.count,row.icd_code,rows[0].id);
+      else insert.run(row.date,row.district,row.disease,batchId,row.count,row.icd_code);
+    }
+    db.exec('COMMIT'); transaction = false;
+  } finally {
+    if (transaction) db.exec('ROLLBACK');
+  }
+}
+
 async function ingestTrackingData(dailyRows, options = {}) {
   const sqliteDb = options.sqliteDb;
-  const batchId = options.batchId || (dailyRows[0] && dailyRows[0].demoBatchId) || 'DEMO_BATCH';
+  const batchId = options.batchId || (dailyRows[0] && dailyRows[0].demoBatchId);
+  validateTrackingRows(dailyRows, batchId);
 
   // Adapter mode (from tests or in-memory)
   if (sqliteDb && typeof sqliteDb.prepare === 'function') {
     try {
-      const insertStmt = sqliteDb.prepare(`
-        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date, demoBatchId)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      for (const row of dailyRows) {
-        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date, row.demoBatchId || batchId);
-      }
+      writeTrackingSnapshots(sqliteDb, dailyRows, batchId);
       return { success: true, count: dailyRows.length, mode: 'adapter' };
     } catch (e) {
-      try {
-        const fallbackStmt = sqliteDb.prepare(`
-          INSERT INTO outbreak_tracking (district, disease, icd_code, count, date)
-          VALUES (?, ?, ?, ?, ?)
-        `);
-        for (const row of dailyRows) {
-          fallbackStmt.run(row.district, row.disease, row.icd_code, row.count, row.date);
-        }
-        return { success: true, count: dailyRows.length, mode: 'adapter_fallback' };
-      } catch (_) {}
+      return { success: false, error: 'TRACKING_STORAGE_OR_PROVENANCE_UNVERIFIED', mode: 'adapter_error' };
     }
   }
 
@@ -494,36 +519,37 @@ async function ingestTrackingData(dailyRows, options = {}) {
     if (options.warmUp !== false) {
       await warmUpMlEngine(mlEngineUrl, options);
     }
-    let internalToken = '';
-    try {
-      internalToken = require('../server/src/utils/internalAuth').generateToken();
-    } catch (_) {}
+    const internalToken = options.internalToken || require('../server/src/utils/internalAuth').generateToken();
 
     try {
-      const axios = require('axios');
+      const axios = options.transport || require('axios');
       let ingested = 0;
       const BATCH_SIZE = 15;
       for (let i = 0; i < dailyRows.length; i += BATCH_SIZE) {
         const chunk = dailyRows.slice(i, i + BATCH_SIZE);
-        await Promise.all(
+        const outcomes = await Promise.allSettled(
           chunk.map(row =>
             axios.post(`${mlEngineUrl}/ingest`, {
               district: row.district,
               disease: row.disease,
               icd_code: row.icd_code,
               date: row.date,
-              count: row.count
+              count: row.count,
+              demoBatchId: batchId,
+              isSimulatedDemo: true
             }, {
               headers: { 'x-internal-key': internalToken },
-              timeout: 10000
+              timeout: 10000,
+              maxRedirects: 0
             })
           )
         );
+        if (outcomes.some(outcome => outcome.status === 'rejected')) throw Error('TRACKING_HTTP_INGEST_FAILED_NO_RETRY');
         ingested += chunk.length;
       }
       return { success: true, count: ingested, mode: 'http_api', url: mlEngineUrl };
     } catch (httpErr) {
-      return { success: false, error: httpErr.message, mode: 'http_error' };
+      return { success: false, error: 'TRACKING_HTTP_INGEST_FAILED_NO_RETRY', mode: 'http_error' };
     }
   }
 
@@ -533,33 +559,11 @@ async function ingestTrackingData(dailyRows, options = {}) {
     try {
       const { DatabaseSync } = require('node:sqlite');
       const db = new DatabaseSync(localDbPath);
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS outbreak_tracking (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          district TEXT NOT NULL,
-          disease TEXT NOT NULL,
-          icd_code TEXT,
-          count INTEGER NOT NULL,
-          date TEXT NOT NULL,
-          demoBatchId TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_date_district_disease ON outbreak_tracking(date, district, disease);
-      `);
-      try {
-        db.exec(`ALTER TABLE outbreak_tracking ADD COLUMN demoBatchId TEXT;`);
-      } catch (_) {}
-
-      const insertStmt = db.prepare(`
-        INSERT INTO outbreak_tracking (district, disease, icd_code, count, date, demoBatchId)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      for (const row of dailyRows) {
-        insertStmt.run(row.district, row.disease, row.icd_code, row.count, row.date, row.demoBatchId || batchId);
-      }
-      db.close();
+      try { writeTrackingSnapshots(db, dailyRows, batchId); }
+      finally { db.close(); }
       return { success: true, count: dailyRows.length, mode: 'local_sqlite' };
     } catch (err) {
-      return { success: false, error: err.message, mode: 'local_sqlite_error' };
+      return { success: false, error: 'TRACKING_STORAGE_OR_PROVENANCE_UNVERIFIED', mode: 'local_sqlite_error' };
     }
   }
 
@@ -656,6 +660,10 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
   const env = options.env || process.env;
   const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
   const isRemote = mlEngineUrl && !mlEngineUrl.includes('127.0.0.1');
+  const isTestHarness = Boolean(sqliteDb || options.consultationCollection);
+  if (!isTestHarness && (isRemote || options.forceHttp)) {
+    throw Error('REMOTE_BATCH_REMOVAL_REQUIRES_REVIEWED_COMMAND');
+  }
 
   // 1. Delete consultations strictly by isSimulatedDemo: true AND demoBatchId: batchId
   const conRes = await consultationCol.deleteMany({
@@ -687,7 +695,7 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
 
   // Also check local sqlite file
   const localDbPath = path.resolve(__dirname, '../ml-engine/medisync.db');
-  if (fs.existsSync(localDbPath)) {
+  if (!isTestHarness && fs.existsSync(localDbPath)) {
     try {
       const { DatabaseSync } = require('node:sqlite');
       const db = new DatabaseSync(localDbPath);
@@ -700,48 +708,11 @@ async function removeDemoBatch(batchId, consultationCol, outbreakAlertCol, sqlit
     } catch (_) {}
   }
 
-  // 4. Reverse/compensate remote ML Engine tracking counts if remote (and not offline test harness)
-  let remoteCompensated = 0;
-  const isTestHarness = Boolean(sqliteDb || options.consultationCollection);
-  if (!isTestHarness && (isRemote || options.forceHttp)) {
-    try {
-      if (options.warmUp !== false) {
-        await warmUpMlEngine(mlEngineUrl, options);
-      }
-      const seedMatch = batchId.match(/DEMO_OUTBREAK_(\d+)/);
-      const seedNum = seedMatch ? parseInt(seedMatch[1], 10) : 2026;
-      const plan = generateOutbreakDataset(seedNum, { batchId });
-      let internalToken = '';
-      try {
-        internalToken = require('../server/src/utils/internalAuth').generateToken();
-      } catch (_) {}
-      const axios = require('axios');
-      const BATCH_SIZE = 15;
-      for (let i = 0; i < plan.dailyTracking.length; i += BATCH_SIZE) {
-        const chunk = plan.dailyTracking.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          chunk.map(row =>
-            axios.post(`${mlEngineUrl}/ingest`, {
-              district: row.district,
-              disease: row.disease,
-              icd_code: row.icd_code,
-              date: row.date,
-              count: -row.count
-            }, {
-              headers: { 'x-internal-key': internalToken },
-              timeout: 10000
-            }).catch(() => {})
-          )
-        );
-        remoteCompensated += chunk.length;
-      }
-    } catch (_) {}
-  }
-
+  // Remote negative-delta compensation is deliberately unsupported.
   // 5. Invalidate Redis health-stats cache
   await invalidateHealthStatsCache(env, options);
 
-  return { success: true, batchId, deletedCount, deletedAlerts, deletedTracking, remoteCompensated };
+  return { success: true, batchId, deletedCount, deletedAlerts, deletedTracking, remoteCompensated: 0 };
 }
 
 /**
@@ -762,6 +733,24 @@ async function connectDb(options = {}) {
  * Main seed execution runner.
  * Supports both programmatic invocation and CLI calls.
  */
+async function trackingFromPersistedBatch(collection, batchId, expectedCount) {
+  const cursor = await collection.find({ isSimulatedDemo: true, demoBatchId: batchId }, {
+    projection: { _id: 0, isSimulatedDemo: 1, demoBatchId: 1, district: 1, diagnosis: 1, icdCode: 1, createdAt: 1 }
+  });
+  const documents = await cursor.toArray();
+  if (!documents.length || documents.length !== expectedCount) throw Error('DEMO_BATCH_COUNT_UNVERIFIED');
+  const rows = new Map();
+  for (const doc of documents) {
+    const definition = Object.values(SEED_DISEASES).find(d => d.name === doc.diagnosis && d.icdCode === doc.icdCode);
+    const date = new Date(doc.createdAt);
+    if (doc.isSimulatedDemo !== true || doc.demoBatchId !== batchId || !definition || !OFFICIAL_DISTRICTS.includes(doc.district) || !Number.isFinite(date.getTime())) throw Error('DEMO_BATCH_PROVENANCE_UNVERIFIED');
+    const day = date.toISOString().slice(0,10), key = JSON.stringify([day,doc.district,definition.name]);
+    if (!rows.has(key)) rows.set(key, { date: day, district: doc.district, disease: definition.name, icd_code: definition.icdCode, count: 0, demoBatchId: batchId, isSimulatedDemo: true });
+    rows.get(key).count++;
+  }
+  return [...rows.values()];
+}
+
 async function runSeed(argv = process.argv.slice(2), options = {}) {
   const env = options.env || process.env;
   const silent = Boolean(options.silent);
@@ -841,7 +830,8 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       customBatchId,
       consultationCol,
       outbreakAlertCol,
-      options.sqliteDb
+      options.sqliteDb,
+      options
     );
     const afterStatus = await getDemoStatus(consultationCol);
     log(`✅ Deleted ${removeResult.deletedCount} simulated consultations.`);
@@ -925,8 +915,10 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
     }
 
     // Step B: Ingest daily tracking counts into ML Engine SQLite
-    const trackingRes = await ingestTrackingData(dataset.dailyTracking, options);
-    log(`✅ Ingested ${dataset.dailyTracking.length} daily tracking rows into ML Engine SQLite (${trackingRes.mode}).`);
+    const snapshots = await trackingFromPersistedBatch(consultationCol, batchId, existingCount || dataset.consultations.length);
+    const trackingRes = await ingestTrackingData(snapshots, options);
+    if (!trackingRes.success) throw Error('TRACKING_SYNC_FAILED_NO_SURVEILLANCE_OR_CACHE_CLEAR');
+    log(`✅ Ingested ${snapshots.length} daily tracking rows into ML Engine SQLite (${trackingRes.mode}).`);
 
     // Step C: Trigger surveillance analysis through the REAL pipeline
     const consultationIds = dataset.consultations.map(c => String(c._id));
@@ -958,7 +950,7 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       batchId,
       totalCases: dataset.totalCases,
       consultationsCount: dataset.consultations.length,
-      trackingRowsCount: dataset.dailyTracking.length,
+      trackingRowsCount: snapshots.length,
       targetDetails,
       before: beforeStatus,
       after: afterStatus
@@ -992,11 +984,12 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
       demoBatchId: batchId
     });
     log(`MongoDB verified: found ${existingCount} existing simulated consultations for batch "${batchId}".`);
+    const snapshots = await trackingFromPersistedBatch(consultationCol, batchId, existingCount);
 
     // Step A: Warm up ML Engine
     const mlEngineUrl = (env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
     log(`Warming up ML Engine at ${mlEngineUrl}...`);
-    const warmRes = await warmUpMlEngine(mlEngineUrl, options);
+    const warmRes = options.warmUp === false ? { success: true, mode: 'explicit_skip' } : await warmUpMlEngine(mlEngineUrl, options);
     if (warmRes.success) {
       log(`✅ ML Engine is ready and responsive (${warmRes.mode || 'status 200'}).`);
     } else {
@@ -1004,8 +997,9 @@ async function runSeed(argv = process.argv.slice(2), options = {}) {
     }
 
     // Step B: Ingest daily tracking counts into ML Engine SQLite
-    log(`Ingesting ${dataset.dailyTracking.length} daily tracking rows into ML Engine...`);
-    const trackingRes = await ingestTrackingData(dataset.dailyTracking, { ...options, forceHttp: true });
+    log(`Ingesting ${snapshots.length} daily tracking rows into ML Engine...`);
+    const trackingRes = await ingestTrackingData(snapshots, { ...options, forceHttp: true });
+    if (!trackingRes.success) throw Error('TRACKING_SYNC_FAILED_NO_SURVEILLANCE_OR_CACHE_CLEAR');
     log(`✅ Ingested ${trackingRes.count || 0} tracking rows (${trackingRes.mode}).`);
 
     // Step C: Trigger surveillance analysis
@@ -1080,6 +1074,9 @@ module.exports = {
   getConnectionDetails,
   invalidateHealthStatsCache,
   warmUpMlEngine,
+  ingestTrackingData,
+  writeTrackingSnapshots,
+  trackingFromPersistedBatch,
   OFFICIAL_DISTRICTS,
   SEED_DISEASES
 };
