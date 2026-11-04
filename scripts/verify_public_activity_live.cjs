@@ -23,7 +23,7 @@ function assertApi(data) {
 }
 function assertObservation(row) {
   if (!Object.hasOwn(captions,row.requestedLanguage) || row.language !== row.requestedLanguage || row.availability !== 'available' ||
-      row.caption !== captions[row.requestedLanguage] || !row.captionVisible || !row.figureVisible || row.overflow || row.hasTemporaryNotice ||
+      row.caption !== captions[row.requestedLanguage] || !row.captionVisible || !row.figureVisible || !row.headingClear || !row.districtTableFits || row.overflow || row.hasTemporaryNotice ||
       !row.scrolledToSurveillance || !Array.isArray(row.surveillanceValues) || row.surveillanceValues.length !== 3 || row.surveillanceValues.some(value => value !== unavailableLabels[row.requestedLanguage]) ||
       row.oldHealthRequests || row.consoleErrors || row.pageErrors || row.failedRequests || row.writeRequests || row.guardViolations) reject();
   return true;
@@ -58,12 +58,15 @@ async function main(argv = process.argv.slice(2)) {
         stage = 'LANGUAGE'; await page.getByRole('button',{ name: label, exact: true }).click();
         await page.waitForFunction(code => document.documentElement.lang === code, language);
         await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(200);
+        await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
         stage = 'OBSERVATION';
         const row = await page.evaluate(() => ({
           language: document.documentElement.lang, availability: document.querySelector('[data-testid="public-activity-report"]')?.dataset.availability,
           caption: document.querySelector('[data-testid="activity-visit-caption"]')?.textContent,
           surveillanceValues: ['confirmed-cases','outbreak-clusters','forecast'].map(id => document.querySelector('[data-testid="surveillance-' + id + '-value"]')?.textContent),
           overflow: document.documentElement.scrollWidth > innerWidth,
+          headingClear: document.querySelector('main h1').getBoundingClientRect().top >= document.querySelector('nav').getBoundingClientRect().bottom,
+          districtTableFits: (() => { const table = [...document.querySelectorAll('table')].at(-1); return table.scrollWidth <= table.parentElement.clientWidth + 1; })(),
           hasTemporaryNotice: !!document.querySelector('[data-testid="prototype-notice"],[data-testid="demonstration-data-banner"],aside[role="note"]')
         }));
         const clinical = page.getByTestId('surveillance-forecast-value');

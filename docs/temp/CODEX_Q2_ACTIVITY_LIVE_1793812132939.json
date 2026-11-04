@@ -1,0 +1,276 @@
+{
+  "at": "2026-11-04T17:08:31.726Z",
+  "scope": "ANONYMOUS_PUBLIC_ACTIVITY_ONLY",
+  "passed": true,
+  "authAttempts": 0,
+  "observations": [
+    {
+      "language": "en",
+      "availability": "available",
+      "caption": "One visit is one saved consultation record, not a unique patient or a confirmed case.",
+      "surveillanceValues": [
+        "Not available",
+        "Not available",
+        "Not available"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-320-en.png",
+      "at": "2026-11-04T17:08:42.085Z",
+      "requestedLanguage": "en",
+      "viewport": [
+        320,
+        800
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-320-en.png"
+    },
+    {
+      "language": "si",
+      "availability": "available",
+      "caption": "එක් පැමිණීමක් යනු සුරැකි එක් උපදේශන වාර්තාවකි; එය අනන්‍ය රෝගියෙකු හෝ තහවුරු කළ රෝග අවස්ථාවක් නොවේ.",
+      "surveillanceValues": [
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-320-si.png",
+      "at": "2026-11-04T17:08:42.517Z",
+      "requestedLanguage": "si",
+      "viewport": [
+        320,
+        800
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-320-si.png"
+    },
+    {
+      "language": "ta",
+      "availability": "available",
+      "caption": "ஒரு வருகை என்பது சேமிக்கப்பட்ட ஓர் ஆலோசனைப் பதிவு; தனித்த நோயாளியையோ உறுதிசெய்த நோய்நிலையையோ குறிக்காது.",
+      "surveillanceValues": [
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-320-ta.png",
+      "at": "2026-11-04T17:08:42.917Z",
+      "requestedLanguage": "ta",
+      "viewport": [
+        320,
+        800
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-320-ta.png"
+    },
+    {
+      "language": "en",
+      "availability": "available",
+      "caption": "One visit is one saved consultation record, not a unique patient or a confirmed case.",
+      "surveillanceValues": [
+        "Not available",
+        "Not available",
+        "Not available"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-375-en.png",
+      "at": "2026-11-04T17:08:45.735Z",
+      "requestedLanguage": "en",
+      "viewport": [
+        375,
+        812
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-375-en.png"
+    },
+    {
+      "language": "si",
+      "availability": "available",
+      "caption": "එක් පැමිණීමක් යනු සුරැකි එක් උපදේශන වාර්තාවකි; එය අනන්‍ය රෝගියෙකු හෝ තහවුරු කළ රෝග අවස්ථාවක් නොවේ.",
+      "surveillanceValues": [
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-375-si.png",
+      "at": "2026-11-04T17:08:46.117Z",
+      "requestedLanguage": "si",
+      "viewport": [
+        375,
+        812
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-375-si.png"
+    },
+    {
+      "language": "ta",
+      "availability": "available",
+      "caption": "ஒரு வருகை என்பது சேமிக்கப்பட்ட ஓர் ஆலோசனைப் பதிவு; தனித்த நோயாளியையோ உறுதிசெய்த நோய்நிலையையோ குறிக்காது.",
+      "surveillanceValues": [
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-375-ta.png",
+      "at": "2026-11-04T17:08:46.502Z",
+      "requestedLanguage": "ta",
+      "viewport": [
+        375,
+        812
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-375-ta.png"
+    },
+    {
+      "language": "en",
+      "availability": "available",
+      "caption": "One visit is one saved consultation record, not a unique patient or a confirmed case.",
+      "surveillanceValues": [
+        "Not available",
+        "Not available",
+        "Not available"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-1440-en.png",
+      "at": "2026-11-04T17:08:49.716Z",
+      "requestedLanguage": "en",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-1440-en.png"
+    },
+    {
+      "language": "si",
+      "availability": "available",
+      "caption": "එක් පැමිණීමක් යනු සුරැකි එක් උපදේශන වාර්තාවකි; එය අනන්‍ය රෝගියෙකු හෝ තහවුරු කළ රෝග අවස්ථාවක් නොවේ.",
+      "surveillanceValues": [
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක",
+        "ලබාගත නොහැක"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-1440-si.png",
+      "at": "2026-11-04T17:08:51.324Z",
+      "requestedLanguage": "si",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-1440-si.png"
+    },
+    {
+      "language": "ta",
+      "availability": "available",
+      "caption": "ஒரு வருகை என்பது சேமிக்கப்பட்ட ஓர் ஆலோசனைப் பதிவு; தனித்த நோயாளியையோ உறுதிசெய்த நோய்நிலையையோ குறிக்காது.",
+      "surveillanceValues": [
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை",
+        "கிடைக்கவில்லை"
+      ],
+      "overflow": false,
+      "hasTemporaryNotice": false,
+      "scrolledToSurveillance": true,
+      "bottomScreenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-bottom-1440-ta.png",
+      "at": "2026-11-04T17:08:52.651Z",
+      "requestedLanguage": "ta",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "captionVisible": true,
+      "figureVisible": true,
+      "oldHealthRequests": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "failedRequests": 0,
+      "writeRequests": 0,
+      "guardViolations": 0,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q2-activity-129e17cc\\activity-1440-ta.png"
+    }
+  ],
+  "expectedCommit": "05824ae0a518b113cefcf46c386b30653a3017a3",
+  "backendCommit": "05824ae0a518b113cefcf46c386b30653a3017a3",
+  "activityHttpStatus": 200,
+  "totalVisits": 7,
+  "category": "PUBLIC_ACTIVITY_NINE_VIEWS_VERIFIED",
+  "guardViolations": 0,
+  "completedAt": "2026-11-04T17:08:52.939Z"
+}

@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-04T17:10:11.543Z",
+  "expectedCommit": "05824ae0a518b113cefcf46c386b30653a3017a3",
+  "scope": "PUBLIC_ACTIVITY_FILTER_READS_ONLY",
+  "observations": [
+    {
+      "path": "/api/public/consultation-activity?district=Colombo",
+      "status": 200,
+      "suppressed": true,
+      "dailyRowsWithheld": true,
+      "surveillanceUnavailable": true,
+      "disclosureSafe": true
+    },
+    {
+      "path": "/api/public/consultation-activity?mode=simulation",
+      "status": 400,
+      "rejected": true
+    }
+  ],
+  "passed": true
+}
