@@ -54,3 +54,13 @@ URL https://medisync.chamodtharusha.com.lk/public-health. In-app browser rendere
 ## Q1 public browser capture 2026-11-04T06:13:55.852Z
 
 Six actual Chromium observations: desktop1280x800/mobile375x667, EN/SI/TA. Receipt docs/temp/CODEX_Q1_PUBLIC_BROWSER_20261104_86fb4574.json; screenshots outside repo/OneDrive at C:\Users\chamo\AppData\Local\medisync\evidence\Q1-public-86fb4574. All API/status/layout/console outcomes remain as measured in receipt; Q1 removal still blocked. No role login.
+
+## Q2 actual API 2026-11-04T06:21:49.378Z
+
+Backend /health200 exposes exact873e321f6f017c01d1c6c9adf7668c3db29a559a (deploy receipt docs/temp/CODEX_Q2_BACKEND_DEPLOY_20261104_873e321.json). Public readonly response receipt docs/temp/CODEX_Q2_PUBLIC_API_20261104_873e321.json. No authentication, ingestion, clinical mutation, direct Atlas/Redis, restart or settings operation.
+
+[{"at":"2026-11-04T06:21:48.779Z","path":"/api/public/health-stats","status":503,"error":"PUBLIC_HEALTH_UNAVAILABLE","isSimulatedDemo":false,"dataNull":true},{"at":"2026-11-04T06:21:49.091Z","path":"/api/public/health-stats?mode=simulation","status":400,"error":"INVALID_HEALTH_FILTER","isSimulatedDemo":false,"dataNull":false},{"at":"2026-11-04T06:21:49.376Z","path":"/api/public/health-stats?rangeDays=366","status":400,"error":"INVALID_HEALTH_FILTER","isSimulatedDemo":false,"dataNull":false}]
+
+## Q2 Chromium safe-degraded UI 2026-11-04T06:27:44.699Z
+
+Exact873e321backend/Vercelverified. SixEN/SI/TA desktop1280/mobile375 observations, receipt docs/temp/CODEX_Q2_PUBLIC_BROWSER_20261104_4da806b1.json, screenshots outside repo/OneDrive C:\Users\chamo\AppData\Local\medisync\evidence\Q2-public-4da806b1. API503 is an observed unavailable boundary, not positive data/durability PASS. Measured script/runtime/console outcomes retained; no login, clinical mutation or provider.

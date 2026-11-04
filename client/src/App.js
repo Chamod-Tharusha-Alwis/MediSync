@@ -9,7 +9,6 @@ import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
-import PrototypeNotice from './components/common/PrototypeNotice';
 
 // ─── Lazy-loaded route components ──────────────────────────────────────────
 // Each import() creates a separate JS chunk that is only downloaded when
@@ -114,7 +113,6 @@ function AppRoutes() {
 
   return (
     <div className="relative min-h-screen text-slate-200 overflow-x-hidden">
-      <PrototypeNotice />
       <AnimatedBackground />
       <IdleTimer />
       <NotificationToast />

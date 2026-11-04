@@ -1,6 +1,8 @@
 'use strict';
 // Construct response objects; query projection alone is not a privacy boundary.
-const isSyntheticRecord = row => ['isSynthetic','isDemoData','isDemoAccount'].some(key => row?.[key] === true) || row?.datasetVersion === 'MEDISYNC_UNIV_DEMO_V2';
+const isBootstrapPlaceholder = row => [row?.fullName,row?.name].some(value => typeof value === 'string' &&
+  /^Synthetic Demo (?:Doctor|Hospital|Pharmacy)$/i.test(value.trim().replace(/^(?:(?:dr\.?|doctor)\s+)+/i,'')));
+const isSyntheticRecord = row => ['isSynthetic','isDemoData','isDemoAccount'].some(key => row?.[key] === true) || row?.datasetVersion === 'MEDISYNC_UNIV_DEMO_V2' || isBootstrapPlaceholder(row);
 const text = value => typeof value === 'string' ? value : '';
 const number = value => typeof value === 'number' && Number.isFinite(value) ? value : 0;
 const publicId = value => typeof value === 'string' ? value : value && typeof value.toHexString === 'function' ? value.toHexString() : '';
@@ -15,7 +17,7 @@ function directoryDto(kind, row = {}) {
     Object.assign(result, { name: text(row.name), district: text(row.district), address: text(row.address), pickupLocationAddress: text(row.pickupLocationAddress) });
     if (kind === 'hospital') Object.assign(result, { type: text(row.type), emergencyHotline: text(row.emergencyHotline), website: text(row.website) });
   }
-  if (row.isSynthetic === true || row.isDemoData === true) Object.assign(result, { isSynthetic: true, syntheticLabel: 'Synthetic University Demo Profile — Not a verified clinical service' });
+  if (isSyntheticRecord(row)) Object.assign(result, { isSynthetic: true, syntheticLabel: 'Synthetic University Demo Profile — Not a verified clinical service' });
   return result;
 }
 function profileDto(row) {

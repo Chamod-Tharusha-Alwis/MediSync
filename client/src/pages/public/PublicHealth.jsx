@@ -4,7 +4,7 @@ import { MapContainer, GeoJSON } from 'react-leaflet';
 import DiseaseCombobox from '../../components/DiseaseCombobox';
 import 'leaflet/dist/leaflet.css';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { FiTrendingUp, FiActivity, FiMap, FiInfo, FiLayers, FiAlertTriangle } from 'react-icons/fi';
+import { FiTrendingUp, FiActivity, FiMap, FiLayers, FiAlertTriangle } from 'react-icons/fi';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
 import api from '../../api/axiosInstance';
@@ -142,7 +142,17 @@ const PublicHealth = () => {
         const response = await api.get('/public/health-stats', {
           params: filters, signal: controller.signal
         });
-        if (active) setData(response.data.data);
+        const stats = response.data?.data;
+        const flags = ['isSimulatedDemo', 'isSynthetic', 'isDemoData', 'isSimulation', 'isSyntheticUniversityData', 'isUniversityDemo'];
+        const markers = ['demoBatchId', 'syntheticSeedBatch', 'datasetVersion', 'datasetBatch', 'testRunId'];
+        if (!stats || typeof stats !== 'object' || Array.isArray(stats) ||
+            flags.some(key => stats[key] !== undefined && stats[key] !== null && stats[key] !== false) ||
+            markers.some(key => Object.prototype.hasOwnProperty.call(stats, key))) {
+          const unavailable = new Error('PUBLIC_HEALTH_PROVENANCE_UNVERIFIED');
+          unavailable.response = { status: 503 };
+          throw unavailable;
+        }
+        if (active) setData(stats);
       } catch (err) {
         if (!active) return;
         if (err.response && err.response.status === 429) {
@@ -301,38 +311,6 @@ const PublicHealth = () => {
         {/* Content */}
         {!error && (
           <div className="space-y-6">
-            {/* Demonstration Data Banner (Requirement R2) */}
-            {(data?.isSimulatedDemo || data?.isSynthetic) && (
-              <aside
-                role="status"
-                aria-live="polite"
-                data-testid="demonstration-data-banner"
-                className="glass-panel p-4 sm:p-5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/10 backdrop-blur-md text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20"
-              >
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div className="p-2.5 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-300 shrink-0">
-                    <FiInfo className="text-xl sm:text-2xl" aria-hidden="true" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-bold text-amber-300 text-sm sm:text-base tracking-wide">
-                        {t("public.simulatedNoticeTitle", "Demonstration Data Active")}
-                      </h2>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                        {t("public.simulatedBadge", "DEMONSTRATION")}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed">
-                      {t(
-                        "public.simulatedNotice",
-                        "Demonstration Data Active — This dashboard currently displays synthetic epidemiological data for simulation and evaluation purposes."
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </aside>
-            )}
-
             {/* Active Regional Outbreak Clusters Card */}
             <div className="glass-panel p-4 sm:p-5 rounded-xl border border-amber-500/30 bg-slate-800/60 backdrop-blur-md" data-testid="active-clusters-section">
               <div className="flex items-center justify-between mb-3">

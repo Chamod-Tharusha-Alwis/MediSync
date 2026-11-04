@@ -73,12 +73,6 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-lg border border-slate-700/50 relative bg-[#0b1120]">
-      {alerts.some(a => a.isSimulation || a.isSyntheticUniversityData || a.scenarioId) && (
-        <div className="absolute top-2 left-2 right-2 z-[1000] bg-amber-500/90 backdrop-blur-md text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between shadow-lg border border-amber-400">
-          <span>⚠️ SIMULATION MODE: Displaying synthetic outbreak scenarios.</span>
-          <span className="text-[10px] uppercase tracking-wider font-extrabold bg-slate-950 text-amber-400 px-2 py-0.5 rounded">NOT OFFICIAL PUBLIC DATA</span>
-        </div>
-      )}
       <MapContainer
         center={center}
         zoom={zoom}
@@ -165,7 +159,7 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
                     )}
                   </div>
 
-                  {(alert.isSimulation || alert.isSyntheticUniversityData || alert.scenarioId) && (
+                  {(alert.isSimulation || alert.isSyntheticUniversityData || alert.scenarioId || alert.syntheticSeedBatch || alert.demoBatchId) && (
                     <div className="mt-2.5 pt-2 border-t-2 border-dashed border-amber-300 bg-amber-50 -mx-1 -mb-1 p-1.5 rounded-b">
                       <span className="text-[10px] font-black text-amber-900 tracking-wide uppercase block text-center">
                         ⚠️ SIMULATION SCENARIO — DEMO ONLY

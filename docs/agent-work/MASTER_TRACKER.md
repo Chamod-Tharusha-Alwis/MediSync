@@ -4,8 +4,8 @@ Started 2026-11-04T05:52:16.227Z. Source main f825df43c8d42032e1cf77447de85b205a
 
 | ID | Item | Owner | Status | Commit | Pushed (UTC) | Deploy confirmed | Live verified | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Q1 | Live recheck and truthful banner removal | C/F | BLOCKED | Baseline f825df4 | — | Vercel f825df4 READY; Render SHA NOT VERIFIED | Public GET 200, zero cases, demo flag true | Removing provenance before Q2 could misrepresent simulated numbers. |
-| Q2 | Durable real-only public statistics | A/B | LOCAL_DONE | — | — | NOT VERIFIED | NOT VERIFIED |  |
+| Q1 | Live recheck and truthful banner removal | C/F | LOCAL_DONE | Baseline f825df4 | — | Vercel f825df4 READY; Render SHA NOT VERIFIED | Public GET 200, zero cases, demo flag true | Removing provenance before Q2 could misrepresent simulated numbers. |
+| Q2 | Durable real-only public statistics | A/B | BLOCKED | 873e321f6f017c01d1c6c9adf7668c3db29a559a | 2026-11-04T06:19:36Z | Backend health200 exactSHA; Vercel alias exactSHA READY | Safe unavailable503; public simulation/range400 | Positive trusted-data/restart acceptance NOT VERIFIED; no data repair authorized. |
 | Q3 | Doctor consultation carry-over verification | A/B/C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q4 | C4 definition and acceptance reconciliation | A/B/C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q5 | C5 disease and drug coverage | A/B | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |

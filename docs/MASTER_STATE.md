@@ -1,5 +1,14 @@
 # MediSync Master State
 
+## Completion-run checkpoint — Q1 local source gate, 4 November 2026
+
+- Q2 is deployed as `873e321f6f017c01d1c6c9adf7668c3db29a559a`: both exact-head CI workflows passed; Vercel production alias and backend `/health` identify that exact commit. Public statistics return503/data:null; simulation-mode and out-of-range requests400. Actual503cause, trusted-data/latency and ML-restart comparison remain NOT VERIFIED. Q2 functional acceptance is BLOCKED, with the required real-only-or-unavailable boundary live. No data repair/restart performed.
+- Q1 source is LOCAL_DONE: obsolete global prototype/university/simulated notices, their render sites, layout padding and15unused locale keys retired. Clinical/statistical cautions and inline per-record provenance remain. PublicHealth rejects flagged simulated/batch payloads instead of relabeling them as national data. Narrow bootstrap-placeholder publication exclusion does not change accounts or login eligibility. All15 protected files and ledger entries unchanged.
+- Final Q1 offline regression **2,554PASS /0FAIL /0SKIP**, exit0, sourceFrozen/15pins; `scratch/clinical-offline-zZzRkF/summary.json`. Final buildexit0,115clinical modules/demoImported=false, existingwarnings only. Focused client50PASS and backend58PASS.20obsolete banner cases retired and20rendered replacements added; client total remains477, backend adds10publication checks. Worker hit usage limit after partial source edits; Lead reviewed/completed the gate and removed the new unused icon import.
+- Q1 deployment and route/language acceptance are pending. Existing live Q2 screenshots prove safe degraded public UI at1280/375 EN/SI/TA with no counts or crash, not positive data acceptance; one observed HTTP503 console error remains explicit. Receipts and screenshots are outside the committed source as tracked in the agent-work logs.
+- Fresh operator provider report: Resend0/Brevo0, computed starting combined0, cap30. No login or email in this run yet. One login per needed role is authorized; no credential values are printed. Clinical save/dispensing, record repair, OTP delivery beyond the approved read-only phase, seed/ingest, cache clears and production settings remain separately gated.
+- Authoritative queue and measured action log: `docs/agent-work/MASTER_TRACKER.md` and `LIVE_VERIFICATION_LOG.md`. Continue Q1 live sign-off, then Q3 in sequence; C4's historical false-positive verifier still requires Q4 repair. Clinical production readiness remains unestablished.
+
 ## Completion-run checkpoint — 4 November 2026, Q2 local gate
 
 - Authoritative current queue: `docs/agent-work/MASTER_TRACKER.md`. Latest operator master prompt authorizes sequential main commits/pushes; previous push holds below are historical. Q1 public baseline/truthfulness blocker recorded in `eeedaa1`, pushed with both exact-head CI workflows green and Vercel production READY.

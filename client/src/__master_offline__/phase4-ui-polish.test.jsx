@@ -2,8 +2,6 @@ import React from 'react';
 import { render, screen, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { formatDoctorName, stripDoctorPrefix } from '../utils/doctorName';
-import PrototypeNotice from '../components/common/PrototypeNotice';
-import { LanguageProvider } from '../i18n/LanguageContext';
 import LoginShell from '../components/common/LoginShell';
 import DoctorLogin from '../pages/doctor/Login';
 import NotificationBell from '../components/common/NotificationBell';
@@ -39,7 +37,6 @@ jest.mock('react-toastify', () => ({
 }));
 
 describe('Phase 4 — UI & Text Polish Offline Acceptance Suite', () => {
-  const originalEnv = process.env.REACT_APP_SHOW_PROTOTYPE_BANNER;
 
   beforeEach(() => {
     localStorage.clear();
@@ -48,7 +45,6 @@ describe('Phase 4 — UI & Text Polish Offline Acceptance Suite', () => {
 
   afterEach(() => {
     cleanup();
-    process.env.REACT_APP_SHOW_PROTOTYPE_BANNER = originalEnv;
   });
 
   describe('1. Doctor Name Normalization Utility (Client)', () => {
@@ -100,42 +96,6 @@ describe('Phase 4 — UI & Text Polish Offline Acceptance Suite', () => {
       expect(stripDoctorPrefix('Dr. Dr. Chamod Alwis')).toBe('Chamod Alwis');
       expect(stripDoctorPrefix('Drew Barrymore')).toBe('Drew Barrymore');
       expect(stripDoctorPrefix('Drake Graham')).toBe('Drake Graham');
-    });
-  });
-
-  describe('2. Prototype Banner Environment Gating', () => {
-    test('returns null when REACT_APP_SHOW_PROTOTYPE_BANNER is unset', () => {
-      delete process.env.REACT_APP_SHOW_PROTOTYPE_BANNER;
-      const { container } = render(
-        <LanguageProvider>
-          <PrototypeNotice />
-        </LanguageProvider>
-      );
-      expect(screen.queryByRole('status')).toBeNull();
-      expect(container.firstChild).toBeNull();
-    });
-
-    test('returns null when REACT_APP_SHOW_PROTOTYPE_BANNER is false', () => {
-      process.env.REACT_APP_SHOW_PROTOTYPE_BANNER = 'false';
-      const { container } = render(
-        <LanguageProvider>
-          <PrototypeNotice />
-        </LanguageProvider>
-      );
-      expect(screen.queryByRole('status')).toBeNull();
-      expect(container.firstChild).toBeNull();
-    });
-
-    test('renders banner when REACT_APP_SHOW_PROTOTYPE_BANNER is true', () => {
-      process.env.REACT_APP_SHOW_PROTOTYPE_BANNER = 'true';
-      render(
-        <LanguageProvider>
-          <PrototypeNotice />
-        </LanguageProvider>
-      );
-      const banner = screen.getByRole('status');
-      expect(banner).toBeInTheDocument();
-      expect(banner).toHaveTextContent(/synthetic data only/i);
     });
   });
 

@@ -9,7 +9,6 @@ import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
-import UniversityDemoNotice from './components/common/UniversityDemoNotice';
 import UniversityRuntimeBoundary from './components/common/UniversityRuntimeBoundary';
 
 const demoRuntime = process.env.REACT_APP_UNIVERSITY_RUNTIME === 'true';
@@ -118,12 +117,11 @@ function AppRoutes() {
   const permittedDemoPage = ['/','/select-role','/doctor/select-role','/doctors','/hospitals','/pharmacies','/public-health'].includes(location.pathname) || /^\/(admin|doctor|patient|pharmacy|hospital)\/(login|dashboard)$/.test(location.pathname);
 
   return (
-    <div className={`relative min-h-screen text-slate-200 overflow-x-hidden${process.env.REACT_APP_MEDISYNC_UNIVERSITY_DEMO === 'true' ? ' pb-40 sm:pb-28' : ''}`} style={{ paddingBottom: process.env.REACT_APP_MEDISYNC_UNIVERSITY_DEMO === 'true' ? 'var(--medisync-demo-notice-height, 160px)' : undefined }}>
+    <div className="relative min-h-screen text-slate-200 overflow-x-hidden">
       <AnimatedBackground />
       <IdleTimer />
       <NotificationToast />
       <BanNotice />
-      <UniversityDemoNotice />
 
       <ErrorBoundary key={location.pathname}>
         <Suspense fallback={<PageLoader />}>

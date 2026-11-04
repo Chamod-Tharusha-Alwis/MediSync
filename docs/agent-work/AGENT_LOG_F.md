@@ -15,3 +15,15 @@ Actual PublicHealth rendered with inert API and Leaflet event interface: suppres
 ## 2026-11-04T06:16:39.554Z — Q2 final gate
 
 Initial combined2,543PASS/build0 preceded an independently found UI forecast fallback issue. New actual component negative reproduced2PASS/1FAIL; source corrected to respect explicit forecast:[] instead of recomputing calendar zeros. Focused client13PASS, final combined2,544PASS/0FAIL/0SKIP/sourceFrozen/15pins/exit0 (scratch/clinical-offline-xT14lp), final buildexit0. ML profile27 includes actual deprecated-script exit-before-HTTP test. No live Q2 acceptance yet.
+
+## 2026-11-04T06:20:33.743Z — Q2 push
+
+Commit873e321f6f017c01d1c6c9adf7668c3db29a559a, explicit25paths, commit/pull-rebase/pushmain all exit0; push captured2026-11-04T06:19:36Z. All15protected files/ledger unchanged. Exact staged scan3reviewed benign matches, no confirmed credentials. Await exact-head CI/Vercel/Renderrevision and actual read-only response before acceptance. No login/email or production clinical write.
+
+## 2026-11-04T10:54:36.901Z — Q2 deployed safe-unavailable browser evidence
+
+Backendhealth200 exact873e321 and Vercelproductionalias873e321 READY. BothCI41784771282/41784771291 success. Public default503/data:null; mode=simulation and range366 return400. Six actual Chromium public checks EN/SI/TA at1280/375 showed alert, no displayed case metric, no demo banner, no overflow or unhandled page error; one console error per viewport corresponds to observed failed HTTP503, so this is NOT a clean-network/positive-data PASS. No requests failed at transport and0guarded writes. Receipt docs/temp/CODEX_Q2_PUBLIC_BROWSER_20261104_4da806b1.json, screenshots outside repo/OneDrive. Data/rootcause/restart acceptance remains BLOCKED; no source/metadata trust is fabricated.
+
+## 2026-11-04T11:04:19.811Z — Email/auth preparation boundary
+
+Operator reports Resend0 andBrevo0, computed initial combined0 undercap30. No sends/logins by this run yet. The two previously approved ignored local credential sources are present; only presence/format was inspected and no values printed or copied. Existing strict read-only verification guard remains unchanged; any later permitted login must be a separately scoped one-shot authentication phase before read-only role navigation. No clinical write permission is inferred.

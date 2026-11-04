@@ -80,3 +80,21 @@ The committed bootstrap constructs active+verified Hospital (`bootstrapSynthetic
 The bootstrap pharmacy staff is role pharmacist (:348), whereas public facility publication requires pharmacy_admin; that particular freshly bootstrapped staff alone does not qualify its facility for the public directory. If an eligible unmarked admin already exists, facility flag-only publication is still the relevant guard. This is a source condition, not evidence of actual production presence.
 
 Lead disposition: record the unmarked bootstrap-profile path as a Q1/Q9 source finding with production exposure NOT VERIFIED. It is not part of the frozen Q2 candidate and must not be represented as an observed live record or as proof that all synthetic directories are excluded. Agent C task concluded without source edits.
+
+## 2026-11-04T06:23:53.238Z — Q1 resumed
+
+Plan: remove active temporary/prototype/simulation notice components, render sites and unused locale keys/tests/styles; keep case/batch provenance and statistical/clinical cautions. Public data now real-only-or-unavailable from exact deployed873e321. Add defensive rejection of flagged simulated public payloads. Revisit narrowly identifiable bootstrap publication leakage without changing accounts or login rules. No clinical writes or provider operation.
+
+## 2026-11-04T10:54:36.901Z — Q1 worker limit and Lead takeover
+
+Frontend worker made the scoped partial edits but terminated at usage limit before a completion receipt; do not attribute a finished review/test gate to that worker. Lead inspected the full diff and executed six actual client suites:50PASS/0FAIL/exit0. PrototypeNotice/UniversityDemoNotice components and exclusive tests removed; render sites/height padding/imports/15temporary locale keys removed; runtime capability guard retained. Floating map ribbon removed while per-alert popup provenance remains and now recognizes syntheticSeedBatch/demoBatchId. PublicHealth rejects flagged demo/batch responses into unavailable before any national counts. Existing Q2 suppression/forecast logic preserved. Obsolete banner cases retired:5prototype+11university+3phase4+1old public-banner=20;20replacement rendered absence/rejection/per-record-label cases added. This is requested component retirement, not skipped failing security assertions.
+
+Lead-owned server public eligibility also identifies only the exact default bootstrap professional placeholder names; does not mutate records or authentication flags. Actual production predicate/endpoint and unchanged accountState tests are exercised: focused four backend suites58PASS/exit0. No protected file changed. Full final regression/build now running; no Q1 push/login/provider call yet.
+
+### 2026-11-04T11:04:19.811Z — Final Lead Q1 gate
+
+All final source frozen:2,554PASS/0FAIL/0SKIP,exit0,scratch/clinical-offline-zZzRkF; buildexit0,115modules/demoImported=false, existingwarnings only. First Q1 full also2554PASS; removed unused FiInfo introduced by banner deletion, then repeated final gate. All15protected pins/ledger unchanged. New backend publication tests10cases exercise real eligibility/controller/DTO/accountState with inert DB: default placeholders hidden, ordinary names preserved, login account state unchanged. No production records modified. Source ready for explicit-path commit/push; live Q1 sign-off not yet claimed.
+
+### Lead exact-candidate hygiene 2026-11-04T11:05:27.198Z
+
+Thirty explicit paths, four requested component/exclusive-test deletions, no unrelated files. Staged diffcheck0. Scanner5matches are only process.env references for public legacy React banner flags in notice-removal tests, no credential value. Protected15/15unchanged; index contains no private credential/evidence/runtime files.

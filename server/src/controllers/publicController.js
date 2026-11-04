@@ -117,7 +117,7 @@ const isPublicVerifiedDoctor = (doc, bannedDoctorIdSet = new Set(), options = {}
   const isSyntheticOrDemo =
     doc.isSynthetic === true ||
     doc.isDemoAccount === true ||
-    doc.isDemoData === true;
+    doc.isDemoData === true || isSyntheticRecord(doc);
 
   if (isSyntheticOrDemo) {
     const allowDemo =

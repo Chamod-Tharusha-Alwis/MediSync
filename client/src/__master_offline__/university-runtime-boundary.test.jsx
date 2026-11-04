@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import Boundary, { qualifiedCapabilities } from '../components/common/UniversityRuntimeBoundary';
 import api from '../api/axiosInstance';
 jest.mock('../api/axiosInstance',()=>({get:jest.fn()}));
-jest.mock('../components/common/UniversityDemoNotice',()=>()=>null);
 const capability={version:'university-readonly-v1',mode:'university-demo',clinicalWrites:false,uploads:false,exports:false,registration:false,providers:false};
 afterEach(()=>{delete process.env.REACT_APP_UNIVERSITY_RUNTIME;jest.clearAllMocks();});
 test('non-demo application keeps the existing route tree without a demo capability request',()=>{render(<Boundary><p>Application route</p></Boundary>);expect(screen.getByText('Application route')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();});

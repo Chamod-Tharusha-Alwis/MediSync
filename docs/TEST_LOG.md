@@ -1,5 +1,12 @@
 # MediSync Test Log
 
+## Q1 temporary notice retirement — final local gate, 2026-11-04
+
+- Actual full offline:2,554PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins unchanged; `scratch/clinical-offline-zZzRkF/summary.json`. Backend1939/92suites; client477/53; emailPDF31; MLscoring40; actualFlask27; root40. Final buildexit0 with only existingwarnings,115clinical modules/demoImported=false.
+- Focused six client suites50PASS,exit0; focused four backend suites58PASS,exit0. Tests execute actual shells/React state/controller predicates/DTO and accountState with inert boundaries.20obsolete banner cases retired under explicit Q1 component-removal instruction,20replacement absence/provenance cases added. No skipped tests; no claim that mocked maps establish real persistence.
+- The first Q1 full run also passed2554, but build identified a newly unused icon import; removed it, then repeated full+build above against final bytes. Worker usage-limit failure is recorded; Lead completed tests and review, not a fabricated worker sign-off.
+- Q2 live against873e321: exact backendhealth200 and Vercel alias verified; publicstats503/data:null, invalid mode/range400. Chromium EN/SI/TA at1280/375 rendered unavailable with no counts, no overflow or unhandled page error; one expectedHTTP503console error, no transport failures/blocked writes. Full data/rootcause/restart acceptance BLOCKED. Source/fixtures were not connected directly to Atlas/Redis, and no production clinical/provider mutation was performed.
+
 ## Q2 durable public statistics — final local gate, 2026-11-04
 
 - `node scripts/run_offline_tests.js`: **2,544PASS /0FAIL /0SKIP**, exit0; all15pins match, sourceFrozen=true; receipt `scratch/clinical-offline-xT14lp/summary.json`, Nodev26.4.0. Backend1929/91suites; client477/53; emailPDF31; MLscoring40; actualFlask27; root40. No live clinical acceptance inferred.
