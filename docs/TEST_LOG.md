@@ -1,5 +1,11 @@
 # MediSync Test Log
 
+## Q4 C4 verifier correction — final local gate, 2026-11-04
+
+- Actual original false-success repro:2inert TIMEOUT requests,0network,passed=true/exit0. Receipt `docs/temp/CODEX_Q4_FALSE_SUCCESS_REPRO_20261104_7ac08c.json`; historical live report unchanged.
+- Corrected actual verifier:41focused PASS/0FAIL,exit0, with30new behavior cases and11previously unregistered AI-resilience cases. Both health statuses/readiness and expected backend revision now participate; malformed/large bodies, old/missing revisions, TLS/DNS/timeout, retry limits, private-path/duplicate ledger and CLI sanitized-failure receipt paths tested. Source-string disclaimer indicator is explicitly informational, not browser acceptance.
+- Full `node scripts/run_offline_tests.js`:2,595PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins; `scratch/clinical-offline-VldRtm/summary.json`. Backend1980/94suites; client477/53; emailPDF31; MLscoring40; actualFlask27; root40. Buildexit0 with existingwarnings,115clinical modules/demoImported=false. HostNodev26.4.0. No actual live clinical inference, login, database connection, provider send, migration or record write.
+
 ## Q1 temporary notice retirement — final local gate, 2026-11-04
 
 - Actual full offline:2,554PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins unchanged; `scratch/clinical-offline-zZzRkF/summary.json`. Backend1939/92suites; client477/53; emailPDF31; MLscoring40; actualFlask27; root40. Final buildexit0 with only existingwarnings,115clinical modules/demoImported=false.

@@ -50,6 +50,9 @@ _Updated: 2026-11-04. Agent: single-agent (Orchestrator). Repo HEAD: `86d5876`. 
 | Step 0 commit | ✅ Done | Commit `53856d8` (CI green runs 41731257226 & 41731257137) |
 
 ### W1 — C4 Doctor AI Resilience
+
+**Independent correction, 4 November 2026:** the old live receipt recorded two health TIMEOUTs yet passed=true; its verifier ignored health outcomes. Preserve the table below as historical reported work, not accepted live proof. Actual current application source includes f825df4. The repaired verifier is scoped only to read-only health and local contracts; Q4 clinical/browser acceptance remains NOT VERIFIED. Focused41PASS/full2595PASS/build0; current queue is docs/agent-work/MASTER_TRACKER.md.
+
 | Sub-task | Status | Notes |
 |----------|--------|-------|
 | Verify `clinicalValidation not_established` disclaimer visible | ✅ Done | Added `data-testid="clinical-validation-disclaimer"` & badge `clinicalValidation: not_established` to NewConsultation.jsx |

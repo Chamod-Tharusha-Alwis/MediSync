@@ -96,3 +96,7 @@ Frozen reviewed file bindings:
 ### Lead staged hygiene review 2026-11-04T06:19:11.365Z
 
 Exact Q2 staged diff scanner returned3 reviewed matches, not exposed credentials: runtimeHealth.js:3/:7 are process.env parameter references for the validated public Render commit; publicHealthMongo.test.js:147 is an inert password-field sentinel in a cache DTO-stripping negative, not a login/provider credential. No raw literal printed. Kept the meaningful privacy assertion. Zero confirmed credential values in the candidate; no claim about whole repository/history. git diff --cached --check exit0; all15 protected files and ledger unchanged.
+
+## 2026-11-04T11:33:09.500Z — Lead sequential security review, Q4
+
+No additional sub-agent signoff is claimed. Lead inspected actual request adapter and tests: fixed HTTPS targets, TLSverificationtrue,64KiBresponse cap,65sabsolute/idledeadline, maxone60sdelayed cold-start retry, DNS/TLSno retry, sanitized fixed categories, no raw response/error/identifier, no env credential load, unique wx receipt, invalid/private/duplicate manifest rejection. Existing read-only guard remains installed/unmodified.41focused and2595combined pass. Runtime/clinical inference and role UI are deliberately excluded from the health verdict.

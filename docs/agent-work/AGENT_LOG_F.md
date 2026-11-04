@@ -27,3 +27,15 @@ Backendhealth200 exact873e321 and Vercelproductionalias873e321 READY. BothCI4178
 ## 2026-11-04T11:04:19.811Z — Email/auth preparation boundary
 
 Operator reports Resend0 andBrevo0, computed initial combined0 undercap30. No sends/logins by this run yet. The two previously approved ignored local credential sources are present; only presence/format was inspected and no values printed or copied. Existing strict read-only verification guard remains unchanged; any later permitted login must be a separately scoped one-shot authentication phase before read-only role navigation. No clinical write permission is inferred.
+
+## 2026-11-04T11:12:58.826Z — Q1 delivery
+
+Exact30paths committed800d87abbf1773645fb83bd9efcf6f1b526e9df4; pull-rebase up-to-date and pushmain exit0, captured2026-11-04T11:05:59Z. Backendhealth200 exposes exactSHA and VercelproductiondeploymentREADY at thatSHA. CI still being checked. All15protected unchanged. Public role/login page checks start without authentication; fresh provider re-confirmation requested because earlier0/0 preceded pause. No login/email yet.
+
+## 2026-11-04T11:29:40.392Z — Q1 language qualification
+
+Initial96anonymous observations included60without a local switcher; not all were requested-language passes. Follow-up actual Home selector thennavigation:60/60correct requested language/no banner/nooverflow at375/1280,0blockedwrites; docs/temp/CODEX_Q1_PERSISTED_LANGUAGE_ROUTES_20261104_4d993b3f.json. Combined public-route coverage16routes/3languages/2widths qualified, with10missing per-route language controls still a Q7 defect. Authenticated role check remains pending fresh provider report; no login/email.
+
+## 2026-11-04T11:48:18.967Z — Q1 authenticated check stopped
+
+Fresh operator provider total was Resend0/Brevo0, cap30. Backend health and Vercel READY identified exact800d87a before the one Doctor attempt. Receipt docs/temp/CODEX_Q1_ROLE_DOCTOR_20261104114230933.json, SHA256 1fe6cec43a9297ce5beb6571fa5c5446350530cedb04d36034f718ceda635899: one login HTTP200, zero clinical saves/OTP submissions, no dashboard observations, generic ROLE_BROWSER_STEP_FAILED_SANITIZED,90 boundary rejections and0 strict-guard violations. Authentication success is observed; authenticated UI acceptance FAIL. The receipt does not retain failing stage/request categories, so the actual navigation failure and blocked request targets are NOT VERIFIED. No retry or other role attempted. At most1 login-alert email is reserved; delivery/current provider total NOT VERIFIED. Owned browser/context close was awaited by the recorded finally path; server session was not revoked. Preserve the one-shot marker; renewed Doctor login needs separate approval.

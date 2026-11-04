@@ -14,3 +14,6 @@
 
 - 2026-11-04T11:04:19.811Z — Q1 removes temporary source notices, not record provenance or clinical/statistical warnings. Explicitly reject any flagged simulated public payload.20obsolete notice cases replaced by20behavioral absence/rejection cases; all unrelated assertions retained.
 - 2026-11-04T11:04:19.811Z — Derived public-placeholder eligibility is deliberately narrower than substring matching. It hides only the bootstrap placeholder shapes without setting synthetic flags that would break legitimate production login. No record mutation.
+
+- 2026-11-04T11:20:33.526Z — Use the actual Home language selector then navigate for pages without their own selector; distinguish persisted translated rendering from a working local switcher. No direct storage mutation. Missing widgets remain Q7, not a hidden PASS.
+- 2026-11-04T11:20:33.526Z — Proceed with independent Q4 verifier repair while Q1/Q3 await their external gates. A source-string check cannot count as live clinical or browser acceptance. Current C4 verifier must fail closed on health/timeouts and preserve historical evidence.

@@ -21,3 +21,17 @@ Full regression/build, deployment, actual production query latency, storage inde
 ## 2026-11-04T11:04:19.811Z — Q1 publication boundary
 
 Lead changed publicDto derived eligibility for exact default bootstrap placeholder professional names, reused by actual doctor/hospital publication. No account/model/security flags are written; actual assertAccountState still accepts the same account. Focused public suites58PASS; final combined2554PASS/15pins/build0. Existing actual production profile presence remains NOT VERIFIED; this is source defense, not a database repair.
+
+## 2026-11-04T11:20:33.526Z — Q4 claimed
+
+Plan: reproduce the actual C4 verifier false-success against inert HTTP boundaries; require both ready health results and exact expected backend revision; bound response/timeout/retry, sanitize receipts, preserve existing guard and old receipt. Register actual existing AI resilience suite plus new behavioral verifier negatives. Narrow resulting verdict to read-only health/local contracts, leaving real AI/clinical/browser acceptance NOT VERIFIED. No production inference POST, login, clinical write, protected edit or provider.
+
+## 2026-11-04T11:29:40.392Z — Q4 focused repair
+
+Actual old verifier reproduced false-success with2inert healthTIMEOUTs, reportedpassed=true/exit0,0network; receipt docs/temp/CODEX_Q4_FALSE_SUCCESS_REPRO_20261104_7ac08c.json. Historical docs/live_c4_ai_resilience_log.json unchanged. Repaired verifier requires explicit expected backend revision and both200/ready responses; pins/local helper contracts alone cannot pass. Verdict narrowed to READ_ONLY_HEALTH_AND_LOCAL_CONTRACTS, rendered Doctor/real inference remain NOT VERIFIED/NOT RUN. Fixed targets/TLS,64KiBbody bound,65sabsolute+idledeadline, maxone60sdelayed cold-startretry, TLS/DNSnoretry, structured sanitized categories, uniqueCODEXreceipt under docs/temp. No raw response/exception/credential stored.
+
+New30behavioral verifier cases plus11previously unregistered actual aiResilience cases:2suites41PASS,0FAIL,exit0. Tests run real verifier logic/local helpers with inert HTTP/filesystem receipt boundaries, including old false-success regression, wrong/missing revision, statuses500/502/503/504/403/302, malformed/oversized response, TLS/DNS/absolute timeout, invalidmanifest/privatepath, CLI failure/sanitization. Existing guard unchanged. Full/build running; no protected edit, login, provider, clinicalwrite, inferencePOST or productiondata operation.
+
+### 2026-11-04T11:33:09.500Z — Q4 final local gate
+
+Final combined2,595PASS/0FAIL/0SKIP/15pins/sourceFrozen/exit0, scratch/clinical-offline-VldRtm/summary.json; buildexit0,115modules/demoImported=false/existingwarnings. Protected files and ledger unchanged. All41focused cases passed;30new plus11existing newlyregistered. Source ready for commit/push and scoped read-only health check; full Doctor/browser/clinical inference is NOT VERIFIED. No source/clinical/patient record writes beyond approved engineering.

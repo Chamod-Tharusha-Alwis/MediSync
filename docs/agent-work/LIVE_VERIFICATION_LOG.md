@@ -64,3 +64,15 @@ Backend /health200 exposes exact873e321f6f017c01d1c6c9adf7668c3db29a559a (deploy
 ## Q2 Chromium safe-degraded UI 2026-11-04T06:27:44.699Z
 
 Exact873e321backend/Vercelverified. SixEN/SI/TA desktop1280/mobile375 observations, receipt docs/temp/CODEX_Q2_PUBLIC_BROWSER_20261104_4da806b1.json, screenshots outside repo/OneDrive C:\Users\chamo\AppData\Local\medisync\evidence\Q2-public-4da806b1. API503 is an observed unavailable boundary, not positive data/durability PASS. Measured script/runtime/console outcomes retained; no login, clinical mutation or provider.
+
+## Q1 deployed anonymous-route matrix 2026-11-04T11:15:11.893Z
+
+Exact800d87abackend/Vercelverified. Receipt docs/temp/CODEX_Q1_DEPLOYED_ROUTES_20261104_ac9663c6.json, screenshots outside repo/OneDrive C:\Users\chamo\AppData\Local\medisync\evidence\Q1-routes-ac9663c6. No form submitted/login/provider/clinicalwrite. Matrix includes missing-switcher, overflow and console outcomes; do not equate zero banners with full functional acceptance. Private roles not run.
+
+## Q1 persisted-language fallback 2026-11-04T11:20:19.129Z
+
+Initial96-observation matrix has60rows without a local switcher, not96complete per-route-switch passes. Follow-up uses actual Home selection then navigation to10routes at2widths/3languages; receipt docs/temp/CODEX_Q1_PERSISTED_LANGUAGE_ROUTES_20261104_4d993b3f.json, private screenshots C:\Users\chamo\AppData\Local\medisync\evidence\Q1-language-4d993b3f. No forms/logins submitted. Missing local controls remain Q7 defect, not silently repaired here.
+
+## Q1 one-shot doctor 2026-11-04T11:42:30.933Z
+
+{"role":"doctor","expectedCommit":"800d87abbf1773645fb83bd9efcf6f1b526e9df4","loginStatus":200,"authRequests":1,"passed":false,"category":"ROLE_BROWSER_STEP_FAILED_SANITIZED","observations":0,"clinicalWrites":0,"OTPSubmissions":0,"potentialAuthEmailUpperBound":1,"emailDelivery":"NOT_VERIFIED","receipt":"docs/temp/CODEX_Q1_ROLE_DOCTOR_20261104114230933.json"}
