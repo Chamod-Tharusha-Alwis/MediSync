@@ -19,6 +19,8 @@ import {
 
 const MapController = ({ data, geoData, getFeatureStyle, onSelectDistrict, districtClusterMap }) => {
   const geoJsonLayerRef = useRef(null);
+  const latest = useRef({ data, onSelectDistrict, districtClusterMap });
+  latest.current = { data, onSelectDistrict, districtClusterMap };
 
   useEffect(() => {
     if (geoJsonLayerRef.current) {
@@ -88,13 +90,15 @@ const MapController = ({ data, geoData, getFeatureStyle, onSelectDistrict, distr
 
         layer.on({
           click: () => {
-            if (onSelectDistrict) {
-              onSelectDistrict({
-                district: districtData?.district || rawName,
-                totalCases: cases,
-                topDisease,
-                tier,
-                cluster
+            const current = latest.current;
+            const reported = current.data?.byDistrict?.find(d => normalizeDistrictName(d.district) === normName);
+            if (current.onSelectDistrict) {
+              current.onSelectDistrict({
+                district: reported?.district || rawName,
+                totalCases: reported ? reported.totalCases : null,
+                topDisease: reported?.topDisease || 'N/A',
+                tier: getRiskTier(reported?.totalCases || 0),
+                cluster: current.districtClusterMap?.get(normName)
               });
             }
           }
@@ -156,15 +160,18 @@ const PublicHealth = () => {
   }, [filters, retryCount]);
 
   const handleRetry = () => {
+    setSelectedDistrict(null);
     setRetryCount(prev => prev + 1);
   };
 
   const handleFilterChange = (e) => {
+    setSelectedDistrict(null);
     setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const forecastData = useMemo(() => {
-    if (Array.isArray(data?.forecast) && data.forecast.length > 0) {
+    // An explicit empty forecast means the source has insufficient evidence.
+    if (Array.isArray(data?.forecast)) {
       return data.forecast.map(item => ({
         ...item,
         bandRange: Math.max(0, (item.upper || 0) - (item.lower || 0))
@@ -556,7 +563,7 @@ const PublicHealth = () => {
                           return (
                             <tr
                               key={district}
-                              onClick={() => setSelectedDistrict({ district, totalCases: cases, topDisease, tier, cluster })}
+                              onClick={() => setSelectedDistrict({ district, totalCases: districtData ? cases : null, topDisease, tier, cluster })}
                               className="hover:bg-slate-800/40 transition-colors cursor-pointer"
                             >
                               <td className="py-2 px-3 font-medium text-white">{district}</td>
@@ -651,7 +658,7 @@ const PublicHealth = () => {
                   <div className="p-3 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs" data-testid="selected-district-card">
                     <div>
                       <strong className="text-white text-sm">{selectedDistrict.district}</strong>
-                      <span className="ml-2 text-teal-300 font-semibold">{selectedDistrict.totalCases.toLocaleString()} cases</span>
+                      <span className="ml-2 text-teal-300 font-semibold">{selectedDistrict.totalCases === null ? t('public.undisclosedCaseCount', 'Case count not disclosed (<5)') : `${selectedDistrict.totalCases.toLocaleString()} cases`}</span>
                       <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: selectedDistrict.tier.color }}>
                         {selectedDistrict.tier.label}
                       </span>

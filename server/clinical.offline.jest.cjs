@@ -28,3 +28,4 @@ module.exports.testMatch.push('<rootDir>/tests/outbreakNotificationPipeline.test
 module.exports.testMatch.push('<rootDir>/tests/outbreakForecasting.test.js');
 module.exports.testMatch.push('<rootDir>/tests/adversarialOutbreakSeedVerification.test.js');
 module.exports.testMatch.push('<rootDir>/tests/seedDemoOutbreakOffline.test.js', '<rootDir>/tests/seedSnapshotIdempotency.test.js', '<rootDir>/tests/liveVerificationReadOnly.test.js');
+module.exports.testMatch.push('<rootDir>/tests/publicHealthMongo.test.js', '<rootDir>/tests/runtimeHealthRevision.test.js', '<rootDir>/tests/universityPublicPrivacy.test.js');

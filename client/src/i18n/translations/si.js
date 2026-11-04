@@ -555,6 +555,7 @@ export const si = {
     "pickupLocation": "ඖෂධ ලබාගැනීමේ ස්ථානය",
     "rating": "ශ්‍රේණිගත කිරීම:",
     "forecastTitle": "දින 14 ක වසංගත පුරෝකථනය",
+    "undisclosedCaseCount": "රෝගීන් සංඛ්‍යාව ප්‍රසිද්ධ කර නොමැත (<5)",
     "forecastSubtitle": "95% අනාවැකි පරාසයන් සහිත වසංගත රෝග කාල-ශ්‍රේණි ප්‍රක්ෂේපණය",
     "confidenceBand": "95% අනාවැකි පරාසය",
     "predictionInterval": "95% අනාවැකි පරාසය",

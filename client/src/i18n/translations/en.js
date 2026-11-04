@@ -555,6 +555,7 @@ export const en = {
     "pickupLocation": "Pickup Location",
     "rating": "Rating:",
     "forecastTitle": "14-Day Outbreak Forecast",
+    "undisclosedCaseCount": "Case count not disclosed (<5)",
     "forecastSubtitle": "Epidemiological time-series projection with 95% prediction intervals",
     "confidenceBand": "95% Prediction Interval",
     "predictionInterval": "95% Prediction Interval",

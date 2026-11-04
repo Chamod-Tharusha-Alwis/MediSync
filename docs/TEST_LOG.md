@@ -1,5 +1,12 @@
 # MediSync Test Log
 
+## Q2 durable public statistics — final local gate, 2026-11-04
+
+- `node scripts/run_offline_tests.js`: **2,544PASS /0FAIL /0SKIP**, exit0; all15pins match, sourceFrozen=true; receipt `scratch/clinical-offline-xT14lp/summary.json`, Nodev26.4.0. Backend1929/91suites; client477/53; emailPDF31; MLscoring40; actualFlask27; root40. No live clinical acceptance inferred.
+- Focused actual backend:5suites115PASS,exit0 (publicHealthMongo, universityPublicPrivacy now registered, antigravityPublicHealthPrivacy, outbreakForecasting, runtimeHealthRevision). Independent backend recheck2suites77PASS,exit0. Client actual component regression:3suites13PASS,exit0.
+- A new client negative proved explicit empty forecast was wrongly regenerated from sparse/zero-filled history:2PASS/1FAIL,exit1, retained `scratch/CODEX_Q2_FORECAST_NEGATIVE_20261104.json`; corrected to honor the source's empty forecast; final client/full gates pass. Initial full2,543PASS and its build precede this correction and are historical. Final `npm run build`:exit0, existing ESLint warnings,116clinical modules/demoImported=false.
+- Q1 baseline actual public Chromium:6desktop/mobile observations EN/SI/TA; HTTP200, existing demo banner/statistical caution, no overflow/console/request failures; screenshots outside repo andOneDrive, summarized in `docs/temp/CODEX_Q1_PUBLIC_BROWSER_20261104_86fb4574.json`. Not Q1-removal or Q2-deployment acceptance. No login, provider, direct Atlas/Redis, production seed/ingest/trigger/cache clear or clinical write.
+
 ## Captured local conditional ingest revision — 2026-11-04
 
 - Focused four-suite Jest command: 57 PASS, 0 FAIL, exit 0. Actual in-memory SQLite exercises producer snapshot/replay/rollback behavior; read-only transport/import policy tests are inert and send no network requests.

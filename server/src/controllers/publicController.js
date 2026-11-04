@@ -10,55 +10,48 @@ const { getCache, setCache } = require('../config/redis');
 const internalAuth = require('../utils/internalAuth');
 const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
+const { CACHE_POLICY, validateFilters, loadPublicHealthStats } = require('../services/publicHealthStats');
 
 let healthUnavailableUntil = 0;
 exports.getHealthStats = async (req, res) => {
   try {
-    const rangeDays = req.query.rangeDays === undefined ? 30 : Number(req.query.rangeDays);
-    const district = req.query.district || 'all', disease = req.query.disease || 'all';
-    if (!Number.isInteger(rangeDays) || rangeDays < 1 || rangeDays > 365 || [district,disease].some(v => typeof v !== 'string' || v.length > 100 || /[\x00-\x1f]/.test(v))) return res.status(400).json({error:'INVALID_HEALTH_FILTER'});
+    const query = req.query || {};
+    // Public consumers cannot opt into unlabeled simulated/batch data.
+    if (Object.keys(query).some(key => !['rangeDays', 'district', 'disease'].includes(key))) return res.status(400).json({error:'INVALID_HEALTH_FILTER'});
+    let filters;
+    try {
+      filters = validateFilters({
+        rangeDays: query.rangeDays === undefined ? 30 : (typeof query.rangeDays === 'string' || typeof query.rangeDays === 'number' ? Number(query.rangeDays) : NaN),
+        district: query.district === undefined ? 'all' : query.district,
+        disease: query.disease === undefined ? 'all' : query.disease
+      });
+    } catch (_) { return res.status(400).json({error:'INVALID_HEALTH_FILTER'}); }
 
-    const cacheKey = `medisync:cache:health-stats:${rangeDays}:${district}:${disease}`;
+    const reportTime = new Date();
+    const cacheKey = `medisync:cache:health-stats:real-v1:${encodeURIComponent(JSON.stringify([reportTime.toISOString().slice(0, 10), filters.rangeDays, filters.district, filters.disease]))}`;
     
     if (Date.now() < healthUnavailableUntil) throw Error('HEALTH_CIRCUIT_OPEN');
-    // 1. Check Cache
+    if (!mongoose.connection || mongoose.connection.readyState !== 1) throw Error('PUBLIC_REPORTING_SOURCE_UNAVAILABLE');
+    // Never consume the old mixed-source cache namespace or cached demo data.
     const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ data: healthDto(cachedData), cached: true });
+    if (cachedData?.policy === CACHE_POLICY && cachedData.mode === 'real' &&
+        cachedData.data && cachedData.data.isSimulatedDemo !== true && cachedData.data.isSynthetic !== true) {
+      return res.json({ data: healthDto(cachedData.data), cached: true });
     }
 
-    // 2. Fetch from ML Engine (explicitly IPv4 127.0.0.1 to avoid Node localhost IPv6 resolution hangs)
-    const mlEngineUrl = (process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001').replace('localhost', '127.0.0.1');
-    assertMlOrigin(mlEngineUrl, process.env);
-    const internalToken = internalAuth.generateToken();
-
-    const response = await axios.get(`${mlEngineUrl}/api/internal/health-stats`, {
-      params: { rangeDays, district, disease },
-      headers: { 'x-internal-key': internalToken },
-      timeout: process.env.ML_HEALTH_STATS_TIMEOUT_MS ? Number(process.env.ML_HEALTH_STATS_TIMEOUT_MS) : (process.env.NODE_ENV === 'production' ? 60000 : 3000), maxRedirects: 0, maxContentLength: 262144
-    });
-
-    let hasSimulatedRecords = false;
-    try {
-      if (mongoose.connection && mongoose.connection.readyState === 1 && Consultation?.collection) {
-        hasSimulatedRecords = Boolean(await Consultation.collection.findOne(
-          { isSimulatedDemo: true },
-          { projection: { _id: 1 } }
-        ));
-      }
-    } catch (_) {
-      hasSimulatedRecords = false;
-    }
-
-    const forecastResult = calculate14DayForecast(response.data?.trend || []);
+    const aggregate = await loadPublicHealthStats(Consultation.collection, { connection: mongoose.connection, ...filters, mode: 'real', now: reportTime });
+    // Calendar zero-fill alone is not forecasting evidence. Keep the existing
+    // insufficient-history UI when fewer than three dates contain actual cases.
+    const forecastResult = aggregate.trend.filter(day => day.count > 0).length >= 3
+      ? calculate14DayForecast(aggregate.trend)
+      : { forecast: [] };
     const statsData = healthDto({
-      ...response.data,
-      forecast: forecastResult.forecast,
-      isSimulatedDemo: Boolean(response.data?.isSimulatedDemo || hasSimulatedRecords)
+      ...aggregate,
+      forecast: forecastResult.forecast
     });
 
-    // 3. Cache the result for 5 minutes (300 seconds)
-    await setCache(cacheKey, statsData, 300);
+    // Optional cache storage is isolated from the previous SQLite-derived values.
+    await setCache(cacheKey, { policy: CACHE_POLICY, mode: 'real', data: statsData }, 300);
 
     res.json({ data: statsData, cached: false });
   } catch (error) {

@@ -555,6 +555,7 @@ export const ta = {
     "pickupLocation": "பெறும் இடம்",
     "rating": "மதிப்பீடு:",
     "forecastTitle": "14 நாட்கள் வெடிப்பு முன்னறிவிப்பு",
+    "undisclosedCaseCount": "பாதிப்பு எண்ணிக்கை வெளியிடப்படவில்லை (<5)",
     "forecastSubtitle": "95% முன்கணிப்பு இடைவெளியுடன் கூடிய தொற்றுநோயியல் கால-வரிசை கணிப்பு",
     "confidenceBand": "95% முன்கணிப்பு இடைவெளி",
     "predictionInterval": "95% முன்கணிப்பு இடைவெளி",

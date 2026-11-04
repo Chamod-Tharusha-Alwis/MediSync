@@ -50,3 +50,7 @@ Expected source: f825df4; operator reports ML manual deploy 86d5876. These reque
 ## 2026-11-04T05:57:20.155Z — Q1 browser, English desktop, public role
 
 URL https://medisync.chamodtharusha.com.lk/public-health. In-app browser rendered Total Cases0, Top Disease None, 25 districts in minimal tier, 0 clusters, empty disease/trend panels, insufficient-history forecast, and Demonstration Data Active banner. Statistical nonclinical disclaimer remains visible. No login/clinical action, ingest, trigger or cache clear. Vercel deployment list reports production READY f825df4; Render commit remains NOT VERIFIED. Screenshot not saved for this initial DOM-only observation; mobile and SI/TA NOT VERIFIED. Banner removal BLOCKED pending Q2 provenance boundary.
+
+## Q1 public browser capture 2026-11-04T06:13:55.852Z
+
+Six actual Chromium observations: desktop1280x800/mobile375x667, EN/SI/TA. Receipt docs/temp/CODEX_Q1_PUBLIC_BROWSER_20261104_86fb4574.json; screenshots outside repo/OneDrive at C:\Users\chamo\AppData\Local\medisync\evidence\Q1-public-86fb4574. All API/status/layout/console outcomes remain as measured in receipt; Q1 removal still blocked. No role login.

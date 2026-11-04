@@ -1,5 +1,17 @@
 # MediSync Master State
 
+## Completion-run checkpoint — 4 November 2026, Q2 local gate
+
+- Authoritative current queue: `docs/agent-work/MASTER_TRACKER.md`. Latest operator master prompt authorizes sequential main commits/pushes; previous push holds below are historical. Q1 public baseline/truthfulness blocker recorded in `eeedaa1`, pushed with both exact-head CI workflows green and Vercel production READY.
+- Q1 current live baseline: public API200 with0cases/demo flagtrue; actual Chromium desktop1280/mobile375 in EN/SI/TA rendered the existing banner and statistical caution, no overflow, console errors, failed requests or blocked write attempts. Screenshots outside repo/OneDrive; receipt `docs/temp/CODEX_Q1_PUBLIC_BROWSER_20261104_86fb4574.json`. No role login or email. Banner removal waits for Q2 real-only boundary.
+- Q2 implementation now LOCAL_DONE: durable metadata-only Mongo reviewed-episode reporting, explicit real-only public filters, exact internal simulated batch isolation, UTC calendar buckets, compatible disease labels, deterministic repeat-episode handling, bounded reads/cursor cleanup and separate cache namespace. Missing/untrustworthy provenance returns503; no migration, invented confirmation, data repair, DDL or ML ingestion.
+- Q2 frontend preserves undisclosed district counts and honors explicit insufficient-evidence forecasts. Legacy outbreak burst tester now exits before imports/network. Backend health optionally exposes only a validated public Render revision. None of the15 protected files or ledger entries changed.
+- Final offline gate: **2,544 PASS /0FAIL /0SKIP**, exit0, sourceFrozen=true,15pins; `scratch/clinical-offline-xT14lp/summary.json`. Focused backend115PASS, client13PASS; buildexit0 with existingwarnings. Independent frozen backend review77PASS. One new client negative test reproduced unwanted forecast regeneration (2PASS/1FAIL) before the one-line correction; evidence retained. Initial Q2 regression2,543PASS is superseded by this final-byte run.
+- Q2 production identity, live query behavior, performance and before/after-ML-restart acceptance are pending. Operator reports ML86d5876Live/manual11:12+05:30; supplied backend and ingest-log entries remain placeholders, NOT VERIFIED. No direct Atlas/Redis connection or production clinical writes in this run.
+- Historical C4 live PASS is unsupported: saved receipt contains two health TIMEOUTs while the verifier ignored them and returnedpassed=true. Existing feature source is preserved; Q4 must repair/verify that evidence. Q3/Q10 authentication waits for a fresh provider total under the30-email cap; clinical writes need separate exact authorization. Q11 fixed-OTP removal remains last afterQ10 acceptance.
+
+Historical checkpoints below do not supersede this completion-run status.
+
 ## Current checkpoint — 4 November 2026, conditional ingest review
 
 - Single-agent local implementation complete under the operator's conditional protected-file approval. `/ingest` now replaces explicit date/district/disease/batch snapshots; the seeder sends the batch, replays persisted dates, refuses ambiguous storage, and stops before surveillance/cache work on sync failure. Legacy remote negative-count compensation is blocked before removal.

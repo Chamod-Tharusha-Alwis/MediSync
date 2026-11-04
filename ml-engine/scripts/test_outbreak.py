@@ -1,4 +1,9 @@
-# python test_outbreak.py
+# Deprecated before imports or any network/storage operation. Historical code below
+# is retained for provenance, never as a supported ingestion or verification tool.
+print("DEPRECATED: needs redesign; this legacy outbreak tester must not ingest or trigger surveillance.")
+raise SystemExit(2)
+
+# Historical implementation (unreachable).
 import requests
 from datetime import datetime
 

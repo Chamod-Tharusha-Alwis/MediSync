@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import os
 import pathlib
+import runpy
 import sqlite3
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -127,3 +128,17 @@ class TestOutbreakSnapshots(unittest.TestCase):
         for db in captured:
             with self.assertRaises(sqlite3.ProgrammingError):
                 db.execute('SELECT 1')
+
+
+class TestLegacyOutbreakTester(unittest.TestCase):
+    def test_legacy_script_exits_before_loading_its_http_dependency(self):
+        original_import = __import__
+        def guarded_import(name, *args, **kwargs):
+            if name == 'requests':
+                raise AssertionError('LEGACY_HTTP_DEPENDENCY_MUST_NOT_LOAD')
+            return original_import(name, *args, **kwargs)
+        with patch('builtins.__import__', side_effect=guarded_import), patch('builtins.print') as output:
+            with self.assertRaises(SystemExit) as stopped:
+                runpy.run_path(str(pathlib.Path(module.__file__).parent / 'scripts' / 'test_outbreak.py'), run_name='__main__')
+        self.assertEqual(stopped.exception.code, 2)
+        output.assert_called_once_with('DEPRECATED: needs redesign; this legacy outbreak tester must not ingest or trigger surveillance.')

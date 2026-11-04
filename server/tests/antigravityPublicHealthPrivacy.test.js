@@ -5,11 +5,12 @@ function controller(error){
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/controllers/publicController.js'),'utf8'),{
   exports:exported,module:{exports:exported},process:{env:{}},console:{log(){},warn(){},error:log},
   require(name){if(name==='../security/publicDto')return require('../src/security/publicDto');
+   if(name==='../services/publicHealthStats')return{CACHE_POLICY:'public-real-verified-episodes-v1',validateFilters:require('../src/services/publicHealthStats').validateFilters,loadPublicHealthStats:async()=>{throw error;}};
    if(name==='axios')return{get:async()=>{throw error;}};
    if(name==='../utils/internalAuth')return{generateToken:()=> 'offline-token'};
    if(name==='../config/redis')return{getCache:async()=>null,setCache:jest.fn()};
    if(name==='crypto')return require('crypto');
-   if(name==='mongoose')return{connection:{readyState:0}};
+   if(name==='mongoose')return{connection:{readyState:1}};
    if(name==='../config/dbGuard')return{isAutomatedTestEnvironment:()=>false,TEST_DB_NAME:'medisync_automated_test',PROD_DB_NAME:'test'};
    return{};
   }
