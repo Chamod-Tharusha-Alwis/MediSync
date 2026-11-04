@@ -1,0 +1,97 @@
+{
+  "at": "2026-11-04T18:11:14.4411689Z",
+  "verdict": "P1_TIMESTAMP_DISPLAY_VERIFIED",
+  "applicationCommit": "a4952b5a02597595cb49640314863bb6e49248cc",
+  "vercelDeployment": "dpl_2t9ZWGiCvabRdQr7rUyV6JhYMHM3",
+  "vercelAliasCommit": "a4952b5a02597595cb49640314863bb6e49248cc",
+  "backendHealth": {
+    "commit": "a4952b5a02597595cb49640314863bb6e49248cc",
+    "status": 200
+  },
+  "ci": [
+    {
+      "id": 41883677622,
+      "name": "Security Hardening & Trust Governance Tests",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "a4952b5a02597595cb49640314863bb6e49248cc"
+    },
+    {
+      "id": 41883677403,
+      "name": "MediSync Clinical Offline Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "a4952b5a02597595cb49640314863bb6e49248cc"
+    }
+  ],
+  "offline": {
+    "receipt": "scratch/clinical-offline-mNvSYU/summary.json",
+    "failed": 0,
+    "passed": 2848,
+    "exitCode": 0,
+    "skipped": 0
+  },
+  "build": {
+    "demoImported": false,
+    "modules": 116,
+    "exitCode": 0
+  },
+  "protectedPins": 15,
+  "proof": {
+    "browserUiPassed": false,
+    "additionalBlockedRequests": {
+      "pathPattern": "/socket.io/",
+      "count": 6,
+      "method": "GET"
+    },
+    "receipt": "docs/temp/CODEX_Q1_SESSION_admin_1793815599567.json",
+    "logout": 200,
+    "loginAttempts": 1,
+    "confirmation": "Operator replied yes to explicit Sri Lanka/UTC+05:30 display confirmation",
+    "scope": "EMAIL_DISPLAY_SINGLE_LOGIN_PROOF",
+    "login": 200,
+    "OTPSubmissions": 0,
+    "sha256": "7e907aabb4626d52c8c1f47563242c5d3381ecd289e572241d08a225324b0f8b",
+    "operatorConfirmedReceiptAndSriLankaZone": true,
+    "boundaryInducedConsoleErrors": 6,
+    "role": "admin",
+    "clinicalWrites": 0
+  },
+  "emailAccounting": {
+    "remaining": 18,
+    "status": "CLOSED",
+    "source": "Fresh operator dashboard attestation",
+    "fiveRoleSweepReceivedAlerts": 5,
+    "finalResend": 7,
+    "limit": 25,
+    "furtherLoginsOrEmails": "NOT_AUTHORIZED",
+    "finalBrevo": 0,
+    "preSweepBaseline": 1,
+    "extraProofReceivedAlerts": 1,
+    "finalCombined": 7
+  },
+  "sessionSweep": {
+    "loginPass": 5,
+    "noBannerOrPageException": true,
+    "privateForecast": "NO_VIEW_IMPLEMENTED",
+    "adminMlStatus": 503,
+    "blockedSocketGETs": 29,
+    "mapDataTruth": "NOT_VERIFIED",
+    "fullUiAcceptance": "NOT_PASSED",
+    "logoutPass": 5
+  },
+  "totalBlockedThisTask": {
+    "pathPattern": "/socket.io/",
+    "count": 35,
+    "excludesHistoricalUnrecorded90": true,
+    "method": "GET"
+  },
+  "historicalRealBackendAcceptance": "2/14",
+  "migration": "NONE",
+  "UTCStorage": "UNCHANGED; normal approved authentication metadata updates only",
+  "remainingIssues": [
+    "Session-boundary Socket.IO console errors require separately reviewed transport scope",
+    "Admin ml-status503 and honest map/forecast availability not accepted",
+    "All private UI timestamp layouts were not live rechecked; offline/build covered"
+  ]
+}
