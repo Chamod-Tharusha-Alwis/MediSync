@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime, formatSriLankaDate } from '../../utils/sriLankaTime';
 import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import React, { useEffect, useState } from 'react';
@@ -130,7 +131,7 @@ const UserAuditModal = ({ userId, onClose }) => {
                 <div key={log._id} className="p-3 bg-slate-950/40 rounded-xl border border-white/5">
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-xs font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">{log.action}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{formatSriLankaDateTime(log.timestamp)}</span>
                   </div>
                   <p className="text-xs text-slate-400 mt-2 font-mono">
                     <span className="text-slate-500">Device:</span> {log.deviceModel || 'Unknown'} <br />
@@ -284,10 +285,10 @@ const ManageUsers = () => {
                       <div className="text-xs text-slate-300 truncate max-w-[110px]" title={u.deviceInfo}>{u.deviceModel || 'Unknown'}</div>
                     </td>
                     <td className="px-2.5 py-2.5 text-xs text-slate-400 whitespace-nowrap hidden lg:table-cell">
-                      {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {u.lastLoginAt ? formatSriLankaDateTime(u.lastLoginAt, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
                     <td className="px-2.5 py-2.5 text-xs text-slate-400 whitespace-nowrap hidden 2xl:table-cell">
-                      {u.lastSignOutAt ? new Date(u.lastSignOutAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (u.isValid === false ? 'Session expired' : '—')}
+                      {u.lastSignOutAt ? formatSriLankaDateTime(u.lastSignOutAt, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (u.isValid === false ? 'Session expired' : '—')}
                     </td>
                     <td className="px-2.5 py-2.5 whitespace-nowrap">
                       {u.isActive !== false ? (
@@ -408,7 +409,7 @@ const AlertSettings = () => {
                       {a.syntheticLabel && (
                         <p className="text-[10px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">{a.syntheticLabel}</p>
                       )}
-                    <p className="text-slate-500 mt-1 font-mono text-[10px]">Date: {new Date(a.createdAt || a.date).toLocaleDateString()}</p>
+                    <p className="text-slate-500 mt-1 font-mono text-[10px]">Date: {formatSriLankaDate(a.createdAt || a.date)}</p>
                   </div>
                 </div>
               ))}

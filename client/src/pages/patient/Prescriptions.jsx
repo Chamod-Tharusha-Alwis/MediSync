@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
@@ -137,8 +138,8 @@ const PrescriptionCard = ({ rx, badge, index }) => {
       {/* ── Footer: dates + PDF download button ── */}
       <div className="border-t border-slate-700/30 pt-3 mt-auto">
         <div className="flex justify-between text-xs text-slate-500 mb-3">
-          <span>Issued: {rx.consultationDate ? new Date(rx.consultationDate).toLocaleDateString() : 'N/A'}</span>
-          {rx.expiresAt && <span>Expires: {new Date(rx.expiresAt).toLocaleDateString()}</span>}
+          <span>Issued: {rx.consultationDate ? formatSriLankaDate(rx.consultationDate) : 'N/A'}</span>
+          {rx.expiresAt && <span>Expires: {formatSriLankaDate(rx.expiresAt)}</span>}
         </div>
 
         {/* PDF download — shown for all statuses so patients can always retrieve their record */}

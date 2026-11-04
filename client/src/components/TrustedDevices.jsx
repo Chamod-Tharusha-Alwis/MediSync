@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../utils/sriLankaTime';
 import React, { useEffect, useState, useCallback } from 'react';
 import { Smartphone, ShieldCheck, ShieldAlert, Trash2, Loader2, Clock, Edit2, Check, X, KeyRound, Lock } from 'lucide-react';
 import api from '../api/axiosInstance';
@@ -400,7 +401,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                     {isDeviceTrusted ? (
                       <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
                         <Clock className="w-3 h-3" />
-                        Trusted {device.trustedAt ? new Date(device.trustedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified'}
+                        Trusted {device.trustedAt ? formatSriLankaDate(device.trustedAt, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified'}
                       </span>
                     ) : (
                       <span className="text-[10px] text-amber-400 flex items-center gap-1 font-medium">
@@ -409,7 +410,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                       </span>
                     )}
                     <span className="text-[10px] text-slate-600">
-                      Last seen {device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown'}
+                      Last seen {device.lastSeenAt ? formatSriLankaDate(device.lastSeenAt, 'en-US', { month: 'short', day: 'numeric' }) : 'Unknown'}
                     </span>
                   </div>
                 </div>

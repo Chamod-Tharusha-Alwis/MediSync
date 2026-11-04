@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -192,7 +193,7 @@ export const Overview = ({ data }) => {
             {upcomingFollowUp ? (
               <>
                 <p className="text-white font-bold text-lg leading-snug">
-                  {new Date(upcomingFollowUp.followUpDate).toLocaleDateString('en-US', {
+                  {formatSriLankaDate(upcomingFollowUp.followUpDate, 'en-US', {
                     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
                   })}
                 </p>
@@ -298,7 +299,7 @@ export const Overview = ({ data }) => {
                   )}
                   <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs text-slate-500">
                     <span>ID: {rx.prescriptionId}</span>
-                    <span>Expires: {new Date(rx.expiresAt).toLocaleDateString()}</span>
+                    <span>Expires: {formatSriLankaDate(rx.expiresAt)}</span>
                   </div>
                 </div>
               ))}
@@ -326,7 +327,7 @@ export const Overview = ({ data }) => {
                 <div key={c._id} className="relative pl-6">
                   <div className="absolute w-4 h-4 bg-purple-500 rounded-full -left-[9px] top-1 border-4 border-[#0b1120]" />
                   <p className="text-xs text-purple-400 font-bold mb-1">
-                    {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {formatSriLankaDate(c.createdAt, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                   <p className="text-white font-medium text-lg">{c.diagnosis || 'General Checkup'}</p>
                   <p className="text-slate-400 text-sm mt-1">{formatDoctorName(c.doctorId?.fullName, 'Unknown')}</p>

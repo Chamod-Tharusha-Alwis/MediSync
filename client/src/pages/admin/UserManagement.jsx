@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { Search, User, Shield, Smartphone, Trash2, Loader2, Link as LinkIcon, AlertCircle } from 'lucide-react';
@@ -200,7 +201,7 @@ const UserManagement = () => {
                             {device.deviceLabel || device.deviceModel || 'Unknown Device'}
                           </span>
                           <span className="text-xs text-slate-500 mt-1 font-mono">
-                            Added: {new Date(device.trustedAt).toLocaleDateString()}
+                            Added: {formatSriLankaDate(device.trustedAt)}
                           </span>
                         </div>
                         <button

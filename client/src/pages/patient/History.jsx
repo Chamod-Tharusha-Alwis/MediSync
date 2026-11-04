@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { useLocation } from 'react-router-dom';
@@ -226,7 +227,7 @@ const HistoryCard = ({ event, onRate }) => {
   const { Icon } = tc;
 
   const dateStr = event.date
-    ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? formatSriLankaDate(event.date, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Unknown date';
 
   // Merge labTests
@@ -319,7 +320,7 @@ const HistoryCard = ({ event, onRate }) => {
                 <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/12 border border-indigo-500/25">
                   <Calendar className="w-3 h-3 text-indigo-400" />
                   <span className="text-indigo-300 text-[10px] font-bold">
-                    Follow-up: {new Date(details.followUpDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Follow-up: {formatSriLankaDate(details.followUpDate, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
               )}
@@ -520,7 +521,7 @@ const HistoryCard = ({ event, onRate }) => {
                           <Calendar className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                           <div>
                             <p className="text-indigo-200 text-sm font-semibold">
-                              {new Date(details.followUpDate).toLocaleDateString('en-US', {
+                              {formatSriLankaDate(details.followUpDate, 'en-US', {
                                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                               })}
                             </p>

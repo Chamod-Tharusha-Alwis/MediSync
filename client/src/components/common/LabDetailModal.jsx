@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,7 +64,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
                 <div>
                   <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.requestedDate", "Requested Date")}</p>
                   <p className="text-slate-200 font-medium">
-                    {new Date(orderedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {formatSriLankaDate(orderedDate, 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
               </div>

@@ -1,0 +1,155 @@
+'use strict';
+// Explicit one-role-at-a-time live runner. Never execute without a fresh operator
+// approval and combined provider count. Credentials stay in this child only.
+const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const { createBrowserBoundary, loginProof, classifyConsole, pageVerdict, adminHonesty } = require('./authenticatedSessionBrowser.cjs');
+const { FRONTEND, API } = require('./authenticatedSessionPolicy.cjs');
+const ROLES = ['admin','patient','doctor','hospital','pharmacy'];
+function argsOf(args) {
+  const allowed = new Set(['--role','--run-id','--email-total','--backend-commit']);
+  const out = {};
+  for (let i=0; i<args.length; i++) {
+    if (args[i] === '--approved-session-check' && !out.approved) { out.approved=true; continue; }
+    if (!allowed.has(args[i]) || out[args[i]] !== undefined || args[i+1] === undefined) throw Error('ARGUMENT_ADMISSION_REJECTED');
+    out[args[i]]=args[++i];
+  }
+  if (!out.approved || !ROLES.includes(out['--role']) || !/^q1_sessions_\d{8}_[a-f0-9]{8}$/.test(out['--run-id'] || '') || !/^\d+$/.test(out['--email-total'] || '') || !/^[a-f0-9]{40}$/.test(out['--backend-commit'] || '')) throw Error('ARGUMENT_ADMISSION_REJECTED');
+  const total=Number(out['--email-total']);
+  if (!Number.isSafeInteger(total) || total<0 || total+2>25) throw Error('EMAIL_BUDGET_REJECTED');
+  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit']};
+}
+function credentials(root, readFile = fs.readFileSync) {
+  const parsed=require('../server/node_modules/dotenv').parse(readFile(path.join(root,'server/.env')));
+  const password=parsed.TEMP_ACCOUNT_PASSWORD;
+  // Do not inherit Windows password variables or load any dotenv values into env.
+  const content=readFile(path.join(root,'docs/temp/TEST_CREDENTIALS.local.md'),'utf8');
+  const emails={};
+  for(const role of ROLES) {
+    const lines=content.split(/\r?\n/).filter(line=>new RegExp('^'+role+':\\s*','i').test(line.trim()));
+    if(lines.length!==1)throw Error('PRIVATE_IDENTITY_ADMISSION_REJECTED');
+    const match=lines[0].trim().match(/^[^:]+:\s*([^\s(]+)/);
+    if(!match || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(match[1]))throw Error('PRIVATE_IDENTITY_ADMISSION_REJECTED');
+    emails[role]=match[1];
+  }
+  if(typeof password!=='string'||password.length<12||new Set(Object.values(emails).map(x=>x.toLowerCase())).size!==5)throw Error('PRIVATE_IDENTITY_ADMISSION_REJECTED');
+  for(const key of Object.keys(parsed)) delete parsed[key];
+  return {emails,password};
+}
+async function observePage(page,role) {
+  const values=await page.evaluate(()=>{
+    const body=document.body.innerText;
+    const banners=[...document.querySelectorAll('[role="alert"],[role="status"],[class*="banner"],[data-testid*="banner"]')].filter(el=>el.getBoundingClientRect().height>0);
+    return {hasMain:!!document.querySelector('main'), hasHeading:!!document.querySelector('h1,h2'),
+      temporaryBanner:banners.some(el=>/prototype|university demo|demo mode|temporary (?:banner|mode|notice)/i.test(el.innerText))||/prototype (?:mode|site)|demo (?:mode|environment)|temporary (?:mode|environment|banner)/i.test(body),
+      metricsUnavailable:/Dashboard metrics unavailable/.test(body),
+      mapRendered:!!document.querySelector('.leaflet-container'),
+      forecastPresent:!!document.querySelector('[data-testid*="forecast"],.recharts-line'),
+      telemetryFallbackVisible:/15,420/.test(body),
+      sessionLocal:!!(localStorage.getItem('token')||localStorage.getItem('accessToken'))};
+  });
+  return {view:role==='admin'?'overview':'dashboard',rendered:values.hasMain&&values.hasHeading&&values.sessionLocal&&new URL(page.url()).pathname.startsWith('/'+role+'/dashboard'),
+    temporaryBanner:values.temporaryBanner,metricsUnavailable:values.metricsUnavailable,mapRendered:values.mapRendered,
+    forecastPresent:values.forecastPresent,telemetryFallbackVisible:values.telemetryFallbackVisible};
+}
+async function run(config) {
+  const root=path.resolve(__dirname,'..');
+  const localAppData=process.env.LOCALAPPDATA;
+  if(!localAppData)throw Error('LOCAL_EVIDENCE_ROOT_MISSING');
+  const kept=new Set(['SYSTEMROOT','WINDIR','PATH','PATHEXT','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','SYSTEMDRIVE']);
+  for(const key of Object.keys(process.env))if(!kept.has(key.toUpperCase()))delete process.env[key];
+  const privateInput=credentials(root);
+  const dir=path.join(localAppData,'medisync','evidence',config.runId);fs.mkdirSync(dir,{recursive:true});
+  const previous=ROLES.filter(role=>fs.existsSync(path.join(dir,role+'.attempt.json')));
+  if(previous.includes(config.role)||config.baseline+2*(previous.length+1)>25)throw Error('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
+  const lock=path.join(dir,'owned-runner.lock');
+  const fd=fs.openSync(lock,'wx');fs.closeSync(fd);
+  let browser,context,page,authenticated=false,token,receiptPath;
+  const boundary=createBrowserBoundary(config.role);
+  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:'SESSION_ONLY_BROWSER_ACCEPTANCE',
+    baselineConfirmedSent:config.baseline,emailLimit:25,newLoginAlertCount:'NOT_OBSERVABLE_FROM_LOGIN_RESPONSE',
+    reservedPotentialEmailCount:0,combinedConservativeUpperBound:config.baseline+2*previous.length,
+    loginAttempts:0,loginStatus:null,observations:[],consoleCategories:{},pageErrors:0,httpFailures:[],
+    OTPSubmissions:0,clinicalWrites:0,providerCallsByHarness:0,passed:false};
+  const flush=()=>{
+    receipt.boundary=boundary.summary();receipt.completedAt=new Date().toISOString();
+    if(!receiptPath)receiptPath=path.join(root,'docs/temp','CODEX_Q1_SESSION_'+config.role+'_'+Date.now()+'.json');
+    fs.writeFileSync(receiptPath,JSON.stringify(receipt,null,2)+'\n');
+  };
+  try {
+    const response=await fetch(API+'/health',{redirect:'error',signal:AbortSignal.timeout(60000)});
+    const health=await response.json();
+    if(response.status!==200||health.commit!==config.backendCommit)throw Error('LIVE_SOURCE_ADMISSION_REJECTED');
+    receipt.backendCommit=health.commit;
+    const Module=require('module'),load=Module._load;
+    Module._load=function(name,...rest){if(/^(?:mongoose|mongodb|redis|sqlite3|better-sqlite3|node:sqlite)(?:\/|$)/.test(name))throw Error('INFRASTRUCTURE_IMPORT_REJECTED');return load.call(this,name,...rest);};
+    const {chromium}=require('../client/node_modules/playwright');
+    browser=await chromium.launch({headless:true});context=await browser.newContext({serviceWorkers:'block',viewport:{width:1440,height:1000},locale:'en-US'});
+    await boundary.attach(context);
+    page=await context.newPage();page.setDefaultTimeout(20000);
+    page.on('console',msg=>{if(msg.type()==='error'){const category=classifyConsole(msg.text());receipt.consoleCategories[category]=(receipt.consoleCategories[category]||0)+1;}});
+    page.on('pageerror',()=>{receipt.pageErrors++;});
+    const adminMetadata={mlDataPointsVerified:false};
+    page.on('response',async response=>{
+      try {
+        const u=new URL(response.url());
+        if(u.origin===API&&response.status()>=400)receipt.httpFailures.push({...require('./authenticatedSessionBrowser.cjs').requestPattern(response.url(),response.request().method()),status:response.status()});
+        if(u.origin===API&&u.pathname==='/api/admin/ml-status'&&response.status()===200){const j=await response.json();adminMetadata.mlDataPointsVerified=Number.isFinite(j?.data?.dataPoints)&&j.data.dataPoints>0;}
+      }catch(_){}
+    });
+    await page.goto(FRONTEND+'/'+config.role+'/login',{waitUntil:'domcontentloaded',timeout:60000});
+    await page.locator('input[type="email"]').fill(privateInput.emails[config.role]);
+    await page.locator('input[type="password"]').fill(privateInput.password);
+    // Exclusive marker is durable before the single submit. No retry on timeout.
+    fs.writeFileSync(path.join(dir,config.role+'.attempt.json'),JSON.stringify({role:config.role,at:new Date().toISOString(),reservedPotentialEmails:2}),{flag:'wx'});
+    receipt.loginAttempts=1;receipt.reservedPotentialEmailCount=2;receipt.combinedConservativeUpperBound=config.baseline+2*(previous.length+1);flush();
+    const loginPath=config.role==='pharmacy'?'/api/pharmacy/login':'/api/auth/login';
+    const loginWait=page.waitForResponse(r=>new URL(r.url()).origin===API&&new URL(r.url()).pathname===loginPath&&r.request().method()==='POST',{timeout:90000});
+    await page.locator('button[type="submit"]').click();
+    const loginResponse=await loginWait;receipt.loginStatus=loginResponse.status();
+    const body=await loginResponse.json();const proof=loginProof(config.role,receipt.loginStatus,body);
+    boundary.observeLoginResponse(receipt.loginStatus,proof);
+    if(receipt.loginStatus!==200||proof.requiresOTP||!proof.roleMatches||!proof.accessTokenPresent)throw Error(proof.requiresOTP?'OTP_REQUIRED_NOT_AUTHORIZED':'LOGIN_REJECTED_OR_INCOMPLETE');
+    authenticated=true;token=body.data.accessToken;
+    await page.waitForURL(url=>url.pathname.startsWith('/'+config.role+'/dashboard'),{timeout:30000});
+    await page.waitForTimeout(6000);
+    let observation=await observePage(page,config.role);receipt.observations.push(observation);
+    if(config.role==='admin') {
+      receipt.adminOverview=adminHonesty(observation,adminMetadata);
+      await page.goto(FRONTEND+'/admin/dashboard/outbreak',{waitUntil:'domcontentloaded',timeout:60000});
+      await page.waitForTimeout(5000);
+      observation=await observePage(page,'admin');observation.view='outbreak-monitor';receipt.observations.push(observation);
+      receipt.adminOutbreak=adminHonesty(observation,adminMetadata);
+      receipt.adminOutbreak.map='NOT_A_MAP_VIEW';
+      receipt.adminOutbreak.forecast='NO_FORECAST_VIEW_IMPLEMENTED';
+      receipt.adminOutbreak.passed=receipt.adminOutbreak.telemetry!=='UNVERIFIED_FALLBACK_DISPLAYED'&&!observation.forecastPresent;
+    }
+    const consoleErrors=Object.values(receipt.consoleCategories).reduce((a,b)=>a+b,0);
+    receipt.passed=receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
+      (config.role!=='admin'||receipt.adminOverview.passed&&receipt.adminOutbreak.passed);
+    receipt.category=receipt.passed?'ROLE_SESSION_BROWSER_VERIFIED':'ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';
+  } catch(error) {
+    const safe=new Set(['LIVE_SOURCE_ADMISSION_REJECTED','OTP_REQUIRED_NOT_AUTHORIZED','LOGIN_REJECTED_OR_INCOMPLETE']);
+    receipt.category=safe.has(error?.message)?error.message:'ROLE_BROWSER_STEP_FAILED_SANITIZED';receipt.passed=false;
+  } finally {
+    // Even a failed render must not skip the one authorized logout. The same
+    // browser route and consumed-before-dispatch policy still govern this POST.
+    if(authenticated&&page&&token){
+      try{
+        const result=await page.evaluate(async({url,accessToken})=>{try{const r=await fetch(url,{method:'POST',credentials:'include',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:'{}'});return {status:r.status};}catch(_){return {status:null};}}, {url:API+'/api/auth/logout',accessToken:token});
+        receipt.logoutStatus=result.status;
+        if(result.status===200)authenticated=false;
+        else{receipt.passed=false;receipt.category='LOGOUT_NOT_VERIFIED';}
+      }catch(_){receipt.passed=false;receipt.category='LOGOUT_NOT_VERIFIED';}
+    }
+    receipt.ownedSessionCleanup=authenticated?'SERVER_LOGOUT_NOT_VERIFIED':receipt.logoutStatus===200?'SERVER_LOGOUT_200':receipt.loginAttempts&&receipt.loginStatus===null?'AUTHENTICATION_OUTCOME_UNKNOWN':'NO_AUTHENTICATED_SESSION_ESTABLISHED';
+    token=undefined;privateInput.password=undefined;for(const key of Object.keys(privateInput.emails))delete privateInput.emails[key];
+    if(context)await context.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});
+    receipt.ownedBrowserClosed=true;flush();fs.unlinkSync(lock);
+    console.log(JSON.stringify({role:receipt.role,loginAttempts:receipt.loginAttempts,loginStatus:receipt.loginStatus,passed:receipt.passed,category:receipt.category,receipt:path.relative(root,receiptPath),emailAlertCount:receipt.newLoginAlertCount,combinedConservativeUpperBound:receipt.combinedConservativeUpperBound,blockedRequests:receipt.boundary.blockedRequests}));
+  }
+  return receipt;
+}
+if(require.main===module){let config;try{config=argsOf(process.argv.slice(2));}catch(_){console.log(JSON.stringify({category:'LOCAL_ARGUMENT_ADMISSION_REJECTED',loginAttempts:0}));process.exitCode=1;}
+  if(config)run(config).then(r=>{process.exitCode=r.passed?0:1;}).catch(()=>{console.log(JSON.stringify({category:'LOCAL_PREFLIGHT_REJECTED',loginAttempts:0}));process.exitCode=1;});
+}
+module.exports={argsOf,credentials,observePage};

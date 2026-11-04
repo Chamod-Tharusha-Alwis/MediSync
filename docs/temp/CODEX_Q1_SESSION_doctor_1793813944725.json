@@ -1,0 +1,86 @@
+{
+  "at": "2026-11-04T17:39:02.717Z",
+  "role": "doctor",
+  "runId": "q1_sessions_20261104_c7a4e9b2",
+  "scope": "SESSION_ONLY_BROWSER_ACCEPTANCE",
+  "source": {
+    "verify_five_role_sessions_live.cjs": "06e5ad9888975c3e833cb13e43f652e6caf93b19515c33e3b8d9f00d95a47c7a",
+    "authenticatedSessionBrowser.cjs": "682786d4a83dd606a10dd2319de3fdea77a9b1f8c80d36a3d7f47ee75054fcba",
+    "authenticatedSessionPolicy.cjs": "93364dc676947efd923ba8a97df10e68210c468153a6d74de202f13dc94af0c5"
+  },
+  "baselineConfirmedSent": 1,
+  "emailLimit": 25,
+  "newLoginAlertCount": "NOT_OBSERVABLE_FROM_LOGIN_RESPONSE",
+  "reservedPotentialEmailCount": 2,
+  "combinedConservativeUpperBound": 7,
+  "loginAttempts": 1,
+  "loginStatus": 200,
+  "observations": [
+    {
+      "view": "dashboard",
+      "rendered": true,
+      "temporaryBanner": false,
+      "metricsUnavailable": false,
+      "mapRendered": false,
+      "forecastPresent": false,
+      "telemetryFallbackVisible": false
+    }
+  ],
+  "consoleCategories": {
+    "BOUNDARY_BLOCKED_NETWORK": 4
+  },
+  "pageErrors": 0,
+  "httpFailures": [],
+  "OTPSubmissions": 0,
+  "clinicalWrites": 0,
+  "providerCallsByHarness": 0,
+  "passed": false,
+  "backendCommit": "7e0d9c0c29b99fae985f878698ccf671adce0eac",
+  "boundary": {
+    "state": "CLOSED",
+    "rejected": 0,
+    "budgetUsed": {
+      "LOGIN": 1,
+      "REFRESH": 0,
+      "LOGOUT": 1
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "pathPattern": "/:page-or-asset",
+        "accepted": true,
+        "count": 9
+      },
+      {
+        "method": "POST",
+        "pathPattern": "/api/auth/login",
+        "accepted": true,
+        "count": 1
+      },
+      {
+        "method": "GET",
+        "pathPattern": "/api/:redacted",
+        "accepted": true,
+        "count": 3
+      },
+      {
+        "method": "POST",
+        "pathPattern": "/api/auth/logout",
+        "accepted": true,
+        "count": 1
+      }
+    ],
+    "blockedRequests": [
+      {
+        "method": "GET",
+        "pathPattern": "/socket.io/",
+        "count": 4
+      }
+    ]
+  },
+  "completedAt": "2026-11-04T17:39:18.327Z",
+  "category": "ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED",
+  "logoutStatus": 200,
+  "ownedSessionCleanup": "SERVER_LOGOUT_200",
+  "ownedBrowserClosed": true
+}

@@ -1,4 +1,8 @@
 
+const { formatSriLankaDateTime, formatSriLankaDate } = require('./sriLankaTime');
+const displayExpiry = value => value instanceof Date || typeof value === 'number' || /^\d{4}-\d{2}-\d{2}T/.test(String(value))
+  ? formatSriLankaDateTime(value) : value;
+
 function resolveLang(options, fallback = 'en') {
   if (options && typeof options === 'object') {
     const candidate = options.lang || options.preferredLanguage;
@@ -797,6 +801,13 @@ async function sendViaBrevoHttps(options, primaryErrorCode) {
  * - Never falls back to Brevo for bulk/outbreak emails (`allowFallback: false`).
  */
 const sendMail = async (options = {}) => {
+  // Render once before either provider or the inert test transport. UTC storage,
+  // quota day boundaries and authentication expiry calculations are unchanged.
+  const sentAt = formatSriLankaDateTime(new Date());
+  const stamp = `<p data-medisync-sent-at="Asia/Colombo" style="font-size:12px;color:#64748b;">Sent: ${sentAt}</p>`;
+  options = { ...options,
+    ...(typeof options.html === 'string' ? { html: /<\/body>/i.test(options.html) ? options.html.replace(/<\/body>/i, stamp + '</body>') : options.html + stamp } : {}),
+    ...(typeof options.text === 'string' ? { text: options.text + '\n\nSent: ' + sentAt } : {}) };
   const toList = options.to
     ? (Array.isArray(options.to) ? options.to : [options.to]).filter(Boolean)
     : [];
@@ -1246,6 +1257,7 @@ exports.sendWelcomeEmail = async (to, name, role, options = {}) => {
 // 4. FOLLOW-UP REMINDER EMAIL
 // -----------------------------------------------------------------------------
 exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
+  const displayDate = formatSriLankaDate(date);
   return sendMail({
     from: getResendFromAddress(),
     to,
@@ -1260,7 +1272,7 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
           <p style="font-size: 16px; color: #333333;">This is a friendly reminder for your upcoming medical follow-up.</p>
           <div style="margin: 30px 0; padding: 20px; border-left: 4px solid #3B82F6; background-color: #f4f7f6;">
             <p style="margin: 0 0 10px 0; font-size: 16px; color: #333333;"><strong>Doctor:</strong> ${formatDoctorName(doctorName, 'Medical Professional')}</p>
-            <p style="margin: 0; font-size: 16px; color: #333333;"><strong>Date:</strong> ${date}</p>
+            <p style="margin: 0; font-size: 16px; color: #333333;"><strong>Date:</strong> ${displayDate}</p>
           </div>
           <p style="font-size: 14px; color: #777777;">Please contact the clinic if you need to reschedule.</p>
         </div>
@@ -1413,11 +1425,12 @@ exports.sendReminderEmail = async (patientEmail, patientName, formattedDate, doc
   const cleanName = stripDoctorPrefix(doctorName || 'Your Doctor');
   const safeDoctorName = escapeHtml(formatDoctorName(cleanName));
   const safeCleanName = escapeHtml(cleanName);
-  const safeDate = escapeHtml(formattedDate);
+  const displayDate = formatSriLankaDate(formattedDate);
+  const safeDate = escapeHtml(displayDate);
   const subjects = {
-    en: `MediSync — Appointment Reminder: ${formattedDate}`,
-    si: `MediSync — සායනික හමුව පිළිබඳ සිහිකැඳවීම: ${formattedDate}`,
-    ta: `MediSync — சந்திப்பு நினைவூட்டல்: ${formattedDate}`
+    en: `MediSync — Appointment Reminder: ${displayDate}`,
+    si: `MediSync — සායනික හමුව පිළිබඳ සිහිකැඳවීම: ${displayDate}`,
+    ta: `MediSync — சந்திப்பு நினைவூட்டல்: ${displayDate}`
   };
   const notices = {
     en: `This is a reminder that you have a scheduled consultation with <strong>${safeDoctorName}</strong> on <strong>${safeDate}</strong>.`,
@@ -1472,10 +1485,11 @@ exports.sendDispenseNotificationEmail = async (
     si: 'MediSync — ඔබගේ ඖෂධ නිකුත් කර ඇත',
     ta: 'MediSync — உங்கள் மருந்துகள் வழங்கப்பட்டுள்ளன'
   };
+  const displayDispensedAt = formatSriLankaDateTime(dispensedAt);
   const notices = {
-    en: `Your medication has been dispensed at <strong>${pharmacyName || 'a MediSync Pharmacy'}</strong> by <strong>${dispenserName || 'Pharmacist'}</strong> at ${dispensedAt}.`,
-    si: `ඔබගේ ඖෂධ <strong>${pharmacyName || 'MediSync ඔසුසල'}</strong> වෙතින් <strong>${dispenserName || 'ඖෂධවේදී'}</strong> විසින් ${dispensedAt} වේලාවේදී නිකුත් කරන ලදී.`,
-    ta: `உங்கள் மருந்துகள் <strong>${pharmacyName || 'MediSync மருந்தகம்'}</strong> இல் <strong>${dispenserName || 'மருந்தாளர்'}</strong> மூலம் ${dispensedAt} மணிக்கு வழங்கப்பட்டன.`
+    en: `Your medication has been dispensed at <strong>${pharmacyName || 'a MediSync Pharmacy'}</strong> by <strong>${dispenserName || 'Pharmacist'}</strong> at ${displayDispensedAt}.`,
+    si: `ඔබගේ ඖෂධ <strong>${pharmacyName || 'MediSync ඔසුසල'}</strong> වෙතින් <strong>${dispenserName || 'ඖෂධවේදී'}</strong> විසින් ${displayDispensedAt} වේලාවේදී නිකුත් කරන ලදී.`,
+    ta: `உங்கள் மருந்துகள் <strong>${pharmacyName || 'MediSync மருந்தகம்'}</strong> இல் <strong>${dispenserName || 'மருந்தாளர்'}</strong> மூலம் ${displayDispensedAt} மணிக்கு வழங்கப்பட்டன.`
   };
 
   return sendMail({
@@ -1701,7 +1715,7 @@ exports.sendLoginNotificationEmail = async (
             <li><strong>Device Status:</strong> <span style="font-weight: bold; color: ${isNewDevice ? '#C62828' : '#2E7D32'};">${isNewDevice ? '⚠️ Untrusted / New Device' : '✅ Trusted Device'}</span></li>
             <li><strong>Network Provider:</strong> ${networkInfo?.isp || 'Unknown ISP'}</li>
             <li><strong>Country:</strong> ${networkInfo?.country || 'Unknown Country'}</li>
-            <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+            <li><strong>Time:</strong> ${formatSriLankaDateTime(new Date())}</li>
             <li><small style="color: #777;">Nearest network hub: ${networkInfo?.city || 'Unknown'}, ${networkInfo?.region || 'Unknown'}</small></li>
           </ul>
           <p style="margin-top: 24px; color: #555; font-size: 0.9em;">If this was you, you can safely ignore this email. If not, please contact MediSync security support immediately.</p>
@@ -1880,6 +1894,7 @@ exports.renderBrandEmailHtml = renderBrandEmailHtml;
 
 // 1. Account Invitation
 exports.sendAccountInvitationEmail = async (to, name, inviteUrl, role = 'member', expiresAt = '48 hours', options = {}) => {
+  expiresAt = displayExpiry(expiresAt);
   const lang = resolveLang(options);
   const safeName = escapeHtml(name);
   const safeRoleName = escapeHtml(String(role).replace('_', ' ').toUpperCase());
@@ -1950,6 +1965,7 @@ exports.sendAccountInvitationEmail = async (to, name, inviteUrl, role = 'member'
 
 // 2. Email Address Verification
 exports.sendEmailVerificationEmail = async (to, name, verifyUrl, expiresAt = '24 hours', options = {}) => {
+  expiresAt = displayExpiry(expiresAt);
   const lang = resolveLang(options);
   const safeName = escapeHtml(name);
   const safeExpiresAt = escapeHtml(expiresAt);
@@ -2003,6 +2019,7 @@ exports.sendEmailVerificationEmail = async (to, name, verifyUrl, expiresAt = '24
 
 // 3. Password Reset
 exports.sendPasswordResetEmail = async (to, name, resetUrl, expiresAt = '15 minutes', options = {}) => {
+  expiresAt = displayExpiry(expiresAt);
   const lang = resolveLang(options);
   const safeName = escapeHtml(name);
   const safeExpiresAt = escapeHtml(expiresAt);
@@ -2121,9 +2138,9 @@ exports.sendConsentStatusEmail = async (to, patientName, doctorName, status = 'g
   };
 
   const plainTexts = {
-    en: `Hello ${patientName},\n\nClinical access for ${formattedDoctorName} was ${isGranted ? 'granted' : 'revoked'}.\n\nTimestamp: ${new Date().toISOString()}`,
-    si: `ආයුබෝවන් ${patientName},\n\nවෛද්‍ය ${safeCleanDoc} සඳහා සායනික ප්‍රවේශය ${isGranted ? 'බලය පවරන ලදී' : 'අවලංගු කරන ලදී'}.\n\nවේලාව: ${new Date().toISOString()}`,
-    ta: `வணக்கம் ${patientName},\n\nமருத்துவர் ${safeCleanDoc} க்கான மருத்துவ அணுகல் ${isGranted ? 'வழங்கப்பட்டது' : 'ரத்து செய்யப்பட்டது'}.\n\nநேரம்: ${new Date().toISOString()}`
+    en: `Hello ${patientName},\n\nClinical access for ${formattedDoctorName} was ${isGranted ? 'granted' : 'revoked'}.\n\nTimestamp: ${formatSriLankaDateTime(new Date())}`,
+    si: `ආයුබෝවන් ${patientName},\n\nවෛද්‍ය ${safeCleanDoc} සඳහා සායනික ප්‍රවේශය ${isGranted ? 'බලය පවරන ලදී' : 'අවලංගු කරන ලදී'}.\n\nවේලාව: ${formatSriLankaDateTime(new Date())}`,
+    ta: `வணக்கம் ${patientName},\n\nமருத்துவர் ${safeCleanDoc} க்கான மருத்துவ அணுகல் ${isGranted ? 'வழங்கப்பட்டது' : 'ரத்து செய்யப்பட்டது'}.\n\nநேரம்: ${formatSriLankaDateTime(new Date())}`
   };
 
   return sendMail({
@@ -2136,7 +2153,7 @@ exports.sendConsentStatusEmail = async (to, patientName, doctorName, status = 'g
       bodyHtml: `
         <p>Hello <strong>${safePatientName}</strong>,</p>
         <p>This confirmation confirms that clinical timeline access for <strong>${safeDoctorName}</strong> has been <span style="font-weight: 700; color: ${isGranted ? '#0d9488' : '#e11d48'};">${isGranted ? 'AUTHORIZED' : 'TERMINATED'}</span>.</p>
-        <p style="font-size: 13px; color: #64748b;">Event logged to immutable audit ledger at: ${new Date().toLocaleString()}</p>
+        <p style="font-size: 13px; color: #64748b;">Event logged to immutable audit ledger at: ${formatSriLankaDateTime(new Date())}</p>
       `,
       lang
     })

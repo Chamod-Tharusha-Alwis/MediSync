@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ const formatDate = (dateString) => {
   try {
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return 'Invalid Date';
-    return d.toLocaleString('en-US', {
+    return formatSriLankaDateTime(dateString, 'en-US', {
       year: 'numeric', month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
@@ -208,7 +209,7 @@ const SessionMonitor = () => {
                         <td className="px-6 py-4 font-mono text-xs text-slate-400">{s.identifier || '—'}</td>
                         <td className="px-6 py-4 text-slate-300 text-xs">{s.deviceModel || 'Unknown'}</td>
                         <td className="px-6 py-4 text-slate-400 text-xs font-mono">
-                          {s.loginTime ? new Date(s.loginTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          {s.loginTime ? formatSriLankaDateTime(s.loginTime, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </td>
                         <td className="px-6 py-4 text-slate-400 text-xs">{timeAgo(s.lastUsed)}</td>
                         <td className="px-6 py-4">

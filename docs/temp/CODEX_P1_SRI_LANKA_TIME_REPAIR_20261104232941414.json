@@ -1,0 +1,69 @@
+{
+  "at": "2026-11-04T17:59:41.4162843Z",
+  "bug": "BUG-EMAIL-TIMEZONE-P1",
+  "status": "OFFLINE_PASS_DEPLOYMENT_PENDING",
+  "baseCommit": "efb7eee546613aa144a1148352682297fe0201bf",
+  "displayZone": "Asia/Colombo",
+  "storedDates": "UTC unchanged",
+  "fixedInstant": "2026-11-04T17:36:43.000Z",
+  "expectedDisplay": "11/4/2026, 11:06:43 PM (Sri Lanka time, UTC+05:30)",
+  "rolloverInstant": "2026-11-04T20:00:00Z",
+  "expectedRollover": "11/5/2026, 1:30:00 AM (Sri Lanka time, UTC+05:30)",
+  "offline": {
+    "passed": 2848,
+    "priorFailureReason": "One exact mail-body golden omitted the new display footer; revised to assert exact identical stamped payload at both transports.",
+    "exitCode": 0,
+    "priorFailure": "scratch/clinical-offline-1NEyhS/summary.json",
+    "sourceFrozen": true,
+    "skipped": 0,
+    "receipt": "scratch/clinical-offline-LTvyOe/summary.json",
+    "failed": 0
+  },
+  "build": {
+    "demoImported": false,
+    "warnings": "Existing only",
+    "modules": 116,
+    "exitCode": 0,
+    "command": "npm run build (client)"
+  },
+  "protectedPins": 15,
+  "emailTemplates": "Login, consent, appointment, dispense and absolute expiry formatting; all outgoing HTML/plain-text templates receive one labelled prepared send-time stamp through the real sendMail function.",
+  "uiDateCallReplacements": 45,
+  "uiFilesMigrated": 25,
+  "notificationAbsoluteTime": true,
+  "intentionalExceptions": [
+    "Birth dates remain calendar dates",
+    "Relative durations use epoch differences",
+    "Public activity chart retains explicitly labelled UTC daily buckets",
+    "Device fingerprint observes the real browser zone",
+    "Held PDF generation and protected legacy suspension-message formatting unchanged; client uses structured expiry"
+  ],
+  "confirmedProviderTotals": {
+    "source": "Operator dashboard attestation after five received role alerts",
+    "resend": 6,
+    "combined": 6,
+    "brevo": 0
+  },
+  "fiveRoleNewAlertsReceived": {
+    "admin": 1,
+    "pharmacy": 1,
+    "patient": 1,
+    "source": "Operator receipt attestation, not harness provider telemetry",
+    "hospital": 1,
+    "doctor": 1
+  },
+  "emailLimit": 25,
+  "optionalLoginProof": {
+    "executed": 0,
+    "gates": [
+      "exact deployment live",
+      "offline pass"
+    ],
+    "approved": true,
+    "maximum": 1
+  },
+  "migration": "NONE",
+  "UTCStorageOrKeyChanges": false,
+  "directAtlasRedisConnections": 0,
+  "clinicalWrites": 0
+}

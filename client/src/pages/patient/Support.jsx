@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime, formatSriLankaDate } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -124,7 +125,7 @@ const PatientSupport = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h4 className="text-white font-bold text-lg">{selectedTicket.subject}</h4>
-                  <p className="text-slate-500 text-xs mt-1">Submitted on {new Date(selectedTicket.createdAt).toLocaleString()}</p>
+                  <p className="text-slate-500 text-xs mt-1">Submitted on {formatSriLankaDateTime(selectedTicket.createdAt)}</p>
                 </div>
                 <StatusBadge
                   status={selectedTicket.status === 'Open' ? 'pending' : 'completed'}
@@ -143,7 +144,7 @@ const PatientSupport = () => {
                     <CheckCircle className="w-3.5 h-3.5" /> Support Team Response
                   </div>
                   <p className="text-slate-200 text-sm whitespace-pre-line leading-relaxed">{selectedTicket.adminReply}</p>
-                  <p className="text-slate-500 text-[10px] mt-3">Resolved on {new Date(selectedTicket.repliedAt).toLocaleString()}</p>
+                  <p className="text-slate-500 text-[10px] mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
                 </div>
               ) : (
                 <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-4 flex items-center gap-3 text-slate-400">
@@ -182,7 +183,7 @@ const PatientSupport = () => {
                         customText={ticket.status}
                       />
                       <span className="text-[10px] text-slate-500 font-medium">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
+                        {formatSriLankaDate(ticket.createdAt)}
                       </span>
                     </div>
                     <h4 className="font-bold text-sm truncate">{ticket.subject}</h4>

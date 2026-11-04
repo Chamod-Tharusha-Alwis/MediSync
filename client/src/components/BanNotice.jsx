@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../utils/sriLankaTime';
 import { useTranslation } from '../i18n/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +64,7 @@ const BanNotice = () => {
                     <p className="text-amber-800 font-semibold text-sm">Temporary Suspension</p>
                     {banData.expiresAt && (
                       <p className="text-amber-700 text-sm mt-1">
-                        Until: {new Date(banData.expiresAt).toLocaleDateString('en-US', {
+                        Until: {formatSriLankaDate(banData.expiresAt, 'en-US', {
                           year: 'numeric', month: 'long', day: 'numeric'
                         })}
                       </p>

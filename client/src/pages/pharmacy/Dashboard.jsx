@@ -1,3 +1,4 @@
+import { formatCalendarDate, formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import PatientAccessModal from '../../components/PatientAccessModal';
 import { PatientAccessProvider, usePatientAccess } from '../../context/PatientAccessContext';
@@ -211,7 +212,7 @@ const Dispense = () => {
             </div>
             <div>
               <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.dob", "Date of Birth")}</p>
-              <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? formatCalendarDate(patientInfo.dateOfBirth) : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -404,7 +405,7 @@ const History = () => {
                       <td className="px-6 py-4 font-mono text-slate-300 text-xs">{record.patientNic || '—'}</td>
                       <td className="px-6 py-4 text-slate-300 text-xs font-medium max-w-[200px] truncate" title={drugLabel}>{drugLabel}</td>
                       <td className="px-6 py-4 text-slate-400 font-bold">{record.staffId?.fullName || '—'}</td>
-                      <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right">{new Date(record.createdAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right">{formatSriLankaDateTime(record.createdAt)}</td>
                     </tr>
                   );
                 })}

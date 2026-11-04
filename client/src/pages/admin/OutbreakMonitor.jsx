@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { motion } from 'framer-motion';
@@ -467,7 +468,7 @@ const OutbreakMonitor = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right select-none">
-                        {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : 'N/A'}
+                        {alert.createdAt ? formatSriLankaDateTime(alert.createdAt) : 'N/A'}
                       </td>
                     </tr>
                   );

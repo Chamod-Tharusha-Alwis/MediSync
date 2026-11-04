@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from './sriLankaTime';
 /**
  * client/src/utils/labTestFormatter.js
  * Centralized, safe lab test extraction and formatting utility.
@@ -105,7 +106,7 @@ export function formatLabTestDate(labTest, fallback = '—') {
   if (!rawDate) return fallback;
   try {
     const d = new Date(rawDate);
-    return isNaN(d.getTime()) ? fallback : d.toLocaleDateString();
+    return isNaN(d.getTime()) ? fallback : formatSriLankaDate(rawDate);
   } catch {
     return fallback;
   }
@@ -229,7 +230,7 @@ export function formatStatusHistory(statusHistory) {
     if (entry.changedAt) {
       try {
         const d = new Date(entry.changedAt);
-        if (!isNaN(d.getTime())) date = d.toLocaleDateString();
+        if (!isNaN(d.getTime())) date = formatSriLankaDate(entry.changedAt);
       } catch {
         date = '—';
       }

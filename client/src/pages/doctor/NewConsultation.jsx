@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React, { useState, useEffect, useRef } from 'react';
 import { requiresWriteReconciliation } from '../../utils/clinicalSaveOutcome';
 import { useTranslation } from '../../i18n/LanguageContext';
@@ -858,7 +859,7 @@ const NewConsultation = () => {
                                   </span>
                                   <div>
                                     <p className="text-white">{item.type === 'consultation' ? 'Consultation' : 'Lab/Prescription'}</p>
-                                    <p className="text-xs text-slate-400 font-normal">{new Date(item.date).toLocaleDateString()} {item.data?.hospitalId?.name ? `• ${item.data.hospitalId.name}` : ''}</p>
+                                    <p className="text-xs text-slate-400 font-normal">{formatSriLankaDate(item.date)} {item.data?.hospitalId?.name ? `• ${item.data.hospitalId.name}` : ''}</p>
                                   </div>
                                 </div>
                                 <span className="text-slate-500 group-open:rotate-90 transition-transform">
@@ -1644,7 +1645,7 @@ const NewConsultation = () => {
                             className="mt-2 text-xs text-teal-400 font-semibold flex items-center gap-1.5"
                           >
                             <FiCheck className="w-3 h-3" />
-                            Follow-up scheduled for {new Date(followUpDate).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                            Follow-up scheduled for {formatSriLankaDate(followUpDate, 'en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
                           </motion.p>
                         )}
                       </div>

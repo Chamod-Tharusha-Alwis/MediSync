@@ -31,6 +31,9 @@ module.exports.testMatch.push('<rootDir>/tests/seedDemoOutbreakOffline.test.js',
 module.exports.testMatch.push('<rootDir>/tests/publicBootstrapPublication.test.js');
 module.exports.testMatch.push('<rootDir>/tests/c4VerifierTruthfulness.test.js','<rootDir>/tests/aiResilience.test.js');
 module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionPolicy.test.js');
+module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionBrowser.test.js');
+module.exports.testMatch.push('<rootDir>/tests/sriLankaTime.test.js');
+module.exports.testMatch.push('<rootDir>/tests/emailTemplatesPhase6.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicConsultationActivity.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicActivityLiveVerification.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicHealthMongo.test.js', '<rootDir>/tests/runtimeHealthRevision.test.js', '<rootDir>/tests/universityPublicPrivacy.test.js');

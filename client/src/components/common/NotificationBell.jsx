@@ -1,4 +1,5 @@
 import { useTranslation } from '../../i18n/LanguageContext';
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -249,7 +250,10 @@ const NotificationBellView = () => {
                         <p className={`text-sm ${!n.read ? 'text-slate-200 font-semibold' : 'text-slate-400'}`}>
                           {n.message}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">{timeAgo(n.createdAt)}</p>
+                        <p className="text-xs text-slate-500 mt-1 break-words">
+                          {timeAgo(n.createdAt)}
+                          <time className="block" dateTime={n.createdAt}>{formatSriLankaDateTime(n.createdAt)}</time>
+                        </p>
                       </div>
                       {!n.read && (
                         <button 

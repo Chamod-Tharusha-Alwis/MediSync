@@ -30,7 +30,7 @@ const handler = otc => async (req, res) => {
         const nicHash = crypto.createHash('sha256').update(receipt.patientNic).digest('hex');
         Patient.findOne(nicFilter(receipt.patientNic, { plainFields: ['nic'] })).then(patient => {
           if (patient?.email && (!receipt.patientId || String(receipt.patientId) === String(patient._id))) return require('../services/recipientLanguageService').email({ model: 'Patient', accountId: String(patient._id) }, ({ to, lang }) => emailService.sendDispenseNotificationEmail(to,patient.fullName,'MediSync Pharmacy',
-            String(receipt.staffId),receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),new Date().toLocaleString('en-GB'), { lang }));
+            String(receipt.staffId),receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),receipt.dispensedAt || receipt.createdAt || new Date(), { lang }));
         }).catch(()=>{});
       }
     }

@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { toast } from 'react-toastify';
@@ -423,7 +424,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>Date Prescribed:</span>
-                    <span className="font-mono">{new Date(t.createdAt).toLocaleDateString()}</span>
+                    <span className="font-mono">{formatSriLankaDate(t.createdAt)}</span>
                   </div>
                   <UrgencyBadge urgency={t.urgency} />
                 </div>
@@ -600,12 +601,12 @@ const LabAssistantUpload = () => {
             </div>
             <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
               <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Date Prescribed</span>
-              <span className="text-white font-mono mt-1 block text-sm">{new Date(testData.createdAt).toLocaleDateString()}</span>
+              <span className="text-white font-mono mt-1 block text-sm">{formatSriLankaDate(testData.createdAt)}</span>
             </div>
             {testData.reportUploadedAt && (
               <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Encrypted Release</span>
-                <span className="text-emerald-400 font-mono mt-1 block text-xs font-semibold">{new Date(testData.reportUploadedAt).toLocaleDateString()}</span>
+                <span className="text-emerald-400 font-mono mt-1 block text-xs font-semibold">{formatSriLankaDate(testData.reportUploadedAt)}</span>
               </div>
             )}
           </div>

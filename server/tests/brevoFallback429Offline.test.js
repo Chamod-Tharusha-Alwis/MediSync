@@ -15,6 +15,8 @@ const names = ['NODE_ENV','MEDISYNC_TEST_MODE','EMAIL_SERVICE_LIVE_TEST','RESEND
 let saved, email, resendPost, brevoPost;
 const address = ['operator', 'example.test'].join('@');
 const message = { to: address, subject: 'Offline delivery diagnostic', text: 'Synthetic transport fixture.', html: '<p>Synthetic transport fixture.</p>' };
+beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-11-04T17:36:43Z')); });
+afterEach(() => jest.useRealTimers());
 beforeAll(() => {
   saved = Object.fromEntries(names.map(name => [name, process.env[name]]));
   for (const name of names) delete process.env[name];
@@ -47,7 +49,10 @@ test('actual dispatch classifies mocked HTTP 429 and invokes Brevo once without 
   expect(brevoPost).toHaveBeenCalledTimes(1);
   expect(quota.reserveDailyEmailSlot).toHaveBeenCalledWith('brevo', 300);
   expect(quota.reserveDailyEmailSlot.mock.invocationCallOrder[0]).toBeLessThan(brevoPost.mock.invocationCallOrder[0]);
-  expect(brevoPost.mock.calls[0][1]).toMatchObject({ to: [{ email: address }], subject: message.subject, textContent: message.text, htmlContent: message.html });
+  const time='11/4/2026, 11:06:43 PM (Sri Lanka time, UTC+05:30)';
+  const stampedHtml=message.html+`<p data-medisync-sent-at="Asia/Colombo" style="font-size:12px;color:#64748b;">Sent: ${time}</p>`;
+  expect(brevoPost.mock.calls[0][1]).toMatchObject({ to: [{ email: address }], subject: message.subject, textContent: message.text+'\n\nSent: '+time, htmlContent: stampedHtml });
+  expect(resendPost.mock.calls[0][1].html).toBe(stampedHtml);
   expect(brevoPost.mock.calls[0][1]).not.toHaveProperty('attachment');
   expect(result).toMatchObject({ provider: 'brevo', fallbackUsed: true, primaryErrorCode: 'daily_quota_exceeded', providerAccepted: true, deliveryQueued: false, deliveryConfirmed: false });
 });

@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect } from 'react';
 import { motion} from 'framer-motion';
@@ -123,7 +124,7 @@ const SupportTicketsRoster = () => {
                   
                   <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/60 text-xs text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" /> {new Date(ticket.createdAt).toLocaleString()}
+                      <Calendar className="w-3.5 h-3.5" /> {formatSriLankaDateTime(ticket.createdAt)}
                     </span>
                     {ticket.status === 'Closed' && (
                       <span className="text-emerald-400 font-semibold flex items-center gap-1">
@@ -150,7 +151,7 @@ const SupportTicketsRoster = () => {
                 <div>
                   <h3 className="text-white font-bold text-xl">{selectedTicket.subject}</h3>
                   <p className="text-slate-400 text-xs mt-2 font-mono">NIC: {selectedTicket.patientId?.nic || 'N/A'}</p>
-                  <p className="text-slate-500 text-xs mt-1">Submitted on: {new Date(selectedTicket.createdAt).toLocaleString()}</p>
+                  <p className="text-slate-500 text-xs mt-1">Submitted on: {formatSriLankaDateTime(selectedTicket.createdAt)}</p>
                 </div>
                 
                 <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
@@ -188,7 +189,7 @@ const SupportTicketsRoster = () => {
                         <CheckCircle className="w-3.5 h-3.5" /> Admin Reply Sent
                       </div>
                       <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed">{selectedTicket.adminReply}</p>
-                      <p className="text-slate-500 text-[10px] mt-3">Resolved on {new Date(selectedTicket.repliedAt).toLocaleString()}</p>
+                      <p className="text-slate-500 text-[10px] mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
                     </div>
                   </div>
                 )}

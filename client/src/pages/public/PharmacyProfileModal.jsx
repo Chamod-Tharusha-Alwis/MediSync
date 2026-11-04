@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import { trustedMapEmbedUrl as getEmbedMapUrl } from '../../utils/trustedMapEmbed';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useEffect, useState, useCallback } from 'react';
@@ -220,7 +221,7 @@ const PharmacyProfileModal = ({ pharmacy: initialPharmacy, onClose }) => {
                       <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
                       <div className="flex justify-between items-center mt-3 text-[10px] text-slate-550 font-bold">
                         <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
-                        <span className="font-mono">{new Date(review.createdAt).toLocaleDateString()}</span>
+                        <span className="font-mono">{formatSriLankaDate(review.createdAt)}</span>
                       </div>
                     </div>
                   ))

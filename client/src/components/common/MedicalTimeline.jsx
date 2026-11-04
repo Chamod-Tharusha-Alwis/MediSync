@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -271,7 +272,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
             </span>
             <span className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              {event.date ? new Date(event.date).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
+              {event.date ? formatSriLankaDate(event.date, undefined, { dateStyle: 'medium' }) : '—'}
             </span>
           </div>
 
@@ -388,7 +389,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                 <span className="flex items-center gap-1.5 text-xs text-slate-400">
                   <Package className="w-3.5 h-3.5 text-cyan-400" />
                   {data.pharmacyId?.name || 'Pharmacy'} — {data.dispensedAt
-                    ? new Date(data.dispensedAt).toLocaleDateString()
+                    ? formatSriLankaDate(data.dispensedAt)
                     : 'Date unknown'}
                 </span>
               </div>

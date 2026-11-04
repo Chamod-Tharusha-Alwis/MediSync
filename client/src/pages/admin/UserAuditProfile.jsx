@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -48,7 +49,7 @@ const UserAuditProfile = () => {
 
   const formatDate = (d) => {
     if (!d) return '—';
-    return new Date(d).toLocaleString('en-US', {
+    return formatSriLankaDateTime(d, 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',

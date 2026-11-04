@@ -1,0 +1,153 @@
+{
+  "at": "2026-11-04T17:43:08.8590272Z",
+  "verdict": "SESSION_AUTHENTICATION_PASS_UI_CONSOLE_AND_ADMIN_AVAILABILITY_NOT_ACCEPTED",
+  "runId": "q1_sessions_20261104_c7a4e9b2",
+  "backendCommit": "7e0d9c0c29b99fae985f878698ccf671adce0eac",
+  "frontendCommit": "efb7eee546613aa144a1148352682297fe0201bf",
+  "frontendDeployment": "dpl_746dnUw4uBNCcCEuRYJFW7FAmjsY",
+  "loginPass": 5,
+  "logoutPass": 5,
+  "fullyAcceptedRoles": 0,
+  "roleSessions": [
+    {
+      "role": "admin",
+      "login": 200,
+      "logout": 200,
+      "dashboardDomRendered": true,
+      "temporaryBannerFound": false,
+      "pageErrors": 0,
+      "boundaryConsoleErrors": 14,
+      "otherConsoleErrors": 1.0,
+      "httpFailures": [
+        {
+          "method": "GET",
+          "pathPattern": "/api/admin/ml-status",
+          "status": 503
+        }
+      ],
+      "loginAlertActualCount": "NOT_VERIFIED",
+      "conservativeEmailReservation": 2,
+      "clinicalWrites": 0,
+      "OTPSubmissions": 0,
+      "browserClosed": true,
+      "receipt": "docs/temp/CODEX_Q1_SESSION_admin_1793813798320.json",
+      "receiptSha256": "5f59b7cf6b5fe210506525cdaa7c6c8ee24f49f33844127009c0dc2a894518be"
+    },
+    {
+      "role": "patient",
+      "login": 200,
+      "logout": 200,
+      "dashboardDomRendered": true,
+      "temporaryBannerFound": false,
+      "pageErrors": 0,
+      "boundaryConsoleErrors": 4,
+      "otherConsoleErrors": null,
+      "httpFailures": [],
+      "loginAlertActualCount": "NOT_VERIFIED",
+      "conservativeEmailReservation": 2,
+      "clinicalWrites": 0,
+      "OTPSubmissions": 0,
+      "browserClosed": true,
+      "receipt": "docs/temp/CODEX_Q1_SESSION_patient_1793813893398.json",
+      "receiptSha256": "64d35e6772760dcef2e0f64e0d933dfae4ae87d5c2c3852603b7bf06f49d4c70"
+    },
+    {
+      "role": "doctor",
+      "login": 200,
+      "logout": 200,
+      "dashboardDomRendered": true,
+      "temporaryBannerFound": false,
+      "pageErrors": 0,
+      "boundaryConsoleErrors": 4,
+      "otherConsoleErrors": null,
+      "httpFailures": [],
+      "loginAlertActualCount": "NOT_VERIFIED",
+      "conservativeEmailReservation": 2,
+      "clinicalWrites": 0,
+      "OTPSubmissions": 0,
+      "browserClosed": true,
+      "receipt": "docs/temp/CODEX_Q1_SESSION_doctor_1793813944725.json",
+      "receiptSha256": "66ba24d0beed41bafced7ba024887dfb3b819ccd4525ca6f5a5b77c807a9cb54"
+    },
+    {
+      "role": "hospital",
+      "login": 200,
+      "logout": 200,
+      "dashboardDomRendered": true,
+      "temporaryBannerFound": false,
+      "pageErrors": 0,
+      "boundaryConsoleErrors": 3,
+      "otherConsoleErrors": null,
+      "httpFailures": [],
+      "loginAlertActualCount": "NOT_VERIFIED",
+      "conservativeEmailReservation": 2,
+      "clinicalWrites": 0,
+      "OTPSubmissions": 0,
+      "browserClosed": true,
+      "receipt": "docs/temp/CODEX_Q1_SESSION_hospital_1793813986257.json",
+      "receiptSha256": "630984bb5fdf588c5f37998d9a6efe720e497a92738ee9410849d38eb70f6b95"
+    },
+    {
+      "role": "pharmacy",
+      "login": 200,
+      "logout": 200,
+      "dashboardDomRendered": true,
+      "temporaryBannerFound": false,
+      "pageErrors": 0,
+      "boundaryConsoleErrors": 4,
+      "otherConsoleErrors": null,
+      "httpFailures": [],
+      "loginAlertActualCount": "NOT_VERIFIED",
+      "conservativeEmailReservation": 2,
+      "clinicalWrites": 0,
+      "OTPSubmissions": 0,
+      "browserClosed": true,
+      "receipt": "docs/temp/CODEX_Q1_SESSION_pharmacy_1793814015761.json",
+      "receiptSha256": "0f60437da7dda7dc78ffda1f26b16fe979a736e9a510389fcdd8a25f20606220"
+    }
+  ],
+  "blockedRequests": [
+    {
+      "method": "GET",
+      "pathPattern": "/socket.io/",
+      "count": 29.0
+    }
+  ],
+  "approvedSessionMutations": {
+    "refresh": 0,
+    "login": 5,
+    "logout": 5
+  },
+  "baselineConfirmedSent": 1,
+  "newProviderConfirmedSends": "NOT_VERIFIED",
+  "finalCombinedActual": "AWAITING_OPERATOR_DASHBOARD_COUNTS",
+  "conservativeCombinedUpperBound": 11,
+  "emailLimit": 25,
+  "protectedPins": 15,
+  "offline": {
+    "passed": 2780,
+    "exitCode": 0,
+    "focusedExit": 0,
+    "receipt": "scratch/clinical-offline-vblOYD/summary.json",
+    "failed": 0,
+    "focused": 68
+  },
+  "build": {
+    "exitCode": 0,
+    "modules": 115,
+    "demoImported": false,
+    "warnings": "Existing only"
+  },
+  "admin": {
+    "unsupportedTelemetryFallback": "SOURCE_RISK_ONLY_NOT_OBSERVED_LIVE",
+    "originalSubviewPassingFlagsRejectedByFinalReview": true,
+    "modelStatus": "HTTP_503",
+    "map": "RENDERED_TRUTH_NOT_VERIFIED",
+    "forecast": "NO_FORECAST_VIEW_IMPLEMENTED"
+  },
+  "clinicalWrites": 0,
+  "OTPSubmissions": 0,
+  "directAtlasRedisConnectionsByHarness": 0,
+  "allOwnedBrowsersClosed": true,
+  "realBackendAcceptance": "2/14"
+}

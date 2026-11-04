@@ -543,7 +543,7 @@ describe('R2 Milestone 3: Lab Test Rendering Regression & History Error Boundary
 
       test('extracts and formats valid dates from createdAt, date, reportUploadedAt, orderedAt', () => {
         const iso = '2026-10-31T08:00:00.000Z';
-        const expected = new Date(iso).toLocaleDateString();
+        const expected = '10/31/2026 (Sri Lanka time, UTC+05:30)';
 
         expect(formatLabTestDate({ createdAt: iso })).toBe(expected);
         expect(formatLabTestDate({ date: iso })).toBe(expected);
@@ -618,7 +618,7 @@ describe('R2 Milestone 3: Lab Test Rendering Regression & History Error Boundary
         expect(summary.testName).toBe('Full Blood Count (FBC)');
         expect(summary.status).toBe('Sample Collected');
         expect(summary.reportId).toBe('LAB-2026-8888');
-        expect(summary.date).toBe(new Date('2026-10-31T08:00:00.000Z').toLocaleDateString());
+        expect(summary.date).toBe('10/31/2026 (Sri Lanka time, UTC+05:30)');
         expect(summary.category).toBe('Hematology');
         expect(summary.urgency).toBe('routine');
         expect(summary.notes).toBe('Check hemoglobin and platelets');
@@ -654,7 +654,7 @@ describe('R2 Milestone 3: Lab Test Rendering Regression & History Error Boundary
           testName: 'Full Blood Count (FBC)',
           status: 'Sample Collected',
           displayStatus: 'Sample Collected',
-          date: new Date('2026-10-31T08:00:00.000Z').toLocaleDateString(),
+          date: '10/31/2026 (Sri Lanka time, UTC+05:30)',
           id: 'LAB-2026-8888',
           urgency: 'routine',
         });
@@ -677,12 +677,12 @@ describe('R2 Milestone 3: Lab Test Rendering Regression & History Error Boundary
         expect(formatted).toHaveLength(2);
         expect(formatted[0]).toEqual({
           status: 'Pending',
-          date: new Date('2026-10-31T08:00:00.000Z').toLocaleDateString(),
+          date: '10/31/2026 (Sri Lanka time, UTC+05:30)',
           note: 'Created',
         });
         expect(formatted[1]).toEqual({
           status: 'Sample Collected',
-          date: new Date('2026-10-31T09:00:00.000Z').toLocaleDateString(),
+          date: '10/31/2026 (Sri Lanka time, UTC+05:30)',
           note: 'Sample drawn',
         });
       });

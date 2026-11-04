@@ -1,3 +1,4 @@
+import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useState } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { Send, MessageSquare, Users, MapPin, Loader2, CheckCircle, Bell, Info, Pill, FlaskConical, AlertTriangle } from 'lucide-react';
@@ -219,7 +220,7 @@ const Broadcast = () => {
                         <td className="px-5 py-3 text-slate-400 font-semibold">{b.targetDistrict || b.district || 'Nationwide'}</td>
                         <td className="px-5 py-3 text-slate-500 font-mono text-[10px]">
                           {b.sentAt || b.createdAt 
-                            ? new Date(b.sentAt || b.createdAt).toLocaleString('en-GB')
+                            ? formatSriLankaDateTime(b.sentAt || b.createdAt, 'en-GB')
                             : 'N/A'}
                         </td>
                         <td className="px-5 py-3 text-right">

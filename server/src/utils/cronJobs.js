@@ -176,22 +176,13 @@ const initCronJobs = () => {
             patient.decryptFieldsSync();
           }
 
-          // ── Format the date as a readable string ───────────────────────
-          const formattedDate = new Intl.DateTimeFormat('en-GB', {
-            timeZone: timezone,
-            weekday: 'long',
-            day:     '2-digit',
-            month:   'long',
-            year:    'numeric',
-          }).format(new Date(consult.followUpDate));
-
           const doctorName = consult.doctorId?.fullName || 'Your Doctor';
 
           // ── Send reminder — uses the dedicated 2-day template ───────────
           const result = await dispatch({ appointmentId: String(consult._id), patientId: String(patient._id), scheduledFor: consult.followUpDate }, deliveryOptions => emailService.sendReminderEmail(
             patient.email,
             patient.fullName,
-            formattedDate,
+            consult.followUpDate,
             doctorName,
             { ...require('../services/recipientLanguageService').languageOptionsForRecord('Patient', patient), ...deliveryOptions }
           ));

@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { toast } from 'react-toastify';
@@ -184,7 +185,7 @@ const BanManagement = () => {
                       <p className="line-clamp-2">{ban.reason}</p>
                     </td>
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
-                      {ban.expiresAt ? new Date(ban.expiresAt).toLocaleDateString() : 'Permanent'}
+                      {ban.expiresAt ? formatSriLankaDate(ban.expiresAt) : 'Permanent'}
                     </td>
                     <td className="px-6 py-4">
                       {ban.isActive ? (

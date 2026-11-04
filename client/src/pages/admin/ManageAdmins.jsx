@@ -1,3 +1,4 @@
+import { formatSriLankaDate } from '../../utils/sriLankaTime';
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -107,7 +108,7 @@ const ManageAdmins = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">
-                    {new Date(admin.createdAt).toLocaleDateString()}
+                    {formatSriLankaDate(admin.createdAt)}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded text-xs font-bold ${

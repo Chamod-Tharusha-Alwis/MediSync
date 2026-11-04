@@ -287,7 +287,7 @@ describe('Email Templates & Security Engine (Stage 4)', () => {
 
     // Reminder (ta)
     expect(captured[3].subject).toContain('சந்திப்பு நினைவூட்டல்');
-    expect(captured[3].html).toContain('2026-11-15');
+    expect(captured[3].html).toContain('11/15/2026 (Sri Lanka time, UTC+05:30)');
 
     // Dispense (si)
     expect(captured[4].subject).toContain('ඔබගේ ඖෂධ නිකුත් කර ඇත');
