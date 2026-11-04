@@ -98,3 +98,15 @@ All final source frozen:2,554PASS/0FAIL/0SKIP,exit0,scratch/clinical-offline-zZz
 ### Lead exact-candidate hygiene 2026-11-04T11:05:27.198Z
 
 Thirty explicit paths, four requested component/exclusive-test deletions, no unrelated files. Staged diffcheck0. Scanner5matches are only process.env references for public legacy React banner flags in notice-removal tests, no credential value. Protected15/15unchanged; index contains no private credential/evidence/runtime files.
+
+## 2026-11-04T11:53:30.310Z — Q6 C7 claimed
+
+Definition docs/WORK_TRACKING.md W3: dedicated404, error boundary, submit locks, loading/empty audit and Lighthouse90. Current App.js catchall redirectsselect-role. Implement small trilingual publicNotFound without reflecting raw URLs; preserve existing route/error/auth policy. Test real React Router catchall and page navigation with inert child boundaries. Then full offline/build/public-only browser. Role forms/Lighthouse not declared done by this substep.
+
+## Q6 focused test gate — 4 November 2026
+
+Added lazy public NotFound catchall, fixed destination links, heading focus,44px controls and existing language selector; four notFound keys in EN/SI/TA. Does not reflect pathname/query or expose exception details. Real Router integration eight tests PASS/exit0: all languages, both recovery destinations, language persistence, existing login route precedence, existing render boundary containment. First test invocation failed before executing any cases because the Jest factory referenced window outside its allowed binding; corrected to global.window, no product/assertion weakening. Full offline/build underway. This is SPA content404; hosting HTTP status remains independent/not altered. Protected ledger/source untouched.
+
+## 2026-11-04T11:57:23.509Z — Q6 public404 local gate
+
+Eight actual Router/React tests PASS/exit0. Final node scripts/run_offline_tests.js:2603PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins; scratch/clinical-offline-E2WHwP/summary.json. Client485/54suites, backend1980/94, emailPDF31, MLscoring40, Flask27, root40. npm run build exit0 with existingwarnings only,116clinicalmodules/demoImported=false. No protected change. Existing error boundary behavior verified, no extraction necessary. Unknown public routes now render a localized recovery page without reflecting raw URL; known auth routes unchanged. Role forms and Lighthouse>=90 NOT VERIFIED; this does not complete C7. No authentication/provider/clinical write.

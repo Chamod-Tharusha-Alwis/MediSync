@@ -76,3 +76,7 @@ Initial96-observation matrix has60rows without a local switcher, not96complete p
 ## Q1 one-shot doctor 2026-11-04T11:42:30.933Z
 
 {"role":"doctor","expectedCommit":"800d87abbf1773645fb83bd9efcf6f1b526e9df4","loginStatus":200,"authRequests":1,"passed":false,"category":"ROLE_BROWSER_STEP_FAILED_SANITIZED","observations":0,"clinicalWrites":0,"OTPSubmissions":0,"potentialAuthEmailUpperBound":1,"emailDelivery":"NOT_VERIFIED","receipt":"docs/temp/CODEX_Q1_ROLE_DOCTOR_20261104114230933.json"}
+
+## 2026-11-04T11:53:30.310Z — Q4 exact deployment and scoped verdict
+
+Commit d6c8040e48489c0314552f7607040464dbd808f4 pushed main after clean pull--rebase. Both exact-head CI workflows success:41824022270 clinical,41824022348 security. Backendhealth200exactSHA; VercelaliasREADY dpl_8n36wcvVVtBNBd6fKXpve8Wwszna exactSHA. Actual repaired verifier exit0/PASS, receipt docs/temp/CODEX_C4_READONLY_20261104115201786_71b1f588.json; both health200/ready, no retry. Verdict only READ_ONLY_HEALTH_AND_LOCAL_CONTRACTS; ML deployment identity not exposed, clinical inference/browser acceptance NOT VERIFIED. No login repeated or clinical/provider write.

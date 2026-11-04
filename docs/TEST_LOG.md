@@ -1,5 +1,10 @@
 # MediSync Test Log
 
+## 2026-11-04T11:57:23.509Z — Q6 public404 local gate
+
+Eight actual Router/React tests PASS/exit0. Final node scripts/run_offline_tests.js:2603PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins; scratch/clinical-offline-E2WHwP/summary.json. Client485/54suites, backend1980/94, emailPDF31, MLscoring40, Flask27, root40. npm run build exit0 with existingwarnings only,116clinicalmodules/demoImported=false. No protected change. Existing error boundary behavior verified, no extraction necessary. Unknown public routes now render a localized recovery page without reflecting raw URL; known auth routes unchanged. Role forms and Lighthouse>=90 NOT VERIFIED; this does not complete C7. No authentication/provider/clinical write.
+
+
 ## Q4 C4 verifier correction — final local gate, 2026-11-04
 
 - Actual original false-success repro:2inert TIMEOUT requests,0network,passed=true/exit0. Receipt `docs/temp/CODEX_Q4_FALSE_SUCCESS_REPRO_20261104_7ac08c.json`; historical live report unchanged.

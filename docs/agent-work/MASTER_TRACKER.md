@@ -7,9 +7,9 @@ Started 2026-11-04T05:52:16.227Z. Source main f825df43c8d42032e1cf77447de85b205a
 | Q1 | Live recheck and truthful banner removal | C/F | BLOCKED | 800d87abbf1773645fb83bd9efcf6f1b526e9df4 | 2026-11-04T11:05:59Z | Backend health200 exactSHA; Vercel READY | Public matrix qualified; role acceptance FAIL | Doctor login200 once; harness boundary/navigation failed,90blocks; other roles not run. |
 | Q2 | Durable real-only public statistics | A/B | BLOCKED | 873e321f6f017c01d1c6c9adf7668c3db29a559a | 2026-11-04T06:19:36Z | Backend health200 exactSHA; Vercel alias exactSHA READY | Safe unavailable503; public simulation/range400 | Positive trusted-data/restart acceptance NOT VERIFIED; no data repair authorized. |
 | Q3 | Doctor consultation carry-over verification | A/B/C | BLOCKED | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q4 | C4 definition and acceptance reconciliation | A/B/C | LOCAL_DONE | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q5 | C5 disease and drug coverage | A/B | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q6 | C7 release hardening | B/C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
+| Q4 | C4 definition and acceptance reconciliation | A/B/C | BLOCKED | d6c8040e48489c0314552f7607040464dbd808f4 | Exact timestamp not captured; successful Git push observed | Backend200exactSHA/VercelREADY | Health/local contracts PASS; clinical browser NOT VERIFIED | Both CI green41824022270/41824022348;2595PASS/build0. |
+| Q5 | C5 disease and drug coverage | A/B | BLOCKED | — | — | ML commit not exposed | ML health200/71704 ICD concepts | Drug/interaction role UI held after failed one-shot harness; local inventory distinct from live. |
+| Q6 | C7 release hardening | B/C | LOCAL_DONE | — | — | NOT VERIFIED | NOT VERIFIED | Implement public404; other form/role/accessibility gates tracked separately. |
 | Q7 | Trilingual parity and role walkthrough | D | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q8 | UI polish and accessibility | C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q9 | Security review and operator hardening | E/B | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |

@@ -1,5 +1,6 @@
 // Sinhala UI Dictionary (si)
 export const si = {
+  notFound: { title: 'පිටුව හමු නොවීය', description: 'මෙම පිටුව නොපවතී. ඉදිරියට යාමට පහත ගමනාන්තයක් තෝරන්න.', home: 'මුල් පිටුවට යන්න', signIn: 'පිවිසීමේ භූමිකාව තෝරන්න' },
   hospitalLink: { doctorId: 'හෝ MediSync වෛද්‍ය හැඳුනුම් අංකය', registeredEmail: 'වෛද්‍යවරයාගේ ලියාපදිංචි ඊමේල් ලිපිනය', saved: 'වෛද්‍යවරයා සම්බන්ධ කරන ලදී. ආරාධනාව භාරදුන් බව තහවුරු කර නොමැත.' },
   notificationStatus: { unavailable: 'දැනුම්දීම් ලබාගත නොහැක. නැවත උත්සාහ කරන්න.', markAll: 'සියල්ල කියවූ ලෙස සලකුණු කරන්න', markRead: 'දැනුම්දීම කියවූ ලෙස සලකුණු කරන්න' },
   serviceStatus: { directoryUnavailable: 'නාමාවලිය ලබාගත නොහැක. නැවත උත්සාහ කරන්න.', retry: 'නැවත උත්සාහ කරන්න' },

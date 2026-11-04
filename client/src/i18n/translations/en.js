@@ -1,5 +1,6 @@
 // English UI Dictionary (en)
 export const en = {
+  notFound: { title: 'Page not found', description: 'This page does not exist. Choose a destination below to continue.', home: 'Go to home', signIn: 'Choose a sign-in role' },
   hospitalLink: { doctorId: 'OR MediSync Doctor ID', registeredEmail: 'Doctor Registered Email', saved: 'Doctor linked. Invitation delivery is not confirmed.' },
   notificationStatus: { unavailable: 'Notifications unavailable. Please try again.', markAll: 'Mark all read', markRead: 'Mark notification as read' },
   serviceStatus: { directoryUnavailable: 'Directory unavailable. Please try again.', retry: 'Try again' },

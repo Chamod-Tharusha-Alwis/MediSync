@@ -21,6 +21,7 @@ const SelectRole        = React.lazy(() => import('./pages/SelectRole'));
 const Register          = React.lazy(() => import('./pages/auth/RegistrationEntry'));
 const ForgotPassword    = React.lazy(() => import('./pages/public/ForgotPassword'));
 const ResetPassword     = React.lazy(() => import('./pages/public/ResetPassword'));
+const NotFound          = React.lazy(() => import('./pages/public/NotFound'));
 
 // Public directory pages
 const DoctorDirectory   = React.lazy(() => import('./pages/public/DoctorDirectory'));
@@ -178,7 +179,7 @@ function AppRoutes() {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/select-role" replace />} />
+          <Route path="*" element={<NotFound />} />
             </Routes>
           </AnimatePresence>
         </Suspense>
