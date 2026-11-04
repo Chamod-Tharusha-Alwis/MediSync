@@ -21,3 +21,7 @@ Fresh operator provider total was Resend0/Brevo0, cap30. Backend health and Verc
 
 - 2026-11-04T12:25:31.124Z — Q1 historical90method/path accounting is unrecoverable from the aggregate receipt; new counters are proposal-only. No login approval exists for a retry/new runner. Email totals are unconfirmed placeholders.
 - 2026-11-04T12:25:31.124Z — Q2 cache failures are repaired offline, but actual live503cause needs one fixed sanitized stage/category line after deploy. Clinical review metadata is not written by current normal workflow; do not invent confirmation or modify records without separate scope.
+
+## 2026-11-04T12:38:04.827Z — Q2 confirmed failing gate and operator contract decision
+
+Operator-supplied Render line at12:29:45UTC onfb4dc0b: [PublicHealth] stage=SOURCE_READ_AND_VERIFY category=REPORTING_REVIEW_REQUIRED. Actual live cause is missing/invalid review object on an admitted candidate; record counts/identities remain unobserved. Operator chose separate public consultation activity (visits, not cases), durableMongo/real-only; confirmed-case/outbreak/forecast values remain unavailable/null; clinical review deferred. Operator explicitly requires page/API field list before implementation. Scope proposal docs/temp/CODEX_Q2_ACTIVITY_SCOPE_FOR_CONFIRMATION_20261104123804827.md. No new application code, records, login or database operation after this decision.

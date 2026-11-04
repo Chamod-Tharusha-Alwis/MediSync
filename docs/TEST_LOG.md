@@ -1,5 +1,10 @@
 # MediSync Test Log
 
+## 2026-11-04T17:04:25.286Z — Q2 approved public activity final local gate
+
+2760PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins; scratch/clinical-offline-W89qi8. Final buildexit0,115modules/demoImported=false,existingwarnings only. Activity59/verifier11/newclient26/migrated36 PASS. Independent reviewer59backend+29clientPASS, no edits/live calls. Private pages/shared admin map/confirmed-case API/ML/protected files unchanged. Public page only requests activity, inline trilingual definition, neutral empty/suppressed states, explicit null/unavailable clinical panels. Selected districts hide under5totals and all daily counts; cache/client scope checks prevent bypass. No record/ingest/cache-clear/login. Receipt docs/temp/CODEX_Q2_ACTIVITY_IMPLEMENTATION_20261104170425286.json. Deployment and9anonymous views pending.
+
+
 ## 2026-11-04T12:25:31.124Z — Q1 session proposal / Q2 cache isolation final local gate
 
 Historical90request rejections have no saved method/path metadata: all90NOT_RECORDED, not an invented breakdown. No new auth/OTP/provider/clinical action. Session proposal defaults closed; allows only one approved login/refresh/logout each, requires role/token/noOTP completion proof, keeps original universal read-only guard unchanged and records fixed sanitized counters. Purepolicy only; live runner/transport/marker integration not qualified and login approval pending. Fresh provider counts are placeholders, not evidence; cap30.

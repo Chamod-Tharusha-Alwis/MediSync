@@ -1,3 +1,4 @@
+import {activityFixture} from './activityFixture';
 import React from 'react';
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import PublicHealth from '../pages/public/PublicHealth';
@@ -45,13 +46,13 @@ describe('Public Health retry & graceful degradation regression', () => {
     render(<PublicHealth />);
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Health statistics are temporarily unavailable. No case counts are shown.');
+    expect(alert).toHaveTextContent('Recorded visit statistics are temporarily unavailable. No visit counts are shown.');
 
     const retryBtn = screen.getByRole('button', { name: 'Retry' });
     expect(retryBtn).toBeInTheDocument();
 
     // Must not render Total Cases during unavailable state
-    expect(screen.queryByText('Total Cases')).not.toBeInTheDocument();
+    expect(screen.queryByText('Recorded visits')).not.toBeInTheDocument();
   });
 
   test('Clicking Retry dispatches another request and renders data on success', async () => {
@@ -61,12 +62,7 @@ describe('Public Health retry & graceful degradation regression', () => {
       })
       .mockResolvedValueOnce({
         data: {
-          data: {
-            totalCases: 42,
-            byDistrict: [{ district: 'Colombo', totalCases: 42 }],
-            byDisease: [{ disease: 'Dengue', totalCases: 42 }],
-            trend: [{ date: '2026-11-01', count: 42 }]
-          }
+          data: activityFixture(42)
         }
       });
 
@@ -83,7 +79,7 @@ describe('Public Health retry & graceful degradation regression', () => {
     // After retry click, second call dispatched and Total Cases rendered
     await waitFor(() => {
       expect(api.get).toHaveBeenCalledTimes(2);
-      expect(screen.getByText('Total Cases')).toBeInTheDocument();
+      expect(screen.getByText('Recorded visits')).toBeInTheDocument();
       expect(screen.getAllByText('42').length).toBeGreaterThan(0);
     });
 

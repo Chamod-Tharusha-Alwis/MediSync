@@ -20,3 +20,13 @@ Created 2026-11-04T05:52:16.227Z. No work completed by this role yet. Entries mu
 ## 2026-11-04T11:53:30.310Z — Q5 read-only catalogue facts
 
 Definition docs/WORK_TRACKING.md W2. Public MLhealth200 reports7files/71704ICDconcepts/clinicalValidationnot_established; no drug/interaction counts or commit. Receipt CODEX_Q5_ML_HEALTH_1793793066937.json. Local integrity-verified7manifestfiles:3000drug rows,191541interaction rows,71704ICDrows; symptomCSV4920nonemptyrows/41labels. Receipt CODEX_Q5_LOCAL_CATALOGUE_1793793082401.json. These are local reference rows, not clinical validation or deployed-drug counts. Role drug-search/interaction UI is BLOCKED after one-shot Doctor harness failure; no login/inferencePOST repeated.
+
+## 2026-11-04T16:50:51.839Z — Approved public activity implementation / worker limit takeover
+
+Operator confirmed separate durable real-only consultation visits, no health-stats call on public load, inline EN/SI/TA visit definition, neutral zero/all-suppressed states, and nine public browser views after deploy. Authenticated inventory supplied before application edits; source report docs/temp/CODEX_Q2_AUTHENTICATED_VIEW_INVENTORY_20261104165051839.md. No role login. Both workers stopped at usage limit before completion; backend left partial service/controller/route registration, frontend left only DTO helper. Lead inspected and completed implementation/tests; no worker completion or independent signoff is fabricated.
+
+Lead focused backend53activity cases plus11live-verifier predicate cases PASS; client23new cases plus36migrated public tests PASS. All36prior public-case consumer assertions were migrated to approved activity meaning; pure clustering/forecast helpers and authenticated sources remain unchanged. Optional district in existing schemas is not invented: missing location retains the saved visit in total/trend but no district row; invalid location types still fail. Full regression/build underway.
+
+## 2026-11-04T17:04:25.286Z — Q2 approved public activity final local gate
+
+2760PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins; scratch/clinical-offline-W89qi8. Final buildexit0,115modules/demoImported=false,existingwarnings only. Activity59/verifier11/newclient26/migrated36 PASS. Independent reviewer59backend+29clientPASS, no edits/live calls. Private pages/shared admin map/confirmed-case API/ML/protected files unchanged. Public page only requests activity, inline trilingual definition, neutral empty/suppressed states, explicit null/unavailable clinical panels. Selected districts hide under5totals and all daily counts; cache/client scope checks prevent bypass. No record/ingest/cache-clear/login. Receipt docs/temp/CODEX_Q2_ACTIVITY_IMPLEMENTATION_20261104170425286.json. Deployment and9anonymous views pending.

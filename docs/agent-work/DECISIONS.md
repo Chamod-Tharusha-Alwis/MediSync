@@ -17,3 +17,6 @@
 
 - 2026-11-04T11:20:33.526Z — Use the actual Home language selector then navigate for pages without their own selector; distinguish persisted translated rendering from a working local switcher. No direct storage mutation. Missing widgets remain Q7, not a hidden PASS.
 - 2026-11-04T11:20:33.526Z — Proceed with independent Q4 verifier repair while Q1/Q3 await their external gates. A source-string check cannot count as live clinical or browser acceptance. Current C4 verifier must fail closed on health/timeouts and preserve historical evidence.
+
+- 2026-11-04T17:04:25.286Z — Operator confirmed visit activity as a separate public metric. Never reinterpret confirmed-case fields as visits. No public health-stats request in this phase; cases/outbreaks/forecast remainnull. Keep clinical review deferred.
+- 2026-11-04T17:04:25.286Z — Selected-district totals below5are genuinely suppressed and all selected-district daily rows withheld; national complete-empty0visits remains valid. Additional disclosure flags encode withheld data, not fabricated zeroes. No claim of full anonymity certification.

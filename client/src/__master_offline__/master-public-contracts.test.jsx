@@ -1,3 +1,4 @@
+import {activityFixture} from './activityFixture';
 import React from 'react';
 import {render,screen,waitFor,fireEvent,cleanup} from '@testing-library/react';
 import {trustedMapEmbedUrl} from '../utils/trustedMapEmbed';
@@ -19,7 +20,7 @@ test('hospital selection uses the authenticated login address instead of the fir
  const first={orgEmail:'first@example.invalid',isActive:true},second={orgEmail:'second@example.invalid',isActive:true};expect(selectDoctorWorkspace([first,second],'SECOND@example.invalid')).toBe(second);expect(()=>selectDoctorWorkspace([first,second],'personal@example.invalid')).toThrow();expect(()=>selectDoctorWorkspace([{...second,isActive:false}],'second@example.invalid')).toThrow();
 });
 test('public-health API uses the configured backend client; unmount aborts its owned request',async()=>{
- api.get.mockRejectedValue(Error('inert unavailable service'));const {unmount}=render(<PublicHealth/>);await screen.findByText('Failed to load health statistics.');const call=api.get.mock.calls.find(row=>row[0]==='/public/health-stats');expect(call).toBeDefined();expect(call[1].signal.aborted).toBe(false);unmount();expect(call[1].signal.aborted).toBe(true);
+ api.get.mockRejectedValue(Error('inert unavailable service'));const {unmount}=render(<PublicHealth/>);await screen.findByText('Recorded visit statistics are temporarily unavailable. No visit counts are shown.');const call=api.get.mock.calls.find(row=>row[0]==='/public/consultation-activity');expect(call).toBeDefined();expect(call[1].signal.aborted).toBe(false);unmount();expect(call[1].signal.aborted).toBe(true);
 });
 test('review service failure is visible and cannot become an empty-review success',async()=>{
  localStorage.setItem('role','patient');api.get.mockRejectedValue(Error('inert unavailable service'));render(<DoctorProfileModal doctor={{_id:'000000000000000000000001',fullName:'Synthetic Doctor'}} onClose={()=>{}}/>);fireEvent.click(screen.getByRole('button',{name:'Patient Feedback'}));await waitFor(()=>expect(screen.getByRole('alert')).toBeInTheDocument());expect(screen.getByRole('link',{name:/Review a verified visit/})).toHaveAttribute('href','/patient/dashboard/history');expect(api.post).not.toHaveBeenCalled();
@@ -29,16 +30,16 @@ test.each([
  {isSyntheticUniversityData:true},{isUniversityDemo:true},{demoBatchId:'owned-demo'},
  {syntheticSeedBatch:'owned-demo'},{datasetVersion:'owned-demo'},{testRunId:'owned-run'}
 ])('public health rejects flagged simulated data instead of silently displaying national counts (%p)',async provenance=>{
- api.get.mockResolvedValueOnce({data:{data:{totalCases:1200,byDistrict:[],byDisease:[],trend:[],...provenance}}});
+ api.get.mockResolvedValueOnce({data:{data:{...activityFixture(1200),...provenance}}});
  render(<PublicHealth/>);
- expect(await screen.findByRole('alert')).toHaveTextContent('No case counts are shown.');
- expect(screen.queryByText('Total Cases')).not.toBeInTheDocument();
+ expect(await screen.findByRole('alert')).toHaveTextContent('No visit counts are shown.');
+ expect(screen.queryByText('Recorded visits')).not.toBeInTheDocument();
  expect(screen.queryByTestId('demonstration-data-banner')).not.toBeInTheDocument();
 });
 
 test('public health renders real-only totals without a temporary data banner',async()=>{
- api.get.mockResolvedValueOnce({data:{data:{totalCases:50,byDistrict:[],byDisease:[],trend:[],forecast:[]}}});
- render(<PublicHealth/>);await screen.findByText('50');
- expect(screen.getByText('Total Cases')).toBeInTheDocument();
+ api.get.mockResolvedValueOnce({data:{data:activityFixture(50)}});
+ render(<PublicHealth/>);await screen.findByTestId('activity-total-visits');
+ expect(screen.getByText('Recorded visits')).toBeInTheDocument();
  expect(screen.queryByTestId('demonstration-data-banner')).not.toBeInTheDocument();
 });

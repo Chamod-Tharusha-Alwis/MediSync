@@ -1,3 +1,4 @@
+import {activityFixture} from './activityFixture';
 import React from 'react';
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import PublicHealth from '../pages/public/PublicHealth';
@@ -135,129 +136,9 @@ describe('Feature C3: Outbreak Map & Clustering Suite', () => {
     });
   });
 
-  describe('PublicHealth Dashboard Component Integration', () => {
-    test('renders outbreak map dashboard with active clusters and dynamic legend summing to 25', async () => {
-      const mockResponse = {
-        totalCases: 3200,
-        byDistrict: [
-          { district: 'Colombo', totalCases: 1200, topDisease: 'Dengue' },
-          { district: 'Gampaha', totalCases: 700, topDisease: 'Dengue' },
-          { district: 'Kalutara', totalCases: 600, topDisease: 'Leptospirosis' },
-          { district: 'Kandy', totalCases: 550, topDisease: 'Influenza' },
-          { district: 'Kurunegala', totalCases: 150, topDisease: 'Dengue' }
-        ],
-        byDisease: [
-          { disease: 'Dengue', totalCases: 2050 },
-          { disease: 'Leptospirosis', totalCases: 600 },
-          { disease: 'Influenza', totalCases: 550 }
-        ],
-        trend: [
-          { date: '2026-10-29', count: 100 },
-          { date: '2026-10-30', count: 110 },
-          { date: '2026-10-31', count: 120 }
-        ]
-      };
-
-      api.get.mockResolvedValue({ data: { data: mockResponse } });
-
-      render(<PublicHealth />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Total Cases')).toBeInTheDocument();
-        expect(screen.getByText('3,200')).toBeInTheDocument();
-      });
-
-      // Active clusters section
-      const clusterSection = screen.getByTestId('active-clusters-section');
-      expect(clusterSection).toBeInTheDocument();
-      expect(clusterSection).toHaveTextContent('Active Regional Outbreak Clusters');
-
-      // Legend rendered with live counts
-      const legend = screen.getByTestId('map-risk-legend');
-      expect(legend).toBeInTheDocument();
-      expect(legend).toHaveTextContent('Risk Tier Legend (25 Districts)');
-      expect(legend).toHaveTextContent('Critical: 1'); // Colombo
-      expect(legend).toHaveTextContent('High: 3');     // Gampaha, Kalutara, Kandy
-      expect(legend).toHaveTextContent('Moderate: 1'); // Kurunegala
-    });
-
-    test('toggles accessible table view and renders all 25 districts', async () => {
-      api.get.mockResolvedValue({
-        data: {
-          data: {
-            totalCases: 1500,
-            byDistrict: [{ district: 'Colombo', totalCases: 1500, topDisease: 'Dengue' }],
-            byDisease: [{ disease: 'Dengue', totalCases: 1500 }],
-            trend: [{ date: '2026-10-31', count: 50 }]
-          }
-        }
-      });
-
-      render(<PublicHealth />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Total Cases')).toBeInTheDocument();
-      });
-
-      const toggleBtn = screen.getByTestId('toggle-table-view');
-      expect(toggleBtn).toBeInTheDocument();
-      expect(toggleBtn).toHaveTextContent('Accessible Table View');
-
-      // Click to toggle to table view
-      fireEvent.click(toggleBtn);
-
-      const table = screen.getByRole('table', { name: /district outbreak surveillance table/i });
-      expect(table).toBeInTheDocument();
-
-      // Ensure key districts are in the table
-      expect(screen.getByRole('cell', { name: 'Colombo' })).toBeInTheDocument();
-      expect(screen.getByRole('cell', { name: 'Nuwara Eliya' })).toBeInTheDocument();
-      expect(screen.getByRole('cell', { name: 'Monaragala' })).toBeInTheDocument();
-      expect(screen.getByRole('cell', { name: 'Jaffna' })).toBeInTheDocument();
-
-      // Toggle back to map view
-      fireEvent.click(toggleBtn);
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    });
-
-    test('dispatches disease filter to health stats endpoint', async () => {
-      api.get.mockResolvedValue({
-        data: {
-          data: {
-            totalCases: 500,
-            byDistrict: [{ district: 'Colombo', totalCases: 500, topDisease: 'Dengue' }],
-            byDisease: [{ disease: 'Dengue', totalCases: 500 }],
-            trend: []
-          }
-        }
-      });
-
-      render(<PublicHealth />);
-
-      await waitFor(() => {
-        expect(api.get).toHaveBeenCalledWith(
-          '/public/health-stats',
-          expect.objectContaining({
-            params: expect.objectContaining({ disease: 'all' })
-          })
-        );
-      });
-
-      // Open combobox and select Dengue
-      const diseaseBtn = screen.getByRole('button', { name: /disease filter/i });
-      fireEvent.click(diseaseBtn);
-
-      const dengueOption = screen.getByRole('option', { name: /dengue/i });
-      fireEvent.click(dengueOption);
-
-      await waitFor(() => {
-        expect(api.get).toHaveBeenCalledWith(
-          '/public/health-stats',
-          expect.objectContaining({
-            params: expect.objectContaining({ disease: 'Dengue' })
-          })
-        );
-      });
-    });
+  describe('Public consultation activity integration (clinical cluster helpers above stay unchanged)',()=>{
+    test('visit totals cannot create outbreak clusters or a risk-tier legend',async()=>{api.get.mockResolvedValue({data:{data:activityFixture(3200)}});render(<PublicHealth/>);await screen.findByTestId('activity-total-visits');expect(screen.queryByTestId('active-clusters-section')).not.toBeInTheDocument();expect(screen.queryByTestId('map-risk-legend')).not.toBeInTheDocument();expect(screen.getByTestId('surveillance-outbreak-clusters-value')).toHaveTextContent('Not available');});
+    test('accessible district table retains25districts and suppression semantics',async()=>{api.get.mockResolvedValue({data:{data:activityFixture(1500)}});render(<PublicHealth/>);await screen.findByTestId('activity-total-visits');const table=screen.getByRole('table',{name:'District visit counts'});expect(table).toBeInTheDocument();expect(table.querySelectorAll('tbody tr')).toHaveLength(25);expect(screen.getByRole('button',{name:'Nuwara Eliya'})).toBeInTheDocument();expect(screen.getAllByText('Not disclosed (<5)').length).toBe(24);});
+    test('only district/time filters reach activity endpoint; no disease or confirmed-case request',async()=>{api.get.mockImplementation((_url,options)=>Promise.resolve({data:{data:activityFixture(500,{rangeDays:Number(options.params.rangeDays)})}}));render(<PublicHealth/>);await screen.findByTestId('activity-total-visits');fireEvent.change(screen.getByRole('combobox',{name:'Time range'}),{target:{value:'7'}});await waitFor(()=>expect(api.get).toHaveBeenLastCalledWith('/public/consultation-activity',expect.objectContaining({params:{rangeDays:7,district:'all'}})));expect(api.get.mock.calls.some(([url])=>url.includes('health-stats'))).toBe(false);expect(screen.queryByRole('button',{name:'Disease filter'})).not.toBeInTheDocument();});
   });
 });
