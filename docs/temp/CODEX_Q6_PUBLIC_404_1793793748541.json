@@ -1,0 +1,170 @@
+{
+  "expectedBackendCommit": "d6c8040e48489c0314552f7607040464dbd808f4",
+  "backendTreeEqualToFrontendCommit": true,
+  "at": "2026-11-04T12:02:11.008Z",
+  "expectedCommit": "b911713a28a85783926c89ad08c623b4251e84a1",
+  "scope": "ANONYMOUS_PUBLIC_404_ONLY",
+  "passed": true,
+  "authRequests": 0,
+  "clinicalWrites": 0,
+  "observations": [
+    {
+      "at": "2026-11-04T12:02:18.554Z",
+      "viewport": [
+        320,
+        740
+      ],
+      "requestedLanguage": "en",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "en",
+      "heading": "Page not found",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-320-en.png"
+    },
+    {
+      "at": "2026-11-04T12:02:18.778Z",
+      "viewport": [
+        320,
+        740
+      ],
+      "requestedLanguage": "si",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "si",
+      "heading": "පිටුව හමු නොවීය",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-320-si.png"
+    },
+    {
+      "at": "2026-11-04T12:02:18.944Z",
+      "viewport": [
+        320,
+        740
+      ],
+      "requestedLanguage": "ta",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "ta",
+      "heading": "பக்கம் கிடைக்கவில்லை",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-320-ta.png"
+    },
+    {
+      "at": "2026-11-04T12:02:20.197Z",
+      "viewport": [
+        375,
+        740
+      ],
+      "requestedLanguage": "en",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "en",
+      "heading": "Page not found",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-375-en.png"
+    },
+    {
+      "at": "2026-11-04T12:02:20.365Z",
+      "viewport": [
+        375,
+        740
+      ],
+      "requestedLanguage": "si",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "si",
+      "heading": "පිටුව හමු නොවීය",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-375-si.png"
+    },
+    {
+      "at": "2026-11-04T12:02:20.519Z",
+      "viewport": [
+        375,
+        740
+      ],
+      "requestedLanguage": "ta",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "ta",
+      "heading": "பக்கம் கிடைக்கவில்லை",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-375-ta.png"
+    },
+    {
+      "at": "2026-11-04T12:02:23.558Z",
+      "viewport": [
+        1440,
+        900
+      ],
+      "requestedLanguage": "en",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "en",
+      "heading": "Page not found",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-1440-en.png"
+    },
+    {
+      "at": "2026-11-04T12:02:25.127Z",
+      "viewport": [
+        1440,
+        900
+      ],
+      "requestedLanguage": "si",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "si",
+      "heading": "පිටුව හමු නොවීය",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-1440-si.png"
+    },
+    {
+      "at": "2026-11-04T12:02:26.835Z",
+      "viewport": [
+        1440,
+        900
+      ],
+      "requestedLanguage": "ta",
+      "httpStatus": 200,
+      "focusedOnArrival": true,
+      "lang": "ta",
+      "heading": "பக்கம் கிடைக்கவில்லை",
+      "overflow": false,
+      "path": "/codex-missing-page",
+      "linkCount": 2,
+      "targets44": true,
+      "screenshot": "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\Q6-404-c9840ee4\\404-1440-ta.png"
+    }
+  ],
+  "keyboardHomeRecovery": true,
+  "unhandledPageErrors": 0,
+  "strictGuardViolations": 0,
+  "category": "PUBLIC_404_BROWSER_VERIFIED",
+  "completedAt": "2026-11-04T12:02:28.541Z"
+}

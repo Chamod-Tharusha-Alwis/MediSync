@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-04T12:19:44.948Z",
+  "sourceReceipt": "docs/temp/CODEX_Q1_ROLE_DOCTOR_20261104114230933.json",
+  "sourceReceiptSha256": "1fe6cec43a9297ce5beb6571fa5c5446350530cedb04d36034f718ceda635899",
+  "recordedRejections": 90,
+  "groups": [
+    {
+      "method": "NOT_RECORDED",
+      "pathPattern": "NOT_RECORDED",
+      "count": 90
+    }
+  ],
+  "uniqueNetworkRequests": "NOT_VERIFIED",
+  "reason": "The historical recorder retained only an aggregate. No HAR or request-method/path ledger was produced. The owned Doctor evidence directory is empty.",
+  "authAttempts": 1,
+  "loginStatus": 200,
+  "clinicalWrites": 0,
+  "OTPSubmissions": 0,
+  "additionalLoginAttempts": 0,
+  "emailTotals": "NOT_CONFIRMED_PLACEHOLDERS_RECEIVED",
+  "emailCap": 30
+}

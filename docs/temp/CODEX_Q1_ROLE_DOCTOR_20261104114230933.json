@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-04T11:41:10.653Z",
+  "role": "doctor",
+  "expectedCommit": "800d87abbf1773645fb83bd9efcf6f1b526e9df4",
+  "authRequests": 1,
+  "loginStatus": 200,
+  "passed": false,
+  "clinicalWrites": 0,
+  "OTPSubmissions": 0,
+  "emailDelivery": "NOT_VERIFIED",
+  "potentialAuthEmailUpperBound": 1,
+  "observations": [],
+  "category": "ROLE_BROWSER_STEP_FAILED_SANITIZED",
+  "blockedRequests": 90,
+  "strictGuardViolations": 0,
+  "completedAt": "2026-11-04T11:42:30.933Z"
+}

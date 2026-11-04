@@ -35,3 +35,9 @@ New30behavioral verifier cases plus11previously unregistered actual aiResilience
 ### 2026-11-04T11:33:09.500Z — Q4 final local gate
 
 Final combined2,595PASS/0FAIL/0SKIP/15pins/sourceFrozen/exit0, scratch/clinical-offline-VldRtm/summary.json; buildexit0,115modules/demoImported=false/existingwarnings. Protected files and ledger unchanged. All41focused cases passed;30new plus11existing newlyregistered. Source ready for commit/push and scoped read-only health check; full Doctor/browser/clinical inference is NOT VERIFIED. No source/clinical/patient record writes beyond approved engineering.
+
+## 2026-11-04T12:25:31.124Z — Q1 session proposal / Q2 cache isolation final local gate
+
+Historical90request rejections have no saved method/path metadata: all90NOT_RECORDED, not an invented breakdown. No new auth/OTP/provider/clinical action. Session proposal defaults closed; allows only one approved login/refresh/logout each, requires role/token/noOTP completion proof, keeps original universal read-only guard unchanged and records fixed sanitized counters. Purepolicy only; live runner/transport/marker integration not qualified and login approval pending. Fresh provider counts are placeholders, not evidence; cap30.
+
+Q2 actual cache read/write and malformed-cache failures reproduced then repaired without weakening reviewed Mongo/synthetic exclusion. Fixed internal stage/category diagnostics allow sanitized cause identification. Missing review provenance remains fail-closed; no source-only repair can establish old clinical confirmation. Final143focusedPASS; full2664PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins, buildexit0 with unchangedclient/116modules. Receipt docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.json; diff docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.patch. Historical role/C4/Q6 receipts and pending tracker entries will be committed explicitly; screenshot bytes remain outside repo.

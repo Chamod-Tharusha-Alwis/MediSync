@@ -164,6 +164,65 @@ test('actual source failure returns sanitized 503 and circuit hold prevents repe
   expect(h.collection.find).toHaveBeenCalledTimes(1); expect(h.setCache).not.toHaveBeenCalled();
 });
 
+test.each(['read', 'write'])('optional cache %s failure cannot discard a verified Mongo aggregate', async phase => {
+  const rows = Array.from({ length: 6 }, (_, n) => clinical(n + 1, {
+    createdAt: new Date(Date.now() - 60000),
+    surveillanceVerification: { ...clinical(n + 1).surveillanceVerification, verifiedAt: new Date(Date.now() - 1000) }
+  }));
+  const h = controller({ rows });
+  (phase === 'read' ? h.getCache : h.setCache).mockRejectedValue(Error('PRIVATE_CACHE_DETAILS'));
+  const result = await h.run();
+  expect(result.status).toBe(200);
+  expect(result.body.data.totalCases).toBe(6);
+  expect(result.body.cached).toBe(false);
+  expect(h.collection.find).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(result.body)).not.toContain('PRIVATE_CACHE_DETAILS');
+});
+
+test('optional cache failure never bypasses clinical review or fabricates a zero count', async () => {
+  const h = controller({ rows: [clinical(1, { createdAt: new Date(), surveillanceVerification: undefined })] });
+  h.getCache.mockRejectedValue(Error('PRIVATE_CACHE_DETAILS'));
+  const result = await h.run();
+  expect(result.status).toBe(503);
+  expect(result.body.data).toBeNull();
+  expect(h.collection.find).toHaveBeenCalledTimes(1);
+  expect(h.setCache).not.toHaveBeenCalled();
+});
+
+test('missing review metadata has a fixed internal reason without exposing the record', () => {
+  try {
+    reporting.aggregatePublicCases([clinical(1, { surveillanceVerification: undefined })], { now });
+    throw Error('EXPECTED_REJECTION');
+  } catch (error) {
+    expect(error.code).toBe('REPORTING_REVIEW_REQUIRED');
+    expect(error.message).toBe('PUBLIC_REPORTING_SOURCE_UNVERIFIED');
+    expect(JSON.stringify(error)).not.toMatch(/patient|doctor|district|episode/);
+  }
+});
+
+test('a malformed current-policy cache entry falls through to verified Mongo instead of blocking it', async () => {
+  const rows = Array.from({ length: 6 }, (_, n) => clinical(n + 1, {
+    createdAt: new Date(Date.now() - 60000),
+    surveillanceVerification: { ...clinical(n + 1).surveillanceVerification, verifiedAt: new Date(Date.now() - 1000) }
+  }));
+  const h = controller({ rows, cached: { policy: reporting.CACHE_POLICY, mode: 'real', data: { totalCases: 'PRIVATE_INVALID_CACHE_VALUE' } } });
+  const result = await h.run();
+  expect(result.status).toBe(200);
+  expect(result.body.data.totalCases).toBe(6);
+  expect(result.body.cached).toBe(false);
+  expect(h.collection.find).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(result.body)).not.toContain('PRIVATE_INVALID_CACHE_VALUE');
+});
+
+test('discarding a malformed cache still fails unavailable for unverified Mongo metadata', async () => {
+  const h = controller({ rows: [clinical(1, { createdAt: new Date(), surveillanceVerification: undefined })],
+    cached: { policy: reporting.CACHE_POLICY, mode: 'real', data: { totalCases: 'PRIVATE_INVALID_CACHE_VALUE' } } });
+  const result = await h.run();
+  expect(result.status).toBe(503);
+  expect(result.body.data).toBeNull();
+  expect(h.collection.find).toHaveBeenCalledTimes(1);
+});
+
 test.each([
   ['Dengue', 'A90'], ['Leptospirosis', 'A27.9'], ['Diarrhoeal disease', 'A09'],
   ['Influenza', 'J10.1'], ['Chikungunya', 'A92.0'], ['COVID-19', 'U07.1']

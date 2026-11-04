@@ -1,0 +1,44 @@
+{
+  "at": "2026-11-04T11:57:23.509Z",
+  "scope": "Q6_PUBLIC_404_ONLY",
+  "tests": 2603,
+  "failed": 0,
+  "sourceFrozen": true,
+  "protectedPins": 15,
+  "focusedPass": 8,
+  "buildExit": 0,
+  "newWarnings": 0,
+  "firstFocusedAttempt": "JEST_FACTORY_REJECTED_BEFORE_CASE_EXECUTION",
+  "sourceFiles": [
+    {
+      "file": "client/src/App.js",
+      "sha256": "1323e2725a9a785051ed690c0cd48e1828ca2cf497d8bbe86a8cf70eba0ee1fb"
+    },
+    {
+      "file": "client/src/pages/public/NotFound.jsx",
+      "sha256": "fec9a244f406442e10ea78f7bb17c7e7bfbcd8ae2696e8870156037667662c05"
+    },
+    {
+      "file": "client/src/__master_offline__/not-found.test.jsx",
+      "sha256": "6b16c946efe1f0762e3ea972d7dda867538ed28d22d8edc5e47e19f7e8285b67"
+    },
+    {
+      "file": "client/src/i18n/translations/en.js",
+      "sha256": "a0b58d459949ab49433685d0e8bbc861671af12a6be5a673767e65c9c88c9c0b"
+    },
+    {
+      "file": "client/src/i18n/translations/si.js",
+      "sha256": "8e01977ca2207e577ba16fee0ccbe4a66f9a98744feeb2a8e166ebbe47edb7bb"
+    },
+    {
+      "file": "client/src/i18n/translations/ta.js",
+      "sha256": "17ea07de65a117ec28645886ac6411550f0f844d593638f30b8cb7f8fe54a695"
+    }
+  ],
+  "notVerified": [
+    "Lighthouse score",
+    "role forms",
+    "HTTP404 hosting status",
+    "clinical role acceptance"
+  ]
+}

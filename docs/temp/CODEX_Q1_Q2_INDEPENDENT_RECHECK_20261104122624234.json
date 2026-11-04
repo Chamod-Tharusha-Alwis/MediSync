@@ -1,0 +1,53 @@
+{
+  "at": "2026-11-04T12:26:24.234Z",
+  "reviewer": "/root/q2_readonly_cause_review",
+  "verdict": "PASS_SCOPED_OFFLINE_SOURCE_REVIEW",
+  "measured": {
+    "sessionAndUnchangedGuard": {
+      "passed": 64,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "reportingAndPrivacy": {
+      "passed": 79,
+      "failed": 0,
+      "exitCode": 0
+    }
+  },
+  "constraints": {
+    "noEdits": true,
+    "noNetwork": true,
+    "noCredentials": true,
+    "noLiveAuth": true
+  },
+  "limits": [
+    "Pure session HTTP policy is not wired or live-qualified",
+    "Actual production 503 cause not established"
+  ],
+  "source": [
+    {
+      "file": "scripts/authenticatedSessionPolicy.cjs",
+      "sha256": "93364dc676947efd923ba8a97df10e68210c468153a6d74de202f13dc94af0c5"
+    },
+    {
+      "file": "server/tests/authenticatedSessionPolicy.test.js",
+      "sha256": "43f66e0ab690397a4e854e7384ec29682ea209114d14c6543439c60a06dc8878"
+    },
+    {
+      "file": "server/src/controllers/publicController.js",
+      "sha256": "b9abc4a6ca4b0dd14b1eab1c9d2980b6a7b31031187c4b7dd172f8baf42c76b5"
+    },
+    {
+      "file": "server/src/services/publicHealthStats.js",
+      "sha256": "a80f6e2319aaf14cbe0556d59e92ac2c48efe012ac1d88d8dc091d885ad96442"
+    },
+    {
+      "file": "server/tests/publicHealthMongo.test.js",
+      "sha256": "7266a46e77a02d83c207daf2009b2090c4ee797db1be82284d95b52befb448fc"
+    },
+    {
+      "file": "server/tests/antigravityPublicHealthPrivacy.test.js",
+      "sha256": "83201d8308a9788cd2c6c4541bb3a3c2babb312e78545fe8aeddcb36146d07ae"
+    }
+  ]
+}

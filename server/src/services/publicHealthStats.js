@@ -37,7 +37,9 @@ function diseaseLabel(id) {
   return DISPLAY_ALIASES[id] || referenceLabels.get(id) || id;
 }
 
-function unavailable() { throw Error('PUBLIC_REPORTING_SOURCE_UNVERIFIED'); }
+function unavailable(code = 'PUBLIC_REPORTING_SOURCE_UNVERIFIED') {
+  throw Object.assign(Error('PUBLIC_REPORTING_SOURCE_UNVERIFIED'), { code });
+}
 const validDate = value => Object.prototype.toString.call(value) === '[object Date]' && Number.isFinite(+value);
 function validateFilters({ rangeDays = 30, district = 'all', disease = 'all' } = {}) {
   if (!Number.isInteger(rangeDays) || rangeDays < 1 || rangeDays > 365 ||
@@ -91,7 +93,8 @@ function selectReportingCases(documents, options = {}) {
   const { mode = 'real', batchId, now = new Date(), rangeDays = 30 } = options;
   queryFor({ mode, batchId, now, rangeDays });
   const { start, end } = reportingWindow(rangeDays, now);
-  if (!Array.isArray(documents) || documents.length > MAX_REPORTING_ROWS) unavailable();
+  if (!Array.isArray(documents)) unavailable('REPORTING_RESULT_INVALID');
+  if (documents.length > MAX_REPORTING_ROWS) unavailable('REPORTING_READ_LIMIT_EXCEEDED');
   const cases = [], seen = new Set();
   const candidates = [];
   for (const row of documents) {
@@ -102,7 +105,7 @@ function selectReportingCases(documents, options = {}) {
     if (time < +start || time > +end) continue;
     const verification = row.surveillanceVerification;
     // Missing legacy provenance cannot truthfully be converted to a zero count.
-    if (!verification || typeof verification !== 'object' || Array.isArray(verification)) unavailable();
+    if (!verification || typeof verification !== 'object' || Array.isArray(verification)) unavailable('REPORTING_REVIEW_REQUIRED');
     if (!['verified', 'pending', 'unverified', 'rejected'].includes(verification.status) ||
         (verification.status === 'verified' && !['confirmed', 'suspected', 'unconfirmed', 'rejected'].includes(verification.diagnosisStatus))) unavailable();
     if (verification.status !== 'verified' || verification.diagnosisStatus !== 'confirmed') continue;
@@ -162,13 +165,13 @@ function aggregatePublicCases(documents, options = {}) {
 }
 
 async function loadPublicHealthStats(collection, { connection, ...options } = {}) {
-  if (!connection || connection.readyState !== 1 || !collection || typeof collection.find !== 'function') unavailable();
+  if (!connection || connection.readyState !== 1 || !collection || typeof collection.find !== 'function') unavailable('REPORTING_SOURCE_UNAVAILABLE');
   const filters = validateFilters(options);
   const now = options.now || new Date();
   const query = queryFor({ ...options, ...filters, now });
   // No hydration/decryption and no joins to account or patient collections.
   const cursor = collection.find(query, { projection: PROJECTION, limit: MAX_REPORTING_ROWS + 1, maxTimeMS: MAX_TIME_MS });
-  if (!cursor || typeof cursor.toArray !== 'function') unavailable();
+  if (!cursor || typeof cursor.toArray !== 'function') unavailable('REPORTING_CURSOR_INVALID');
   try {
     const documents = await cursor.toArray();
     return aggregatePublicCases(documents, { ...options, ...filters, now });

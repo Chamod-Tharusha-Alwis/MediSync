@@ -100,3 +100,11 @@ Exact Q2 staged diff scanner returned3 reviewed matches, not exposed credentials
 ## 2026-11-04T11:33:09.500Z — Lead sequential security review, Q4
 
 No additional sub-agent signoff is claimed. Lead inspected actual request adapter and tests: fixed HTTPS targets, TLSverificationtrue,64KiBresponse cap,65sabsolute/idledeadline, maxone60sdelayed cold-start retry, DNS/TLSno retry, sanitized fixed categories, no raw response/error/identifier, no env credential load, unique wx receipt, invalid/private/duplicate manifest rejection. Existing read-only guard remains installed/unmodified.41focused and2595combined pass. Runtime/clinical inference and role UI are deliberately excluded from the health verdict.
+
+## 2026-11-04T12:25:31.124Z — Q1 session proposal / Q2 cache isolation final local gate
+
+Historical90request rejections have no saved method/path metadata: all90NOT_RECORDED, not an invented breakdown. No new auth/OTP/provider/clinical action. Session proposal defaults closed; allows only one approved login/refresh/logout each, requires role/token/noOTP completion proof, keeps original universal read-only guard unchanged and records fixed sanitized counters. Purepolicy only; live runner/transport/marker integration not qualified and login approval pending. Fresh provider counts are placeholders, not evidence; cap30.
+
+Q2 actual cache read/write and malformed-cache failures reproduced then repaired without weakening reviewed Mongo/synthetic exclusion. Fixed internal stage/category diagnostics allow sanitized cause identification. Missing review provenance remains fail-closed; no source-only repair can establish old clinical confirmation. Final143focusedPASS; full2664PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins, buildexit0 with unchangedclient/116modules. Receipt docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.json; diff docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.patch. Historical role/C4/Q6 receipts and pending tracker entries will be committed explicitly; screenshot bytes remain outside repo.
+
+Final independent recheck 2026-11-04T12:26:24.234Z:64policy/guard and79reporting/privacy PASS/exit0. Includes final malformed-cache fallback and malformed proof negatives; original strict guard unchanged. No live runner qualification or actual503cause claim. Receipt docs/temp/CODEX_Q1_Q2_INDEPENDENT_RECHECK_20261104122624234.json.

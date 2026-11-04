@@ -1,5 +1,21 @@
 # MediSync Master State
 
+## 2026-11-04T12:25:31.124Z — Q1 session proposal / Q2 cache isolation final local gate
+
+Historical90request rejections have no saved method/path metadata: all90NOT_RECORDED, not an invented breakdown. No new auth/OTP/provider/clinical action. Session proposal defaults closed; allows only one approved login/refresh/logout each, requires role/token/noOTP completion proof, keeps original universal read-only guard unchanged and records fixed sanitized counters. Purepolicy only; live runner/transport/marker integration not qualified and login approval pending. Fresh provider counts are placeholders, not evidence; cap30.
+
+Q2 actual cache read/write and malformed-cache failures reproduced then repaired without weakening reviewed Mongo/synthetic exclusion. Fixed internal stage/category diagnostics allow sanitized cause identification. Missing review provenance remains fail-closed; no source-only repair can establish old clinical confirmation. Final143focusedPASS; full2664PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins, buildexit0 with unchangedclient/116modules. Receipt docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.json; diff docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.patch. Historical role/C4/Q6 receipts and pending tracker entries will be committed explicitly; screenshot bytes remain outside repo.
+
+
+## Latest live checkpoint — 2026-11-04T12:03:54.024Z
+
+- Q4 d6c8040 pushed with bothCIgreen; actual read-onlyhealth/local-contracts verifierPASS, clinical inference/browser NOT VERIFIED.
+- Q6 b911713 pushed with bothCIgreen; Vercel exactSHA READY and nine public404 browser observationsPASS; backend d6c8040 has identical server tree. Final offline2603PASS/build0/15pins. Q6 remains partial: role forms/Lighthouse not verified.
+- Q1: one Doctor login200 at800d87a, browserharnessfailed before observations with90requestblocks; no retry/otherrole login. No clinical save/OTP/dispense. Starting confirmedemail0, atmost1newauthalertpossible, deliveryNOT VERIFIED. Fresh actual total needed before future email phase.
+- Q2 real public data503 persists; no authorized data repair. Q5 public disease search200; local3000drugs/191541pairs/71704ICD/41disease labels are reference counts, not clinical validation/live deployed counts.
+- Historical real backend acceptance2/14. Full clinical production NO-GO.
+
+
 ## 2026-11-04T11:57:23.509Z — Q6 public404 local gate
 
 Eight actual Router/React tests PASS/exit0. Final node scripts/run_offline_tests.js:2603PASS/0FAIL/0SKIP,exit0,sourceFrozen=true,15pins; scratch/clinical-offline-E2WHwP/summary.json. Client485/54suites, backend1980/94, emailPDF31, MLscoring40, Flask27, root40. npm run build exit0 with existingwarnings only,116clinicalmodules/demoImported=false. No protected change. Existing error boundary behavior verified, no extraction necessary. Unknown public routes now render a localized recovery page without reflecting raw URL; known auth routes unchanged. Role forms and Lighthouse>=90 NOT VERIFIED; this does not complete C7. No authentication/provider/clinical write.

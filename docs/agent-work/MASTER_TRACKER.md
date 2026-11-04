@@ -5,11 +5,11 @@ Started 2026-11-04T05:52:16.227Z. Source main f825df43c8d42032e1cf77447de85b205a
 | ID | Item | Owner | Status | Commit | Pushed (UTC) | Deploy confirmed | Live verified | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Q1 | Live recheck and truthful banner removal | C/F | BLOCKED | 800d87abbf1773645fb83bd9efcf6f1b526e9df4 | 2026-11-04T11:05:59Z | Backend health200 exactSHA; Vercel READY | Public matrix qualified; role acceptance FAIL | Doctor login200 once; harness boundary/navigation failed,90blocks; other roles not run. |
-| Q2 | Durable real-only public statistics | A/B | BLOCKED | 873e321f6f017c01d1c6c9adf7668c3db29a559a | 2026-11-04T06:19:36Z | Backend health200 exactSHA; Vercel alias exactSHA READY | Safe unavailable503; public simulation/range400 | Positive trusted-data/restart acceptance NOT VERIFIED; no data repair authorized. |
+| Q2 | Durable real-only public statistics | A/B | IN_PROGRESS | 873e321f6f017c01d1c6c9adf7668c3db29a559a | 2026-11-04T06:19:36Z | Backend health200 exactSHA; Vercel alias exactSHA READY | Safe unavailable503; public simulation/range400 | Positive trusted-data/restart acceptance NOT VERIFIED; no data repair authorized. |
 | Q3 | Doctor consultation carry-over verification | A/B/C | BLOCKED | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q4 | C4 definition and acceptance reconciliation | A/B/C | BLOCKED | d6c8040e48489c0314552f7607040464dbd808f4 | Exact timestamp not captured; successful Git push observed | Backend200exactSHA/VercelREADY | Health/local contracts PASS; clinical browser NOT VERIFIED | Both CI green41824022270/41824022348;2595PASS/build0. |
 | Q5 | C5 disease and drug coverage | A/B | BLOCKED | — | — | ML commit not exposed | ML health200/71704 ICD concepts | Drug/interaction role UI held after failed one-shot harness; local inventory distinct from live. |
-| Q6 | C7 release hardening | B/C | LOCAL_DONE | — | — | NOT VERIFIED | NOT VERIFIED | Implement public404; other form/role/accessibility gates tracked separately. |
+| Q6 | C7 release hardening | B/C | BLOCKED | b911713a28a85783926c89ad08c623b4251e84a1 | 2026-11-04T11:58:00.809Z | Vercel exactSHA READY; backend d6c8040 tree-equivalent | Public404 nine observations PASS | 2603PASS/build0/bothCIgreen; role forms/Lighthouse NOT VERIFIED. |
 | Q7 | Trilingual parity and role walkthrough | D | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q8 | UI polish and accessibility | C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
 | Q9 | Security review and operator hardening | E/B | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
@@ -26,3 +26,10 @@ Commit eeedaa17b4f30209c31c082c0a9a811e16ba43ae was pushed successfully to main.
 ## 2026-11-04T06:16:39.554Z — Q2 final local gate
 
 2,544PASS/0FAIL/0SKIP,sourceFrozen=true,15pins,exit0; scratch/clinical-offline-xT14lp/summary.json. Final client buildexit0 with existingwarnings. Focused backend115, client13; independent backend77PASS. Source scoped to durable real-only aggregate, metadata revision, tester deprecation and truthful count/forecast presentation. No protected edit or data migration. Push/deploy/live sign-off still pending at this checkpoint. No clinical production-readiness claim.
+
+
+## 2026-11-04T12:25:31.124Z — Q1 session proposal / Q2 cache isolation final local gate
+
+Historical90request rejections have no saved method/path metadata: all90NOT_RECORDED, not an invented breakdown. No new auth/OTP/provider/clinical action. Session proposal defaults closed; allows only one approved login/refresh/logout each, requires role/token/noOTP completion proof, keeps original universal read-only guard unchanged and records fixed sanitized counters. Purepolicy only; live runner/transport/marker integration not qualified and login approval pending. Fresh provider counts are placeholders, not evidence; cap30.
+
+Q2 actual cache read/write and malformed-cache failures reproduced then repaired without weakening reviewed Mongo/synthetic exclusion. Fixed internal stage/category diagnostics allow sanitized cause identification. Missing review provenance remains fail-closed; no source-only repair can establish old clinical confirmation. Final143focusedPASS; full2664PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins, buildexit0 with unchangedclient/116modules. Receipt docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.json; diff docs/temp/CODEX_Q1_Q2_FINAL_REVIEW_20261104122531124.patch. Historical role/C4/Q6 receipts and pending tracker entries will be committed explicitly; screenshot bytes remain outside repo.

@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-04T12:03:02.892Z",
+  "scope": "POST_Q6_PUBLIC_READ_ONLY_REGRESSION",
+  "observations": [
+    {
+      "path": "/health",
+      "status": 200,
+      "commit": "d6c8040e48489c0314552f7607040464dbd808f4",
+      "category": null,
+      "dataNull": false
+    },
+    {
+      "path": "/api/public/health-stats",
+      "status": 503,
+      "commit": null,
+      "category": "PUBLIC_HEALTH_UNAVAILABLE",
+      "dataNull": true
+    },
+    {
+      "path": "/api/public/health-stats?mode=simulation",
+      "status": 400,
+      "commit": null,
+      "category": "INVALID_HEALTH_FILTER",
+      "dataNull": false
+    }
+  ]
+}

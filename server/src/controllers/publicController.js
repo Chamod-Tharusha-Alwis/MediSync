@@ -14,6 +14,7 @@ const { CACHE_POLICY, validateFilters, loadPublicHealthStats } = require('../ser
 
 let healthUnavailableUntil = 0;
 exports.getHealthStats = async (req, res) => {
+  let stage = 'FILTER_VALIDATION';
   try {
     const query = req.query || {};
     // Public consumers cannot opt into unlabeled simulated/batch data.
@@ -30,18 +31,27 @@ exports.getHealthStats = async (req, res) => {
     const reportTime = new Date();
     const cacheKey = `medisync:cache:health-stats:real-v1:${encodeURIComponent(JSON.stringify([reportTime.toISOString().slice(0, 10), filters.rangeDays, filters.district, filters.disease]))}`;
     
+    stage = 'CIRCUIT_HOLD';
     if (Date.now() < healthUnavailableUntil) throw Error('HEALTH_CIRCUIT_OPEN');
+    stage = 'CONNECTION_GATE';
     if (!mongoose.connection || mongoose.connection.readyState !== 1) throw Error('PUBLIC_REPORTING_SOURCE_UNAVAILABLE');
     // Never consume the old mixed-source cache namespace or cached demo data.
-    const cachedData = await getCache(cacheKey);
+    let cachedData = null;
+    try { cachedData = await getCache(cacheKey); }
+    catch (_) { console.warn('[PublicHealth] stage=CACHE_READ category=OPTIONAL_CACHE_UNAVAILABLE'); }
+    let cachedDto = null;
     if (cachedData?.policy === CACHE_POLICY && cachedData.mode === 'real' &&
         cachedData.data && cachedData.data.isSimulatedDemo !== true && cachedData.data.isSynthetic !== true) {
-      return res.json({ data: healthDto(cachedData.data), cached: true });
+      try { cachedDto = healthDto(cachedData.data); }
+      catch (_) { console.warn('[PublicHealth] stage=CACHE_DECODE category=OPTIONAL_CACHE_INVALID'); }
     }
+    if (cachedDto) return res.json({ data: cachedDto, cached: true });
 
+    stage = 'SOURCE_READ_AND_VERIFY';
     const aggregate = await loadPublicHealthStats(Consultation.collection, { connection: mongoose.connection, ...filters, mode: 'real', now: reportTime });
     // Calendar zero-fill alone is not forecasting evidence. Keep the existing
     // insufficient-history UI when fewer than three dates contain actual cases.
+    stage = 'FORECAST_AND_DTO';
     const forecastResult = aggregate.trend.filter(day => day.count > 0).length >= 3
       ? calculate14DayForecast(aggregate.trend)
       : { forecast: [] };
@@ -51,12 +61,18 @@ exports.getHealthStats = async (req, res) => {
     });
 
     // Optional cache storage is isolated from the previous SQLite-derived values.
-    await setCache(cacheKey, { policy: CACHE_POLICY, mode: 'real', data: statsData }, 300);
+    try { await setCache(cacheKey, { policy: CACHE_POLICY, mode: 'real', data: statsData }, 300); }
+    catch (_) { console.warn('[PublicHealth] stage=CACHE_WRITE category=OPTIONAL_CACHE_UNAVAILABLE'); }
 
     res.json({ data: statsData, cached: false });
   } catch (error) {
-    if (healthUnavailableUntil <= Date.now()) healthUnavailableUntil = Date.now() + 5000;
-    console.error('[PublicController] Public health statistics unavailable.');
+    if (healthUnavailableUntil <= Date.now()) {
+      healthUnavailableUntil = Date.now() + 5000;
+      // Fixed labels only: never log raw exceptions, filters or clinical data.
+      const codes = ['PUBLIC_REPORTING_SOURCE_UNVERIFIED', 'REPORTING_REVIEW_REQUIRED', 'REPORTING_RESULT_INVALID', 'REPORTING_READ_LIMIT_EXCEEDED', 'REPORTING_SOURCE_UNAVAILABLE', 'REPORTING_CURSOR_INVALID'];
+      const category = codes.includes(error?.code) ? error.code : 'DEPENDENCY_OR_REPORTING_FAILURE';
+      console.error(`[PublicHealth] stage=${stage} category=${category}`);
+    }
     res.status(503).json({ error: 'PUBLIC_HEALTH_UNAVAILABLE', message: 'Health statistics are temporarily unavailable.', data: null });
   }
 };

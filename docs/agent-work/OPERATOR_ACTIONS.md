@@ -11,3 +11,6 @@ No production mutation is authorized by this checklist.
 
 6. [ ] After Q2 deployment, confirm actual backend commit through its optional public /health commit field (RENDER_GIT_COMMIT is platform-provided); do not add/change secrets. If real statistics return503 because trusted clinical provenance is missing, do not seed, backfill or fabricate verification. Plan clinical review separately.
 7. [ ] Q2 restart-independence acceptance: after recording the read-only public aggregate and deployed SHA, operator may separately choose an ML restart and provide its time. Codex has not requested/performed a restart. Re-read the same public filter afterward; expected source remains Mongo. No new index is created/required automatically; production query latency/index adequacy remain unverified.
+
+8. [ ] After the scoped Q2 deployment and one read-only public health GET, provide only its fixed [PublicHealth] stage=... category=... line from MediSync Render logs. No raw logs/identifiers/env values. A new source receipt does not authorize patient-data reads, backfill or migration.
+9. [ ] Before approving any future login runner, provide real Resend/Brevo/combined sent counts (current N values are placeholders). Review pure session policy and runner integration; no login is authorized by this checklist.

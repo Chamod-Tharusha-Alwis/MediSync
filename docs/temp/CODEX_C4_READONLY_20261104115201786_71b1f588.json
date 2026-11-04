@@ -1,0 +1,41 @@
+{
+  "at": "2026-11-04T11:52:00.983Z",
+  "scope": "READ_ONLY_HEALTH_AND_LOCAL_CONTRACTS",
+  "expectedCommit": "d6c8040e48489c0314552f7607040464dbd808f4",
+  "passed": true,
+  "clinicalBrowserAcceptance": "NOT_VERIFIED",
+  "liveInference": "NOT_RUN",
+  "mlDeploymentIdentity": "NOT_EXPOSED_BY_HEALTH",
+  "protectedFiles": 15,
+  "localContracts": true,
+  "clinicalDisclaimer": {
+    "sourceMarkersPresent": true,
+    "browserVerified": false
+  },
+  "backendHealth": {
+    "attempts": [
+      {
+        "status": 200,
+        "ready": true,
+        "commit": "d6c8040e48489c0314552f7607040464dbd808f4"
+      }
+    ],
+    "status": 200,
+    "ready": true,
+    "commit": "d6c8040e48489c0314552f7607040464dbd808f4"
+  },
+  "backendRevisionMatches": true,
+  "mlHealth": {
+    "attempts": [
+      {
+        "status": 200,
+        "ready": true,
+        "commit": null
+      }
+    ],
+    "status": 200,
+    "ready": true,
+    "commit": null
+  },
+  "category": "READ_ONLY_CHECKS_VERIFIED"
+}
