@@ -1,0 +1,84 @@
+{
+  "at": "2026-11-04T17:23:48.5260357Z",
+  "verdict": "APPROVED_PUBLIC_ACTIVITY_SCOPE_LIVE_VERIFIED",
+  "acceptedSourceCommit": "7e0d9c0c29b99fae985f878698ccf671adce0eac",
+  "browserReceipt": "docs/temp/CODEX_Q2_ACTIVITY_LIVE_1793812757413.json",
+  "browserReceiptSha256": "b9d441da54e797e19da02b39a16611332f348dc027a2278aa92c14ed5ef39d9d",
+  "browserViews": 9,
+  "browserPass": 9,
+  "browserFail": 0,
+  "languages": [
+    "en",
+    "si",
+    "ta"
+  ],
+  "widths": [
+    320,
+    375,
+    1440
+  ],
+  "activityHttpStatus": 200,
+  "capturedTotalVisits": 7,
+  "oldHealthRequests": 0,
+  "consoleErrors": 0,
+  "pageErrors": 0,
+  "failedRequests": 0,
+  "writeRequests": 0,
+  "authAttempts": 0,
+  "guardViolations": 0,
+  "headingClearAll": true,
+  "districtTableFitsAll": true,
+  "screenshotsOutsideRepository": true,
+  "visualReview": [
+    "Tamil 320 top",
+    "Sinhala 320 top",
+    "Tamil 320 clinical panels"
+  ],
+  "backendCommit": "7e0d9c0c29b99fae985f878698ccf671adce0eac",
+  "vercel": {
+    "state": "READY",
+    "id": "dpl_9CGApQh2RLHw11KY6KTmpb3yRsnr",
+    "observedAt": "2026-11-04T17:18:52.939Z",
+    "commit": "7e0d9c0c29b99fae985f878698ccf671adce0eac"
+  },
+  "ci": [
+    {
+      "id": 41876097701,
+      "name": "Security Hardening & Trust Governance Tests",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "7e0d9c0c29b99fae985f878698ccf671adce0eac"
+    },
+    {
+      "id": 41876097710,
+      "name": "MediSync Clinical Offline Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "7e0d9c0c29b99fae985f878698ccf671adce0eac"
+    }
+  ],
+  "offline": {
+    "receipt": "scratch/clinical-offline-Mo0GWA/summary.json",
+    "node": "v26.4.0",
+    "passed": 2760,
+    "exitCode": 0,
+    "sourceFrozen": true,
+    "failed": 0
+  },
+  "build": {
+    "clinicalModules": 115,
+    "exitCode": 0,
+    "demoImported": false,
+    "newWarnings": 0
+  },
+  "protectedPinsMatched": 15,
+  "clinicalMetrics": "NOT_AVAILABLE",
+  "realBackendAcceptance": "2/14",
+  "notVerified": [
+    "Human clinical review and confirmed-case reporting",
+    "ML restart/persistence experiment",
+    "Authenticated five-role browser flows",
+    "Full clinical production readiness"
+  ],
+  "noRecordChanges": true
+}
