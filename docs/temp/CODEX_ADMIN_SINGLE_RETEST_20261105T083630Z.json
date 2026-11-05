@@ -1,0 +1,147 @@
+{
+  "at": "2026-11-05T08:36:30.754Z",
+  "verdict": "PARTIAL_TIMED_COMPARISON_NOT_COMPLETED",
+  "liveCommit": "40979ff0aadee8ae9b97d20ded5bdf21e228ae10",
+  "runId": "q1_sessions_20261105_eb1768a8",
+  "liveReceipt": "docs/temp/CODEX_Q1_SESSION_admin_1793867465453.json",
+  "liveReceiptSha256": "fa969af3fd6fdf4ab262b12166ffe3736bc79078021ed8ff9d48015636392222",
+  "executedRunnerSource": {
+    "verify_five_role_sessions_live.cjs": "3a4be76df5c0999136625b658ce11e300c41aad2d496f9fd7aa0664c2720f68f",
+    "authenticatedSessionBrowser.cjs": "13a434b1a1b1abb664f9c6c2166204e16e2e4d4cda1c66ac1ef2842c71118ff7",
+    "authenticatedSessionPolicy.cjs": "93364dc676947efd923ba8a97df10e68210c468153a6d74de202f13dc94af0c5",
+    "notificationTransportPolicy.cjs": "e315f421ad47d097ae5de62e837b96f33bf6d955fa13fe28ab2b8e5f30ca8978"
+  },
+  "loginAttempts": 1,
+  "loginHttpStatus": 200,
+  "logoutHttpStatus": 200,
+  "dashboard": {
+    "rendered": true,
+    "temporaryBanner": false
+  },
+  "consoleErrors": 0,
+  "pageExceptions": 0,
+  "blockedRequests": [],
+  "firstMlStatus": {
+    "httpStatus": 200,
+    "state": "unavailable",
+    "category": "bad_response",
+    "contractValid": true,
+    "receivedAt": "2026-11-05T08:31:24.116Z"
+  },
+  "secondMlStatus": {
+    "status": "NOT_SENT",
+    "httpStatus": null,
+    "category": null,
+    "reason": "Runner terminated before delayed GET; no new session authorized"
+  },
+  "originalRunnerExitCode": 1,
+  "originalRunnerCategory": "ROLE_BROWSER_STEP_FAILED_SANITIZED",
+  "exactThrownStage": "NOT_RECORDED",
+  "likelyCause": "Initial response guard ran after a fixed five-second view wait before the response observer completed; exact original exception was not retained",
+  "sessionCleanup": "SERVER_LOGOUT_200",
+  "ownedBrowserClosed": true,
+  "emails": {
+    "source": "Operator dashboards confirmed after retest",
+    "resend": 6,
+    "brevo": 0,
+    "combined": 6,
+    "limit": 25,
+    "remaining": 19,
+    "newAlertMatchedByOperator": true
+  },
+  "offlineRunnerCorrection": {
+    "sourcePaths": [
+      "scripts/verify_five_role_sessions_live.cjs",
+      "server/tests/authenticatedSessionBrowser.test.js"
+    ],
+    "sourceSha256": {
+      "scripts/verify_five_role_sessions_live.cjs": "5c3e1325627b44be78cf5e826e66e49a2473d3817f1d9bf8bb42314777903610",
+      "server/tests/authenticatedSessionBrowser.test.js": "03e0e75bac9fcc95be6f32882c51f1fd147bd1134bb22bcd1317b3daa93eccab"
+    },
+    "focusedPassed": 138,
+    "focusedExitCode": 0,
+    "regression": {
+      "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-L6wGfX",
+      "node": "v26.4.0",
+      "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+      "totals": [
+        {
+          "mode": "backend",
+          "passed": 2376,
+          "failed": 0,
+          "skipped": 0,
+          "total": 2376,
+          "suites": 103,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "client",
+          "passed": 540,
+          "failed": 0,
+          "skipped": 0,
+          "total": 540,
+          "suites": 57,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "email-pdf",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 0,
+          "total": 31,
+          "suites": 2,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "ml-scoring",
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "total": 40,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "ml-flask",
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "total": 27,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "root",
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "total": 40,
+          "success": true,
+          "status": "PASS"
+        }
+      ],
+      "passed": 3054,
+      "failed": 0,
+      "blockedProfiles": 0,
+      "sourceFrozen": true,
+      "protectedAccountedFor": 15,
+      "success": true,
+      "profile": "local-offline",
+      "notRun": []
+    },
+    "change": "Wait for the already-dispatched first reply with a sixty-second bound, then schedule one additional GET sixty seconds after receipt; retain fixed failure stage labels",
+    "liveExecuted": false,
+    "committed": false,
+    "pushed": false
+  },
+  "protectedIntact": 15,
+  "liveClinicalWrites": 0,
+  "OTPSubmissions": 0,
+  "directDatabaseConnections": 0,
+  "manualProviderCalls": 0,
+  "newAuthenticationApprovalRequired": true,
+  "historicalClinicalE2E": "2/14"
+}

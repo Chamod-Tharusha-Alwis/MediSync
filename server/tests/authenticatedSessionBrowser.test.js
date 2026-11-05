@@ -119,3 +119,46 @@ test('owned-page notification cleanup precedes exactly one real logout request a
     expect(await logoutInPage({url:API+'/api/auth/logout',accessToken:'inert-only'})).toEqual({status:null});
   }finally{global.window=originalWindow;global.fetch=originalFetch;}
 });
+test('timed admin retest requires admin notification scope and cannot combine with other live modes',()=>{
+  const {argsOf}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  const args=['--approved-session-check','--role','admin','--run-id','q1_sessions_20261105_a1b2c3d4','--email-total','5','--backend-commit','a'.repeat(40),'--notification-transport','--admin-ml-retest'];
+  expect(argsOf(args)).toMatchObject({role:'admin',adminMlRetest:true,baseline:5});
+  expect(()=>argsOf(args.filter(x=>x!=='--notification-transport'))).toThrow('ADMIN_RETEST_SCOPE_REJECTED');
+  expect(()=>argsOf(args.map(x=>x==='admin'?'doctor':x))).toThrow('ADMIN_RETEST_SCOPE_REJECTED');
+  for(const mode of ['--combined-read-only-sweep','--email-display-proof'])expect(()=>argsOf([...args,mode])).toThrow();
+});
+test('timed status repeat waits sixty seconds from the first reply and performs one GET without exposing response bodies',async()=>{
+  const {repeatMlStatusRead}=require('../../scripts/verify_five_role_sessions_live.cjs');let clock=10000;
+  const sleep=jest.fn(async ms=>{clock+=ms;});
+  const read=jest.fn(async()=>({status:200,body:{available:false,status:'unavailable',category:'config',dataPoints:null,private:'private-sentinel'}}));
+  const result=await repeatMlStatusRead({firstAt:5000,now:()=>clock,sleep,read});
+  expect(sleep).toHaveBeenCalledWith(55000);expect(read).toHaveBeenCalledTimes(1);
+  expect(result).toMatchObject({httpStatus:200,category:'config',contractValid:true,intervalMs:60000});expect(JSON.stringify(result)).not.toContain('private-sentinel');
+});
+test('timed status repeat rejects early wake-up or invalid admission before reading and never retries failures',async()=>{
+  const {repeatMlStatusRead}=require('../../scripts/verify_five_role_sessions_live.cjs'),read=jest.fn();
+  await expect(repeatMlStatusRead({firstAt:100,now:()=>100,sleep:async()=>{},read})).rejects.toThrow('STATUS_REPEAT_INTERVAL_REJECTED');expect(read).not.toHaveBeenCalled();
+  await expect(repeatMlStatusRead({firstAt:101,now:()=>100,read})).rejects.toThrow('STATUS_REPEAT_ADMISSION_REJECTED');expect(read).not.toHaveBeenCalled();
+  read.mockRejectedValue(Error('inert-failure'));
+  await expect(repeatMlStatusRead({firstAt:0,now:()=>60000,sleep:async()=>{},read})).rejects.toThrow('inert-failure');expect(read).toHaveBeenCalledTimes(1);
+});
+test('initial ML-status wait permits an already dispatched reply arriving after the five-second rendering delay',async()=>{
+  const {waitForInitialMlStatus}=require('../../scripts/verify_five_role_sessions_live.cjs');let clock=5000;const samples=[];
+  const sleep=jest.fn(async ms=>{clock+=ms;if(clock>=6000)samples.push({httpStatus:200,category:'bad_response'});});
+  await expect(waitForInitialMlStatus({samples,now:()=>clock,sleep})).resolves.toBeUndefined();
+  expect(clock).toBe(6000);expect(samples).toHaveLength(1);expect(sleep).toHaveBeenCalledTimes(10);
+});
+test('initial ML-status wait is bounded, has no HTTP callback, and fails closed for missing or duplicate replies',async()=>{
+  const {waitForInitialMlStatus}=require('../../scripts/verify_five_role_sessions_live.cjs');let clock=0;
+  await expect(waitForInitialMlStatus({samples:[],timeoutMs:200,now:()=>clock,sleep:async ms=>{clock+=ms;}})).rejects.toThrow('INITIAL_STATUS_READ_TIMEOUT');
+  expect(clock).toBe(200);
+  await expect(waitForInitialMlStatus({samples:[{},{}]})).rejects.toThrow('INITIAL_STATUS_READ_NOT_UNIQUE');
+  await expect(waitForInitialMlStatus({samples:[],timeoutMs:60001})).rejects.toThrow('INITIAL_STATUS_WAIT_ADMISSION_REJECTED');
+});
+test('delayed first response followed by the repeat still separates dispatches by at least sixty seconds',async()=>{
+  const {waitForInitialMlStatus,repeatMlStatusRead}=require('../../scripts/verify_five_role_sessions_live.cjs');let clock=0,firstAt;const samples=[];
+  await waitForInitialMlStatus({samples,now:()=>clock,sleep:async ms=>{clock+=ms;if(clock===6100){firstAt=clock;samples.push({httpStatus:200});}}});
+  const read=jest.fn(async()=>({status:200,body:{status:'unavailable',available:false,category:'bad_response',dataPoints:null}}));
+  const result=await repeatMlStatusRead({firstAt,now:()=>clock,sleep:async ms=>{clock+=ms;},read});
+  expect(result.intervalMs).toBe(60000);expect(clock).toBe(66100);expect(read).toHaveBeenCalledTimes(1);
+});

@@ -13,6 +13,7 @@ function argsOf(args) {
     if (args[i] === '--email-display-proof' && !out.proofOnly) { out.proofOnly=true; continue; }
     if (args[i] === '--notification-transport' && !out.notifications) { out.notifications=true; continue; }
     if (args[i] === '--combined-read-only-sweep' && !out.combined) { out.combined=true; continue; }
+    if (args[i] === '--admin-ml-retest' && !out.adminMlRetest) { out.adminMlRetest=true; continue; }
     if (!allowed.has(args[i]) || out[args[i]] !== undefined || args[i+1] === undefined) throw Error('ARGUMENT_ADMISSION_REJECTED');
     out[args[i]]=args[++i];
   }
@@ -20,7 +21,8 @@ function argsOf(args) {
   const total=Number(out['--email-total']);
   if (!Number.isSafeInteger(total) || total<0 || total+2>25) throw Error('EMAIL_BUDGET_REJECTED');
   if(out.combined&&(!out.notifications||out.proofOnly))throw Error('COMBINED_SCOPE_REJECTED');
-  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true,combined:out.combined===true};
+  if(out.adminMlRetest&&(out['--role']!=='admin'||!out.notifications||out.combined||out.proofOnly))throw Error('ADMIN_RETEST_SCOPE_REJECTED');
+  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true,combined:out.combined===true,adminMlRetest:out.adminMlRetest===true};
 }
 function credentials(root, readFile = fs.readFileSync) {
   const parsed=require('../server/node_modules/dotenv').parse(readFile(path.join(root,'server/.env')));
@@ -53,6 +55,23 @@ function combinedVerdict(receipt){
   return receipt.observations.length>0&&receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
     (receipt.role!=='admin'||receipt.adminMlStatus?.contractValid===true&&receipt.observations.some(o=>o.view==='outbreak-monitor')&&
       (receipt.adminMlStatus.state!=='unavailable'||receipt.observations.some(o=>o.referenceUnavailable===true)));
+}
+async function repeatMlStatusRead({firstAt,read,now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
+  if(!Number.isSafeInteger(firstAt)||firstAt<0||firstAt>now()||typeof read!=='function')throw Error('STATUS_REPEAT_ADMISSION_REJECTED');
+  await sleep(Math.max(0,60000-(now()-firstAt)));
+  const requestedAt=now();
+  if(requestedAt-firstAt<60000)throw Error('STATUS_REPEAT_INTERVAL_REJECTED');
+  const result=await read();
+  return {...statusEvidence(result.status,result.body),requestedAt:new Date(requestedAt).toISOString(),intervalMs:requestedAt-firstAt};
+}
+async function waitForInitialMlStatus({samples,now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),timeoutMs=60000}){
+  if(!Array.isArray(samples)||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000)throw Error('INITIAL_STATUS_WAIT_ADMISSION_REJECTED');
+  const deadline=now()+timeoutMs;
+  while(samples.length===0){
+    const remaining=deadline-now();if(remaining<=0)throw Error('INITIAL_STATUS_READ_TIMEOUT');
+    await sleep(Math.min(100,remaining));
+  }
+  if(samples.length!==1)throw Error('INITIAL_STATUS_READ_NOT_UNIQUE');
 }
 async function logoutInPage({url,accessToken}){
   // Stop the owned page's notification transports using the app's existing
@@ -96,7 +115,7 @@ async function run(config) {
   const fd=fs.openSync(lock,'wx');fs.closeSync(fd);
   let browser,context,page,authenticated=false,token,receiptPath;
   const boundary=createBrowserBoundary(config.role,{notificationTransportApproved:config.notifications===true});
-  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.combined?'COMBINED_READ_ONLY_SESSION_SWEEP':config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
+  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.adminMlRetest?'ADMIN_SINGLE_SESSION_TIMED_RETEST':config.combined?'COMBINED_READ_ONLY_SESSION_SWEEP':config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
     source:Object.fromEntries(['verify_five_role_sessions_live.cjs','authenticatedSessionBrowser.cjs','authenticatedSessionPolicy.cjs','notificationTransportPolicy.cjs'].map(name=>[name,crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,name))).digest('hex')])),
     baselineConfirmedSent:config.baseline,emailLimit:25,newLoginAlertCount:'NOT_OBSERVABLE_FROM_LOGIN_RESPONSE',
     reservedPotentialEmailCount:0,combinedConservativeUpperBound:config.baseline+2*previous.length,
@@ -121,12 +140,18 @@ async function run(config) {
     page.on('console',msg=>{if(msg.type()==='error'){const category=classifyConsole(msg.text());receipt.consoleCategories[category]=(receipt.consoleCategories[category]||0)+1;}});
     page.on('pageerror',()=>{receipt.pageErrors++;});
     const adminMetadata={mlDataPointsVerified:false};
+    let firstMlStatusAt;
+    if(config.adminMlRetest)receipt.mlStatusSamples=[];
     page.on('response',async response=>{
       try {
         const u=new URL(response.url());
         if(u.origin===API&&response.status()>=400)receipt.httpFailures.push({...require('./authenticatedSessionBrowser.cjs').requestPattern(response.url(),response.request().method()),status:response.status()});
         if(u.origin===API&&u.pathname==='/api/admin/ml-status'){
           const j=await response.json();receipt.adminMlStatus=statusEvidence(response.status(),j);
+          if(config.adminMlRetest){
+            const at=Date.now();if(firstMlStatusAt===undefined)firstMlStatusAt=at;
+            receipt.mlStatusSamples.push({...receipt.adminMlStatus,receivedAt:new Date(at).toISOString()});flush();
+          }
           adminMetadata.mlDataPointsVerified=receipt.adminMlStatus.state==='available';
         }
       }catch(_){}
@@ -164,6 +189,21 @@ async function run(config) {
       receipt.adminOutbreak.passed=receipt.adminOutbreak.telemetry!=='UNVERIFIED_FALLBACK_DISPLAYED'&&!observation.forecastPresent;
       if(config.combined){const screenshot=path.join(dir,'admin-outbreak.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository.push(screenshot);}
     }
+    if(config.adminMlRetest){
+      receipt.retestStage='INITIAL_STATUS_WAIT';flush();
+      await waitForInitialMlStatus({samples:receipt.mlStatusSamples});
+      if(receipt.mlStatusSamples.length!==1||firstMlStatusAt===undefined)throw Error('INITIAL_STATUS_READ_NOT_UNIQUE');
+      receipt.retestStage='TIMED_REPEAT_WAIT';flush();
+      receipt.timedStatusRepeat=await repeatMlStatusRead({firstAt:firstMlStatusAt,read:()=>page.evaluate(async({url,accessToken})=>{
+        const response=await fetch(url,{method:'GET',credentials:'include',redirect:'error',headers:{Authorization:'Bearer '+accessToken}});
+        let body;try{body=await response.json();}catch(_){body=null;}
+        return {status:response.status,body};
+      },{url:API+'/api/admin/ml-status',accessToken:token})});
+      await page.waitForTimeout(1000);
+      receipt.retestStage='TIMED_REPEAT_COMPLETED';
+      receipt.observations.push({...await observePage(page,'admin'),view:'outbreak-after-repeat'});
+      const screenshot=path.join(dir,'admin-retest-status.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository=[screenshot];
+    }
     if(config.combined&&config.role==='doctor'){
       await page.goto(FRONTEND+'/doctor/consultation/new',{waitUntil:'domcontentloaded',timeout:60000});
       await page.waitForTimeout(2500);
@@ -174,9 +214,12 @@ async function run(config) {
     const consoleErrors=Object.values(receipt.consoleCategories).reduce((a,b)=>a+b,0);
     receipt.passed=config.combined?combinedVerdict(receipt):receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
       (config.role!=='admin'||config.proofOnly||receipt.adminOverview.passed&&receipt.adminOutbreak.passed);
+    if(config.adminMlRetest)receipt.passed=receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&receipt.mlStatusSamples.length===2&&receipt.mlStatusSamples.every(s=>s.contractValid)&&receipt.timedStatusRepeat.contractValid&&boundary.summary().blockedRequests.length===0;
     receipt.category=receipt.passed?'ROLE_SESSION_BROWSER_VERIFIED':'ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';
   } catch(error) {
-    const safe=new Set(['LIVE_SOURCE_ADMISSION_REJECTED','OTP_REQUIRED_NOT_AUTHORIZED','LOGIN_REJECTED_OR_INCOMPLETE']);
+    const safe=new Set(['LIVE_SOURCE_ADMISSION_REJECTED','OTP_REQUIRED_NOT_AUTHORIZED','LOGIN_REJECTED_OR_INCOMPLETE',
+      'INITIAL_STATUS_READ_TIMEOUT','INITIAL_STATUS_READ_NOT_UNIQUE','INITIAL_STATUS_WAIT_ADMISSION_REJECTED',
+      'STATUS_REPEAT_ADMISSION_REJECTED','STATUS_REPEAT_INTERVAL_REJECTED']);
     receipt.category=safe.has(error?.message)?error.message:'ROLE_BROWSER_STEP_FAILED_SANITIZED';receipt.passed=false;
   } finally {
     // Even a failed render must not skip the one authorized logout. The same
@@ -193,6 +236,7 @@ async function run(config) {
     token=undefined;privateInput.password=undefined;for(const key of Object.keys(privateInput.emails))delete privateInput.emails[key];
     if(context)await context.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});
     if(config.combined&&receipt.passed&&!combinedVerdict(receipt)){receipt.passed=false;receipt.category='ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';}
+    if(config.adminMlRetest&&(Object.values(receipt.consoleCategories).some(n=>n>0)||receipt.pageErrors||boundary.summary().blockedRequests.length)){receipt.passed=false;receipt.category='ADMIN_RETEST_CONSOLE_OR_BOUNDARY_FAILURE';}
     receipt.ownedBrowserClosed=true;flush();fs.unlinkSync(lock);
     console.log(JSON.stringify({role:receipt.role,loginAttempts:receipt.loginAttempts,loginStatus:receipt.loginStatus,passed:receipt.passed,category:receipt.category,receipt:path.relative(root,receiptPath),emailAlertCount:receipt.newLoginAlertCount,combinedConservativeUpperBound:receipt.combinedConservativeUpperBound,blockedRequests:receipt.boundary.blockedRequests}));
   }
@@ -201,4 +245,4 @@ async function run(config) {
 if(require.main===module){let config;try{config=argsOf(process.argv.slice(2));}catch(_){console.log(JSON.stringify({category:'LOCAL_ARGUMENT_ADMISSION_REJECTED',loginAttempts:0}));process.exitCode=1;}
   if(config)run(config).then(r=>{process.exitCode=r.passed?0:1;}).catch(()=>{console.log(JSON.stringify({category:'LOCAL_PREFLIGHT_REJECTED',loginAttempts:0}));process.exitCode=1;});
 }
-module.exports={argsOf,credentials,observePage,admitAttempt,statusEvidence,combinedVerdict,logoutInPage};
+module.exports={argsOf,credentials,observePage,admitAttempt,statusEvidence,combinedVerdict,logoutInPage,repeatMlStatusRead,waitForInitialMlStatus};

@@ -1,0 +1,94 @@
+{
+  "at": "2026-11-05T08:49:31.852Z",
+  "phase": "V2-P0a",
+  "source": {
+    "scripts/verify_five_role_sessions_live.cjs": "5c3e1325627b44be78cf5e826e66e49a2473d3817f1d9bf8bb42314777903610",
+    "server/tests/authenticatedSessionBrowser.test.js": "03e0e75bac9fcc95be6f32882c51f1fd147bd1134bb22bcd1317b3daa93eccab"
+  },
+  "fullOffline": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-L6wGfX",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2376,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2376,
+        "suites": 103,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 540,
+        "failed": 0,
+        "skipped": 0,
+        "total": 540,
+        "suites": 57,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "total": 27,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 3054,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "focused": {
+    "pass": 138,
+    "exitCode": 0
+  },
+  "build": {
+    "exitCode": 0,
+    "evidence": "scratch/CODEX_V2_P0_BUILD_1793868372472/console.log",
+    "offlinePreload": true
+  },
+  "expectedBase": "40979ff0aadee8ae9b97d20ded5bdf21e228ae10",
+  "protected": 15,
+  "newLogins": 0,
+  "newEmails": 0,
+  "emailTotalLastConfirmed": 6
+}
