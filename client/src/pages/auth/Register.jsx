@@ -151,7 +151,7 @@ const Register = () => {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 1 
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
               }`}>
                 {step > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
               </div>
@@ -162,7 +162,7 @@ const Register = () => {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 2 
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-slate-950/40 border-white/5 text-slate-550'
+                  : 'bg-slate-950/40 border-white/5 text-slate-500'
               }`}>
                 2
               </div>
@@ -216,13 +216,20 @@ const Register = () => {
                   <GlassInput type="password" name="password" required icon={Lock} value={formData.password} onChange={handleChange} placeholder="••••••••" />
                   {/* Password strength meter */}
                   {formData.password && (
-                    <div className="pt-1.5 select-none">
+                    <div
+                      className="pt-1.5 select-none"
+                      role="progressbar"
+                      aria-valuenow={strength.score}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuetext={strength.text}
+                    >
                       <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
-                        <span>Strength</span>
-                        <span className="text-slate-350">{strength.text}</span>
+                        <span>{t('auth.strength', 'Strength')}</span>
+                        <span className="text-slate-400">{strength.text}</span>
                       </div>
                       <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-350 ${strength.color}`} style={{ width: `${strength.score}%` }} />
+                        <div className={`h-full transition-all duration-300 ${strength.color}`} style={{ width: `${strength.score}%` }} />
                       </div>
                     </div>
                   )}

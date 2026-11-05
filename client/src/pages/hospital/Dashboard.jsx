@@ -374,13 +374,13 @@ const Overview = ({ stats, labStats, onNavigate }) => {
       {/* Lab Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Lab Tests Today', value: labStats.receivedToday, color: 'emerald', desc: 'Received for analysis' },
-          { label: 'Completed Results', value: labStats.completed, color: 'teal', desc: 'Decrypted & released' },
-          { label: 'Pending Processing', value: labStats.pending, color: 'amber', desc: 'In queue or diagnostics' },
-          { label: 'Avg Turnaround Time', value: labStats.avgTime, color: 'indigo', desc: 'Acceptance to upload' }
+          { label: 'Lab Tests Today', value: labStats.receivedToday, color: 'emerald', glow: 'bg-emerald-500/5', desc: 'Received for analysis' },
+          { label: 'Completed Results', value: labStats.completed, color: 'teal', glow: 'bg-teal-500/5', desc: 'Decrypted & released' },
+          { label: 'Pending Processing', value: labStats.pending, color: 'amber', glow: 'bg-amber-500/5', desc: 'In queue or diagnostics' },
+          { label: 'Avg Turnaround Time', value: labStats.avgTime, color: 'indigo', glow: 'bg-indigo-500/5', desc: 'Acceptance to upload' }
         ].map((stat, i) => (
           <div key={i} className="glass-panel p-5 rounded-2xl border border-white/5 flex flex-col gap-1 relative overflow-hidden">
-            <div className={`absolute top-0 right-0 w-16 h-16 bg-${stat.color}-500/5 rounded-full blur-xl`} />
+            <div className={`absolute top-0 right-0 w-16 h-16 ${stat.glow} rounded-full blur-xl`} />
             <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">{stat.label}</span>
             <span className="text-3xl font-extrabold text-white font-mono mt-1">{stat.value}</span>
             <span className="text-[10px] text-slate-400 mt-1">{stat.desc}</span>

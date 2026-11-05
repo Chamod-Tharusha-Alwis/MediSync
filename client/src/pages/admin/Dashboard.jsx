@@ -17,6 +17,7 @@ import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
 import { useTranslation } from '../../i18n/LanguageContext';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
@@ -76,7 +77,7 @@ const ManageHospitals = () => {
                   <tr key={h._id} className="hover:bg-white/[0.01] transition-colors">
                     <td className="px-6 py-4 font-bold text-white">{h.fullName}</td>
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{h.regNo}</td>
-                    <td className="px-6 py-4 text-slate-300 font-semibold">{h.district}</td>
+                    <td className="px-6 py-4 text-slate-300 font-semibold">{formatDistrictName(h.district)}</td>
                     <td className="px-6 py-4 text-right">
                       <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
                         {t('common.active', 'Active')}
@@ -687,7 +688,7 @@ const AdminDashboard = () => {
           <div>
             <p className="font-bold text-sm">🚨 Outbreak Alert</p>
             <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
-            {data?.district && <p className="text-xs mt-0.5">District: {data.district}</p>}
+            {data?.district && <p className="text-xs mt-0.5">District: {formatDistrictName(data.district)}</p>}
           </div>,
           { autoClose: 10000, position: 'top-right' }
         );

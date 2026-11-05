@@ -398,7 +398,7 @@ const DoctorProfile = () => {
                   onDragLeave={() => setIsDraggingSig(false)}
                   onDrop={(e) => { e.preventDefault(); setIsDraggingSig(false); const file = e.dataTransfer.files[0]; if (file) uploadSignatureFile(file); }}
                   className={`border-2 rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 bg-slate-950/20 h-44 ${
-                    isDraggingSig ? 'border-dashed border-teal-400 bg-teal-500/10 scale-102' : 'border-white/10 hover:border-white/15'
+                    isDraggingSig ? 'border-dashed border-teal-400 bg-teal-500/10 scale-[1.02]' : 'border-white/10 hover:border-white/15'
                   }`}
                   onClick={() => document.getElementById('signature-input-elem').click()}
                 >

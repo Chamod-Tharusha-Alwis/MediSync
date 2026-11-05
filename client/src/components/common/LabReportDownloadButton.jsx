@@ -17,7 +17,7 @@ const LabReportDownloadButton = ({ labTests = [] }) => {
       disabled
       aria-disabled="true"
       title={unavailableText}
-      className="glass-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300/60 text-xs font-bold opacity-60 cursor-not-allowed"
+      className="glass-button inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300/60 text-xs font-bold opacity-60 cursor-not-allowed"
     >
       <Download className="w-3.5 h-3.5 text-purple-400/60" />
       {unavailableText}{labTests.length > 1 ? ` (${labTests.length})` : ''}

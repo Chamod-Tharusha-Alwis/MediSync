@@ -47,7 +47,7 @@ const typeConfig = {
     badge:      'bg-blue-500/10 text-blue-400 border-blue-500/20',
     dot:        'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.9)]',
     cardBorder: 'border-blue-500/15 hover:border-blue-500/35 hover:shadow-[0_0_28px_rgba(59,130,246,0.12)]',
-    labTagBg:   'bg-blue-500/12 border-blue-500/25 text-blue-300',
+    labTagBg:   'bg-blue-500/[0.12] border-blue-500/25 text-blue-300',
   },
   prescription: {
     Icon:       Pill,
@@ -56,7 +56,7 @@ const typeConfig = {
     badge:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     dot:        'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]',
     cardBorder: 'border-emerald-500/15 hover:border-emerald-500/35 hover:shadow-[0_0_28px_rgba(16,185,129,0.12)]',
-    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+    labTagBg:   'bg-purple-500/[0.12] border-purple-500/25 text-purple-300',
   },
   otc: {
     Icon:       ShoppingBag,
@@ -65,7 +65,7 @@ const typeConfig = {
     badge:      'bg-teal-500/10 text-teal-400 border-teal-500/20',
     dot:        'bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]',
     cardBorder: 'border-teal-500/20 hover:border-teal-500/40 hover:shadow-[0_0_28px_rgba(20,184,166,0.12)]',
-    labTagBg:   'bg-teal-500/12 border-teal-500/25 text-teal-300',
+    labTagBg:   'bg-teal-500/[0.12] border-teal-500/25 text-teal-300',
   },
   dispensing: {
     Icon:       Package,
@@ -74,7 +74,7 @@ const typeConfig = {
     badge:      'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
     dot:        'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]',
     cardBorder: 'border-cyan-500/15 hover:border-cyan-500/35 hover:shadow-[0_0_28px_rgba(6,182,212,0.12)]',
-    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+    labTagBg:   'bg-purple-500/[0.12] border-purple-500/25 text-purple-300',
   },
   lab_test: {
     Icon:       FlaskConical,
@@ -83,7 +83,7 @@ const typeConfig = {
     badge:      'bg-purple-500/10 text-purple-400 border-purple-500/20',
     dot:        'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.9)]',
     cardBorder: 'border-purple-500/15 hover:border-purple-500/35 hover:shadow-[0_0_28px_rgba(139,92,246,0.12)]',
-    labTagBg:   'bg-purple-500/12 border-purple-500/25 text-purple-300',
+    labTagBg:   'bg-purple-500/[0.12] border-purple-500/25 text-purple-300',
   },
 };
 const getTC = (type) => typeConfig[type] || typeConfig.consultation;
@@ -317,7 +317,7 @@ const HistoryCard = ({ event, onRate }) => {
 
               {/* Follow-up indicator */}
               {details.followUpDate && new Date(details.followUpDate) > new Date() && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/12 border border-indigo-500/25">
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/[0.12] border border-indigo-500/25">
                   <Calendar className="w-3 h-3 text-indigo-400" />
                   <span className="text-indigo-300 text-[10px] font-bold">
                     Follow-up: {formatSriLankaDate(details.followUpDate, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -431,7 +431,7 @@ const HistoryCard = ({ event, onRate }) => {
 
                                       {/* ⚠️ Alternative Dispense Warning */}
                                       {p.isAlternativeDispensed && p.alternativeDetails && (
-                                        <div className="mt-2 flex items-start gap-2 bg-amber-500/8 border border-amber-500/25 rounded-lg px-3 py-2">
+                                        <div className="mt-2 flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/25 rounded-lg px-3 py-2">
                                           <span className="text-amber-400 text-xs font-black tracking-wide flex-shrink-0">⚠️ ALT DISPENSED:</span>
                                           <span className="text-amber-300/90 text-xs font-medium">{p.alternativeDetails}</span>
                                         </div>
@@ -517,7 +517,7 @@ const HistoryCard = ({ event, onRate }) => {
                     {details.followUpDate && (
                       <div>
                         <p className="label-caps mb-1.5 text-slate-400 text-xs font-bold tracking-wider uppercase">Follow-up Scheduled</p>
-                        <div className="flex items-center gap-2 bg-indigo-500/8 border border-indigo-500/20 rounded-xl p-3">
+                        <div className="flex items-center gap-2 bg-indigo-500/[0.08] border border-indigo-500/20 rounded-xl p-3">
                           <Calendar className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                           <div>
                             <p className="text-indigo-200 text-sm font-semibold">
@@ -543,7 +543,7 @@ const HistoryCard = ({ event, onRate }) => {
                             disabled
                             aria-disabled="true"
                             title={t("pdfUnavailable", "PDF export temporarily unavailable")}
-                            className="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold opacity-60 cursor-not-allowed"
+                            className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold opacity-60 cursor-not-allowed"
                           >
                             <Download className="w-3.5 h-3.5" />
                             {t("pdfUnavailable", "PDF export temporarily unavailable")}

@@ -173,7 +173,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
 
                 <div className="glass-panel p-4 rounded-xl border border-white/5">
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-450" /> Hospital Affiliations
+                    <Building2 className="w-3.5 h-3.5 text-indigo-400" /> Hospital Affiliations
                   </h3>
                   {doctor.hospitals?.length > 0 ? (
                     <div className="space-y-1.5">
@@ -221,7 +221,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
                         ))}
                       </div>
                       <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
-                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-550 font-bold">
+                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-500 font-bold">
                         <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
                         <span className="font-mono">{formatSriLankaDate(review.createdAt)}</span>
                       </div>

@@ -213,7 +213,7 @@ const NotificationBellView = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl"
+              className="fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-80 sm:max-w-[calc(100vw-1rem)] mt-2 glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-800/80">
                 <h3 className="text-sm font-bold text-white">{t('common.notifications', 'Notifications')}</h3>

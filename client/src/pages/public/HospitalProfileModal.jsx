@@ -166,7 +166,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                   
                   {hospital.pickupLocationAddress && (
                     <div className="mt-3 pt-3 border-t border-white/5">
-                      <span className="text-[9px] font-black text-emerald-450 block uppercase tracking-wider">{t("public.pickupLocation", "Pickup Location")}</span>
+                      <span className="text-[9px] font-black text-emerald-400 block uppercase tracking-wider">{t("public.pickupLocation", "Pickup Location")}</span>
                       <span className="text-slate-300 text-xs mt-0.5 block leading-normal">{hospital.pickupLocationAddress}</span>
                     </div>
                   )}
@@ -177,14 +177,14 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                     Contact & Portal Link
                   </h3>
                   {hospital.contactPhone && (
-                    <div className="flex items-center gap-2 text-slate-350 text-xs">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs">
                       <Phone className="w-4 h-4 text-slate-500 shrink-0" />
                       <span>{hospital.contactPhone}</span>
                     </div>
                   )}
                   {hospital.emergencyHotline && (
-                    <div className="flex items-center gap-2 text-rose-455 text-xs font-bold">
-                      <PhoneCall className="w-4 h-4 text-rose-455 shrink-0 animate-pulse" />
+                    <div className="flex items-center gap-2 text-rose-400 text-xs font-bold">
+                      <PhoneCall className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
                       <span>Emergency Hotline: {hospital.emergencyHotline}</span>
                     </div>
                   )}
@@ -235,7 +235,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                         ))}
                       </div>
                       <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
-                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-550 font-bold">
+                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-500 font-bold">
                         <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
                         <span className="font-mono">{formatSriLankaDate(review.createdAt)}</span>
                       </div>

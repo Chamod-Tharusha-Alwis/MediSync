@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, GeoJSON, Marker, Popup, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { formatDistrictName } from '../../utils/districtAdjacency';
+
 
 // Fix for default marker icons in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -89,7 +91,7 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
                 <Popup>
                   <div className="text-slate-800 font-sans">
                     <strong>{hospital.fullName || hospital.name}</strong><br/>
-                    <span className="text-xs text-slate-500">{hospital.district}</span>
+                    <span className="text-xs text-slate-500">{formatDistrictName(hospital.district)}</span>
                   </div>
                 </Popup>
               </Marker>
@@ -101,7 +103,7 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
         {/* Render ML Outbreak Alerts as Heatmap Zones */}
         {alerts.filter(a => a.status === 'Active' || a.status === 'SIMULATION').map((alert, index) => {
           const districtName = alert.location || alert.district || 'Nationwide';
-          const coords = districtCoordinates[districtName] || districtCoordinates['Nationwide'];
+          const coords = districtCoordinates[formatDistrictName(districtName)] || districtCoordinates[districtName] || districtCoordinates['Nationwide'];
           const colors = getSeverityColor(alert.severity);
           const isCrit = String(alert.severity).toLowerCase() === 'critical';
           const isHigh = String(alert.severity).toLowerCase() === 'high';
@@ -140,7 +142,7 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
                   </h3>
 
                   <p className="text-xs text-slate-600 mb-2 border-b border-slate-200 pb-1.5">
-                    {districtName} District
+                    {formatDistrictName(districtName) || districtName} District
                   </p>
 
                   <div className="space-y-1 text-xs">

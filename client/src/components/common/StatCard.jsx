@@ -81,7 +81,7 @@ const StatCard = ({
 
       {/* Top-edge shimmer line */}
       <div
-        className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent"
+        className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent"
         aria-hidden="true"
       />
 

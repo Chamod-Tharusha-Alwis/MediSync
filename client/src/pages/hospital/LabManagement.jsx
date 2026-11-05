@@ -184,7 +184,7 @@ const RegisterNewTest = () => {
                 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 shadow-lg"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {loading ? 'Requesting Consent OTP...' : '{t("common.verify", "Send Verification OTP")}'}
+              {loading ? t('consent.requestingConsentOtp', 'Requesting Consent OTP...') : t('common.verify', 'Send Verification OTP')}
             </button>
           </form>
         </motion.div>
@@ -653,7 +653,7 @@ const LabAssistantUpload = () => {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handleUploadFile(file); }}
                 className={`border-2 rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 bg-slate-950/20 min-h-40 ${
-                  isDragging ? 'border-dashed border-emerald-400 bg-emerald-500/10 scale-102' : 'border-white/10 hover:border-white/15'
+                  isDragging ? 'border-dashed border-emerald-400 bg-emerald-500/10 scale-[1.02]' : 'border-white/10 hover:border-white/15'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
               >

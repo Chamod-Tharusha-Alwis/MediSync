@@ -20,6 +20,7 @@ import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
 import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
 const requiresPatientConsent = error => error.response?.status === 403 &&
@@ -984,7 +985,7 @@ const RestockPredictor = () => {
   useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
   const alerts = data?.alerts || [];
-  const district = data?.district || '';
+  const district = formatDistrictName(data?.district) || '';
 
   const getStatusStyles = (status) => {
     if (status === 'Critical') return { border: 'border-red-500/20', bg: 'bg-red-500/[0.02]', badge: 'bg-red-500/10 text-red-400 border-red-500/20', icon: '🚨', trend: 'text-red-400' };

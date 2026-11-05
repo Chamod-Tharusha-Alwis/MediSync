@@ -134,7 +134,7 @@ const UserAuditProfile = () => {
     : auditLogs;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-fade-in">
       {/* Top Back Nav & Quick Refresh */}
       <div className="flex items-center justify-between">
         <button
@@ -251,7 +251,7 @@ const UserAuditProfile = () => {
         >
           <Activity className="w-3.5 h-3.5" />
           {t('admin.auditLogs', 'Full Audit Log History')}
-          <span className="ml-1.5 px-2 py-0.2 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
             {auditLogs.length}
           </span>
         </button>
@@ -266,7 +266,7 @@ const UserAuditProfile = () => {
         >
           <Monitor className="w-3.5 h-3.5" />
           {t('admin.activeSessions', 'Sessions History')}
-          <span className="ml-1.5 px-2 py-0.2 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
             {sessions.length}
           </span>
         </button>
@@ -281,7 +281,7 @@ const UserAuditProfile = () => {
         >
           <Smartphone className="w-3.5 h-3.5" />
           {t('admin.deviceFingerprint', 'Devices & Fingerprints')}
-          <span className="ml-1.5 px-2 py-0.2 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-white/10 text-[10px] text-slate-400">
             {devices.length}
           </span>
         </button>

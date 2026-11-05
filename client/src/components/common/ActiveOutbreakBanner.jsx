@@ -46,7 +46,7 @@ const ActiveOutbreakBanner = () => {
 
   const palette = (isCrit || isHigh)
     ? {
-        wrap:   'bg-red-500/12 border-b border-red-500/25 shadow-[0_4px_30px_rgba(239,68,68,0.12)]',
+        wrap:   'bg-red-500/[0.12] border-b border-red-500/25 shadow-[0_4px_30px_rgba(239,68,68,0.12)]',
         bar:    'from-red-500 to-red-600',
         icon:   'text-red-400',
         title:  'text-red-400',

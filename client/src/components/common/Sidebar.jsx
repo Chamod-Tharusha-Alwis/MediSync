@@ -108,7 +108,7 @@ const Sidebar = ({
     <div className="flex flex-col h-full">
 
       {/* ─ Brand header ── */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/6">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.06]">
         <div
           className={`
             relative p-2.5 rounded-xl
@@ -142,7 +142,7 @@ const Sidebar = ({
       </nav>
 
       {/* ─ Footer / user badge + logout ── */}
-      <div className="px-3 pb-4 border-t border-white/6 pt-4 space-y-2">
+      <div className="px-3 pb-4 border-t border-white/[0.06] pt-4 space-y-2">
         {/* User badge */}
         {userName && (
           <div className={`
@@ -222,7 +222,7 @@ const Sidebar = ({
         className="
           hidden md:flex flex-col
           fixed left-0 top-0 bottom-0 w-64 z-40
-          glass-panel border-r border-white/6
+          glass-panel border-r border-white/[0.06]
         "
         aria-label="Sidebar"
       >
@@ -254,7 +254,7 @@ const Sidebar = ({
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
               className="
                 md:hidden fixed left-0 top-0 bottom-0 w-[280px] z-50
-                glass-panel border-r border-white/6
+                glass-panel border-r border-white/[0.06]
               "
               aria-label="Mobile navigation"
             >

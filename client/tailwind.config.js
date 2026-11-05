@@ -3,6 +3,12 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: { 
     extend: {
+      spacing: {
+        4.5: '1.125rem', // 18px standard icon sizing across headers & navbars
+        5.5: '1.375rem', // 22px standard icon sizing for featured headers
+        6.5: '1.625rem', // 26px standard avatar/badge sizing
+        18: '4.5rem',    // 72px standard hero section top padding
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },

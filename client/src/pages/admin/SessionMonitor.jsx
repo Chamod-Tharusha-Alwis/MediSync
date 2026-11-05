@@ -165,7 +165,7 @@ const SessionMonitor = () => {
 
       {/* 🟢 TAB: ONLINE NOW */}
       {activeTab === 'online' && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
             <button onClick={fetchSessions} disabled={loadingSessions} className="glass-button text-xs py-2 px-4 flex items-center gap-2">
               <RefreshCw className={`w-3.5 h-3.5 ${loadingSessions ? 'animate-spin' : ''}`} /> Refresh Sessions
@@ -248,7 +248,7 @@ const SessionMonitor = () => {
 
       {/* 📜 TAB: AUDIT LOG */}
       {activeTab === 'audit' && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-4 animate-fade-in">
           <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-5">
             <div className="flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">

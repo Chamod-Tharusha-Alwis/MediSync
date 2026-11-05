@@ -1,5 +1,6 @@
 import React from 'react';
 import { evaluatePasswordStrength } from '../../utils/passwordPolicy';
+import { useTranslation } from '../../i18n/LanguageContext';
 import { cn } from '../../utils/cn';
 
 /**
@@ -13,17 +14,29 @@ const PasswordStrengthMeter = ({
   id = 'password-strength-meter',
   className
 }) => {
+  const { t } = useTranslation();
   const evalData = propEval || (password ? evaluatePasswordStrength(password) : null);
   if (!evalData && !password) return null;
 
   const { score, label, textColor } = evalData || evaluatePasswordStrength(password);
 
   const segmentColors = [
-    'bg-rose-600',   // Level 1: Weak
+    'bg-rose-600',   // Level 1: Weak (or Level 0 active fill)
     'bg-amber-500',  // Level 2: Fair
     'bg-teal-500',   // Level 3: Good (meets min policy)
     'bg-emerald-500' // Level 4: Strong
   ];
+
+  const labelKeyMap = {
+    'Very Weak': 'auth.veryWeak',
+    'Weak': 'auth.weak',
+    'Fair': 'auth.fair',
+    'Good': 'auth.good',
+    'Strong': 'auth.strong',
+  };
+
+  const translatedLabel = t(labelKeyMap[label] || `auth.${label?.toLowerCase()}`, label);
+  const activeSegments = Math.max(score, (password || evalData) ? 1 : 0);
 
   return (
     <div
@@ -33,17 +46,17 @@ const PasswordStrengthMeter = ({
       aria-valuenow={score}
       aria-valuemin={0}
       aria-valuemax={4}
-      aria-valuetext={label}
+      aria-valuetext={translatedLabel}
     >
       <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
-        <span className="text-slate-400">Password Strength</span>
-        <span className={textColor}>{label}</span>
+        <span className="text-slate-400">{t('auth.passwordStrength', 'Password Strength')}</span>
+        <span className={textColor}>{translatedLabel}</span>
       </div>
 
       {/* 4 Segmented Bars representing levels 1 to 4 */}
       <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-slate-900/60 p-0.5 rounded-full overflow-hidden border border-white/5">
         {[0, 1, 2, 3].map((index) => {
-          const isFilled = index < score;
+          const isFilled = index < activeSegments;
           return (
             <div
               key={index}

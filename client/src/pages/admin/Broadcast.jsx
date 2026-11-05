@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import Modal from '../../components/ui/Modal';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 const SRI_LANKA_DISTRICTS = [
   'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
@@ -217,7 +218,7 @@ const Broadcast = () => {
                             {b.targetRole || 'All'}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-slate-400 font-semibold">{b.targetDistrict || b.district || 'Nationwide'}</td>
+                        <td className="px-5 py-3 text-slate-400 font-semibold">{formatDistrictName(b.targetDistrict || b.district) || 'Nationwide'}</td>
                         <td className="px-5 py-3 text-slate-500 font-mono text-[10px]">
                           {b.sentAt || b.createdAt 
                             ? formatSriLankaDateTime(b.sentAt || b.createdAt, 'en-GB')
@@ -260,7 +261,7 @@ const Broadcast = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-200 font-bold text-xs truncate">{title || 'Broadcast Title'}</p>
                     <p className="text-slate-400 text-[11px] mt-1 leading-normal break-words">{message || 'Announcement message content body...'}</p>
-                    <p className="text-[9px] text-slate-500 mt-2 font-mono select-none">To: {targetRole.toUpperCase()} • {targetDistrict || 'NATIONWIDE'}</p>
+                    <p className="text-[9px] text-slate-500 mt-2 font-mono select-none">To: {targetRole.toUpperCase()} • {(formatDistrictName(targetDistrict) || 'NATIONWIDE').toUpperCase()}</p>
                   </div>
                 </div>
               </div>
@@ -293,7 +294,7 @@ const Broadcast = () => {
             </p>
             <div className="flex gap-4 text-[10px] font-bold text-slate-500 border-t border-white/5 pt-3">
               <span>Audience: <span className="text-slate-300 uppercase">{viewMessage.targetRole || 'All'}</span></span>
-              <span>District: <span className="text-slate-300">{viewMessage.targetDistrict || viewMessage.district || 'Nationwide'}</span></span>
+              <span>District: <span className="text-slate-300">{formatDistrictName(viewMessage.targetDistrict || viewMessage.district) || 'Nationwide'}</span></span>
             </div>
             <button
               onClick={() => setViewMessage(null)}

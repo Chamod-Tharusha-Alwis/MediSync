@@ -10,6 +10,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Res
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
+import { formatDistrictName } from '../../utils/districtAdjacency';
+
 
 const sevConfig = {
   Critical: { text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/30',    glow: 'shadow-[0_0_20px_rgba(239,68,68,0.18)]',  dot: 'bg-red-500'    },
@@ -164,7 +166,7 @@ const OutbreakMonitor = () => {
     // Calculate mathematically correct Z-score if not present
     const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
     return {
-      name: `${item.disease} (${item.district})`,
+      name: `${item.disease} (${formatDistrictName(item.district)})`,
       zScore: parseFloat(zScore.toFixed(2)),
       latest: item.latest_actual,
       baseline: item.baseline
@@ -335,7 +337,7 @@ const OutbreakMonitor = () => {
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {item.district}
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
                       </p>
                     </div>
 
@@ -407,7 +409,7 @@ const OutbreakMonitor = () => {
                       <td className="px-6 py-4 text-slate-400 font-semibold">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-600" />
-                          {alert.location || alert.district || 'N/A'}
+                          {formatDistrictName(alert.location || alert.district) || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">

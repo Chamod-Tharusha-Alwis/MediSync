@@ -55,8 +55,8 @@ const HospitalDirectory = () => {
                 <div className="h-4 bg-slate-800 rounded w-2/3" />
                 <div className="h-3 bg-slate-800 rounded w-1/2" />
                 <div className="space-y-2 pt-2">
-                  <div className="h-3 bg-slate-850 rounded w-5/6" />
-                  <div className="h-3 bg-slate-850 rounded w-4/5" />
+                  <div className="h-3 bg-slate-800 rounded w-5/6" />
+                  <div className="h-3 bg-slate-800 rounded w-4/5" />
                 </div>
               </div>
             ))}

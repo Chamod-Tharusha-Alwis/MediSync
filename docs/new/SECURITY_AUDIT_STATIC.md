@@ -31,10 +31,31 @@ Positive controls confirmed in source (no change needed): `helmet()`; CORS restr
 ## 2. Findings in detail
 
 ### S1 — NIC in JWT payload (High)
-- **Where:** `server/src/controllers/patientController.js:85` — `jwt.sign({ id, role: 'patient', sub: patient.nic }, …)`.
-- **Why it matters:** JWTs are signed, not encrypted. Anyone who sees the token (browser storage, logs, proxies, screenshots) can base64-decode the national identity number.
-- **Fix:** use `sub: String(patient._id)` (or drop `sub`). Check every consumer of `decoded.sub` first (search `\.sub\b` in `server/src`). Add one regression test asserting the decoded payload contains no NIC-shaped value.
-- **Acceptance:** no token issued by any login path contains a NIC; existing patient flows unchanged.
+- **Where:**
+  - `server/src/controllers/patientController.js:85`: `const accessToken = jwt.sign({ id: patient._id, role: 'patient', sub: patient.nic }, process.env.JWT_SECRET, { expiresIn: '15m' });`
+  - `server/src/controllers/authController.js:454, 457, 458-460`: In `login`, `const subId = user.doctorId || user.nic || user.regNo || user._id; const tokenPayload = { id: user._id, role: actualRole, sub: subId }; if (modelName === 'Patient' && user.nic) { tokenPayload.nic = user.nic; }`
+  - `server/src/controllers/authController.js:686, 689, 690-692`: In `verifyOTP`, repeats identical pattern assigning `sub: subId` (resolving to `user.nic` for Patient) and `tokenPayload.nic = user.nic`.
+  - `server/src/controllers/authController.js:1923-1924`: In `refreshToken`, preserves `sub: decoded.sub` and `nic: decoded.nic`.
+- **Why it matters:** JWTs are base64url-encoded and unencrypted. Anyone holding or inspecting the access token (browser storage, proxies, server logs, API monitors) can instantly decode the national identity card number.
+- **Consumer Audit & Impact Analysis Across Codebase:**
+  1. `server/src/controllers/patientController.js:143-150` (`resolveAuthenticatedPatientNic`):
+     - Lines 143-146 query MongoDB directly: `const doc = await Patient.findById(reqUser.id).select('nic'); if (doc?.nic) return String(doc.nic).trim().toUpperCase();`.
+     - Lines 147-149: `if (reqUser.sub && String(reqUser.sub) !== String(reqUser.id)) { return String(reqUser.sub).trim().toUpperCase(); }`.
+     - *Impact*: When `sub` changes to `String(patient._id)`, `reqUser.sub !== reqUser.id` evaluates to `false`. The function safely falls back to line 144's database resolution, preserving 100% of patient identity resolution without regression.
+  2. `server/src/middleware/auth.js:93`:
+     - Line 93: `actorId: decoded.id || decoded.sub || 'unknown'`.
+     - *Impact*: `decoded.id` is always present (`user._id`). Migrating `sub` to `String(patient._id)` ensures total consistency across `decoded.id` and `decoded.sub`. (`auth.js` is protected and does not require modification).
+  3. `server/src/controllers/authController.js:1923`:
+     - Copies `sub: decoded.sub`.
+     - *Impact*: Continues passing sanitized `_id` string seamlessly.
+  4. `client/src/`:
+     - Exhaustive search confirmed **zero** consumers of `decoded.sub`, `token.sub`, or `jwtDecode` reading `sub`.
+     - `client/src/hooks/usePatientConsent.js:7` only reads `.exp` from `x-patient-access` temp tokens.
+     - *Impact*: Zero client-side consumers or dependencies on JWT `sub`.
+- **Protected File Check:**
+  - Neither `server/src/controllers/patientController.js` nor `server/src/controllers/authController.js` is in `docs/release/PROTECTED_HASHES.json`. Both files are **UNPROTECTED**.
+- **Fix:** In `patientController.js:85`, sign `sub: String(patient._id)`. In `authController.js:454, 686`, ensure `subId` resolves to `String(user._id)` for patients, and remove `tokenPayload.nic = user.nic`. Add regression test asserting decoded JWT payload contains no NIC-shaped string.
+- **Acceptance:** No token issued contains raw NIC under `sub` or `nic`; existing patient profile, consent, and consultation flows remain 100% operational.
 
 ### S2 — No limiter on registration (Medium)
 - **Where:** `hospitalRoutes.js:14`, `patientRoutes.js:16`, `pharmacyRoutes.js:15` — `router.post('/register', …)` with no limiter, while `/login` uses `loginLimiter`.

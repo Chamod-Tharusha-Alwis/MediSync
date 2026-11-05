@@ -242,6 +242,26 @@
     background-image: linear-gradient(135deg, #a3e635 0%, #84cc16 100%);
   }
 
+  .text-gradient-blue {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #93c5fd 100%);
+  }
+
+  .text-gradient-rose {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #fda4af 100%);
+  }
+
+  .text-gradient-purple {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #d8b4fe 100%);
+  }
+
+  .text-gradient-amber {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fcd34d 100%);
+  }
+
   .label-caps {
     @apply text-[10px] font-extrabold uppercase tracking-widest text-slate-400;
   }

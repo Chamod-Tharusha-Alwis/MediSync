@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const DISTRICTS = ['Colombo','Gampaha','Kalutara','Kandy','Matale','Nuwara Eliya','Galle','Matara','Hambantota','Jaffna','Kurunegala','Puttalam','Anuradhapura','Polonnaruwa','Badulla','Ratnapura','Kegalle','Trincomalee','Batticaloa','Ampara'];
 
 const checkPasswordStrength = (pass) => {
-  if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-850' };
+  if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
   let score = 0;
   if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
@@ -89,7 +89,7 @@ export default function PharmacyRegister() {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 1 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg' 
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
               }`}>
                 {step > 1 ? '✓' : '1'}
               </div>
@@ -100,7 +100,7 @@ export default function PharmacyRegister() {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 2 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg' 
-                  : 'bg-slate-950/40 border-white/5 text-slate-555'
+                  : 'bg-slate-950/40 border-white/5 text-slate-500'
               }`}>
                 2
               </div>
@@ -120,7 +120,7 @@ export default function PharmacyRegister() {
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Pharmacy Name *</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                     <input type="text" value={form.name} onChange={set('name')} 
                       className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
                       placeholder="e.g. HealthFirst Pharmacy" required />
@@ -130,7 +130,7 @@ export default function PharmacyRegister() {
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Registration Number *</label>
                   <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <Hash className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                     <input type="text" value={form.regNo} onChange={set('regNo')} 
                       className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
                       placeholder="e.g. PH-2026-042" required />
@@ -140,7 +140,7 @@ export default function PharmacyRegister() {
                 <div className="flex flex-col gap-1.5 select-none">
                   <label className={labelCls}>District *</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550 z-10" />
+                    <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500 z-10" />
                     <select value={form.district} onChange={set('district')} required 
                       className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
                       <option value="" className="bg-slate-900">Select district</option>
@@ -152,7 +152,7 @@ export default function PharmacyRegister() {
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Address</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                    <MapPin className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                     <textarea value={form.address} onChange={set('address')} rows={2}
                       className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all"
                       placeholder="Street address details" />
@@ -181,7 +181,7 @@ export default function PharmacyRegister() {
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Admin Full Name *</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <User className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                   <input type="text" value={form.adminName} onChange={set('adminName')} 
                     className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
                     placeholder="Pharmacist name" required />
@@ -191,7 +191,7 @@ export default function PharmacyRegister() {
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Admin Email *</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <Mail className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                   <input type="email" value={form.adminEmail} onChange={set('adminEmail')} 
                     className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
                     placeholder="admin@pharmacy.com" required />
@@ -201,22 +201,29 @@ export default function PharmacyRegister() {
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Password *</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                   <input type={showPw ? 'text' : 'password'} value={form.adminPassword} onChange={set('adminPassword')} 
                     className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
                     placeholder="Secure password" required />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350">
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-400">
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {form.adminPassword && (
-                  <div className="pt-1 select-none">
+                  <div
+                    className="pt-1 select-none"
+                    role="progressbar"
+                    aria-valuenow={strength.score}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuetext={strength.text}
+                  >
                     <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
-                      <span>Strength</span>
-                      <span className="text-slate-350">{strength.text}</span>
+                      <span>{t('auth.strength', 'Strength')}</span>
+                      <span className="text-slate-400">{strength.text}</span>
                     </div>
                     <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
-                      <div className={`h-full transition-all duration-350 ${strength.color}`} style={{ width: `${strength.score}%` }} />
+                      <div className={`h-full transition-all duration-300 ${strength.color}`} style={{ width: `${strength.score}%` }} />
                     </div>
                   </div>
                 )}
@@ -225,16 +232,16 @@ export default function PharmacyRegister() {
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Confirm Password *</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-550" />
+                  <Lock className="absolute left-3 top-3 h-4.5 w-4.5 text-slate-500" />
                   <input type={showCPw ? 'text' : 'password'} value={form.confirmPassword} onChange={set('confirmPassword')} 
                     className="block w-full pl-10 pr-10 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
                     placeholder="Repeat password" required />
-                  <button type="button" onClick={() => setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350">
+                  <button type="button" onClick={() => setShowCPw(!showCPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-400">
                     {showCPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {form.confirmPassword && form.adminPassword !== form.confirmPassword && (
-                  <p className="text-[10px] text-rose-455 font-bold select-none mt-1">Passwords do not match</p>
+                  <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
                 )}
               </div>
 
