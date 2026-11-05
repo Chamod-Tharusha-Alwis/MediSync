@@ -123,3 +123,7 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T13:15:16.613Z — C7 history privacy and language-target qualification
 
 3166offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins;45focusedPASS;clinical-productionbuild0. Actual compiled local9-view geometryPASS,zeroexternal/APIrequests,zero normalconsole/pageerrors;noLighthouse/liveclinicalclaim. Historybuilt-inexceptionpayloadremoved,localizedfallback;754keys/parity. Evidence docs/temp/CODEX_C7_HISTORY_ACCESSIBILITY_20261105T131516Z.json. Previous4d02303bothCIgreen/backend/Vercelready. No live login/email;totals8/0/8. Next doctor/checks andC5,while remaining major-form/a11ymatrix staysNOTVERIFIED.
+
+## 2026-11-05T13:23:49.307Z — doctor/C5 response integrity offline gate
+
+3176PASS/0FAIL/0SKIP,sourceFrozen/15pins;focused28PASS;clinical-productionbuild0. Nine reproduced UI negatives fixed without changing serverclinical rules;actualserverDTOpositivesincluded. Evidence docs/temp/CODEX_DOCTOR_C5_RESPONSE_REVIEW_20261105T132349Z.json. Doctor existing offline suites reconciled; live save/OTP/drugPOST/visual geometry remainNOTVERIFIED. 3692403bothCIgreen/VercelREADY; backend4d02303healthy/server-source-equivalent. No live login/email, totals8/0/8;clinical2/14. Next security lockout/rate/validation source and inert behavior review.

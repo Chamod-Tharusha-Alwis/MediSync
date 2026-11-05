@@ -4,7 +4,7 @@ Source inventory, not runtime acceptance. Every row starts NOT VERIFIED for the 
 
 R = read-only intent; W-low = self-contained change; W-clin = clinical; W-sec = security/consent; W-adm = admin management; X = destructive/maintenance, never live. Classification is conservative static triage, not authorization. Dynamic targets, unresolved callbacks and controller side effects require review before Phase 3. A semantic read using POST remains blocked by the existing fence. Opening a modal may request OTP; never do so from an R row without reviewing its effect. QA-only routes and unmounted code are not production test targets. No endpoint is invoked by this generator.
 
-Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T131516Z.json`; fingerprint `1fc3580aa4a967185316ee78df3306059b63da687043adfafc28616f53ac0f4a`.
+Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T132349Z.json`; fingerprint `7aae0633c92933b48e1e06fed3f5463fa24141be44eed8832c7ef854b6bc1b33`.
 
 | Class | Rows |
 | --- | ---: |
@@ -52,13 +52,13 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T131516Z.json`; fingerpri
 | CLIENT_REQUEST-8d9208be6d78 | CLIENT_REQUEST | shared | POST :dynamic | performTokenRefresh | W-sec | client/src/api/axiosInstance.js:118 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | CLIENT_REQUEST-6f40a6f8fbc6 | CLIENT_REQUEST | shared | GET :dynamic | request | R | client/src/api/usePublicDirectory.js:16 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | UI_ACTION-783ee03094f4 | UI_ACTION | shared | :component | button.onClick → handleDismiss | R | client/src/components/BanNotice.jsx:97 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| CLIENT_REQUEST-5dfa98e44da0 | CLIENT_REQUEST | shared | GET /drugs/search | request | R | client/src/components/DrugSearchInput.jsx:158 | NOT VERIFIED | Server side effects still require review |
-| CLIENT_REQUEST-c097b06576a7 | CLIENT_REQUEST | shared | POST /drugs/interactions | checkInteractions | W-low | client/src/components/DrugSearchInput.jsx:223 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
-| UI_ACTION-3db0bdbe29aa | UI_ACTION | shared | :component | input.onChange → inline | R | client/src/components/DrugSearchInput.jsx:325 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-2c47e4207dac | UI_ACTION | shared | :component | input.onKeyDown → handleKeyDown | W-low | client/src/components/DrugSearchInput.jsx:329 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-0b2dc7e5a47b | UI_ACTION | shared | :component | input.onFocus → inline | R | client/src/components/DrugSearchInput.jsx:330 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-81d929804d2a | UI_ACTION | shared | :component | div.onClick → inline | W-low | client/src/components/DrugSearchInput.jsx:403 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-e310568a8c1a | UI_ACTION | shared | :component | div.onClick → handleAddCustomMedication | W-low | client/src/components/DrugSearchInput.jsx:455 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| CLIENT_REQUEST-40d5a42b6a3b | CLIENT_REQUEST | shared | GET /drugs/search | request | R | client/src/components/DrugSearchInput.jsx:161 | NOT VERIFIED | Server side effects still require review |
+| CLIENT_REQUEST-f715f6701e6c | CLIENT_REQUEST | shared | POST /drugs/interactions | checkInteractions | W-low | client/src/components/DrugSearchInput.jsx:227 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
+| UI_ACTION-e32ae935ddd6 | UI_ACTION | shared | :component | input.onChange → inline | R | client/src/components/DrugSearchInput.jsx:330 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-691d970c441f | UI_ACTION | shared | :component | input.onKeyDown → handleKeyDown | W-low | client/src/components/DrugSearchInput.jsx:334 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-d67ceb0e53c8 | UI_ACTION | shared | :component | input.onFocus → inline | R | client/src/components/DrugSearchInput.jsx:335 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-a17822ca02ab | UI_ACTION | shared | :component | div.onClick → inline | W-low | client/src/components/DrugSearchInput.jsx:408 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-1d12f2d64746 | UI_ACTION | shared | :component | div.onClick → handleAddCustomMedication | W-low | client/src/components/DrugSearchInput.jsx:460 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-c77ff9db9b31 | UI_ACTION | shared | :component | inline.onClick → onClose | R | client/src/components/Modal.jsx:27 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
 | UI_ACTION-8b3fdb1c63a5 | UI_ACTION | shared | :component | button.onClick → onClose | R | client/src/components/Modal.jsx:42 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
 | CLIENT_REQUEST-6ea8bc5e1b6b | CLIENT_REQUEST | shared | POST /patient/request-access | sendOTP | W-sec | client/src/components/PatientAccessModal.jsx:62 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
@@ -864,4 +864,4 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T131516Z.json`; fingerpri
 | API-446f3440c413 | API | shared | POST /api/users/upload-profile-pic | userController.uploadProfilePic | W-low | server/src/routes/userRoutes.js:7 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 
-Historical source snapshots retained. This refresh binds current history recovery and language controls; no live PASS inferred.
+Historical inventories retained. Current bindings include medication-response validation; no live clinical acceptance inferred.

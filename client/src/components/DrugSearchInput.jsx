@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from '../api/axiosInstance';
 import { FiSearch, FiAlertTriangle, FiInfo, FiPlus } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { medicationSafetyResponse } from '../utils/medicationSafetyResponse';
 
 // Curated offline fallback catalog with name, genericName, brand, category, commonDosages, and trilingual labels
 const FALLBACK_DRUGS = [
@@ -113,6 +114,8 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
 
   const wrapperRef = useRef(null);
   const listRef = useRef(null);
+  const interactionRequestRef = useRef(0);
+  useEffect(() => () => { interactionRequestRef.current += 1; }, []);
 
   // Click outside listener
   useEffect(() => {
@@ -200,6 +203,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
   }, [activeIndex]);
 
   const checkInteractions = async (selectedDrug) => {
+    const request = ++interactionRequestRef.current;
     setInteractionWarning(null);
     setVerificationWarning(null);
 
@@ -223,21 +227,22 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
       const res = await axios.post('/drugs/interactions', {
         drugs: drugsToCheck
       });
-      const payload = res.data?.data;
-      if (payload?.hasInteraction && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
-        const warningsText = payload.warnings
-          .map(w => w.message || w.description)
-          .filter(Boolean)
-          .join(' | ');
+      if (request !== interactionRequestRef.current) return;
+      const payload = medicationSafetyResponse(res.data?.data);
+      if (payload.hasInteraction) {
+        const warningsText = payload.warnings.join(' | ');
         setInteractionWarning(`⚠️ MEDICATION SAFETY ALERT: ${warningsText}`);
       }
-      if (payload?.verificationIncomplete && Array.isArray(payload.unresolvedIngredients) && payload.unresolvedIngredients.length > 0) {
+      if (payload.verificationIncomplete) {
         setVerificationWarning(
           payload.statusMessage ||
-          `Automated interaction checking is incomplete. Unresolved ingredient(s): ${payload.unresolvedIngredients.join(', ')}.`
+          (payload.unresolvedIngredients.length
+            ? `Automated interaction checking is incomplete. Unresolved ingredient(s): ${payload.unresolvedIngredients.join(', ')}.`
+            : 'Automated interaction checking is incomplete.')
         );
       }
     } catch (error) {
+      if (request !== interactionRequestRef.current) return;
       setVerificationWarning('Automated interaction checking could not be completed due to a service error.');
     }
   };

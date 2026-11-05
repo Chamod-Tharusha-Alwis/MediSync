@@ -185,7 +185,7 @@ describe('DrugSearchInput Adversarial Stress Suite (m2_challenger_2)', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  test('6. Layout shift measurement: 0px layout shift invariant on adjacent containers', async () => {
+  test('6. Dropdown CSS and sibling-order contract (jsdom does not measure layout shift)', async () => {
     api.get.mockResolvedValueOnce({
       data: {
         data: [
