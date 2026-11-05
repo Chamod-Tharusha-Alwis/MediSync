@@ -80,6 +80,8 @@ async function main() {
     run('ml-flask', py, [path.join(root, 'ml-engine/scripts/clinical_offline_tests.py')], mlEnv)] : []),
     run('root', process.execPath, ['--test', '--test-reporter=tap', path.join(root, 'scripts/realLocalStack.test.cjs')])
   ]);
+  if (!securityOnly) exits.push(await run('ml-status-contract', process.execPath,
+    [path.join(root,'scripts/verifyMlStatusContractOffline.cjs'),'--evidence',out]));
   const totals = [];
   for (const exit of exits) {
     try {
@@ -90,6 +92,9 @@ async function main() {
       } else if (exit.mode === 'ml-scoring') {
         const result = JSON.parse(fs.readFileSync(path.join(out, 'ml-scoring-results.json')));
         row = { mode: exit.mode, passed: result.passed, failed: result.failed, skipped: result.skipped, total: result.checks.length, success: result.failed === 0 && result.checks.length === result.passed + result.failed + result.skipped };
+      } else if (exit.mode === 'ml-status-contract') {
+        const result = JSON.parse(fs.readFileSync(path.join(out,'ml-status-contract-results.json')));
+        row = { mode: exit.mode, passed: result.passed, failed: result.failed, skipped: result.skipped, total: result.total, success: result.success === true };
       } else if (exit.mode === 'ml-flask') {
         const result = JSON.parse(fs.readFileSync(path.join(out, 'ml-flask-results.json')));
         row = { mode: exit.mode, passed: result.run - result.failures - result.errors - result.skipped, failed: result.failures + result.errors, skipped: result.skipped, total: result.run, success: result.success === true };

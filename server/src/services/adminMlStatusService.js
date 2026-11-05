@@ -12,6 +12,22 @@ function categoryOf(error) {
   return 'bad_response';
 }
 
+function safeStatus(value) {
+  return Number.isInteger(value) && value >= 100 && value <= 599 ? value : 'none';
+}
+
+function failedStatusFields(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return ['response'];
+  const fields = [];
+  if (data.status !== 'active') fields.push('status');
+  if (!Number.isSafeInteger(data.dataPoints) || data.dataPoints < 0) fields.push('dataPoints');
+  if (data.dataPointUnit !== 'reference disease profiles') fields.push('dataPointUnit');
+  if (data.clinicalValidation !== 'not established') fields.push('clinicalValidation');
+  if (!['TF-IDF + Cosine Similarity', 'Intersection Fallback'].includes(data.models?.diseasePrediction)) fields.push('models.diseasePrediction');
+  if (data.models?.outbreakForecasting !== 'unavailable') fields.push('models.outbreakForecasting');
+  return fields;
+}
+
 function modelStatusUrl(baseUrl, { allowLoopbackHttp = false } = {}) {
   if (typeof baseUrl !== 'string' || !baseUrl || baseUrl !== baseUrl.trim() || /[\s\\@?#]/.test(baseUrl)) throw Error('INVALID_ML_CONFIGURATION');
   if (!/^[a-z][a-z\d+.-]*:\/\/[^/]+(?:\/+)?$/i.test(baseUrl)) throw Error('INVALID_ML_CONFIGURATION');
@@ -28,6 +44,8 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
   let stage = 'prepare';
   let dispatched = false;
   let responseSeen = false;
+  let upstreamStatus = 'none';
+  let failedFields = [];
   try {
     const url = modelStatusUrl(baseUrl, { allowLoopbackHttp });
     if (typeof get !== 'function' || typeof token !== 'function') throw Error('INVALID_ML_CONFIGURATION');
@@ -38,18 +56,18 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
       headers: { 'x-internal-key': key }
     }, {
       onDispatch: () => { dispatched = true; },
-      onResponse: () => { responseSeen = true; }
+      onResponse: response => { responseSeen = true; upstreamStatus = safeStatus(response?.status); }
     });
     if (!pending || typeof pending.then !== 'function') throw Error('INVALID_ML_CONFIGURATION');
     stage = 'request';
     const response = await pending;
     stage = 'response';
+    upstreamStatus = safeStatus(response?.status);
+    if (upstreamStatus !== 'none' && (upstreamStatus < 200 || upstreamStatus >= 300)) throw Error('UNEXPECTED_STATUS_RESPONSE');
     const data = response?.data;
     const model = data?.models?.diseasePrediction;
-    if (!data || data.status !== 'active' || !Number.isSafeInteger(data.dataPoints) || data.dataPoints < 0 ||
-        data.dataPointUnit !== 'reference disease profiles' || data.clinicalValidation !== 'not established' ||
-        !['TF-IDF + Cosine Similarity', 'Intersection Fallback'].includes(model) ||
-        data.models.outbreakForecasting !== 'unavailable') throw Error('INVALID_STATUS_RESPONSE');
+    failedFields = failedStatusFields(data);
+    if (failedFields.length) throw Error('INVALID_STATUS_RESPONSE');
     return { status: 'available', available: true, dataPoints: data.dataPoints,
       dataPointUnit: 'reference disease profiles', modelType: model,
       clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
@@ -61,7 +79,16 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
       ['ERR_INVALID_URL', 'ERR_BAD_OPTION', 'ERR_BAD_OPTION_VALUE', 'ERR_NOT_SUPPORT', 'ERR_DEPRECATED'].includes(error?.code);
     const category = stage === 'prepare' ||
       (stage === 'request' && ((!dispatched && !responseSeen && !error?.request && !error?.response) || localOptionError)) ? 'config' : categoryOf(error);
-    log(`[AdminMlStatus] category=${category}`);
+    if (category === 'bad_response') {
+      const errorStatus = safeStatus(error?.response?.status);
+      if (errorStatus !== 'none') upstreamStatus = errorStatus;
+      const reason = failedFields.length ? 'schema' :
+        (upstreamStatus >= 300 && upstreamStatus < 400 || error?.code === 'ERR_FR_TOO_MANY_REDIRECTS') ? 'redirect' :
+          upstreamStatus !== 'none' && (upstreamStatus < 200 || upstreamStatus >= 300) ? 'http_status' : 'other';
+      // Only internal enums, bounded numeric status and fixed schema paths.
+      // Never serialize an exception, URL, headers, response body or key.
+      log(`[AdminMlStatus] category=bad_response reason=${reason} upstreamStatus=${upstreamStatus} failedFields=${failedFields.length ? failedFields.join(',') : 'none'}`);
+    } else log(`[AdminMlStatus] category=${category}`);
     return { status: 'unavailable', available: false, category, dataPoints: null,
       dataPointUnit: 'reference disease profiles', modelType: null,
       clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
@@ -75,11 +102,11 @@ function createStatusGet(client, resolveAdapter = client?.getAdapter) {
       const adapter = resolveAdapter(client.defaults.adapter);
       lifecycle.onDispatch();
       return Promise.resolve().then(() => adapter(config)).then(response => {
-        lifecycle.onResponse();
+        lifecycle.onResponse(response);
         return response;
       });
     }
   });
 }
 
-module.exports = { readAdminMlStatus, categoryOf, modelStatusUrl, createStatusGet };
+module.exports = { readAdminMlStatus, categoryOf, modelStatusUrl, createStatusGet, failedStatusFields };

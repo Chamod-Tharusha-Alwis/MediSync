@@ -49,8 +49,10 @@ sys.path.insert(0, str(root / 'ml-engine'))
 import test_medication_safety
 import test_reference_catalog
 import test_outbreak_ingestion
+import test_model_status_contract
 
-suite = unittest.defaultTestLoader.loadTestsFromModule(test_medication_safety)
+suite = unittest.defaultTestLoader.loadTestsFromModule(test_model_status_contract)
+suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_medication_safety))
 suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_reference_catalog))
 suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_outbreak_ingestion))
 result = unittest.TextTestRunner(verbosity=2).run(suite)

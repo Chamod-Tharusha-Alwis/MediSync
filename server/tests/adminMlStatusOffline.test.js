@@ -3,6 +3,7 @@ const {readAdminMlStatus,createStatusGet}=require('../src/services/adminMlStatus
 const payload=()=>({status:'active',dataPoints:0,dataPointUnit:'reference disease profiles',
   clinicalValidation:'not established',models:{diseasePrediction:'TF-IDF + Cosine Similarity',outbreakForecasting:'unavailable'}});
 const options=()=>({get:jest.fn().mockResolvedValue({data:payload()}),token:jest.fn(()=> 'inert-hmac'),baseUrl:'https://inert.invalid',log:jest.fn()});
+const badLog=(reason='other',status='none',fields='none')=>`[AdminMlStatus] category=bad_response reason=${reason} upstreamStatus=${status} failedFields=${fields}`;
 test('actual status service preserves zero reference profiles, never invents training, forecast or clinical totals',async()=>{
   const o=options(),r=await readAdminMlStatus(o);
   expect(r).toMatchObject({available:true,dataPoints:0,forecastAvailable:false,nextRun:null,lastTrained:null});
@@ -18,7 +19,7 @@ test.each([
 ])('fixed failure category; single request, no retry or raw error leak %#',async(error,category)=>{
   const o=options();o.get.mockRejectedValue({...error,message:'private-sentinel',config:{url:'private-sentinel'},response:{...error.response,data:'private-sentinel'}});
   const r=await readAdminMlStatus(o);expect(r).toMatchObject({available:false,status:'unavailable',category,dataPoints:null});
-  expect(o.get).toHaveBeenCalledTimes(1);expect(o.log.mock.calls).toEqual([[`[AdminMlStatus] category=${category}`]]);
+  expect(o.get).toHaveBeenCalledTimes(1);expect(o.log.mock.calls).toEqual([[category==='bad_response'?badLog(error.response?.status?'http_status':'other',error.response?.status||'none'):`[AdminMlStatus] category=${category}`]]);
   expect(JSON.stringify([r,o.log.mock.calls])).not.toContain('private-sentinel');
 });
 test('missing HMAC dependency is sanitized config, with zero HTTP requests',async()=>{
@@ -52,7 +53,7 @@ test('real controller emits explicit HTTP 200 unavailable envelope; no raw upstr
 test.each([400,405,408,413,429,500,502,503,504,301,302,307,308])('an HTTP %i rejection is bad_response, not evidence of a cold start',async status=>{
   const o=options();o.get.mockRejectedValue({response:{status,data:'private-upstream-body'},code:'ERR_BAD_RESPONSE'});
   expect(await readAdminMlStatus(o)).toMatchObject({available:false,category:'bad_response'});
-  expect(o.get).toHaveBeenCalledTimes(1);expect(o.log.mock.calls).toEqual([['[AdminMlStatus] category=bad_response']]);
+  expect(o.get).toHaveBeenCalledTimes(1);expect(o.log.mock.calls).toEqual([[badLog(status<400?'redirect':'http_status',status)]]);
 });
 test.each([
   '<!doctype html><title>Unrelated frontend application</title>',
@@ -65,7 +66,7 @@ test.each([
   const o=options();o.get.mockResolvedValue({data});const result=await readAdminMlStatus(o);
   expect(result).toMatchObject({available:false,dataPoints:null,category:'bad_response'});
   expect(JSON.stringify(result)).not.toContain('Unrelated frontend application');
-  expect(o.log.mock.calls).toEqual([['[AdminMlStatus] category=bad_response']]);
+  expect(o.log.mock.calls).toHaveLength(1);expect(o.log.mock.calls[0][0]).toMatch(/^\[AdminMlStatus\] category=bad_response reason=schema upstreamStatus=none failedFields=(?:response|status|dataPoints|dataPointUnit|clinicalValidation|models\.diseasePrediction|models\.outbreakForecasting)(?:,(?:status|dataPoints|dataPointUnit|clinicalValidation|models\.diseasePrediction|models\.outbreakForecasting))*$/);
 });
 test('trailing slash is normalized before dispatch and redirect rejection remains unchanged',async()=>{
   const o=options();o.baseUrl='https://inert.invalid/';o.get.mockRejectedValue({response:{status:308}});
@@ -186,7 +187,7 @@ test.each([
   const adapter=jest.fn(async()=>{throw Object.assign(Error('private-sentinel'),{code});});
   const client=axios.create({proxy:false,adapter}),o=options();o.get=createStatusGet(client,axios.getAdapter);
   expect(await readAdminMlStatus(o)).toMatchObject({category});expect(adapter).toHaveBeenCalledTimes(1);
-  expect(o.log.mock.calls).toEqual([[`[AdminMlStatus] category=${category}`]]);
+  expect(o.log.mock.calls).toEqual([[category==='bad_response'?badLog():`[AdminMlStatus] category=${category}`]]);
 });
 test('response-interceptor option-shaped error after a reply stays bad_response',async()=>{
   const axios=jest.requireActual('axios');
@@ -195,7 +196,7 @@ test('response-interceptor option-shaped error after a reply stays bad_response'
   client.interceptors.response.use(()=>{throw Object.assign(Error('private-sentinel'),{code:'ERR_BAD_OPTION_VALUE'});});
   const o=options();o.get=createStatusGet(client,axios.getAdapter);
   expect(await readAdminMlStatus(o)).toMatchObject({category:'bad_response'});expect(adapter).toHaveBeenCalledTimes(1);
-  expect(o.log.mock.calls).toEqual([['[AdminMlStatus] category=bad_response']]);
+  expect(o.log.mock.calls).toEqual([[badLog('other',200)]]);
 });
 test('actual Axios adapter receives unchanged request limits and valid status is available',async()=>{
   const axios=jest.requireActual('axios');
@@ -206,4 +207,37 @@ test('actual Axios adapter receives unchanged request limits and valid status is
   expect(adapter.mock.calls[0][0]).toMatchObject({url:'https://inert.invalid/model-status',method:'get',timeout:10000,maxRedirects:0,maxContentLength:65536});
   expect(adapter.mock.calls[0][0].headers.get('x-internal-key')).toBe('inert-hmac');
   expect(o.log).not.toHaveBeenCalled();
+});
+test.each([
+  [null,'response'],
+  [{...payload(),status:'inactive'},'status'],
+  [{...payload(),dataPoints:-1},'dataPoints'],
+  [{...payload(),dataPoints:'41'},'dataPoints'],
+  [{...payload(),dataPointUnit:'inert-private-value'},'dataPointUnit'],
+  [{...payload(),clinicalValidation:'inert-private-value'},'clinicalValidation'],
+  [{...payload(),models:{...payload().models,diseasePrediction:'inert-private-value'}},'models.diseasePrediction'],
+  [{...payload(),models:{...payload().models,outbreakForecasting:'active'}},'models.outbreakForecasting'],
+  [{...payload(),models:null},'models.diseasePrediction,models.outbreakForecasting'],
+  [{},'status,dataPoints,dataPointUnit,clinicalValidation,models.diseasePrediction,models.outbreakForecasting']
+])('schema diagnostics contain only exact failed field names, not values %#',async(data,fields)=>{
+  const o=options();o.get.mockResolvedValue({status:200,data});
+  expect(await readAdminMlStatus(o)).toMatchObject({available:false,category:'bad_response',dataPoints:null});
+  expect(o.log.mock.calls).toEqual([[badLog('schema',200,fields)]]);expect(o.get).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(o.log.mock.calls)).not.toContain('inert-private-value');
+});
+test.each([100,301,302,307,308,400,429,500,502,503,599])('fulfilled HTTP %i cannot be accepted merely because its body matches the schema',async status=>{
+  const o=options();o.get.mockResolvedValue({status,data:payload()});
+  expect(await readAdminMlStatus(o)).toMatchObject({available:false,category:'bad_response'});
+  expect(o.log.mock.calls).toEqual([[badLog(status>=300&&status<400?'redirect':'http_status',status)]]);
+  expect(o.get).toHaveBeenCalledTimes(1);expect(o.get.mock.calls[0][1].maxRedirects).toBe(0);
+});
+test.each(['503 private-sentinel',null,NaN,Infinity,0,600,401.5])('untrusted error status never leaks or masquerades as a safe numeric status %#',async status=>{
+  const o=options();o.get.mockRejectedValue({request:{},response:{status,data:'private-sentinel'},message:'private-sentinel',config:{url:'private-sentinel'},failedFields:['private-sentinel']});
+  expect(await readAdminMlStatus(o)).toMatchObject({available:false,category:'bad_response'});
+  expect(o.log.mock.calls).toEqual([[badLog('other')]]);expect(JSON.stringify(o.log.mock.calls)).not.toContain('private-sentinel');
+});
+test('redirect-limit error with no reply has a fixed redirect reason and no raw exception',async()=>{
+  const o=options();o.get.mockRejectedValue({request:{},code:'ERR_FR_TOO_MANY_REDIRECTS',message:'private-sentinel'});
+  expect(await readAdminMlStatus(o)).toMatchObject({category:'bad_response'});
+  expect(o.log.mock.calls).toEqual([[badLog('redirect')]]);
 });

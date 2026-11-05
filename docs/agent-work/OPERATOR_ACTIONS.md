@@ -32,3 +32,9 @@ No production mutation is authorized by this checklist.
 - [ ] Decide how to retire MEDISYNC_PROTOTYPE_MODE/operator-key Vault bypass. Any encryption migration needs a reviewed backward-compatible dry-run, private backup and tested restore before separate apply approval. No automatic startup migration.
 - [ ] Rotate any credentials found exposed in historical source/evidence; report secret type/location only, never values, and do not rewrite Git history automatically.
 - [ ] For future migrations, first take a private encrypted backup outside repo/OneDrive, verify its digest/access controls and an isolated restore, then review dry-run counts. Approve only one exact migration at a time.
+
+## 2026-11-05T09:48:24.750Z — P1 consumed; next diagnostic gate supersedes old P1 request
+
+- [ ] Review docs/temp/CODEX_V2_ML_STATUS_DIAGNOSTICS_20261105T094824Z.md. After exact-head deployment confirmation, separately authorize APPROVE P2 with fresh numeric Resend/Brevo/combined totals for one admin login/logout and the existing two-status-GET comparison only. Expected1alert,reserve2; projected total must not exceed22/25. No other role, clinical/OTP/maintenance writes or retry.
+- [ ] Return only each fixed AdminMlStatus category/reason/upstreamStatus/failedFields line from that approved window; no raw logs, bodies, URLs, headers or secrets.
+- [ ] No ML protected source or production data repair is proposed: the actual empty-storage reply already passes the unchanged schema. Root cause remains unverified pending fixed diagnostic evidence.

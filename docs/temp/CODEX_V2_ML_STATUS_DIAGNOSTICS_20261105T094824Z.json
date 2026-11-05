@@ -1,0 +1,210 @@
+{
+  "at": "2026-11-05T09:48:24.750Z",
+  "item": "ML_EMPTY_SQLITE_CONTRACT_AND_FIXED_BAD_RESPONSE_DIAGNOSTICS",
+  "baseHead": "c00f2589218750120c34fbde5533cacbda3038d4",
+  "source": {
+    "server/src/services/adminMlStatusService.js": "2df812088212612ba5d0ff8127799638378713c720f00c2f0d1740ae23f37d9a",
+    "server/tests/adminMlStatusOffline.test.js": "a50f0db855a8276b6bc0efb0303e5d95f4286e1e36e111373c863f2d91f4a66a",
+    "ml-engine/test_model_status_contract.py": "ff5b75488212419b96eb9d1fc24b13e0dd69e0e991809b12cb5e3b2c379fcf0a",
+    "ml-engine/scripts/clinical_offline_tests.py": "c0f280a2706c61c876c9e20706ac7157de9a5e8e925089e05b834b5a111f5037",
+    "scripts/verifyMlStatusContractOffline.cjs": "3ccd193db62fc342e95847ea6f34edcf5bb066a0e31f8014a450ed57fcefa8e1",
+    "scripts/run_offline_tests.js": "c60f35c8b7cb5f5f5b655acf1285c7a652e3d5f47c8670a0e0b03745705543a1"
+  },
+  "regression": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-dudZol",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2422,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2422,
+        "suites": 104,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 547,
+        "failed": 0,
+        "skipped": 0,
+        "total": 547,
+        "suites": 58,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-status-contract",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "total": 7,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 3118,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "focused": {
+    "passed": 167,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0
+  },
+  "build": {
+    "exitCode": 0,
+    "evidence": "scratch/CODEX_V2_ML_DIAGNOSTIC_BUILD_1793871653009/console.log",
+    "envAndNetworkFenced": true
+  },
+  "actualFlaskReply": {
+    "httpStatus": 200,
+    "emptySQLiteCounts": {
+      "outbreak_tracking": 0,
+      "outbreak_feedback": 0
+    },
+    "sqliteCallsDuringRoute": 0,
+    "referenceProfiles": 41,
+    "unit": "reference disease profiles",
+    "inputSha256": "a0a57cca33ce17a35428e43394a3835018d46f53d659a427c88e2f9e79d5eec3",
+    "bodyNotCopiedToFinalReport": true
+  },
+  "validatorRules": [
+    {
+      "field": "response",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "status",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "dataPoints",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "dataPointUnit",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "clinicalValidation",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "models.diseasePrediction",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    },
+    {
+      "field": "models.outbreakForecasting",
+      "positive": "PASS",
+      "negative": "PASS",
+      "passed": true
+    }
+  ],
+  "mlSourceIdentity": {
+    "operatorReportedCommit": "86d5876",
+    "operatorReportedStatus": "Live, manually deployed one day ago",
+    "localProtectedAppMatchesGitReportedCommit": true,
+    "remoteImageFileHash": "NOT_VERIFIED"
+  },
+  "diagnostics": {
+    "category": "bad_response",
+    "reasonAllowlist": [
+      "schema",
+      "http_status",
+      "redirect",
+      "other"
+    ],
+    "upstreamStatus": "Integer100..599 or none",
+    "fieldAllowlist": [
+      "response",
+      "status",
+      "dataPoints",
+      "dataPointUnit",
+      "clinicalValidation",
+      "models.diseasePrediction",
+      "models.outbreakForecasting"
+    ],
+    "noBodiesUrlsHeadersOrErrors": true,
+    "browserDtoUnchanged": true,
+    "tlsRedirectAndHmacPolicy": "PRESERVED",
+    "non2xxFulfilledReply": "DENIED"
+  },
+  "preservedFailure": {
+    "file": "scratch/CODEX_V2_ML_DIAGNOSTIC_ASSERTION_RED_20261105.log",
+    "exitCode": 1,
+    "failed": 2,
+    "passed": 106,
+    "cause": "Expected diagnostic assertion admitted one schema field only; corrected to allowlisted multi-field diagnostics and added exact multi-field case. No production validation was relaxed."
+  },
+  "protectedIntact": 15,
+  "liveRootCause": "NOT_VERIFIED",
+  "newLoginsSinceP1": 0,
+  "newEmailsSinceP1": 0,
+  "lastConfirmedProviderTotals": {
+    "resend": 7,
+    "brevo": 0,
+    "combined": 7,
+    "limit": 25,
+    "remaining": 18
+  },
+  "nextLiveGate": "APPROVE P2 with fresh numeric totals",
+  "clinicalE2E": "2/14 historical"
+}
