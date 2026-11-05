@@ -8,18 +8,18 @@ Started 2026-11-04T05:52:16.227Z. Source main f825df43c8d42032e1cf77447de85b205a
 | P1-ML-STATUS | Honest admin ML status + fixed diagnostic | Lead | LIVE_PARTIAL | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend200exactSHA | API200/unavailable/bad_response | Fixed log-line operator confirmation pending; exact UI card assertion NOT VERIFIED; upstream cause not established. |
 | P1-SESSION-TRANSPORT | Admin socket session cleanup | Lead | OFFLINE_REPAIRED_RETEST_HELD | dce6bbef00566424ad256ad8ab3d05bb3933e364 | Captured | Backend200exactSHA/VercelREADY/bothCIgreen | Historical sweep4PASS/adminFAIL;new admin UI PASS/timed comparison INCOMPLETE | Actual admin effect lacked session-cleared cleanup; old3/new0 offlineChromium. No allowlist expansion; no live retry. |
 | P1-ID-MASK | Login-alert identifier body masking | Lead | LIVE_CONFIRMED_BY_OPERATOR | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend/Vercel/CI verified | All5received-rolealerts masked;SriLanka label correct | No identifierexamples retained. Operator-confirmed totals5/0/5 on5Nov; cap25. |
-| Q1 | Live session checks and truthful banner removal | Lead | PARTIAL | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend/Vercel exactSHA |5login/logout200;4pagePASS/adminFAIL | No banners/pageexceptions.3adminboundaryGETerrors; map data truth not verified. |
-| Q2 | Durable real-only recorded consultation activity (operator-approved revised scope) | A/B | LIVE_VERIFIED | 7e0d9c0c29b99fae985f878698ccf671adce0eac | 2026-11-04T17:17:13.261Z | Backend exact SHA; Vercel READY exact SHA | 9/9 anonymous views; API 200 / 7 visits | Cases/outbreaks/forecast unavailable; clinical review deferred; no writes or restart experiment. |
-| Q3 | Doctor consultation carry-over verification | Lead | PARTIAL | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend/Vercel exactSHA | Initial wizard PASS only | Lab/drug/interaction UI blocked by no-OTP/narrowPOST scope; no clinical save. Offline suites pass; visual/clinical acceptance pending. |
-| Q4 | C4 definition and acceptance reconciliation | A/B/C | BLOCKED | d6c8040e48489c0314552f7607040464dbd808f4 | Exact timestamp not captured; successful Git push observed | Backend200exactSHA/VercelREADY | Health/local contracts PASS; clinical browser NOT VERIFIED | Both CI green41824022270/41824022348;2595PASS/build0. |
-| Q5 | C5 disease and drug coverage | A/B | BLOCKED | — | — | ML commit not exposed | ML health200/71704 ICD concepts | Drug/interaction role UI held after failed one-shot harness; local inventory distinct from live. |
-| Q6 | C7 release hardening | B/C | BLOCKED | b911713a28a85783926c89ad08c623b4251e84a1 | 2026-11-04T11:58:00.809Z | Vercel exactSHA READY; backend d6c8040 tree-equivalent | Public404 nine observations PASS | 2603PASS/build0/bothCIgreen; role forms/Lighthouse NOT VERIFIED. |
-| Q7 | Trilingual parity and role walkthrough | D | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q8 | UI polish and accessibility | C | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q9 | Security review and operator hardening | E/B | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q10 | Full five-role QA | F | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
-| Q11 | Remove temporary test OTP after Q10 | B/E | TODO | — | — | NOT VERIFIED | NOT VERIFIED | Only after Q10 passes. |
-| Q12 | Cleanup and final release documentation | G | TODO | — | — | NOT VERIFIED | NOT VERIFIED |  |
+| Q1 | Authenticated/full-site banner acceptance | Lead (single agent) | BLOCKED | 4383d63 / 40979ff | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Dashboards and9publicviews observed; inner-page EN/SI/TA matrix pending P3. Admin UI retest0blocked/0console; timed ML comparison incomplete. |
+| Q2 | Durable real-only consultation activity | Lead (single agent) | LIVE_VERIFIED | 7e0d9c0 | Historical captured pushes | Scoped deployment receipts only | See scope in notes | 9anonymous EN/SI/TA×width views;7visits at historical capture; clinical panels unavailable. Not a current count claim. |
+| Q3 | Doctor consultation full flow | Lead (single agent) | BLOCKED | 4383d63 (initial wizard only) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Offline repairs exist; no consent/clinical save/drug UI acceptance under current approval. Needs W2/W3 and named test patient. |
+| Q4 | C4 Doctor AI resilience | Lead (single agent) | BLOCKED | d6c8040 (limited verifier) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Definition WORK_TRACKING:52; legacy health-timeout PASS rejected; genuine clinical browser integration pending. |
+| Q5 | C5 Disease/drug coverage | Lead (single agent) | BLOCKED | a3726ec (partial) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Definition WORK_TRACKING:64; reference counts/offline contracts are not drug/interaction UI acceptance. |
+| Q6 | C7 Release hardening | Lead (single agent) | BLOCKED | b911713 / d6c8040 (partial) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Definition WORK_TRACKING:72; public404 observed; all-form locks, authenticated recovery, accessibility and states incomplete. |
+| Q7 | Trilingual parity and walkthrough | Lead (single agent) | BLOCKED | a4952b5 (time display only) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Public9views observed; full key/hard-coded-string audit and authenticated matrix not complete. |
+| Q8 | UI polish and accessibility | Lead (single agent) | BLOCKED | dce6bbe (socket only) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | No Lighthouse installed; all-page mobile/focus/contrast geometry not verified. |
+| Q9 | Security completion | Lead (single agent) | BLOCKED | 4383d63 / 40979ff (partial) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Mask/time confirmed; full validation/rate-limit/dependency review and operator-key/vault/migration decisions remain. |
+| Q10 | Every-function five-role QA | Lead (single agent) | BLOCKED | 40979ff (dashboards only) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Historical real-backend2/14; P3 and W1-W4 approvals required. No generic full-platform PASS. |
+| Q11 | Retire temporary test OTP/accounts | Lead (single agent) | DEFERRED | — | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Last code change only after P3/W phases pass; retirement and live old-code rejection need operator scope. |
+| Q12 | Cleanup and final release evidence | Lead (single agent) | BLOCKED | — | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Needs upstream acceptance; deletion list requires separate confirmation; preserve all historical artifacts. |
 
 Historical real backend group acceptance remains 2/14; no additional accepted receipts are assumed.
 
@@ -106,3 +106,48 @@ Sourcefix`dce6bbef00566424ad256ad8ab3d05bb3933e364` pushed. Both exactheadCI che
 ## 2026-11-05T08:36:30.754Z — Admin single-session retest partial; email accounting closed
 
 Live40979ff: one admin login200/logout200; dashboard rendered/no banner;0console errors/0page exceptions/0blocked requests (including socket.io). First ML-status200/unavailable/bad_response at14:01:24 Asia/Colombo. Timed second GET NOT SENT: runner exited1 before it; original generic category does not prove exact thrown stage. Likely initial-response timing race; original evidence preserved. Offline local runner now bounds first-response wait and retains stage labels; focused138PASS/full3054PASS/0FAIL/0SKIP/15pins. Candidate test tooling only, not committed/pushed or run live after correction. No further auth/email approval. Operator final emails Resend6/Brevo0/combined6,cap25/remaining19. Evidence docs/temp/CODEX_ADMIN_SINGLE_RETEST_20261105T083630Z.md and docs/temp/CODEX_ADMIN_SINGLE_RETEST_20261105T083630Z.json; original docs/temp/CODEX_Q1_SESSION_admin_1793867465453.json; scratch/clinical-offline-L6wGfX/summary.json. Historical clinical2/14. Overall timed comparison remains INCOMPLETE; no second result invented.
+
+## 2026-11-05T08:58:01.552Z — V2 current acceptance reconciliation
+
+V2 supersedes older blanket completion labels. No new authenticated check is approved. Email totals6/0/6 (operator-confirmed after last admin retest), cap25, stop before projected usage exceeds22. The source-bound TEST_MATRIX is static coverage triage, not proof of functionality or authorization. Dynamic callbacks and controller side effects must be reviewed before live R actions.
+
+| ID | Current item | Status | Evidence / unblock |
+| --- | --- | --- | --- |
+| P0a | Corrected timed runner | LIVE_VERIFIED (deployment only) | 25d29a6; CI127144245231/127144243727 success; Vercel dpl_9MUgoyrKSQs3JxshYXCTzTLAAp7d READY; backend ready exact SHA. Timed live comparison NOT VERIFIED. |
+| P0b | Test matrix and definitions | LOCAL_DONE | Generator17PASS;846 source rows initially; static classification only; full final gate/deploy recorded in successor receipt. |
+| P1 | Admin ML steady/cold comparison | BLOCKED | APPROVE P1 plus fresh numeric provider totals; one admin login/logout and two ML-status GETs sixty seconds apart. |
+| P2-I | Locale parity and hard-coded UI | IN_PROGRESS | Offline inventory next; no authenticated UI claim. |
+| P3 | All R pages/tabs | BLOCKED | APPROVE P3, fresh totals, reviewed dynamic callbacks and source-bound guarded itinerary. |
+| W1-W4 | Controlled writes | BLOCKED | Each named approval with endpoints, marked data, email budget and operator cleanup; no deletion by agent. |
+| FINAL | Final acceptance matrix | BLOCKED | Only after all applicable R and separately approved W acceptance; no production-ready declaration. |
+
+### Located 14 historical real-backend groups
+
+Source: docs/temp/CODEX_REAL_E2E_SCORECARD_20261024_a91f6e.json and docs/temp/MEDISYNC_FIVE_ROLE_REAL_E2E_ACCEPTANCE.md:57-72. Historical Group1/2 receipts accepted, total2/14; not current production or browser acceptance. All current re-execution remains separately gated.
+
+| Group | Exact title | Historical acceptance | Current boundary |
+| --- | --- | --- | --- |
+| 1 | Five-role authentication | PASS (historical restricted QA receipts) | Current source/live acceptance and named approval still required. |
+| 2 | Admin management and status | PASS (historical restricted QA receipts) | Current source/live acceptance and named approval still required. |
+| 3 | Patient consent and OTP | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 4 | Doctor transactional consultation | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 5 | Real Express-to-Flask ML integration | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 6 | Clinical timeline and record isolation | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 7 | Five-role persisted language and session transitions | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 8 | Pharmacy prescription dispensing | NOT VERIFIED | Legacy inventory language conflicts with later no-inventory product decision; operator must reconcile scope before live testing. |
+| 9 | Pharmacy OTC concurrency and replay protection | NOT VERIFIED | Legacy inventory language conflicts with later no-inventory product decision; operator must reconcile scope before live testing. |
+| 10 | Pharmacy staff, inventory and institution authorization | NOT VERIFIED | Legacy inventory language conflicts with later no-inventory product decision; operator must reconcile scope before live testing. |
+| 11 | Hospital and doctor affiliation | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 12 | Laboratory workflow | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 13 | Clinical PDF security and authorized export | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+| 14 | Real five-role trilingual and responsive browser | NOT VERIFIED | Current source/live acceptance and named approval still required. |
+
+### Located C4 / C5 / C7 definitions
+
+- C4, WORK_TRACKING:52: doctor AI resilience, disclaimer, timeout/fallback and genuinely observed clinical/browser behavior. Earlier live verifier ignored health failure, so that PASS is not accepted.
+- C5, WORK_TRACKING:64: actual disease/drug/interaction/ICD reference counts plus drug search and interaction warnings in UI; no clinical efficacy inference.
+- C7, WORK_TRACKING:72:404 recovery, route ErrorBoundary, submit locks, loading/empty/error states and Lighthouse accessibility≥90. Public404 is only partial acceptance.
+
+## 2026-11-05T09:02:08.716Z — V2 Phase 0 inventory qualified
+
+17generator testsPASS; full3071PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins; scratch/clinical-offline-6jBmlQ/summary.json. Same clinical client source built offline with network/env fencing,exit0,existing warnings (scratch/CODEX_V2_P0_BUILD_1793868372472/console.log). Matrix846rows: R560,W-low78,W-clin41,W-sec99,W-adm37,X31;65page declarations,466UIactions,131clientrequests,184APIregistrations. 78dynamic/callback-review flags; no live authority inferred. Historical universe excluded from the current entry import graph and preserved on disk. Current full846×role/locale/viewport acceptance NOT VERIFIED. All14originalgroups located;2historicallyaccepted,inventoryscope conflict recorded. C4/C5/C7 definitions located. Receipt docs/temp/CODEX_V2_P0_MATRIX_GATE_20261105T090208Z.json. P1 needs new named approval and fresh numeric provider totals; none received. No new login/email/data/infra operation.

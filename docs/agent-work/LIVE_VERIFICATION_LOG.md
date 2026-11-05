@@ -86,3 +86,11 @@ Commit d6c8040e48489c0314552f7607040464dbd808f4 pushed main after clean pull--re
 Frontend commit b911713a28a85783926c89ad08c623b4251e84a1, pushed2026-11-04T11:58:00.809Z; exact-head clinicalCI41825217683 and securityCI41825217645 bothsuccess. VercelcustomaliasREADY exactSHA dpl_EMXbF4SZweQnNP5wJQDjvjuzDxHo. Backendhealth200 d6c8040e48489c0314552f7607040464dbd808f4; server and ml-engine Git trees exactly equal between that commit and HEAD (diffexit0). Render rootserver excludes frontend/docs-only commits per https://render.com/docs/monorepo-support; effective unchanged backend bytes are verified, a fresh backend SHA/redeploy is not claimed or requested.
 
 Actual anonymousChromium9observations:EN/SI/TA×320/375/1440,localizedheading/focus/2recoverylinks/44pxlinks/nooverflow,keyboardHome recoveryPASS,0pageerrors/0guardviolations. Receipt docs/temp/CODEX_Q6_PUBLIC_404_1793793748541.json; public screenshots outside repo/OneDrive LocalAppData/medisync/evidence/Q6-404-c9840ee4,320SI/TAvisuallyreviewed. VercelSPAHTTP200is recorded; this is recoverycontent404, not HTTP404routing. No auth/provider/clinical write. Public health503/data:null and unapprovedsimulation400 unchanged; receipt CODEX_Q6_PUBLIC_REGRESSION_1793793784802.json. Q6 role forms/loading audit/Lighthouse>=90 remain NOT VERIFIED.
+
+## 2026-11-05T09:02:08.716Z — V2 baseline (anonymous metadata only)
+
+| Time UTC | Expected / observed source | Role | Request | Result | Evidence | Email count after |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-05T09:02:08.716Z | 25d29a6 / 25d29a6 | Public | Backend health and Vercel deployment metadata | Backend ready; Vercel READY; both CI success | docs/temp/CODEX_V2_P0_MATRIX_GATE_20261105T090208Z.json; CI127144245231/127144243727; dpl_9MUgoyrKSQs3JxshYXCTzTLAAp7d | 6 last confirmed; no new sends |
+
+No authenticated retest was run under V2. ML live SHA is NOT VERIFIED because its health response does not expose it and no hosting dashboard is connected. A repository commit alone is not proof of an ML deployment.

@@ -25,3 +25,11 @@ Fresh operator provider total was Resend0/Brevo0, cap30. Backend health and Verc
 ## 2026-11-04T12:38:04.827Z — Q2 confirmed failing gate and operator contract decision
 
 Operator-supplied Render line at12:29:45UTC onfb4dc0b: [PublicHealth] stage=SOURCE_READ_AND_VERIFY category=REPORTING_REVIEW_REQUIRED. Actual live cause is missing/invalid review object on an admitted candidate; record counts/identities remain unobserved. Operator chose separate public consultation activity (visits, not cases), durableMongo/real-only; confirmed-case/outbreak/forecast values remain unavailable/null; clinical review deferred. Operator explicitly requires page/API field list before implementation. Scope proposal docs/temp/CODEX_Q2_ACTIVITY_SCOPE_FOR_CONFIRMATION_20261104123804827.md. No new application code, records, login or database operation after this decision.
+
+## 2026-11-05T08:58:01.552Z — V2 active gates
+
+- P1: current admin ML first response200/unavailable/bad_response; second call never sent. Exact protected Flask reply vs validator remains reviewable offline; live two-call comparison needs APPROVE P1 and fresh numeric totals. No new login approved.
+- R matrix callbacks/dynamic targets: static classification is not evidence of no side effects; review flagged rows and exact itinerary before P3. Existing fence remains unchanged.
+- Groups8–10: original definitions include medication inventory/decrement; later operator explicitly says no medication inventory. Preserve original group names/receipts; ask for scope reconciliation before any live inventory test; do not invent stock checks.
+- P3/W1–W4/FINAL need separate phase authorization; no test patient is selected under V2.
+- Protected source changes, ML hosting/disk/shell/settings, dependency installs/Lighthouse, operator secrets/rotation, DDL/migration and cleanup are unapproved.

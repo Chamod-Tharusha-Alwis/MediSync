@@ -1,5 +1,6 @@
 'use strict';
 const base = require('./agent-b.offline.jest.cjs');
+// Inventory tooling never dispatches routes or imports clinical application code.
 module.exports = { ...base, testMatch: [...base.testMatch.filter(file => !file.includes('agentBPublicDemoIsolation')), '<rootDir>/tests/clinicalProductionEntry.test.js', '<rootDir>/tests/localStartupAndDirectory.test.js', '<rootDir>/tests/approvedClinicalPatchBinding.test.js', '<rootDir>/tests/closureQaReadOnly.test.js', '<rootDir>/tests/closureQaPreservationBaseline.local.test.js', '<rootDir>/tests/masterSupportSafety.test.js', '<rootDir>/tests/masterClinicalStorage.test.js', '<rootDir>/tests/masterLoginAdmission.test.js', '<rootDir>/tests/masterReviewSafety.test.js', '<rootDir>/tests/masterOrganizationPassword.test.js', '<rootDir>/tests/masterReleaseBoundary.test.js', '<rootDir>/tests/masterReconciliation.test.js', '<rootDir>/tests/masterExistingStorage.test.js', '<rootDir>/tests/masterAuthRedaction.test.js', '<rootDir>/tests/masterQaAdmissionDiagnostics.test.js'] };
 module.exports.testMatch.push(...['websiteClinicalContracts','websiteReferencePackaging','websiteNotifications'].map(name=>`<rootDir>/tests/${name}.test.js`));
 module.exports.testMatch.push('<rootDir>/tests/websiteHospitalDoctorLink.test.js');
@@ -32,6 +33,7 @@ module.exports.testMatch.push('<rootDir>/tests/publicBootstrapPublication.test.j
 module.exports.testMatch.push('<rootDir>/tests/c4VerifierTruthfulness.test.js','<rootDir>/tests/aiResilience.test.js');
 module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionPolicy.test.js');
 module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionBrowser.test.js');
+module.exports.testMatch.push('<rootDir>/tests/testMatrixInventory.test.js');
 module.exports.testMatch.push('<rootDir>/tests/sriLankaTime.test.js');
 module.exports.testMatch.push('<rootDir>/tests/emailTemplatesPhase6.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicConsultationActivity.test.js');
