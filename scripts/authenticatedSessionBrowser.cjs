@@ -21,17 +21,33 @@ function requestPattern(input, method) {
 function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
   const policy = createSessionPolicy({ role, sessionMutationsApproved: true });
   const blocked = new Map();
+  const blockedTransportReasons = {};
   const sockets = new Set();
   let socketToken;
   const authenticated=()=>policy.summary().state==='AUTHENTICATED'&&typeof socketToken==='string';
+  let resolveLogin;
+  const loginObserved = new Promise(resolve=>{resolveLogin=resolve;});
+  async function waitForAuthentication() {
+    if(authenticated())return true;
+    if(policy.summary().state!=='LOGIN_DISPATCHED')return false;
+    let timer;
+    try{return await Promise.race([loginObserved,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),3000);})]);}
+    finally{clearTimeout(timer);}
+  }
   const recordBlocked = (url, method) => {
     const row = requestPattern(url, method), key = JSON.stringify(row);
     blocked.set(key, (blocked.get(key) || 0) + 1);
+    if(row.pathPattern==='/socket.io/'){
+      const reason=policy.summary().state==='CLOSED'?'CLOSED_SESSION':
+        !transportUrl(url,method==='WS'?'websocket':'polling',method==='WS'?'GET':method)?'URL_SHAPE_REJECTED':
+        !authenticated()?'NOT_AUTHENTICATED':'FRAME_OR_CONTENT_TYPE_REJECTED';
+      blockedTransportReasons[reason]=(blockedTransportReasons[reason]||0)+1;
+    }
   };
   async function attach(context) {
     if (typeof context.routeWebSocket !== 'function') throw Error('WEBSOCKET_FENCE_UNAVAILABLE');
-    await context.routeWebSocket('**/*', ws => {
-      if(!notificationTransportApproved||!authenticated()||!transportUrl(ws.url(),'websocket','GET')){recordBlocked(ws.url(),'WS');ws.close();return;}
+    await context.routeWebSocket('**/*', async ws => {
+      if(!notificationTransportApproved||!transportUrl(ws.url(),'websocket','GET')||!await waitForAuthentication()){recordBlocked(ws.url(),'WS');ws.close();return;}
       const server=ws.connectToServer();
       let closed=false;
       const closeBoth=()=>{if(closed)return;closed=true;sockets.delete(closeBoth);ws.close();server.close();};
@@ -51,6 +67,7 @@ function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
         const u = new URL(url);
         if (u.pathname.startsWith('/socket.io')) {
           if(!notificationTransportApproved||!transportUrl(url,'polling',method))throw Error('UNAPPROVED_SOCKET_TRANSPORT');
+          if(policy.summary().state==='LOGIN_DISPATCHED')await waitForAuthentication();
           if(method==='GET'&&!authenticated())throw Error('UNAPPROVED_SOCKET_TRANSPORT');
           if(method==='POST'){
             const type=request.headers?.()['content-type']||'';
@@ -74,8 +91,9 @@ function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
   return { attach, observeLoginResponse(status,proof,token){
       policy.observeLoginResponse(status,proof);
       socketToken=policy.summary().state==='AUTHENTICATED'&&typeof token==='string'&&token.length>20?token:undefined;
+      resolveLogin(authenticated());
     },
-    summary: () => ({ ...policy.summary(), blockedRequests: [...blocked].map(([k,count]) => ({ ...JSON.parse(k), count })) }) };
+    summary: () => ({ ...policy.summary(), blockedTransportReasons:{...blockedTransportReasons}, blockedRequests: [...blocked].map(([k,count]) => ({ ...JSON.parse(k), count })) }) };
 }
 function loginProof(role, status, body) {
   const d = body && typeof body === 'object' && body.data;

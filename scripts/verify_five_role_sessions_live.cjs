@@ -12,13 +12,15 @@ function argsOf(args) {
     if (args[i] === '--approved-session-check' && !out.approved) { out.approved=true; continue; }
     if (args[i] === '--email-display-proof' && !out.proofOnly) { out.proofOnly=true; continue; }
     if (args[i] === '--notification-transport' && !out.notifications) { out.notifications=true; continue; }
+    if (args[i] === '--combined-read-only-sweep' && !out.combined) { out.combined=true; continue; }
     if (!allowed.has(args[i]) || out[args[i]] !== undefined || args[i+1] === undefined) throw Error('ARGUMENT_ADMISSION_REJECTED');
     out[args[i]]=args[++i];
   }
   if (!out.approved || !ROLES.includes(out['--role']) || !/^q1_sessions_\d{8}_[a-f0-9]{8}$/.test(out['--run-id'] || '') || !/^\d+$/.test(out['--email-total'] || '') || !/^[a-f0-9]{40}$/.test(out['--backend-commit'] || '')) throw Error('ARGUMENT_ADMISSION_REJECTED');
   const total=Number(out['--email-total']);
   if (!Number.isSafeInteger(total) || total<0 || total+2>25) throw Error('EMAIL_BUDGET_REJECTED');
-  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true};
+  if(out.combined&&(!out.notifications||out.proofOnly))throw Error('COMBINED_SCOPE_REJECTED');
+  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true,combined:out.combined===true};
 }
 function credentials(root, readFile = fs.readFileSync) {
   const parsed=require('../server/node_modules/dotenv').parse(readFile(path.join(root,'server/.env')));
@@ -40,7 +42,27 @@ function credentials(root, readFile = fs.readFileSync) {
 function admitAttempt(config, previous) {
   if(previous.includes(config.role)||(config.proofOnly&&previous.length>0)||config.baseline+2*(previous.length+1)>25)throw Error('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
 }
-async function observePage(page,role) {
+function statusEvidence(status,body){
+  const categories=['timeout','auth','not_found','dns','connection','bad_response'];
+  if(status===200&&body?.available===false&&body.status==='unavailable'&&body.dataPoints===null&&categories.includes(body.category))return {httpStatus:status,state:'unavailable',category:body.category,contractValid:true};
+  if(status===200&&body?.available===true&&body.status==='available'&&Number.isSafeInteger(body.dataPoints)&&body.dataPoints>=0&&body.dataPointUnit==='reference disease profiles')return {httpStatus:status,state:'available',contractValid:true};
+  return {httpStatus:status,state:'INVALID_OR_MISSING_CONTRACT',contractValid:false};
+}
+function combinedVerdict(receipt){
+  const consoleErrors=Object.values(receipt.consoleCategories).reduce((a,b)=>a+b,0);
+  return receipt.observations.length>0&&receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
+    (receipt.role!=='admin'||receipt.adminMlStatus?.contractValid===true&&receipt.observations.some(o=>o.view==='outbreak-monitor')&&
+      (receipt.adminMlStatus.state!=='unavailable'||receipt.observations.some(o=>o.referenceUnavailable===true)));
+}
+async function logoutInPage({url,accessToken}){
+  // Stop the owned page's notification transports using the app's existing
+  // session-cleanup event before the test fence closes the session scope.
+  // The real server logout below remains mandatory; this event is not proof.
+  window.dispatchEvent(new Event('medisync:session-cleared'));
+  try{const response=await fetch(url,{method:'POST',credentials:'include',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:'{}'});return {status:response.status};}
+  catch(_){return {status:null};}
+}
+async function observePage(page,role,view='dashboard') {
   const values=await page.evaluate(()=>{
     const body=document.body.innerText;
     const banners=[...document.querySelectorAll('[role="alert"],[role="status"],[class*="banner"],[data-testid*="banner"]')].filter(el=>el.getBoundingClientRect().height>0);
@@ -50,16 +72,20 @@ async function observePage(page,role) {
       mapRendered:!!document.querySelector('.leaflet-container'),
       forecastPresent:!!document.querySelector('[data-testid*="forecast"],.recharts-line'),
       telemetryFallbackVisible:/15,420/.test(body),
+      referenceUnavailable:[...document.querySelectorAll('h3')].some(el=>['ML reference service','ML යොමු සේවාව','ML குறிப்பு சேவை'].includes(el.textContent)&&['Not available','ලබා ගත නොහැක','கிடைக்கவில்லை'].includes(el.closest('.glass-card')?.querySelector('p')?.textContent)),
+      blankPatientLookup:document.querySelector('input[aria-label="Patient NIC"]')?.value===''&&!document.querySelector('[role="dialog"]'),
       sessionLocal:!!(localStorage.getItem('token')||localStorage.getItem('accessToken'))};
   });
-  return {view:role==='admin'?'overview':'dashboard',rendered:values.hasMain&&values.hasHeading&&values.sessionLocal&&new URL(page.url()).pathname.startsWith('/'+role+'/dashboard'),
+  const isWizard=view==='consultation-initial'&&role==='doctor';
+  return {view:isWizard?view:role==='admin'?'overview':'dashboard',rendered:values.hasMain&&values.hasHeading&&values.sessionLocal&&(isWizard?new URL(page.url()).pathname==='/doctor/consultation/new'&&values.blankPatientLookup:new URL(page.url()).pathname.startsWith('/'+role+'/dashboard')),
     temporaryBanner:values.temporaryBanner,metricsUnavailable:values.metricsUnavailable,mapRendered:values.mapRendered,
-    forecastPresent:values.forecastPresent,telemetryFallbackVisible:values.telemetryFallbackVisible};
+    forecastPresent:values.forecastPresent,telemetryFallbackVisible:values.telemetryFallbackVisible,referenceUnavailable:values.referenceUnavailable};
 }
 async function run(config) {
   const root=path.resolve(__dirname,'..');
   const localAppData=process.env.LOCALAPPDATA;
   if(!localAppData)throw Error('LOCAL_EVIDENCE_ROOT_MISSING');
+  if(/onedrive/i.test(localAppData)||path.resolve(localAppData).startsWith(root))throw Error('PRIVATE_EVIDENCE_ROOT_REJECTED');
   const kept=new Set(['SYSTEMROOT','WINDIR','PATH','PATHEXT','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','SYSTEMDRIVE']);
   for(const key of Object.keys(process.env))if(!kept.has(key.toUpperCase()))delete process.env[key];
   const privateInput=credentials(root);
@@ -70,7 +96,7 @@ async function run(config) {
   const fd=fs.openSync(lock,'wx');fs.closeSync(fd);
   let browser,context,page,authenticated=false,token,receiptPath;
   const boundary=createBrowserBoundary(config.role,{notificationTransportApproved:config.notifications===true});
-  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
+  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.combined?'COMBINED_READ_ONLY_SESSION_SWEEP':config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
     source:Object.fromEntries(['verify_five_role_sessions_live.cjs','authenticatedSessionBrowser.cjs','authenticatedSessionPolicy.cjs','notificationTransportPolicy.cjs'].map(name=>[name,crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,name))).digest('hex')])),
     baselineConfirmedSent:config.baseline,emailLimit:25,newLoginAlertCount:'NOT_OBSERVABLE_FROM_LOGIN_RESPONSE',
     reservedPotentialEmailCount:0,combinedConservativeUpperBound:config.baseline+2*previous.length,
@@ -99,7 +125,10 @@ async function run(config) {
       try {
         const u=new URL(response.url());
         if(u.origin===API&&response.status()>=400)receipt.httpFailures.push({...require('./authenticatedSessionBrowser.cjs').requestPattern(response.url(),response.request().method()),status:response.status()});
-        if(u.origin===API&&u.pathname==='/api/admin/ml-status'&&response.status()===200){const j=await response.json();adminMetadata.mlDataPointsVerified=j?.available===true&&Number.isSafeInteger(j.dataPoints)&&j.dataPoints>=0&&j.dataPointUnit==='reference disease profiles';}
+        if(u.origin===API&&u.pathname==='/api/admin/ml-status'){
+          const j=await response.json();receipt.adminMlStatus=statusEvidence(response.status(),j);
+          adminMetadata.mlDataPointsVerified=receipt.adminMlStatus.state==='available';
+        }
       }catch(_){}
     });
     await page.goto(FRONTEND+'/'+config.role+'/login',{waitUntil:'domcontentloaded',timeout:60000});
@@ -119,6 +148,11 @@ async function run(config) {
     await page.waitForURL(url=>url.pathname.startsWith('/'+config.role+'/dashboard'),{timeout:30000});
     await page.waitForTimeout(6000);
     let observation=await observePage(page,config.role);receipt.observations.push(observation);
+    if(config.combined){
+      receipt.screenshotsOutsideRepository=[];
+      const screenshot=path.join(dir,config.role+'-dashboard.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository.push(screenshot);
+      receipt.lighthouse={status:'BLOCKED',reason:'LIGHTHOUSE_NOT_INSTALLED_NO_DEPENDENCY_INSTALL_AUTHORIZED'};
+    }
     if(config.role==='admin'&&!config.proofOnly) {
       receipt.adminOverview=adminHonesty(observation,adminMetadata);
       await page.goto(FRONTEND+'/admin/dashboard/outbreak',{waitUntil:'domcontentloaded',timeout:60000});
@@ -128,9 +162,17 @@ async function run(config) {
       receipt.adminOutbreak.map='NOT_A_MAP_VIEW';
       receipt.adminOutbreak.forecast='NO_FORECAST_VIEW_IMPLEMENTED';
       receipt.adminOutbreak.passed=receipt.adminOutbreak.telemetry!=='UNVERIFIED_FALLBACK_DISPLAYED'&&!observation.forecastPresent;
+      if(config.combined){const screenshot=path.join(dir,'admin-outbreak.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository.push(screenshot);}
+    }
+    if(config.combined&&config.role==='doctor'){
+      await page.goto(FRONTEND+'/doctor/consultation/new',{waitUntil:'domcontentloaded',timeout:60000});
+      await page.waitForTimeout(2500);
+      receipt.observations.push(await observePage(page,'doctor','consultation-initial'));
+      const screenshot=path.join(dir,'doctor-consultation-initial.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository.push(screenshot);
+      receipt.consultationChecks={initialWizard:'OPENED_WITHOUT_PATIENT_INPUT',labPlacement:'BLOCKED_CONSENT_OTP_NOT_AUTHORIZED',drugSearchUI:'BLOCKED_CONSENT_OTP_NOT_AUTHORIZED',interactionUI:'BLOCKED_CONSENT_AND_POST_OUTSIDE_ALLOWLIST',saveAttempts:0,otpSubmissions:0,patientLookups:0};
     }
     const consoleErrors=Object.values(receipt.consoleCategories).reduce((a,b)=>a+b,0);
-    receipt.passed=receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
+    receipt.passed=config.combined?combinedVerdict(receipt):receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
       (config.role!=='admin'||config.proofOnly||receipt.adminOverview.passed&&receipt.adminOutbreak.passed);
     receipt.category=receipt.passed?'ROLE_SESSION_BROWSER_VERIFIED':'ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';
   } catch(error) {
@@ -141,7 +183,7 @@ async function run(config) {
     // browser route and consumed-before-dispatch policy still govern this POST.
     if(authenticated&&page&&token){
       try{
-        const result=await page.evaluate(async({url,accessToken})=>{try{const r=await fetch(url,{method:'POST',credentials:'include',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:'{}'});return {status:r.status};}catch(_){return {status:null};}}, {url:API+'/api/auth/logout',accessToken:token});
+        const result=await page.evaluate(logoutInPage, {url:API+'/api/auth/logout',accessToken:token});
         receipt.logoutStatus=result.status;
         if(result.status===200)authenticated=false;
         else{receipt.passed=false;receipt.category='LOGOUT_NOT_VERIFIED';}
@@ -150,6 +192,7 @@ async function run(config) {
     receipt.ownedSessionCleanup=authenticated?'SERVER_LOGOUT_NOT_VERIFIED':receipt.logoutStatus===200?'SERVER_LOGOUT_200':receipt.loginAttempts&&receipt.loginStatus===null?'AUTHENTICATION_OUTCOME_UNKNOWN':'NO_AUTHENTICATED_SESSION_ESTABLISHED';
     token=undefined;privateInput.password=undefined;for(const key of Object.keys(privateInput.emails))delete privateInput.emails[key];
     if(context)await context.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});
+    if(config.combined&&receipt.passed&&!combinedVerdict(receipt)){receipt.passed=false;receipt.category='ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';}
     receipt.ownedBrowserClosed=true;flush();fs.unlinkSync(lock);
     console.log(JSON.stringify({role:receipt.role,loginAttempts:receipt.loginAttempts,loginStatus:receipt.loginStatus,passed:receipt.passed,category:receipt.category,receipt:path.relative(root,receiptPath),emailAlertCount:receipt.newLoginAlertCount,combinedConservativeUpperBound:receipt.combinedConservativeUpperBound,blockedRequests:receipt.boundary.blockedRequests}));
   }
@@ -158,4 +201,4 @@ async function run(config) {
 if(require.main===module){let config;try{config=argsOf(process.argv.slice(2));}catch(_){console.log(JSON.stringify({category:'LOCAL_ARGUMENT_ADMISSION_REJECTED',loginAttempts:0}));process.exitCode=1;}
   if(config)run(config).then(r=>{process.exitCode=r.passed?0:1;}).catch(()=>{console.log(JSON.stringify({category:'LOCAL_PREFLIGHT_REJECTED',loginAttempts:0}));process.exitCode=1;});
 }
-module.exports={argsOf,credentials,observePage,admitAttempt};
+module.exports={argsOf,credentials,observePage,admitAttempt,statusEvidence,combinedVerdict,logoutInPage};

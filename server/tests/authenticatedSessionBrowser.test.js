@@ -83,3 +83,38 @@ test('credential reader uses only the approved local password source and parses 
     identities+='\nadmin: second@example.invalid';expect(()=>credentials('/inert',readFile)).toThrow();
   }finally{if(previous===undefined)delete process.env.TEMP_ACCOUNT_PASSWORD;else process.env.TEMP_ACCOUNT_PASSWORD=previous;}
 });
+test('combined CLI scope requires explicit notification opt-in and rejects conflicting proof mode',()=>{
+  const {argsOf}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  const args=['--approved-session-check','--role','admin','--run-id','q1_sessions_20261105_a1b2c3d4','--email-total','0','--backend-commit','a'.repeat(40),'--combined-read-only-sweep'];
+  expect(()=>argsOf(args)).toThrow('COMBINED_SCOPE_REJECTED');
+  expect(argsOf([...args,'--notification-transport'])).toMatchObject({combined:true,notifications:true,baseline:0});
+  expect(()=>argsOf([...args,'--notification-transport','--email-display-proof'])).toThrow('COMBINED_SCOPE_REJECTED');
+});
+test('status evidence retains only known categories and never raw bodies',()=>{
+  const {statusEvidence}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  expect(statusEvidence(200,{available:false,status:'unavailable',category:'auth',dataPoints:null,error:'private-sentinel'})).toEqual({httpStatus:200,state:'unavailable',category:'auth',contractValid:true});
+  expect(statusEvidence(200,{available:true,status:'available',dataPoints:0,dataPointUnit:'reference disease profiles'})).toMatchObject({state:'available',contractValid:true});
+  for(const dto of [{},null,{available:false,status:'unavailable',category:'private-sentinel',dataPoints:null}])expect(JSON.stringify(statusEvidence(503,dto))).not.toContain('private-sentinel');
+});
+test('combined acceptance separates no-console dashboard checks from still-unverified map data and clinical steps',()=>{
+  const {combinedVerdict}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  const row={role:'admin',observations:[{rendered:true,temporaryBanner:false,view:'outbreak-monitor',referenceUnavailable:true}],consoleCategories:{},pageErrors:0,httpFailures:[],adminMlStatus:{contractValid:true,state:'unavailable'}};
+  expect(combinedVerdict(row)).toBe(true);
+  expect(combinedVerdict({...row,consoleCategories:{SOCKET_TRANSPORT_ERROR:1}})).toBe(false);
+  expect(combinedVerdict({...row,observations:[{...row.observations[0],referenceUnavailable:false}]})).toBe(false);
+  expect(combinedVerdict({...row,adminMlStatus:{contractValid:false}})).toBe(false);
+  expect(combinedVerdict({...row,observations:[]})).toBe(false);
+});
+test('owned-page notification cleanup precedes exactly one real logout request and is not itself logout proof',async()=>{
+  const {logoutInPage}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  const originalWindow=global.window,originalFetch=global.fetch,order=[];
+  global.window={dispatchEvent:event=>{order.push(event.type);}};
+  global.fetch=jest.fn(async()=>{order.push('logout-request');return {status:200};});
+  try{
+    expect(await logoutInPage({url:API+'/api/auth/logout',accessToken:'inert-only'})).toEqual({status:200});
+    expect(order).toEqual(['medisync:session-cleared','logout-request']);expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch.mock.calls[0][1]).toMatchObject({method:'POST',credentials:'include',body:'{}'});
+    global.fetch.mockRejectedValueOnce(Error('private-sentinel'));
+    expect(await logoutInPage({url:API+'/api/auth/logout',accessToken:'inert-only'})).toEqual({status:null});
+  }finally{global.window=originalWindow;global.fetch=originalFetch;}
+});

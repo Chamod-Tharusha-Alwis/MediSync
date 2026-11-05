@@ -53,6 +53,7 @@ test('actual browser route enforces authenticated opt-in and token binding witho
  expect((await send(x,PATH+'&sid=inert','POST','42["dispense",{}]')).abort).toHaveBeenCalledTimes(1);
  expect((await send(x,PATH+'&sid=inert','POST',connect,'application/json')).abort).toHaveBeenCalledTimes(1);
  await send(x,'/api/auth/logout','POST');expect((await send(x,PATH)).abort).toHaveBeenCalledTimes(1);
+ expect(b.summary().blockedTransportReasons.CLOSED_SESSION).toBe(1);
  expect((await send(x,PATH+'&sid=inert','POST','41')).continue).toHaveBeenCalledTimes(1);
  expect(JSON.stringify(b.summary())).not.toContain(TOKEN);
 });
@@ -67,7 +68,7 @@ test('actual WSS relay passes incoming notifications/control only, denies writes
  const {x}=await authenticated();
  function socket(){const s={send:jest.fn(),close:jest.fn(()=>s.closeHandler?.()),onClose:f=>{s.closeHandler=f;},onMessage:f=>{s.message=f;}};return s;}
  const ws=socket(),server=socket();ws.url=()=>API.replace('https:','wss:')+'/socket.io/?EIO=4&transport=websocket';ws.connectToServer=jest.fn(()=>server);
- x.ws(ws);expect(ws.connectToServer).toHaveBeenCalledTimes(1);
+ await x.ws(ws);expect(ws.connectToServer).toHaveBeenCalledTimes(1);
  ws.message('2probe');expect(server.send).toHaveBeenCalledWith('2probe');
  server.message('42["notification",{}]');expect(ws.send).toHaveBeenCalledWith('42["notification",{}]');
  ws.message('42["save",{}]');expect(server.send).toHaveBeenCalledTimes(1);
@@ -77,6 +78,17 @@ test('logout closes owned WSS transport; server notifications cannot continue af
  const {x}=await authenticated();
  const ws={url:()=>API.replace('https:','wss:')+'/socket.io/?EIO=4&transport=websocket',send:jest.fn(),close:jest.fn(),onMessage:jest.fn(),onClose:jest.fn()};
  const server={send:jest.fn(),close:jest.fn(),onMessage:f=>{server.message=f;},onClose:jest.fn()};ws.connectToServer=()=>server;
- x.ws(ws);await send(x,'/api/auth/logout','POST');expect(ws.close).toHaveBeenCalledTimes(1);expect(server.close).toHaveBeenCalledTimes(1);
+ await x.ws(ws);await send(x,'/api/auth/logout','POST');expect(ws.close).toHaveBeenCalledTimes(1);expect(server.close).toHaveBeenCalledTimes(1);
  server.message('42["notification",{}]');expect(ws.send).not.toHaveBeenCalled();
+});
+test('browser handshake racing the real login observer waits, without accepting unverified authentication',async()=>{
+ const b=createBrowserBoundary('doctor',{notificationTransportApproved:true}),x=context();await b.attach(x);await send(x,'/api/auth/login','POST');
+ const pending=send(x,PATH);await Promise.resolve();
+ b.observeLoginResponse(200,loginProof('doctor',200,{data:{role:'doctor',accessToken:TOKEN}}),TOKEN);
+ expect((await pending).continue).toHaveBeenCalledTimes(1);expect(b.summary().blockedRequests).toEqual([]);
+});
+test('a pending socket cannot proceed when the login response requires OTP',async()=>{
+ const b=createBrowserBoundary('doctor',{notificationTransportApproved:true}),x=context();await b.attach(x);await send(x,'/api/auth/login','POST');
+ const pending=send(x,PATH);b.observeLoginResponse(200,loginProof('doctor',200,{data:{requiresOTP:true,role:'doctor'}}));
+ expect((await pending).abort).toHaveBeenCalledTimes(1);
 });

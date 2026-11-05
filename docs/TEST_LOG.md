@@ -1,5 +1,10 @@
 # MediSync Test Log
 
+## 2026-11-05T04:15:05.003674+00:00 — Masking deployed and combined sweep consumed
+
+Mask commit`4383d6367ea19b6f21e084c76700e80fa291174e`:2953offlinePASS/build0/15pins/bothCIgreen,backendhealth200exactSHA,VercelREADYexactSHA. Actual5singlelogins+5logout200:patient/doctor/hospital/pharmacy PASS(noConsole/noBlocked);admin FAIL(3blockedGET/socket.io/,0pageExceptions). APIadminml-status200/unavailable/bad_response; operatorlog and maskedemail confirmation pending; exactcardDOMmatcher notverified. DoctorinitialwizardPASS/blank/noOTP; lab/drugUIblockedconsent,interactionPOSToutsideallowlist,Lighthousemissing. No clinical save/dispense/OTP/seed/ingest/trigger/cacheclear/directDB. Startingemails0,conservativeupper10/25; actualfinalcountsawaitoperator. No morelogins/emails under consumedapproval. Adminfailure and exactsource preserved; subsequentharnesscleanup doesn'tturnadminPASS. Finalharnessgate2959PASS/focused101/15pins,receipt`docs/temp/CODEX_COMBINED_SWEEP_RESULTS_20261105T041505Z.json`; report`docs/temp/CODEX_MASKING_DEPLOY_AND_COMBINED_SWEEP_20261105T041505Z.md`. RealclinicalE2E2/14.
+
+
 ## 2026-11-05T03:52:55.836361+00:00 — Login-alert identifier masking offline gate
 
 Body-only mask implemented under explicit operator approval: national first4/last3, email firstcharacter+domain, staff/registration shortprefix/suffix; escaped render. Recipient/stored values/logmask untouched.45new checks; focused79PASS; complete2953PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins; clientbuild0/116modules/demoImported=false,existingwarnings. Evidence `docs/temp/CODEX_LOGIN_ALERT_IDENTIFIER_MASK_OFFLINE_20261105T035255Z.json` and `docs/temp/CODEX_LOGIN_ALERT_MASK_AND_COMBINED_SWEEP_PREFLIGHT_20261105T035255Z.md`. No live login/email/directDB operation. Combined sweep separately approved but NOT STARTED: provider totals are [N] placeholders. Lab/medication UI requires OTP consent (not allowed); interaction POST outside narrow allowlist; Lighthouse absent/no install. Do not bypass or invent live acceptance. Historical clinicalrealE2E2/14.
