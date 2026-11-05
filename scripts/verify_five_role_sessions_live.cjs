@@ -14,6 +14,7 @@ function argsOf(args) {
     if (args[i] === '--notification-transport' && !out.notifications) { out.notifications=true; continue; }
     if (args[i] === '--combined-read-only-sweep' && !out.combined) { out.combined=true; continue; }
     if (args[i] === '--admin-ml-retest' && !out.adminMlRetest) { out.adminMlRetest=true; continue; }
+    if (args[i] === '--admin-ml-once' && !out.adminMlOnce) { out.adminMlOnce=true; continue; }
     if (!allowed.has(args[i]) || out[args[i]] !== undefined || args[i+1] === undefined) throw Error('ARGUMENT_ADMISSION_REJECTED');
     out[args[i]]=args[++i];
   }
@@ -22,7 +23,9 @@ function argsOf(args) {
   if (!Number.isSafeInteger(total) || total<0 || total+2>25) throw Error('EMAIL_BUDGET_REJECTED');
   if(out.combined&&(!out.notifications||out.proofOnly))throw Error('COMBINED_SCOPE_REJECTED');
   if(out.adminMlRetest&&(out['--role']!=='admin'||!out.notifications||out.combined||out.proofOnly))throw Error('ADMIN_RETEST_SCOPE_REJECTED');
-  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true,combined:out.combined===true,adminMlRetest:out.adminMlRetest===true};
+  if(out.adminMlOnce&&(out['--role']!=='admin'||!out.notifications||out.combined||out.proofOnly||out.adminMlRetest))throw Error('ADMIN_SINGLE_GET_SCOPE_REJECTED');
+  if(out.adminMlOnce&&total+2>22)throw Error('EMAIL_BUDGET_REJECTED');
+  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true,combined:out.combined===true,adminMlRetest:out.adminMlRetest===true,adminMlOnce:out.adminMlOnce===true};
 }
 function credentials(root, readFile = fs.readFileSync) {
   const parsed=require('../server/node_modules/dotenv').parse(readFile(path.join(root,'server/.env')));
@@ -43,6 +46,7 @@ function credentials(root, readFile = fs.readFileSync) {
 }
 function admitAttempt(config, previous) {
   if(previous.includes(config.role)||(config.proofOnly&&previous.length>0)||config.baseline+2*(previous.length+1)>25)throw Error('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
+  if(config.adminMlOnce&&(previous.length||config.baseline+2>22))throw Error('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
 }
 function statusEvidence(status,body){
   const categories=['config','timeout','auth','not_found','dns','connection','bad_response'];
@@ -114,8 +118,8 @@ async function run(config) {
   const lock=path.join(dir,'owned-runner.lock');
   const fd=fs.openSync(lock,'wx');fs.closeSync(fd);
   let browser,context,page,authenticated=false,token,receiptPath;
-  const boundary=createBrowserBoundary(config.role,{notificationTransportApproved:config.notifications===true});
-  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.adminMlRetest?'ADMIN_SINGLE_SESSION_TIMED_RETEST':config.combined?'COMBINED_READ_ONLY_SESSION_SWEEP':config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
+  const boundary=createBrowserBoundary(config.role,{notificationTransportApproved:config.notifications===true,...(config.adminMlOnce?{mlStatusGetLimit:1}:{})});
+  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.adminMlOnce?'ADMIN_SINGLE_SESSION_ONE_ML_GET':config.adminMlRetest?'ADMIN_SINGLE_SESSION_TIMED_RETEST':config.combined?'COMBINED_READ_ONLY_SESSION_SWEEP':config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
     source:Object.fromEntries(['verify_five_role_sessions_live.cjs','authenticatedSessionBrowser.cjs','authenticatedSessionPolicy.cjs','notificationTransportPolicy.cjs'].map(name=>[name,crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,name))).digest('hex')])),
     baselineConfirmedSent:config.baseline,emailLimit:25,newLoginAlertCount:'NOT_OBSERVABLE_FROM_LOGIN_RESPONSE',
     reservedPotentialEmailCount:0,combinedConservativeUpperBound:config.baseline+2*previous.length,
@@ -141,14 +145,14 @@ async function run(config) {
     page.on('pageerror',()=>{receipt.pageErrors++;});
     const adminMetadata={mlDataPointsVerified:false};
     let firstMlStatusAt;
-    if(config.adminMlRetest)receipt.mlStatusSamples=[];
+    if(config.adminMlRetest||config.adminMlOnce)receipt.mlStatusSamples=[];
     page.on('response',async response=>{
       try {
         const u=new URL(response.url());
         if(u.origin===API&&response.status()>=400)receipt.httpFailures.push({...require('./authenticatedSessionBrowser.cjs').requestPattern(response.url(),response.request().method()),status:response.status()});
-        if(u.origin===API&&u.pathname==='/api/admin/ml-status'){
+        if(u.origin===API&&u.pathname==='/api/admin/ml-status'&&response.request().method()==='GET'){
           const j=await response.json();receipt.adminMlStatus=statusEvidence(response.status(),j);
-          if(config.adminMlRetest){
+          if(config.adminMlRetest||config.adminMlOnce){
             const at=Date.now();if(firstMlStatusAt===undefined)firstMlStatusAt=at;
             receipt.mlStatusSamples.push({...receipt.adminMlStatus,receivedAt:new Date(at).toISOString()});flush();
           }
@@ -204,6 +208,13 @@ async function run(config) {
       receipt.observations.push({...await observePage(page,'admin'),view:'outbreak-after-repeat'});
       const screenshot=path.join(dir,'admin-retest-status.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository=[screenshot];
     }
+    if(config.adminMlOnce){
+      receipt.retestStage='SINGLE_STATUS_WAIT';flush();
+      await waitForInitialMlStatus({samples:receipt.mlStatusSamples});
+      receipt.retestStage='SINGLE_STATUS_COMPLETED';
+      receipt.observations.push({...await observePage(page,'admin'),view:'outbreak-status-once'});
+      const screenshot=path.join(dir,'admin-single-status.png');await page.screenshot({path:screenshot});receipt.screenshotsOutsideRepository=[screenshot];
+    }
     if(config.combined&&config.role==='doctor'){
       await page.goto(FRONTEND+'/doctor/consultation/new',{waitUntil:'domcontentloaded',timeout:60000});
       await page.waitForTimeout(2500);
@@ -215,6 +226,7 @@ async function run(config) {
     receipt.passed=config.combined?combinedVerdict(receipt):receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&
       (config.role!=='admin'||config.proofOnly||receipt.adminOverview.passed&&receipt.adminOutbreak.passed);
     if(config.adminMlRetest)receipt.passed=receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&receipt.mlStatusSamples.length===2&&receipt.mlStatusSamples.every(s=>s.contractValid)&&receipt.timedStatusRepeat.contractValid&&boundary.summary().blockedRequests.length===0;
+    if(config.adminMlOnce)receipt.passed=receipt.observations.every(o=>pageVerdict({...o,consoleErrors,pageErrors:receipt.pageErrors}))&&receipt.httpFailures.length===0&&receipt.mlStatusSamples.length===1&&receipt.mlStatusSamples[0].contractValid&&boundary.summary().mlStatusGetDispatches===1&&boundary.summary().blockedRequests.length===0;
     receipt.category=receipt.passed?'ROLE_SESSION_BROWSER_VERIFIED':'ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';
   } catch(error) {
     const safe=new Set(['LIVE_SOURCE_ADMISSION_REJECTED','OTP_REQUIRED_NOT_AUTHORIZED','LOGIN_REJECTED_OR_INCOMPLETE',
@@ -236,7 +248,7 @@ async function run(config) {
     token=undefined;privateInput.password=undefined;for(const key of Object.keys(privateInput.emails))delete privateInput.emails[key];
     if(context)await context.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});
     if(config.combined&&receipt.passed&&!combinedVerdict(receipt)){receipt.passed=false;receipt.category='ROLE_RENDER_OR_CONTRACT_REQUIREMENT_FAILED';}
-    if(config.adminMlRetest&&(Object.values(receipt.consoleCategories).some(n=>n>0)||receipt.pageErrors||boundary.summary().blockedRequests.length)){receipt.passed=false;receipt.category='ADMIN_RETEST_CONSOLE_OR_BOUNDARY_FAILURE';}
+    if((config.adminMlRetest||config.adminMlOnce)&&(Object.values(receipt.consoleCategories).some(n=>n>0)||receipt.pageErrors||boundary.summary().blockedRequests.length)){receipt.passed=false;receipt.category='ADMIN_RETEST_CONSOLE_OR_BOUNDARY_FAILURE';}
     receipt.ownedBrowserClosed=true;flush();fs.unlinkSync(lock);
     console.log(JSON.stringify({role:receipt.role,loginAttempts:receipt.loginAttempts,loginStatus:receipt.loginStatus,passed:receipt.passed,category:receipt.category,receipt:path.relative(root,receiptPath),emailAlertCount:receipt.newLoginAlertCount,combinedConservativeUpperBound:receipt.combinedConservativeUpperBound,blockedRequests:receipt.boundary.blockedRequests}));
   }

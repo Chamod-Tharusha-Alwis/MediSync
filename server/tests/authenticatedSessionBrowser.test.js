@@ -162,3 +162,36 @@ test('delayed first response followed by the repeat still separates dispatches b
   const result=await repeatMlStatusRead({firstAt,now:()=>clock,sleep:async ms=>{clock+=ms;},read});
   expect(result.intervalMs).toBe(60000);expect(clock).toBe(66100);expect(read).toHaveBeenCalledTimes(1);
 });
+test('P2 one-GET mode excludes repeat/other-role modes and enforces the22-email soft stop',()=>{
+  const {argsOf,admitAttempt}=require('../../scripts/verify_five_role_sessions_live.cjs');
+  const args=['--approved-session-check','--role','admin','--run-id','q1_sessions_20261105_a1b2c3d4','--email-total','7','--backend-commit','a'.repeat(40),'--notification-transport','--admin-ml-once'];
+  const config=argsOf(args);expect(config).toMatchObject({adminMlOnce:true,adminMlRetest:false,baseline:7});
+  for(const flag of ['--admin-ml-retest','--combined-read-only-sweep','--email-display-proof'])expect(()=>argsOf([...args,flag])).toThrow('ADMIN_SINGLE_GET_SCOPE_REJECTED');
+  expect(()=>argsOf(args.map(x=>x==='admin'?'doctor':x))).toThrow('ADMIN_SINGLE_GET_SCOPE_REJECTED');
+  expect(()=>argsOf(args.map(x=>x==='7'?'21':x))).toThrow('EMAIL_BUDGET_REJECTED');
+  expect(()=>admitAttempt(config,['patient'])).toThrow('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
+});
+test('P2 routing dispatches exactly one authenticated ML GET and rejects every repeat before transport',async()=>{
+  const b=createBrowserBoundary('admin',{notificationTransportApproved:true,mlStatusGetLimit:1}),x=context();await b.attach(x);
+  expect((await dispatch(x,'/api/admin/ml-status')).aborted).toBe(true);expect(b.summary().mlStatusGetDispatches).toBe(0);
+  await dispatch(x,'/api/auth/login','POST');b.observeLoginResponse(200,loginProof('admin',200,{data:{role:'admin',accessToken:'inert-token-long-enough-for-session'}}),'inert-token-long-enough-for-session');
+  expect((await dispatch(x,'/api/admin/ml-status')).continued).toBe(true);
+  expect((await dispatch(x,'/api/admin/ml-status')).aborted).toBe(true);
+  expect(b.summary()).toMatchObject({mlStatusGetDispatches:1,mlStatusGetLimit:1});
+  for(const p of ['/ingest','/api/seed-demo','/api/admin/outbreak/trigger','/api/cache/clear','/api/auth/verify-otp','/api/doctor/consultation','/api/pharmacy/dispense'])expect((await dispatch(x,p,'POST')).aborted).toBe(true);
+});
+test('P2 quota rejects query aliases, HEAD and non-admin configuration; OPTIONS consumes no GET',async()=>{
+  expect(()=>createBrowserBoundary('doctor',{mlStatusGetLimit:1})).toThrow('ML_STATUS_LIMIT_REJECTED');
+  expect(()=>createBrowserBoundary('admin',{mlStatusGetLimit:2})).toThrow('ML_STATUS_LIMIT_REJECTED');
+  const b=createBrowserBoundary('admin',{notificationTransportApproved:true,mlStatusGetLimit:1}),x=context();await b.attach(x);
+  expect((await dispatch(x,'/api/admin/ml-status','OPTIONS')).continued).toBe(true);
+  expect((await dispatch(x,'/api/admin/ml-status?extra=fixture')).aborted).toBe(true);
+  expect((await dispatch(x,'/api/admin/ml-status','HEAD')).aborted).toBe(true);
+  expect(b.summary().mlStatusGetDispatches).toBe(0);
+});
+test.each(['/api/admin/ml-status/','/API/ADMIN/ML-STATUS','/api/admin/ml-status//'])('P2 cannot evade its single-GET quota through the route alias %s',async alias=>{
+  const b=createBrowserBoundary('admin',{notificationTransportApproved:true,mlStatusGetLimit:1}),x=context();await b.attach(x);
+  await dispatch(x,'/api/auth/login','POST');b.observeLoginResponse(200,loginProof('admin',200,{data:{role:'admin',accessToken:'inert-token-long-enough-for-session'}}),'inert-token-long-enough-for-session');
+  expect((await dispatch(x,alias)).aborted).toBe(true);expect(b.summary().mlStatusGetDispatches).toBe(0);
+  expect((await dispatch(x,'/api/admin/ml-status')).continued).toBe(true);expect(b.summary().mlStatusGetDispatches).toBe(1);
+});

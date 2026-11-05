@@ -1,5 +1,10 @@
 # MediSync Test Log
 
+## 2026-11-05T10:42:12.864Z — P2 single admin GET accepted
+
+Livee163f40:1admin login200/logout200;exactly1MLstatusGET200/available/validcontract at10:31:01.479UTC;no repeat. Dashboard/status views rendered/no banner;0console errors/pageexceptions/blockedrequests(including socket.io). Browserclosed/serverlogout200. OperatorfinalemailsResend8/Brevo0/combined8,cap25/remaining17;onealertmatchesP2. Historicalbad_responsecause NOT VERIFIED; no clinical/forecast/persistence acceptance inferred. Receipt docs/temp/CODEX_P2_ONE_GET_ACCEPTANCE_20261105T104212Z.md / docs/temp/CODEX_P2_ONE_GET_ACCEPTANCE_20261105T104212Z.json; original docs/temp/CODEX_Q1_SESSION_admin_1793874642106.json. Prelive199focusedPASS; finalcandidate202focused/full3124PASS/15pins,aliasnegative3preserved; currentcandidate narrows only QA tooling,notapplication source; no subsequent live run. No furtherlogin/email approval;clinical2/14.
+
+
 ## 2026-11-05T08:36:30.754Z — Admin single-session retest partial; email accounting closed
 
 Live40979ff: one admin login200/logout200; dashboard rendered/no banner;0console errors/0page exceptions/0blocked requests (including socket.io). First ML-status200/unavailable/bad_response at14:01:24 Asia/Colombo. Timed second GET NOT SENT: runner exited1 before it; original generic category does not prove exact thrown stage. Likely initial-response timing race; original evidence preserved. Offline local runner now bounds first-response wait and retains stage labels; focused138PASS/full3054PASS/0FAIL/0SKIP/15pins. Candidate test tooling only, not committed/pushed or run live after correction. No further auth/email approval. Operator final emails Resend6/Brevo0/combined6,cap25/remaining19. Evidence docs/temp/CODEX_ADMIN_SINGLE_RETEST_20261105T083630Z.md and docs/temp/CODEX_ADMIN_SINGLE_RETEST_20261105T083630Z.json; original docs/temp/CODEX_Q1_SESSION_admin_1793867465453.json; scratch/clinical-offline-L6wGfX/summary.json. Historical clinical2/14. Overall timed comparison remains INCOMPLETE; no second result invented.

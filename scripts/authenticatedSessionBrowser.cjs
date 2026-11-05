@@ -14,11 +14,14 @@ function requestPattern(input, method) {
   let u; try { u = new URL(input); } catch (_) { return { method: verb, pathPattern: 'UNCLASSIFIED' }; }
   const origin = u.origin.replace(/^wss:/, 'https:');
   if (![FRONTEND, API].includes(origin)) return { method: verb, pathPattern: 'UNTRUSTED_ORIGIN' };
+  if(/^\/api\/admin\/ml-status\/*$/i.test(u.pathname))return {method:verb,pathPattern:'/api/admin/ml-status'};
   if (STATIC_PATHS.has(u.pathname)) return { method: verb, pathPattern: u.pathname };
   if (/^\/api\/notifications\/[^/]+\/(?:read|seen)$/.test(u.pathname)) return { method: verb, pathPattern: '/api/notifications/:id/read-or-seen' };
   return { method: verb, pathPattern: origin === API ? '/api/:redacted' : '/:page-or-asset' };
 }
-function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
+function createBrowserBoundary(role, {notificationTransportApproved=false,mlStatusGetLimit}={}) {
+  if(mlStatusGetLimit!==undefined&&(role!=='admin'||mlStatusGetLimit!==1))throw Error('ML_STATUS_LIMIT_REJECTED');
+  let mlStatusGetDispatches=0;
   const policy = createSessionPolicy({ role, sessionMutationsApproved: true });
   const blocked = new Map();
   const blockedTransportReasons = {};
@@ -74,7 +77,11 @@ function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
             if(!/^text\/plain(?:;|$)/i.test(type)||!socketToken||!permittedFrames(request.postData(),socketToken,{closed:!authenticated()}))throw Error('UNAPPROVED_SOCKET_TRANSPORT');
           }
         } else {
+          const limitedMl=mlStatusGetLimit!==undefined&&u.origin===API&&/^\/api\/admin\/ml-status\/*$/i.test(u.pathname);
+          if(limitedMl&&(u.pathname!=='/api/admin/ml-status'||u.search||u.hash||!['GET','OPTIONS'].includes(method)))throw Error('ML_STATUS_SCOPE_REJECTED');
+          if(limitedMl&&method==='GET'&&(!authenticated()||mlStatusGetDispatches>=mlStatusGetLimit))throw Error('ML_STATUS_LIMIT_REJECTED');
           policy.assertRequest(url, { method });
+          if(limitedMl&&method==='GET')mlStatusGetDispatches++;
           if(policy.summary().state==='CLOSED')for(const close of [...sockets])close();
         }
       } catch (_) {
@@ -93,7 +100,7 @@ function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
       socketToken=policy.summary().state==='AUTHENTICATED'&&typeof token==='string'&&token.length>20?token:undefined;
       resolveLogin(authenticated());
     },
-    summary: () => ({ ...policy.summary(), blockedTransportReasons:{...blockedTransportReasons}, blockedRequests: [...blocked].map(([k,count]) => ({ ...JSON.parse(k), count })) }) };
+    summary: () => ({ ...policy.summary(), ...(mlStatusGetLimit===undefined?{}:{mlStatusGetDispatches,mlStatusGetLimit}), blockedTransportReasons:{...blockedTransportReasons}, blockedRequests: [...blocked].map(([k,count]) => ({ ...JSON.parse(k), count })) }) };
 }
 function loginProof(role, status, body) {
   const d = body && typeof body === 'object' && body.data;

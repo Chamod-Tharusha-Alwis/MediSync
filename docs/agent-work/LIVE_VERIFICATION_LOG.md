@@ -96,3 +96,5 @@ Actual anonymousChromium9observations:EN/SI/TA×320/375/1440,localizedheading/fo
 No authenticated retest was run under V2. ML live SHA is NOT VERIFIED because its health response does not expose it and no hosting dashboard is connected. A repository commit alone is not proof of an ML deployment.
 
 | 2026-11-05T09:26:07.203Z | c5d21f1 / c5d21f1 | admin | P1 one login/logout; dashboard/status | Protocol PASS; both200/unavailable/bad_response;60004ms;0console/blocked/banner | docs/temp/CODEX_Q1_SESSION_admin_1793870338924.json | 7operator-confirmed |
+
+| 2026-11-05T10:42:12.864Z | e163f40/e163f40 | admin,EN,1440x1000 | P2one login200/logout200;exactly1MLGET200/available | PASS:0console/page/blocked/banner;no repeat | docs/temp/CODEX_Q1_SESSION_admin_1793874642106.json | 8operator-confirmed |

@@ -1,0 +1,188 @@
+{
+  "at": "2026-11-05T10:42:12.864Z",
+  "phase": "P2_USER_APPROVED_SINGLE_ML_GET",
+  "verdict": "PASS",
+  "applicationCommit": "e163f409515247a3ec4cc4e5ae50bacad00861f3",
+  "runId": "q1_sessions_20261105_00db6cc0",
+  "originalReceipt": "docs/temp/CODEX_Q1_SESSION_admin_1793874642106.json",
+  "originalReceiptSha256": "0d4848a87b6178fd9c6fc237dc3c5c9823adf152408f5074de4e7e851f2f79b3",
+  "executedHarnessSource": {
+    "verify_five_role_sessions_live.cjs": "7bb9dfa694e2e84dbe1aede33ba0f100bb3248b925b0ea06e342fc356e54210e",
+    "authenticatedSessionBrowser.cjs": "84a0efa08ba8c329c95caee315c7abf02633bf6cc83cf6380c31094632782b86",
+    "authenticatedSessionPolicy.cjs": "93364dc676947efd923ba8a97df10e68210c468153a6d74de202f13dc94af0c5",
+    "notificationTransportPolicy.cjs": "e315f421ad47d097ae5de62e837b96f33bf6d955fa13fe28ab2b8e5f30ca8978"
+  },
+  "login": {
+    "attempts": 1,
+    "httpStatus": 200
+  },
+  "logout": {
+    "httpStatus": 200,
+    "cleanup": "SERVER_LOGOUT_200"
+  },
+  "mlStatus": {
+    "getDispatches": 1,
+    "samples": [
+      {
+        "httpStatus": 200,
+        "state": "available",
+        "contractValid": true,
+        "receivedAt": "2026-11-05T10:31:01.479Z"
+      }
+    ],
+    "repeatPerformed": false,
+    "failureCategory": "NOT_APPLICABLE_AVAILABLE"
+  },
+  "observations": [
+    {
+      "view": "overview",
+      "rendered": true,
+      "temporaryBanner": false,
+      "metricsUnavailable": false,
+      "mapRendered": false,
+      "forecastPresent": false,
+      "telemetryFallbackVisible": false,
+      "referenceUnavailable": false
+    },
+    {
+      "view": "outbreak-monitor",
+      "rendered": true,
+      "temporaryBanner": false,
+      "metricsUnavailable": false,
+      "mapRendered": false,
+      "forecastPresent": false,
+      "telemetryFallbackVisible": false,
+      "referenceUnavailable": false
+    },
+    {
+      "view": "outbreak-status-once",
+      "rendered": true,
+      "temporaryBanner": false,
+      "metricsUnavailable": false,
+      "mapRendered": false,
+      "forecastPresent": false,
+      "telemetryFallbackVisible": false,
+      "referenceUnavailable": false
+    }
+  ],
+  "consoleErrors": 0,
+  "pageExceptions": 0,
+  "blockedRequests": [],
+  "ownedBrowserClosed": true,
+  "screenshotsOutsideRepository": [
+    "C:\\Users\\chamo\\AppData\\Local\\medisync\\evidence\\q1_sessions_20261105_00db6cc0\\admin-single-status.png"
+  ],
+  "operatorProviderTotals": {
+    "resend": 8,
+    "brevo": 0,
+    "combined": 8,
+    "limit": 25,
+    "remaining": 17,
+    "newAlertMatched": true
+  },
+  "testHarnessCandidate": {
+    "source": {
+      "scripts/authenticatedSessionBrowser.cjs": "c31593c2185f45dbae86c43ba1d779a4f0352ce8cd47e09eb7b4660472d3b116",
+      "scripts/verify_five_role_sessions_live.cjs": "7bb9dfa694e2e84dbe1aede33ba0f100bb3248b925b0ea06e342fc356e54210e",
+      "server/tests/authenticatedSessionBrowser.test.js": "4e7a9035cb6d9c653680ef5c212e4fafdc3d943a8d34da04027a1d037cc5aeec"
+    },
+    "preLiveFocused": 199,
+    "postLiveFullExecutedHarness": 3121,
+    "finalFocused": 202,
+    "finalRegression": {
+      "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-5gNjBO",
+      "node": "v26.4.0",
+      "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+      "totals": [
+        {
+          "mode": "backend",
+          "passed": 2428,
+          "failed": 0,
+          "skipped": 0,
+          "total": 2428,
+          "suites": 104,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "client",
+          "passed": 547,
+          "failed": 0,
+          "skipped": 0,
+          "total": 547,
+          "suites": 58,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "email-pdf",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 0,
+          "total": 31,
+          "suites": 2,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "ml-scoring",
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "total": 40,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "ml-flask",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 0,
+          "total": 31,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "root",
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "total": 40,
+          "success": true,
+          "status": "PASS"
+        },
+        {
+          "mode": "ml-status-contract",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "total": 7,
+          "success": true,
+          "status": "PASS"
+        }
+      ],
+      "passed": 3124,
+      "failed": 0,
+      "blockedProfiles": 0,
+      "sourceFrozen": true,
+      "protectedAccountedFor": 15,
+      "success": true,
+      "profile": "local-offline",
+      "notRun": []
+    },
+    "aliasNegative": {
+      "failedBeforeFix": 3,
+      "filtered": 33,
+      "evidence": "scratch/CODEX_P2_ALIAS_QUOTA_RED_20261105.log"
+    },
+    "liveRerunAfterAliasCorrection": false,
+    "applicationRuntimeChanges": 0
+  },
+  "protectedIntact": 15,
+  "historicalBadResponseCause": "NOT_VERIFIED",
+  "realClinicalE2E": "2/14 historical",
+  "newClinicalRecordsCreated": 0,
+  "authStorageSideEffects": "Normal login/logout/session/audit/device changes are possible; not enumerated or read directly under this approval",
+  "publicVisitDelta": "EXPECTED_ZERO_NOT_RECHECKED",
+  "furtherLoginAndEmailApproval": "NONE"
+}
