@@ -9,3 +9,13 @@ Single-agent C/D/QA. Actual ErrorBoundary inside LanguageProvider stays English 
 ## 2026-11-05T09:16:43.410Z — P2-I/C7 route recovery offline gate
 
 3078PASS/0FAIL/0SKIP,sourceFrozen/15pins; client547PASS; new7behavior checks; buildexit0 (scratch/CODEX_V2_P2_BUILD_1793870050856). Red2locale failures preserved.739matching nonempty dictionary keys. Source: localized route error title/body/reload; existing interrupted-save warning and sanitized operational logging preserved. No auth/API/clinical/hold change. Matrix source bindings refreshed; no old PASS inferred. Evidence docs/temp/CODEX_V2_ROUTE_RECOVERY_LOCALE_20261105T091643Z.md and docs/temp/CODEX_V2_ROUTE_RECOVERY_LOCALE_20261105T091643Z.json. No P1 approval received; no new login/email. Push/deploy and anonymous navigation evidence follow this checkpoint; native language/private layout not verified.
+
+## 2026-11-05T11:19:56.779Z — Operator accepts P2; deployment timing and offline hold
+
+Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
+
+Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.
+
+## 2026-11-05T11:28:56.451Z — translation registration gate
+
+3,138 offline PASS/0FAIL/0SKIP, sourceFrozen, 15pins. 11 new audit tests and 3 real PDF-control locale checks. 751keys per locale, missing usage0; 1,760 review positions are not a runtime coverage percentage. Clinical-production compile completed; local exit not captured, exact-head CI build required. Evidence docs/temp/CODEX_I18N_REPAIR_GATE_20261105T112855Z.json. No live actions; emails8/0/8, cap25. Native language/UI matrix and C7 remain pending.

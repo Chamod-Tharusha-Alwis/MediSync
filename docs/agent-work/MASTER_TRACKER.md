@@ -5,10 +5,10 @@ Started 2026-11-04T05:52:16.227Z. Source main f825df43c8d42032e1cf77447de85b205a
 | ID | Item | Owner | Status | Commit | Pushed (UTC) | Deploy confirmed | Live verified | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P1-TIME | Explicit Sri Lanka email/UI time (UTC storage unchanged) | Lead | VERIFIED | a4952b5a02597595cb49640314863bb6e49248cc | Successful push captured | Backend and Vercel exact SHA READY | Offline templates + one received alert confirmed by operator | 2848PASS/build0/15pins/bothCIgreen; email7/25 closed; no further login. Private layout coverage remains limited. |
-| P1-ML-STATUS | Honest admin ML status + fixed diagnostic | Lead | LIVE_PARTIAL | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend200exactSHA | API200/unavailable/bad_response | Fixed log-line operator confirmation pending; exact UI card assertion NOT VERIFIED; upstream cause not established. |
-| P1-SESSION-TRANSPORT | Admin socket session cleanup | Lead | OFFLINE_REPAIRED_RETEST_HELD | dce6bbef00566424ad256ad8ab3d05bb3933e364 | Captured | Backend200exactSHA/VercelREADY/bothCIgreen | Historical sweep4PASS/adminFAIL;new admin UI PASS/timed comparison INCOMPLETE | Actual admin effect lacked session-cleared cleanup; old3/new0 offlineChromium. No allowlist expansion; no live retry. |
+| P1-ML-STATUS | Admin ML status and diagnostic | Lead | LIVE_VERIFIED_POINT_IN_TIME | e163f40 | Captured | Exact backend/Vercel | P2oneGET200/available | Historicalbad_responsecause unverified;post-idle final recheck required. |
+| P1-SESSION-TRANSPORT | Admin socket cleanup | Lead | LIVE_VERIFIED_ADMIN_P2 | dce6bbe / e163f40 | Captured | Source receipts | P2zero console/page/blocked errors | Historical failed sweep preserved; no global clinical acceptance inferred. |
 | P1-ID-MASK | Login-alert identifier body masking | Lead | LIVE_CONFIRMED_BY_OPERATOR | 4383d6367ea19b6f21e084c76700e80fa291174e | Captured | Backend/Vercel/CI verified | All5received-rolealerts masked;SriLanka label correct | No identifierexamples retained. Operator-confirmed totals5/0/5 on5Nov; cap25. |
-| Q1 | Authenticated/full-site banner acceptance | Lead (single agent) | BLOCKED | 4383d63 / 40979ff | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Dashboards and9publicviews observed; inner-page EN/SI/TA matrix pending P3. Admin UI retest0blocked/0console; timed ML comparison incomplete. |
+| Q1 | Authenticated/full-site banner acceptance | Lead (single agent) | BLOCKED | 4383d63 / 40979ff | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Dashboards and9publicviews observed; inner-page EN/SI/TA matrix pending P3. Admin UI retest0blocked/0console; P1timedcomparisoncomplete;P2oneGETavailable; historical cause unverified. |
 | Q2 | Durable real-only consultation activity | Lead (single agent) | LIVE_VERIFIED | 7e0d9c0 | Historical captured pushes | Scoped deployment receipts only | See scope in notes | 9anonymous EN/SI/TA×width views;7visits at historical capture; clinical panels unavailable. Not a current count claim. |
 | Q3 | Doctor consultation full flow | Lead (single agent) | BLOCKED | 4383d63 (initial wizard only) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Offline repairs exist; no consent/clinical save/drug UI acceptance under current approval. Needs W2/W3 and named test patient. |
 | Q4 | C4 Doctor AI resilience | Lead (single agent) | BLOCKED | d6c8040 (limited verifier) | Historical captured pushes | Scoped deployment receipts only | See scope in notes | Definition WORK_TRACKING:52; legacy health-timeout PASS rejected; genuine clinical browser integration pending. |
@@ -114,9 +114,9 @@ V2 supersedes older blanket completion labels. No new authenticated check is app
 | ID | Current item | Status | Evidence / unblock |
 | --- | --- | --- | --- |
 | P0a | Corrected timed runner | LIVE_VERIFIED (deployment only) | 25d29a6; CI127144245231/127144243727 success; Vercel dpl_9MUgoyrKSQs3JxshYXCTzTLAAp7d READY; backend ready exact SHA. Timed live comparison NOT VERIFIED. |
-| P0b | Test matrix and definitions | LOCAL_DONE | Generator17PASS;846 source rows initially; static classification only; full final gate/deploy recorded in successor receipt. |
+| P0b | Test matrix and definitions | LIVE_VERIFIED_SOURCE_INVENTORY | c5d21f1;846staticrows,all14groupslocated; actual function acceptance remains scoped/NOT VERIFIED. |
 | P1 | Admin ML timed comparison | LIVE_VERIFIED (protocol only) | Historical2bad_response; P2oneGETavailable on e163f40. Historical failure cause NOT VERIFIED. |
-| P2-I | Locale parity and hard-coded UI | IN_PROGRESS | Offline inventory next; no authenticated UI claim. |
+| P2-I | Locale parity and hard-coded UI | IN_PROGRESS_OFFLINE | Exact751keysets;12missing labels repaired;1760static reviewpositions; full UI/native acceptance pending. |
 | P3 | All R pages/tabs | BLOCKED | APPROVE P3, fresh totals, reviewed dynamic callbacks and source-bound guarded itinerary. |
 | W1-W4 | Controlled writes | BLOCKED | Each named approval with endpoints, marked data, email budget and operator cleanup; no deletion by agent. |
 | FINAL | Final acceptance matrix | BLOCKED | Only after all applicable R and separately approved W acceptance; no production-ready declaration. |
@@ -171,3 +171,13 @@ Actual authenticated Flask reply on fresh owned emptySQLite passes all7actual No
 ## 2026-11-05T10:42:12.864Z — P2 single admin GET accepted
 
 Livee163f40:1admin login200/logout200;exactly1MLstatusGET200/available/validcontract at10:31:01.479UTC;no repeat. Dashboard/status views rendered/no banner;0console errors/pageexceptions/blockedrequests(including socket.io). Browserclosed/serverlogout200. OperatorfinalemailsResend8/Brevo0/combined8,cap25/remaining17;onealertmatchesP2. Historicalbad_responsecause NOT VERIFIED; no clinical/forecast/persistence acceptance inferred. Receipt docs/temp/CODEX_P2_ONE_GET_ACCEPTANCE_20261105T104212Z.md / docs/temp/CODEX_P2_ONE_GET_ACCEPTANCE_20261105T104212Z.json; original docs/temp/CODEX_Q1_SESSION_admin_1793874642106.json. Prelive199focusedPASS; finalcandidate202focused/full3124PASS/15pins,aliasnegative3preserved; currentcandidate narrows only QA tooling,notapplication source; no subsequent live run. No furtherlogin/email approval;clinical2/14.
+
+## 2026-11-05T11:19:56.779Z — Operator accepts P2; deployment timing and offline hold
+
+Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
+
+Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.
+
+## 2026-11-05T11:28:56.451Z — translation registration gate
+
+3,138 offline PASS/0FAIL/0SKIP, sourceFrozen, 15pins. 11 new audit tests and 3 real PDF-control locale checks. 751keys per locale, missing usage0; 1,760 review positions are not a runtime coverage percentage. Clinical-production compile completed; local exit not captured, exact-head CI build required. Evidence docs/temp/CODEX_I18N_REPAIR_GATE_20261105T112855Z.json. No live actions; emails8/0/8, cap25. Native language/UI matrix and C7 remain pending.

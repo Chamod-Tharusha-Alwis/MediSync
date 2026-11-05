@@ -20,3 +20,9 @@
 
 - 2026-11-04T17:04:25.286Z — Operator confirmed visit activity as a separate public metric. Never reinterpret confirmed-case fields as visits. No public health-stats request in this phase; cases/outbreaks/forecast remainnull. Keep clinical review deferred.
 - 2026-11-04T17:04:25.286Z — Selected-district totals below5are genuinely suppressed and all selected-district daily rows withheld; national complete-empty0visits remains valid. Additional disclosure flags encode withheld data, not fabricated zeroes. No claim of full anonymity certification.
+
+## 2026-11-05T11:19:56.779Z — Operator accepts P2; deployment timing and offline hold
+
+Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
+
+Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.

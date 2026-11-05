@@ -1,5 +1,6 @@
 // Sinhala UI Dictionary (si)
 export const si = {
+  "pdfUnavailable": "PDF අපනයනය තාවකාලිකව ලබාගත නොහැක",
   routeError: {
     title: 'යම් දෝෂයක් සිදු විය',
     body: 'මෙම පිටුව පෙන්විය නොහැකි විය. ඉදිරියට යාමට පිටුව නැවත පූරණය කරන්න. සුරැකීමක් සිදුවෙමින් තිබුණේ නම්, නැවත ඉදිරිපත් කිරීමට පෙර එහි ප්‍රතිඵලය තහවුරු කරන්න.',
@@ -72,6 +73,9 @@ export const si = {
     "settings": "සැකසුම්"
   },
   "common": {
+    "notifications": "දැනුම්දීම්",
+    "noNotifications": "දැනුම්දීම් නොමැත",
+    "helpSupport": "උදව් සහ සහාය",
     "welcomeBack": "නැවත සාදරයෙන් පිළිගනිමු",
     "search": "සොයන්න",
     "filter": "පෙරහන",
@@ -151,6 +155,7 @@ export const si = {
     "superAdmin": "ප්‍රධාන පරිපාලක"
   },
   "patient": {
+    "submitRatings": "ඇගයීම් යොමු කරන්න",
     "dashboard": "රෝගී සෞඛ්‍ය පුවරුව",
     "myPrescriptions": "මගේ බෙහෙත් වට්ටෝරු",
     "medicalHistory": "වෛද්‍ය ඉතිහාසය",
@@ -209,6 +214,7 @@ export const si = {
     "dob": "උපන් දිනය"
   },
   "doctor": {
+    "practiceInformation": "වෛද්‍ය සේවා තොරතුරු",
     pendingSaveHold: 'පෙර සුරැකීම තහවුරු වී නැත. නැවත ඉදිරිපත් කිරීමට පෙර එහි ප්‍රතිඵලය පරීක්ෂා කරන්න.',
     checkPreviousSave: 'පෙර සුරැකීම පරීක්ෂා කරන්න',
     "dashboard": "සායනික වැඩබිම",
@@ -275,6 +281,8 @@ export const si = {
     "newConsultationSubtitle": "සායනික රෝග ලක්ෂණ වාර්තා කරන්න, ML සහය ලබා ගන්න, සහ බෙහෙත් වට්ටෝරු නිකුත් කරන්න."
   },
   "pharmacy": {
+    "restockAlertsTitle": "දිස්ත්‍රික් නැවත සැපයුම් දැනුම්දීම්",
+    "pharmacySettings": "ඖෂධශාලා සැකසුම්",
     "dashboard": "ඖෂධ මෙහෙයුම් පුවරුව",
     "pendingPrescriptions": "පොරොත්තුවේ පවතින වට්ටෝරු",
     "dispense": "ඖෂධ නිකුත් කරන්න",
@@ -387,6 +395,7 @@ export const si = {
     "apiCredentials": "API සම්බන්ධතා තොරතුරු"
   },
   "admin": {
+    "supportTickets": "සහාය අයදුම්පත්",
     "dashboard": "ජාතික සෞඛ්‍ය විශ්ලේෂණ පුවරුව",
     "userManagement": "පරිශීලක පාලනය සහ භූමිකා",
     "auditLogs": "ආරක්ෂණ විගණන සටහන්",
@@ -528,6 +537,8 @@ export const si = {
     "enter6Digit": "ඉලක්කම් 6ක සත්‍යාපන කේතය ඇතුළත් කරන්න"
   },
   "auth": {
+    "adminEmail": "පරිපාලක ඊමේල් ලිපිනය",
+    "selectLoginType": "පිවිසුම් වර්ගය තෝරන්න",
     "emailAddress": "විද්‍යුත් තැපැල් ලිපිනය",
     "password": "මුරපදය",
     "confirmPassword": "මුරපදය තහවුරු කරන්න",
@@ -641,6 +652,7 @@ export const si = {
     "noCluster": "නැත"
   },
   "home": {
+    "accessPortals": "සේවා ද්වාර වෙත පිවිසෙන්න",
     "heroTitle": "විමධ්‍යගත සෞඛ්‍ය ආරක්ෂණ වේදිකාව",
     "heroSubtitle": "ශ්‍රී ලංකාව පුරා ඒකාබද්ධ සායනික වාර්තා, සජීවී වසංගත නිරීක්ෂණ සහ තහවුරු කළ හැකි ඖෂධ වට්ටෝරු ලුහුබැඳීම.",
     "getStarted": "ආරම්භ කරන්න",

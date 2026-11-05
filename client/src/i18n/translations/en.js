@@ -1,5 +1,6 @@
 // English UI Dictionary (en)
 export const en = {
+  "pdfUnavailable": "PDF export temporarily unavailable",
   routeError: {
     title: 'Something went wrong',
     body: 'This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.',
@@ -72,6 +73,9 @@ export const en = {
     "settings": "Settings"
   },
   "common": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "helpSupport": "Help & Support",
     "welcomeBack": "Welcome back",
     "search": "Search",
     "filter": "Filter",
@@ -151,6 +155,7 @@ export const en = {
     "superAdmin": "Super Administrator"
   },
   "patient": {
+    "submitRatings": "Submit Ratings",
     "dashboard": "Patient Health Portal",
     "myPrescriptions": "My Prescriptions",
     "medicalHistory": "Medical History",
@@ -209,6 +214,7 @@ export const en = {
     "dob": "Date of Birth"
   },
   "doctor": {
+    "practiceInformation": "Practice Information",
     pendingSaveHold: 'A previous save is unconfirmed. Check its outcome before another submission.',
     checkPreviousSave: 'Check previous save',
     "dashboard": "Clinical Workspace",
@@ -275,6 +281,8 @@ export const en = {
     "newConsultationSubtitle": "Record clinical symptoms, run ML decision support, and issue prescriptions."
   },
   "pharmacy": {
+    "restockAlertsTitle": "District Restock Alerts",
+    "pharmacySettings": "Pharmacy Settings",
     "dashboard": "Pharmacy Operations",
     "pendingPrescriptions": "Pending Prescriptions",
     "dispense": "Dispense Medication",
@@ -387,6 +395,7 @@ export const en = {
     "apiCredentials": "API Integration Credentials"
   },
   "admin": {
+    "supportTickets": "Support Tickets",
     "dashboard": "National Health Analytics",
     "userManagement": "User Governance & Roles",
     "auditLogs": "Security Audit Trail",
@@ -528,6 +537,8 @@ export const en = {
     "enter6Digit": "Enter 6-digit verification code"
   },
   "auth": {
+    "adminEmail": "Admin Email",
+    "selectLoginType": "Select Login Type",
     "emailAddress": "Email Address",
     "password": "Password",
     "confirmPassword": "Confirm Password",
@@ -641,6 +652,7 @@ export const en = {
     "noCluster": "None"
   },
   "home": {
+    "accessPortals": "Access Login Portals",
     "heroTitle": "Decentralized Healthcare Platform",
     "heroSubtitle": "Unified clinical records, real-time outbreak surveillance, and verifiable prescription tracking across Sri Lanka.",
     "getStarted": "Get Started",

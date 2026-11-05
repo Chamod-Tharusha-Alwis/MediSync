@@ -38,3 +38,9 @@ No production mutation is authorized by this checklist.
 - [ ] Review docs/temp/CODEX_V2_ML_STATUS_DIAGNOSTICS_20261105T094824Z.md. After exact-head deployment confirmation, separately authorize APPROVE P2 with fresh numeric Resend/Brevo/combined totals for one admin login/logout and the existing two-status-GET comparison only. Expected1alert,reserve2; projected total must not exceed22/25. No other role, clinical/OTP/maintenance writes or retry.
 - [ ] Return only each fixed AdminMlStatus category/reason/upstreamStatus/failedFields line from that approved window; no raw logs, bodies, URLs, headers or secrets.
 - [ ] No ML protected source or production data repair is proposed: the actual empty-storage reply already passes the unchanged schema. Root cause remains unverified pending fixed diagnostic evidence.
+
+## 2026-11-05T11:19:56.779Z — Operator accepts P2; deployment timing and offline hold
+
+Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
+
+Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.

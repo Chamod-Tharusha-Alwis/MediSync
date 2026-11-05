@@ -4,7 +4,7 @@ const root = path.resolve(__dirname, '..'), mode = process.env.MEDISYNC_COMBINED
 const evidence = process.env.MEDISYNC_COMBINED_EVIDENCE;
 const setup = path.join(root, 'scripts/agent_b_combined_test_boundary.cjs');
 async function main() {
-  if (mode === 'translation') return require('./audit_ui_translations.js');
+  if (mode === 'translation') return require('./audit_ui_translations.js').main([]);
   if (mode === 'pdf-proof') {
     const result = await require('./agent_b_pdf_stream_proof.cjs').runProof();
     fs.writeFileSync(path.join(evidence, 'pdf-proof-results.json'), JSON.stringify(result, null, 2));

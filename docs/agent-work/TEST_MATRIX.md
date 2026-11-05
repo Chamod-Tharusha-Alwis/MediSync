@@ -4,7 +4,7 @@ Source inventory, not runtime acceptance. Every row starts NOT VERIFIED for the 
 
 R = read-only intent; W-low = self-contained change; W-clin = clinical; W-sec = security/consent; W-adm = admin management; X = destructive/maintenance, never live. Classification is conservative static triage, not authorization. Dynamic targets, unresolved callbacks and controller side effects require review before Phase 3. A semantic read using POST remains blocked by the existing fence. Opening a modal may request OTP; never do so from an R row without reviewing its effect. QA-only routes and unmounted code are not production test targets. No endpoint is invoked by this generator.
 
-Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json`; fingerprint `9f064d001a7625a3d6ea95a435e8a4beb51566c659c4692dde02a35b2ada2f95`.
+Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerprint `c2a05f3c14273d5cd876b07ee23ef8ce97c481c1efc9aa0c440d5e5286a3a22e`.
 
 | Class | Rows |
 | --- | ---: |
@@ -864,7 +864,4 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json`; fingerpri
 | API-446f3440c413 | API | shared | POST /api/users/upload-profile-pic | userController.uploadProfilePic | W-low | server/src/routes/userRoutes.js:7 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 
-## Version history
-
-- Phase0 snapshot: docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json, commit c5d21f1.
-- Phase2 route-recovery candidate: docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json. Source bindings refreshed; no historical live PASS projected onto changed source.
+Historical source inventories preserved: docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json and docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json. This refresh updates dictionary source bindings; row counts and NOT VERIFIED limits are unchanged.

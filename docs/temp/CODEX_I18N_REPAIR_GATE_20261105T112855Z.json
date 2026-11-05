@@ -1,0 +1,128 @@
+{
+  "at": "2026-11-05T11:28:56.451Z",
+  "base": "fcfbffd3ea3c572d6c74c903e09caa36d6718ff8",
+  "scope": "Offline translation registration repair and privacy-safe source audit; no login, email, Atlas, Redis or clinical writes",
+  "summary": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-XBD81s",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2439,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2439,
+        "suites": 105,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 550,
+        "failed": 0,
+        "skipped": 0,
+        "total": 550,
+        "suites": 59,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-status-contract",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "total": 7,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 3138,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "focused": {
+    "passed": 11,
+    "failed": 0,
+    "command": "node server/node_modules/jest/bin/jest.js --config server/clinical.offline.jest.cjs --runInBand --runTestsByPath server/tests/i18nSourceAudit.test.js --silent"
+  },
+  "redEvidence": [
+    "scratch/CODEX_I18N_MISSING_KEYS_RED_20261105.log",
+    "scratch/CODEX_I18N_PDF_LABEL_RED_1793876893372/client-results.json"
+  ],
+  "greenEvidence": [
+    "scratch/CODEX_I18N_LABELS_GREEN_1793877400821/client-results.json",
+    "scratch/clinical-offline-XBD81s/summary.json"
+  ],
+  "build": {
+    "profile": {
+      "entry": "src/index.js",
+      "application": "src/App.js",
+      "modules": 116,
+      "demoImported": false,
+      "profile": "clinical-production"
+    },
+    "log": "scratch/CODEX_I18N_CLINICAL_PRODUCTION_BUILD_1793877766129/console.log",
+    "compilation": "completed; output folder ready",
+    "processExit": "NOT_CAPTURED after session expired; exact-head CI build remains required"
+  },
+  "audit": "docs/temp/CODEX_I18N_SOURCE_AUDIT_20261105T111802Z.json",
+  "matrix": "docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json",
+  "postIdleRequirement": "docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md",
+  "remaining": [
+    "1760 candidate source positions need contextual review; not all are defects",
+    "Native-language quality and responsive visual qualification NOT VERIFIED",
+    "C7 and later ordered offline items remain open",
+    "Earlier ML bad_response cause NOT VERIFIED",
+    "Clinical historical acceptance remains 2/14"
+  ],
+  "operatorEmailTotals": {
+    "resend": 8,
+    "brevo": 0,
+    "combined": 8,
+    "cap": 25
+  },
+  "liveActions": 0
+}

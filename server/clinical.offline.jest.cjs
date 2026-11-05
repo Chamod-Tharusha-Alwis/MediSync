@@ -34,6 +34,7 @@ module.exports.testMatch.push('<rootDir>/tests/c4VerifierTruthfulness.test.js','
 module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionPolicy.test.js');
 module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionBrowser.test.js');
 module.exports.testMatch.push('<rootDir>/tests/testMatrixInventory.test.js');
+module.exports.testMatch.push('<rootDir>/tests/i18nSourceAudit.test.js');
 module.exports.testMatch.push('<rootDir>/tests/sriLankaTime.test.js');
 module.exports.testMatch.push('<rootDir>/tests/emailTemplatesPhase6.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicConsultationActivity.test.js');
