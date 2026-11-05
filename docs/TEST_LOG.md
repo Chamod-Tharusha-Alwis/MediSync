@@ -1,5 +1,10 @@
 # MediSync Test Log
 
+## 2026-11-05T08:06:01.010Z — ML configuration classification qualified offline
+
+3048 PASS / 0 FAIL / 0 SKIP, exit 0; 132 focused PASS; 15 protected pins intact; sourceFrozen=true. Missing/invalid ML_ENGINE_URL, token preparation and pre-request errors now use fixed config; removed silent controller loopback fallback, normalized root joins and observed actual Axios adapter lifecycle. Strict reply validation, redirects disabled and TLS verification preserved. New response-interceptor negative failed before repair and passes afterward; failure evidence retained. Build exit0/116modules/demoImported=false (client unchanged). Evidence `CODEX_ML_STATUS_CONFIG_REPAIR_20261105T080601Z.md` at docs/temp/CODEX_ML_STATUS_CONFIG_REPAIR_20261105T080601Z.md and docs/temp/CODEX_ML_STATUS_CONFIG_REPAIR_20261105T080601Z.json; scratch/clinical-offline-huQduE/summary.json. Offline checkpoint precedes push/CI/deploy. Operator now confirms emails Resend5/Brevo0/combined5, cap25/remaining20, all5 masking/time labels and correct root ML URL. Render diagnostic word still NOT CONFIRMED; Gunicorn boot excerpts do not prove request absence. No login/email/directDB/ML mutation; historical admin FAIL and clinical2/14 preserved; live retest separately gated.
+
+
 ## 2026-11-05T04:53:45.477464+00:00 — Admin socket repair deployed; live retest held
 
 Sourcefix`dce6bbef00566424ad256ad8ab3d05bb3933e364` pushed. Both exactheadCI checks PASS; Vercel`dpl_7w347crNwawA9cE7oS6d9KvLKAQv` READY andbackendhealth200/ready identifyexactSHA. Source qualification2987offlinePASS/build0/15pins;3additional localinertChromiumcasesPASS,notCIbrowsercoverage. ActualcurrentadminliveacceptanceNOTRUN; historicalFAILpreserved. Masking andlabelledSriLanka timeconfirmedall5byoperator; providerfinalcounters/Rendercategory/liveMLURLremainunconfirmedplaceholders. No newlivelogin/email/directDB/providerrequest. Admin-onlyretest awaitsseparateapprovalandfreshnumericcounts. Receipt`docs/temp/CODEX_ADMIN_SOCKET_DEPLOY_CLOSURE_20261105T045345Z.json`. This successor documentation update does not add application behavior.

@@ -17,7 +17,7 @@ const { generateToken } = require('../utils/internalAuth');
 const { parseDeviceModel } = require('../utils/deviceParser');
 const crypto = require('crypto');
 
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
 
 // ─── EXISTING: getSystemStats ─────────────────────────────────────────────────
 exports.getSystemStats = async (req, res) => {
@@ -513,10 +513,11 @@ exports.triggerMLDetection = async (req, res) => {
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
-  const { readAdminMlStatus } = require('../services/adminMlStatusService');
+  const { readAdminMlStatus, createStatusGet } = require('../services/adminMlStatusService');
   // Local authentication/RBAC remains enforced by adminRoutes. A failed upstream
   // is explicitly unavailable, not a browser resource error or fabricated telemetry.
-  return res.json(await readAdminMlStatus({ get: axios.get, token: generateToken, baseUrl: ML_ENGINE_URL }));
+  return res.json(await readAdminMlStatus({ get: createStatusGet(axios), token: generateToken, baseUrl: ML_ENGINE_URL,
+    allowLoopbackHttp: process.env.NODE_ENV !== 'production' }));
 };
 
 // ─── NEW: BAN USER ────────────────────────────────────────────────────────────

@@ -43,7 +43,7 @@ function admitAttempt(config, previous) {
   if(previous.includes(config.role)||(config.proofOnly&&previous.length>0)||config.baseline+2*(previous.length+1)>25)throw Error('ATTEMPT_OR_EMAIL_BUDGET_REJECTED');
 }
 function statusEvidence(status,body){
-  const categories=['timeout','auth','not_found','dns','connection','bad_response'];
+  const categories=['config','timeout','auth','not_found','dns','connection','bad_response'];
   if(status===200&&body?.available===false&&body.status==='unavailable'&&body.dataPoints===null&&categories.includes(body.category))return {httpStatus:status,state:'unavailable',category:body.category,contractValid:true};
   if(status===200&&body?.available===true&&body.status==='available'&&Number.isSafeInteger(body.dataPoints)&&body.dataPoints>=0&&body.dataPointUnit==='reference disease profiles')return {httpStatus:status,state:'available',contractValid:true};
   return {httpStatus:status,state:'INVALID_OR_MISSING_CONTRACT',contractValid:false};

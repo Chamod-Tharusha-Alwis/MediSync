@@ -93,6 +93,7 @@ test('combined CLI scope requires explicit notification opt-in and rejects confl
 test('status evidence retains only known categories and never raw bodies',()=>{
   const {statusEvidence}=require('../../scripts/verify_five_role_sessions_live.cjs');
   expect(statusEvidence(200,{available:false,status:'unavailable',category:'auth',dataPoints:null,error:'private-sentinel'})).toEqual({httpStatus:200,state:'unavailable',category:'auth',contractValid:true});
+  expect(statusEvidence(200,{available:false,status:'unavailable',category:'config',dataPoints:null})).toEqual({httpStatus:200,state:'unavailable',category:'config',contractValid:true});
   expect(statusEvidence(200,{available:true,status:'available',dataPoints:0,dataPointUnit:'reference disease profiles'})).toMatchObject({state:'available',contractValid:true});
   for(const dto of [{},null,{available:false,status:'unavailable',category:'private-sentinel',dataPoints:null}])expect(JSON.stringify(statusEvidence(503,dto))).not.toContain('private-sentinel');
 });
