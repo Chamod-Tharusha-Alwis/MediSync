@@ -94,3 +94,5 @@ Actual anonymousChromium9observations:EN/SI/TA×320/375/1440,localizedheading/fo
 | 2026-11-05T09:02:08.716Z | 25d29a6 / 25d29a6 | Public | Backend health and Vercel deployment metadata | Backend ready; Vercel READY; both CI success | docs/temp/CODEX_V2_P0_MATRIX_GATE_20261105T090208Z.json; CI127144245231/127144243727; dpl_9MUgoyrKSQs3JxshYXCTzTLAAp7d | 6 last confirmed; no new sends |
 
 No authenticated retest was run under V2. ML live SHA is NOT VERIFIED because its health response does not expose it and no hosting dashboard is connected. A repository commit alone is not proof of an ML deployment.
+
+| 2026-11-05T09:26:07.203Z | c5d21f1 / c5d21f1 | admin | P1 one login/logout; dashboard/status | Protocol PASS; both200/unavailable/bad_response;60004ms;0console/blocked/banner | docs/temp/CODEX_Q1_SESSION_admin_1793870338924.json | 7operator-confirmed |

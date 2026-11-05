@@ -1,0 +1,32 @@
+{
+  "at": "2026-11-05T09:13:58.857Z",
+  "commit": "c5d21f11a9ec6534f524e6efc6d6f348bb9b0137",
+  "phase0": "COMPLETE_SOURCE_INVENTORY_AND_BASELINE",
+  "ci": [
+    {
+      "name": "security-and-trust-tests",
+      "id": 127149812335,
+      "conclusion": "success"
+    },
+    {
+      "name": "source-integrity-and-offline-tests",
+      "id": 127149812179,
+      "conclusion": "success"
+    }
+  ],
+  "backend": {
+    "status": "ready",
+    "commit": "c5d21f11a9ec6534f524e6efc6d6f348bb9b0137"
+  },
+  "vercel": {
+    "id": "dpl_5Pz9SsvDAgfGWsNbd3mBvnYbcMBg",
+    "state": "READY",
+    "commit": "c5d21f11a9ec6534f524e6efc6d6f348bb9b0137"
+  },
+  "mlLiveCommit": "NOT_VERIFIED_NO_PUBLIC_COMMIT_METADATA",
+  "offlinePassed": 3071,
+  "protected": 15,
+  "historicalClinicalE2E": "2/14",
+  "lastConfirmedEmails": 6,
+  "newLoginApprovalsReceived": 0
+}

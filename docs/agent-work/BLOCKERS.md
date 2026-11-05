@@ -33,3 +33,7 @@ Operator-supplied Render line at12:29:45UTC onfb4dc0b: [PublicHealth] stage=SOUR
 - Groups8–10: original definitions include medication inventory/decrement; later operator explicitly says no medication inventory. Preserve original group names/receipts; ask for scope reconciliation before any live inventory test; do not invent stock checks.
 - P3/W1–W4/FINAL need separate phase authorization; no test patient is selected under V2.
 - Protected source changes, ML hosting/disk/shell/settings, dependency installs/Lighthouse, operator secrets/rotation, DDL/migration and cleanup are unapproved.
+
+## 2026-11-05T09:26:07.203Z — P1 timed protocol verified; ML availability unresolved
+
+Exactly1admin login200/logout200 on c5d21f1;0console/page errors/blockedrequests; rendered/no banner. Both MLstatusGETs200/unavailable/bad_response;60004ms fromfirstreplytoseconddispatch. Operator confirms categorywordbothcalls andemails7/0/7,cap25/remaining18. Protocol PASS does not close model availability; deployedML SHA NOT VERIFIED and absenceofbootlogs is not access evidence. Originalreceipt docs/temp/CODEX_Q1_SESSION_admin_1793870338924.json; review docs/temp/CODEX_V2_P1_TIMED_RESULT_20261105T092607Z.md / docs/temp/CODEX_V2_P1_TIMED_RESULT_20261105T092607Z.json. Further login/email held for named P2 approval with fresh totals. Nextoffline: actual emptySQLite Flask→Node contract and fixed bad_response reason/status/field diagnostics. No ML/data/hosting change authorized.

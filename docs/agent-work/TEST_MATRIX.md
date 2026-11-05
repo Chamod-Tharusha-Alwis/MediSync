@@ -4,7 +4,7 @@ Source inventory, not runtime acceptance. Every row starts NOT VERIFIED for the 
 
 R = read-only intent; W-low = self-contained change; W-clin = clinical; W-sec = security/consent; W-adm = admin management; X = destructive/maintenance, never live. Classification is conservative static triage, not authorization. Dynamic targets, unresolved callbacks and controller side effects require review before Phase 3. A semantic read using POST remains blocked by the existing fence. Opening a modal may request OTP; never do so from an R row without reviewing its effect. QA-only routes and unmounted code are not production test targets. No endpoint is invoked by this generator.
 
-Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json`; fingerprint `1a5547a333159effe5c3bfc996fac192af608fb071b515ce298f62c37ab6062c`.
+Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json`; fingerprint `9f064d001a7625a3d6ea95a435e8a4beb51566c659c4692dde02a35b2ada2f95`.
 
 | Class | Rows |
 | --- | ---: |
@@ -18,37 +18,37 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json`; fingerpri
 | ID | Kind | Role/scope | Method/path or component | Function | Class | Source | Live | Review limit |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | UI_ACTION-7d84b7fc66d3 | UI_ACTION | shared | :component | button.onClick → inline | R | client/src/App.js:95 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| PAGE-af1c3a22ca77 | PAGE | public | / | page/redirect | R | client/src/App.js:126 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-3560f8df5116 | PAGE | public | /select-role | page/redirect | R | client/src/App.js:127 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c8a1ee5208dc | PAGE | public | /register | page/redirect | R | client/src/App.js:128 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-3d68032a0cf7 | PAGE | patient | /patient/register | page/redirect | R | client/src/App.js:129 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d76ca6cdd58f | PAGE | hospital | /hospital/register | page/redirect | R | client/src/App.js:130 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-66a3bf827ce3 | PAGE | pharmacy | /pharmacy/register | page/redirect | R | client/src/App.js:131 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d14e08305291 | PAGE | public | /forgot-password | page/redirect | R | client/src/App.js:132 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c040503d08d2 | PAGE | public | /reset-password | page/redirect | R | client/src/App.js:133 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d5844c05a1e2 | PAGE | public | /doctors | page/redirect | R | client/src/App.js:136 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-83c9f9079f0a | PAGE | public | /hospitals | page/redirect | R | client/src/App.js:137 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-28a34db36105 | PAGE | public | /pharmacies | page/redirect | R | client/src/App.js:138 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-a39f7040a466 | PAGE | public | /public-health | page/redirect | R | client/src/App.js:139 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c2b4e7715445 | PAGE | doctor | /doctor/select-role | page/redirect | R | client/src/App.js:142 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-e95cf0aeb303 | PAGE | doctor | /doctor/login | page/redirect | R | client/src/App.js:143 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-2db3a861cc6c | PAGE | doctor | /doctor/register | page/redirect | R | client/src/App.js:144 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-200d29deb563 | PAGE | doctor | /doctor/change-org-password | page/redirect | R | client/src/App.js:145 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-86972ad9373e | PAGE | hospital | /hospital/login | page/redirect | R | client/src/App.js:146 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c7ba9d9c3f98 | PAGE | patient | /patient/login | page/redirect | R | client/src/App.js:147 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-bdf44851ce8d | PAGE | pharmacy | /pharmacy/login | page/redirect | R | client/src/App.js:148 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c279baa23340 | PAGE | admin | /admin/login | page/redirect | R | client/src/App.js:149 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-192be4714636 | PAGE | doctor | /doctor | page/redirect | R | client/src/App.js:152 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-043b95003e79 | PAGE | doctor | /doctor/dashboard | page/redirect | R | client/src/App.js:157 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-a2fb91d620b2 | PAGE | doctor | /doctor/consultation/new | page/redirect | R | client/src/App.js:158 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d06287d714c3 | PAGE | doctor | /doctor/patients/:nic | page/redirect | R | client/src/App.js:159 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-fafa27764154 | PAGE | doctor | /doctor/profile | page/redirect | R | client/src/App.js:160 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-8741d4e18fd8 | PAGE | doctor | /doctor | index redirect | R | client/src/App.js:162 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-e3c80df310c1 | PAGE | hospital | /hospital/* | page/redirect | R | client/src/App.js:166 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-941c5e16b3d2 | PAGE | patient | /patient/* | page/redirect | R | client/src/App.js:170 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d4b5fe8f5034 | PAGE | pharmacy | /pharmacy/* | page/redirect | R | client/src/App.js:174 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-6cda89ecfa34 | PAGE | admin | /admin/* | page/redirect | R | client/src/App.js:178 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-29dd74fb0995 | PAGE | public | /* | page/redirect | R | client/src/App.js:182 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-a75d13af0889 | PAGE | public | / | page/redirect | R | client/src/App.js:139 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-d9790d97bf8d | PAGE | public | /select-role | page/redirect | R | client/src/App.js:140 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c8101fe40187 | PAGE | public | /register | page/redirect | R | client/src/App.js:141 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c17f0a03c32a | PAGE | patient | /patient/register | page/redirect | R | client/src/App.js:142 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-1b0ebf4b9dc5 | PAGE | hospital | /hospital/register | page/redirect | R | client/src/App.js:143 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-9d33cd45795b | PAGE | pharmacy | /pharmacy/register | page/redirect | R | client/src/App.js:144 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-826341baca61 | PAGE | public | /forgot-password | page/redirect | R | client/src/App.js:145 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-e99a910084b2 | PAGE | public | /reset-password | page/redirect | R | client/src/App.js:146 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-e4d412700eae | PAGE | public | /doctors | page/redirect | R | client/src/App.js:149 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-f8964e67e078 | PAGE | public | /hospitals | page/redirect | R | client/src/App.js:150 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-4f766059dc89 | PAGE | public | /pharmacies | page/redirect | R | client/src/App.js:151 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c731c36776d8 | PAGE | public | /public-health | page/redirect | R | client/src/App.js:152 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-bd16bf044271 | PAGE | doctor | /doctor/select-role | page/redirect | R | client/src/App.js:155 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-7c2ce46e7a9c | PAGE | doctor | /doctor/login | page/redirect | R | client/src/App.js:156 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-ad5ddc092147 | PAGE | doctor | /doctor/register | page/redirect | R | client/src/App.js:157 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-0c33129d4a8e | PAGE | doctor | /doctor/change-org-password | page/redirect | R | client/src/App.js:158 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-a55474dc0e7e | PAGE | hospital | /hospital/login | page/redirect | R | client/src/App.js:159 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-b7aacb737e64 | PAGE | patient | /patient/login | page/redirect | R | client/src/App.js:160 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-5ab6819d519e | PAGE | pharmacy | /pharmacy/login | page/redirect | R | client/src/App.js:161 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-05876d3d5874 | PAGE | admin | /admin/login | page/redirect | R | client/src/App.js:162 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-9ba76cf1c8e7 | PAGE | doctor | /doctor | page/redirect | R | client/src/App.js:165 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-1a89d421c50d | PAGE | doctor | /doctor/dashboard | page/redirect | R | client/src/App.js:170 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c62af7bd389b | PAGE | doctor | /doctor/consultation/new | page/redirect | R | client/src/App.js:171 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-df652b41435a | PAGE | doctor | /doctor/patients/:nic | page/redirect | R | client/src/App.js:172 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-ac3827fef525 | PAGE | doctor | /doctor/profile | page/redirect | R | client/src/App.js:173 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-dd4d9434ca88 | PAGE | doctor | /doctor | index redirect | R | client/src/App.js:175 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-7251e0108a8c | PAGE | hospital | /hospital/* | page/redirect | R | client/src/App.js:179 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-a4ebb3b91894 | PAGE | patient | /patient/* | page/redirect | R | client/src/App.js:183 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-d9af31024b17 | PAGE | pharmacy | /pharmacy/* | page/redirect | R | client/src/App.js:187 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-43900a0926a7 | PAGE | admin | /admin/* | page/redirect | R | client/src/App.js:191 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-cd57c1cbe052 | PAGE | public | /* | page/redirect | R | client/src/App.js:195 | NOT VERIFIED | Route access only; form actions are separate rows |
 | CLIENT_REQUEST-8d9208be6d78 | CLIENT_REQUEST | shared | POST :dynamic | performTokenRefresh | W-sec | client/src/api/axiosInstance.js:118 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | CLIENT_REQUEST-6f40a6f8fbc6 | CLIENT_REQUEST | shared | GET :dynamic | request | R | client/src/api/usePublicDirectory.js:16 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | UI_ACTION-783ee03094f4 | UI_ACTION | shared | :component | button.onClick → handleDismiss | R | client/src/components/BanNotice.jsx:97 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
@@ -863,3 +863,8 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json`; fingerpri
 | API-c48563285bef | API | hospital | GET /api/tests/hospital | testController.getHospitalTests | R | server/src/routes/testRoutes.js:28 | NOT VERIFIED | Declared role restriction; controller effects require review |
 | API-446f3440c413 | API | shared | POST /api/users/upload-profile-pic | userController.uploadProfilePic | W-low | server/src/routes/userRoutes.js:7 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
+
+## Version history
+
+- Phase0 snapshot: docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json, commit c5d21f1.
+- Phase2 route-recovery candidate: docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json. Source bindings refreshed; no historical live PASS projected onto changed source.

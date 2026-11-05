@@ -1,5 +1,10 @@
 // English UI Dictionary (en)
 export const en = {
+  routeError: {
+    title: 'Something went wrong',
+    body: 'This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.',
+    reload: 'Reload Page'
+  },
   adminStatus: {"notAvailable": "Not available", "available": "Available", "referenceService": "ML reference service", "referenceProfiles": "Reference disease profiles", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count."},
   activity: {
     "districtDailyUnavailable": "Daily counts are not published for district selections.",

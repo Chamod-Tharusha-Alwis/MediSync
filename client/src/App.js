@@ -7,7 +7,7 @@ import BanNotice from './components/BanNotice';
 import { initGA, usePageTracking } from './utils/analytics';
 import AnimatedBackground from './components/common/AnimatedBackground';
 import { PatientAccessProvider } from './context/PatientAccessContext';
-import { LanguageProvider } from './i18n/LanguageContext';
+import { LanguageProvider, useTranslation } from './i18n/LanguageContext';
 import IdleTimer from './components/common/IdleTimer';
 
 // ─── Lazy-loaded route components ──────────────────────────────────────────
@@ -62,7 +62,7 @@ const PageLoader = () => (
 );
 
 // ─── Route Error Boundary (prevents white-screen on render error) ───────────
-export class ErrorBoundary extends React.Component {
+class RenderErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -85,9 +85,9 @@ export class ErrorBoundary extends React.Component {
               !
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white">Something went wrong</h2>
+              <h2 className="text-xl font-bold text-white">{this.props.labels.title}</h2>
               <p className="text-sm text-slate-300 leading-relaxed">
-                This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.
+                {this.props.labels.body}
               </p>
             </div>
             <button
@@ -95,7 +95,7 @@ export class ErrorBoundary extends React.Component {
               onClick={() => window.location.reload()}
               className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
             >
-              Reload Page
+              {this.props.labels.reload}
             </button>
           </div>
         </div>
@@ -103,6 +103,19 @@ export class ErrorBoundary extends React.Component {
     }
     return this.props.children;
   }
+}
+
+export function ErrorBoundary({ children }) {
+  const { t } = useTranslation();
+  return (
+    <RenderErrorBoundary labels={{
+      title: t('routeError.title', 'Something went wrong'),
+      body: t('routeError.body', 'This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.'),
+      reload: t('routeError.reload', 'Reload Page')
+    }}>
+      {children}
+    </RenderErrorBoundary>
+  );
 }
 
 // ─── Inner component that lives inside <Router> so hooks can use useLocation ──
