@@ -1,0 +1,64 @@
+{
+  "at": "2026-11-05T15:06:52.919Z",
+  "head": "d611b41e47753a407bd6252960383631fbc7f52a",
+  "branch": "main",
+  "protectedPins": {
+    "passed": 15,
+    "total": 15,
+    "source": "scripts/run_offline_tests.js:19-40; docs/release/PROTECTED_HASHES.json"
+  },
+  "indexEmpty": true,
+  "sourceMatchesRecordedRegression": true,
+  "historicalRegression": {
+    "path": "scratch/clinical-offline-J8bTZx/summary.json",
+    "passed": 3211,
+    "failed": 0,
+    "success": true,
+    "rerun": false
+  },
+  "nic": {
+    "source": "server/src/controllers/patientController.js:45-47",
+    "cases": [
+      {
+        "label": "old-format-nine-digits-V",
+        "expected": true,
+        "actual": true
+      },
+      {
+        "label": "old-format-nine-digits-lower-x",
+        "expected": true,
+        "actual": true
+      },
+      {
+        "label": "new-format-twelve-digits",
+        "expected": true,
+        "actual": true
+      },
+      {
+        "label": "prior-plan-old-format-eleven-characters",
+        "expected": false,
+        "actual": false
+      },
+      {
+        "label": "prior-plan-new-format-day-prefix-nine",
+        "expected": true,
+        "actual": true
+      },
+      {
+        "label": "alphabetic-input",
+        "expected": false,
+        "actual": false
+      },
+      {
+        "label": "empty-input",
+        "expected": false,
+        "actual": false
+      }
+    ],
+    "passed": 7,
+    "limitation": "Format only; no day-of-year, reserved-range, uniqueness or fictional-identity guarantee."
+  },
+  "fullRunnerNotRun": "scripts/run_offline_tests.js:50-52 writes scratch outside docs/new; current operator constraint forbids that. No runner changes made.",
+  "network": "Only authorized git fetch origin; no service calls",
+  "liveVerification": "NOT VERIFIED in this session"
+}
