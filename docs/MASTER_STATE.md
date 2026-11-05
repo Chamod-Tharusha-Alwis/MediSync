@@ -326,3 +326,13 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T13:49:56.184Z — login admission repair and lockout review milestone
 
 3211offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins;191focusedPASS,syntax0; sameC5clientbuild0. Evidence docs/temp/CODEX_LOGIN_VALIDATION_SECURITY_REVIEW_20261105T134956Z.json. New malformed input rejects400beforelookup; five-role/legacy input compatibility retained. Actualper-IPmiddleware2PASS; passwordlockoutnotactive/distributedIPstoremissing/API-wideschemasincomplete. Operatorselected5/15candidateprepared25PASS,NOTAPPLIED: docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z.md. C5f566eeabothCIgreen/VercelREADY; backendserver-source-equivalent4d02303. No live login/email, totals8/0/8,clinical2/14. Remaining C7majorforms/localevisualmatrix and risky lockout activation need follow-up.
+
+## 2026-11-05T14:20:44.862Z — Phase2offlinebatchclosure and inactive integrated lockoutreview
+
+Mainfdbd40f:3,211offlinePASS/0FAIL/0SKIP,15pins;bothCIgreen;backend200ready/exactSHA,VercelREADY/exactSHA. Fivepatchcommitscapturedin docs/temp/CODEX_PHASE2_OFFLINE_BATCH_CLOSURE_20261105T142044Z.json. No newliveauth/provider/Atlas/Redisoperation;lastconfirmedemails8/0/8,notafreshdashboardread. Local45publicunavailable-stateviewsPASS:36expectedfixtureconsoleentries,0unexpected/pageerrors,noexternalrequests;notliveacceptance. Integratedselected5/15policyNOTAPPLIED: docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.md;candidatebackend2498PASS/privatepreservation1excluded,lifecycle40PASS,fenced25PASS,rawdeltaexactly9files. Client/MLcompletedproofreusednotrerun. Sourceactivationneedsreview;remainingC7forms/distributedIP/API-wideschemas/native/Lighthouse/liveclinicalgatesopen;real2/14.
+
+## 2026-11-05T14:23:34.516Z — Current review gate
+
+The shared application is on fdbd40f with 3,211 offline PASS, both CI workflows green, exact backend/Vercel readiness and all 15 protected expectations intact. Read docs/temp/CODEX_PHASE2_OFFLINE_STATUS_20261105T142334Z.md for the finished changes and remaining gaps.
+
+The selected five-failure/fifteen-minute policy remains inactive. Its exact nine-file integrated package and activation scope are described in docs/temp/CODEX_PASSWORD_LOCKOUT_REVIEW_HANDOFF_20261105T142334Z.md. Candidate backend: 2,498 PASS (one private proof excluded); lifecycle: 40 PASS. These are separate from the deployed baseline. No further live login or email is approved. Last operator-confirmed provider total: 8/25.

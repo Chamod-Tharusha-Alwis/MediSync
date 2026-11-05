@@ -1,0 +1,98 @@
+{
+  "at": "2026-11-05T14:20:44.862Z",
+  "runtimeSource": "fdbd40f0872d5304968e9eb45ce2af79666f0c96",
+  "commits": [
+    {
+      "sha": "192e1d4",
+      "change": "12 missing translation registrations; exact privacy-safe audit"
+    },
+    {
+      "sha": "4d02303",
+      "change": "Localized loading, shell recovery/focus, five-role synchronous form locks"
+    },
+    {
+      "sha": "3692403",
+      "change": "History exception suppression/native fallback and44px language controls"
+    },
+    {
+      "sha": "f566eea",
+      "change": "Medication reply ordering and DTO/incomplete-state validation"
+    },
+    {
+      "sha": "fdbd40f",
+      "change": "Malformed login request admission before account access"
+    }
+  ],
+  "sharedRegression": {
+    "passed": 3211,
+    "failed": 0,
+    "skipped": 0,
+    "sourceFrozen": true,
+    "protectedPins": 15,
+    "receipt": "scratch/clinical-offline-J8bTZx/summary.json"
+  },
+  "ci": [
+    {
+      "name": "source-integrity-and-offline-tests",
+      "conclusion": "success",
+      "url": "https://github.com/Chamod-Tharusha-Alwis/MediSync/actions/runs/42039506255/job/127286272058"
+    },
+    {
+      "name": "security-and-trust-tests",
+      "conclusion": "success",
+      "url": "https://github.com/Chamod-Tharusha-Alwis/MediSync/actions/runs/42039506418/job/127286271963"
+    }
+  ],
+  "deployment": {
+    "vercel": {
+      "id": "dpl_3Dkbf4AiBu6CmcTGWvrrXXPJwEMP",
+      "readyState": "READY",
+      "sha": "fdbd40f0872d5304968e9eb45ce2af79666f0c96"
+    },
+    "backend": {
+      "http": 200,
+      "status": "ready",
+      "commit": "fdbd40f0872d5304968e9eb45ce2af79666f0c96"
+    }
+  },
+  "matrix": {
+    "rows": 846,
+    "R": 560,
+    "W-low": 78,
+    "W-clin": 41,
+    "W-sec": 99,
+    "W-adm": 37,
+    "X": 31,
+    "clinicalGroupDefinitionsLocated": 14,
+    "realClinicalAccepted": 2
+  },
+  "offlineUi": {
+    "views": 45,
+    "receipt": "docs/temp/CODEX_PUBLIC_OFFLINE_UNAVAILABLE_GEOMETRY_20261105T135600Z.json",
+    "locallyFulfilledUnavailableReads": 36,
+    "expectedFixtureConsoleErrors": 36,
+    "unexpectedConsoleErrors": 0,
+    "pageErrors": 0,
+    "networkRequestsToExternalServices": 0,
+    "note": "Actual compiled public surfaces EN/SI/TA at320/375/1440; unavailable fixtures, not live-data acceptance or Lighthouse certification"
+  },
+  "passwordPolicyReview": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.md",
+  "lastOperatorEmailTotal": {
+    "resend": 8,
+    "brevo": 0,
+    "combined": 8,
+    "cap": 25,
+    "freshDashboardReadByAgent": false
+  },
+  "agentInitiatedLiveLogins": 0,
+  "agentProviderSends": 0,
+  "remaining": [
+    "Password lockout source activation pending exact9file review",
+    "Distributed IP quotas/currentMemoryStoregap",
+    "API-wide formal schema coverage",
+    "RemainingC7majorformlocks/loading/errorstates and fullpage locale/accessibility matrix",
+    "Native-language and Lighthouse qualification",
+    "P3/W/FINAL live scopes; finalpost-idleMLstatuscheck; clinical2/14"
+  ],
+  "clinicalProductionVerdict": "NO_GO"
+}

@@ -44,3 +44,13 @@ No production mutation is authorized by this checklist.
 Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
 
 Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.
+
+## 2026-11-05T14:20:44.862Z — next review gate
+
+Review docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.md andexactlocal.patch(orportablePATCH_DOCUMENT.json). Thepolicyandits6testcompanionsneedsourceapplication/activationapprovalbeforemaincommit/push;automaticdeploymentwouldenablethe5/15lockout. No liveauth/email/Redis/Atlas/clinicalscopeis implied. Lastproviderconfirmation8/0/8;getfreshnumericcountsbeforeafutureapprovedlivephase. IncludeFINALpost-idleMLstatuscheckwithoutintentionalwarm-up.
+
+## 2026-11-05T14:23:34.516Z — Current review gate
+
+The shared application is on fdbd40f with 3,211 offline PASS, both CI workflows green, exact backend/Vercel readiness and all 15 protected expectations intact. Read docs/temp/CODEX_PHASE2_OFFLINE_STATUS_20261105T142334Z.md for the finished changes and remaining gaps.
+
+The selected five-failure/fifteen-minute policy remains inactive. Its exact nine-file integrated package and activation scope are described in docs/temp/CODEX_PASSWORD_LOCKOUT_REVIEW_HANDOFF_20261105T142334Z.md. Candidate backend: 2,498 PASS (one private proof excluded); lifecycle: 40 PASS. These are separate from the deployed baseline. No further live login or email is approved. Last operator-confirmed provider total: 8/25.
