@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
+import LanguageContext from '../../i18n/LanguageContext';
 
 /**
  * HistoryErrorBoundary
@@ -8,6 +9,7 @@ import { FiAlertTriangle } from 'react-icons/fi';
  * the parent consultation wizard or history viewers.
  */
 export default class HistoryErrorBoundary extends React.Component {
+  static contextType = LanguageContext;
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -19,10 +21,7 @@ export default class HistoryErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.warn(
-      '[HistoryErrorBoundary] Captured render error in medical history panel (sanitized notice):',
-      error?.message || error
-    );
+    console.warn('[HistoryErrorBoundary] Captured render error in medical history panel (sanitized notice)');
     if (typeof this.props.onError === 'function') {
       try {
         this.props.onError(error, errorInfo);
@@ -37,6 +36,7 @@ export default class HistoryErrorBoundary extends React.Component {
   }
 
   render() {
+    const t = this.context?.t || ((key, fallback) => fallback);
     if (this.state.hasError) {
       if (typeof this.props.fallback === 'function') {
         return this.props.fallback({
@@ -57,19 +57,19 @@ export default class HistoryErrorBoundary extends React.Component {
           <FiAlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 space-y-1">
             <p className="font-semibold text-white">
-              Notice: Unable to render complete historical record
+              {t('historyError.title', 'Notice: Unable to render complete historical record')}
             </p>
             <p className="text-xs text-amber-300/80 leading-relaxed">
-              A record in the patient's medical history could not be formatted. Your consultation session remains active and you can proceed with symptoms and e-prescriptions.
+              {t('historyError.body', "A record in the patient's medical history could not be formatted. Your consultation session remains active and you can proceed with symptoms and e-prescriptions.")}
             </p>
             {typeof this.props.onProceed === 'function' && (
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={this.props.onProceed}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-colors"
+                  className="min-h-[44px] px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                 >
-                  Proceed to Symptoms
+                  {t('historyError.proceed', 'Proceed to Symptoms')}
                 </button>
               </div>
             )}

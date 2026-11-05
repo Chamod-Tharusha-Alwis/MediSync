@@ -119,3 +119,7 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T13:06:02.984Z — C7 recovery/concurrency gate
 
 3162offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins; focused32PASS; clinical-productionbuild0. Evidence docs/temp/CODEX_C7_RECOVERY_LOCK_GATE_20261105T130601Z.json. Five login/OTP form locks, shared-shell boundary, localized loading and recovery focus qualified offline. Remaining forms/history-boundary states/accessibility NOT VERIFIED. Translation192e1d4 bothCIgreen/backendready/VercelREADY; closure docs/temp/CODEX_I18N_CI_DEPLOY_CLOSURE_20261105T113531Z.json. Local language target defect measured; no live action,emails8/0/8.
+
+## 2026-11-05T13:15:16.613Z — C7 history privacy and language-target qualification
+
+3166offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins;45focusedPASS;clinical-productionbuild0. Actual compiled local9-view geometryPASS,zeroexternal/APIrequests,zero normalconsole/pageerrors;noLighthouse/liveclinicalclaim. Historybuilt-inexceptionpayloadremoved,localizedfallback;754keys/parity. Evidence docs/temp/CODEX_C7_HISTORY_ACCESSIBILITY_20261105T131516Z.json. Previous4d02303bothCIgreen/backend/Vercelready. No live login/email;totals8/0/8. Next doctor/checks andC5,while remaining major-form/a11ymatrix staysNOTVERIFIED.

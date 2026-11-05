@@ -1,5 +1,10 @@
 // English UI Dictionary (en)
 export const en = {
+  historyError: {
+    "title": "Notice: Unable to render complete historical record",
+    "body": "A record in the patient's medical history could not be formatted. Your consultation session remains active and you can proceed with symptoms and e-prescriptions.",
+    "proceed": "Proceed to Symptoms"
+  },
   "pdfUnavailable": "PDF export temporarily unavailable",
   routeError: {
     title: 'Something went wrong',

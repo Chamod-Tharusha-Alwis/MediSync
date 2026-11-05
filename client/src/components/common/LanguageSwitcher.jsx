@@ -3,14 +3,14 @@ import { useTranslation } from '../../i18n/LanguageContext';
 import { Globe } from 'lucide-react';
 
 export const LanguageSwitcher = ({ variant = 'light', compact = false }) => {
-  const { language, setLanguage, languages } = useTranslation();
+  const { language, setLanguage, languages, t } = useTranslation();
 
   const isDark = variant === 'dark';
 
   return (
     <div
       role="group"
-      aria-label="Language selection"
+      aria-label={t('common.selectLanguage', 'Language selection')}
       className={`inline-flex items-center gap-1 p-1 rounded-xl transition-all duration-200 ${
         isDark
           ? 'bg-slate-900/60 border border-white/10 backdrop-blur-md'
@@ -35,7 +35,7 @@ export const LanguageSwitcher = ({ variant = 'light', compact = false }) => {
             title={lang.label}
             aria-label={lang.label}
             aria-pressed={isActive}
-            className={`min-h-[44px] min-w-[32px] px-2 py-1 text-xs font-bold rounded-lg transition-all duration-150 ${
+            className={`min-h-[44px] min-w-[44px] px-2 py-1 text-xs font-bold rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
               isActive
                 ? isDark
                   ? 'bg-blue-600 text-white shadow-sm'

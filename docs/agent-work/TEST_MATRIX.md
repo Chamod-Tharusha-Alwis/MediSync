@@ -4,7 +4,7 @@ Source inventory, not runtime acceptance. Every row starts NOT VERIFIED for the 
 
 R = read-only intent; W-low = self-contained change; W-clin = clinical; W-sec = security/consent; W-adm = admin management; X = destructive/maintenance, never live. Classification is conservative static triage, not authorization. Dynamic targets, unresolved callbacks and controller side effects require review before Phase 3. A semantic read using POST remains blocked by the existing fence. Opening a modal may request OTP; never do so from an R row without reviewing its effect. QA-only routes and unmounted code are not production test targets. No endpoint is invoked by this generator.
 
-Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T130601Z.json`; fingerprint `1615504aa922c3cfd07383f567ca257608bbd6a34bca6f317cd18c9f1b100fc0`.
+Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T131516Z.json`; fingerprint `1fc3580aa4a967185316ee78df3306059b63da687043adfafc28616f53ac0f4a`.
 
 | Class | Rows |
 | --- | ---: |
@@ -864,4 +864,4 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T130601Z.json`; fingerpri
 | API-446f3440c413 | API | shared | POST /api/users/upload-profile-pic | userController.uploadProfilePic | W-low | server/src/routes/userRoutes.js:7 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 
-Historical snapshots retained under docs/temp/CODEX_TEST_MATRIX_*.json. Current bindings include shared shell recovery and five-role form-lock changes; no new live acceptance inferred.
+Historical source snapshots retained. This refresh binds current history recovery and language controls; no live PASS inferred.
