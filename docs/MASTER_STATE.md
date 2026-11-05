@@ -1,5 +1,10 @@
 # MediSync Master State
 
+## 2026-11-05T04:53:45.477464+00:00 — Admin socket repair deployed; live retest held
+
+Sourcefix`dce6bbef00566424ad256ad8ab3d05bb3933e364` pushed. Both exactheadCI checks PASS; Vercel`dpl_7w347crNwawA9cE7oS6d9KvLKAQv` READY andbackendhealth200/ready identifyexactSHA. Source qualification2987offlinePASS/build0/15pins;3additional localinertChromiumcasesPASS,notCIbrowsercoverage. ActualcurrentadminliveacceptanceNOTRUN; historicalFAILpreserved. Masking andlabelledSriLanka timeconfirmedall5byoperator; providerfinalcounters/Rendercategory/liveMLURLremainunconfirmedplaceholders. No newlivelogin/email/directDB/providerrequest. Admin-onlyretest awaitsseparateapprovalandfreshnumericcounts. Receipt`docs/temp/CODEX_ADMIN_SOCKET_DEPLOY_CLOSURE_20261105T045345Z.json`. This successor documentation update does not add application behavior.
+
+
 ## 2026-11-05T04:47:47.926073+00:00 — Admin socket offline repair; masking confirmed by operator
 
 Operator confirms masked identifiers and labelledSriLanka time for all5roles; examples notretained. P1maskingLIVE_CONFIRMED on4383d63. Finalprovidertotals/logword/liveMLURL remainUNVERIFIED because replies containplaceholders; no connectedprovider/Renderdashboards,no dedicatedconnector,no serviceauthentication. Adminownsocket lacked session-cleared listener: fixed localcleanup only, preserving auth/transports/allowlist. Real inertChromiumpolling replay3PASS:old3blockedGET/new0;actualownedloopback relaypeers17/17,20/20,19/19;8forbiddenPOSTsdenied/0applicationevents. React8PASS; backend/boundary100PASS; final2987PASS/0FAIL/0SKIP/build0/15pins; `scratch/clinical-offline-6HvzXD/summary.json`; `docs/temp/CODEX_ADMIN_SOCKET_FIX_AND_ML_REVIEW_20261105T044747Z.md`; `docs/temp/CODEX_ADMIN_SOCKET_FIX_AND_ML_REVIEW_20261105T044747Z.json`. bad_response includesincompatible200HTML/JSON,unmappedHTTPerrors/redirects andotherunmappedexceptions; notproofcoldstart. No backendruntime/MLconfigchange. OriginaladminFAILpreserved. No newlivelogin/email/directDB. Admin-onlyretestHELDpendingapproval+freshnumericcounts; realclinicalE2E2/14.
