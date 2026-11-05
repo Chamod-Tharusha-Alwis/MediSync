@@ -47,3 +47,33 @@ test('real controller emits explicit HTTP 200 unavailable envelope; no raw upstr
     expect(warn).toHaveBeenCalledWith('[AdminMlStatus] category=dns');
   }finally{warn.mockRestore();}
 });
+
+test.each([400,405,408,413,429,500,502,503,504,301,302,307,308])('an HTTP %i rejection is bad_response, not evidence of a cold start',async status=>{
+  const o=options();o.get.mockRejectedValue({response:{status,data:'private-upstream-body'},code:'ERR_BAD_RESPONSE'});
+  expect(await readAdminMlStatus(o)).toMatchObject({available:false,category:'bad_response'});
+  expect(o.get).toHaveBeenCalledTimes(1);expect(o.log.mock.calls).toEqual([['[AdminMlStatus] category=bad_response']]);
+});
+test.each([
+  '<!doctype html><title>Unrelated frontend application</title>',
+  {status:'ok',service:'unrelated'},
+  {data:payload()},
+  {...payload(),dataPointUnit:undefined},
+  {...payload(),clinicalValidation:'not_established'},
+  {...payload(),models:{...payload().models,outbreakForecasting:'active'}}
+])('wrong service or incompatible HTTP200 schema is unavailable, without leaking the reply %#',async data=>{
+  const o=options();o.get.mockResolvedValue({data});const result=await readAdminMlStatus(o);
+  expect(result).toMatchObject({available:false,dataPoints:null,category:'bad_response'});
+  expect(JSON.stringify(result)).not.toContain('Unrelated frontend application');
+  expect(o.log.mock.calls).toEqual([['[AdminMlStatus] category=bad_response']]);
+});
+test('a trailing slash is not normalized; a rejected slash redirect is bad_response',async()=>{
+  const o=options();o.baseUrl='https://inert.invalid/';o.get.mockRejectedValue({response:{status:308}});
+  expect(await readAdminMlStatus(o)).toMatchObject({category:'bad_response'});
+  expect(o.get.mock.calls[0][0]).toBe('https://inert.invalid//model-status');
+  expect(o.get.mock.calls[0][1].maxRedirects).toBe(0);
+});
+test.each(['ERR_INVALID_URL','ERR_BAD_OPTION_VALUE','ERR_CANCELED','UNCLASSIFIED'])('other unmapped errors use bad_response (%s)',async code=>{
+  const o=options();o.get.mockRejectedValue({code,message:'private-upstream-body'});
+  expect(await readAdminMlStatus(o)).toMatchObject({category:'bad_response'});
+  expect(JSON.stringify(o.log.mock.calls)).not.toContain('private-upstream-body');
+});

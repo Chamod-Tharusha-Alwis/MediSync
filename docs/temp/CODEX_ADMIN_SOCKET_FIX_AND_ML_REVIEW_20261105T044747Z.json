@@ -1,0 +1,146 @@
+{
+  "at": "2026-11-05T04:47:47.926073+00:00",
+  "baseHead": "37c4bf730589a7190fc69d2e9b63034cebda87a6",
+  "scope": "OFFLINE_ADMIN_SOCKET_LIFECYCLE_REPAIR_AND_ML_CLASSIFICATION_REVIEW",
+  "source": {
+    "client/src/pages/admin/Dashboard.jsx": "e8dd0e97424855abc2831295ac5d1d15d8a9ff73b86d8e859e419f041278a65e",
+    "client/src/__master_offline__/admin-dashboard-socket.test.jsx": "dc40996d0e37d39c8f99932202f2dfb9625761163d4e563d4cc183cbdb45f968",
+    "server/tests/adminMlStatusOffline.test.js": "9cfc2fe1e6dafe5d0dadf16cedf1760f8e028c56096fa0fedbdea23b64417d13",
+    "scripts/adminSocketCleanupOffline.test.cjs": "eb16adc577eb80a05bc5c24684906e5966657c7707d3d8a2ea34816c9433b29e",
+    "scripts/fixtures/adminSocketEffectBeforeSessionCleanup.cjs": "a124edf523ec3550a01bd4faad68c0b710a1b35c4ec118d23990a7f2e9a2ebbe"
+  },
+  "regression": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-6HvzXD",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2309,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2309,
+        "suites": 103,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 540,
+        "failed": 0,
+        "skipped": 0,
+        "total": 540,
+        "suites": 57,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "total": 27,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 2987,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "inertBrowser": {
+    "tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "exitCode": 0,
+    "receipt": "docs/temp/CODEX_ADMIN_SOCKET_INERT_BROWSER_20261105T044225005Z.json",
+    "receiptSha256": "d89e3b51e6069e8a70ae2db85ad23da0ea964a56844a8dc87f92d455a72a58fc",
+    "preFixBlockedGets": 3,
+    "postFixBlockedGets": 0,
+    "negativeBlockedPosts": 8,
+    "allRelayPeersVerifiedLoopback": true
+  },
+  "focusedAdminComponent": {
+    "passed": 8,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "focusedBackendAndBoundary": {
+    "passed": 100,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "build": {
+    "exitCode": 0,
+    "clinicalModules": 116,
+    "demoImported": false,
+    "warnings": "existing only"
+  },
+  "protectedPinsIntact": 15,
+  "operatorConfirmation": {
+    "identifierMasked": {
+      "admin": true,
+      "patient": true,
+      "doctor": true,
+      "hospital": true,
+      "pharmacy": true
+    },
+    "sriLankaZoneLabelCorrectAllFive": true,
+    "rawIdentifierExamplesRetained": false
+  },
+  "emailTotals": {
+    "resend": null,
+    "brevo": null,
+    "combined": null,
+    "status": "NOT_VERIFIED_OPERATOR_PLACEHOLDERS",
+    "limit": 25
+  },
+  "adminMlBackendLogCategory": null,
+  "observedHistoricalApiCategory": "bad_response",
+  "liveMlBaseUrl": "NOT_VERIFIED_OPERATOR_PLACEHOLDER",
+  "dashboardAccess": {
+    "providerOrRenderConnectorAvailable": false,
+    "matchingConnectedDashboardTabs": 0,
+    "serviceLoginAttempted": false
+  },
+  "operatorMlBootObservation": "No new boot line in the supplied window; not independently inspected",
+  "liveLoginAttempts": 0,
+  "emailsSent": 0,
+  "directAtlasOrRedisConnections": 0,
+  "adminLiveRetest": "HELD_REQUIRES_SEPARATE_OPERATOR_APPROVAL",
+  "historicalAdminVerdict": "FAIL_PRESERVED_NOT_RERUN",
+  "clinicalRealE2E": "2/14"
+}

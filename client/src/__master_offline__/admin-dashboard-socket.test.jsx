@@ -7,18 +7,23 @@ jest.mock('../components/common/GeographicMap', () => () => <div>Map mock</div>)
 jest.mock('socket.io-client', () => ({
   __esModule: true,
   io: (url, opts) => {
-    mockCalls.push({ url, opts });
-    return {
-      on: () => {},
+    const handlers = {};
+    const socket = {
+      on: (name, handler) => { handlers[name] = handler; },
       off: () => {},
       disconnect: () => {},
     };
+    mockCalls.push({ url, opts, socket, handlers });
+    return socket;
   },
 }));
 
 import api from '../api/axiosInstance';
 import { safeDisconnectSocket } from '../utils/safeSocketDisconnect';
 import AdminDashboard from '../pages/admin/Dashboard';
+import { toast } from 'react-toastify';
+
+jest.mock('react-toastify', () => ({toast: {error: jest.fn(), info: jest.fn()}}));
 
 jest.mock('../api/axiosInstance', () => ({
   __esModule: true,
@@ -66,6 +71,8 @@ describe('Admin Dashboard Socket Auth Guard', () => {
     localStorage.clear();
     mockCalls.length = 0;
     safeDisconnectSocket.mockClear();
+    toast.error.mockClear();
+    toast.info.mockClear();
     api.get.mockResolvedValue({ data: { stats: {}, users: [], alerts: [] } });
   });
 
@@ -135,5 +142,57 @@ describe('Admin Dashboard Socket Auth Guard', () => {
     });
 
     expect(safeDisconnectSocket).toHaveBeenCalledTimes(1);
+  });
+  test('session clear before delayed initialization cancels the admin socket', async () => {
+    localStorage.setItem('token', 'inert-only-admin-session');
+    const {unmount} = render(<AdminDashboard />);
+    await act(async () => {
+      window.dispatchEvent(new Event('medisync:session-cleared'));
+      jest.advanceTimersByTime(1000);
+    });
+    expect(mockCalls).toHaveLength(0);
+    expect(safeDisconnectSocket).not.toHaveBeenCalled();
+    unmount();
+  });
+  test('session clear disconnects the connected admin socket exactly once, including later unmount', async () => {
+    localStorage.setItem('token', 'inert-only-admin-session');
+    const {unmount} = render(<AdminDashboard />);
+    await act(async () => { jest.advanceTimersByTime(600); });
+    expect(mockCalls).toHaveLength(1);
+    await act(async () => {
+      window.dispatchEvent(new Event('medisync:session-cleared'));
+      window.dispatchEvent(new Event('medisync:session-cleared'));
+    });
+    expect(safeDisconnectSocket).toHaveBeenCalledTimes(1);
+    expect(safeDisconnectSocket).toHaveBeenCalledWith(mockCalls[0].socket);
+    unmount();
+    expect(safeDisconnectSocket).toHaveBeenCalledTimes(1);
+  });
+  test('queued admin alert callbacks cannot update the page after session cleanup', async () => {
+    localStorage.setItem('token', 'inert-only-admin-session');
+    const {unmount} = render(<AdminDashboard />);
+    await act(async () => { jest.advanceTimersByTime(600); });
+    await act(async () => { mockCalls[0].handlers.broadcast_message({message: 'Synthetic notification'}); });
+    expect(toast.info).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      window.dispatchEvent(new Event('medisync:session-cleared'));
+      mockCalls[0].handlers.broadcast_message({message: 'Synthetic notification'});
+      mockCalls[0].handlers.outbreak_alert({message: 'Synthetic notification'});
+    });
+    expect(toast.info).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalled();
+    unmount();
+  });
+  test('unmount removes its session listener and cannot restart or disconnect another session', async () => {
+    localStorage.setItem('token', 'inert-only-admin-session');
+    const remove = jest.spyOn(window, 'removeEventListener');
+    const {unmount} = render(<AdminDashboard />);
+    await act(async () => { jest.advanceTimersByTime(600); });
+    unmount();
+    expect(remove).toHaveBeenCalledWith('medisync:session-cleared', expect.any(Function));
+    window.dispatchEvent(new Event('medisync:session-cleared'));
+    expect(safeDisconnectSocket).toHaveBeenCalledTimes(1);
+    expect(mockCalls).toHaveLength(1);
+    remove.mockRestore();
   });
 });

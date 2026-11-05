@@ -646,7 +646,17 @@ const AdminDashboard = () => {
   // Socket.IO real-time integration
   useEffect(() => {
     let socket;
+    let active = true;
+    const clearSocket = () => {
+      active = false;
+      clearTimeout(timer);
+      if (socket) {
+        safeDisconnectSocket(socket);
+        socket = undefined;
+      }
+    };
     const timer = setTimeout(() => {
+      if (!active) return;
       const rawToken = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!rawToken || rawToken === 'undefined' || rawToken === 'null' || !rawToken.trim()) {
         return;
@@ -662,6 +672,7 @@ const AdminDashboard = () => {
       });
 
       socket.on('connect_error', (err) => {
+        if (!active) return;
         if (err?.message?.includes('AUTH') || err?.message?.includes('token') || err?.message?.includes('expired') || err?.data?.code === 'SOCKET_AUTH_DENIED') {
           console.warn('[Socket.IO Admin] Authentication rejected or expired. Halting reconnection.');
           safeDisconnectSocket(socket);
@@ -671,6 +682,7 @@ const AdminDashboard = () => {
       });
 
       socket.on('outbreak_alert', (data) => {
+        if (!active) return;
         toast.error(
           <div>
             <p className="font-bold text-sm">🚨 Outbreak Alert</p>
@@ -683,6 +695,7 @@ const AdminDashboard = () => {
       });
 
       socket.on('broadcast_message', (data) => {
+        if (!active) return;
         toast.info(
           <div>
             <p className="font-bold text-sm">📢 Broadcast</p>
@@ -693,12 +706,11 @@ const AdminDashboard = () => {
       });
     }, 500);
 
-    return () => {
-      clearTimeout(timer);
-      if (socket) {
-        safeDisconnectSocket(socket);
+    window.addEventListener('medisync:session-cleared', clearSocket);
 
-      }
+    return () => {
+      window.removeEventListener('medisync:session-cleared', clearSocket);
+      clearSocket();
     };
   }, []);
 
