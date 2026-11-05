@@ -1,0 +1,149 @@
+{
+  "at": "2026-11-05T03:17:22.424322+00:00",
+  "sourceHeadBefore": "7db9e33664b903cfa973d320e4e631fc67bc8c7c",
+  "scope": "OFFLINE_ONLY_NO_LOGIN_NO_EMAIL_NO_DB",
+  "source": {
+    "client/src/__master_offline__/new-consultation-stress.test.jsx": "bbe1f9ce0d19888966499566255b435be0b3cbe8fc72eeba433344ecf03550ec",
+    "client/src/__master_offline__/admin-ml-status.test.jsx": "f41b9efe0fabd7cf035225adcc938e6c145cdcf56ef5530bd64d6b24e0d80fa0",
+    "client/src/i18n/translations/en.js": "3ca41b2ed08ebb7792c527426c91523437dd0d5c04f1544affd2c7924499702e",
+    "client/src/i18n/translations/si.js": "521937680507e37d9d35b6657fe994eb381af419d2bc7f6e5a04b01de0114f3c",
+    "client/src/i18n/translations/ta.js": "c3a5c43f89cb9ce657b767a4cde082e6efb0709723045942e589959bffd39702",
+    "client/src/pages/admin/OutbreakMonitor.jsx": "43d70a2da4570ffdc1e401f4a28ed50786ee06d0716df156f860333a2981c775",
+    "scripts/authenticatedSessionBrowser.cjs": "83ba91aebafeadfd07cd683cbd1e88a4fdaffc84c065f1613b9fb8ad04e8cce9",
+    "scripts/notificationTransportPolicy.cjs": "e315f421ad47d097ae5de62e837b96f33bf6d955fa13fe28ab2b8e5f30ca8978",
+    "scripts/verify_five_role_sessions_live.cjs": "84d7fe4b08d07e80b28819361e41c4f7b4230f2f949caf8aba0805a7f00d77a0",
+    "server/clinical.offline.jest.cjs": "1dcf174a37dc1039ab5fb053efd79abfc643d5a0f78509d4ce69a26560048f9e",
+    "server/src/controllers/adminController.js": "3c2816459c26964af0fbe20b351fa32a97050a7cd409ab3009170c0993867071",
+    "server/src/services/adminMlStatusService.js": "675dacf4d281bb28762b9f9042ca884a80dc9a383c4aff8f21206ef6f7e4226f",
+    "server/tests/adminMlStatusOffline.test.js": "32458cb31da15b77177bddc92183b67de95e9bf4d3afa8134289f210d2e312a9",
+    "server/tests/notificationTransportOffline.test.js": "11cada37c3212279ed670bf6037f8146187cbbc6652282bf808c5c826b9d0e6e"
+  },
+  "regression": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-9fPaOF",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2234,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2234,
+        "suites": 102,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 536,
+        "failed": 0,
+        "skipped": 0,
+        "total": 536,
+        "suites": 57,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "total": 27,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 2908,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "focusedBackend": {
+    "passed": 118,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "focusedAdminUI": {
+    "passed": 8,
+    "failed": 0,
+    "exitCode": 0
+  },
+  "q3ClientSuites": [
+    {
+      "file": "src/__master_offline__/new-consultation-stress.test.jsx",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "file": "src/__master_offline__/consultation-409-resilience.test.jsx",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "file": "src/__master_offline__/phase4-ui-polish.test.jsx",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "file": "src/__master_offline__/b1-ml-503-resilience.test.jsx",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "file": "src/__master_offline__/b2-drug-suggestions-trilingual.test.jsx",
+      "passed": 5,
+      "failed": 0
+    }
+  ],
+  "build": {
+    "exitCode": 0,
+    "clinicalModules": 116,
+    "demoImported": false,
+    "existingWarningsOnly": true
+  },
+  "protected": {
+    "intact": 15,
+    "changed": 0
+  },
+  "emailAccounting": "CLOSED_PREVIOUS_TOTAL_7_NO_NEW_SENDS",
+  "live": "NOT_RUN_REQUIRES_SEPARATE_COMBINED_SWEEP_APPROVAL",
+  "realE2EAccepted": {
+    "passed": 2,
+    "groups": 14
+  },
+  "upstreamMlStatusCause": "NOT_VERIFIED_OPERATOR_NO_LOG_LINE",
+  "identifierMasking": "P1_OPEN_LOGIN_ALERT_BODY_RAW_IDENTIFIER",
+  "report": "docs/temp/CODEX_OFFLINE_TRANSPORT_ML_Q3_REVIEW_20261105T031147Z.md"
+}

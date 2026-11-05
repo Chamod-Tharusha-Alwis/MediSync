@@ -1,5 +1,6 @@
 // Sinhala UI Dictionary (si)
 export const si = {
+  adminStatus: {"notAvailable": "ලබා ගත නොහැක", "available": "ලබා ගත හැක", "referenceService": "ML යොමු සේවාව", "referenceProfiles": "යොමු රෝග පැතිකඩ", "noAlerts": "ඇඟවීම් ලැබී නැත.", "caution": "සායනික වලංගුභාවය තහවුරු කර නැත. පුරෝකථනය: ලබා ගත නොහැක. යොමු ගණන රෝගීන් හෝ වසංගත ගණනක් නොවේ."},
   activity: {
     "districtDailyUnavailable": "දිස්ත්‍රික් තේරීම් සඳහා දෛනික ගණන් ප්‍රකාශ නොකෙරේ.",
     "selectedSuppressed": "තෝරාගත් දිස්ත්‍රික්කයේ මුළු සහ දෛනික ගණන් 5ට අඩු විට හෙළි නොකෙරේ.",

@@ -11,13 +11,14 @@ function argsOf(args) {
   for (let i=0; i<args.length; i++) {
     if (args[i] === '--approved-session-check' && !out.approved) { out.approved=true; continue; }
     if (args[i] === '--email-display-proof' && !out.proofOnly) { out.proofOnly=true; continue; }
+    if (args[i] === '--notification-transport' && !out.notifications) { out.notifications=true; continue; }
     if (!allowed.has(args[i]) || out[args[i]] !== undefined || args[i+1] === undefined) throw Error('ARGUMENT_ADMISSION_REJECTED');
     out[args[i]]=args[++i];
   }
   if (!out.approved || !ROLES.includes(out['--role']) || !/^q1_sessions_\d{8}_[a-f0-9]{8}$/.test(out['--run-id'] || '') || !/^\d+$/.test(out['--email-total'] || '') || !/^[a-f0-9]{40}$/.test(out['--backend-commit'] || '')) throw Error('ARGUMENT_ADMISSION_REJECTED');
   const total=Number(out['--email-total']);
   if (!Number.isSafeInteger(total) || total<0 || total+2>25) throw Error('EMAIL_BUDGET_REJECTED');
-  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true};
+  return {role:out['--role'],runId:out['--run-id'],baseline:total,backendCommit:out['--backend-commit'],proofOnly:out.proofOnly===true,notifications:out.notifications===true};
 }
 function credentials(root, readFile = fs.readFileSync) {
   const parsed=require('../server/node_modules/dotenv').parse(readFile(path.join(root,'server/.env')));
@@ -68,9 +69,9 @@ async function run(config) {
   const lock=path.join(dir,'owned-runner.lock');
   const fd=fs.openSync(lock,'wx');fs.closeSync(fd);
   let browser,context,page,authenticated=false,token,receiptPath;
-  const boundary=createBrowserBoundary(config.role);
-  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',
-    source:Object.fromEntries(['verify_five_role_sessions_live.cjs','authenticatedSessionBrowser.cjs','authenticatedSessionPolicy.cjs'].map(name=>[name,crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,name))).digest('hex')])),
+  const boundary=createBrowserBoundary(config.role,{notificationTransportApproved:config.notifications===true});
+  const receipt={at:new Date().toISOString(),role:config.role,runId:config.runId,scope:config.proofOnly?'EMAIL_DISPLAY_SINGLE_LOGIN_PROOF':'SESSION_ONLY_BROWSER_ACCEPTANCE',notificationTransportApproved:config.notifications===true,
+    source:Object.fromEntries(['verify_five_role_sessions_live.cjs','authenticatedSessionBrowser.cjs','authenticatedSessionPolicy.cjs','notificationTransportPolicy.cjs'].map(name=>[name,crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,name))).digest('hex')])),
     baselineConfirmedSent:config.baseline,emailLimit:25,newLoginAlertCount:'NOT_OBSERVABLE_FROM_LOGIN_RESPONSE',
     reservedPotentialEmailCount:0,combinedConservativeUpperBound:config.baseline+2*previous.length,
     loginAttempts:0,loginStatus:null,observations:[],consoleCategories:{},pageErrors:0,httpFailures:[],
@@ -98,7 +99,7 @@ async function run(config) {
       try {
         const u=new URL(response.url());
         if(u.origin===API&&response.status()>=400)receipt.httpFailures.push({...require('./authenticatedSessionBrowser.cjs').requestPattern(response.url(),response.request().method()),status:response.status()});
-        if(u.origin===API&&u.pathname==='/api/admin/ml-status'&&response.status()===200){const j=await response.json();adminMetadata.mlDataPointsVerified=Number.isFinite(j?.data?.dataPoints)&&j.data.dataPoints>0;}
+        if(u.origin===API&&u.pathname==='/api/admin/ml-status'&&response.status()===200){const j=await response.json();adminMetadata.mlDataPointsVerified=j?.available===true&&Number.isSafeInteger(j.dataPoints)&&j.dataPoints>=0&&j.dataPointUnit==='reference disease profiles';}
       }catch(_){}
     });
     await page.goto(FRONTEND+'/'+config.role+'/login',{waitUntil:'domcontentloaded',timeout:60000});
@@ -112,7 +113,7 @@ async function run(config) {
     await page.locator('button[type="submit"]').click();
     const loginResponse=await loginWait;receipt.loginStatus=loginResponse.status();
     const body=await loginResponse.json();const proof=loginProof(config.role,receipt.loginStatus,body);
-    boundary.observeLoginResponse(receipt.loginStatus,proof);
+    boundary.observeLoginResponse(receipt.loginStatus,proof,body?.data?.accessToken);
     if(receipt.loginStatus!==200||proof.requiresOTP||!proof.roleMatches||!proof.accessTokenPresent)throw Error(proof.requiresOTP?'OTP_REQUIRED_NOT_AUTHORIZED':'LOGIN_REJECTED_OR_INCOMPLETE');
     authenticated=true;token=body.data.accessToken;
     await page.waitForURL(url=>url.pathname.startsWith('/'+config.role+'/dashboard'),{timeout:30000});

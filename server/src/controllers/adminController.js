@@ -18,7 +18,6 @@ const { parseDeviceModel } = require('../utils/deviceParser');
 const crypto = require('crypto');
 
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5001';
-const ML_TIMEOUT = 90000; // 90 seconds to accommodate Render free-tier cold starts
 
 // ─── EXISTING: getSystemStats ─────────────────────────────────────────────────
 exports.getSystemStats = async (req, res) => {
@@ -514,39 +513,10 @@ exports.triggerMLDetection = async (req, res) => {
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
-  try {
-    let resp;
-    try {
-      resp = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
-        timeout: ML_TIMEOUT,
-        headers: { 'x-internal-key': generateToken() }
-      });
-    } catch (primaryErr) {
-      if (primaryErr.code === 'ECONNABORTED' || primaryErr.code === 'ECONNREFUSED' || primaryErr.response?.status >= 500) {
-        await new Promise(r => setTimeout(r, 2000));
-        resp = await axios.get(`${ML_ENGINE_URL}/model-status`, { 
-          timeout: ML_TIMEOUT,
-          headers: { 'x-internal-key': generateToken() }
-        });
-      } else {
-        throw primaryErr;
-      }
-    }
-    const data = resp.data;
-    return res.json({
-      status: data.status || 'active',
-      lastTrained: data.lastTrained || data.last_trained || null,
-      dataPoints: data.dataPoints || data.data_points || 0,
-      nextRun: data.nextScheduledRun || 'Every 6 hours',
-      totalAlerts: data.totalAlertsTriggered || 0,
-      modelType: data.modelType || (data.models?.diseasePrediction) || 'TF-IDF + Cosine Similarity'
-    });
-  } catch (err) {
-    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNABORTED') {
-      return res.status(503).json({ status: 'offline', message: 'ML engine is spinning up, please retry shortly' });
-    }
-    return res.status(503).json({ status: 'offline', error: err.message });
-  }
+  const { readAdminMlStatus } = require('../services/adminMlStatusService');
+  // Local authentication/RBAC remains enforced by adminRoutes. A failed upstream
+  // is explicitly unavailable, not a browser resource error or fabricated telemetry.
+  return res.json(await readAdminMlStatus({ get: axios.get, token: generateToken, baseUrl: ML_ENGINE_URL }));
 };
 
 // ─── NEW: BAN USER ────────────────────────────────────────────────────────────

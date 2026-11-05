@@ -50,39 +50,30 @@ const OutbreakMonitor = () => {
   const [mlResult,    setMlResult]    = useState(null);
   const [loading,     setLoading]     = useState(true);
   const [detecting,   setDetecting]   = useState(false);
-  const [countdown,   setCountdown]   = useState('');
+  const [alertsLoaded, setAlertsLoaded] = useState(false);
   const [error,       setError]       = useState(null);
   
   // New workflow state
   const [approveModal, setApproveModal] = useState({ isOpen: false, alertId: null, scope: 'none' });
 
   useEffect(() => {
-    const tick = () => {
-      const now  = new Date();
-      const next = new Date(now);
-      const slot = Math.ceil((now.getHours() + 1) / 6) * 6;
-      next.setHours(slot, 0, 0, 0);
-      if (next <= now) next.setHours(next.getHours() + 6);
-      const d   = next - now;
-      const pad = (n) => String(Math.floor(n)).padStart(2, '0');
-      setCountdown(`${pad(d / 3600000)}h ${pad((d % 3600000) / 60000)}m ${pad((d % 60000) / 1000)}s`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
+    let mounted = true;
     (async () => {
-      try {
-        const [s, a] = await Promise.allSettled([
-          api.get('/admin/ml-status').then(r => r.data.data),
-          api.get('/alerts/active'),
-        ]);
-        if (s.status === 'fulfilled') setModelStatus(s.value);
-        if (a.status === 'fulfilled') setAlerts(a.value.data.data || []);
-      } finally { setLoading(false); }
+      const [s, a] = await Promise.allSettled([
+        api.get('/admin/ml-status'),
+        api.get('/alerts/active'),
+      ]);
+      if (!mounted) return;
+      const status = s.status === 'fulfilled' ? s.value?.data : null;
+      setModelStatus(status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
+        && status.dataPointUnit === 'reference disease profiles' ? status : null);
+      if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
+        setAlerts(a.value.data.data);
+        setAlertsLoaded(true);
+      }
+      setLoading(false);
     })();
+    return () => { mounted = false; };
   }, []);
 
   const handleRunDetection = async () => {
@@ -198,7 +189,7 @@ const OutbreakMonitor = () => {
           <Radio className="w-4 h-4 text-red-400 animate-pulse" />
           <div className="text-left">
             <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Next Automated Scan</span>
-            <span className="text-sm font-mono font-black text-red-400 tracking-wider">{countdown}</span>
+            <span className="text-sm font-mono font-black text-red-400 tracking-wider">{t("adminStatus.notAvailable", "Not available")}</span>
           </div>
         </div>
       </div>
@@ -206,20 +197,20 @@ const OutbreakMonitor = () => {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatTile
-          icon={Activity} label="ML Outbreak Node" value="SURVEILLANCE"
+          icon={Activity} label={t("adminStatus.referenceService", "ML reference service")} value={modelStatus ? t("adminStatus.available", "Available") : t("adminStatus.notAvailable", "Not available")}
           accentText="text-emerald-400" accentBg="bg-emerald-500/10"
           accentBorder="border-emerald-500/20" glowBg="bg-emerald-500/20"
           delay={0} pulse
         />
         <StatTile
-          icon={TrendingUp} label="Clinical Telemetry Data Points"
-          value={(modelStatus?.dataPoints || 15420).toLocaleString()}
+          icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Reference disease profiles")}
+          value={modelStatus ? modelStatus.dataPoints.toLocaleString() : t("adminStatus.notAvailable", "Not available")}
           accentText="text-blue-400" accentBg="bg-blue-500/10"
           accentBorder="border-blue-500/20" glowBg="bg-blue-500/20"
           delay={0.08}
         />
         <StatTile
-          icon={ShieldAlert} label={t("outbreak.activeAlerts", "Active Outbreak Alerts")} value={activeCount}
+          icon={ShieldAlert} label={t("outbreak.activeAlerts", "Active Outbreak Alerts")} value={alertsLoaded ? activeCount : t("adminStatus.notAvailable", "Not available")}
           accentText={activeCount > 0 ? 'text-red-400' : 'text-emerald-400'}
           accentBg={activeCount > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}
           accentBorder={activeCount > 0 ? 'border-red-500/20' : 'border-emerald-500/20'}
@@ -227,6 +218,10 @@ const OutbreakMonitor = () => {
           delay={0.16} pulse={activeCount > 0}
         />
       </div>
+
+      <p role="status" className="text-sm text-slate-400">
+        {t("adminStatus.caution", "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count.")}
+      </p>
 
       {/* On-Demand Trigger Frame */}
       <div className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
@@ -372,7 +367,7 @@ const OutbreakMonitor = () => {
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-red-400 animate-pulse" /> Outbreak Surveillance Logs
           </h3>
-          <span className="text-[10px] font-mono font-bold text-red-400">{alerts.length} alerts</span>
+          <span className="text-[10px] font-mono font-bold text-red-400">{alertsLoaded ? alerts.length : t("adminStatus.notAvailable", "Not available")} alerts</span>
         </div>
 
         {alerts.length > 0 ? (
@@ -479,7 +474,7 @@ const OutbreakMonitor = () => {
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">
             <Activity className="w-12 h-12 mx-auto mb-3 opacity-30 animate-pulse" />
-            <p className="text-sm font-semibold">Surveillance logs clear. No threat events registered.</p>
+            <p className="text-sm font-semibold">{alertsLoaded ? t("adminStatus.noAlerts", "No alerts returned.") : t("adminStatus.notAvailable", "Not available")}</p>
           </div>
         )}
       </div>

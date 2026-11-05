@@ -1,6 +1,7 @@
 'use strict';
 // Browser test boundary, not application authorization. Never logs request data.
 const { createSessionPolicy, FRONTEND, API } = require('./authenticatedSessionPolicy.cjs');
+const {transportUrl,permittedFrames}=require('./notificationTransportPolicy.cjs');
 const STATIC_PATHS = new Set([
   '/api/auth/login', '/api/pharmacy/login', '/api/auth/refresh', '/api/auth/logout',
   '/api/auth/heartbeat', '/api/auth/preferences/language', '/api/auth/me',
@@ -17,24 +18,48 @@ function requestPattern(input, method) {
   if (/^\/api\/notifications\/[^/]+\/(?:read|seen)$/.test(u.pathname)) return { method: verb, pathPattern: '/api/notifications/:id/read-or-seen' };
   return { method: verb, pathPattern: origin === API ? '/api/:redacted' : '/:page-or-asset' };
 }
-function createBrowserBoundary(role) {
+function createBrowserBoundary(role, {notificationTransportApproved=false}={}) {
   const policy = createSessionPolicy({ role, sessionMutationsApproved: true });
   const blocked = new Map();
+  const sockets = new Set();
+  let socketToken;
+  const authenticated=()=>policy.summary().state==='AUTHENTICATED'&&typeof socketToken==='string';
   const recordBlocked = (url, method) => {
     const row = requestPattern(url, method), key = JSON.stringify(row);
     blocked.set(key, (blocked.get(key) || 0) + 1);
   };
   async function attach(context) {
-    // WebSocket frames could mutate state without an HTTP POST. Deny the entire
-    // unapproved transport rather than pretend the clinical/session guard covers it.
     if (typeof context.routeWebSocket !== 'function') throw Error('WEBSOCKET_FENCE_UNAVAILABLE');
-    await context.routeWebSocket('**/*', ws => { recordBlocked(ws.url(), 'WS'); ws.close(); });
+    await context.routeWebSocket('**/*', ws => {
+      if(!notificationTransportApproved||!authenticated()||!transportUrl(ws.url(),'websocket','GET')){recordBlocked(ws.url(),'WS');ws.close();return;}
+      const server=ws.connectToServer();
+      let closed=false;
+      const closeBoth=()=>{if(closed)return;closed=true;sockets.delete(closeBoth);ws.close();server.close();};
+      sockets.add(closeBoth);
+      // Register both directions explicitly: do not auto-forward arbitrary events.
+      ws.onMessage(data=>{
+        if(closed)return;
+        if(!permittedFrames(data,socketToken,{closed:!authenticated(),websocket:true})){recordBlocked(ws.url(),'WS');closeBoth();return;}
+        server.send(data);
+      });
+      server.onMessage(data=>{if(!authenticated()){closeBoth();return;}if(!closed)ws.send(data);});
+      ws.onClose(closeBoth);server.onClose(closeBoth);
+    });
     await context.route('**/*', async route => {
       const request = route.request(), url = request.url(), method = request.method();
       try {
         const u = new URL(url);
-        if (u.pathname.startsWith('/socket.io')) throw Error('UNAPPROVED_SOCKET_TRANSPORT');
-        policy.assertRequest(url, { method });
+        if (u.pathname.startsWith('/socket.io')) {
+          if(!notificationTransportApproved||!transportUrl(url,'polling',method))throw Error('UNAPPROVED_SOCKET_TRANSPORT');
+          if(method==='GET'&&!authenticated())throw Error('UNAPPROVED_SOCKET_TRANSPORT');
+          if(method==='POST'){
+            const type=request.headers?.()['content-type']||'';
+            if(!/^text\/plain(?:;|$)/i.test(type)||!socketToken||!permittedFrames(request.postData(),socketToken,{closed:!authenticated()}))throw Error('UNAPPROVED_SOCKET_TRANSPORT');
+          }
+        } else {
+          policy.assertRequest(url, { method });
+          if(policy.summary().state==='CLOSED')for(const close of [...sockets])close();
+        }
       } catch (_) {
         recordBlocked(url, method);
         await route.abort('blockedbyclient'); return;
@@ -46,7 +71,10 @@ function createBrowserBoundary(role) {
       context.request[key] = () => { throw Error('BROWSER_API_BYPASS_REJECTED'); };
     }
   }
-  return { attach, observeLoginResponse: policy.observeLoginResponse,
+  return { attach, observeLoginResponse(status,proof,token){
+      policy.observeLoginResponse(status,proof);
+      socketToken=policy.summary().state==='AUTHENTICATED'&&typeof token==='string'&&token.length>20?token:undefined;
+    },
     summary: () => ({ ...policy.summary(), blockedRequests: [...blocked].map(([k,count]) => ({ ...JSON.parse(k), count })) }) };
 }
 function loginProof(role, status, body) {

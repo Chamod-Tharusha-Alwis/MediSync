@@ -1,5 +1,6 @@
 // English UI Dictionary (en)
 export const en = {
+  adminStatus: {"notAvailable": "Not available", "available": "Available", "referenceService": "ML reference service", "referenceProfiles": "Reference disease profiles", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count."},
   activity: {
     "districtDailyUnavailable": "Daily counts are not published for district selections.",
     "selectedSuppressed": "The selected district’s total and daily counts are not disclosed below 5.",

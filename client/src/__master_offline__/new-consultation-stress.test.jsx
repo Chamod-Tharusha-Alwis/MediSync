@@ -235,7 +235,7 @@ describe('NewConsultation ICD & Lab Tests Stress Suite (m2_challenger_2)', () =>
     });
   });
 
-  test('7. Layout shift invariant: ICD and Lab dropdowns use absolute positioning with 0px displacement', async () => {
+  test('7. Dropdown CSS placement contract (jsdom does not establish visual overlap or displacement)', async () => {
     await navigateToStep4();
     const icdInput = getIcdInput();
 
@@ -266,4 +266,29 @@ describe('NewConsultation ICD & Lab Tests Stress Suite (m2_challenger_2)', () =>
     expect(labList.className).toContain('absolute');
     expect(labList.className).toContain('z-50');
   });
+  test.each([
+    [{top: 600, bottom: 640}, 'bottom-full'],
+    [{top: 20, bottom: 60}, 'top-full'],
+  ])('lab dropdown chooses viewport placement and keyboard selection with inert geometry %#', async (rect, placement) => {
+    await navigateToStep5();
+    const geometry = jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect);
+    const height = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    Object.defineProperty(window, 'innerHeight', {configurable: true, value: 768});
+    try {
+      const input = getLabInput();
+      fireEvent.change(input, {target: {value: 'urine'}});
+      const list = await screen.findByRole('listbox');
+      await waitFor(() => expect(list).toHaveClass(placement));
+      await screen.findAllByRole('option');
+      fireEvent.keyDown(getLabInput(), {key: 'ArrowDown'});
+      const selected = await screen.findByRole('option', {selected: true});
+      const label = selected.textContent;
+      fireEvent.keyDown(getLabInput(), {key: 'Enter'});
+      await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+      expect(screen.getByText(label)).toBeInTheDocument();
+    } finally {
+      geometry.mockRestore();Object.defineProperty(window, 'innerHeight', height);
+    }
+  });
+
 });
