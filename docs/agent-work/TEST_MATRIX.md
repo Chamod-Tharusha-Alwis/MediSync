@@ -4,7 +4,7 @@ Source inventory, not runtime acceptance. Every row starts NOT VERIFIED for the 
 
 R = read-only intent; W-low = self-contained change; W-clin = clinical; W-sec = security/consent; W-adm = admin management; X = destructive/maintenance, never live. Classification is conservative static triage, not authorization. Dynamic targets, unresolved callbacks and controller side effects require review before Phase 3. A semantic read using POST remains blocked by the existing fence. Opening a modal may request OTP; never do so from an R row without reviewing its effect. QA-only routes and unmounted code are not production test targets. No endpoint is invoked by this generator.
 
-Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerprint `c2a05f3c14273d5cd876b07ee23ef8ce97c481c1efc9aa0c440d5e5286a3a22e`.
+Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T130601Z.json`; fingerprint `1615504aa922c3cfd07383f567ca257608bbd6a34bca6f317cd18c9f1b100fc0`.
 
 | Class | Rows |
 | --- | ---: |
@@ -17,38 +17,38 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 
 | ID | Kind | Role/scope | Method/path or component | Function | Class | Source | Live | Review limit |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| UI_ACTION-7d84b7fc66d3 | UI_ACTION | shared | :component | button.onClick → inline | R | client/src/App.js:95 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| PAGE-a75d13af0889 | PAGE | public | / | page/redirect | R | client/src/App.js:139 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d9790d97bf8d | PAGE | public | /select-role | page/redirect | R | client/src/App.js:140 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c8101fe40187 | PAGE | public | /register | page/redirect | R | client/src/App.js:141 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c17f0a03c32a | PAGE | patient | /patient/register | page/redirect | R | client/src/App.js:142 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-1b0ebf4b9dc5 | PAGE | hospital | /hospital/register | page/redirect | R | client/src/App.js:143 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-9d33cd45795b | PAGE | pharmacy | /pharmacy/register | page/redirect | R | client/src/App.js:144 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-826341baca61 | PAGE | public | /forgot-password | page/redirect | R | client/src/App.js:145 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-e99a910084b2 | PAGE | public | /reset-password | page/redirect | R | client/src/App.js:146 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-e4d412700eae | PAGE | public | /doctors | page/redirect | R | client/src/App.js:149 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-f8964e67e078 | PAGE | public | /hospitals | page/redirect | R | client/src/App.js:150 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-4f766059dc89 | PAGE | public | /pharmacies | page/redirect | R | client/src/App.js:151 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c731c36776d8 | PAGE | public | /public-health | page/redirect | R | client/src/App.js:152 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-bd16bf044271 | PAGE | doctor | /doctor/select-role | page/redirect | R | client/src/App.js:155 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-7c2ce46e7a9c | PAGE | doctor | /doctor/login | page/redirect | R | client/src/App.js:156 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-ad5ddc092147 | PAGE | doctor | /doctor/register | page/redirect | R | client/src/App.js:157 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-0c33129d4a8e | PAGE | doctor | /doctor/change-org-password | page/redirect | R | client/src/App.js:158 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-a55474dc0e7e | PAGE | hospital | /hospital/login | page/redirect | R | client/src/App.js:159 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-b7aacb737e64 | PAGE | patient | /patient/login | page/redirect | R | client/src/App.js:160 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-5ab6819d519e | PAGE | pharmacy | /pharmacy/login | page/redirect | R | client/src/App.js:161 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-05876d3d5874 | PAGE | admin | /admin/login | page/redirect | R | client/src/App.js:162 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-9ba76cf1c8e7 | PAGE | doctor | /doctor | page/redirect | R | client/src/App.js:165 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-1a89d421c50d | PAGE | doctor | /doctor/dashboard | page/redirect | R | client/src/App.js:170 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-c62af7bd389b | PAGE | doctor | /doctor/consultation/new | page/redirect | R | client/src/App.js:171 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-df652b41435a | PAGE | doctor | /doctor/patients/:nic | page/redirect | R | client/src/App.js:172 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-ac3827fef525 | PAGE | doctor | /doctor/profile | page/redirect | R | client/src/App.js:173 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-dd4d9434ca88 | PAGE | doctor | /doctor | index redirect | R | client/src/App.js:175 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-7251e0108a8c | PAGE | hospital | /hospital/* | page/redirect | R | client/src/App.js:179 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-a4ebb3b91894 | PAGE | patient | /patient/* | page/redirect | R | client/src/App.js:183 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-d9af31024b17 | PAGE | pharmacy | /pharmacy/* | page/redirect | R | client/src/App.js:187 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-43900a0926a7 | PAGE | admin | /admin/* | page/redirect | R | client/src/App.js:191 | NOT VERIFIED | Route access only; form actions are separate rows |
-| PAGE-cd57c1cbe052 | PAGE | public | /* | page/redirect | R | client/src/App.js:195 | NOT VERIFIED | Route access only; form actions are separate rows |
+| UI_ACTION-7d7e02c21368 | UI_ACTION | shared | :component | button.onClick → inline | R | client/src/App.js:99 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| PAGE-5a0d5b58ec11 | PAGE | public | / | page/redirect | R | client/src/App.js:143 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-8d00b976bbb9 | PAGE | public | /select-role | page/redirect | R | client/src/App.js:144 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-8e546b473e60 | PAGE | public | /register | page/redirect | R | client/src/App.js:145 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-f362619b92b0 | PAGE | patient | /patient/register | page/redirect | R | client/src/App.js:146 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-bc292d1100b4 | PAGE | hospital | /hospital/register | page/redirect | R | client/src/App.js:147 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-514eb43fb49b | PAGE | pharmacy | /pharmacy/register | page/redirect | R | client/src/App.js:148 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-9e23b0d2dfc9 | PAGE | public | /forgot-password | page/redirect | R | client/src/App.js:149 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-dd8ff70e5896 | PAGE | public | /reset-password | page/redirect | R | client/src/App.js:150 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-7a4a4fcc0186 | PAGE | public | /doctors | page/redirect | R | client/src/App.js:153 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-6a309e34a3c4 | PAGE | public | /hospitals | page/redirect | R | client/src/App.js:154 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-862849ca1b5a | PAGE | public | /pharmacies | page/redirect | R | client/src/App.js:155 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c2ac8aaf8dd7 | PAGE | public | /public-health | page/redirect | R | client/src/App.js:156 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-b9bd694fddd6 | PAGE | doctor | /doctor/select-role | page/redirect | R | client/src/App.js:159 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-a441cedc65ea | PAGE | doctor | /doctor/login | page/redirect | R | client/src/App.js:160 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-8585e6672072 | PAGE | doctor | /doctor/register | page/redirect | R | client/src/App.js:161 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-47078e26af0a | PAGE | doctor | /doctor/change-org-password | page/redirect | R | client/src/App.js:162 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c7f17063c5e6 | PAGE | hospital | /hospital/login | page/redirect | R | client/src/App.js:163 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-47b7e3ae908d | PAGE | patient | /patient/login | page/redirect | R | client/src/App.js:164 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-bcfe2d91b040 | PAGE | pharmacy | /pharmacy/login | page/redirect | R | client/src/App.js:165 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-ae7e5c36ce8a | PAGE | admin | /admin/login | page/redirect | R | client/src/App.js:166 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-4abf751c86bb | PAGE | doctor | /doctor | page/redirect | R | client/src/App.js:169 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-d0e8ab58d4c4 | PAGE | doctor | /doctor/dashboard | page/redirect | R | client/src/App.js:174 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-0963bb3109d6 | PAGE | doctor | /doctor/consultation/new | page/redirect | R | client/src/App.js:175 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-88784f52f440 | PAGE | doctor | /doctor/patients/:nic | page/redirect | R | client/src/App.js:176 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-16aad7f85207 | PAGE | doctor | /doctor/profile | page/redirect | R | client/src/App.js:177 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-c8164cb7a882 | PAGE | doctor | /doctor | index redirect | R | client/src/App.js:179 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-f5eec1e356f9 | PAGE | hospital | /hospital/* | page/redirect | R | client/src/App.js:183 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-e899adc889da | PAGE | patient | /patient/* | page/redirect | R | client/src/App.js:187 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-9ba1e1bf2e01 | PAGE | pharmacy | /pharmacy/* | page/redirect | R | client/src/App.js:191 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-21960d026a2d | PAGE | admin | /admin/* | page/redirect | R | client/src/App.js:195 | NOT VERIFIED | Route access only; form actions are separate rows |
+| PAGE-bc10781d38a8 | PAGE | public | /* | page/redirect | R | client/src/App.js:199 | NOT VERIFIED | Route access only; form actions are separate rows |
 | CLIENT_REQUEST-8d9208be6d78 | CLIENT_REQUEST | shared | POST :dynamic | performTokenRefresh | W-sec | client/src/api/axiosInstance.js:118 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | CLIENT_REQUEST-6f40a6f8fbc6 | CLIENT_REQUEST | shared | GET :dynamic | request | R | client/src/api/usePublicDirectory.js:16 | NOT VERIFIED | DYNAMIC_TARGET_REVIEW |
 | UI_ACTION-783ee03094f4 | UI_ACTION | shared | :component | button.onClick → handleDismiss | R | client/src/components/BanNotice.jsx:97 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
@@ -231,11 +231,11 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | PAGE-b844e5096c8f | PAGE | admin | /admin/dashboard/admins | page/redirect | R | client/src/pages/admin/Dashboard.jsx:760 | NOT VERIFIED | Route access only; form actions are separate rows |
 | PAGE-22238d2993c9 | PAGE | admin | /admin/dashboard/settings | page/redirect | R | client/src/pages/admin/Dashboard.jsx:761 | NOT VERIFIED | Route access only; form actions are separate rows |
 | PAGE-d8b936d928ba | PAGE | admin | /admin/* | page/redirect | R | client/src/pages/admin/Dashboard.jsx:762 | NOT VERIFIED | Route access only; form actions are separate rows |
-| UI_ACTION-1267d7926749 | UI_ACTION | admin | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/admin/Login.jsx:125 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
-| UI_ACTION-ddeeac2f979a | UI_ACTION | admin | :component | GlassInput.onChange → inline | R | client/src/pages/admin/Login.jsx:145 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-286862df8df1 | UI_ACTION | admin | :component | button.onClick → inline | R | client/src/pages/admin/Login.jsx:153 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-4b60390555c5 | UI_ACTION | admin | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/admin/Login.jsx:159 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-31131e65519f | UI_ACTION | admin | :component | button.onClick → inline | R | client/src/pages/admin/Login.jsx:180 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-eeb69b2b90ab | UI_ACTION | admin | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/admin/Login.jsx:131 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
+| UI_ACTION-960c9139f5c4 | UI_ACTION | admin | :component | GlassInput.onChange → inline | R | client/src/pages/admin/Login.jsx:151 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-6073da1e8e46 | UI_ACTION | admin | :component | button.onClick → inline | R | client/src/pages/admin/Login.jsx:159 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-067df5ff3962 | UI_ACTION | admin | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/admin/Login.jsx:165 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-b5964f68ec3b | UI_ACTION | admin | :component | button.onClick → inline | R | client/src/pages/admin/Login.jsx:186 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | CLIENT_REQUEST-8c9140ae821c | CLIENT_REQUEST | admin | GET /admin/users | fetchAdmins | R | client/src/pages/admin/ManageAdmins.jsx:22 | NOT VERIFIED | Server side effects still require review |
 | CLIENT_REQUEST-6468cec85712 | CLIENT_REQUEST | admin | POST /admin/admins | handleCreate | W-adm | client/src/pages/admin/ManageAdmins.jsx:40 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
 | UI_ACTION-40bcc54d9af1 | UI_ACTION | admin | :component | button.onClick → inline | R | client/src/pages/admin/ManageAdmins.jsx:60 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
@@ -316,12 +316,12 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | UI_ACTION-b665f226ee62 | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Dashboard.jsx:175 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-d7426b728a74 | UI_ACTION | doctor | :component | inline.onClick → inline | R | client/src/pages/doctor/DoctorRoleSelection.jsx:76 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-073cb305bb5f | UI_ACTION | doctor | :component | inline.onClick → inline | R | client/src/pages/doctor/DoctorRoleSelection.jsx:111 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-0142180abeef | UI_ACTION | doctor | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/doctor/Login.jsx:166 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
-| UI_ACTION-3a32e14a4e1a | UI_ACTION | doctor | :component | GlassInput.onChange → inline | R | client/src/pages/doctor/Login.jsx:187 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-b74c08b8a0d4 | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:195 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-0839a1049120 | UI_ACTION | doctor | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/doctor/Login.jsx:201 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-913d495c37f8 | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:209 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-877070493b6e | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:219 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-73033ea7f097 | UI_ACTION | doctor | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/doctor/Login.jsx:172 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
+| UI_ACTION-44ed39e83b93 | UI_ACTION | doctor | :component | GlassInput.onChange → inline | R | client/src/pages/doctor/Login.jsx:193 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-2461e0840dd1 | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:201 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-c00d912dd549 | UI_ACTION | doctor | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/doctor/Login.jsx:207 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-3175546107be | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:215 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-04d5d0a51a25 | UI_ACTION | doctor | :component | button.onClick → inline | R | client/src/pages/doctor/Login.jsx:225 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | CLIENT_REQUEST-51e0a4d0a373 | CLIENT_REQUEST | doctor | POST /drugs/interactions | runInteractionCheck | W-low | client/src/pages/doctor/NewConsultation.jsx:276 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
 | CLIENT_REQUEST-e8646969287a | CLIENT_REQUEST | doctor | GET /drugs/icd/search | request | R | client/src/pages/doctor/NewConsultation.jsx:362 | NOT VERIFIED | Server side effects still require review |
 | CLIENT_REQUEST-1997d44b9d0d | CLIENT_REQUEST | doctor | POST /doctor/predict-disease | getDiagnosisSuggestions | W-low | client/src/pages/doctor/NewConsultation.jsx:418 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
@@ -461,11 +461,11 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | UI_ACTION-129bc7fe7746 | UI_ACTION | hospital | :component | button.onClick → inline | R | client/src/pages/hospital/LabManagement.jsx:767 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-37788aebc1a3 | UI_ACTION | hospital | :component | div.onClick → inline | R | client/src/pages/hospital/LabManagement.jsx:806 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-3ee81f7130bf | UI_ACTION | hospital | :component | input.onChange → inline | W-clin | client/src/pages/hospital/LabManagement.jsx:825 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-2e8d68f21a7d | UI_ACTION | hospital | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/hospital/Login.jsx:125 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
-| UI_ACTION-d8a26b963636 | UI_ACTION | hospital | :component | GlassInput.onChange → inline | R | client/src/pages/hospital/Login.jsx:144 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-dec3bf495dcc | UI_ACTION | hospital | :component | button.onClick → inline | R | client/src/pages/hospital/Login.jsx:152 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-e0ced1c131c7 | UI_ACTION | hospital | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/hospital/Login.jsx:158 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-b971c9310f69 | UI_ACTION | hospital | :component | button.onClick → inline | R | client/src/pages/hospital/Login.jsx:166 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-2ac2eaf9d642 | UI_ACTION | hospital | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/hospital/Login.jsx:131 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
+| UI_ACTION-12f650a7d897 | UI_ACTION | hospital | :component | GlassInput.onChange → inline | R | client/src/pages/hospital/Login.jsx:150 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-a5217ab7dc27 | UI_ACTION | hospital | :component | button.onClick → inline | R | client/src/pages/hospital/Login.jsx:158 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-c0d81bfc4b4d | UI_ACTION | hospital | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/hospital/Login.jsx:164 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-5acf25fd76a2 | UI_ACTION | hospital | :component | button.onClick → inline | R | client/src/pages/hospital/Login.jsx:172 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | CLIENT_REQUEST-22747a0c1d45 | CLIENT_REQUEST | hospital | POST /hospital/register | handleSubmit | W-low | client/src/pages/hospital/Register.jsx:49 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
 | UI_ACTION-f07e52faf960 | UI_ACTION | hospital | :component | input.onChange → inline | R | client/src/pages/hospital/Register.jsx:124 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
 | UI_ACTION-60463fdd4861 | UI_ACTION | hospital | :component | input.onChange → inline | R | client/src/pages/hospital/Register.jsx:134 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
@@ -503,11 +503,11 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | UI_ACTION-17ba79c4460a | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/History.jsx:721 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-eee514caced4 | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/History.jsx:743 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-0eb14d4f8506 | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/History.jsx:793 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-ede9b4172129 | UI_ACTION | patient | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/patient/Login.jsx:129 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
-| UI_ACTION-30a521d789a0 | UI_ACTION | patient | :component | GlassInput.onChange → inline | R | client/src/pages/patient/Login.jsx:148 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-0afc78488448 | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/Login.jsx:156 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-b01b641783c7 | UI_ACTION | patient | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/patient/Login.jsx:162 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-4865d0ca5113 | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/Login.jsx:170 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-e093efc4c04b | UI_ACTION | patient | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/patient/Login.jsx:135 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
+| UI_ACTION-b553bad1d4af | UI_ACTION | patient | :component | GlassInput.onChange → inline | R | client/src/pages/patient/Login.jsx:154 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-98d5847b01d8 | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/Login.jsx:162 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-3b1f0c5d0e82 | UI_ACTION | patient | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/patient/Login.jsx:168 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-7e26c3bcfe3e | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/Login.jsx:176 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-6745c82af30b | UI_ACTION | patient | :component | button.onClick → inline | R | client/src/pages/patient/Profile.jsx:63 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-b203703dc55b | UI_ACTION | patient | :component | input.onChange → inline | R | client/src/pages/patient/Profile.jsx:78 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | UI_ACTION-c6e3a99e501b | UI_ACTION | patient | :component | input.onKeyDown → inline | R | client/src/pages/patient/Profile.jsx:79 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
@@ -611,11 +611,11 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | PAGE-8cb9560df5b9 | PAGE | pharmacy | /pharmacy/dashboard/staff | page/redirect | R | client/src/pages/pharmacy/Dashboard.jsx:1498 | NOT VERIFIED | Route access only; form actions are separate rows |
 | PAGE-ae3658607561 | PAGE | pharmacy | /pharmacy/dashboard/settings | page/redirect | R | client/src/pages/pharmacy/Dashboard.jsx:1501 | NOT VERIFIED | Route access only; form actions are separate rows |
 | PAGE-2914d81ba93e | PAGE | pharmacy | /pharmacy/* | page/redirect | R | client/src/pages/pharmacy/Dashboard.jsx:1502 | NOT VERIFIED | Route access only; form actions are separate rows |
-| UI_ACTION-2c62e84c2a38 | UI_ACTION | pharmacy | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/pharmacy/Login.jsx:122 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
-| UI_ACTION-50afe395fdee | UI_ACTION | pharmacy | :component | GlassInput.onChange → inline | R | client/src/pages/pharmacy/Login.jsx:141 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-c1b486f2dd8b | UI_ACTION | pharmacy | :component | button.onClick → inline | R | client/src/pages/pharmacy/Login.jsx:149 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-85897da3a8f0 | UI_ACTION | pharmacy | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/pharmacy/Login.jsx:155 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
-| UI_ACTION-178767874b57 | UI_ACTION | pharmacy | :component | button.onClick → inline | R | client/src/pages/pharmacy/Login.jsx:163 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-b8ee4aaaa09c | UI_ACTION | pharmacy | :component | LoginShell.onSubmit → inline | W-sec | client/src/pages/pharmacy/Login.jsx:128 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
+| UI_ACTION-99bc29649360 | UI_ACTION | pharmacy | :component | GlassInput.onChange → inline | R | client/src/pages/pharmacy/Login.jsx:147 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-80b2a35a755c | UI_ACTION | pharmacy | :component | button.onClick → inline | R | client/src/pages/pharmacy/Login.jsx:155 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-3982d72f669f | UI_ACTION | pharmacy | :component | PasswordInput.onChange → inline | W-sec | client/src/pages/pharmacy/Login.jsx:161 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
+| UI_ACTION-bfcd9e698dcf | UI_ACTION | pharmacy | :component | button.onClick → inline | R | client/src/pages/pharmacy/Login.jsx:169 | NOT VERIFIED | Static handler graph; server effects and dynamic props require review |
 | CLIENT_REQUEST-cb7dbf5f3084 | CLIENT_REQUEST | pharmacy | POST /pharmacy/register | handleSubmit | W-low | client/src/pages/pharmacy/Register.jsx:49 | NOT VERIFIED | Explicit method/endpoint approval required; no fence expansion |
 | UI_ACTION-da6c7805fbc6 | UI_ACTION | pharmacy | :component | input.onChange → inline | R | client/src/pages/pharmacy/Register.jsx:124 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
 | UI_ACTION-f33f98577fd8 | UI_ACTION | pharmacy | :component | input.onChange → inline | R | client/src/pages/pharmacy/Register.jsx:134 | NOT VERIFIED | CALLBACK_REVIEW_REQUIRED |
@@ -864,4 +864,4 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json`; fingerpri
 | API-446f3440c413 | API | shared | POST /api/users/upload-profile-pic | userController.uploadProfilePic | W-low | server/src/routes/userRoutes.js:7 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 
-Historical source inventories preserved: docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json and docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json. This refresh updates dictionary source bindings; row counts and NOT VERIFIED limits are unchanged.
+Historical snapshots retained under docs/temp/CODEX_TEST_MATRIX_*.json. Current bindings include shared shell recovery and five-role form-lock changes; no new live acceptance inferred.

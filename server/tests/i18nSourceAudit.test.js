@@ -50,7 +50,7 @@ test('parity output contains key metadata and no dictionary values',()=>{
 test('actual current dictionaries have parity and every static used key is registered',()=>{
   const result=audit(path.resolve(__dirname,'../..'));expect(result.keyParityPassed).toBe(true);
   expect(result.missingUsageKeys).toEqual([]);
-  expect(result.source).not.toHaveProperty('client/src/UniversityApp.jsx');
-  expect(result.candidates.some(r=>r.file==='client/src/App.js'&&r.kind==='JSX_TEXT')).toBe(true);
+  expect(Object.hasOwn(result.source,'client/src/UniversityApp.jsx')).toBe(false);
+  expect(Object.hasOwn(result.source,'client/src/App.js')).toBe(true);
   expect(summary(result).translationReadiness).toBe('NOT_VERIFIED');
 });

@@ -1,4 +1,5 @@
 import { useTranslation } from '../../i18n/LanguageContext';
+import useSubmissionLock from '../../hooks/useSubmissionLock';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldAlert, Loader2 } from 'lucide-react';
@@ -13,6 +14,7 @@ const AdminLogin = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const submission = useSubmissionLock();
   const [loading, setLoading] = useState(false);
   const [resendingOtp, setResendingOtp] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +41,7 @@ const AdminLogin = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!submission.acquire()) return;
     setLoading(true);
     setError(null);
 
@@ -68,12 +71,13 @@ const AdminLogin = () => {
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
+      submission.release();
       setLoading(false);
     }
   };
 
   const handleVerifyOtp = async (otp) => {
-    if (!pendingAuth?.userId) return;
+    if (!pendingAuth?.userId || !submission.acquire()) return;
     setLoading(true);
     setError(null);
 
@@ -88,12 +92,13 @@ const AdminLogin = () => {
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
+      submission.release();
       setLoading(false);
     }
   };
 
   const handleResendOtp = async () => {
-    if (!pendingAuth) return false;
+    if (!pendingAuth || !submission.acquire()) return false;
     setResendingOtp(true);
     setError(null);
 
@@ -111,6 +116,7 @@ const AdminLogin = () => {
       toast.error(errorMsg);
       return false;
     } finally {
+      submission.release();
       setResendingOtp(false);
     }
   };

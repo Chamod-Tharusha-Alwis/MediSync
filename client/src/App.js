@@ -52,14 +52,17 @@ const PharmacyDashboard = React.lazy(() => import('./pages/pharmacy/Dashboard'))
 const AdminDashboard    = React.lazy(() => import('./pages/admin/Dashboard'));
 
 // ─── Suspense fallback (minimal spinner) ────────────────────────────────────
-const PageLoader = () => (
+const PageLoader = () => {
+  const { t } = useTranslation();
+  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1120]">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
-      <p className="text-slate-400 text-sm font-medium tracking-wide">Loading…</p>
+    <div role="status" aria-live="polite" className="flex flex-col items-center gap-4">
+      <div aria-hidden="true" className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-slate-400 text-sm font-medium tracking-wide">{t('common.loading', 'Loading…')}</p>
     </div>
   </div>
-);
+  );
+};
 
 // ─── Route Error Boundary (prevents white-screen on render error) ───────────
 class RenderErrorBoundary extends React.Component {
@@ -74,6 +77,7 @@ class RenderErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary] Runtime render error captured (sanitized operational notice)');
+    this.recoveryHeading?.focus();
   }
 
   render() {
@@ -85,7 +89,7 @@ class RenderErrorBoundary extends React.Component {
               !
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white">{this.props.labels.title}</h2>
+              <h2 ref={node => { this.recoveryHeading = node; }} tabIndex={-1} className="text-xl font-bold text-white">{this.props.labels.title}</h2>
               <p className="text-sm text-slate-300 leading-relaxed">
                 {this.props.labels.body}
               </p>
@@ -93,7 +97,7 @@ class RenderErrorBoundary extends React.Component {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              className="inline-flex min-h-[44px] items-center justify-center px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
             >
               {this.props.labels.reload}
             </button>
@@ -210,7 +214,9 @@ function App() {
   return (
     <Router>
       <LanguageProvider>
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </LanguageProvider>
     </Router>
   );

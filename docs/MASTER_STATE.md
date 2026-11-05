@@ -310,3 +310,7 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T11:28:56.451Z — translation registration gate
 
 3,138 offline PASS/0FAIL/0SKIP, sourceFrozen, 15pins. 11 new audit tests and 3 real PDF-control locale checks. 751keys per locale, missing usage0; 1,760 review positions are not a runtime coverage percentage. Clinical-production compile completed; local exit not captured, exact-head CI build required. Evidence docs/temp/CODEX_I18N_REPAIR_GATE_20261105T112855Z.json. No live actions; emails8/0/8, cap25. Native language/UI matrix and C7 remain pending.
+
+## 2026-11-05T13:06:02.984Z — C7 recovery/concurrency gate
+
+3162offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins; focused32PASS; clinical-productionbuild0. Evidence docs/temp/CODEX_C7_RECOVERY_LOCK_GATE_20261105T130601Z.json. Five login/OTP form locks, shared-shell boundary, localized loading and recovery focus qualified offline. Remaining forms/history-boundary states/accessibility NOT VERIFIED. Translation192e1d4 bothCIgreen/backendready/VercelREADY; closure docs/temp/CODEX_I18N_CI_DEPLOY_CLOSURE_20261105T113531Z.json. Local language target defect measured; no live action,emails8/0/8.
