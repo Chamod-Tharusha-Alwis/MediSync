@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-05T13:49:56.184Z",
+  "sha": "f566eea341463b420722c97f67bf1e6128b9891f",
+  "checks": [
+    {
+      "name": "security-and-trust-tests",
+      "conclusion": "success",
+      "url": "https://github.com/Chamod-Tharusha-Alwis/MediSync/actions/runs/42035439273/job/127272246484"
+    },
+    {
+      "name": "source-integrity-and-offline-tests",
+      "conclusion": "success",
+      "url": "https://github.com/Chamod-Tharusha-Alwis/MediSync/actions/runs/42035439289/job/127272247669"
+    }
+  ],
+  "vercel": {
+    "id": "dpl_JDPc9sfUJhJ23wxrKbpPAn3w4rEv",
+    "state": "READY",
+    "sha": "f566eea341463b420722c97f67bf1e6128b9891f"
+  },
+  "backend": {
+    "lastCapturedSha": "4d02303fecba47ea3fd1ca207f1feb1acfa14219",
+    "sourceEquivalentTo": "f566eea341463b420722c97f67bf1e6128b9891f",
+    "proof": "git diff --name-only 4d02303..f566eea -- server ml-engine is empty",
+    "note": "No new backend live health capture claimed for this client-only commit"
+  },
+  "scope": "CI/deployment metadata only"
+}

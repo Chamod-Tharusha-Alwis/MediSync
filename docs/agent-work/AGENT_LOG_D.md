@@ -31,3 +31,7 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T13:23:49.307Z — doctor/C5 response integrity offline gate
 
 3176PASS/0FAIL/0SKIP,sourceFrozen/15pins;focused28PASS;clinical-productionbuild0. Nine reproduced UI negatives fixed without changing serverclinical rules;actualserverDTOpositivesincluded. Evidence docs/temp/CODEX_DOCTOR_C5_RESPONSE_REVIEW_20261105T132349Z.json. Doctor existing offline suites reconciled; live save/OTP/drugPOST/visual geometry remainNOTVERIFIED. 3692403bothCIgreen/VercelREADY; backend4d02303healthy/server-source-equivalent. No live login/email, totals8/0/8;clinical2/14. Next security lockout/rate/validation source and inert behavior review.
+
+## 2026-11-05T13:49:56.184Z — login admission repair and lockout review milestone
+
+3211offlinePASS/0FAIL/0SKIP,sourceFrozen/15pins;191focusedPASS,syntax0; sameC5clientbuild0. Evidence docs/temp/CODEX_LOGIN_VALIDATION_SECURITY_REVIEW_20261105T134956Z.json. New malformed input rejects400beforelookup; five-role/legacy input compatibility retained. Actualper-IPmiddleware2PASS; passwordlockoutnotactive/distributedIPstoremissing/API-wideschemasincomplete. Operatorselected5/15candidateprepared25PASS,NOTAPPLIED: docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z.md. C5f566eeabothCIgreen/VercelREADY; backendserver-source-equivalent4d02303. No live login/email, totals8/0/8,clinical2/14. Remaining C7majorforms/localevisualmatrix and risky lockout activation need follow-up.

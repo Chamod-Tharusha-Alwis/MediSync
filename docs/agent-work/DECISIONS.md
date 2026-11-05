@@ -26,3 +26,7 @@
 Operator confirms ML e163f40Auto-Deploy09:51UTC andManual10:26UTC on5Nov; P2available at10:31UTC. P1old-container failures remain unexplained; do not label them cold start or fixed by deployment without evidence. Final live plan now includes post-idle status recheck: docs/temp/CODEX_FINAL_LIVE_POST_IDLE_CHECK_20261105T111956Z.md. No current login/live-functional action is approved. Lastprovider totalsResend8/Brevo0/combined8,cap25/remaining17.
 
 Current ordered offline item: replace unsupported percentage/count-only translation audit; exact dictionaries751keys each,no missing/extra/empty/duplicate;12missing registrations fixed(23calls) without changing739existing values perlocale. Actual disabled PDF control regression failedSI/TA before repair; no hold change. Audit113reachable sourcefiles;1760review positions,5dynamic key references;0unregistered static usedkeys. Findings are not measured untranslated runtime coverage; native/layout acceptance NOT VERIFIED.
+
+## 2026-11-05T13:49:56.184Z — selected password-attempt policy
+
+Operatorselected5failedpasswords/15minutesforreview. Preparedexactcandidateusingauthoritativeaccount/modelidentityandexistingRedisadmission; successdoesnotresetthewindow; fifthfailure429,storefailure503. CandidateisNOTAPPLIEDoractive. Selectiondidnotauthorizesourceactivationorlivechecks. PreserveexistingIP/OTPcontrolsandall15pins.

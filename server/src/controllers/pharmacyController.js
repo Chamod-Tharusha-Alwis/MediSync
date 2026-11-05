@@ -1,4 +1,5 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
+const { isLoginRequest } = require('../security/loginRequest');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Pharmacy = require('../models/Pharmacy');
@@ -50,6 +51,7 @@ exports.registerPharmacy = async (req, res) => {
 
 exports.loginPharmacy = async (req, res) => {
   try {
+    if (!isLoginRequest(req.body, { pharmacyOnly: true })) return res.status(400).json({ error: 'Invalid login request' });
     const { email, password } = req.body;
     const cleanEmail = (email || '').trim();
     const staff = await PharmacyStaff.findOne({ 

@@ -10,7 +10,7 @@ test.each(['isSynthetic','isDemoData','isDemoAccount','phase5xOwner','phase5xBro
 });
 test.each([{isActive:false},{isVerified:false},{mustChangePassword:true},{isDeleted:true}])('real login controller rejects ineligible doctor before password/session/provider work: %p',flags=>{
  const compare=jest.fn(),account={_id:id,role:'doctor',isActive:true,isVerified:true,...flags};
- const h=controllerHarness('authController',{dependencies:{'../models/Doctor':{findOne:async()=>account},'../security/loginIdentifier':require('../src/security/loginIdentifier'),'../security/accountState':require('../src/security/accountState'),'bcryptjs':{compare},'uuid':{v4:jest.fn()}}});
+ const h=controllerHarness('authController',{dependencies:{'../models/Doctor':{findOne:async()=>account},'../security/loginIdentifier':require('../src/security/loginIdentifier'),'../security/loginRequest':require('../src/security/loginRequest'),'../security/accountState':require('../src/security/accountState'),'bcryptjs':{compare},'uuid':{v4:jest.fn()}}});
  return h.invoke('login',{body:{role:'doctor',email:'synthetic@example.invalid',password:'synthetic-only'}}).then(result=>{expect(result.status).toBe(403);expect(compare).not.toHaveBeenCalled();expect(h.calls.writes).toBe(0);});
 });
 test('organization login DTO never returns password hashes, OTP secrets or unknown fields',()=>{

@@ -1,4 +1,5 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
+const { isLoginRequest } = require('../security/loginRequest');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -200,6 +201,7 @@ exports.registerPharmacyStaff = async (_req, res) => {
 exports.login = async (req, res) => {
   let failureStep = 'login_lookup';
   try {
+    if (!isLoginRequest(req.body)) return res.status(400).json({ error: 'Invalid login request' });
     const { email, identifier, nic, regNo, doctorId, password, role, loginType } = req.body;
     let cleanId, emailPattern;
     try {
