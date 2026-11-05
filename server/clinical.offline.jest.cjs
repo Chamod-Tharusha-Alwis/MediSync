@@ -38,3 +38,4 @@ module.exports.testMatch.push('<rootDir>/tests/publicConsultationActivity.test.j
 module.exports.testMatch.push('<rootDir>/tests/publicActivityLiveVerification.test.js');
 module.exports.testMatch.push('<rootDir>/tests/publicHealthMongo.test.js', '<rootDir>/tests/runtimeHealthRevision.test.js', '<rootDir>/tests/universityPublicPrivacy.test.js');
 module.exports.testMatch.push('<rootDir>/tests/notificationTransportOffline.test.js','<rootDir>/tests/adminMlStatusOffline.test.js');
+module.exports.testMatch.push('<rootDir>/tests/loginAlertIdentifierMasking.test.js');

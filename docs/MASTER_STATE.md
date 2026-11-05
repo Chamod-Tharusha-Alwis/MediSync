@@ -1,5 +1,10 @@
 # MediSync Master State
 
+## 2026-11-05T03:52:55.836361+00:00 — Login-alert identifier masking offline gate
+
+Body-only mask implemented under explicit operator approval: national first4/last3, email firstcharacter+domain, staff/registration shortprefix/suffix; escaped render. Recipient/stored values/logmask untouched.45new checks; focused79PASS; complete2953PASS/0FAIL/0SKIP,exit0,sourceFrozen/15pins; clientbuild0/116modules/demoImported=false,existingwarnings. Evidence `docs/temp/CODEX_LOGIN_ALERT_IDENTIFIER_MASK_OFFLINE_20261105T035255Z.json` and `docs/temp/CODEX_LOGIN_ALERT_MASK_AND_COMBINED_SWEEP_PREFLIGHT_20261105T035255Z.md`. No live login/email/directDB operation. Combined sweep separately approved but NOT STARTED: provider totals are [N] placeholders. Lab/medication UI requires OTP consent (not allowed); interaction POST outside narrow allowlist; Lighthouse absent/no install. Do not bypass or invent live acceptance. Historical clinicalrealE2E2/14.
+
+
 ## 2026-11-05T03:21:57.154107+00:00 — Source deployment closure; authenticated acceptance remains held
 
 Application commit `68efe212e316dbfc687de345acc86e1ee1b0bc0d` pushed to main after scoped19-file review, secret-pattern scan0findings and pull/rebase(up-to-date). Both exact-head CI workflows passed: clinical41960748458,security41960748309 (Node24). Vercel`dpl_8a6L5qV1gTKdMM2bRKfDBNNjHyft` READY exactSHA; backendhealth200/ready/exactSHA after one earlier30secondtimeout. No manual deployment/settings operation. Offline2908PASS/build0/15pins; source changes stay bound to the committed offline receipt. No new login/email/directDB connection, OTP or clinical action. Live cause category and private no-console acceptance NOT VERIFIED. Combined sweep awaits newapproval/freshcounts; P1login-alert identifier masking OPEN; realE2E2/14. Receipt `docs/temp/CODEX_SESSION_ML_SOURCE_DEPLOY_CLOSURE_20261105T032157Z.json`. Subsequent documentation-only commit does not imply a new backend application deployment.

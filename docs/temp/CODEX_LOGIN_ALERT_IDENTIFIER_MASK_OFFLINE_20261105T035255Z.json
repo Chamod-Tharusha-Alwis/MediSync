@@ -1,0 +1,111 @@
+{
+  "at": "2026-11-05T03:52:55.836361+00:00",
+  "baseHead": "a0e56e67e8c5e2ba4636c447ee34627231f7de35",
+  "scope": "LOGIN_ALERT_RENDERED_IDENTIFIER_ONLY",
+  "source": {
+    "server/src/utils/loginAlertIdentifier.js": "befea1f601b9dc06e9e311f7748dcd4653d1de0940409b4fd1c50a2117bc334b",
+    "server/src/utils/emailService.js": "c8adf63950d83a64de515459f64e554a564077362ee724ae5cefb8499e515302",
+    "server/tests/loginAlertIdentifierMasking.test.js": "af10fb96f399dcac653c8dd3c786acc2101d5387ff8993d0649ab81abb937eae",
+    "server/clinical.offline.jest.cjs": "e8b52470d19903cb29a95610265d09e89beac2971c5247bd78ed178a2c31b883"
+  },
+  "regression": {
+    "out": "C:\\Users\\chamo\\OneDrive\\Desktop\\Final project\\medisync\\scratch\\clinical-offline-vApLio",
+    "node": "v26.4.0",
+    "scope": "Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.",
+    "totals": [
+      {
+        "mode": "backend",
+        "passed": 2279,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2279,
+        "suites": 103,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 536,
+        "failed": 0,
+        "skipped": 0,
+        "total": 536,
+        "suites": 57,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "total": 27,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "passed": 2953,
+    "failed": 0,
+    "blockedProfiles": 0,
+    "sourceFrozen": true,
+    "protectedAccountedFor": 15,
+    "success": true,
+    "profile": "local-offline",
+    "notRun": []
+  },
+  "focused": {
+    "passed": 79,
+    "failed": 0,
+    "exitCode": 0,
+    "newMaskChecks": 45
+  },
+  "build": {
+    "exitCode": 0,
+    "modules": 116,
+    "demoImported": false,
+    "warnings": "existing only"
+  },
+  "protectedPins": {
+    "intact": 15,
+    "changed": 0
+  },
+  "providerRequests": 0,
+  "liveLoginAttempts": 0,
+  "storedIdentifierChanges": 0,
+  "recipientRoutingChanges": 0,
+  "logMaskChanges": 0,
+  "combinedSweep": {
+    "state": "BLOCKED_EMAIL_TOTAL_PLACEHOLDERS",
+    "attempts": 0,
+    "clinicalSteps": "BLOCKED_PATIENT_CONSENT_OTP_NOT_AUTHORIZED",
+    "interactionUI": "POST_OUTSIDE_CURRENT_ALLOWLIST",
+    "lighthouse": "NOT_INSTALLED_NO_INSTALL_PERFORMED"
+  }
+}

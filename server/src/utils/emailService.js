@@ -1,5 +1,6 @@
 
 const { formatSriLankaDateTime, formatSriLankaDate } = require('./sriLankaTime');
+const { maskLoginAlertIdentifier } = require('./loginAlertIdentifier');
 const displayExpiry = value => value instanceof Date || typeof value === 'number' || /^\d{4}-\d{2}-\d{2}T/.test(String(value))
   ? formatSriLankaDateTime(value) : value;
 
@@ -1709,7 +1710,7 @@ exports.sendLoginNotificationEmail = async (
           <p>Hello ${name},</p>
           <p>A new login was detected on your MediSync <strong>${role}</strong> account.</p>
           <ul style="list-style: none; padding-left: 0; line-height: 1.6;">
-            <li><strong>Identifier:</strong> ${idField}</li>
+            <li><strong>Identifier:</strong> ${escapeHtml(maskLoginAlertIdentifier(idField))}</li>
             ${workspaceStr}
             <li><strong>Device:</strong> ${device || 'Unknown Device'}</li>
             <li><strong>Device Status:</strong> <span style="font-weight: bold; color: ${isNewDevice ? '#C62828' : '#2E7D32'};">${isNewDevice ? '⚠️ Untrusted / New Device' : '✅ Trusted Device'}</span></li>
