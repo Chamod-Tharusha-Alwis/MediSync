@@ -451,13 +451,10 @@ exports.login = async (req, res) => {
     }
 
     const actualRole = user.role || role || (modelName === 'Hospital' ? 'hospital_admin' : (modelName === 'Admin' ? 'admin' : (modelName === 'PharmacyStaff' ? user.role : 'patient')));
-    const subId = user.doctorId || user.nic || user.regNo || user._id;
+    const subId = modelName === 'Patient' ? String(user._id) : (user.doctorId || user.nic || user.regNo || user._id);
     const name = user.fullName || user.name || 'User';
 
     const tokenPayload = { id: user._id, role: actualRole, sub: subId };
-    if (modelName === 'Patient' && user.nic) {
-      tokenPayload.nic = user.nic;
-    }
     failureStep = 'token_access';
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
     failureStep = 'token_refresh';
@@ -683,13 +680,10 @@ exports.verifyLoginOTP = async (req, res) => {
     await clearAttempts(authOtpKey);
     await clearAttempts('otp-resend:' + String(userId));
 
-    const subId = user.doctorId || user.nic || user.regNo || user._id;
+    const subId = modelName === 'Patient' ? String(user._id) : (user.doctorId || user.nic || user.regNo || user._id);
     const name = user.fullName || user.name || 'User';
 
     const tokenPayload = { id: user._id, role: actualRole, sub: subId };
-    if (modelName === 'Patient' && user.nic) {
-      tokenPayload.nic = user.nic;
-    }
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
@@ -1921,7 +1915,6 @@ exports.refreshToken = async (req, res) => {
     } catch (_) { return res.status(503).json({ error: 'Account verification unavailable' }); }
 
     const tokenPayload = { id: decoded.id, role: decoded.role, sub: decoded.sub };
-    if (decoded.nic) tokenPayload.nic = decoded.nic;
 
     // Include unique jti so rotated tokens always have a fresh cryptographic signature & hash
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
