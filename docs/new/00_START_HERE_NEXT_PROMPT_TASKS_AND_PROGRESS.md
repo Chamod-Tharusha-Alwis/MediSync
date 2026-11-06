@@ -152,6 +152,18 @@ Comprehensive synthesis report generated at `docs/new/B1_INVESTIGATION_REPORT.md
 
 ---
 
+### ⚠️ Phase 2 Implementation Status: BATCH 4 COMPLETED (Test Coverage Audit, U7, U2, Password Lockout Applied)
+**BATCH 4 EXECUTION COMPLETE**: Pursuant to operator authorization (`APPROVED ITEMS: U7 (with limited test-helper update), U2, TEST-COVERAGE CHECK; APPROVE LOCKOUT`), Phase 2 Batch 4 has been executed and verified offline (`scratch/clinical-offline-XshK2Z`).
+- **Completed (`DONE_OFFLINE`)**:
+  - **Test Coverage Audit**: Audited `scripts/clinicalOfflineChild.cjs` and `server/clinical.offline.jest.cjs`. Client uses glob discovery (`<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}`), so all new client tests are auto-included. Backend uses explicit allowlist (`module.exports.testMatch`), requiring explicit enumeration for new standalone test files.
+  - **U7** (Pharmacy pending NIC lookup — require consent before `api.get`): Updated `Dashboard.jsx:87-95` to require `patientToken` before calling `api.get` (opens modal upfront). Updated `pharmacy-consent-flow.test.jsx:24,32-43,117-128` per rules (a)/(b) (14/14 PASS). Added `client/src/__master_offline__/pharmacy-consent-u7.test.jsx` (3/3 PASS). Client test suite elevated from 638 to 641 tests across 72 suites.
+  - **U2** (Soap/non-medicine product filter & self-comparison elimination): Implemented `isPrescribableDrug` in `server/src/utils/ingredientResolver.js` (filters 13 soaps and 33 wash/bar/shampoo items; preserves topical ointments/creams/gels) and applied it in `server/src/controllers/drugController.js` (`searchDrugs` and `recommendDrugs`) and `client/src/components/DrugSearchInput.jsx` (`rankMedicationMatches`). Eliminated pairwise self-comparison duplicate warnings in `ingredientResolver.js:442-450`. Added `server/tests/u2DrugCatalogAndSafety.test.js` (5/5 PASS). Existing `websiteClinicalContracts.test.js` passes 20/20.
+  - **Password Lockout Patch Applied**: Applied `docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.patch` cleanly across all 9 target files (`authController.js`, `pharmacyController.js`, `passwordAttemptPolicy.js`, `clinical.offline.jest.cjs`, and 5 test companions). Added `passwordAttemptPolicy.test.js` (25/25 PASS). Backend test suite elevated from 2,474 to 2,499 tests across 108 suites. Real Redis TTL and cluster transport are NOT VERIFIED (tested offline against simulated store).
+- **Protected Pins**: `15/15` protected files match `docs/release/PROTECTED_HASHES.json` (`releaseCandidateSha256`, `sourceFrozen: true`).
+- **Detailed Synthesis Report**: See `docs/new/B1_BATCH4_REPORT.md`.
+
+---
+
 ## Phase 0 — Housekeeping (no approval required)
 
 | ID | Item | Status | Commit | Deploy | Live evidence | Owner | Notes |
@@ -193,20 +205,21 @@ Gate: operator types `APPROVE PLAN <file>` or `APPROVE PLAN ALL` before Stage B.
 | ID | Item | Status | Commit | Deploy | Evidence | Notes |
 |----|------|--------|--------|--------|----------|-------|
 | B1-U1 | Medication search dropdown — portal/stacking fix | COMPLETED | Committed (`0372199`) | Offline verified | `drug-search-dropdown-u1.test.jsx` (4/4 PASS) | `createPortal` to body + fixed coordinates + ARIA listbox + scroll/resize listener |
-| B1-U2 | Interaction/duplicate safety alert dedup + soap filter | INVESTIGATION_COMPLETE | Docs only | Read-only audit | `docs/new/B1_U2_INVESTIGATION.md` | 13 Soap + 33 wash/bar/shampoo items audited; self-comparison root cause in `ingredientResolver.js:425-455` |
+| B1-U2 | Interaction/duplicate safety alert dedup + soap filter | COMPLETED | Pending Host Commit | Offline verified | `u2DrugCatalogAndSafety.test.js` (5/5 PASS) | `isPrescribableDrug` filters 13 soaps + 33 washes/bars in search & recommendations; pairwise self-comparison eliminated in `ingredientResolver.js:442-450` |
 | B1-U3 | Password strength bar fill | COMPLETED | Committed (`2a73eb7`) | Offline verified | `password-strength-fill.test.jsx` (8/8 PASS) | Score 0 fill + progressbar ARIA + translations + registration cleanup |
 | B1-U5 | Hospital lab button raw `{t(...)}` text | COMPLETED | Committed (`2a73eb7`) | Offline verified | `lab-button-i18n.test.jsx` (6/6 PASS) | Evaluated JSX `t()` helper + trilingual loading states |
 | B1-U6 | OTP duplicate-request guard + 429 handling | COMPLETED | Committed (`9b0d5fb`) | Offline verified | `hospital-lab-otp-u6.test.jsx` (6/6 PASS) | `useSubmissionLock` + 60s cooldown countdown + 429 server retry countdown + OtpInput loading |
-| B1-U7 | Pharmacy 403 on pending NIC lookup — root cause + fix | BLOCKED | Uncommitted (skipped) | Offline verified | `B1_BATCH3_REPORT.md` | 11/13 tests in `pharmacy-consent-flow.test.jsx` call `query()` without consent (2 probe tests + 9 non-probe tests at lines 45-115); skipped per Batch 3 rule |
+| B1-U7 | Pharmacy 403 on pending NIC lookup — root cause + fix | COMPLETED | Pending Host Commit | Offline verified | `pharmacy-consent-u7.test.jsx` (3/3 PASS), `pharmacy-consent-flow.test.jsx` (14/14 PASS) | `handleSearch` requires consent token upfront before `api.get`; opens modal directly; 0 tokenless probe calls; 403 catch preserved |
 | B1-U8 | Notification dropdown left-edge clip | COMPLETED | Committed (`2a73eb7`) | Offline verified | `notification-bell-responsive.test.jsx` (4/4 PASS) | Responsive fixed inset-x-2 positioning on mobile (320/375px) |
 | B1-U18 | App-owned console warnings (not extension) | TODO | | | | U18 |
 | B1-U19 | Capitalize district names everywhere | COMPLETED | Committed (`2a73eb7`) | Offline verified | `district-display-format.test.jsx` (6/6 PASS) | `formatDistrictName()` helper + coordinate resolution + query preservation |
 | B1-U22 | Tiny text audit and fix (`text-[9px]` → ≥12 px) | COMPLETED | Committed (`a251d04`) | Offline verified | `min-font-size.test.js` (4/4 PASS) | 280 occurrences across 54 files upgraded to approved minimums (11px uppercase badge, 12px readable text); SymptomTagInput.jsx preserved clean |
 | B1-U23 | Undefined Tailwind classes (slate-550, etc.) | COMPLETED | Committed (`2a73eb7`) | Offline verified | `tailwind-undefined-classes.test.js` (12/12 PASS) | Theme config extension + gradient CSS + component cleanup |
 | B1-S1 | Patient NIC removed from JWT access/refresh token claims | COMPLETED | Committed (`e1dc51b`) | Offline verified | `jwt-patient-nic-removal-s1.test.js` (6/6 PASS) | Removed NIC claim; `sub` set to `String(patient._id)`; DB resolution preserved; non-patient roles untouched |
-| B1-S2 | Rate-limit registration endpoints (`/register`) | COMPLETED | Pending Host Commit | Offline verified | `registrationRateLimitS2.test.js` (6/6 PASS) | Dedicated `registerLimiter` (10/15m in prod) on `hospitalRoutes.js`, `patientRoutes.js`, `pharmacyRoutes.js` isolated from `/login` |
-| B1-S5 | Rate-limit public directory, disease search, and review endpoints | COMPLETED | Pending Host Commit | Offline verified | `publicListingRateLimitS5.test.js` (7/7 PASS) | `publicLimiter` (60/60s) on `/doctors`, `/hospitals`, `/pharmacies`, `/diseases/search`; `publicReviewLimiter` (60/60s IP-based) on `GET /api/reviews/:targetId` |
-| B1-S11 | Restrict `Permissions-Policy` Client Hints to `(self)` | COMPLETED | Pending Host Commit | Offline verified | `permissionsPolicyHeaderS11.test.js` (1/1 PASS) | `server/src/app.js:237` sets `ch-ua-model=(self), ch-ua-platform=(self), ch-ua-platform-version=(self)` |
+| B1-S2 | Rate-limit registration endpoints (`/register`) | COMPLETED | Committed (`5861452`) | Offline verified | `registrationRateLimitS2.test.js` (6/6 PASS) | Dedicated `registerLimiter` (10/15m in prod) on `hospitalRoutes.js`, `patientRoutes.js`, `pharmacyRoutes.js` isolated from `/login` |
+| B1-S5 | Rate-limit public directory, disease search, and review endpoints | COMPLETED | Committed (`ae65fb7`) | Offline verified | `publicListingRateLimitS5.test.js` (7/7 PASS) | `publicLimiter` (60/60s) on `/doctors`, `/hospitals`, `/pharmacies`, `/diseases/search`; `publicReviewLimiter` (60/60s IP-based) on `GET /api/reviews/:targetId` |
+| B1-S11 | Restrict `Permissions-Policy` Client Hints to `(self)` | COMPLETED | Committed (`ae968ad`) | Offline verified | `permissionsPolicyHeaderS11.test.js` (1/1 PASS) | `server/src/app.js:237` sets `ch-ua-model=(self), ch-ua-platform=(self), ch-ua-platform-version=(self)` |
+| B1-LOCKOUT | 5 failed passwords in 15 min locks account | COMPLETED | Pending Host Commit | Offline verified | `passwordAttemptPolicy.test.js` (25/25 PASS) | Applied 9-file lockout candidate; backend elevated to 2,499 PASS; real Redis TTL NOT VERIFIED |
 
 ### B2 — Removals and redesigns (U9–U16)
 
