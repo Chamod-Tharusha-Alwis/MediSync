@@ -234,7 +234,7 @@ async function startServer() {
   app.use(helmet());
   app.use((req, res, next) => {
     res.setHeader('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA, Sec-CH-UA-Mobile');
-    res.setHeader('Permissions-Policy', 'ch-ua-model=*, ch-ua-platform=*, ch-ua-platform-version=*');
+    res.setHeader('Permissions-Policy', 'ch-ua-model=(self), ch-ua-platform=(self), ch-ua-platform-version=(self)');
     next();
   });
   app.use(
