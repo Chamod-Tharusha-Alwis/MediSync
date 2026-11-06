@@ -12,17 +12,17 @@ Severity: **High** = exploitable or leaks personal data; **Medium** = defence-in
 
 | ID | Finding | Severity | Fix effort | Operator action? |
 |----|---------|----------|-----------|------------------|
-| S1 | Patient NIC placed in JWT `sub` claim (readable by anyone holding the token) | High | S | FIXED OFFLINE (Batch 2) |
-| S2 | Registration endpoints have no rate limiter | Medium | S | No |
+| S1 | Patient NIC placed in JWT `sub` claim (readable by anyone holding the token) | High | S | FIXED OFFLINE (`e1dc51b`) |
+| S2 | Registration endpoints have no rate limiter | Medium | S | FIXED OFFLINE (Batch 3) |
 | S3 | `authLimiter` is skipped unless `NODE_ENV === 'production'` | Medium | S | Yes — confirm Render `NODE_ENV` |
 | S4 | `console.log` of login notification results in auth/pharmacy controllers | Medium | S | No |
-| S5 | `GET /api/public/doctors|hospitals|pharmacies`, `/diseases/search`, `GET /api/reviews/:targetId` have no rate limiter | Low–Medium | S | No |
+| S5 | `GET /api/public/doctors|hospitals|pharmacies`, `/diseases/search`, `GET /api/reviews/:targetId` have no rate limiter | Low–Medium | S | FIXED OFFLINE (Batch 3) |
 | S6 | `GET /api/lab/public/:labTestId/status` is unauthenticated | Medium (needs review) | S | No |
 | S7 | Internal HMAC key rotates hourly from one secret; replay inside the 2-hour window | Low | M | No |
 | S8 | Dependency audit not run (no network) | Unknown | S | No |
 | S9 | Git-history secret scan not re-run this session (158 historical findings recorded 3 Nov) | Unknown | M | Yes — rotate anything confirmed |
 | S10 | Test OTP harness still present in production code (by design until Stage E) | Medium | M | Yes — unset env vars after removal |
-| S11 | `Permissions-Policy` grants client-hint features to `*` | Low | S | No |
+| S11 | `Permissions-Policy` grants client-hint features to `*` | Low | S | FIXED OFFLINE (Batch 3) |
 
 Positive controls confirmed in source (no change needed): `helmet()`; CORS restricted to `clientOrigin` with credentials; JSON body limit 1 MB; Mongo operator sanitiser (`$`/`.` keys stripped from body, params, query); JWT verified with pinned `HS256`; server-side session table checked on every request (`SessionToken` hash, `isValid`, `logoutAt`, `expiredAt`); RBAC via `protect([roles])`; active-ban check; access token 15 min; refresh cookie `httpOnly`, `secure`, `sameSite: 'none'`; OTP throttle on lab OTP routes (`checkOtpRequestThrottle`); `/api/qa` routes mounted only in QA mode; `/api/alerts/trigger` checks an internal HMAC key; `SECURITY_HOLD` path present in `prescriptionController.js:125`.
 
@@ -64,10 +64,10 @@ Positive controls confirmed in source (no change needed): `helmet()`; CORS restr
   - Unit test `server/tests/jwt-patient-nic-removal-s1.test.js` verifies across registration, login, verifyOTP, and refresh that no token contains any claim matching Sri Lankan NIC patterns (`/^([0-9]{9}[vxVX]|[0-9]{12})$/`), `nic` claim is undefined, and doctor credentials retain `doctorId`. 6/6 PASS. All 31 tests in `tests/universityPatientProfile.test.js` PASS.
 - **Acceptance:** No token issued contains raw NIC under `sub` or `nic`; existing patient profile, consent, and consultation flows remain 100% operational. Active tokens in circulation will clear on expiration (15m).
 
-### S2 — No limiter on registration (Medium)
-- **Where:** `hospitalRoutes.js:14`, `patientRoutes.js:16`, `pharmacyRoutes.js:15` — `router.post('/register', …)` with no limiter, while `/login` uses `loginLimiter`.
+### S2 — No limiter on registration (Medium) — COMPLETED OFFLINE (Batch 3)
+- **Where:** `hospitalRoutes.js:14`, `patientRoutes.js:16`, `pharmacyRoutes.js:15` — `router.post('/register', …)` had no limiter, while `/login` used `loginLimiter` (and in `patientRoutes.js:9`, `loginLimiter` had `max: 1000` in production).
 - **Risk:** account-creation spam, email-sending abuse if registration sends mail, blind-index enumeration.
-- **Fix:** apply the existing `loginLimiter` (or a dedicated `registerLimiter`, e.g. 5 per hour per IP).
+- **Implementation & Verification (Batch 3):** Defined a dedicated `registerLimiter` (`windowMs: 15 * 60 * 1000`, `max: process.env.NODE_ENV === 'development' ? 10000 : 10`, isolated from `loginLimiter`) in `hospitalRoutes.js:14-22`, `patientRoutes.js:15-24`, and `pharmacyRoutes.js:14-23`, and attached it to `router.post('/register', registerLimiter, ...)`. Verified by `server/tests/registrationRateLimitS2.test.js` (6/6 PASS) and `server/tests/loginRateLimitOffline.test.js` (1/1 PASS).
 
 ### S3 — Auth limiter disabled outside production (Medium)
 - **Where:** `server/src/app.js:303-309` — `skip: () => process.env.NODE_ENV !== 'production'`.
@@ -79,10 +79,10 @@ Positive controls confirmed in source (no change needed): `helmet()`; CORS restr
 - **Risk:** Render logs retain role, device model and notification result objects; if the result object includes the recipient address it is personal data in logs.
 - **Fix:** route through the existing logger at `debug` level and log only status codes/counts. Cleanup plan already bans `console.log` in shipped code.
 
-### S5 — Public listing endpoints without limiter (Low–Medium)
+### S5 — Public listing endpoints without limiter (Low–Medium) — COMPLETED OFFLINE (Batch 3)
 - **Where:** `publicRoutes.js:14-16, 19`; `reviewRoutes.js:8`.
 - **Risk:** scraping of doctor/hospital/pharmacy directories; cheap DoS on Render free tier.
-- **Fix:** apply existing `publicLimiter`. Confirm the DTOs return no email, phone or NIC (masking commits may already ensure this — re-verify).
+- **Implementation & Verification (Batch 3):** Attached `publicLimiter` (`windowMs: 60 * 1000, max: 60`) to `/doctors`, `/hospitals`, `/pharmacies`, and `/diseases/search` in `server/src/routes/publicRoutes.js:14-19`. Added IP-based `publicReviewLimiter` (`windowMs: 60 * 1000, max: 60, validate: { trustProxy: false }`) to unauthenticated `GET /:targetId` in `server/src/routes/reviewRoutes.js:8-15`. Verified by `server/tests/publicListingRateLimitS5.test.js` (7/7 PASS).
 
 ### S6 — Unauthenticated lab status (Medium, needs review)
 - **Where:** `labRoutes.js:50` — `GET /public/:labTestId/status`.
@@ -104,9 +104,9 @@ Positive controls confirmed in source (no change needed): `helmet()`; CORS restr
 ### S10 — Test OTP harness (Medium, scheduled)
 - Present by design for Stage E. Removal plan in `DEMO_DATA_REMOVAL_PLAN.md` §5. After removal the operator unsets `TEST_OTP_ENABLED` / `TEST_OTP_CODE` and rotates the five test-account passwords.
 
-### S11 — Permissions-Policy wildcard (Low)
-- **Where:** `app.js` — `ch-ua-model=*, ch-ua-platform=*, …`.
-- **Fix:** restrict to `self` unless a third-party origin needs client hints.
+### S11 — Permissions-Policy wildcard (Low) — COMPLETED OFFLINE (Batch 3)
+- **Where:** `server/src/app.js:237` — `ch-ua-model=*, ch-ua-platform=*, ch-ua-platform-version=*`.
+- **Implementation & Verification (Batch 3):** Updated `server/src/app.js:237` to `res.setHeader('Permissions-Policy', 'ch-ua-model=(self), ch-ua-platform=(self), ch-ua-platform-version=(self)');`. Verified by `server/tests/permissionsPolicyHeaderS11.test.js` (1/1 PASS).
 
 ---
 
