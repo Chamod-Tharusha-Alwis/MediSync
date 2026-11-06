@@ -12,7 +12,7 @@ Severity: **High** = exploitable or leaks personal data; **Medium** = defence-in
 
 | ID | Finding | Severity | Fix effort | Operator action? |
 |----|---------|----------|-----------|------------------|
-| S1 | Patient NIC placed in JWT `sub` claim (readable by anyone holding the token) | High | S | No |
+| S1 | Patient NIC placed in JWT `sub` claim (readable by anyone holding the token) | High | S | FIXED OFFLINE (Batch 2) |
 | S2 | Registration endpoints have no rate limiter | Medium | S | No |
 | S3 | `authLimiter` is skipped unless `NODE_ENV === 'production'` | Medium | S | Yes — confirm Render `NODE_ENV` |
 | S4 | `console.log` of login notification results in auth/pharmacy controllers | Medium | S | No |
@@ -54,8 +54,15 @@ Positive controls confirmed in source (no change needed): `helmet()`; CORS restr
      - *Impact*: Zero client-side consumers or dependencies on JWT `sub`.
 - **Protected File Check:**
   - Neither `server/src/controllers/patientController.js` nor `server/src/controllers/authController.js` is in `docs/release/PROTECTED_HASHES.json`. Both files are **UNPROTECTED**.
-- **Fix:** In `patientController.js:85`, sign `sub: String(patient._id)`. In `authController.js:454, 686`, ensure `subId` resolves to `String(user._id)` for patients, and remove `tokenPayload.nic = user.nic`. Add regression test asserting decoded JWT payload contains no NIC-shaped string.
-- **Acceptance:** No token issued contains raw NIC under `sub` or `nic`; existing patient profile, consent, and consultation flows remain 100% operational.
+- **Implementation & Verification (S1 — COMPLETED OFFLINE):**
+  - In `patientController.js:85`, signed `sub: String(patient._id)`.
+  - In `authController.js:454` (login) and `686` (verifyOTP), set `subId = modelName === 'Patient' ? String(user._id) : (user.doctorId || user.nic || user.regNo || user._id)`, and removed `tokenPayload.nic = user.nic;`.
+  - In `authController.js:1924` (refreshToken), removed `if (decoded.nic) tokenPayload.nic = decoded.nic;`. Copies safe `decoded.sub` and drops `nic`.
+  - In `patientController.js:140-151` (`resolveAuthenticatedPatientNic`), MongoDB query `Patient.findById(reqUser.id).select('nic')` preserves 100% reliable patient NIC resolution when `sub === id`.
+  - Protected file `server/src/middleware/auth.js:93` preserved 100% untouched.
+  - Doctors, hospitals, pharmacies, and admins retain their existing `subId` identifiers.
+  - Unit test `server/tests/jwt-patient-nic-removal-s1.test.js` verifies across registration, login, verifyOTP, and refresh that no token contains any claim matching Sri Lankan NIC patterns (`/^([0-9]{9}[vxVX]|[0-9]{12})$/`), `nic` claim is undefined, and doctor credentials retain `doctorId`. 6/6 PASS. All 31 tests in `tests/universityPatientProfile.test.js` PASS.
+- **Acceptance:** No token issued contains raw NIC under `sub` or `nic`; existing patient profile, consent, and consultation flows remain 100% operational. Active tokens in circulation will clear on expiration (15m).
 
 ### S2 — No limiter on registration (Medium)
 - **Where:** `hospitalRoutes.js:14`, `patientRoutes.js:16`, `pharmacyRoutes.js:15` — `router.post('/register', …)` with no limiter, while `/login` uses `loginLimiter`.

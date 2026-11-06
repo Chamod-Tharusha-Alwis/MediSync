@@ -57,14 +57,15 @@ Root causes of U6 (429) and U7 (403) verified in codebase. Email quota accountin
    - The first request succeeds and activates the 60-second Redis cooldown (`recordOtpRequestSent`).
    - The subsequent rapid requests are rejected by `checkOtpRequestThrottle` with HTTP 429 (`reason: 'otp_resend_cooldown'`). After 5 attempts within 15 minutes, requests are blocked with HTTP 429 (`reason: 'otp_account_rate_limit'`).
 
-**Fix (U6):**
-1. Add `isSubmittingRef` to `client/src/pages/hospital/LabManagement.jsx` to prevent concurrent / double-click invocations of `handleSendOtp`.
-2. Introduce a `cooldownSeconds` state (default 0). On successful dispatch or 429 response, initialize countdown from `err.response?.data?.retryAfterSeconds || 60` with an active interval timer.
-3. Disable the submit button when `loading || cooldownSeconds > 0`.
-4. When cooldown is active, display: `"Wait {cooldownSeconds}s before resending"`.
-5. Display clear 429 message from server: `"Too many requests. Please wait {retryAfterSeconds} seconds."`.
-6. Pass `loading={loading}` to `<OtpInput>` on line 211.
-7. Add an offline guard test asserting mock `api.post` is called exactly once on rapid double-click.
+**Implementation & Verification Status (U6 — COMPLETED OFFLINE):**
+1. Reused `useSubmissionLock` hook (`client/src/hooks/useSubmissionLock.js`) in `client/src/pages/hospital/LabManagement.jsx:45-132` to lock synchronous rapid clicks on `handleSendOtp`.
+2. Introduced `cooldownSeconds` state with `startCooldown(seconds)`. On successful dispatch or 429 response, initializes a countdown from `err.response?.data?.retryAfterSeconds || 60` with active interval timer. Added interval cleanup on component unmount.
+3. Disabled the submit button during `loading || cooldownSeconds > 0`.
+4. Rendered `"Wait {cooldownSeconds}s before resending"` on the button during active cooldown.
+5. Displayed server 429 error via localized toast: `"Too many requests. Please wait {retryAfterSeconds} seconds."`.
+6. Passed `loading={loading}` and `cooldownSeconds={cooldownSeconds}` to `<OtpInput>` (`client/src/components/ui/OtpInput.jsx:125-134`), disabling the resend button and rendering countdown feedback.
+7. Added localized keys `lab.waitCooldown` and `lab.tooManyRequests` across `en.js`, `si.js`, and `ta.js` (verified 770 leaf keys per language).
+8. Verified with 6/6 passing unit tests in `client/src/__master_offline__/hospital-lab-otp-u6.test.jsx`.
 
 **Email cost after fix:** 1 per consent flow (down from up to 5).
 
@@ -84,7 +85,7 @@ Root causes of U6 (429) and U7 (403) verified in codebase. Email quota accountin
 
 ---
 
-## U7 — Verified root cause: GET /api/pharmacy/prescriptions/pending/<NIC> returns 403
+## U7 — Verified root cause & test conflict: GET /api/pharmacy/prescriptions/pending/<NIC> returns 403
 
 **Endpoint:** `GET /api/pharmacy/prescriptions/pending/:nic`  
 **Expected auth:** `dispensingAuth` (`['pharmacist', 'pharmacy_admin']`) + `patientConsent` middleware.  
@@ -99,7 +100,7 @@ Root causes of U6 (429) and U7 (403) verified in codebase. Email quota accountin
    ```
 2. **Consent Middleware Requirement**:
    In `server/src/middleware/patientConsent.js:5-8`:
-   The middleware checks for `x-patient-access` or `x-patient-access-token` header. If missing, it immediately throws/returns `res.status(403).json({ error: 'Patient consent required' })`.
+   The middleware checks for `x-patient-access` or `x-patient-access-token` header. If missing, it immediately returns HTTP 403 `{"error": "Patient consent required"}`.
 3. **Client "Probe-First" Execution**:
    In `client/src/pages/pharmacy/Dashboard.jsx:87-90` (`handleSearch`):
    ```javascript
@@ -109,18 +110,19 @@ Root causes of U6 (429) and U7 (403) verified in codebase. Email quota accountin
    ```
    On initial lookup, `patientToken` is null/undefined. The client issues an unauthenticated `GET` request with empty headers (`headers: {}`).
 4. **Console 403 and Modal Recovery**:
-   The server rejects this request with HTTP 403. The browser developer tools console logs this 403 error.
-   In `Dashboard.jsx:106-111`, the catch block detects `requiresPatientConsent(err)` and displays `<PatientAccessModal>` (line 340).
+   The server rejects this request with HTTP 403, which browser dev tools log as a red network failure.
+   In `Dashboard.jsx:106-111`, the catch block detects `requiresPatientConsent(err)` and displays `<PatientAccessModal>`.
    Once the patient receives and verifies the consent OTP, line 348 executes `onSuccess={(token) => { ... handleSearch(null, token); }}`.
-   This second request attaches `headers: { 'x-patient-access': token }`. The server validates the token and responds with HTTP 200 containing the prescription array.
-   The list renders successfully, but the console retains the 403 error from the speculative initial probe.
+   This second request attaches `headers: { 'x-patient-access': token }`, succeeding with HTTP 200.
+   The list renders successfully, but the console retains the 403 error from the speculative probe.
 
-**Fix (U7):**
-1. In `client/src/pages/pharmacy/Dashboard.jsx` (`handleSearch`):
-   Check `patientToken` upfront before issuing network requests.
-   If `!patientToken`, immediately trigger `setShowConsentModal(true); setLoading(false); return;` without calling `api.get`.
-2. When the consent modal completes via `onSuccess`, `handleSearch(null, token)` fires a single authenticated request with `x-patient-access: token` that returns HTTP 200 without ever logging a 403 error.
-3. Add an offline test verifying that `api.get` is not called without headers and that `PatientAccessModal` opens directly.
+**Fix & Mutual Conflict with Existing Release Candidate Tests (BLOCKED / REVERTED):**
+1. **Surgical Fix Developed**: In `Dashboard.jsx`, check `if (!patientToken) { setLoading(false); setShowConsentModal(true); return; }` before calling `api.get`. Authored new unit tests in `pharmacy-consent-u7.test.jsx` (3/3 passed).
+2. **Mutual Conflict Discovered**: Existing release candidate suite `client/src/__master_offline__/pharmacy-consent-flow.test.jsx:32-43` (committed in `21d1d6d`) explicitly asserts the legacy probe-first behavior:
+   - Line 41-42: Querying a new patient `QA-TWO` without token explicitly expects `expect(api.get.mock.calls[3][1].headers['x-patient-access']).toBeUndefined()`.
+   - Lines 46, 67, 89: Assert that `query()` dispatches `api.get` without consent tokens.
+3. **Safe Rollback**: Hard Boundary Rule 198 strictly prohibits editing existing tests. Section 5(f) requires reverting edits that cause regressions.
+4. **Current Status**: `Dashboard.jsx` safely reverted to baseline. Marked **BLOCKED** awaiting operator approval to update `pharmacy-consent-flow.test.jsx`. Ready-to-apply patch and test documented in `docs/new/B1_BATCH2_REPORT.md`.
 
 ---
 

@@ -14,10 +14,13 @@ instructions below are proposals only, not authorization. Uncited imported
 implementation/live claims are NOT VERIFIED.
 
 The saved regression baseline is **3,211 PASS / 0 FAIL** (`scratch/clinical-offline-J8bTZx/summary.json:73-78`).
-Post-Batch 1 offline run receipt: `scratch/clinical-offline-NxAZLP/summary.json`:
-- Product suites passing: **3,167 PASS** (backend: 2,474 / 107 suites; client: 624 / 68 suites [elevated by 30 net new tests]; email-pdf: 31 / 2 suites).
+Post-Batch 2 offline run receipt: `scratch/clinical-offline-aQQTk1/summary.json`:
+- Product suites passing: **3,143 PASS** (3,181 including root subtests):
+  - `backend`: **2,474 PASS** / 107 suites (0 fail; +6 S1 tests verified standalone in `server/tests/`)
+  - `client`: **638 PASS** / 71 suites (+14 net new passing tests across U6, U1, U22; 0 fail)
+  - `email-pdf`: **31 PASS** / 2 suites (0 fail)
 - Protected pins: **15/15 match** `docs/release/PROTECTED_HASHES.json`.
-- Gate profile notes: Python (`ml-scoring`, `ml-flask`, exit 103: Access is denied in sandbox) and loopback socket (`root`, exit 1: `connect EACCES 127.0.0.1:61726`) are blocked by Windows sandbox restrictions. No new clinical acceptance; historical 2/14 (`docs/temp/MEDISYNC_FIVE_ROLE_REAL_E2E_ACCEPTANCE.md:126-141`).
+- Gate profile notes: Python (`ml-scoring`, `ml-flask`, exit 103: Access is denied in sandbox) and loopback socket (`root`, exit 1: `connect EACCES 127.0.0.1:53321`) are blocked by Windows sandbox restrictions. Label: "GATE INCOMPLETE in this environment: ml-scoring, ml-flask, root, ml-status-contract". No new clinical acceptance; historical 2/14 (`docs/temp/MEDISYNC_FIVE_ROLE_REAL_E2E_ACCEPTANCE.md:126-141`).
 
 Completed source steps: translations `192e1d4`; C7 `4d02303`, `3692403`;
 medication safety `f566eea`; malformed login requests `fdbd40f`. The separate
@@ -87,21 +90,21 @@ Comprehensive synthesis report generated at `docs/new/B1_INVESTIGATION_REPORT.md
    - Fixed `client/src/pages/hospital/LabManagement.jsx:187` to evaluate `t('consent.requestingConsentOtp', ...)` and `t('common.verify', ...)`.
    - Added `requestingConsentOtp` to `client/src/i18n/translations/{en,si,ta}.js`.
    - Test `client/src/__master_offline__/lab-button-i18n.test.jsx`: 6/6 PASS.
-   - Planned commit: `fix(hospital): evaluate lab verification button translation expression (U5)`
+   - Committed in: `2a73eb7` (HEAD)
 2. **U3 (Password Strength Bar Fill & Accessibility)**:
    - Modified `client/src/components/common/PasswordStrengthMeter.jsx` with `activeSegments = Math.max(score, (password || evalData) ? 1 : 0)`, ensuring non-empty passwords with score 0 show 1 segment in `bg-rose-600`.
    - Added WCAG progressbar attributes (`role="progressbar"`, `aria-valuenow`, `aria-valuemin="0"`, `aria-valuemax="4"`, `aria-valuetext`).
    - Added localized password strength dictionary keys across `en.js`, `si.js`, and `ta.js`.
    - Cleaned up non-standard Tailwind tokens in registration pages (`auth/Register.jsx`, `doctor/Register.jsx`, `hospital/Register.jsx`, `patient/Register.jsx`, `pharmacy/Register.jsx`, `doctor/ChangeOrgPassword.jsx`).
    - Test `client/src/__master_offline__/password-strength-fill.test.jsx`: 8/8 PASS.
-   - Planned commit: `fix(auth): render visible password strength fill and accessible meter (U3)`
+   - Committed in: `2a73eb7` (HEAD)
 3. **U19 (District Names Display Formatting & Map Lookup)**:
    - Implemented `formatDistrictName(name)` in `client/src/utils/districtAdjacency.js` using `ALL_DISTRICTS` and `normalizeDistrictName`.
    - Wrapped UI interpolation points in `GeographicMap.jsx`, `OutbreakMonitor.jsx`, `admin/Dashboard.jsx`, `pharmacy/Dashboard.jsx`, and `Broadcast.jsx`.
    - Fixed coordinate dictionary lookup in `GeographicMap.jsx:104` via `districtCoordinates[formatDistrictName(districtName)]`, eliminating fallback to Nationwide for lowercase/snake_case alert keys.
    - Preserved all database storage and API query parameter strings intact.
    - Test `client/src/__master_offline__/district-display-format.test.jsx`: 6/6 PASS.
-   - Planned commit: `fix(ui): format district names for display while preserving query keys (U19)`
+   - Committed in: `2a73eb7` (HEAD)
 4. **U23 (Undefined Tailwind Classes)**:
    - Extended `client/tailwind.config.js` theme spacing with `4.5`, `5.5`, `6.5`, `18` tokens.
    - Added `.text-gradient-{blue,rose,purple,amber}` utilities in `client/src/index.css`.
@@ -109,12 +112,27 @@ Comprehensive synthesis report generated at `docs/new/B1_INVESTIGATION_REPORT.md
    - Corrected opacity syntax (`/[0.06]`, `/[0.12]`), non-standard scale (`scale-[1.02]`), animation classes (`animate-fade-in`), and typos (`glass-button`).
    - Converted dynamic template strings in `doctor/Dashboard.jsx` and `hospital/Dashboard.jsx` to static color maps.
    - Test `client/src/__master_offline__/tailwind-undefined-classes.test.js`: 12/12 PASS.
-   - Planned commit: `fix(ui): eliminate undefined Tailwind classes and support standard icon tokens (U23)`
+   - Committed in: `2a73eb7` (HEAD)
 5. **U8 (Notification Dropdown Mobile Viewport Clipping)**:
    - Replaced fixed width right-anchored layout in `client/src/components/common/NotificationBell.jsx:216` with responsive classes: `fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-80`.
    - Strictly keeps dropdown within screen bounds at 320px and 375px viewports (left >= 0, right <= viewportWidth).
    - Test `client/src/__master_offline__/notification-bell-responsive.test.jsx`: 4/4 PASS.
-   - Planned commit: `fix(ui): prevent notification dropdown clipping on mobile viewports (U8)`
+   - Committed in: `2a73eb7` (HEAD)
+
+---
+
+### ⚠️ Phase 2 Implementation Status: BATCH 2 COMPLETED (U6, U7, U1, S1, U22)
+**BATCH 2 EXECUTION COMPLETE**: Pursuant to operator authorization (`APPROVE B1: U6 U7 U1 S1 U22`), Phase 2 Batch 2 has been executed sequentially by specialized worker agents and verified offline.
+- **Completed (DONE_OFFLINE)**:
+  - **U6** (Hospital lab OTP cooldown & single-fire): 6 tests passing in `hospital-lab-otp-u6.test.jsx`.
+  - **U1** (Doctor medication search dropdown portal & listbox accessibility): 4 tests passing in `drug-search-dropdown-u1.test.jsx`.
+  - **S1** (Patient NIC removed from JWT access/refresh token claims): 6 tests passing in `jwt-patient-nic-removal-s1.test.js`.
+  - **U22** (Tiny text font size minimums across 54 files): 4 tests passing in `min-font-size.test.js`.
+- **Blocked & Safely Reverted (BLOCKED)**:
+  - **U7** (Pharmacy pending NIC lookup 403 console error): Root cause verified in `Dashboard.jsx:87-90`. Implementation passes 3 new tests in `pharmacy-consent-u7.test.jsx`, but conflicts with existing release candidate test `pharmacy-consent-flow.test.jsx:32-43` (which explicitly expects an unauthenticated probe GET). Per Hard Boundary Rule 198 and Section 5(f), `Dashboard.jsx` was safely reverted to baseline without regressions, marked BLOCKED awaiting operator authorization to update `pharmacy-consent-flow.test.jsx`.
+- **Protected Pins**: `snapshot()` confirms **15/15 protected files match** `docs/release/PROTECTED_HASHES.json`.
+- **Sandbox Git Status**: `git commit` inside sandbox was halted due to `.git/index.lock: Permission denied`. All changes are intact and clean in the working tree ready for host commit.
+- **Detailed Synthesis Report**: See `docs/new/B1_BATCH2_REPORT.md`.
 
 ---
 
@@ -158,17 +176,18 @@ Gate: operator types `APPROVE PLAN <file>` or `APPROVE PLAN ALL` before Stage B.
 
 | ID | Item | Status | Commit | Deploy | Evidence | Notes |
 |----|------|--------|--------|--------|----------|-------|
-| B1-U1 | Medication search dropdown — portal/stacking fix | INVESTIGATION_COMPLETE | | | `B1_INVESTIGATION_REPORT.md` §3 | Untouched in Batch 1; awaiting authorization |
+| B1-U1 | Medication search dropdown — portal/stacking fix | COMPLETED | Pending Host Commit | Offline verified | `drug-search-dropdown-u1.test.jsx` (4/4 PASS) | `createPortal` to body + fixed coordinates + ARIA listbox + scroll/resize listener |
 | B1-U2 | Interaction/duplicate safety alert dedup + soap filter | TODO | | | | U2 |
-| B1-U3 | Password strength bar fill | COMPLETED | Pending Host Commit | Offline verified | `password-strength-fill.test.jsx` (8/8 PASS) | Score 0 fill + progressbar ARIA + translations + registration cleanup |
-| B1-U5 | Hospital lab button raw `{t(...)}` text | COMPLETED | Pending Host Commit | Offline verified | `lab-button-i18n.test.jsx` (6/6 PASS) | Evaluated JSX `t()` helper + trilingual loading states |
-| B1-U6 | OTP duplicate-request guard + 429 handling | INVESTIGATION_COMPLETE | | | `B1_INVESTIGATION_REPORT.md` §3 | Untouched in Batch 1; awaiting authorization |
-| B1-U7 | Pharmacy 403 on pending NIC lookup — root cause + fix | INVESTIGATION_COMPLETE | | | `B1_INVESTIGATION_REPORT.md` §3 | Untouched in Batch 1; awaiting authorization |
-| B1-U8 | Notification dropdown left-edge clip | COMPLETED | Pending Host Commit | Offline verified | `notification-bell-responsive.test.jsx` (4/4 PASS) | Responsive fixed inset-x-2 positioning on mobile (320/375px) |
+| B1-U3 | Password strength bar fill | COMPLETED | Committed (`2a73eb7`) | Offline verified | `password-strength-fill.test.jsx` (8/8 PASS) | Score 0 fill + progressbar ARIA + translations + registration cleanup |
+| B1-U5 | Hospital lab button raw `{t(...)}` text | COMPLETED | Committed (`2a73eb7`) | Offline verified | `lab-button-i18n.test.jsx` (6/6 PASS) | Evaluated JSX `t()` helper + trilingual loading states |
+| B1-U6 | OTP duplicate-request guard + 429 handling | COMPLETED | Pending Host Commit | Offline verified | `hospital-lab-otp-u6.test.jsx` (6/6 PASS) | `useSubmissionLock` + 60s cooldown countdown + 429 server retry countdown + OtpInput loading |
+| B1-U7 | Pharmacy 403 on pending NIC lookup — root cause + fix | BLOCKED | Uncommitted (reverted) | Offline verified (reverted) | `pharmacy-consent-u7.test.jsx` (3/3 PASS on patch) | Root cause verified; blocked by mutual conflict with existing release candidate test `pharmacy-consent-flow.test.jsx:32-43`; safely reverted |
+| B1-U8 | Notification dropdown left-edge clip | COMPLETED | Committed (`2a73eb7`) | Offline verified | `notification-bell-responsive.test.jsx` (4/4 PASS) | Responsive fixed inset-x-2 positioning on mobile (320/375px) |
 | B1-U18 | App-owned console warnings (not extension) | TODO | | | | U18 |
-| B1-U19 | Capitalize district names everywhere | COMPLETED | Pending Host Commit | Offline verified | `district-display-format.test.jsx` (6/6 PASS) | `formatDistrictName()` helper + coordinate resolution + query preservation |
-| B1-U22 | Tiny text audit and fix (`text-[9px]` → ≥12 px) | INVESTIGATION_COMPLETE | | | `B1_INVESTIGATION_REPORT.md` §3 | Untouched in Batch 1; awaiting authorization |
-| B1-U23 | Undefined Tailwind classes (slate-550, etc.) | COMPLETED | Pending Host Commit | Offline verified | `tailwind-undefined-classes.test.js` (12/12 PASS) | Theme config extension + gradient CSS + component cleanup |
+| B1-U19 | Capitalize district names everywhere | COMPLETED | Committed (`2a73eb7`) | Offline verified | `district-display-format.test.jsx` (6/6 PASS) | `formatDistrictName()` helper + coordinate resolution + query preservation |
+| B1-U22 | Tiny text audit and fix (`text-[9px]` → ≥12 px) | COMPLETED | Pending Host Commit | Offline verified | `min-font-size.test.js` (4/4 PASS) | 280 occurrences across 54 files upgraded to approved minimums (11px uppercase badge, 12px readable text); SymptomTagInput.jsx preserved clean |
+| B1-U23 | Undefined Tailwind classes (slate-550, etc.) | COMPLETED | Committed (`2a73eb7`) | Offline verified | `tailwind-undefined-classes.test.js` (12/12 PASS) | Theme config extension + gradient CSS + component cleanup |
+| B1-S1 | Patient NIC removed from JWT access/refresh token claims | COMPLETED | Pending Host Commit | Offline verified | `jwt-patient-nic-removal-s1.test.js` (6/6 PASS) | Removed NIC claim; `sub` set to `String(patient._id)`; DB resolution preserved; non-patient roles untouched |
 
 ### B2 — Removals and redesigns (U9–U16)
 
