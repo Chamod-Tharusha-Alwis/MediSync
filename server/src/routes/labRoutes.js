@@ -44,10 +44,19 @@ const uploadDisk = multer({
   },
 });
 
+const rateLimit = require('express-rate-limit');
+
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // Limit each IP to 60 requests per `window`
+  message: { error: 'Too many requests', details: 'Please try again later.' },
+  validate: { trustProxy: false }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC — no auth needed
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/public/:labTestId/status', publicStatusCheck);
+router.get('/public/:labTestId/status', publicLimiter, publicStatusCheck);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOSPITAL routes — role: 'hospital_admin' or 'labTechnician'
