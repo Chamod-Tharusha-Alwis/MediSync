@@ -78,7 +78,8 @@ const production=()=>{
 };
 test('seed-local pin admits only the current existing production cluster through the real operator policy',()=>{
   const target=selectSeedTarget(production(),'medisync_prod');
-  expect(target.connectionOptions).toMatchObject({tls:true,authSource:'admin',authMechanism:'SCRAM-SHA-256',dbName:'medisync_prod'});
+  expect(target.connectionOptions).toMatchObject({tls:true,authSource:'admin',dbName:'medisync_prod'});
+  expect(target.connectionOptions.authMechanism).toBeUndefined();
 });
 test.each(['medisync.p7hjket.mongodb.net','another.abc12.mongodb.net','localhost'])('seed-local policy rejects an unapproved production hostname %#',host=>{
   const env=production();env.MONGO_URI=env.MONGO_URI.replace('medisync.xton2tj.mongodb.net',host);

@@ -11,7 +11,10 @@ test.each([false, true])('mode %s pins URI source, database and secure driver op
   const env = isQa ? qa() : production(), result = selectOperatorDatabase(env, isQa);
   expect(result.uri).toBe(isQa ? env.MONGO_URI_TEST : env.MONGO_URI);
   expect(result.database).toBe(isQa ? 'medisync_automated_test' : 'medisync_prod');
-  expect(result.connectionOptions).toMatchObject({ dbName: result.database, tls: true, authSource: 'admin', authMechanism: 'SCRAM-SHA-256', readPreference: 'primary', writeConcern: { w: 'majority' } });
+  const expectedOptions = { dbName: result.database, tls: true, authSource: 'admin', readPreference: 'primary', writeConcern: { w: 'majority' } };
+  if (isQa) expectedOptions.authMechanism = 'SCRAM-SHA-256';
+  expect(result.connectionOptions).toMatchObject(expectedOptions);
+  if (!isQa) expect(result.connectionOptions.authMechanism).toBeUndefined();
 });
 
 test.each([null, 'qa', 1, 0])('incorrect mode %j is rejected', mode => expect(() => selectOperatorDatabase(production(), mode)).toThrow('MODE_INVALID'));

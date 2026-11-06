@@ -78,7 +78,8 @@ describe('Read-only preflight uses real runtime policies with inert transports',
   afterEach(() => { jest.restoreAllMocks(); jest.clearAllMocks(); jest.useRealTimers(); });
   test('strict real storage verification, boot filter and TLS PING all pass without data writes', async () => {
     await expect(runLiveConnectivityPreflight(environment)).resolves.toMatchObject({ storage: { verifiedCollections: 28, verifiedRequiredIndexes: 65, transactionTopologyVerified: true }, operator: { activeSuperAdminVerified: true }, redis: { tls: true, ping: 'PONG' } });
-    expect(MongoClient).toHaveBeenCalledWith(environment.MONGO_URI, expect.objectContaining({ tls: true, authSource: 'admin', authMechanism: 'SCRAM-SHA-256', socketTimeoutMS: 5000 }));
+    expect(MongoClient).toHaveBeenCalledWith(environment.MONGO_URI, expect.objectContaining({ tls: true, authSource: 'admin', socketTimeoutMS: 5000 }));
+    expect(MongoClient.mock.calls[0][1].authMechanism).toBeUndefined();
     expect(fixture.db.command.mock.calls.map(([c]) => c)).toEqual([{ connectionStatus: 1 }, { hello: 1 }]);
     expect(findAdmin).toHaveBeenCalledWith({ isActive: true, isSuperAdmin: true }, { projection: { _id: 1 }, maxTimeMS: 5000 });
     expect(createClient).toHaveBeenCalledWith({ url: environment.REDIS_URL, disableOfflineQueue: true, socket: { tls: true, rejectUnauthorized: true, connectTimeout: 5000, reconnectStrategy: false } });

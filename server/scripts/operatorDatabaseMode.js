@@ -31,7 +31,7 @@ function selectOperatorDatabase(environment, isQa = false) {
   }
   return Object.freeze({
     mode: isQa ? 'qa' : 'production', database, uri: rawUri,
-    connectionOptions: Object.freeze({ dbName: database, tls: true, authSource: 'admin', authMechanism: 'SCRAM-SHA-256', readPreference: 'primary', writeConcern: { w: 'majority' }, serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 })
+    connectionOptions: Object.freeze({ dbName: database, tls: true, authSource: 'admin', ...(isQa ? { authMechanism: 'SCRAM-SHA-256' } : {}), readPreference: 'primary', writeConcern: { w: 'majority' }, serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 })
   });
 }
 

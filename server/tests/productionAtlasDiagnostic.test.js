@@ -9,7 +9,7 @@ const proof = () => ({ authInfo: { authenticatedUsers: [{ user: REQUESTED_USER, 
 
 test('exact requested target passes real policy offline without claiming authentication', () => {
   const result = inspectProductionConnection(env());
-  expect(result).toMatchObject({ status: 'OFFLINE_CONFIGURATION_PASS', requestedUsernameMatches: true, tlsEnforcedByDriver: true, authSourceEnforcedByDriver: true, authMechanismEnforcedByDriver: true, authentication: 'NOT_VERIFIED', roles: 'NOT_VERIFIED', storage: 'NOT_VERIFIED', topology: 'NOT_VERIFIED', networkOperations: 0 });
+  expect(result).toMatchObject({ status: 'OFFLINE_CONFIGURATION_PASS', requestedUsernameMatches: true, tlsEnforcedByDriver: true, authSourceEnforcedByDriver: true, authMechanismEnforcedByDriver: false, authentication: 'NOT_VERIFIED', roles: 'NOT_VERIFIED', storage: 'NOT_VERIFIED', topology: 'NOT_VERIFIED', networkOperations: 0 });
   expect(JSON.stringify(result)).not.toContain(dummyPassword);
   expect(JSON.stringify(result)).not.toContain('mongodb+srv://');
 });
