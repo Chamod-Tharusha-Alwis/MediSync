@@ -81,8 +81,8 @@ export async function getHardwareModel() {
           return mappedModel;
         }
       }
-    } catch (e) {
-      console.warn('[DeviceTracker] Failed to get high entropy hardware model', e);
+    } catch (_) {
+      // Optional client hints may be denied; retain the existing null fallback.
     }
   }
   return null;
