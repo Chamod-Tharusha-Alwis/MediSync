@@ -499,17 +499,11 @@ exports.login = async (req, res) => {
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
         const networkInfo = await resolveLocation(ip);
         const isTrusted = sessionResult.isTrusted;
-        console.log(`[AUTH LOGIN NOTIFICATION] Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+        console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch initiated');
         const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted, require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user));
-        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
-          provider: resNotification?.provider || null,
-          providerAccepted: Boolean(resNotification?.providerAccepted),
-          deliveryQueued: Boolean(resNotification?.deliveryQueued),
-          fallbackUsed: Boolean(resNotification?.fallbackUsed),
-          deliveryConfirmed: false,
-        });
+        console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch completed');
       } catch(e) {
-        console.error('[AUTH LOGIN NOTIFICATION ERROR] Failed to send login notification:');
+        console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch encountered an error');
       }
     }
 
@@ -740,17 +734,11 @@ exports.verifyLoginOTP = async (req, res) => {
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
         const networkInfo = await resolveLocation(ip);
         const isTrusted = sessionResult.isTrusted;
-        console.log(`[AUTH LOGIN OTP NOTIFICATION] Role: ${actualRole} | Device: ${deviceModel} | isTrusted: ${isTrusted}`);
+        console.debug('[AUTH LOGIN OTP NOTIFICATION] Login notification dispatch initiated');
         const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted, require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user));
-        console.log(`[AUTH LOGIN OTP NOTIFICATION RESULT]`, {
-          provider: resNotification?.provider || null,
-          providerAccepted: Boolean(resNotification?.providerAccepted),
-          deliveryQueued: Boolean(resNotification?.deliveryQueued),
-          fallbackUsed: Boolean(resNotification?.fallbackUsed),
-          deliveryConfirmed: false,
-        });
+        console.debug('[AUTH LOGIN OTP NOTIFICATION] Login notification dispatch completed');
       } catch(e) {
-        console.error('[AUTH LOGIN OTP NOTIFICATION ERROR] Failed to send login notification:');
+        console.debug('[AUTH LOGIN OTP NOTIFICATION] Login notification dispatch encountered an error');
       }
     }
 

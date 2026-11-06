@@ -164,6 +164,29 @@ Comprehensive synthesis report generated at `docs/new/B1_INVESTIGATION_REPORT.md
 
 ---
 
+### ⚠️ Phase 2 Implementation Status: BATCH 5 COMPLETED (Gate Allowlist, S4 Logging Fix, Investigations S6/S7/U18/S3, Inventory Plan U9–U16)
+**BATCH 5 EXECUTION COMPLETE**: Pursuant to operator authorization (`APPROVED: (1) GATE-ALLOWLIST edit, (2) S4, (3) read-only investigations S6, S7, U18, (4) read-only plan for U9-U16`), Phase 2 Batch 5 has been executed and verified offline (`scratch/clinical-offline-kkbybA`).
+- **Completed (`DONE_OFFLINE`)**:
+  - **GATE-ALLOWLIST**: Added 4 passing branch test suites to `server/clinical.offline.jest.cjs:testMatch` (`registrationRateLimitS2.test.js` [6], `publicListingRateLimitS5.test.js` [7], `permissionsPolicyHeaderS11.test.js` [1], `u2DrugCatalogAndSafety.test.js` [5]). Excluded `jwt-patient-nic-removal-s1.test.js` (2 FAIL / 4 PASS) per rule due to vm mock isolation failure. Backend elevated from 2,499 to 2,518 tests across 112 suites (+19 tests).
+  - **S4** (Stop logging login notification details): Replaced sensitive logging of role, deviceModel, isTrusted, recipient email, and provider result objects with unparameterized `console.debug(...)` messages in `server/src/controllers/authController.js:502,504,512,737,739,747` and `server/src/controllers/pharmacyController.js:279,292,300`. Added `server/tests/loginNotificationLoggingS4.test.js` (5/5 PASS) and added to `clinical.offline.jest.cjs`. Backend test suite elevated to **2,523 PASS across 113 suites** (0 failures).
+  - **Investigations (S6, S7, U18, S3)**: Completed read-only investigations in `docs/new/B1_BATCH5_INVESTIGATIONS.md` covering S6 (public lab status check 403, 4-digit ID, missing rate limiter), S7 (timingSafeEqual and 2-hour replay window in `internalAuth.js`), U18 (client console warnings audit; 10 app-owned logs, 3 React act() warnings), and S3 (`app.js:303-309` rate limiter skip inversion).
+  - **Inventory Removal Plan (U9–U16)**: Completed read-only architectural plan in `docs/new/B1_INVENTORY_REMOVAL_PLAN.md` covering all touchpoints, routes, models, components, i18n keys, clinical acceptance groups 8-10, admin redesigns (U13-U16), and the critical discovery that `server/tests/ir04BackendIntegration.test.js` is protected (PIN 6 in `PROTECTED_HASHES.json`) and tests inventory.
+- **Protected Pins**: `15/15` protected files match `docs/release/PROTECTED_HASHES.json` (`releaseCandidateSha256`, `sourceFrozen: true`).
+- **Detailed Synthesis Report**: See `docs/new/B1_BATCH5_REPORT.md`.
+
+---
+
+### ⚠️ Phase 2 Implementation Status: BATCH 6 COMPLETED (S1 Test Fix, S6 Lab Status Rate Limiter, S3 Auth Limiter Skip Inversion)
+**BATCH 6 EXECUTION COMPLETE**: Pursuant to operator authorization (`APPROVED: (1) fix the S1 test, (2) S6 limiter, (3) S3 limiter skip change`), Phase 2 Batch 6 has been executed and verified offline (`scratch/clinical-offline-MxVB0X`).
+- **Completed (`DONE_OFFLINE`)**:
+  - **Item 1: S1 Test Fix**: Evaluated failure in `server/tests/jwt-patient-nic-removal-s1.test.js`. Both failures were HTTP 500 on login due to missing `passwordAttemptPolicy` mock. Zero token or NIC-shaped leaks. Added standard lockout mock (`createPasswordAttemptPolicy({ getAttempts: async () => 0, incrementAttempts: async () => 1 })`) matching other login tests, kept all assertions intact, and registered path in `server/clinical.offline.jest.cjs`. Suite passes 6/6; backend elevated to 2,529 PASS across 114 suites.
+  - **Item 2: S6 Public Lab Status Rate Limiter**: Attached `publicLimiter` (`windowMs: 60 * 1000, max: 60`) to `router.get('/public/:labTestId/status', publicLimiter, publicStatusCheck)` in `server/src/routes/labRoutes.js:61` matching `publicRoutes.js`. Response (`HTTP 403 Forbidden`) preserved. Added `server/tests/publicLabStatusRateLimitS6.test.js` (1/1 PASS) and registered in `clinical.offline.jest.cjs`. Backend elevated to 2,530 PASS across 115 suites.
+  - **Item 3: S3 Auth Limiter Skip Inversion**: Audited tests across `server/tests/` and confirmed zero tests depend on the limiter being skipped outside `test`. Changed `server/src/app.js:307` from `skip: () => process.env.NODE_ENV !== 'production'` to `skip: () => process.env.NODE_ENV === 'test'`. Added `server/tests/authLimiterSkipS3.test.js` (2/2 PASS) and registered in `clinical.offline.jest.cjs`. Backend elevated to **2,532 PASS across 116 suites** (0 failures). Total runnable passed: **3,204 PASS** (3,242 including root 38).
+- **Protected Pins**: `15/15` protected files match `docs/release/PROTECTED_HASHES.json` (`releaseCandidateSha256`, `sourceFrozen: true`).
+- **Detailed Synthesis Report**: See `docs/new/B1_BATCH6_REPORT.md`.
+
+---
+
 ## Phase 0 — Housekeeping (no approval required)
 
 | ID | Item | Status | Commit | Deploy | Live evidence | Owner | Notes |
@@ -211,15 +234,19 @@ Gate: operator types `APPROVE PLAN <file>` or `APPROVE PLAN ALL` before Stage B.
 | B1-U6 | OTP duplicate-request guard + 429 handling | COMPLETED | Committed (`9b0d5fb`) | Offline verified | `hospital-lab-otp-u6.test.jsx` (6/6 PASS) | `useSubmissionLock` + 60s cooldown countdown + 429 server retry countdown + OtpInput loading |
 | B1-U7 | Pharmacy 403 on pending NIC lookup — root cause + fix | COMPLETED | Pending Host Commit | Offline verified | `pharmacy-consent-u7.test.jsx` (3/3 PASS), `pharmacy-consent-flow.test.jsx` (14/14 PASS) | `handleSearch` requires consent token upfront before `api.get`; opens modal directly; 0 tokenless probe calls; 403 catch preserved |
 | B1-U8 | Notification dropdown left-edge clip | COMPLETED | Committed (`2a73eb7`) | Offline verified | `notification-bell-responsive.test.jsx` (4/4 PASS) | Responsive fixed inset-x-2 positioning on mobile (320/375px) |
-| B1-U18 | App-owned console warnings (not extension) | TODO | | | | U18 |
+| B1-U18 | App-owned console warnings (not extension) | INVESTIGATION COMPLETED | Read-only | Offline verified | `B1_BATCH5_INVESTIGATIONS.md` | Audit complete; 10 app-owned logs in client/src; 3 React act() warnings in client test logs |
 | B1-U19 | Capitalize district names everywhere | COMPLETED | Committed (`2a73eb7`) | Offline verified | `district-display-format.test.jsx` (6/6 PASS) | `formatDistrictName()` helper + coordinate resolution + query preservation |
 | B1-U22 | Tiny text audit and fix (`text-[9px]` → ≥12 px) | COMPLETED | Committed (`a251d04`) | Offline verified | `min-font-size.test.js` (4/4 PASS) | 280 occurrences across 54 files upgraded to approved minimums (11px uppercase badge, 12px readable text); SymptomTagInput.jsx preserved clean |
 | B1-U23 | Undefined Tailwind classes (slate-550, etc.) | COMPLETED | Committed (`2a73eb7`) | Offline verified | `tailwind-undefined-classes.test.js` (12/12 PASS) | Theme config extension + gradient CSS + component cleanup |
-| B1-S1 | Patient NIC removed from JWT access/refresh token claims | COMPLETED | Committed (`e1dc51b`) | Offline verified | `jwt-patient-nic-removal-s1.test.js` (6/6 PASS) | Removed NIC claim; `sub` set to `String(patient._id)`; DB resolution preserved; non-patient roles untouched |
+| B1-S1 | Patient NIC removed from JWT access/refresh token claims | COMPLETED | Committed (`e1dc51b`) / Test Fix Pending Host Commit | Offline verified | `jwt-patient-nic-removal-s1.test.js` (6/6 PASS) | Removed NIC claim; `sub` set to `String(patient._id)`; DB resolution preserved; test harness lockout mock fixed & registered in gate |
 | B1-S2 | Rate-limit registration endpoints (`/register`) | COMPLETED | Committed (`5861452`) | Offline verified | `registrationRateLimitS2.test.js` (6/6 PASS) | Dedicated `registerLimiter` (10/15m in prod) on `hospitalRoutes.js`, `patientRoutes.js`, `pharmacyRoutes.js` isolated from `/login` |
+| B1-S3 | Enable auth rate limiter outside test environment | COMPLETED | Pending Host Commit | Offline verified | `authLimiterSkipS3.test.js` (2/2 PASS) | Inverted `authLimiter` skip in `server/src/app.js:307` from `!== 'production'` to `=== 'test'` |
+| B1-S4 | Stop logging login notification details | COMPLETED | Pending Host Commit | Offline verified | `loginNotificationLoggingS4.test.js` (5/5 PASS) | Replaced sensitive PII/device logging with console.debug in authController.js & pharmacyController.js |
 | B1-S5 | Rate-limit public directory, disease search, and review endpoints | COMPLETED | Committed (`ae65fb7`) | Offline verified | `publicListingRateLimitS5.test.js` (7/7 PASS) | `publicLimiter` (60/60s) on `/doctors`, `/hospitals`, `/pharmacies`, `/diseases/search`; `publicReviewLimiter` (60/60s IP-based) on `GET /api/reviews/:targetId` |
+| B1-S6 | Rate-limit public lab status check | COMPLETED | Pending Host Commit | Offline verified | `publicLabStatusRateLimitS6.test.js` (1/1 PASS) | Attached `publicLimiter` to `GET /public/:labTestId/status` in `server/src/routes/labRoutes.js:61` |
 | B1-S11 | Restrict `Permissions-Policy` Client Hints to `(self)` | COMPLETED | Committed (`ae968ad`) | Offline verified | `permissionsPolicyHeaderS11.test.js` (1/1 PASS) | `server/src/app.js:237` sets `ch-ua-model=(self), ch-ua-platform=(self), ch-ua-platform-version=(self)` |
 | B1-LOCKOUT | 5 failed passwords in 15 min locks account | COMPLETED | Pending Host Commit | Offline verified | `passwordAttemptPolicy.test.js` (25/25 PASS) | Applied 9-file lockout candidate; backend elevated to 2,499 PASS; real Redis TTL NOT VERIFIED |
+| B1-GATE-ALLOWLIST | Include branch security and catalog tests in offline gate | COMPLETED | Pending Host Commit | Offline verified | `server/clinical.offline.jest.cjs` | Added S2, S5, S11, U2, S4, S1, S6, S3 suites; backend now 2,532 PASS across 116 suites |
 
 ### B2 — Removals and redesigns (U9–U16)
 

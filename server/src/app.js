@@ -299,12 +299,12 @@ async function startServer() {
     next();
   });
 
-  // Rate limiting: strict in production, relaxed in development
+  // Rate limiting: strict in production, relaxed in development, skipped only in test
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: process.env.NODE_ENV === 'production' ? 10 : 100,
     message: { error: 'Too many requests from this IP, please try again later.' },
-    skip: () => process.env.NODE_ENV !== 'production',
+    skip: () => process.env.NODE_ENV === 'test',
     validate: { trustProxy: false }
   });
 
