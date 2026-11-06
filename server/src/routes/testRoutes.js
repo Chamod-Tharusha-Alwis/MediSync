@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const testController = require('../controllers/testController');
 const protect = require('../middleware/verifiedAuth');
+const patientRouteIdentity = require('../middleware/patientRouteIdentity');
 const clinicalWriteAuthorization = require('../middleware/clinicalWriteAuthorization');
 
 // Order a test (doctor only)
 router.post('/order', protect(['doctor']), clinicalWriteAuthorization, testController.orderTest);
 
 // Get all tests for a patient
-router.get('/patient/:nic', protect(['doctor', 'patient', 'hospital_admin']), testController.getPatientTests);
+router.get('/patient/:nic', protect(['doctor', 'patient', 'hospital_admin']), patientRouteIdentity, testController.getPatientTests);
 
 // Get tests for a specific consultation
 router.get('/consultation/:id', protect(['doctor', 'hospital_admin']), testController.getConsultationTests);
