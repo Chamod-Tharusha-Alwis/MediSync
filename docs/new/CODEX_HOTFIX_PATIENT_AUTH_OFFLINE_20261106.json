@@ -1,0 +1,218 @@
+{
+  "at": "2026-11-06T06:43:23.834Z",
+  "branch": "hotfix/patient-auth",
+  "base": "c5434228635254423f011f49b1e1e983201aee3d",
+  "baseline": {
+    "passed": 3322,
+    "exit": 0,
+    "out": "scratch/clinical-offline-mwsP3d"
+  },
+  "candidate": {
+    "passed": 3349,
+    "failed": 0,
+    "exit": 0,
+    "profiles": [
+      {
+        "mode": "backend",
+        "passed": 2553,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2553,
+        "suites": 117,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "client",
+        "passed": 647,
+        "failed": 0,
+        "skipped": 0,
+        "total": 647,
+        "suites": 73,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "email-pdf",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "suites": 2,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-scoring",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-flask",
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0,
+        "total": 31,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "root",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0,
+        "total": 40,
+        "success": true,
+        "status": "PASS"
+      },
+      {
+        "mode": "ml-status-contract",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "total": 7,
+        "success": true,
+        "status": "PASS"
+      }
+    ],
+    "notRun": [],
+    "sourceFrozen": true,
+    "out": "scratch/clinical-offline-wXZ5ap"
+  },
+  "firstFullAttempt": {
+    "passed": 3348,
+    "failed": 1,
+    "exit": 1,
+    "out": "scratch/clinical-offline-xkW4Hn",
+    "cause": "Existing route inventory harness did not allow new real middleware import; all assertions retained."
+  },
+  "build": {
+    "code": 0,
+    "signal": null,
+    "profile": {
+      "entry": "src/index.js",
+      "application": "src/App.js",
+      "modules": 118,
+      "demoImported": false,
+      "profile": "clinical-production"
+    }
+  },
+  "protectedPins": [
+    {
+      "path": "server/src/middleware/auth.js",
+      "match": true
+    },
+    {
+      "path": "server/src/controllers/doctorController.js",
+      "match": true
+    },
+    {
+      "path": "ml-engine/app.py",
+      "match": true
+    },
+    {
+      "path": "ml-engine/evaluate_symptom_model.py",
+      "match": true
+    },
+    {
+      "path": "client/src/components/SymptomTagInput.jsx",
+      "match": true
+    },
+    {
+      "path": "server/tests/ir04BackendIntegration.test.js",
+      "match": true
+    },
+    {
+      "path": "server/tests/patientProfileOwnedIntegration.test.js",
+      "match": true
+    },
+    {
+      "path": "server/tests/prescriptionDurationOwnedIntegration.test.js",
+      "match": true
+    },
+    {
+      "path": "server/tests/lab.test.js",
+      "match": true
+    },
+    {
+      "path": "server/tests/universityDemoSeedVerify.test.js",
+      "match": true
+    },
+    {
+      "path": "client/tests/ir04-isolated-five-role-e2e.spec.js",
+      "match": true
+    },
+    {
+      "path": "server/src/config/dbGuard.js",
+      "match": true
+    },
+    {
+      "path": "server/src/models/Consultation.js",
+      "match": true
+    },
+    {
+      "path": "server/src/models/Patient.js",
+      "match": true
+    },
+    {
+      "path": "server/src/utils/versionedEncryption.js",
+      "match": true
+    }
+  ],
+  "reviewedSourcePaths": [
+    {
+      "path": "client/src/pages/patient/Login.jsx",
+      "sha256": "ccbb64d727f4b20a7c60f00ec318bfb0493510ab8cb465fc065c4da2f1eaeac9"
+    },
+    {
+      "path": "client/src/__master_offline__/patient-login-identity.test.jsx",
+      "sha256": "30ddae329ee6ed26dfa6d94e26fb8b11c6d442fa47d8d06a06c5fa1057f87270"
+    },
+    {
+      "path": "server/clinical.offline.jest.cjs",
+      "sha256": "eace950abcd8713ef46f61282da9e46d6d1a1cf0fe78e5c37607fb4806d65e15"
+    },
+    {
+      "path": "server/src/middleware/patientRouteIdentity.js",
+      "sha256": "cbbbd865ba1448a3429e3122fde2bcece2dd430601ecae6df51b4ffafd6ab593"
+    },
+    {
+      "path": "server/src/routes/patientRoutes.js",
+      "sha256": "1911f2351129bf895d130dbefd4350bfcb2ebe8ee5b39734d1482c9828616909"
+    },
+    {
+      "path": "server/src/routes/prescriptionRoutes.js",
+      "sha256": "872e1cc14f12b1c3d8b88feefabe391c059e32582d57cdab33e6182d524c98fb"
+    },
+    {
+      "path": "server/src/routes/testRoutes.js",
+      "sha256": "1535427a435c037963c51047cc408bc9efcb74192d4c337fd578f5d3f486eb8f"
+    },
+    {
+      "path": "server/tests/agentBEndpointAdmission.test.js",
+      "sha256": "cc15e9cf2519aaa21e45129bc593b9a094d515a3d17a38bc1e6c46adf4716f02"
+    },
+    {
+      "path": "server/tests/patientRouteIdentityHotfix.test.js",
+      "sha256": "ad1f557a7c1d0f7409088fa3af84190ae897a5bdf596e4cb5d13a8881342b774"
+    },
+    {
+      "path": "server/tests/helpers/patientRouteIdentityHarness.js",
+      "sha256": "5d50f405d54e7b73f882b955434679d1120e788949f7f769ce8044af88acd6e6"
+    }
+  ],
+  "liveLogins": 0,
+  "providerRequests": 0,
+  "liveStatus": "NOT_VERIFIED",
+  "operatorEmailCounts": {
+    "resend": 1,
+    "brevo": 0,
+    "combined": 1,
+    "derivedFromRemainingQuotas": true,
+    "stopAt": 50
+  }
+}

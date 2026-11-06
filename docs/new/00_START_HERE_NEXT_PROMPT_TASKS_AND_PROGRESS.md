@@ -1,5 +1,38 @@
 # MediSync — Stage A Master Task List
 
+## 6 November 2026 — production patient hotfix in progress
+
+The new operator attachment supersedes the earlier docs-only boundary for this
+specific run. Starting main/origin/main is `c543422`; work is on
+`hotfix/patient-auth`, never a direct main push. Report:
+`HOTFIX_PATIENT_AUTH_REPORT.md`. No protected-file, email-service, clinical data,
+Atlas/Redis, seed, detector, PDF-hold or inventory change is authorized here.
+
+Confirmed incident: login stores stable `subId` as a NIC; NIC-format route guards
+reject the resulting account-ID URL. Source: patient `Login.jsx:27,37` at
+`c543422`, `patientController.js:161,364-365,492-493`. Existing ID-only JWTs with
+the correct owner-NIC path already work. S1 came through PR #10 `a25098d`.
+
+Baseline: 3,322 PASS, all seven profiles, zero failures, source frozen, 15/15 pins,
+notRun empty (`scratch/clinical-offline-mwsP3d/summary.json`). New router red
+8 PASS / 6 FAIL reproduced the actual path mismatch. New router green 21/21;
+client identity plus login locks green 21/21. Full candidate gate **3,349 PASS /
+0 FAIL / 0 SKIP**, all seven profiles, notRun empty, frozen source and 15/15 pins
+(`scratch/clinical-offline-wXZ5ap/summary.json`). First full failure is preserved;
+only an existing route-inventory harness dependency allowlist was updated, no
+assertions changed. PR/CI/deploy still pending. Strict client build exit 0,
+clinical-production, 118 modules, no demo import
+(`scratch/CODEX_PATIENT_HOTFIX_BUILD_sSjtrU/build-result.json`).
+
+No live login/email has run. Operator remaining quotas imply combined sent 1
+(Resend 1, Brevo 0). Current attachment caps 60/day, STOP at 50; up to three
+patient-only logins after deployment, no retries on a failed login. No admin
+login. Live scopes and costs remain separately accounted. Current Render logs,
+security-alert severity inventory and all new patient live results NOT VERIFIED.
+Later U18/cleanup/security proposals do not delay this service repair.
+
+The dated historical planning checkpoint below is preserved, not current scope.
+
 **Planning index.** Reconciles the older trackers, which remain preserved and
 unmodified, not archived with pointers. Read `TRACKER_RECONCILIATION.md` and
 `MEDISYNC_MASTER_PROMPT_V3_ADDENDUM_ANTIGRAVITY.md` first.

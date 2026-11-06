@@ -88,6 +88,7 @@ test('actual consent routes admit the same pharmacy staff roles as the verified 
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../src/routes/patientRoutes.js'), 'utf8'), { module, process: { env: { NODE_ENV: 'test' } }, require(name) {
     if (name === 'express') return { Router: () => router };
     if (name === '../middleware/verifiedAuth') return roles => ({ verifiedRoles: roles });
+    if (name === '../middleware/patientRouteIdentity') return require('../src/middleware/patientRouteIdentity');
     if (name === 'express-rate-limit') return () => () => {};
     if (name === '../controllers/patientController') return {};
     throw new Error('UNEXPECTED_ROUTE_DEPENDENCY');

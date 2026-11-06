@@ -24,7 +24,7 @@ const PatientLogin = () => {
   const navigate = useNavigate();
 
   const completePatientSession = (data) => {
-    const { accessToken, refreshToken, role, subId, name } = data || {};
+    const { accessToken, refreshToken, role, subId, nic, name } = data || {};
     if (!accessToken || accessToken === 'undefined') {
       throw new Error('Authentication token missing from server response.');
     }
@@ -34,7 +34,8 @@ const PatientLogin = () => {
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('role', role || 'patient');
     localStorage.setItem('userRole', role || 'patient');
-    if (subId) localStorage.setItem('nic', subId);
+    const patientIdentifier = nic || subId;
+    if (patientIdentifier) localStorage.setItem('nic', patientIdentifier);
     if (name) {
       localStorage.setItem('name', name);
       localStorage.setItem('userName', name);

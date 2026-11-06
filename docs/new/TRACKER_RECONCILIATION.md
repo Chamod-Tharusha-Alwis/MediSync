@@ -1,5 +1,32 @@
 # MediSync — Tracker Reconciliation
 
+## 6 November 2026 — patient hotfix reconciliation
+
+Current operator authority is the production-hotfix attachment, superseding the
+older docs-only scope below for this run. Starting main is `c543422`; candidate
+branch `hotfix/patient-auth`. No direct main push or protected change.
+
+S1 `e1dc51b` is in PR #10 merge `a25098d`, inherited by PR #11 `c543422` (verified
+merge-base exits 0 for PR #10 and 1 for its first parent). It correctly removes
+NIC claims, but patient Login discarded the separately returned NIC. It stored
+the account ID as NIC, producing paths rejected by the format checks before the
+existing ownership resolver. Exact source and evidence:
+`HOTFIX_PATIENT_AUTH_REPORT.md`. No S1 revert or authorization widening.
+
+Actual current-main baseline 3,322 PASS, all seven profiles, notRun empty,
+15/15 protected pins: `scratch/clinical-offline-mwsP3d/summary.json`. The older
+3,211 count below remains historical. New real-router tests reproduce the bug
+and preserve current owner-NIC paths/negative authorization. Candidate full gate:
+**3,349 PASS / 0 FAIL / 0 SKIP**, all seven profiles, notRun empty, frozen source,
+15/15 pins (`scratch/clinical-offline-wXZ5ap/summary.json`). Strict production
+client build exit 0. PR/deploy/live remain pending; no live PASS claimed.
+
+Security-alert count/severities and Render post-deploy error counts are
+NOT VERIFIED due missing scoped read access. No secrets/identifiers copied.
+Historical clinical group acceptance stays 2/14; no new full clinical acceptance.
+
+The preserved 5 November docs-only checkpoint follows.
+
 Reconciled locally on 5 November 2026. Documentation only; no application changes.
 
 ## Authority and scope
