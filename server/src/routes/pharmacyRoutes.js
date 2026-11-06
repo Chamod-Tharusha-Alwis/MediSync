@@ -12,7 +12,15 @@ const loginLimiter = rateLimit({
 });
 
 // Public routes
-router.post('/register', pharmacyController.registerPharmacy);
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 10,
+  message: { error: 'Too many registration requests from this IP, please try again later.' },
+  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  validate: { trustProxy: false }
+});
+
+router.post('/register', registerLimiter, pharmacyController.registerPharmacy);
 router.post('/login', loginLimiter, pharmacyController.loginPharmacy);
 router.post('/change-first-password', loginLimiter, pharmacyController.changeFirstPassword);
 

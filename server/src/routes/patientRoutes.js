@@ -13,7 +13,15 @@ const loginLimiter = rateLimit({
 });
 
 // Auth routes
-router.post('/register', patientController.registerPatient);
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 10,
+  message: { error: 'Too many registration requests from this IP, please try again later.' },
+  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  validate: { trustProxy: false }
+});
+
+router.post('/register', registerLimiter, patientController.registerPatient);
 router.post('/login', loginLimiter, patientController.loginPatient);
 
 // Patient data routes
