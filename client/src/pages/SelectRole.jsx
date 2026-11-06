@@ -111,7 +111,7 @@ const SelectRole = () => {
                   <div className={`p-3 rounded-xl bg-slate-950/50 border border-white/5 group-hover:border-slate-800 transition-colors`}>
                     <Icon className={`w-6 h-6 ${role.color}`} />
                   </div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-600 group-hover:text-slate-500 select-none">
+                  <span className="text-[11px] uppercase font-bold tracking-widest text-slate-600 group-hover:text-slate-500 select-none">
                     Select
                   </span>
                 </div>

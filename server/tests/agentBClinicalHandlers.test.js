@@ -15,6 +15,7 @@ function controller(name, mocks, environment = {}) {
       if (id === '../security/securityRuntime') return require('../src/security/securityRuntime');
       if (id === '../security/loginIdentifier') return require('../src/security/loginIdentifier');
       if (id === '../security/loginRequest') return require('../src/security/loginRequest');
+      if (id === '../security/passwordAttemptPolicy') return require('../src/security/passwordAttemptPolicy').createPasswordAttemptPolicy({getAttempts:async()=>0,incrementAttempts:async()=>1});
       if (id === '../services/clinicalRecordDto') return require('../src/services/clinicalRecordDto');
       if (id === '../services/recipientLanguageService') return require('../src/services/recipientLanguageService');
       if (id === '../security/accountState') return require('../src/security/accountState');

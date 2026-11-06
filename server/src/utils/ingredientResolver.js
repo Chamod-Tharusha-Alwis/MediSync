@@ -373,6 +373,20 @@ function findCatalogMatch(inputName, dbDrugs = [], fallbackDrugs = []) {
 /**
  * Deterministic medication interaction & ingredient-resolution analyzer.
  */
+const NON_PRESCRIBABLE_NAME_RE =
+  /\b(soap|shampoo|face\s*wash|facewash|gel\s*wash|creamy\s*wash|body\s*wash|cleansing\s*gel|cleanser|bathing\s*bar|syndet\s*bar|acne\s*bar|face\s*pack|pad\s*wipes|scar\s*serum)\b/i;
+const NON_PRESCRIBABLE_GENERIC_RE = /^generic\s+name\s+skin\s+care$/i;
+
+function isPrescribableDrug(drug) {
+  if (!drug) return false;
+  const name = String(drug.name || '');
+  const brand = String(drug.brand || '');
+  const generic = String(drug.genericName || '').trim();
+  if (NON_PRESCRIBABLE_NAME_RE.test(name) || NON_PRESCRIBABLE_NAME_RE.test(brand)) return false;
+  if (NON_PRESCRIBABLE_GENERIC_RE.test(generic)) return false;
+  return true;
+}
+
 function analyzeMedicationSafety(drugInputs, dbDrugs = [], fallbackDrugs = []) {
   initReferenceIndex();
 
@@ -426,6 +440,14 @@ function analyzeMedicationSafety(drugInputs, dbDrugs = [], fallbackDrugs = []) {
     for (let j = i + 1; j < validMeds.length; j++) {
       const medA = validMeds[i];
       const medB = validMeds[j];
+
+      // Skip self-comparison when identical medication is compared against itself
+      if (medA.originalName && medB.originalName && medA.originalName.trim().toLowerCase() === medB.originalName.trim().toLowerCase()) {
+        continue;
+      }
+      if (medA.resolvedBrand && medB.resolvedBrand && medA.resolvedBrand.toLowerCase() === medB.resolvedBrand.toLowerCase()) {
+        continue;
+      }
 
       // 1. Check for duplicate active ingredients across the two prescribed medications
       const sharedIngredients = medA.allIngredientsNormalized.filter(ing =>
@@ -687,6 +709,7 @@ module.exports = {
   resolveSingleIngredient,
   parseMedicationEntry,
   findCatalogMatch,
+  isPrescribableDrug,
   analyzeMedicationSafety,
   checkAllergyConflict
 };

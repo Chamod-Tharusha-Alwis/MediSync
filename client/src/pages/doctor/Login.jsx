@@ -199,7 +199,7 @@ const DoctorLogin = () => {
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password?role=doctor')}
-                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+                className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
               >
                 Forgot credentials?
               </button>
@@ -223,7 +223,7 @@ const DoctorLogin = () => {
             <button
               type="button"
               onClick={() => navigate('/doctor/select-role')}
-              className="text-[10px] uppercase font-bold text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-[11px] uppercase font-bold text-slate-500 hover:text-slate-300 transition-colors"
             >
               ← Back to Login Type Selection
             </button>

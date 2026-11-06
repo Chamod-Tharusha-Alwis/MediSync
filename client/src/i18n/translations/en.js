@@ -538,6 +538,7 @@ export const en = {
     "noActiveGrants": "No active clinical access grants.",
     "verificationRequired": "Verification Required",
     "sendingOtp": "Sending OTP...",
+    "requestingConsentOtp": "Requesting Consent OTP...",
     "otpWillReceive": "You will receive a 6-digit OTP to confirm access.",
     "enter6Digit": "Enter 6-digit verification code"
   },
@@ -580,6 +581,19 @@ export const en = {
     "sessionExpired": "Session expired.",
     "signInHere": "Sign in here",
     "strength": "Strength",
+    "passwordStrength": "Password Strength",
+    "veryWeak": "Very Weak",
+    "weak": "Weak",
+    "fair": "Fair",
+    "good": "Good",
+    "strong": "Strong",
+    "empty": "Empty",
+    "strengthVeryWeak": "Very Weak",
+    "strengthWeak": "Weak",
+    "strengthFair": "Fair",
+    "strengthGood": "Good",
+    "strengthStrong": "Strong",
+    "strengthEmpty": "Empty",
     "rotateCredentials": "Rotate Credentials",
     "adminAccount": "Admin Account",
     "trustedDevicesDesc": "Devices verified via OTP. Remove a device to revoke its trusted status and terminate active sessions from it.",
@@ -746,7 +760,9 @@ export const en = {
     "urgencyPriority": "Urgency Priority",
     "operationalState": "Operational State",
     "selectReportToDownload": "Select a report to download",
-    "pdfUnavailable": "PDF export temporarily unavailable"
+    "pdfUnavailable": "PDF export temporarily unavailable",
+    "waitCooldown": "Wait {n}s before resending",
+    "tooManyRequests": "Too many requests. Please wait {n} seconds."
   },
   "adminManagement": {
     "analyticsTitle": "Executive Health Analytics",

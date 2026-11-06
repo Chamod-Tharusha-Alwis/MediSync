@@ -1,5 +1,6 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const { isLoginRequest } = require('../security/loginRequest');
+const passwordAttempts = require('../security/passwordAttemptPolicy');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -305,6 +306,8 @@ exports.login = async (req, res) => {
     catch (_) { return res.status(403).json({ error: 'Account verification required' }); }
 
     // Password validation (support orgLogin tempPassword / hospital password)
+    if (!(await passwordAttempts.canAttempt(user, modelName))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
+
     failureStep = 'password_compare';
     let isMatch = false;
     if (matchingOrgLogin) {
@@ -321,7 +324,11 @@ exports.login = async (req, res) => {
       isMatch = await bcrypt.compare(password, user.password);
     }
 
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!isMatch) {
+      const held = await passwordAttempts.recordFailure(user, modelName);
+      return res.status(held ? 429 : 401).json({ error: held ? 'Too many password attempts. Please try again later.' : 'Invalid credentials' });
+    }
+    if (!(await passwordAttempts.canAttempt(user, modelName))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
 
     // Check if the incoming device fingerprint belongs to a revoked device
     failureStep = 'device_lookup';
@@ -451,13 +458,10 @@ exports.login = async (req, res) => {
     }
 
     const actualRole = user.role || role || (modelName === 'Hospital' ? 'hospital_admin' : (modelName === 'Admin' ? 'admin' : (modelName === 'PharmacyStaff' ? user.role : 'patient')));
-    const subId = user.doctorId || user.nic || user.regNo || user._id;
+    const subId = modelName === 'Patient' ? String(user._id) : (user.doctorId || user.nic || user.regNo || user._id);
     const name = user.fullName || user.name || 'User';
 
     const tokenPayload = { id: user._id, role: actualRole, sub: subId };
-    if (modelName === 'Patient' && user.nic) {
-      tokenPayload.nic = user.nic;
-    }
     failureStep = 'token_access';
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
     failureStep = 'token_refresh';
@@ -537,6 +541,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (err) {
+    if (err.code === 'PASSWORD_ATTEMPT_STORE_UNAVAILABLE') return res.status(503).json({ error: 'Login security verification unavailable' });
     // Exceptions may contain credentials or patient fields. The diagnostic
     // formatter emits only fixed categories/messages and the failing stage.
     try { require('../security/safeFailureDiagnostic').reportFailure(err, failureStep); }
@@ -683,13 +688,10 @@ exports.verifyLoginOTP = async (req, res) => {
     await clearAttempts(authOtpKey);
     await clearAttempts('otp-resend:' + String(userId));
 
-    const subId = user.doctorId || user.nic || user.regNo || user._id;
+    const subId = modelName === 'Patient' ? String(user._id) : (user.doctorId || user.nic || user.regNo || user._id);
     const name = user.fullName || user.name || 'User';
 
     const tokenPayload = { id: user._id, role: actualRole, sub: subId };
-    if (modelName === 'Patient' && user.nic) {
-      tokenPayload.nic = user.nic;
-    }
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
@@ -1921,7 +1923,6 @@ exports.refreshToken = async (req, res) => {
     } catch (_) { return res.status(503).json({ error: 'Account verification unavailable' }); }
 
     const tokenPayload = { id: decoded.id, role: decoded.role, sub: decoded.sub };
-    if (decoded.nic) tokenPayload.nic = decoded.nic;
 
     // Include unique jti so rotated tokens always have a fresh cryptographic signature & hash
     const accessToken = jwt.sign({ ...tokenPayload, jti: uuid() }, process.env.JWT_SECRET, { expiresIn: '15m' });

@@ -538,6 +538,7 @@ export const si = {
     "noActiveGrants": "ක්‍රියාකාරී වෛද්‍ය අවසර නොමැත.",
     "verificationRequired": "සත්‍යාපනය අවශ්‍යයි",
     "sendingOtp": "OTP යවමින් පවතී...",
+    "requestingConsentOtp": "කැමැත්ත OTP ඉල්ලමින් පවතී...",
     "otpWillReceive": "ප්‍රවේශය තහවුරු කිරීමට ඔබට ඉලක්කම් 6ක OTP ලැබෙනු ඇත.",
     "enter6Digit": "ඉලක්කම් 6ක සත්‍යාපන කේතය ඇතුළත් කරන්න"
   },
@@ -580,6 +581,19 @@ export const si = {
     "sessionExpired": "සැසිය කල් ඉකුත් විය.",
     "signInHere": "මෙහි පුරනය වන්න",
     "strength": "ශක්තිය",
+    "passwordStrength": "මුරපදයේ ශක්තිය",
+    "veryWeak": "ඉතා දුර්වල",
+    "weak": "දුර්වල",
+    "fair": "මධ්‍යස්ථ",
+    "good": "හොඳ",
+    "strong": "ශක්තිමත්",
+    "empty": "හිස්",
+    "strengthVeryWeak": "ඉතා දුර්වල",
+    "strengthWeak": "දුර්වල",
+    "strengthFair": "මධ්‍යස්ථ",
+    "strengthGood": "හොඳ",
+    "strengthStrong": "ශක්තිමත්",
+    "strengthEmpty": "හිස්",
     "rotateCredentials": "තොරතුරු යාවත්කාලීන කරන්න",
     "adminAccount": "පරිපාලක ගිණුම",
     "trustedDevicesDesc": "OTP මගින් තහවුරු කළ උපාංග. උපාංගයක් ඉවත් කිරීමෙන් එහි විශ්වාසනීය තත්ත්වය අවලංගු වේ.",
@@ -746,7 +760,9 @@ export const si = {
     "urgencyPriority": "හදිසි ප්‍රමුඛතාවය",
     "operationalState": "ක්‍රියාකාරී තත්ත්වය",
     "selectReportToDownload": "බාගත කිරීමට වාර්තාවක් තෝරන්න",
-    "pdfUnavailable": "PDF අපනයනය තාවකාලිකව ලබාගත නොහැක"
+    "pdfUnavailable": "PDF අපනයනය තාවකාලිකව ලබාගත නොහැක",
+    "waitCooldown": "නැවත යැවීමට පෙර තත්පර {n}ක් රැඳී සිටින්න",
+    "tooManyRequests": "ඉල්ලීම් ගණන වැඩියි. කරුණාකර තත්පර {n}ක් රැඳී සිටින්න."
   },
   "adminManagement": {
     "analyticsTitle": "විධායක සෞඛ්‍ය විශ්ලේෂණ",

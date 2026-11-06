@@ -145,13 +145,13 @@ const Home = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => navigate('/select-role')}
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all hover:scale-103"
+                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all hover:scale-[1.03]"
               >
                 {t('home.accessPortals', 'Access Login Portals')}
               </button>
               <button
                 onClick={() => navigate('/register?role=patient')}
-                className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 rounded-full font-bold text-sm transition-all hover:scale-103"
+                className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 rounded-full font-bold text-sm transition-all hover:scale-[1.03]"
               >
                 Register as Patient
               </button>

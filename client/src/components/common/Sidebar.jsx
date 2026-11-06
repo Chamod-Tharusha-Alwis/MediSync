@@ -108,7 +108,7 @@ const Sidebar = ({
     <div className="flex flex-col h-full">
 
       {/* ─ Brand header ── */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/6">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.06]">
         <div
           className={`
             relative p-2.5 rounded-xl
@@ -125,7 +125,7 @@ const Sidebar = ({
         </div>
         <div>
           <h1 className="text-base font-bold text-white tracking-tight leading-none">{title}</h1>
-          <p className={`text-[10px] font-semibold uppercase tracking-widest mt-0.5 ${accent.text}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-widest mt-0.5 ${accent.text}`}>
             {themePrefix} portal
           </p>
         </div>
@@ -142,7 +142,7 @@ const Sidebar = ({
       </nav>
 
       {/* ─ Footer / user badge + logout ── */}
-      <div className="px-3 pb-4 border-t border-white/6 pt-4 space-y-2">
+      <div className="px-3 pb-4 border-t border-white/[0.06] pt-4 space-y-2">
         {/* User badge */}
         {userName && (
           <div className={`
@@ -161,7 +161,7 @@ const Sidebar = ({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-100 truncate leading-none">{userName}</p>
               {userRole && (
-                <p className={`text-[10px] font-medium mt-0.5 capitalize ${accent.text}`}>
+                <p className={`text-xs font-medium mt-0.5 capitalize ${accent.text}`}>
                   {userRole.replace(/_/g, ' ')}
                 </p>
               )}
@@ -222,7 +222,7 @@ const Sidebar = ({
         className="
           hidden md:flex flex-col
           fixed left-0 top-0 bottom-0 w-64 z-40
-          glass-panel border-r border-white/6
+          glass-panel border-r border-white/[0.06]
         "
         aria-label="Sidebar"
       >
@@ -254,7 +254,7 @@ const Sidebar = ({
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
               className="
                 md:hidden fixed left-0 top-0 bottom-0 w-[280px] z-50
-                glass-panel border-r border-white/6
+                glass-panel border-r border-white/[0.06]
               "
               aria-label="Mobile navigation"
             >

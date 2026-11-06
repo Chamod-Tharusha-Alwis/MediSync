@@ -160,7 +160,7 @@ const PatientLogin = () => {
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password?role=patient')}
-                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+                className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
               >
                 Forgot password?
               </button>

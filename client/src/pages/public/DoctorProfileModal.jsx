@@ -107,12 +107,12 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
                 {(doctor.isSynthetic || doctor.syntheticLabel) && (
                   <span
                     data-testid="modal-synthetic-doctor-badge"
-                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                    className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
                   >
                     {doctor.syntheticLabel || 'Demo Doctor — Synthetic Profile'}
                   </span>
                 )}
-                <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-bold text-amber-400">
+                <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-xs font-bold text-amber-400">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                   <span>{doctor.averageRating > 0 ? doctor.averageRating : 'New'}</span>
                   {doctor.ratingCount > 0 && <span className="opacity-60 font-semibold"> ({doctor.ratingCount})</span>}
@@ -151,7 +151,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
             <div className="space-y-6">
               {doctor.description && (
                 <div className="glass-panel p-5 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-blue-400" /> Professional Summary
                   </h3>
                   <p className="text-slate-300 text-xs leading-relaxed font-medium whitespace-pre-line">
@@ -162,7 +162,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="glass-panel p-4 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-rose-400" /> Private Practice
                   </h3>
                   <p className="text-white text-xs font-bold">{doctor.clinicAddress || 'Clinic details not specified.'}</p>
@@ -172,15 +172,15 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
                 </div>
 
                 <div className="glass-panel p-4 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-450" /> Hospital Affiliations
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-indigo-400" /> Hospital Affiliations
                   </h3>
                   {doctor.hospitals?.length > 0 ? (
                     <div className="space-y-1.5">
                       {doctor.hospitals.map((h, index) => (
                         <div key={h._id || index} className="text-xs">
                           <p className="text-white font-bold leading-none">{h.name || 'Hospital'}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">{h.district || ''}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{h.district || ''}</p>
                         </div>
                       ))}
                     </div>
@@ -197,7 +197,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
             <div className="space-y-6">
               {isPatient && (
                 <div className="glass-panel p-5 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
                     Write a Patient Review
                   </h3>
                   <a href="/patient/dashboard/history" className="inline-block text-teal-400 underline">{t('public.reviewViaHistory', 'Review a verified visit from your medical history')}</a>
@@ -205,7 +205,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
               )}
 
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5" /> Recent Reviews List
                 </h3>
                 
@@ -221,7 +221,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
                         ))}
                       </div>
                       <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
-                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-550 font-bold">
+                      <div className="flex justify-between items-center mt-3 text-xs text-slate-500 font-bold">
                         <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
                         <span className="font-mono">{formatSriLankaDate(review.createdAt)}</span>
                       </div>
@@ -237,7 +237,7 @@ const DoctorProfileModal = ({ doctor: initialDoctor, onClose }) => {
           {/* TAB: Location Map */}
           {activeTab === 'location' && (
             <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+              <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" /> Interactive Map Frame
               </h3>
               {process.env.REACT_APP_UNIVERSITY_RUNTIME !== 'true' && getEmbedMapUrl(doctor.googleMapsUrl) ? (

@@ -69,6 +69,7 @@ function harness({ role = 'patient', model = 'Patient', missingKey, failure } = 
   const reportFailure = (...args) => calls.diagnostics.push(args);
   const unexpected = () => { throw new Error('Unexpected provider or alternate authentication path'); };
   const dependencies = {
+    '../security/passwordAttemptPolicy': require('../src/security/passwordAttemptPolicy').createPasswordAttemptPolicy({getAttempts:async()=>0,incrementAttempts:async()=>1}),
     '../security/loginRequest': require('../src/security/loginRequest'),
     crypto, jsonwebtoken: jwt, bcryptjs: bcrypt,
     uuid: { v4: () => crypto.randomUUID() },

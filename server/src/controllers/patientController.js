@@ -82,7 +82,7 @@ exports.registerPatient = async (req, res) => {
 
     await patient.save();
 
-    const accessToken = jwt.sign({ id: patient._id, role: 'patient', sub: patient.nic }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: patient._id, role: 'patient', sub: String(patient._id) }, process.env.JWT_SECRET, { expiresIn: '15m' });
     
     const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
     await SessionToken.create({

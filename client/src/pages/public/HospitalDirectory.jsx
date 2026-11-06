@@ -55,8 +55,8 @@ const HospitalDirectory = () => {
                 <div className="h-4 bg-slate-800 rounded w-2/3" />
                 <div className="h-3 bg-slate-800 rounded w-1/2" />
                 <div className="space-y-2 pt-2">
-                  <div className="h-3 bg-slate-850 rounded w-5/6" />
-                  <div className="h-3 bg-slate-850 rounded w-4/5" />
+                  <div className="h-3 bg-slate-800 rounded w-5/6" />
+                  <div className="h-3 bg-slate-800 rounded w-4/5" />
                 </div>
               </div>
             ))}
@@ -96,12 +96,12 @@ const HospitalDirectory = () => {
                         {(hospital.isSynthetic || hospital.syntheticLabel) && (
                           <span
                             data-testid="synthetic-hospital-badge"
-                            className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
                           >
                             {hospital.syntheticLabel || 'Demo Hospital — Synthetic Profile'}
                           </span>
                         )}
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
                           hospital.type === 'government' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                         }`}>
                           {hospital.type}
@@ -109,7 +109,7 @@ const HospitalDirectory = () => {
                         {hospital.averageRating > 0 && (
                           <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            <span className="text-[10px] font-bold text-amber-400">{hospital.averageRating}</span>
+                            <span className="text-xs font-bold text-amber-400">{hospital.averageRating}</span>
                           </div>
                         )}
                       </div>
@@ -145,7 +145,7 @@ const HospitalDirectory = () => {
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-white/5 flex justify-end items-center select-none text-[10px] uppercase font-bold tracking-widest text-slate-500 group-hover:text-indigo-400 transition-colors gap-1">
+                  <div className="mt-5 pt-3 border-t border-white/5 flex justify-end items-center select-none text-[11px] uppercase font-bold tracking-widest text-slate-500 group-hover:text-indigo-400 transition-colors gap-1">
                     Hospital Profile <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </motion.div>

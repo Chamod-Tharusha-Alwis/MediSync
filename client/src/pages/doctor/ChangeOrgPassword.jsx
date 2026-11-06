@@ -132,14 +132,31 @@ const ChangeOrgPassword = () => {
 
               {/* Strength meter */}
               {passwords.newPassword && (
-                <div className="mt-2">
+                <div
+                  className="mt-2"
+                  role="progressbar"
+                  aria-valuenow={strength}
+                  aria-valuemin={0}
+                  aria-valuemax={4}
+                  aria-valuetext={strengthLabels[strength - 1] || 'Very Weak'}
+                >
                   <div className="flex gap-1 mb-1">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all ${i < strength ? strengthColors[strength - 1] : 'bg-slate-700'}`} />
-                    ))}
+                    {[0, 1, 2, 3].map(i => {
+                      const activeSegments = Math.max(strength, passwords.newPassword ? 1 : 0);
+                      const isFilled = i < activeSegments;
+                      return (
+                        <div
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-all ${
+                            isFilled
+                              ? (strength > 0 ? strengthColors[strength - 1] : 'bg-red-500')
+                              : 'bg-slate-700'
+                          }`}
+                        />
+                      );
+                    })}
                   </div>
-                  <p className="text-xs text-slate-500">Strength: <span className="font-semibold text-white">{strengthLabels[strength - 1] || 'Very Weak'}</span></p>
+                  <p className="text-xs text-slate-500">{t('auth.strength', 'Strength')}: <span className="font-semibold text-white">{t(strengthLabels[strength - 1] ? `auth.strength${strengthLabels[strength - 1]}` : 'auth.strengthVeryWeak', strengthLabels[strength - 1] || 'Very Weak')}</span></p>
                 </div>
               )}
             </div>

@@ -84,7 +84,7 @@ const PasswordCriteriaTips = ({
             </div>
 
             {item.subItems && (
-              <ul className="grid grid-cols-2 gap-1 pl-5 pt-0.5 text-[11px]">
+              <ul className="grid grid-cols-2 gap-1 pl-5 pt-0.5 text-xs">
                 {item.subItems.map((sub) => (
                   <li key={sub.id} className="flex items-center gap-1.5">
                     {sub.met ? (

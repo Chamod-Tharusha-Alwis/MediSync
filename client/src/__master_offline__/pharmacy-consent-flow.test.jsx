@@ -21,7 +21,7 @@ const pending = () => { let resolve, reject; const promise = new Promise((ok, fa
 const prescription = (nic = 'QA-ONE') => ({ _id: `owned-${nic}`, prescriptionId: `RX-${nic}`, patientNic: nic, medications: [{ name: 'Synthetic Medicine', dosage: 'demo', frequency: 'demo', durationDays: 2 }] });
 const result = (nic = 'QA-ONE') => ({ data: { data: { patient: { fullName: `Patient ${nic}` }, prescriptions: [prescription(nic)] } } });
 const consentError = () => ({ response: { status: 403, data: { error: 'Patient consent required' } } });
-const query = value => { fireEvent.change(screen.getByPlaceholderText(/Enter Patient NIC/), { target: { value } }); fireEvent.click(screen.getByRole('button', { name: 'Retrieve' })); };
+const query = (value, autoConsent = true) => { fireEvent.change(screen.getByPlaceholderText(/Enter Patient NIC/), { target: { value } }); fireEvent.click(screen.getByRole('button', { name: 'Retrieve' })); if (autoConsent) { const btn = screen.queryByText('Grant synthetic consent'); if (btn) fireEvent.click(btn); } };
 
 beforeEach(() => {
   localStorage.clear(); sessionStorage.clear(); localStorage.setItem('role', 'pharmacist'); setMockRoute('/dashboard/dispense');
@@ -30,16 +30,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 test('successful pharmacy consent is held in the real portal provider and reused only for its patient', async () => {
-  api.get.mockRejectedValueOnce(consentError()).mockResolvedValue(result());
-  render(<PharmacyDashboard />); query('QA-ONE');
+  api.get.mockResolvedValue(result());
+  render(<PharmacyDashboard />); query('QA-ONE', false);
   fireEvent.click(await screen.findByText('Grant synthetic consent'));
   await screen.findByText('Patient QA-ONE');
-  expect(api.get.mock.calls[1][1].headers['x-patient-access']).toBe('synthetic-consent-token');
+  expect(api.get.mock.calls[0][1].headers['x-patient-access']).toBe('synthetic-consent-token');
   fireEvent.click(screen.getByRole('button', { name: 'Retrieve' }));
-  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(3));
-  expect(api.get.mock.calls[2][1].headers['x-patient-access']).toBe('synthetic-consent-token');
-  query('QA-TWO'); await waitFor(() => expect(api.get).toHaveBeenCalledTimes(4));
-  expect(api.get.mock.calls[3][1].headers['x-patient-access']).toBeUndefined();
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+  expect(api.get.mock.calls[1][1].headers['x-patient-access']).toBe('synthetic-consent-token');
+  query('QA-TWO', false);
+  expect(screen.getByRole('dialog', { name: 'Consent for QA-TWO' })).toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledTimes(2);
 });
 
 test('changing NIC immediately removes the previous patient and prescriptions', async () => {
@@ -115,9 +116,9 @@ test('late inventory loading cannot reopen dispensing for the previous patient',
 });
 
 test('prescription dispensing carries the patient-bound provider grant into its authenticated request', async () => {
-  api.get.mockRejectedValueOnce(consentError()).mockResolvedValueOnce(result()).mockResolvedValueOnce({ data: { data: [{ _id: 'owned-stock', drugName: 'Synthetic Medicine', stock: 3, unit: 'tablet' }] } });
+  api.get.mockResolvedValueOnce(result()).mockResolvedValueOnce({ data: { data: [{ _id: 'owned-stock', drugName: 'Synthetic Medicine', stock: 3, unit: 'tablet' }] } });
   api.post.mockResolvedValue({ data: { data: { receiptNumber: 'OWNED-RECEIPT' } } });
-  render(<PharmacyDashboard />); query('QA-ONE'); fireEvent.click(await screen.findByText('Grant synthetic consent'));
+  render(<PharmacyDashboard />); query('QA-ONE', false); fireEvent.click(await screen.findByText('Grant synthetic consent'));
   await screen.findByText('Patient QA-ONE'); fireEvent.click(screen.getByRole('button', { name: 'Dispense Medication' }));
   fireEvent.change(await screen.findByLabelText('Quantity in inventory units'), { target: { value: '1' } });
   fireEvent.click(screen.getByRole('button', { name: 'Dispense Now' }));

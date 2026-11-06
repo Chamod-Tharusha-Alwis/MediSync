@@ -145,7 +145,7 @@ const SessionMonitor = () => {
           >
             <Activity className="w-4 h-4" /> 
             Online Now 
-            <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-xs">
               {sessions.length}
             </span>
           </button>
@@ -165,7 +165,7 @@ const SessionMonitor = () => {
 
       {/* 🟢 TAB: ONLINE NOW */}
       {activeTab === 'online' && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
             <button onClick={fetchSessions} disabled={loadingSessions} className="glass-button text-xs py-2 px-4 flex items-center gap-2">
               <RefreshCw className={`w-3.5 h-3.5 ${loadingSessions ? 'animate-spin' : ''}`} /> Refresh Sessions
@@ -202,7 +202,7 @@ const SessionMonitor = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider">
                             {s.role?.replace('_', ' ')}
                           </span>
                         </td>
@@ -226,7 +226,7 @@ const SessionMonitor = () => {
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleForceLogout(s._id, s.fullName); }}
-                            className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
+                            className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
                           >
                             <LogOut className="w-3 h-3" /> Force Logout
                           </button>
@@ -248,25 +248,25 @@ const SessionMonitor = () => {
 
       {/* 📜 TAB: AUDIT LOG */}
       {activeTab === 'audit' && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-4 animate-fade-in">
           <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-5">
             <div className="flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Start Date</span>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Start Date</span>
                 <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className="glass-input text-xs" />
               </div>
               <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> End Date</span>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> End Date</span>
                 <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="glass-input text-xs" />
               </div>
               <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Search className="w-3.5 h-3.5" /> Search User ID / NIC</span>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Search className="w-3.5 h-3.5" /> Search User ID / NIC</span>
                 <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }} className="glass-input text-xs" />
               </div>
               <button onClick={() => { setStartDate(''); setEndDate(''); setRoleFilter(''); setSearchTerm(''); setPage(1); }} className="glass-button text-xs py-2.5 px-5 select-none shrink-0">Clear Filters</button>
             </div>
             <div className="flex flex-col gap-2 pt-2 border-t border-white/5 select-none">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Filter by Actor Role</span>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Filter by Actor Role</span>
               <div className="flex flex-wrap gap-2 pt-1">
                 {roles.map(r => (
                   <button
@@ -312,25 +312,25 @@ const SessionMonitor = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 select-none shrink-0"><User className="w-3 h-3 text-slate-400" /></div>
+                            <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs font-black text-slate-400 select-none shrink-0"><User className="w-3 h-3 text-slate-400" /></div>
                             <div className="flex flex-col">
                               <span className="text-white font-bold text-xs">{log.actorName || log.actorId || 'System'}</span>
-                              {log.actorNic && <span className="text-[10px] text-slate-500 font-mono">{log.actorNic}</span>}
+                              {log.actorNic && <span className="text-xs text-slate-500 font-mono">{log.actorNic}</span>}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col items-start gap-1">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider select-none">{log.actorRole || log.role || 'system'}</span>
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider select-none">{log.actorRole || log.role || 'system'}</span>
                             {log.isOnline ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><Activity className="w-2.5 h-2.5" /> Online</span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><Activity className="w-2.5 h-2.5" /> Online</span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">Offline</span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">Offline</span>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>{log.action || 'Unknown'}</span>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>{log.action || 'Unknown'}</span>
                         </td>
                         <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
                           {log.logoutTime ? formatDate(log.logoutTime) : '—'}

@@ -8,6 +8,7 @@ const OtpInput = ({
   initialSeconds = 600,
   loading = false,
   error = null,
+  cooldownSeconds = 0,
 }) => {
   const [code, setCode] = useState(new Array(6).fill(''));
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
@@ -77,6 +78,7 @@ const OtpInput = ({
   };
 
   const handleResendClick = () => {
+    if (loading || cooldownSeconds > 0) return;
     setTimeLeft(initialSeconds);
     setCode(new Array(6).fill(''));
     if (inputsRef.current[0]) inputsRef.current[0].focus();
@@ -125,11 +127,13 @@ const OtpInput = ({
         <button
           type="button"
           onClick={handleResendClick}
-          disabled={loading}
+          disabled={loading || cooldownSeconds > 0}
           className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 font-bold underline transition-colors disabled:opacity-50"
         >
           <RefreshCw className="w-3 h-3" />
-          Resend OTP
+          {cooldownSeconds > 0
+            ? t('lab.waitCooldown', `Wait ${cooldownSeconds}s before resending`).replace('{n}', cooldownSeconds)
+            : 'Resend OTP'}
         </button>
       </div>
 

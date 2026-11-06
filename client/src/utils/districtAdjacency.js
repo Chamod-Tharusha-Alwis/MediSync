@@ -48,6 +48,21 @@ export function normalizeDistrictName(name) {
     .replace('moneragala', 'monaragala');
 }
 
+/**
+ * Converts stored or lower/snake_case district names into canonical display strings:
+ * - 'nuwara_eliya' -> 'Nuwara Eliya'
+ * - 'moneragala' -> 'Monaragala'
+ * - 'kandy' -> 'Kandy'
+ */
+export function formatDistrictName(name) {
+  if (!name || typeof name !== 'string') return '';
+  const norm = normalizeDistrictName(name);
+  const canonical = ALL_DISTRICTS.find(d => normalizeDistrictName(d) === norm);
+  if (canonical) return canonical;
+  return name.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+
 export const RISK_TIERS = {
   CRITICAL:   { key: 'critical',   minCases: 1001, color: '#9B2C2C', label: 'Critical' },
   HIGH:       { key: 'high',       minCases: 501,  color: '#C53030', label: 'High' },
@@ -145,6 +160,7 @@ const districtAdjacencyModule = {
   DISTRICT_ADJACENCY,
   ALL_DISTRICTS,
   normalizeDistrictName,
+  formatDistrictName,
   RISK_TIERS,
   getRiskTier,
   computeOutbreakClusters

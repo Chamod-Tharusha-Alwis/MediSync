@@ -144,7 +144,7 @@ const PatientSupport = () => {
                     <CheckCircle className="w-3.5 h-3.5" /> Support Team Response
                   </div>
                   <p className="text-slate-200 text-sm whitespace-pre-line leading-relaxed">{selectedTicket.adminReply}</p>
-                  <p className="text-slate-500 text-[10px] mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
+                  <p className="text-slate-500 text-xs mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
                 </div>
               ) : (
                 <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-4 flex items-center gap-3 text-slate-400">
@@ -182,7 +182,7 @@ const PatientSupport = () => {
                         status={ticket.status === 'Open' ? 'pending' : 'completed'}
                         customText={ticket.status}
                       />
-                      <span className="text-[10px] text-slate-500 font-medium">
+                      <span className="text-xs text-slate-500 font-medium">
                         {formatSriLankaDate(ticket.createdAt)}
                       </span>
                     </div>

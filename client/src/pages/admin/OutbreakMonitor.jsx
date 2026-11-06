@@ -10,6 +10,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Res
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
+import { formatDistrictName } from '../../utils/districtAdjacency';
+
 
 const sevConfig = {
   Critical: { text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/30',    glow: 'shadow-[0_0_20px_rgba(239,68,68,0.18)]',  dot: 'bg-red-500'    },
@@ -37,7 +39,7 @@ const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg
       <div className={`p-2 ${accentBg} rounded-xl border ${accentBorder}`}>
         <Icon className={`w-4 h-4 ${accentText} ${pulse ? 'animate-pulse' : ''}`} />
       </div>
-      <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</h3>
+      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{label}</h3>
     </div>
     <p className={`text-2xl font-black ${accentText} tracking-tight font-mono`}>{value}</p>
   </motion.div>
@@ -164,7 +166,7 @@ const OutbreakMonitor = () => {
     // Calculate mathematically correct Z-score if not present
     const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
     return {
-      name: `${item.disease} (${item.district})`,
+      name: `${item.disease} (${formatDistrictName(item.district)})`,
       zScore: parseFloat(zScore.toFixed(2)),
       latest: item.latest_actual,
       baseline: item.baseline
@@ -178,7 +180,7 @@ const OutbreakMonitor = () => {
         <div>
           <div className="flex items-center gap-2 mb-1 select-none">
             <PulseRing color="bg-red-500" />
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Surveillance Feed</span>
+            <span className="text-[11px] font-bold text-red-400 uppercase tracking-widest">Surveillance Feed</span>
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("nav.outbreakmonitor", "Outbreak Monitor")}</h1>
           <p className="text-slate-400 mt-1 text-sm font-medium">Real-time epidemiological ML anomaly surveillance center.</p>
@@ -188,7 +190,7 @@ const OutbreakMonitor = () => {
         <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl select-none shadow-[0_0_15px_rgba(239,68,68,0.05)]">
           <Radio className="w-4 h-4 text-red-400 animate-pulse" />
           <div className="text-left">
-            <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Next Automated Scan</span>
+            <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Next Automated Scan</span>
             <span className="text-sm font-mono font-black text-red-400 tracking-wider">{t("adminStatus.notAvailable", "Not available")}</span>
           </div>
         </div>
@@ -266,21 +268,21 @@ const OutbreakMonitor = () => {
           <div className="pt-6 border-t border-white/5 space-y-4">
             <div className="flex justify-between items-center select-none">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Computed Z-Scores by Disease Vector</h4>
-              <span className="text-[10px] font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
+              <span className="text-xs font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
             </div>
 
             <div className="h-64 w-full bg-slate-950/40 rounded-xl border border-white/5 p-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} />
+                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '11px' }}
-                    itemStyle={{ color: '#ef4444', fontSize: '11px' }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}
+                    itemStyle={{ color: '#ef4444', fontSize: 12 }}
                   />
-                  <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning Limit (Z = 2.0)', fill: '#ef4444', fontSize: 9, position: 'top' }} />
+                  <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning Limit (Z = 2.0)', fill: '#ef4444', fontSize: 12, position: 'top' }} />
                   <Bar dataKey="zScore" fill="#3b82f6" radius={[4, 4, 0, 0]}>
                     {chartData.map((entry, index) => (
                       <rect
@@ -330,24 +332,24 @@ const OutbreakMonitor = () => {
                     <div>
                       <div className="flex justify-between items-start gap-2 mb-2 select-none">
                         <span className="text-white font-bold text-sm truncate">{item.disease}</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeStyle}`}>
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${badgeStyle}`}>
                           {tierLabel}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {item.district}
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
                       </p>
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-end select-none">
                       <div>
-                        <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
+                        <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
                         <span className={`text-sm font-mono font-bold ${isCritOrWarn ? (tierLabel === 'CRITICAL' ? 'text-red-400' : 'text-amber-400') : 'text-slate-300'}`}>
                           {zScore.toFixed(2)}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">Deviation</span>
+                        <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Deviation</span>
                         <span className={`text-sm font-mono ${devColor}`}>
                           {formattedDev}
                         </span>
@@ -367,7 +369,7 @@ const OutbreakMonitor = () => {
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-red-400 animate-pulse" /> Outbreak Surveillance Logs
           </h3>
-          <span className="text-[10px] font-mono font-bold text-red-400">{alertsLoaded ? alerts.length : t("adminStatus.notAvailable", "Not available")} alerts</span>
+          <span className="text-xs font-mono font-bold text-red-400">{alertsLoaded ? alerts.length : t("adminStatus.notAvailable", "Not available")} alerts</span>
         </div>
 
         {alerts.length > 0 ? (
@@ -397,7 +399,7 @@ const OutbreakMonitor = () => {
                             {alert.disease || 'Unknown'}
                             </span>
                             {alert.syntheticLabel && (
-                              <span className="block text-[10px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
+                              <span className="block text-[11px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
                                 {alert.syntheticLabel}
                               </span>
                             )}
@@ -407,7 +409,7 @@ const OutbreakMonitor = () => {
                       <td className="px-6 py-4 text-slate-400 font-semibold">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-600" />
-                          {alert.location || alert.district || 'N/A'}
+                          {formatDistrictName(alert.location || alert.district) || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -420,13 +422,13 @@ const OutbreakMonitor = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setApproveModal({ isOpen: true, alertId: alert._id, scope: 'none' })}
-                              className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold rounded-lg border border-amber-500/25 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                              className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg border border-amber-500/25 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)]"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleResolveAlert(alert._id, 'dismiss')}
-                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg border border-white/5 transition-all"
+                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-white/5 transition-all"
                             >
                               Dismiss
                             </button>
@@ -443,19 +445,19 @@ const OutbreakMonitor = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleVerifyAlert(alert._id, 'confirmed')}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg border border-emerald-500/25 transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg border border-emerald-500/25 transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                             >
                               Confirm
                             </button>
                             <button
                               onClick={() => handleVerifyAlert(alert._id, 'false_positive')}
-                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg border border-white/5 transition-all"
+                              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-white/5 transition-all"
                             >
                               False Alarm
                             </button>
                             <button
                               onClick={() => handleResolveAlert(alert._id, 'resolve')}
-                              className="px-3 py-1 bg-blue-600/50 hover:bg-blue-500 text-white text-[10px] font-bold rounded-lg border border-blue-500/25 transition-all"
+                              className="px-3 py-1 bg-blue-600/50 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500/25 transition-all"
                             >
                               Resolve
                             </button>

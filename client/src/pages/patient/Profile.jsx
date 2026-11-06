@@ -260,7 +260,7 @@ const PatientProfile = () => {
             {!uploadingPic && (
               <label className="absolute inset-0 bg-[#020817]/85 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none">
                 <Camera className="w-5 h-5 text-teal-400 mb-1" />
-                <span className="text-[9px] text-slate-300 font-bold leading-tight">Private image uploads unavailable</span>
+                <span className="text-xs text-slate-300 font-bold leading-tight">Private image uploads unavailable</span>
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -278,7 +278,7 @@ const PatientProfile = () => {
             {uploadingPic && (
               <div className="absolute inset-0 bg-[#020817]/90 flex flex-col items-center justify-center p-2 text-center select-none">
                 <Loader2 className="w-5 h-5 text-teal-400 animate-spin mb-1" />
-                <span className="text-[10px] font-bold text-slate-300 font-mono">{uploadProgress}%</span>
+                <span className="text-xs font-bold text-slate-300 font-mono">{uploadProgress}%</span>
                 <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden mt-1 border border-white/5 max-w-[80%]">
                   <div
                     className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full transition-all duration-150"
@@ -322,7 +322,7 @@ const PatientProfile = () => {
               <div>
                 <p className="text-xs text-slate-500 uppercase font-bold">BMI</p>
                 <p className="text-2xl font-black text-white">{bmi}</p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   {bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese'}
                 </p>
               </div>

@@ -17,6 +17,7 @@ import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
 import { useTranslation } from '../../i18n/LanguageContext';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
@@ -76,7 +77,7 @@ const ManageHospitals = () => {
                   <tr key={h._id} className="hover:bg-white/[0.01] transition-colors">
                     <td className="px-6 py-4 font-bold text-white">{h.fullName}</td>
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{h.regNo}</td>
-                    <td className="px-6 py-4 text-slate-300 font-semibold">{h.district}</td>
+                    <td className="px-6 py-4 text-slate-300 font-semibold">{formatDistrictName(h.district)}</td>
                     <td className="px-6 py-4 text-right">
                       <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase select-none">
                         {t('common.active', 'Active')}
@@ -131,7 +132,7 @@ const UserAuditModal = ({ userId, onClose }) => {
                 <div key={log._id} className="p-3 bg-slate-950/40 rounded-xl border border-white/5">
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-xs font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">{log.action}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">{formatSriLankaDateTime(log.timestamp)}</span>
+                    <span className="text-xs text-slate-500 font-mono">{formatSriLankaDateTime(log.timestamp)}</span>
                   </div>
                   <p className="text-xs text-slate-400 mt-2 font-mono">
                     <span className="text-slate-500">Device:</span> {log.deviceModel || 'Unknown'} <br />
@@ -305,13 +306,13 @@ const ManageUsers = () => {
                       <div className="flex justify-end gap-1.5">
                         <button
                           onClick={() => setAuditUserId(u._id)}
-                          className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
+                          className="text-xs font-bold px-2.5 py-1.5 rounded-lg border bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10 transition-colors"
                         >
                           {t('common.audit', 'Audit')}
                         </button>
                         <button
                           onClick={() => handleToggle(u._id, u.role)}
-                          className={`text-[10px] font-bold transition-all px-2.5 py-1.5 rounded-lg border ${
+                          className={`text-xs font-bold transition-all px-2.5 py-1.5 rounded-lg border ${
                             u.isActive !== false
                               ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
                               : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20'
@@ -338,7 +339,7 @@ const ManageUsers = () => {
                 >
                   Prev
                 </button>
-                <span className="font-mono text-[11px] text-slate-300">
+                <span className="font-mono text-xs text-slate-300">
                   Page {pagination.page || page} / {Math.max(1, pagination.pages || 1)}
                 </span>
                 <button
@@ -407,9 +408,9 @@ const AlertSettings = () => {
                   <div className="text-xs">
                     <p className="text-slate-200 font-semibold">{a.message}</p>
                       {a.syntheticLabel && (
-                        <p className="text-[10px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">{a.syntheticLabel}</p>
+                        <p className="text-[11px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">{a.syntheticLabel}</p>
                       )}
-                    <p className="text-slate-500 mt-1 font-mono text-[10px]">Date: {formatSriLankaDate(a.createdAt || a.date)}</p>
+                    <p className="text-slate-500 mt-1 font-mono text-xs">Date: {formatSriLankaDate(a.createdAt || a.date)}</p>
                   </div>
                 </div>
               ))}
@@ -448,7 +449,7 @@ const Overview = ({ stats, geo, activeAlerts }) => {
           <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">{t('outbreak.surveillanceTitle', 'Active System Outbreak Alert')}</h3>
           <p className="text-slate-200 text-xs font-semibold mt-1">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
             {activeAlerts[0].syntheticLabel && (
-              <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold uppercase tracking-wider">
+              <span className="inline-block mt-1 px-2 py-0.5 rounded text-[11px] bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold uppercase tracking-wider">
                 {activeAlerts[0].syntheticLabel}
               </span>
             )}
@@ -529,14 +530,14 @@ const Overview = ({ stats, geo, activeAlerts }) => {
               return (
                 <div key={log._id} className="bg-slate-950/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                   <div className="flex justify-between items-start mb-2 select-none">
-                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
+                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
                       {log.action}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
+                    <span className="text-xs text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
                   </div>
                   <p className="text-xs text-slate-300 font-medium">
                     <span className="text-white font-bold">{actorName}</span>
-                    <span className="text-slate-500 ml-1 text-[10px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
+                    <span className="text-slate-500 ml-1 text-[11px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
                     <br/>
                     <span className="text-slate-400 mt-1 inline-block">{humanAction} regarding <span className="text-blue-400 font-semibold">{targetEntity}</span>.</span>
                   </p>
@@ -585,9 +586,9 @@ const Overview = ({ stats, geo, activeAlerts }) => {
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="text-xs font-bold text-slate-200 truncate">{sys.label}</h4>
-                <p className="text-[10px] text-slate-500 truncate mt-0.5">{sys.desc}</p>
+                <p className="text-xs text-slate-500 truncate mt-0.5">{sys.desc}</p>
               </div>
-              <span className="inline-flex items-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full select-none">
+              <span className="inline-flex items-center text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full select-none">
                 {sys.status}
               </span>
             </div>
@@ -687,7 +688,7 @@ const AdminDashboard = () => {
           <div>
             <p className="font-bold text-sm">🚨 Outbreak Alert</p>
             <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
-            {data?.district && <p className="text-xs mt-0.5">District: {data.district}</p>}
+            {data?.district && <p className="text-xs mt-0.5">District: {formatDistrictName(data.district)}</p>}
           </div>,
           { autoClose: 10000, position: 'top-right' }
         );

@@ -1,0 +1,49 @@
+{
+  "at": "2026-11-05T15:13:53.903Z",
+  "scope": "docs/new only; no commits, pushes or service calls",
+  "head": "d611b41e47753a407bd6252960383631fbc7f52a",
+  "originMain": "d611b41e47753a407bd6252960383631fbc7f52a",
+  "branch": "main",
+  "indexEmpty": true,
+  "trackedDiffEmpty": true,
+  "gitDiffCheckExit": 0,
+  "protectedPins": 15,
+  "sourceMatchesRecordedRegression": true,
+  "changedOrCreatedPaths": [
+    {
+      "path": "docs/new/TRACKER_RECONCILIATION.md",
+      "sha256": "48b143d0073af8f37eb1fa65768bd01ab6d1e57d1ed8b7e6977f5b91a2cbbe4c"
+    },
+    {
+      "path": "docs/new/MEDISYNC_MASTER_PROMPT_V3_ADDENDUM_ANTIGRAVITY.md",
+      "sha256": "9237825d173721405164655b207d60f29d9f4f69b1e13b46c50a8a903f980f0c"
+    },
+    {
+      "path": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+      "sha256": "6096fbf927c0d3f79375b37a2134c3242f62a67840b6ce5a9b1f4943e0e293a3"
+    },
+    {
+      "path": "docs/new/MASTER_PROMPT_V3.md",
+      "sha256": "ad326f79ab54cb72495d786dd1668c1ef643fa8c8b2d66988ccd5b058ce224f0"
+    },
+    {
+      "path": "docs/new/OUTBREAK_AND_PUBLIC_HEALTH_DESIGN.md",
+      "sha256": "56e270f8dfce752772a9cd99e4c604185847a9b1b236bf66d25fba7db4a3a3e1"
+    },
+    {
+      "path": "docs/new/SEED_DATA_PLAN.md",
+      "sha256": "2e8c97d8c740b00695ab2881ba9fb1c05b499e845df0a1f4dc2a4ab1ee199886"
+    },
+    {
+      "path": "docs/new/ONLINE_TEST_PLAN.md",
+      "sha256": "c7c7a7aef4abb46caf5f72d4d8307844bee14db09f405505259cc6d6dac43756"
+    },
+    {
+      "path": "docs/new/CODEX_RECONCILIATION_LOCAL_CHECKS_20261105.json",
+      "sha256": "a9cf6c9e09a48221b75060015076ac6a31502689668a40fb8cf4af445ea5641c"
+    }
+  ],
+  "fullRegression": "NOT RUN: existing runner writes outside docs/new; 3211 is historical only",
+  "outbreak": "PROPOSED_NEEDS_OPERATOR_APPROVAL: paper guard analysis only; actual S1-S8 outcomes NOT VERIFIED",
+  "live": "NOT VERIFIED; no login, email, Render, Atlas or Redis call"
+}

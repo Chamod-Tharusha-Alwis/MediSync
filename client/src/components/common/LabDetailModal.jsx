@@ -62,7 +62,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
               <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 text-purple-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.requestedDate", "Requested Date")}</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[11px]">{t("lab.requestedDate", "Requested Date")}</p>
                   <p className="text-slate-200 font-medium">
                     {formatSriLankaDate(orderedDate, 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
@@ -72,7 +72,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
               <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.prescribedBy", "Prescribed By")}</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[11px]">{t("lab.prescribedBy", "Prescribed By")}</p>
                   <p className="text-slate-200 font-medium truncate">{doctorName}</p>
                 </div>
               </div>
@@ -80,7 +80,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
               <div className="col-span-2 p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center gap-2.5">
                 <Building2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                 <div>
-                  <p className="text-slate-500 font-semibold uppercase text-[9px]">{t("lab.testingFacility", "Testing Facility / Hospital")}</p>
+                  <p className="text-slate-500 font-semibold uppercase text-[11px]">{t("lab.testingFacility", "Testing Facility / Hospital")}</p>
                   <p className="text-slate-200 font-medium">{hospitalName}</p>
                 </div>
               </div>
@@ -88,7 +88,7 @@ const LabDetailModal = ({ isOpen, onClose, labTest }) => {
 
             {/* Clinical Remarks / Findings */}
             <div className="p-3.5 rounded-xl bg-slate-950/50 border border-white/5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-purple-400" />
                 {t("lab.clinicalRemarks", "Clinical Remarks & Findings")}
               </p>

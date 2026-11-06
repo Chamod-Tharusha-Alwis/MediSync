@@ -907,7 +907,7 @@ const NewConsultation = () => {
                                           {item.data.labTests.map((t, idx) => (
                                             <li key={idx} className="flex items-center gap-2">
                                               <span className="font-medium text-slate-200">{formatLabTestName(t)}</span>
-                                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                                                 {formatLabTestStatus(t)}
                                               </span>
                                             </li>
@@ -1057,7 +1057,7 @@ const NewConsultation = () => {
                                   <p className="font-bold text-white flex items-center gap-2">
                                     {diag.disease}
                                     {diag.urgent && (
-                                      <span className="text-[9px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 font-black uppercase tracking-wider animate-pulse">
+                                      <span className="text-[11px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 font-black uppercase tracking-wider animate-pulse">
                                         URGENT
                                       </span>
                                     )}
@@ -1205,7 +1205,7 @@ const NewConsultation = () => {
                                     }`}
                                   >
                                     <div className="flex items-center gap-2 min-w-0 pr-3">
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-black border flex-shrink-0 ${
+                                      <span className={`text-xs px-1.5 py-0.5 rounded font-black border flex-shrink-0 ${
                                         item.version === 'ICD-11'
                                           ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                                           : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
@@ -1275,7 +1275,7 @@ const NewConsultation = () => {
                             />
                           </div>
                           <div className="w-36 flex items-center gap-1.5">
-                            <span className={`text-[10px] px-1.5 py-1 rounded font-bold border uppercase ${
+                            <span className={`text-[11px] px-1.5 py-1 rounded font-bold border uppercase ${
                               selectedIcdVersion === 'ICD-11'
                                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                                 : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
@@ -1366,7 +1366,7 @@ const NewConsultation = () => {
                               {interactionAnalysis.warnings.map((w, idx) => (
                                 <li key={idx} className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/25 flex flex-col gap-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500/25 text-red-200 border border-red-400/30">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500/25 text-red-200 border border-red-400/30">
                                       {w.type === 'duplicate_ingredient'
                                         ? 'Duplicate Active Ingredient'
                                         : `${(w.severity || 'moderate').toUpperCase()} Interaction`}
@@ -1440,7 +1440,7 @@ const NewConsultation = () => {
                             <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400">
                               <tr>
                                 {['Drug', 'Dosage', 'Frequency', 'Duration', 'Instructions', ''].map(h => (
-                                  <th key={h} className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">{h}</th>
+                                  <th key={h} className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider">{h}</th>
                                 ))}
                               </tr>
                             </thead>
@@ -1564,7 +1564,7 @@ const NewConsultation = () => {
                                   ) : (
                                     <div className="p-3 text-xs text-slate-400 flex items-center justify-between" role="status">
                                       <span>No matching standard tests for "{labTestInput.trim()}".</span>
-                                      <span className="text-[10px] text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
+                                      <span className="text-xs text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
                                         Press Enter or Add to add custom
                                       </span>
                                     </div>

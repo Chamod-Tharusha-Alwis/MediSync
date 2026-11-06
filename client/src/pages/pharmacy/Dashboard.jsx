@@ -20,6 +20,7 @@ import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
 import ChangePasswordCard from '../../components/common/ChangePasswordCard';
 import { formatDoctorName } from '../../utils/doctorName';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 const labelClass = 'block text-xs font-semibold uppercase text-slate-400 mb-1.5';
 const requiresPatientConsent = error => error.response?.status === 403 &&
@@ -85,8 +86,13 @@ const Dispense = () => {
     setLoadedNic('');
     setShowConsentModal(false);
     const patientToken = forcedToken || (getPatientToken ? getPatientToken(lookupNic) : null);
+    if (!patientToken) {
+      setLoading(false);
+      setShowConsentModal(true);
+      return;
+    }
     try {
-      const headers = patientToken ? { 'x-patient-access': patientToken } : {};
+      const headers = { 'x-patient-access': patientToken };
       const { data } = await api.get(`/pharmacy/prescriptions/pending/${encodeURIComponent(lookupNic)}`, { headers });
       if (generation !== searchGeneration.current) return;
       if (Array.isArray(data?.data?.prescriptions)) {
@@ -234,7 +240,7 @@ const Dispense = () => {
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
                       <h3 className="text-base font-bold text-white truncate">{mainDrug?.name || rx.drugName || 'Medication'}</h3>
-                      <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-mono font-bold rounded">
+                      <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-mono font-bold rounded">
                         #{rx.prescriptionId?.split('-')[1] || rx.prescriptionId}
                       </span>
                     </div>
@@ -272,7 +278,7 @@ const Dispense = () => {
         {selectedRx && (
           <div className="space-y-5">
             <div className="text-center md:text-left select-none">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
+              <span className="text-[11px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
               <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
             </div>
 
@@ -300,7 +306,7 @@ const Dispense = () => {
               />
               <div className="min-w-0">
                 <p className="text-amber-400 font-bold text-xs">{t("pharmacy.brandSubstitute", "Dispense Brand Substitute / Alternative")}</p>
-                <p className="text-slate-500 text-[10px] mt-1 leading-normal">{t("pharmacy.substituteHelp", "Select if dispensing a generic alternative different from prescription.")}</p>
+                <p className="text-slate-500 text-xs mt-1 leading-normal">{t("pharmacy.substituteHelp", "Select if dispensing a generic alternative different from prescription.")}</p>
               </div>
             </label>
 
@@ -594,7 +600,7 @@ const ManualDispenseOTC = () => {
               <button
                 type="button"
                 onClick={() => setMedications(prev => [...prev, emptyMed()])}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-bold hover:bg-teal-500/20 transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold hover:bg-teal-500/20 transition-all"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Drug
               </button>
@@ -714,7 +720,7 @@ const ManualDispenseOTC = () => {
                 <span className="font-mono text-teal-400">{totalQuantity} units</span>
               </div>
               <div className="h-px bg-white/5 my-2" />
-              <div className="flex justify-between text-slate-400 text-[11px]">
+              <div className="flex justify-between text-slate-400 text-xs">
                 <span>Idempotency Key:</span>
                 <span className="font-mono">{otcKey.slice(0, 12)}...</span>
               </div>
@@ -755,7 +761,7 @@ const ManualDispenseOTC = () => {
             <div className="h-px bg-white/5" />
 
             <div className="space-y-2">
-              <p className="font-bold text-white uppercase tracking-wider text-[10px] text-slate-500">Fulfilled Medications</p>
+              <p className="font-bold text-white uppercase tracking-wider text-[11px] text-slate-500">Fulfilled Medications</p>
               {lastReceipt.medications?.map((m, i) => (
                 <div key={i} className="flex justify-between font-mono text-slate-300">
                   <span>{m.name} {m.dosage ? `(${m.dosage})` : ''}</span>
@@ -769,7 +775,7 @@ const ManualDispenseOTC = () => {
                 <span>TRANSACTION STATUS:</span>
                 <span className="text-emerald-400">COMMITTED</span>
               </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
+              <div className="flex justify-between text-xs text-slate-400">
                 <span>MEDICATION LINES DISPENSED:</span>
                 <span>{lastReceipt.medicationCount ?? lastReceipt.medications?.length ?? 0} LINES</span>
               </div>
@@ -778,13 +784,13 @@ const ManualDispenseOTC = () => {
             <div className="flex gap-2 pt-3 border-t border-white/5">
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 border border-white/5"
+                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-white/5"
               >
                 <Printer className="w-3.5 h-3.5" /> Print Dispensing Record
               </button>
               <button
                 onClick={() => setShowReceiptModal(false)}
-                className="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold"
+                className="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold"
               >
                 Done
               </button>
@@ -863,15 +869,15 @@ const RestockAnalytics = () => {
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-panel p-5 rounded-2xl border border-white/5">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Active Inventory Analyzed</span>
+            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Active Inventory Analyzed</span>
             <span className="text-2xl font-black text-white mt-1 block font-mono">{meta.drugsAnalyzed || 0}</span>
           </div>
           <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
-            <span className="text-[10px] text-red-400/80 uppercase font-bold tracking-wider">Critical Inventory Alerts</span>
+            <span className="text-[11px] text-red-400/80 uppercase font-bold tracking-wider">Critical Inventory Alerts</span>
             <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{leaderboard.filter(r => r.isCritical).length}</span>
           </div>
           <div className="glass-panel p-5 rounded-2xl border border-teal-500/10">
-            <span className="text-[10px] text-teal-400/80 uppercase font-bold tracking-wider">Total Dispensed Units</span>
+            <span className="text-[11px] text-teal-400/80 uppercase font-bold tracking-wider">Total Dispensed Units</span>
             <span className="text-2xl font-black text-teal-400 mt-1 block font-mono">
               {leaderboard.reduce((sum, r) => sum + r.totalDispensed24h, 0)}
             </span>
@@ -922,7 +928,7 @@ const RestockAnalytics = () => {
                     <td className="px-6 py-4 text-center font-mono font-semibold">
                       <span className={isLow ? 'text-red-400' : 'text-slate-300'}>{stockDisplay}</span>
                       {row.reorderLevel !== null && (
-                        <span className="text-[10px] text-slate-600 block font-normal">Reorder @ {row.reorderLevel}</span>
+                        <span className="text-xs text-slate-600 block font-normal">Reorder @ {row.reorderLevel}</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -984,7 +990,7 @@ const RestockPredictor = () => {
   useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
   const alerts = data?.alerts || [];
-  const district = data?.district || '';
+  const district = formatDistrictName(data?.district) || '';
 
   const getStatusStyles = (status) => {
     if (status === 'Critical') return { border: 'border-red-500/20', bg: 'bg-red-500/[0.02]', badge: 'bg-red-500/10 text-red-400 border-red-500/20', icon: '🚨', trend: 'text-red-400' };
@@ -1006,15 +1012,15 @@ const RestockPredictor = () => {
       {!isLoading && !isError && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-panel p-5 rounded-2xl border border-white/5">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Medicines Analyzed</span>
+            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Medicines Analyzed</span>
             <span className="text-2xl font-black text-white mt-1 block font-mono">{data?.drugsAnalyzed || 0}</span>
           </div>
           <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
-            <span className="text-[10px] text-red-400/80 uppercase font-bold tracking-wider">Critical ML Alerts</span>
+            <span className="text-[11px] text-red-400/80 uppercase font-bold tracking-wider">Critical ML Alerts</span>
             <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Critical').length}</span>
           </div>
           <div className="glass-panel p-5 rounded-2xl border border-amber-500/10">
-            <span className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">Warnings Issued</span>
+            <span className="text-[11px] text-amber-400/80 uppercase font-bold tracking-wider">Warnings Issued</span>
             <span className="text-2xl font-black text-amber-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Warning').length}</span>
           </div>
         </div>
@@ -1048,11 +1054,11 @@ const RestockPredictor = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-base font-bold text-white truncate">{alert.drugName}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${styles.badge}`}>{alert.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase ${styles.badge}`}>{alert.status}</span>
                     <span className={`text-xs font-mono font-bold ${styles.trend}`}>{alert.trend}</span>
                   </div>
                   <p className="text-slate-300 text-xs leading-relaxed">{alert.message}</p>
-                  <div className="mt-3 flex gap-6 text-[10px] text-slate-500 border-t border-white/5 pt-2 select-none">
+                  <div className="mt-3 flex gap-6 text-xs text-slate-500 border-t border-white/5 pt-2 select-none">
                     <span>Baseline: <span className="text-slate-400 font-bold">{alert.baselineDailyAvg} units/day</span></span>
                     <span>Recent demand: <span className="text-slate-400 font-bold">{alert.recentDailyAvg} units/day</span></span>
                   </div>
@@ -1187,7 +1193,7 @@ const StaffManagement = () => {
                 <option value="pharmacy_admin">Admin</option>
               </select>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 select-none">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 select-none">
               <Mail className="w-3.5 h-3.5" />
               Temporary authentication credentials will be dispatched to the email.
             </div>
@@ -1368,7 +1374,7 @@ const PharmacySettings = () => {
                 )}
 
                 {!uploadingPic && (
-                  <label className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none text-[9px] font-bold text-slate-300 leading-tight">
+                  <label className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none text-xs font-bold text-slate-300 leading-tight">
                     <Camera className="w-4.5 h-4.5 text-teal-400 mb-1" />
                     Drag & Drop
                     <input 
@@ -1384,7 +1390,7 @@ const PharmacySettings = () => {
                 {uploadingPic && (
                   <div className="absolute inset-0 bg-[#020817]/95 flex flex-col items-center justify-center p-2 text-center rounded-2xl select-none">
                     <Loader2 className="w-4 h-4 text-teal-400 animate-spin mb-1" />
-                    <span className="text-[9px] font-bold text-slate-300 font-mono">{uploadProgress}%</span>
+                    <span className="text-xs font-bold text-slate-300 font-mono">{uploadProgress}%</span>
                   </div>
                 )}
               </div>

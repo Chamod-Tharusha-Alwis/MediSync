@@ -291,7 +291,7 @@ export const Overview = ({ data }) => {
                   {rx.labTests?.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {rx.labTests.map((t, i) => (
-                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-[10px] font-bold">
+                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-xs font-bold">
                           <FlaskConical className="w-2.5 h-2.5" />{formatLabTestName(t)}
                         </span>
                       ))}
@@ -345,7 +345,7 @@ export const Overview = ({ data }) => {
                   {c.labTests?.length > 0 && (
                     <div className="flex gap-1.5 mt-2 flex-wrap">
                       {c.labTests.map((t, i) => (
-                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-[10px] font-bold">
+                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-xs font-bold">
                           <FlaskConical className="w-2.5 h-2.5" />{formatLabTestName(t)}
                         </span>
                       ))}

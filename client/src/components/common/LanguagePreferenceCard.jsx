@@ -217,7 +217,7 @@ const LanguagePreferenceCard = ({ className = '' }) => {
                   <span className="text-base font-bold text-white tracking-wide">{meta.native}</span>
                   <div className="flex items-center gap-1.5">
                     {persistenceAvailable && Boolean(persistedLang) && isPersisted && (
-                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">
+                      <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">
                         {t('preferences.savedBadge', 'Saved')}
                       </span>
                     )}
@@ -229,7 +229,7 @@ const LanguagePreferenceCard = ({ className = '' }) => {
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 font-medium mb-1">{meta.name}</p>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{meta.desc}</p>
+                <p className="text-xs text-slate-500 leading-relaxed">{meta.desc}</p>
               </div>
             </div>
           );
@@ -238,7 +238,7 @@ const LanguagePreferenceCard = ({ className = '' }) => {
 
       {/* Actions and disclaimer footer */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-white/5">
-        <p className="text-[11px] text-slate-500 leading-normal max-w-md">
+        <p className="text-xs text-slate-500 leading-normal max-w-md">
           {t('preferences.policyNotice', 'Language preference is securely bound to your verified user account. Clinical international drug names (INN) and ICD-10 diagnostic codes remain globally standardized.')}
         </p>
 

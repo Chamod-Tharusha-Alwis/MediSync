@@ -151,22 +151,22 @@ const Register = () => {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 1 
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
               }`}>
                 {step > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
             </div>
             <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
             <div className="flex items-center gap-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border transition-all ${
                 step === 2 
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-slate-950/40 border-white/5 text-slate-550'
+                  : 'bg-slate-950/40 border-white/5 text-slate-500'
               }`}>
                 2
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Specifications</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Specifications</span>
             </div>
           </div>
 
@@ -216,13 +216,20 @@ const Register = () => {
                   <GlassInput type="password" name="password" required icon={Lock} value={formData.password} onChange={handleChange} placeholder="••••••••" />
                   {/* Password strength meter */}
                   {formData.password && (
-                    <div className="pt-1.5 select-none">
-                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
-                        <span>Strength</span>
-                        <span className="text-slate-350">{strength.text}</span>
+                    <div
+                      className="pt-1.5 select-none"
+                      role="progressbar"
+                      aria-valuenow={strength.score}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuetext={strength.text}
+                    >
+                      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
+                        <span>{t('auth.strength', 'Strength')}</span>
+                        <span className="text-slate-400">{strength.text}</span>
                       </div>
                       <div className="w-full bg-slate-950 h-1 mt-1 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-350 ${strength.color}`} style={{ width: `${strength.score}%` }} />
+                        <div className={`h-full transition-all duration-300 ${strength.color}`} style={{ width: `${strength.score}%` }} />
                       </div>
                     </div>
                   )}
@@ -232,7 +239,7 @@ const Register = () => {
                   <label className={labelClass}>Confirm Password</label>
                   <GlassInput type="password" name="confirmPassword" required icon={Lock} value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
+                    <p className="text-xs text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
                   )}
                 </div>
 
@@ -280,7 +287,7 @@ const Register = () => {
                   <div className="flex flex-col gap-1.5">
                     <label className={labelClass}>Pharmacy Reference ID *</label>
                     <GlassInput type="text" name="pharmacyId" required icon={Building} value={formData.pharmacyId} onChange={handleChange} />
-                    <p className="text-[10px] text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
+                    <p className="text-xs text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
                   </div>
                 )}
 

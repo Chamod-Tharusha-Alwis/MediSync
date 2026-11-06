@@ -18,21 +18,31 @@ import { useTranslation } from '../../i18n/LanguageContext';
 import { formatDoctorName } from '../../utils/doctorName';
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-const StatCard = ({ label, value, icon: Icon, color }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-5 flex items-center gap-4"
-  >
-    <div className={`w-12 h-12 rounded-xl bg-${color}-500/10 border border-${color}-500/20 flex items-center justify-center text-${color}-400`}>
-      <Icon size={22} />
-    </div>
-    <div>
-      <p className="text-3xl font-bold text-white">{value ?? '—'}</p>
-      <p className="text-sm text-slate-400 mt-0.5">{label}</p>
-    </div>
-  </motion.div>
-);
+const STAT_CARD_COLOR_MAP = {
+  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
+  green: { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-400' },
+  purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400' },
+  orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-400' },
+};
+
+const StatCard = ({ label, value, icon: Icon, color }) => {
+  const scheme = STAT_CARD_COLOR_MAP[color] || STAT_CARD_COLOR_MAP.blue;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-5 flex items-center gap-4"
+    >
+      <div className={`w-12 h-12 rounded-xl ${scheme.bg} border ${scheme.border} flex items-center justify-center ${scheme.text}`}>
+        <Icon size={22} />
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-white">{value ?? '—'}</p>
+        <p className="text-sm text-slate-400 mt-0.5">{label}</p>
+      </div>
+    </motion.div>
+  );
+};
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function DoctorDashboard() {

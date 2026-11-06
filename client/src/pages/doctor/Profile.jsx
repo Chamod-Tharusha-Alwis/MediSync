@@ -240,7 +240,7 @@ const DoctorProfile = () => {
                 {!uploadingPic && (
                   <label className="absolute inset-0 bg-[#020817]/85 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none">
                     <FiCamera className="w-5 h-5 text-teal-400 mb-1" />
-                    <span className="text-[9px] text-slate-300 font-bold leading-tight">Drag & Drop<br />or Click</span>
+                    <span className="text-xs text-slate-300 font-bold leading-tight">Drag & Drop<br />or Click</span>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -254,7 +254,7 @@ const DoctorProfile = () => {
                 {uploadingPic && (
                   <div className="absolute inset-0 bg-[#020817]/90 flex flex-col items-center justify-center p-2 text-center select-none">
                     <Loader2 className="w-5 h-5 text-teal-400 animate-spin mb-1" />
-                    <span className="text-[10px] font-bold text-slate-300 font-mono">{uploadPicProgress}%</span>
+                    <span className="text-xs font-bold text-slate-300 font-mono">{uploadPicProgress}%</span>
                     <div className="w-full bg-slate-950 h-1 rounded-full overflow-hidden mt-1 border border-white/5 max-w-[80%]">
                       <div className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full" style={{ width: `${uploadPicProgress}%` }} />
                     </div>
@@ -265,7 +265,7 @@ const DoctorProfile = () => {
               <div className="min-w-0 flex-1 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                   <h2 className="text-xl font-bold text-white truncate">{formatDoctorName(form.fullName || profile.fullName)}</h2>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-bold uppercase tracking-wider select-none">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-bold uppercase tracking-wider select-none">
                     <BadgeCheck className="w-3.5 h-3.5" /> Active license
                   </span>
                 </div>
@@ -398,13 +398,13 @@ const DoctorProfile = () => {
                   onDragLeave={() => setIsDraggingSig(false)}
                   onDrop={(e) => { e.preventDefault(); setIsDraggingSig(false); const file = e.dataTransfer.files[0]; if (file) uploadSignatureFile(file); }}
                   className={`border-2 rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 bg-slate-950/20 h-44 ${
-                    isDraggingSig ? 'border-dashed border-teal-400 bg-teal-500/10 scale-102' : 'border-white/10 hover:border-white/15'
+                    isDraggingSig ? 'border-dashed border-teal-400 bg-teal-500/10 scale-[1.02]' : 'border-white/10 hover:border-white/15'
                   }`}
                   onClick={() => document.getElementById('signature-input-elem').click()}
                 >
                   <UploadCloud className="w-8 h-8 text-teal-400 animate-pulse-subtle" />
                   <span className="text-xs font-bold text-slate-200">Drag & Drop Signature Image</span>
-                  <span className="text-[10px] text-slate-500">Supports PNG, JPG, or SVG</span>
+                  <span className="text-xs text-slate-500">Supports PNG, JPG, or SVG</span>
                   
                   <input
                     id="signature-input-elem"
@@ -420,7 +420,7 @@ const DoctorProfile = () => {
                   {digitalSignature ? (
                     <>
                       <img src={digitalSignature} alt="Digital Signature" className="max-h-24 max-w-full object-contain filter invert" />
-                      <span className="text-[10px] font-bold text-teal-400 border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 rounded-full absolute bottom-3">
+                      <span className="text-xs font-bold text-teal-400 border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 rounded-full absolute bottom-3">
                         Active Signature Loaded
                       </span>
                     </>
@@ -466,7 +466,7 @@ const DoctorProfile = () => {
                 </div>
                 {profile.hospitals && profile.hospitals.length > 0 && (
                   <div className="pt-3 border-t border-white/5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 select-none">Linked Medical Org Environments</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 select-none">Linked Medical Org Environments</p>
                     <div className="flex flex-wrap gap-2">
                       {profile.hospitals.map(h => (
                         <span key={h._id || h} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10 text-teal-400 text-xs font-semibold">

@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import Modal from '../../components/ui/Modal';
+import { formatDistrictName } from '../../utils/districtAdjacency';
 
 const SRI_LANKA_DISTRICTS = [
   'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
@@ -113,7 +114,7 @@ const Broadcast = () => {
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between select-none">
                   <label className="text-xs font-semibold uppercase text-slate-500">Message Body</label>
-                  <span className={`text-[10px] font-mono font-bold ${message.length > 450 ? 'text-rose-400 animate-pulse' : 'text-slate-600'}`}>
+                  <span className={`text-xs font-mono font-bold ${message.length > 450 ? 'text-rose-400 animate-pulse' : 'text-slate-600'}`}>
                     {message.length} / 500
                   </span>
                 </div>
@@ -130,7 +131,7 @@ const Broadcast = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 {/* District Selector */}
                 <div className="flex flex-col gap-1.5 select-none">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5" /> Target District
                   </span>
                   <select
@@ -147,7 +148,7 @@ const Broadcast = () => {
 
                 {/* Role selection chips */}
                 <div className="flex flex-col gap-1.5 select-none">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5" /> Target Audience
                   </span>
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -156,7 +157,7 @@ const Broadcast = () => {
                         key={r.value}
                         type="button"
                         onClick={() => setTargetRole(r.value)}
-                        className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                           targetRole === r.value
                             ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
                             : 'bg-slate-950/20 border-white/5 text-slate-400 hover:text-white'
@@ -213,12 +214,12 @@ const Broadcast = () => {
                       <tr key={b._id || i} className="hover:bg-white/[0.01] transition-colors">
                         <td className="px-5 py-3 font-bold text-white">{b.title || 'Untitled'}</td>
                         <td className="px-5 py-3">
-                          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[10px] font-bold capitalize select-none">
+                          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-xs font-bold capitalize select-none">
                             {b.targetRole || 'All'}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-slate-400 font-semibold">{b.targetDistrict || b.district || 'Nationwide'}</td>
-                        <td className="px-5 py-3 text-slate-500 font-mono text-[10px]">
+                        <td className="px-5 py-3 text-slate-400 font-semibold">{formatDistrictName(b.targetDistrict || b.district) || 'Nationwide'}</td>
+                        <td className="px-5 py-3 text-slate-500 font-mono text-xs">
                           {b.sentAt || b.createdAt 
                             ? formatSriLankaDateTime(b.sentAt || b.createdAt, 'en-GB')
                             : 'N/A'}
@@ -226,7 +227,7 @@ const Broadcast = () => {
                         <td className="px-5 py-3 text-right">
                           <button
                             onClick={() => setViewMessage(b)}
-                            className="text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider text-[10px] select-none"
+                            className="text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider text-[11px] select-none"
                           >
                             View
                           </button>
@@ -251,7 +252,7 @@ const Broadcast = () => {
               <div className="w-80 mx-auto glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl bg-slate-900/90 text-left">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-700/50 bg-slate-800/80 select-none">
                   <h4 className="text-[11px] font-black text-white uppercase tracking-wider">Notifications (Live)</h4>
-                  <span className="text-[10px] text-indigo-400 font-bold">1 unread</span>
+                  <span className="text-xs text-indigo-400 font-bold">1 unread</span>
                 </div>
                 <div className="p-3.5 flex gap-3 bg-blue-500/5">
                   <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center shrink-0 select-none">
@@ -259,8 +260,8 @@ const Broadcast = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-200 font-bold text-xs truncate">{title || 'Broadcast Title'}</p>
-                    <p className="text-slate-400 text-[11px] mt-1 leading-normal break-words">{message || 'Announcement message content body...'}</p>
-                    <p className="text-[9px] text-slate-500 mt-2 font-mono select-none">To: {targetRole.toUpperCase()} • {targetDistrict || 'NATIONWIDE'}</p>
+                    <p className="text-slate-400 text-xs mt-1 leading-normal break-words">{message || 'Announcement message content body...'}</p>
+                    <p className="text-xs text-slate-500 mt-2 font-mono select-none">To: {targetRole.toUpperCase()} • {(formatDistrictName(targetDistrict) || 'NATIONWIDE').toUpperCase()}</p>
                   </div>
                 </div>
               </div>
@@ -271,7 +272,7 @@ const Broadcast = () => {
               </div>
             )}
 
-            <div className="text-[10px] text-slate-500 leading-normal space-y-1.5 select-none pt-4 border-t border-white/5">
+            <div className="text-xs text-slate-500 leading-normal space-y-1.5 select-none pt-4 border-t border-white/5">
               <p>• Dispatched signals write records to patient databases.</p>
               <p>• Live push relays will transmit to active socket connections.</p>
             </div>
@@ -291,9 +292,9 @@ const Broadcast = () => {
             <p className="text-slate-300 text-xs leading-relaxed bg-slate-950/40 p-4 rounded-xl border border-white/5 font-medium">
               {viewMessage.message}
             </p>
-            <div className="flex gap-4 text-[10px] font-bold text-slate-500 border-t border-white/5 pt-3">
+            <div className="flex gap-4 text-xs font-bold text-slate-500 border-t border-white/5 pt-3">
               <span>Audience: <span className="text-slate-300 uppercase">{viewMessage.targetRole || 'All'}</span></span>
-              <span>District: <span className="text-slate-300">{viewMessage.targetDistrict || viewMessage.district || 'Nationwide'}</span></span>
+              <span>District: <span className="text-slate-300">{formatDistrictName(viewMessage.targetDistrict || viewMessage.district) || 'Nationwide'}</span></span>
             </div>
             <button
               onClick={() => setViewMessage(null)}

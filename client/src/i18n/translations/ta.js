@@ -538,6 +538,7 @@ export const ta = {
     "noActiveGrants": "செயலில் உள்ள மருத்துவ அனுமதிகள் இல்லை.",
     "verificationRequired": "சரிபார்ப்பு தேவை",
     "sendingOtp": "OTP அனுப்பப்படுகிறது...",
+    "requestingConsentOtp": "ஒப்புதல் OTP கோரப்படுகிறது...",
     "otpWillReceive": "அணுகலை உறுதிப்படுத்த 6 இலக்க OTP உங்களுக்கு அனுப்பப்படும்.",
     "enter6Digit": "6 இலக்க சரிபார்ப்புக் குறியீட்டை உள்ளிடவும்"
   },
@@ -580,6 +581,19 @@ export const ta = {
     "sessionExpired": "அமர்வு காலாவதியானது.",
     "signInHere": "இங்கே உள்நுழைக",
     "strength": "வலிமை",
+    "passwordStrength": "கடவுச்சொல் வலிமை",
+    "veryWeak": "மிகவும் பலவீனமானது",
+    "weak": "பலவீனமானது",
+    "fair": "நியாயமானது",
+    "good": "நல்லது",
+    "strong": "வலிமையானது",
+    "empty": "வெற்று",
+    "strengthVeryWeak": "மிகவும் பலவீனமானது",
+    "strengthWeak": "பலவீனமானது",
+    "strengthFair": "நியாயமானது",
+    "strengthGood": "நல்லது",
+    "strengthStrong": "வலிமையானது",
+    "strengthEmpty": "வெற்று",
     "rotateCredentials": "சான்றுகளை சுழற்றவும்",
     "adminAccount": "நிர்வாகக் கணக்கு",
     "trustedDevicesDesc": "OTP வழியாக சரிபார்க்கப்பட்ட சாதனங்கள். சாதனத்தை நீக்குவதன் மூலம் அதன் நம்பகமான நிலையை ரத்து செய்யவும்.",
@@ -746,7 +760,9 @@ export const ta = {
     "urgencyPriority": "அவசர முன்னுரிமை",
     "operationalState": "செயல்பாட்டு நிலை",
     "selectReportToDownload": "பதிவிறக்க ஒரு அறிக்கையைத் தேர்ந்தெடுக்கவும்",
-    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை"
+    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
+    "waitCooldown": "மீண்டும் அனுப்புவதற்கு முன் {n} வினாடிகள் காத்திருக்கவும்",
+    "tooManyRequests": "அதிகப்படியான கோரிக்கைகள். தயவுசெய்து {n} வினாடிகள் காத்திருக்கவும்."
   },
   "adminManagement": {
     "analyticsTitle": "நிர்வாக சுகாதார பகுப்பாய்வு",

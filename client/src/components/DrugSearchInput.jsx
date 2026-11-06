@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import axios from '../api/axiosInstance';
 import { FiSearch, FiAlertTriangle, FiInfo, FiPlus } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,11 +67,26 @@ const resolveTransliteration = (str) => {
 };
 
 // Helper to filter and rank medication matches: prefix matches first, then substring matches
+const NON_PRESCRIBABLE_NAME_RE =
+  /\b(soap|shampoo|face\s*wash|facewash|gel\s*wash|creamy\s*wash|body\s*wash|cleansing\s*gel|cleanser|bathing\s*bar|syndet\s*bar|acne\s*bar|face\s*pack|pad\s*wipes|scar\s*serum)\b/i;
+const NON_PRESCRIBABLE_GENERIC_RE = /^generic\s+name\s+skin\s+care$/i;
+
+const isPrescribableDrug = drug => {
+  if (!drug) return false;
+  const name = String(drug.name || '');
+  const brand = String(drug.brand || '');
+  const generic = String(drug.genericName || '').trim();
+  if (NON_PRESCRIBABLE_NAME_RE.test(name) || NON_PRESCRIBABLE_NAME_RE.test(brand)) return false;
+  if (NON_PRESCRIBABLE_GENERIC_RE.test(generic)) return false;
+  return true;
+};
+
 const rankMedicationMatches = (items, searchStr) => {
   if (!Array.isArray(items)) return [];
   const rawQ = searchStr.trim().toLowerCase();
   const latinQ = resolveTransliteration(rawQ);
   return items
+    .filter(isPrescribableDrug)
     .filter(d => {
       const n = (d.name || '').toLowerCase();
       const g = (d.genericName || '').toLowerCase();
@@ -117,10 +133,33 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
   const interactionRequestRef = useRef(0);
   useEffect(() => () => { interactionRequestRef.current += 1; }, []);
 
+  const [dropdownCoords, setDropdownCoords] = useState({ top: 0, bottom: 0, left: 0, width: 0, isFlipped: false });
+
+  const updateCoords = useCallback(() => {
+    if (wrapperRef.current && typeof window !== 'undefined') {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const flipped = spaceBelow < 280 && spaceAbove > spaceBelow;
+      setIsFlipped(flipped);
+      setDropdownCoords({
+        top: rect.bottom + 6,
+        bottom: window.innerHeight - rect.top + 6,
+        left: rect.left,
+        width: rect.width,
+        isFlipped: flipped
+      });
+    }
+  }, []);
+
   // Click outside listener
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target) &&
+        (!listRef.current || !listRef.current.contains(event.target))
+      ) {
         setIsOpen(false);
         setActiveIndex(-1);
       }
@@ -133,15 +172,17 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
     };
   }, []);
 
-  // Dynamic viewport flip-above detection when opening near bottom of viewport
+  // Reposition dropdown on open, result change, scroll, and resize
   useEffect(() => {
-    if (isOpen && wrapperRef.current && typeof window !== 'undefined') {
-      const rect = wrapperRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      setIsFlipped(spaceBelow < 280 && spaceAbove > spaceBelow);
-    }
-  }, [isOpen, results]);
+    if (!isOpen) return;
+    updateCoords();
+    window.addEventListener('resize', updateCoords);
+    window.addEventListener('scroll', updateCoords, true);
+    return () => {
+      window.removeEventListener('resize', updateCoords);
+      window.removeEventListener('scroll', updateCoords, true);
+    };
+  }, [isOpen, results, updateCoords]);
 
   // Debounced search with race-condition guard
   useEffect(() => {
@@ -323,7 +364,7 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
           type="text"
           role="combobox"
           aria-autocomplete="list"
-          aria-expanded={isOpen}
+          aria-expanded={Boolean(isOpen && query.trim().length >= 2)}
           aria-controls="medication-suggestions-list"
           aria-activedescendant={activeIndex >= 0 ? `med-suggestion-item-${activeIndex}` : undefined}
           value={query}
@@ -379,98 +420,112 @@ const DrugSearchInput = ({ onSelect, currentPrescriptions = [], patientAllergies
       </div>
 
       {/* Floating Suggestions Dropdown */}
-      {isOpen && query.trim().length >= 2 && (
-        <div
-          ref={listRef}
-          id="medication-suggestions-list"
-          role="listbox"
-          className={`absolute left-0 right-0 z-50 w-full bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar ${
-            isFlipped ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          }`}
-        >
-          {isLoading && (
-            <div className="p-3 text-xs text-slate-400 flex items-center justify-center gap-2" role="status" data-testid="catalog-loading-indicator">
-              <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-              <span>Searching medication catalog...</span>
-            </div>
-          )}
+      {isOpen && query.trim().length >= 2 && (() => {
+        const dropdownElement = (
+          <div
+            ref={listRef}
+            id="medication-suggestions-list"
+            role="listbox"
+            style={{
+              position: 'fixed',
+              top: dropdownCoords.isFlipped ? undefined : `${dropdownCoords.top}px`,
+              bottom: dropdownCoords.isFlipped ? `${dropdownCoords.bottom}px` : undefined,
+              left: `${dropdownCoords.left}px`,
+              width: dropdownCoords.width ? `${dropdownCoords.width}px` : undefined,
+              zIndex: 9999
+            }}
+            className={`absolute left-0 right-0 z-50 w-full bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar ${
+              isFlipped ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+            }`}
+          >
+            {isLoading && (
+              <div className="p-3 text-xs text-slate-400 flex items-center justify-center gap-2" role="status" data-testid="catalog-loading-indicator">
+                <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                <span>Searching medication catalog...</span>
+              </div>
+            )}
 
-          {!isLoading && results.length > 0 && results.map((drug, index) => {
-            const isHighlighted = activeIndex === index;
-            return (
-              <div
-                key={drug._id || `drug-${index}`}
-                id={`med-suggestion-item-${index}`}
-                role="option"
-                aria-selected={isHighlighted}
-                data-index={index}
-                data-testid={`med-suggestion-${index}`}
-                onClick={() => handleSelect(drug)}
-                onMouseEnter={() => setActiveIndex(index)}
-                className={`p-3 border-b border-white/5 last:border-0 cursor-pointer transition-colors ${
-                  isHighlighted ? 'bg-teal-500/20 text-white' : 'hover:bg-slate-800/60 text-slate-200'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold text-white text-sm">
-                      {drug.name}
-                      {drug.brand && drug.brand !== drug.name && (
-                        <span className="ml-1.5 text-xs font-normal text-teal-300">
-                          ({drug.brand})
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-400">{drug.genericName}</p>
+            {!isLoading && results.length > 0 && results.map((drug, index) => {
+              const isHighlighted = activeIndex === index;
+              return (
+                <div
+                  key={drug._id || `drug-${index}`}
+                  id={`med-suggestion-item-${index}`}
+                  role="option"
+                  aria-selected={isHighlighted}
+                  data-index={index}
+                  data-testid={`med-suggestion-${index}`}
+                  onClick={() => handleSelect(drug)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  className={`p-3 border-b border-white/5 last:border-0 cursor-pointer transition-colors ${
+                    isHighlighted ? 'bg-teal-500/20 text-white' : 'hover:bg-slate-800/60 text-slate-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-white text-sm">
+                        {drug.name}
+                        {drug.brand && drug.brand !== drug.name && (
+                          <span className="ml-1.5 text-xs font-normal text-teal-300">
+                            ({drug.brand})
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-slate-400">{drug.genericName}</p>
+                    </div>
+                    {drug.category && (
+                      <span className="text-[11px] uppercase font-bold tracking-wider px-2 py-1 bg-teal-500/10 text-teal-300 rounded border border-teal-500/20">
+                        {drug.category}
+                      </span>
+                    )}
                   </div>
-                  {drug.category && (
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-teal-500/10 text-teal-300 rounded border border-teal-500/20">
-                      {drug.category}
-                    </span>
+                  {drug.commonDosages && drug.commonDosages.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {drug.commonDosages.map(dose => (
+                        <span key={dose} className="text-xs bg-slate-950/60 text-slate-400 px-2 py-0.5 rounded border border-slate-800">
+                          {dose}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
-                {drug.commonDosages && drug.commonDosages.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {drug.commonDosages.map(dose => (
-                      <span key={dose} className="text-xs bg-slate-950/60 text-slate-400 px-2 py-0.5 rounded border border-slate-800">
-                        {dose}
-                      </span>
-                    ))}
-                  </div>
-                )}
+              );
+            })}
+
+            {!isLoading && results.length === 0 && (
+              <div
+                className="p-3 text-xs text-slate-400 text-center border-b border-white/5"
+                role="status"
+                data-testid="no-catalog-match-message"
+              >
+                <span>No catalog medications matching "{query.trim()}".</span>
               </div>
-            );
-          })}
+            )}
 
-          {!isLoading && results.length === 0 && (
-            <div
-              className="p-3 text-xs text-slate-400 text-center border-b border-white/5"
-              role="status"
-              data-testid="no-catalog-match-message"
-            >
-              <span>No catalog medications matching "{query.trim()}".</span>
-            </div>
-          )}
+            {query.trim().length > 0 && !results.some(d => (d.name || '').toLowerCase() === query.trim().toLowerCase()) && (
+              <div
+                role="button"
+                tabIndex={0}
+                data-testid="add-custom-medication-button"
+                onClick={handleAddCustomMedication}
+                className="p-3 hover:bg-amber-500/10 cursor-pointer transition-colors flex items-center justify-between text-amber-300 text-xs font-semibold"
+              >
+                <span className="flex items-center gap-2">
+                  <FiPlus className="w-4 h-4 text-amber-400" />
+                  Add "{query.trim()}" as unlisted / custom medication
+                </span>
+                <span className="text-[11px] uppercase px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 rounded">
+                  Unverified Ingredient
+                </span>
+              </div>
+            )}
+          </div>
+        );
 
-          {query.trim().length > 0 && !results.some(d => (d.name || '').toLowerCase() === query.trim().toLowerCase()) && (
-            <div
-              role="button"
-              tabIndex={0}
-              data-testid="add-custom-medication-button"
-              onClick={handleAddCustomMedication}
-              className="p-3 hover:bg-amber-500/10 cursor-pointer transition-colors flex items-center justify-between text-amber-300 text-xs font-semibold"
-            >
-              <span className="flex items-center gap-2">
-                <FiPlus className="w-4 h-4 text-amber-400" />
-                Add "{query.trim()}" as unlisted / custom medication
-              </span>
-              <span className="text-[10px] uppercase px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 rounded">
-                Unverified Ingredient
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+        return typeof document !== 'undefined' && document.body
+          ? createPortal(dropdownElement, document.body)
+          : dropdownElement;
+      })()}
     </div>
   );
 };
