@@ -760,7 +760,9 @@ export const en = {
     "urgencyPriority": "Urgency Priority",
     "operationalState": "Operational State",
     "selectReportToDownload": "Select a report to download",
-    "pdfUnavailable": "PDF export temporarily unavailable"
+    "pdfUnavailable": "PDF export temporarily unavailable",
+    "waitCooldown": "Wait {n}s before resending",
+    "tooManyRequests": "Too many requests. Please wait {n} seconds."
   },
   "adminManagement": {
     "analyticsTitle": "Executive Health Analytics",

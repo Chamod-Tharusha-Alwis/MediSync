@@ -760,7 +760,9 @@ export const ta = {
     "urgencyPriority": "அவசர முன்னுரிமை",
     "operationalState": "செயல்பாட்டு நிலை",
     "selectReportToDownload": "பதிவிறக்க ஒரு அறிக்கையைத் தேர்ந்தெடுக்கவும்",
-    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை"
+    "pdfUnavailable": "PDF ஏற்றுமதி தற்காலிகமாக கிடைக்கவில்லை",
+    "waitCooldown": "மீண்டும் அனுப்புவதற்கு முன் {n} வினாடிகள் காத்திருக்கவும்",
+    "tooManyRequests": "அதிகப்படியான கோரிக்கைகள். தயவுசெய்து {n} வினாடிகள் காத்திருக்கவும்."
   },
   "adminManagement": {
     "analyticsTitle": "நிர்வாக சுகாதார பகுப்பாய்வு",

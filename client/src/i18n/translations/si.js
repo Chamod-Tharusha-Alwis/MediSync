@@ -760,7 +760,9 @@ export const si = {
     "urgencyPriority": "හදිසි ප්‍රමුඛතාවය",
     "operationalState": "ක්‍රියාකාරී තත්ත්වය",
     "selectReportToDownload": "බාගත කිරීමට වාර්තාවක් තෝරන්න",
-    "pdfUnavailable": "PDF අපනයනය තාවකාලිකව ලබාගත නොහැක"
+    "pdfUnavailable": "PDF අපනයනය තාවකාලිකව ලබාගත නොහැක",
+    "waitCooldown": "නැවත යැවීමට පෙර තත්පර {n}ක් රැඳී සිටින්න",
+    "tooManyRequests": "ඉල්ලීම් ගණන වැඩියි. කරුණාකර තත්පර {n}ක් රැඳී සිටින්න."
   },
   "adminManagement": {
     "analyticsTitle": "විධායක සෞඛ්‍ය විශ්ලේෂණ",

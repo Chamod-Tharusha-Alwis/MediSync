@@ -15,6 +15,7 @@ import Modal from '../../components/ui/Modal';
 import Skeleton from '../../components/ui/Skeleton';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName } from '../../utils/labTestFormatter';
+import useSubmissionLock from '../../hooks/useSubmissionLock';
 
 // ── Urgency badge ────────────────────────────────────────────────────────────
 const UrgencyBadge = ({ urgency }) => {
@@ -44,6 +45,7 @@ const fadeIn = {
 // ─────────────────────────────────────────────────────────────────────────────
 const RegisterNewTest = () => {
   const { t } = useTranslation();
+  const submission = useSubmissionLock();
   const [step, setStep]                 = useState('nic');
   const [nic, setNic]                   = useState('');
   const [patientInfo, setPatientInfo]   = useState(null);
@@ -54,19 +56,56 @@ const RegisterNewTest = () => {
   const [loading, setLoading]           = useState(false);
   const [approvingId, setApprovingId]   = useState(null);
   const [copied, setCopied]             = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const cooldownTimerRef                = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, []);
+
+  const startCooldown = (seconds) => {
+    const total = Math.max(1, Number(seconds) || 60);
+    setCooldownSeconds(total);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownTimerRef.current);
+          cooldownTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleSendOtp = async (e) => {
     e?.preventDefault();
+    if (cooldownSeconds > 0) return;
     if (!nic.trim()) return toast.error('Please enter the patient NIC');
+    if (!submission.acquire()) return;
+
     setLoading(true);
     try {
       const otpRes = await api.post('/lab/hospital/request-otp', { patientNic: nic.trim() });
       setPatientInfo(otpRes.data);
       toast.success('Consent OTP sent to patient\'s email');
       setStep('otp');
+      const retryAfter = Number(otpRes.data?.retryAfterSeconds) || 60;
+      startCooldown(retryAfter);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send OTP');
+      if (err.response?.status === 429) {
+        const retryAfter = Number(err.response?.data?.retryAfterSeconds) || 60;
+        startCooldown(retryAfter);
+        const msg = t('lab.tooManyRequests', 'Too many requests. Please wait {n} seconds.').replace('{n}', retryAfter);
+        toast.error(msg);
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to send OTP');
+      }
     } finally {
+      submission.release();
       setLoading(false);
     }
   };
@@ -179,12 +218,16 @@ const RegisterNewTest = () => {
             </div>
             <button
               type="submit"
-              disabled={loading || !nic.trim()}
+              disabled={loading || cooldownSeconds > 0 || !nic.trim()}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40
                 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 shadow-lg"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {loading ? t('consent.requestingConsentOtp', 'Requesting Consent OTP...') : t('common.verify', 'Send Verification OTP')}
+              {loading
+                ? t('consent.requestingConsentOtp', 'Requesting Consent OTP...')
+                : cooldownSeconds > 0
+                  ? t('lab.waitCooldown', `Wait ${cooldownSeconds}s before resending`).replace('{n}', cooldownSeconds)
+                  : t('common.verify', 'Send Verification OTP')}
             </button>
           </form>
         </motion.div>
@@ -212,6 +255,8 @@ const RegisterNewTest = () => {
                 onSubmit={handleVerifyOtpCode}
                 onResend={handleSendOtp}
                 initialSeconds={120}
+                loading={loading}
+                cooldownSeconds={cooldownSeconds}
               />
             </div>
           ) : (
@@ -258,7 +303,7 @@ const RegisterNewTest = () => {
                     <span className="text-white text-xs font-bold truncate flex-1">{formatLabTestName(t)}</span>
                     <button
                       onClick={() => handleCopy(t.reportId)}
-                      className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors bg-white/5 border border-white/5 px-2 py-1 rounded"
+                      className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:text-emerald-300 transition-colors bg-white/5 border border-white/5 px-2 py-1 rounded"
                     >
                       <Copy className="w-3 h-3" /> {t.reportId}
                     </button>
@@ -284,9 +329,9 @@ const RegisterNewTest = () => {
             onClick={() => handleCopy(lastReportId)}
             className="group cursor-pointer mx-auto max-w-xs p-5 rounded-xl bg-slate-950/40 border-2 border-dashed border-emerald-500/20 hover:border-emerald-500/40 transition-all text-center"
           >
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 select-none">{t("lab.reportId", "Latest Report ID")}</p>
+            <p className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 select-none">{t("lab.reportId", "Latest Report ID")}</p>
             <p className="text-xl font-mono font-bold text-emerald-400 tracking-wider break-all">{lastReportId}</p>
-            <span className="text-[10px] text-slate-400 group-hover:text-emerald-400 transition-colors mt-2 block font-semibold">
+            <span className="text-xs text-slate-400 group-hover:text-emerald-400 transition-colors mt-2 block font-semibold">
               {copied ? 'Copied to clipboard' : 'Click code to copy'}
             </span>
           </div>
@@ -408,7 +453,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
                 <div className="flex justify-between items-start gap-2 mb-3">
                   <div className="min-w-0">
                     <h5 className="text-white font-bold text-sm truncate">{formatLabTestName(t)}</h5>
-                    <p className="text-[10px] text-slate-500 font-mono mt-1">{t.labTestId}</p>
+                    <p className="text-xs text-slate-500 font-mono mt-1">{t.labTestId}</p>
                   </div>
                   <StatusBadge status={t.status} />
                 </div>
@@ -465,7 +510,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
                   </button>
                 )}
                 {['report_ready', 'delivered'].includes(t.status) && (
-                  <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold justify-center select-none bg-emerald-500/5 py-1.5 rounded-lg border border-emerald-500/10">
+                  <div className="flex items-center gap-1 text-xs text-emerald-400 font-bold justify-center select-none bg-emerald-500/5 py-1.5 rounded-lg border border-emerald-500/10">
                     <CheckCircle className="w-3.5 h-3.5" /> Result Sealed & Released
                   </div>
                 )}
@@ -596,16 +641,16 @@ const LabAssistantUpload = () => {
           {/* Quick Details Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t("lab.urgencyPriority", "Urgency Priority")}</span>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider block">{t("lab.urgencyPriority", "Urgency Priority")}</span>
               <span className="text-white font-bold mt-1 block capitalize text-sm">{testData.urgency || 'routine'}</span>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Date Prescribed</span>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider block">Date Prescribed</span>
               <span className="text-white font-mono mt-1 block text-sm">{formatSriLankaDate(testData.createdAt)}</span>
             </div>
             {testData.reportUploadedAt && (
               <div className="p-3.5 rounded-xl bg-slate-950/20 border border-white/5">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Encrypted Release</span>
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider block">Encrypted Release</span>
                 <span className="text-emerald-400 font-mono mt-1 block text-xs font-semibold">{formatSriLankaDate(testData.reportUploadedAt)}</span>
               </div>
             )}
@@ -666,7 +711,7 @@ const LabAssistantUpload = () => {
                   <>
                     <Upload className="w-8 h-8 text-slate-500 animate-pulse-subtle" />
                     <span className="text-xs font-bold text-slate-200">Drag & Drop Encrypted Diagnostics PDF here</span>
-                    <span className="text-[10px] text-slate-500">Only PDF formats are cryptographically signed</span>
+                    <span className="text-xs text-slate-500">Only PDF formats are cryptographically signed</span>
                   </>
                 )}
                 <input
@@ -815,7 +860,7 @@ const LabManagement = () => {
                   <>
                     <Upload className="w-7 h-7 text-slate-500" />
                     <span className="text-xs font-bold text-slate-300">Click to select PDF report</span>
-                    <span className="text-[10px] text-slate-500 font-medium">Automatic AES-256 seal will be applied</span>
+                    <span className="text-xs text-slate-500 font-medium">Automatic AES-256 seal will be applied</span>
                   </>
                 )}
                 <input
