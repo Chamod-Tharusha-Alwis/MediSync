@@ -44,3 +44,5 @@ module.exports.testMatch.push('<rootDir>/tests/publicActivityLiveVerification.te
 module.exports.testMatch.push('<rootDir>/tests/publicHealthMongo.test.js', '<rootDir>/tests/runtimeHealthRevision.test.js', '<rootDir>/tests/universityPublicPrivacy.test.js');
 module.exports.testMatch.push('<rootDir>/tests/notificationTransportOffline.test.js','<rootDir>/tests/adminMlStatusOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/loginAlertIdentifierMasking.test.js');
+
+module.exports.testMatch.push('<rootDir>/tests/passwordAttemptPolicy.test.js');

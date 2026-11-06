@@ -1,5 +1,6 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const { isLoginRequest } = require('../security/loginRequest');
+const passwordAttempts = require('../security/passwordAttemptPolicy');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -305,6 +306,8 @@ exports.login = async (req, res) => {
     catch (_) { return res.status(403).json({ error: 'Account verification required' }); }
 
     // Password validation (support orgLogin tempPassword / hospital password)
+    if (!(await passwordAttempts.canAttempt(user, modelName))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
+
     failureStep = 'password_compare';
     let isMatch = false;
     if (matchingOrgLogin) {
@@ -321,7 +324,11 @@ exports.login = async (req, res) => {
       isMatch = await bcrypt.compare(password, user.password);
     }
 
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!isMatch) {
+      const held = await passwordAttempts.recordFailure(user, modelName);
+      return res.status(held ? 429 : 401).json({ error: held ? 'Too many password attempts. Please try again later.' : 'Invalid credentials' });
+    }
+    if (!(await passwordAttempts.canAttempt(user, modelName))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
 
     // Check if the incoming device fingerprint belongs to a revoked device
     failureStep = 'device_lookup';
@@ -534,6 +541,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (err) {
+    if (err.code === 'PASSWORD_ATTEMPT_STORE_UNAVAILABLE') return res.status(503).json({ error: 'Login security verification unavailable' });
     // Exceptions may contain credentials or patient fields. The diagnostic
     // formatter emits only fixed categories/messages and the failing stage.
     try { require('../security/safeFailureDiagnostic').reportFailure(err, failureStep); }

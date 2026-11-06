@@ -12,6 +12,7 @@ function harness(pharmacy=false){
     module,exports:module.exports,Buffer,Date,process:{env:{NODE_ENV:'production'}},console:{log(){},warn(){},error(){}},
     require(name){
       if(name==='bcryptjs')return bcrypt;
+      if(name==='../security/passwordAttemptPolicy')return require('../../src/security/passwordAttemptPolicy').createPasswordAttemptPolicy({async getAttempts(){calls.securityStore++;return 0;},async incrementAttempts(){calls.securityStore++;return 1;}});
       if(name.startsWith('../models/')&&repos[name.slice('../models/'.length)])return repos[name.slice('../models/'.length)];
       if(name==='../config/redis')return new Proxy({}, {get(){return ()=>{calls.securityStore++;return unexpected();};}});
       if(['../security/loginIdentifier','../security/accountState','../security/loginRequest'].includes(name))return require('../../src/security/'+name.split('/').pop());

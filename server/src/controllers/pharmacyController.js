@@ -1,5 +1,6 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
 const { isLoginRequest } = require('../security/loginRequest');
+const passwordAttempts = require('../security/passwordAttemptPolicy');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Pharmacy = require('../models/Pharmacy');
@@ -59,8 +60,14 @@ exports.loginPharmacy = async (req, res) => {
     }).populate('pharmacyId');
     if (!staff || !staff.isActive) return res.status(401).json({ error: 'Invalid credentials or inactive account' });
 
+    if (!(await passwordAttempts.canAttempt(staff, 'PharmacyStaff'))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
+
     const isMatch = await bcrypt.compare(password, staff.password);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!isMatch) {
+      const held = await passwordAttempts.recordFailure(staff, 'PharmacyStaff');
+      return res.status(held ? 429 : 401).json({ error: held ? 'Too many password attempts. Please try again later.' : 'Invalid credentials' });
+    }
+    if (!(await passwordAttempts.canAttempt(staff, 'PharmacyStaff'))) return res.status(429).json({ error: 'Too many password attempts. Please try again later.' });
 
     if (staff.mustChangePassword) {
       return res.json({ 
@@ -314,6 +321,7 @@ exports.loginPharmacy = async (req, res) => {
       }
     });
   } catch (error) {
+    if (error.code === 'PASSWORD_ATTEMPT_STORE_UNAVAILABLE') return res.status(503).json({ error: 'Login security verification unavailable' });
     res.status(500).json({ error: 'Login failed' });
   }
 };
