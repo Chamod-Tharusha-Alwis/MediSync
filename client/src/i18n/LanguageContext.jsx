@@ -28,8 +28,8 @@ export const LanguageProvider = ({ children }) => {
       setLanguageState(lang);
       try {
         localStorage.setItem('medisync_language', lang);
-      } catch (err) {
-        console.warn('Failed to persist language in localStorage', err);
+      } catch (_) {
+        // Storage is optional; the in-memory language selection still works.
       }
     }
   };
