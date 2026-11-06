@@ -86,8 +86,13 @@ const Dispense = () => {
     setLoadedNic('');
     setShowConsentModal(false);
     const patientToken = forcedToken || (getPatientToken ? getPatientToken(lookupNic) : null);
+    if (!patientToken) {
+      setLoading(false);
+      setShowConsentModal(true);
+      return;
+    }
     try {
-      const headers = patientToken ? { 'x-patient-access': patientToken } : {};
+      const headers = { 'x-patient-access': patientToken };
       const { data } = await api.get(`/pharmacy/prescriptions/pending/${encodeURIComponent(lookupNic)}`, { headers });
       if (generation !== searchGeneration.current) return;
       if (Array.isArray(data?.data?.prescriptions)) {
