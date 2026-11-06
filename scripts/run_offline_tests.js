@@ -112,7 +112,7 @@ async function main() {
   const frozen = JSON.stringify(before.files) === JSON.stringify(after.files) && before.head === after.head && before.index === after.index && after.pins.every(row => row.actual === row.expected);
   const summary = { out, node: process.version, scope: 'Offline regression; root lifecycle uses owned loopback listeners. No Atlas, production, clinical E2E, install, commit or deployment.', totals, passed: totals.reduce((sum, row) => sum + (row.passed || 0), 0), failed: totals.reduce((sum, row) => sum + (row.failed || 0), 0), blockedProfiles: totals.filter(row => row.status === 'BLOCKED').length, sourceFrozen: frozen, protectedAccountedFor: after.pins.length, success: frozen && totals.every(row => row.status === 'PASS') };
   summary.profile = ciProfile ? (securityOnly ? 'ci-security' : 'ci-offline') : 'local-offline';
-  summary.notRun = ciProfile ? ['Local QA preservation baseline proof (private scratch evidence is not published)',...(securityOnly ? ['Client and ML profiles (covered by the independent full offline job)'] : [])] : [];
+  summary.notRun = ciProfile ? ['Local QA preservation baseline proof (private scratch evidence is not published)','Installed-local MongoMemoryReplSet seed persistence proof (no server binary download in CI)',...(securityOnly ? ['Client and ML profiles (covered by the independent full offline job)'] : [])] : [];
   save('summary.json', summary); console.log(JSON.stringify(summary, null, 2));
   if (!summary.success) {
     for (const exit of exits) {

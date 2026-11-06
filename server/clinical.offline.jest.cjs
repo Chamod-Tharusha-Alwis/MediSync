@@ -1,5 +1,6 @@
 'use strict';
 const base = require('./agent-b.offline.jest.cjs');
+// Actual memory-replica cases also run in the native local lifecycle profile.
 // Include the actual router/middleware contract, not token/controller tests alone.
 // Inventory tooling never dispatches routes or imports clinical application code.
 module.exports = { ...base, testMatch: [...base.testMatch.filter(file => !file.includes('agentBPublicDemoIsolation')), '<rootDir>/tests/clinicalProductionEntry.test.js', '<rootDir>/tests/localStartupAndDirectory.test.js', '<rootDir>/tests/approvedClinicalPatchBinding.test.js', '<rootDir>/tests/closureQaReadOnly.test.js', '<rootDir>/tests/closureQaPreservationBaseline.local.test.js', '<rootDir>/tests/masterSupportSafety.test.js', '<rootDir>/tests/masterClinicalStorage.test.js', '<rootDir>/tests/masterLoginAdmission.test.js', '<rootDir>/tests/masterReviewSafety.test.js', '<rootDir>/tests/masterOrganizationPassword.test.js', '<rootDir>/tests/masterReleaseBoundary.test.js', '<rootDir>/tests/masterReconciliation.test.js', '<rootDir>/tests/masterExistingStorage.test.js', '<rootDir>/tests/masterAuthRedaction.test.js', '<rootDir>/tests/masterQaAdmissionDiagnostics.test.js'] };
@@ -37,6 +38,7 @@ module.exports.testMatch.push('<rootDir>/tests/authenticatedSessionBrowser.test.
 module.exports.testMatch.push('<rootDir>/tests/testMatrixInventory.test.js');
 module.exports.testMatch.push('<rootDir>/tests/i18nSourceAudit.test.js');
 module.exports.testMatch.push('<rootDir>/tests/loginRequestValidation.test.js');
+module.exports.testMatch.push('<rootDir>/tests/seedPlatformPlan.test.js','<rootDir>/tests/seedPlatformData.test.js');
 module.exports.testMatch.push('<rootDir>/tests/patientRouteIdentityHotfix.test.js');
 module.exports.testMatch.push('<rootDir>/tests/loginRateLimitOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/sriLankaTime.test.js');
