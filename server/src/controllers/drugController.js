@@ -1,6 +1,6 @@
 const Drug = require('../models/Drug');
 const { icd10, symptoms } = require('../utils/loadDatasets');
-const { escapeRegex, analyzeMedicationSafety } = require('../utils/ingredientResolver');
+const { escapeRegex, analyzeMedicationSafety, isPrescribableDrug } = require('../utils/ingredientResolver');
 const whoIcd11Service = require('../services/whoIcd11Service');
 
 const COMMON_DRUGS = [
@@ -86,7 +86,10 @@ exports.searchDrugs = async (req, res) => {
     const regex = new RegExp(escapeRegex(q.trim()), 'i');
     let drugs = await Drug.find({
       $or: [{ name: regex }, { genericName: regex }, { brand: regex }]
-    }).limit(10).select('_id name genericName brand category commonDosages');
+    }).limit(25).select('_id name genericName brand category commonDosages');
+
+    const filterFn = typeof isPrescribableDrug === 'function' ? isPrescribableDrug : () => true;
+    drugs = drugs.filter(filterFn).slice(0, 10);
 
     return res.json({ data: drugs });
   } catch (error) {
@@ -242,8 +245,11 @@ exports.recommendDrugs = async (req, res) => {
     if (typeof icdCode !== 'string' || icdCode.length > 64 || !/^[A-Za-z0-9][A-Za-z0-9. -]*$/.test(icdCode)) return res.status(400).json({ error: 'Invalid diagnosis code' });
 
     let recommendations = await Drug.find({ icdCodes: icdCode })
-      .limit(5)
+      .limit(10)
       .select('_id name genericName category commonDosages');
+
+    const filterFn = typeof isPrescribableDrug === 'function' ? isPrescribableDrug : () => true;
+    recommendations = recommendations.filter(filterFn).slice(0, 5);
 
     return res.json({ data: recommendations });
   } catch (error) {

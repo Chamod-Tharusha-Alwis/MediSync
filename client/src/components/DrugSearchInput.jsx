@@ -67,11 +67,26 @@ const resolveTransliteration = (str) => {
 };
 
 // Helper to filter and rank medication matches: prefix matches first, then substring matches
+const NON_PRESCRIBABLE_NAME_RE =
+  /\b(soap|shampoo|face\s*wash|facewash|gel\s*wash|creamy\s*wash|body\s*wash|cleansing\s*gel|cleanser|bathing\s*bar|syndet\s*bar|acne\s*bar|face\s*pack|pad\s*wipes|scar\s*serum)\b/i;
+const NON_PRESCRIBABLE_GENERIC_RE = /^generic\s+name\s+skin\s+care$/i;
+
+const isPrescribableDrug = drug => {
+  if (!drug) return false;
+  const name = String(drug.name || '');
+  const brand = String(drug.brand || '');
+  const generic = String(drug.genericName || '').trim();
+  if (NON_PRESCRIBABLE_NAME_RE.test(name) || NON_PRESCRIBABLE_NAME_RE.test(brand)) return false;
+  if (NON_PRESCRIBABLE_GENERIC_RE.test(generic)) return false;
+  return true;
+};
+
 const rankMedicationMatches = (items, searchStr) => {
   if (!Array.isArray(items)) return [];
   const rawQ = searchStr.trim().toLowerCase();
   const latinQ = resolveTransliteration(rawQ);
   return items
+    .filter(isPrescribableDrug)
     .filter(d => {
       const n = (d.name || '').toLowerCase();
       const g = (d.genericName || '').toLowerCase();
