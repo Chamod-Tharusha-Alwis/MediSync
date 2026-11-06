@@ -276,7 +276,7 @@ exports.loginPharmacy = async (req, res) => {
           }
         } catch (e) {}
 
-        console.log(`[AUTH LOGIN NOTIFICATION] Role: ${staff.role} | Device: ${parsedModel} | isTrusted: ${isTrusted}`);
+        console.debug('[AUTH LOGIN NOTIFICATION] Pharmacy login notification dispatch initiated');
         const resNotification = await emailService.sendLoginNotificationEmail(
           staff.email,
           staff.fullName,
@@ -289,15 +289,9 @@ exports.loginPharmacy = async (req, res) => {
           isTrusted,
           require('../services/recipientLanguageService').languageOptionsForRecord('PharmacyStaff', staff)
         );
-        console.log(`[AUTH LOGIN NOTIFICATION RESULT]`, {
-          provider: resNotification?.provider || null,
-          providerAccepted: Boolean(resNotification?.providerAccepted),
-          deliveryQueued: Boolean(resNotification?.deliveryQueued),
-          fallbackUsed: Boolean(resNotification?.fallbackUsed),
-          deliveryConfirmed: false,
-        });
+        console.debug('[AUTH LOGIN NOTIFICATION] Pharmacy login notification dispatch completed');
       } catch (e) {
-        console.error('[AUTH LOGIN NOTIFICATION ERROR] Pharmacy login email failed:');
+        console.debug('[AUTH LOGIN NOTIFICATION] Pharmacy login notification dispatch encountered an error');
       }
     }
 
