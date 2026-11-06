@@ -124,8 +124,8 @@ const UserManagement = () => {
                     {user.fullName || user.name || 'Unknown'}
                   </span>
                   <div className="flex items-center gap-2 mt-1 min-w-0">
-                    <span className="text-[10px] font-mono text-slate-500 truncate">{user.nic || user._id}</span>
-                    <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0">
+                    <span className="text-xs font-mono text-slate-500 truncate">{user.nic || user._id}</span>
+                    <span className="text-[11px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0">
                       {user.role}
                     </span>
                   </div>
@@ -156,7 +156,7 @@ const UserManagement = () => {
                         <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5 truncate">
                           <Shield className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {selectedUser.nic || selectedUser._id}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 uppercase tracking-wider shrink-0">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 uppercase tracking-wider shrink-0">
                           {selectedUser.role}
                         </span>
                       </div>

@@ -48,7 +48,7 @@ const PasswordStrengthMeter = ({
       aria-valuemax={4}
       aria-valuetext={translatedLabel}
     >
-      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+      <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider">
         <span className="text-slate-400">{t('auth.passwordStrength', 'Password Strength')}</span>
         <span className={textColor}>{translatedLabel}</span>
       </div>

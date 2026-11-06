@@ -109,7 +109,7 @@ export default function PatientRegister() {
               }`}>
                 {step > 1 ? '✓' : '1'}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>{t('auth.rotateCredentials') || 'Credentials'}</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>{t('auth.rotateCredentials') || 'Credentials'}</span>
             </div>
             <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
             <div className="flex items-center gap-2">
@@ -120,7 +120,7 @@ export default function PatientRegister() {
               }`}>
                 2
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>{t('patient.profile')}</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>{t('patient.profile')}</span>
             </div>
           </div>
         )}
@@ -164,7 +164,7 @@ export default function PatientRegister() {
                       aria-valuemax={100}
                       aria-valuetext={strength.text}
                     >
-                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
+                      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
                         <span>{t('auth.strength', 'Strength')}</span>
                         <span className="text-slate-400">{strength.text}</span>
                       </div>
@@ -188,7 +188,7 @@ export default function PatientRegister() {
                     </button>
                   </div>
                   {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">{t('forms.passwordMismatch')}</p>
+                    <p className="text-xs text-rose-400 font-bold select-none mt-1">{t('forms.passwordMismatch')}</p>
                   )}
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function PatientRegister() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>{t('patient.knownAllergies')} <span className="text-[10px] text-slate-500 font-normal lowercase">(comma-separated)</span></label>
+                <label className={labelCls}>{t('patient.knownAllergies')} <span className="text-xs text-slate-500 font-normal lowercase">(comma-separated)</span></label>
                 <input type="text" name="email" value={form.email || ''} onChange={set('email')}
                   className="block w-full px-3 py-2.5 border border-slate-700 bg-slate-800/50 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all" 
                   placeholder="e.g. test@example.com" />

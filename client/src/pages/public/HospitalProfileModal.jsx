@@ -101,13 +101,13 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
             <div className="text-left">
               <h2 id="hospital-modal-title" className="text-xl font-bold text-white mb-1 leading-tight">{hospital.name}</h2>
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                <span className={`px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider ${
                   hospital.type === 'government' ? 'bg-blue-500/15 border border-blue-500/25 text-blue-400' : 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400'
                 }`}>
                   {hospital.type}
                 </span>
                 {hospital.averageRating > 0 && (
-                  <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-bold text-amber-400">
+                  <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-xs font-bold text-amber-400">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>{hospital.averageRating}</span>
                     {hospital.ratingCount > 0 && <span className="opacity-60"> ({hospital.ratingCount})</span>}
@@ -147,7 +147,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
             <div className="space-y-6">
               {hospital.description && (
                 <div className="glass-panel p-5 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-indigo-400" /> Facility Profile
                   </h3>
                   <p className="text-slate-300 text-xs leading-relaxed font-medium whitespace-pre-line">
@@ -158,22 +158,22 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="glass-panel p-4 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-indigo-400" /> Geographic Info
                   </h3>
                   <p className="text-white text-xs font-bold leading-tight">{hospital.address || 'Colombo, Sri Lanka'}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">District: {hospital.district || 'Unknown'}</p>
+                  <p className="text-xs text-slate-500 mt-1">District: {hospital.district || 'Unknown'}</p>
                   
                   {hospital.pickupLocationAddress && (
                     <div className="mt-3 pt-3 border-t border-white/5">
-                      <span className="text-[9px] font-black text-emerald-400 block uppercase tracking-wider">{t("public.pickupLocation", "Pickup Location")}</span>
+                      <span className="text-[11px] font-black text-emerald-400 block uppercase tracking-wider">{t("public.pickupLocation", "Pickup Location")}</span>
                       <span className="text-slate-300 text-xs mt-0.5 block leading-normal">{hospital.pickupLocationAddress}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="glass-panel p-4 rounded-xl border border-white/5 space-y-2">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2">
                     Contact & Portal Link
                   </h3>
                   {hospital.contactPhone && (
@@ -211,7 +211,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
             <div className="space-y-6">
               {isPatient && (
                 <div className="glass-panel p-5 rounded-xl border border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
                     Rate this Medical Facility
                   </h3>
                   <a href="/patient/dashboard/history" className="inline-block text-teal-400 underline">{t('public.reviewViaHistory', 'Review a verified visit from your medical history')}</a>
@@ -219,7 +219,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
               )}
 
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5" /> Recent Reviews List
                 </h3>
                 
@@ -235,7 +235,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
                         ))}
                       </div>
                       <p className="text-slate-300 italic text-xs leading-normal">"{review.comment}"</p>
-                      <div className="flex justify-between items-center mt-3 text-[10px] text-slate-500 font-bold">
+                      <div className="flex justify-between items-center mt-3 text-xs text-slate-500 font-bold">
                         <span>Reviewed by {review.reviewerName || 'Anonymous'}</span>
                         <span className="font-mono">{formatSriLankaDate(review.createdAt)}</span>
                       </div>
@@ -251,7 +251,7 @@ const HospitalProfileModal = ({ hospital: initialHospital, onClose }) => {
           {/* TAB: Location Map */}
           {activeTab === 'location' && (
             <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+              <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" /> Interactive Map Frame
               </h3>
               {process.env.REACT_APP_UNIVERSITY_RUNTIME !== 'true' && getEmbedMapUrl(hospital.googleMapsUrl) ? (

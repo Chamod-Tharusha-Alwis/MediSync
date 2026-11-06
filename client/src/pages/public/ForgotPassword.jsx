@@ -94,7 +94,7 @@ const ForgotPassword = ({ defaultRole: propRole = '' }) => {
                 <span>Link Expiration Notice</span>
               </div>
               <p>For your security, the recovery link is strictly valid for <strong>20 minutes</strong> and can only be used once.</p>
-              <p className="text-[11px] text-slate-500">Didn't receive an email? Check your spam/junk folder or request another link once the cooldown expires.</p>
+              <p className="text-xs text-slate-500">Didn't receive an email? Check your spam/junk folder or request another link once the cooldown expires.</p>
             </div>
 
             <div className="space-y-3 pt-2">

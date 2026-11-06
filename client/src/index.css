@@ -263,7 +263,7 @@
   }
 
   .label-caps {
-    @apply text-[10px] font-extrabold uppercase tracking-widest text-slate-400;
+    @apply text-[11px] font-extrabold uppercase tracking-widest text-slate-400;
   }
 
   /* ── Role-based accent themes ───────────────────────────────────────────── */

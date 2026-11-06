@@ -93,7 +93,7 @@ const ActiveOutbreakBanner = () => {
               </span>
               <span className={`font-medium ${palette.body}`}>{broadcast.message}</span>
               {broadcast.syntheticLabel && (
-                <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
+                <span className="ml-2 px-1.5 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
                   {broadcast.syntheticLabel}
                 </span>
               )}

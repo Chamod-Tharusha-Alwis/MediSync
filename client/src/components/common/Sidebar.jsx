@@ -125,7 +125,7 @@ const Sidebar = ({
         </div>
         <div>
           <h1 className="text-base font-bold text-white tracking-tight leading-none">{title}</h1>
-          <p className={`text-[10px] font-semibold uppercase tracking-widest mt-0.5 ${accent.text}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-widest mt-0.5 ${accent.text}`}>
             {themePrefix} portal
           </p>
         </div>
@@ -161,7 +161,7 @@ const Sidebar = ({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-100 truncate leading-none">{userName}</p>
               {userRole && (
-                <p className={`text-[10px] font-medium mt-0.5 capitalize ${accent.text}`}>
+                <p className={`text-xs font-medium mt-0.5 capitalize ${accent.text}`}>
                   {userRole.replace(/_/g, ' ')}
                 </p>
               )}

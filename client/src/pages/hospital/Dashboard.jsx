@@ -266,7 +266,7 @@ const SettingsPage = () => {
                 )}
 
                 {!uploadingPic && (
-                  <label className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none text-[9px] font-bold text-slate-300 leading-tight">
+                  <label className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200 p-1 text-center select-none text-xs font-bold text-slate-300 leading-tight">
                     <Camera className="w-4.5 h-4.5 text-emerald-400 mb-1" />
                     Drag & Drop
                     <input 
@@ -282,7 +282,7 @@ const SettingsPage = () => {
                 {uploadingPic && (
                   <div className="absolute inset-0 bg-[#020817]/95 flex flex-col items-center justify-center p-2 text-center rounded-2xl select-none">
                     <Loader2 className="w-4 h-4 text-emerald-400 animate-spin mb-1" />
-                    <span className="text-[9px] font-bold text-slate-300 font-mono">{uploadProgress}%</span>
+                    <span className="text-xs font-bold text-slate-300 font-mono">{uploadProgress}%</span>
                   </div>
                 )}
               </div>
@@ -383,7 +383,7 @@ const Overview = ({ stats, labStats, onNavigate }) => {
             <div className={`absolute top-0 right-0 w-16 h-16 ${stat.glow} rounded-full blur-xl`} />
             <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">{stat.label}</span>
             <span className="text-3xl font-extrabold text-white font-mono mt-1">{stat.value}</span>
-            <span className="text-[10px] text-slate-400 mt-1">{stat.desc}</span>
+            <span className="text-xs text-slate-400 mt-1">{stat.desc}</span>
           </div>
         ))}
       </div>
@@ -399,12 +399,12 @@ const Overview = ({ stats, labStats, onNavigate }) => {
               <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5">
                 <span className="text-xs text-slate-400 font-semibold block">{t("hospital.totalDoctors", "Total Linked Doctors")}</span>
                 <span className="text-2xl font-bold text-white mt-1 block">{stats?.totalDoctors || 0}</span>
-                <span className="text-[10px] text-slate-500 mt-1 block">Active: {stats?.activeDoctors || 0} | Suspended: {stats?.inactiveDoctors || 0}</span>
+                <span className="text-xs text-slate-500 mt-1 block">Active: {stats?.activeDoctors || 0} | Suspended: {stats?.inactiveDoctors || 0}</span>
               </div>
               <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5">
                 <span className="text-xs text-slate-400 font-semibold block">{t("hospital.consultationsToday", "Consultations Today")}</span>
                 <span className="text-2xl font-bold text-white mt-1 block">{stats?.consultationsToday || 0}</span>
-                <span className="text-[10px] text-slate-500 mt-1 block">Prescriptions issued: {stats?.prescriptionsToday || 0}</span>
+                <span className="text-xs text-slate-500 mt-1 block">Prescriptions issued: {stats?.prescriptionsToday || 0}</span>
               </div>
             </div>
           </div>

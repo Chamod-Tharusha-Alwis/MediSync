@@ -98,7 +98,7 @@ export default function DoctorRegister() {
               }`}>
                 {step > 1 ? '✓' : '1'}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
             </div>
             <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
             <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export default function DoctorRegister() {
               }`}>
                 2
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Practitioner Detail</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Practitioner Detail</span>
             </div>
           </div>
         )}
@@ -153,7 +153,7 @@ export default function DoctorRegister() {
                       aria-valuemax={100}
                       aria-valuetext={strength.text}
                     >
-                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
+                      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
                         <span>{t('auth.strength', 'Strength')}</span>
                         <span className="text-slate-400">{strength.text}</span>
                       </div>
@@ -177,7 +177,7 @@ export default function DoctorRegister() {
                     </button>
                   </div>
                   {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
+                    <p className="text-xs text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
                   )}
                 </div>
               </div>

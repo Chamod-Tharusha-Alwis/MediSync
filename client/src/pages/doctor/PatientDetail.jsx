@@ -236,15 +236,15 @@ const DoctorPatientDetail = () => {
 
                 <div className="flex flex-wrap gap-6 md:gap-8 text-sm relative z-10">
                   <div>
-                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px] mb-1">Age / Gender</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Age / Gender</p>
                     <p className="font-semibold text-slate-200">{patient?.age || 'N/A'} / {patient?.gender || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px] mb-1">Blood</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Blood</p>
                     <p className="font-semibold text-red-400">{patient?.bloodGroup || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px] mb-1">Allergies</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Allergies</p>
                     <p className="font-semibold text-orange-400 bg-orange-400/10 px-2.5 py-0.5 rounded border border-orange-400/20 text-xs">
                       {patient?.allergies?.join(', ') || 'None'}
                     </p>
@@ -350,7 +350,7 @@ const DoctorPatientDetail = () => {
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-bold text-white text-base">{rx.drugName || rx.medications?.[0]?.name || 'Prescription Medication'}</h3>
-                                  <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-bold uppercase">
+                                  <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-bold uppercase">
                                     {rx.status || 'Active'}
                                   </span>
                                 </div>
@@ -363,7 +363,7 @@ const DoctorPatientDetail = () => {
                               </div>
                               <div className="text-left md:text-right border-t md:border-t-0 pt-3 md:pt-0 border-white/5">
                                 <p className="text-xs font-semibold text-slate-300">{formatDoctorName(rx.doctorId?.fullName, 'Prescribing Doctor')}</p>
-                                <p className="text-[11px] text-slate-500 mt-0.5">{formatSriLankaDate(rx.issuedAt || rx.createdAt)}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{formatSriLankaDate(rx.issuedAt || rx.createdAt)}</p>
                               </div>
                             </div>
                           ))}

@@ -266,7 +266,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
           {/* Header row */}
           <div className="flex items-center justify-between mb-4 relative z-10">
             {/* Type badge with SVG icon */}
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${tc.badge}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-widest border ${tc.badge}`}>
               <Icon className={`w-3.5 h-3.5 ${tc.color}`} />
               {type.replace('_', ' ')}
             </span>
@@ -323,7 +323,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
                     <User className="w-3.5 h-3.5 text-emerald-400" />
                     Issued by {formatDoctorName(data.doctorId?.fullName, 'Doctor')}
                   </span>
-                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded border ${
+                  <span className={`text-[11px] font-black px-2.5 py-0.5 rounded border ${
                     data.status === 'dispensed'
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                       : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
@@ -337,7 +337,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
             {/* Lab Test Pills (Clickable) */}
             {labTests.length > 0 && (
               <div className="pt-2 border-t border-slate-800/30">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1.5 flex items-center gap-1">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-purple-400 mb-1.5 flex items-center gap-1">
                   <FlaskConical className="w-3 h-3" /> Recommended Lab Tests (Click to view):
                 </p>
                 <div className="flex flex-wrap gap-1.5">

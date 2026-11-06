@@ -189,7 +189,7 @@ const SupportTicketsRoster = () => {
                         <CheckCircle className="w-3.5 h-3.5" /> Admin Reply Sent
                       </div>
                       <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed">{selectedTicket.adminReply}</p>
-                      <p className="text-slate-500 text-[10px] mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
+                      <p className="text-slate-500 text-xs mt-3">Resolved on {formatSriLankaDateTime(selectedTicket.repliedAt)}</p>
                     </div>
                   </div>
                 )}

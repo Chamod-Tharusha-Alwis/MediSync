@@ -81,7 +81,7 @@ const PublicNavbar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex min-w-0 min-h-[44px] flex-col items-center justify-center gap-1 py-1 px-1 text-[10px] sm:text-xs font-bold transition-colors ${
+              className={`flex min-w-0 min-h-[44px] flex-col items-center justify-center gap-1 py-1 px-1 text-xs font-bold transition-colors ${
                 isActive ? 'text-blue-600' : 'text-slate-500'
               }`}
             >

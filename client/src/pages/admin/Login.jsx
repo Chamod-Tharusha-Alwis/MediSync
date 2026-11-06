@@ -147,17 +147,17 @@ const AdminLogin = () => {
       ) : (
         <>
           <div className="space-y-1">
-            <label htmlFor="admin-email" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">{t('auth.adminEmail', 'Admin Email')}</label>
+            <label htmlFor="admin-email" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 select-none">{t('auth.adminEmail', 'Admin Email')}</label>
             <GlassInput id="admin-email" type="email" required icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center justify-between ml-1 select-none">
-              <label htmlFor="admin-password" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password Key</label>
+              <label htmlFor="admin-password" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Password Key</label>
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password?role=admin')}
-                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+                className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
               >
                 Forgot key?
               </button>

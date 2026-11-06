@@ -100,14 +100,14 @@ const LabTestTags = ({ tests, tc, limit = 4, onSelectLab }) => {
           key={i}
           type="button"
           onClick={(e) => { e.stopPropagation(); onSelectLab && onSelectLab(t); }}
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wide cursor-pointer hover:scale-105 transition-all ${tc.labTagBg}`}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-bold tracking-wide cursor-pointer hover:scale-105 transition-all ${tc.labTagBg}`}
         >
           <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />
           {formatLabTestName(t)}
         </button>
       ))}
       {overflow > 0 && (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-slate-600 bg-slate-800/60 text-slate-400 text-[10px] font-bold">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-slate-600 bg-slate-800/60 text-slate-400 text-xs font-bold">
           +{overflow} more
         </span>
       )}
@@ -267,14 +267,14 @@ const HistoryCard = ({ event, onRate }) => {
             <div className="flex-1 min-w-0">
               {/* Date + type badge + ID */}
               <div className="flex items-center flex-wrap gap-2 mb-1.5">
-                <span className="text-[10px] font-bold text-slate-500 font-mono tracking-wider uppercase">
+                <span className="text-[11px] font-bold text-slate-500 font-mono tracking-wider uppercase">
                   {dateStr}
                 </span>
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border tracking-widest uppercase ${tc.badge}`}>
+                <span className={`text-[11px] font-black px-2 py-0.5 rounded-full border tracking-widest uppercase ${tc.badge}`}>
                   {isOTC ? 'OTC Dispensation' : type.replace('_', ' ')}
                 </span>
                 {details.consultationId && (
-                  <span className="text-[9px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                     Ref: {details.consultationId}
                   </span>
                 )}
@@ -319,7 +319,7 @@ const HistoryCard = ({ event, onRate }) => {
               {details.followUpDate && new Date(details.followUpDate) > new Date() && (
                 <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/[0.12] border border-indigo-500/25">
                   <Calendar className="w-3 h-3 text-indigo-400" />
-                  <span className="text-indigo-300 text-[10px] font-bold">
+                  <span className="text-indigo-300 text-xs font-bold">
                     Follow-up: {formatSriLankaDate(details.followUpDate, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
@@ -364,7 +364,7 @@ const HistoryCard = ({ event, onRate }) => {
                             <div className="text-slate-200 font-bold text-sm truncate">{m.name}</div>
                             <div className="text-slate-400 text-xs mt-0.5">{m.dosage}</div>
                           </div>
-                          <span className="text-[10px] font-bold bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded border border-teal-500/20 font-mono ml-2">
+                          <span className="text-xs font-bold bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded border border-teal-500/20 font-mono ml-2">
                             {m.frequency}
                           </span>
                         </div>
@@ -421,10 +421,10 @@ const HistoryCard = ({ event, onRate }) => {
                                           </div>
                                           <div className="text-slate-400 text-xs mt-0.5">{m.dosage}</div>
                                           {p.instructions && (
-                                            <div className="text-slate-500 text-[10px] mt-0.5 italic">Note: {p.instructions}</div>
+                                            <div className="text-slate-500 text-xs mt-0.5 italic">Note: {p.instructions}</div>
                                           )}
                                         </div>
-                                        <span className="text-[10px] font-bold bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-mono ml-2 flex-shrink-0">
+                                        <span className="text-xs font-bold bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-mono ml-2 flex-shrink-0">
                                           {m.frequency}
                                         </span>
                                       </div>
@@ -439,7 +439,7 @@ const HistoryCard = ({ event, onRate }) => {
 
                                       {/* Dispenser attribution (shown once per prescription, on first med row) */}
                                       {mIdx === 0 && isDispensed && p.pharmacyName && (
-                                        <div className="mt-1.5 text-[10px] text-slate-500 flex items-center gap-1">
+                                        <div className="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
                                           <span className="font-semibold text-slate-400">{p.pharmacyName}</span>
                                           {p.dispensedByPharmacist && (
                                             <span className="text-slate-600">&mdash; Pharmacist: {p.dispensedByPharmacist}</span>

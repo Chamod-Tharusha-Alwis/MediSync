@@ -156,7 +156,7 @@ const HospitalLogin = () => {
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password?role=hospital_admin')}
-                className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors"
+                className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
               >
                 Forgot password?
               </button>

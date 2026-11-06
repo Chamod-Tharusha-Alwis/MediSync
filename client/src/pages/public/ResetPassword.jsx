@@ -194,7 +194,7 @@ const ResetPassword = ({ token: propToken = '' }) => {
             password={password}
           />
 
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 text-[11px] text-slate-400 leading-relaxed">
+          <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 text-xs text-slate-400 leading-relaxed">
             <span className="font-semibold text-slate-300">Security Invariant:</span> Updating your password terminates all active sessions across all devices and requires re-authentication.
           </div>
 

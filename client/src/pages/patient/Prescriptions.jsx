@@ -68,7 +68,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-bold text-white truncate">{rx.drugName || 'Prescription'}</h3>
             {rx.consultationRef && (
-              <span className="text-[9px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 mt-0.5">
+              <span className="text-[11px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 mt-0.5">
                 Ref: {rx.consultationRef}
               </span>
             )}
@@ -78,7 +78,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
             <p className="text-xs text-slate-500 mt-0.5">{rx.hospitalName}</p>
           )}
         </div>
-        <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${badge.cls}`}>
+        <span className={`text-[11px] uppercase font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${badge.cls}`}>
           {badge.text}
         </span>
       </div>
@@ -114,12 +114,12 @@ const PrescriptionCard = ({ rx, badge, index }) => {
       {/* ── Lab test tags ── */}
       {rx.labTests?.length > 0 && (
         <div>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-1.5">Lab Tests Ordered</p>
+          <p className="text-slate-500 text-[11px] uppercase tracking-widest font-bold mb-1.5">Lab Tests Ordered</p>
           <div className="flex flex-wrap gap-1.5">
             {rx.labTests.map((t, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/[0.12] border border-purple-500/25 text-purple-300 text-[10px] font-bold"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/[0.12] border border-purple-500/25 text-purple-300 text-xs font-bold"
               >
                 <FlaskConical className="w-2.5 h-2.5 flex-shrink-0" />{formatLabTestName(t)}
               </span>

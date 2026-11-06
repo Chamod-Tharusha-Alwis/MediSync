@@ -97,7 +97,7 @@ const DoctorDirectory = () => {
                         {(doc.isSynthetic || doc.syntheticLabel) && (
                           <span
                             data-testid="synthetic-doctor-badge"
-                            className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                            className="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300"
                           >
                             {doc.syntheticLabel || 'Demo Doctor — Synthetic Profile'}
                           </span>
@@ -106,7 +106,7 @@ const DoctorDirectory = () => {
                           <div className="flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 select-none">
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                             <span className="text-xs font-bold text-amber-400">{doc.averageRating}</span>
-                            <span className="text-[10px] text-amber-400/60">({doc.ratingCount})</span>
+                            <span className="text-xs text-amber-400/60">({doc.ratingCount})</span>
                           </div>
                         )}
                       </div>
@@ -117,7 +117,7 @@ const DoctorDirectory = () => {
                     </h3>
                     <p className="text-blue-400 font-bold text-xs mb-2">{doc.specialization || 'General Practitioner'}</p>
                     {(doc.isSynthetic || doc.slmcRegistered === false) && (
-                      <p className="text-[10px] font-semibold text-amber-400/90 mb-3">
+                      <p className="text-xs font-semibold text-amber-400/90 mb-3">
                         Synthetic University Demo Fixture — Not SLMC Registered
                       </p>
                     )}
@@ -139,7 +139,7 @@ const DoctorDirectory = () => {
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-white/5 flex justify-end items-center select-none text-[10px] uppercase font-bold tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors gap-1">
+                  <div className="mt-5 pt-3 border-t border-white/5 flex justify-end items-center select-none text-[11px] uppercase font-bold tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors gap-1">
                     View Credentials <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </motion.div>

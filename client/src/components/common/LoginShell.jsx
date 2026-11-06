@@ -60,7 +60,7 @@ const LoginShell = ({
         >
           {bannerText && (
             <div className="mb-4 text-center select-none animate-pulse-subtle">
-              <span className="inline-flex px-3 py-1 rounded-full bg-red-500/15 border border-red-500/35 text-red-400 text-[10px] font-bold uppercase tracking-widest">
+              <span className="inline-flex px-3 py-1 rounded-full bg-red-500/15 border border-red-500/35 text-red-400 text-[11px] font-bold uppercase tracking-widest">
                 {bannerText}
               </span>
             </div>
@@ -98,7 +98,7 @@ const LoginShell = ({
       </div>
 
       <div className="text-center py-4 select-none">
-        <p className="text-[10px] uppercase font-bold tracking-wider text-slate-600">
+        <p className="text-[11px] uppercase font-bold tracking-wider text-slate-600">
           MediSync Healthcare Network • Secure Node Connection
         </p>
       </div>

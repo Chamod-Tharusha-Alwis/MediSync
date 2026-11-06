@@ -197,7 +197,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                   <p className="text-sm font-bold text-white">Two-Factor Authentication (Email OTP)</p>
                   <span
                     data-testid="two-factor-status-badge"
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                       twoFactorEnabled
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                         : 'bg-slate-800 text-slate-400 border-white/10'
@@ -399,17 +399,17 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                   )}
                   <div className="flex items-center gap-3 mt-1">
                     {isDeviceTrusted ? (
-                      <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+                      <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
                         <Clock className="w-3 h-3" />
                         Trusted {device.trustedAt ? formatSriLankaDate(device.trustedAt, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified'}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-amber-400 flex items-center gap-1 font-medium">
+                      <span className="text-xs text-amber-400 flex items-center gap-1 font-medium">
                         <Clock className="w-3 h-3" />
                         Unverified (Step-up OTP required for trust)
                       </span>
                     )}
-                    <span className="text-[10px] text-slate-600">
+                    <span className="text-xs text-slate-600">
                       Last seen {device.lastSeenAt ? formatSriLankaDate(device.lastSeenAt, 'en-US', { month: 'short', day: 'numeric' }) : 'Unknown'}
                     </span>
                   </div>
@@ -420,7 +420,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                   <button
                     onClick={() => handleRequestTrustOtp(device._id)}
                     disabled={sendingOtpId === device._id}
-                    className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+                    className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {sendingOtpId === device._id ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -432,7 +432,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                 )}
                 <button
                   onClick={() => handleRevoke(device._id, device.deviceModel)}
-                  className="text-[10px] font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
                 >
                   <Trash2 className="w-3 h-3" /> Remove
                 </button>
@@ -452,7 +452,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                 <button
                   onClick={() => handleConfirmTrust(device._id)}
                   disabled={submittingTrustId === device._id}
-                  className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 transition inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 transition inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {submittingTrustId === device._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                   Confirm Trust
@@ -460,13 +460,13 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
                 <button
                   onClick={() => handleRequestTrustOtp(device._id)}
                   disabled={sendingOtpId === device._id}
-                  className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-white/5 transition"
+                  className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-white/5 transition"
                 >
                   Resend OTP
                 </button>
                 <button
                   onClick={() => { setVerifyingDeviceId(null); setOtpValue(''); }}
-                  className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-white/5 transition"
+                  className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-white/5 transition"
                 >
                   Cancel
                 </button>

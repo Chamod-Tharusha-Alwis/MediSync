@@ -166,7 +166,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{title}</span>
               {isSubmitted && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                   <Lock className="w-2.5 h-2.5" /> Read-Only
                 </span>
               )}
@@ -207,7 +207,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
                 className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/10 focus:outline-none resize-none transition-all disabled:opacity-75 disabled:text-slate-400"
               />
               {!isSubmitted && (
-                <div className="flex justify-end text-[10px] text-slate-500 mt-1 select-none font-mono">
+                <div className="flex justify-end text-xs text-slate-500 mt-1 select-none font-mono">
                   {comment.length} / 500 characters
                 </div>
               )}

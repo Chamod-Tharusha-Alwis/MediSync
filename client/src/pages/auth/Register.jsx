@@ -155,7 +155,7 @@ const Register = () => {
               }`}>
                 {step > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 1 ? 'text-white' : 'text-slate-500'}`}>Credentials</span>
             </div>
             <div className="flex-1 h-0.5 mx-4 bg-slate-800" />
             <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ const Register = () => {
               }`}>
                 2
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Specifications</span>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${step === 2 ? 'text-white' : 'text-slate-500'}`}>Specifications</span>
             </div>
           </div>
 
@@ -224,7 +224,7 @@ const Register = () => {
                       aria-valuemax={100}
                       aria-valuetext={strength.text}
                     >
-                      <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase">
+                      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
                         <span>{t('auth.strength', 'Strength')}</span>
                         <span className="text-slate-400">{strength.text}</span>
                       </div>
@@ -239,7 +239,7 @@ const Register = () => {
                   <label className={labelClass}>Confirm Password</label>
                   <GlassInput type="password" name="confirmPassword" required icon={Lock} value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="text-[10px] text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
+                    <p className="text-xs text-rose-400 font-bold select-none mt-1">Passwords do not match</p>
                   )}
                 </div>
 
@@ -287,7 +287,7 @@ const Register = () => {
                   <div className="flex flex-col gap-1.5">
                     <label className={labelClass}>Pharmacy Reference ID *</label>
                     <GlassInput type="text" name="pharmacyId" required icon={Building} value={formData.pharmacyId} onChange={handleChange} />
-                    <p className="text-[10px] text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
+                    <p className="text-xs text-slate-500 select-none ml-1">Contact your pharmacy administrator to obtain your workspace reference ID.</p>
                   </div>
                 )}
 

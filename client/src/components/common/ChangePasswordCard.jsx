@@ -71,7 +71,7 @@ const ChangePasswordCard = ({ onComplete }) => {
           <Key className="w-4 h-4 text-teal-400" />
           <h3 className="text-sm font-bold text-white uppercase tracking-wider">Credential Security</h3>
         </div>
-        <span className="text-[10px] text-slate-500 font-mono uppercase">Role Authenticated</span>
+        <span className="text-[11px] text-slate-500 font-mono uppercase">Role Authenticated</span>
       </div>
 
       <div className="space-y-4">
@@ -134,7 +134,7 @@ const ChangePasswordCard = ({ onComplete }) => {
               />
               Terminate all other active sessions and revoke trusted devices
             </label>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               When enabled, any existing sessions on other browsers or phones will be immediately invalidated upon password rotation.
             </p>
           </div>

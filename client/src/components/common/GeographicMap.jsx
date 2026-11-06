@@ -131,7 +131,7 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
                       </strong>
                     </div>
                     {alert.dangerLevel && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                         Danger: {alert.dangerLevel}
                       </span>
                     )}
@@ -163,10 +163,10 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
 
                   {(alert.isSimulation || alert.isSyntheticUniversityData || alert.scenarioId || alert.syntheticSeedBatch || alert.demoBatchId) && (
                     <div className="mt-2.5 pt-2 border-t-2 border-dashed border-amber-300 bg-amber-50 -mx-1 -mb-1 p-1.5 rounded-b">
-                      <span className="text-[10px] font-black text-amber-900 tracking-wide uppercase block text-center">
+                      <span className="text-[11px] font-black text-amber-900 tracking-wide uppercase block text-center">
                         ⚠️ SIMULATION SCENARIO — DEMO ONLY
                       </span>
-                      <span className="text-[9px] text-amber-800 block text-center leading-tight">
+                      <span className="text-xs text-amber-800 block text-center leading-tight">
                         Synthetic testing data (not official public health data).
                       </span>
                     </div>
