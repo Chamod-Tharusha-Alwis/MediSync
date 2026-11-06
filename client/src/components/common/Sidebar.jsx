@@ -166,7 +166,7 @@ const Sidebar = ({
                 </p>
               )}
             </div>
-            <NotificationBell />
+            <NotificationBell placement="sidebar" />
           </div>
         )}
 
