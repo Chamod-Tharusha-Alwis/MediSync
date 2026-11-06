@@ -54,6 +54,19 @@ async function verifySeedStorage(db,environment,target,models) {
   }
 }
 
+async function connectWithRetry(mongoose,uri,options,{maxRetries=2,retryDelayMs=1000}={}) {
+  for(let attempt=1;attempt<=maxRetries+1;attempt++) {
+    try {
+      await mongoose.connect(uri,options);
+      return;
+    } catch(err) {
+      const isTransient=/server selection timed out|MongoNetworkError|MongoNetworkTimeoutError|ETIMEDOUT|ECONNRESET|socket disconnected/i.test(err.message||'')||['MongoServerSelectionError','MongoNetworkError','MongoNetworkTimeoutError'].includes(err.name||'');
+      if(attempt>maxRetries||!isTransient)throw err;
+      await new Promise(resolve=>setTimeout(resolve,retryDelayMs*attempt));
+    }
+  }
+}
+
 async function closeSeedConnection(mongoose,{primaryError,applied=false}={}) {
   try{await mongoose.disconnect();}catch(_){
     if(primaryError){primaryError.connectionCleanupVerified=false;return;}
@@ -106,7 +119,7 @@ async function runCli(args=process.argv.slice(2),{readFile=require('fs').readFil
     const {buildSeedPlatformPlan}=require('./seedPlatformPlan.cjs');
     let plan=assertPlan(buildSeedPlatformPlan({now}));
     ownsConnection=true;
-    await mongoose.connect(target.uri,{...target.connectionOptions,autoCreate:false,autoIndex:false,retryWrites:false});
+    await connectWithRetry(mongoose,target.uri,{...target.connectionOptions,autoCreate:false,autoIndex:false,retryWrites:false});
     await verifyOperatorIdentity(mongoose.connection.db,target);
     await verifySeedStorage(mongoose.connection.db,env,target,models);
     const store=createStore(models,mongoose.connection,mongoose);
@@ -129,4 +142,4 @@ async function runCli(args=process.argv.slice(2),{readFile=require('fs').readFil
 if(require.main===module)runCli().then(result=>console.log(JSON.stringify(result))).catch(error=>{
   console.log(JSON.stringify({status:'BLOCKED',category:/^SEED_[A-Z_]+$/.test(error.code||'')?error.code:'SEED_ADMISSION_OR_EXECUTION_FAILED'}));process.exitCode=1;
 });
-module.exports={parseArguments,loadKeys,selectSeedTarget,verifySeedStorage,closeSeedConnection,resolvePatientNics,runCli};
+module.exports={parseArguments,loadKeys,selectSeedTarget,verifySeedStorage,connectWithRetry,closeSeedConnection,resolvePatientNics,runCli};
