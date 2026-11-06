@@ -11,11 +11,11 @@ const publicLimiter = rateLimit({
   validate: { trustProxy: false }
 });
 
-router.get('/doctors', publicController.getDoctors);
-router.get('/hospitals', publicController.getHospitals);
-router.get('/pharmacies', publicController.getPharmacies);
+router.get('/doctors', publicLimiter, publicController.getDoctors);
+router.get('/hospitals', publicLimiter, publicController.getHospitals);
+router.get('/pharmacies', publicLimiter, publicController.getPharmacies);
 router.get('/health-stats', publicLimiter, publicController.getHealthStats);
 router.get('/consultation-activity', publicLimiter, publicConsultationActivityController.getConsultationActivity);
-router.get('/diseases/search', publicController.searchDiseases);
+router.get('/diseases/search', publicLimiter, publicController.searchDiseases);
 
 module.exports = router;
