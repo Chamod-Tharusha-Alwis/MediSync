@@ -46,3 +46,10 @@ module.exports.testMatch.push('<rootDir>/tests/notificationTransportOffline.test
 module.exports.testMatch.push('<rootDir>/tests/loginAlertIdentifierMasking.test.js');
 
 module.exports.testMatch.push('<rootDir>/tests/passwordAttemptPolicy.test.js');
+module.exports.testMatch.push(
+  '<rootDir>/tests/registrationRateLimitS2.test.js',
+  '<rootDir>/tests/publicListingRateLimitS5.test.js',
+  '<rootDir>/tests/permissionsPolicyHeaderS11.test.js',
+  '<rootDir>/tests/u2DrugCatalogAndSafety.test.js',
+  '<rootDir>/tests/loginNotificationLoggingS4.test.js'
+);
