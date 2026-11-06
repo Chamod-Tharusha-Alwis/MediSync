@@ -148,7 +148,8 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-const NotificationBellView = () => {
+const NotificationBellView = ({ placement = 'header', align }) => {
+  const isSidebar = placement === 'sidebar' || align === 'left';
   const {
     notifications,
     unreadCount,
@@ -209,11 +210,15 @@ const NotificationBellView = () => {
           <>
             <div className="fixed inset-0" onClick={() => setIsOpen(false)} />
             <motion.div 
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: isSidebar ? -10 : 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              exit={{ opacity: 0, y: isSidebar ? -10 : 10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-80 sm:max-w-[calc(100vw-1rem)] mt-2 glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl"
+              className={`fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:w-80 sm:max-w-[calc(100vw-1rem)] ${
+                isSidebar
+                  ? 'sm:bottom-full sm:top-auto sm:left-0 sm:right-auto sm:mb-2 mt-2 sm:mt-0'
+                  : 'sm:top-full sm:right-0 mt-2'
+              } glass-panel border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl`}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-800/80">
                 <h3 className="text-sm font-bold text-white">{t('common.notifications', 'Notifications')}</h3>
@@ -224,7 +229,7 @@ const NotificationBellView = () => {
                 )}
               </div>
               
-              <div className="max-h-96 overflow-y-auto custom-scrollbar bg-slate-900/90">
+              <div className="max-h-96 sm:max-h-[calc(100vh-14rem)] overflow-y-auto custom-scrollbar bg-slate-900/90">
                 {loadError ? <div role="alert" className="p-4 text-sm text-amber-200">
                   <p>{t('notificationStatus.unavailable', 'Notifications unavailable. Please try again.')}</p>
                   <button onClick={fetchNotifications} className="underline mt-2">{t('serviceStatus.retry', 'Try again')}</button>
