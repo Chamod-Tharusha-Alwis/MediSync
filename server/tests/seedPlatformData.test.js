@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('crypto');
 const {buildSeedPlatformPlan}=require('../../scripts/seedPlatformPlan.cjs');
-const {parseArguments,runCli,loadKeys,selectSeedTarget,verifySeedStorage,closeSeedConnection}=require('../../scripts/seed-platform-data.js');
+const {parseArguments,runCli,loadKeys,selectSeedTarget,verifySeedStorage,connectWithRetry,closeSeedConnection}=require('../../scripts/seed-platform-data.js');
 const {assertPlan,assertOwned,inspectOwned,prepareRecords,runSeedPlan,modelSet}=require('../../scripts/seedPlatformStore.cjs');
 const NOW='2026-11-06T07:30:00.000Z';
 const plan=()=>buildSeedPlatformPlan({now:NOW,compact:true});
@@ -54,13 +54,13 @@ test('cross-patient NIC/record links fail before storage access',()=>{
 test('invalid operation refuses before any store operation',async()=>{
   const store=emptyStore();await expect(runSeedPlan({plan:plan(),store,action:'drop',apply:true})).rejects.toThrow('SEED_MODE_INVALID');expect(store.readOwned).not.toHaveBeenCalled();
 });
-test('model preparation uses app encryption and trusted synthetic metadata without a connection',()=>{
+test('model preparation uses app encryption and trusted synthetic metadata without a connection',async()=>{
   const saved={keys:global.ENCRYPTION_KEYS,version:global.ACTIVE_KEY_VERSION,key:global.ENCRYPTION_KEY};
   try{
     global.ENCRYPTION_KEYS={'1':crypto.randomBytes(32).toString('hex')};global.ACTIVE_KEY_VERSION=1;global.ENCRYPTION_KEY=global.ENCRYPTION_KEYS['1'];
     const mongoose=require('mongoose');require('../src/security/productionAtlasPolicy').disableAutomaticModelDdl(mongoose);
     const p=plan(),models=modelSet(mongoose),hash=require('bcryptjs').hashSync(crypto.randomBytes(48).toString('hex'),12);
-    const rows=prepareRecords(p,models,{passwordHash:hash}),patient=rows.find(r=>r.model==='Patient'),consultation=rows.find(r=>r.model==='Consultation');
+    const rows=await prepareRecords(p,models,{passwordHash:hash}),patient=rows.find(r=>r.model==='Patient'),consultation=rows.find(r=>r.model==='Consultation');
     expect(rows.length===p.records.length&&mongoose.connection.readyState===0).toBe(true);
     expect(patient.raw.__enc_fullName===true&&patient.raw.fullName!==patient.document.fullName).toBe(true);
     expect(typeof patient.raw.patientNic_bi==='string'&&patient.raw.patientNic_bi.length>0).toBe(true);
@@ -136,3 +136,28 @@ test('disconnect failure cannot hide the primary uncertain-commit category',asyn
 test.each([false,true])('disconnect failure distinguishes a committed write from a read-only attempt: applied=%s',async applied=>{
   await expect(closeSeedConnection({disconnect:async()=>{throw Error('CLOSE');}},{applied})).rejects.toThrow(applied?'SEED_COMMITTED_CONNECTION_CLEANUP_UNVERIFIED':'SEED_CONNECTION_CLEANUP_UNVERIFIED');
 });
+
+test('connectWithRetry succeeds on first attempt without retry',async()=>{
+  const fakeMongoose={connect:jest.fn().mockResolvedValueOnce(undefined)};
+  await expect(connectWithRetry(fakeMongoose,'test-uri',{},{maxRetries:2,retryDelayMs:1})).resolves.toBeUndefined();
+  expect(fakeMongoose.connect).toHaveBeenCalledTimes(1);
+});
+test('connectWithRetry retries on transient MongoServerSelectionError and succeeds',async()=>{
+  const transientErr=Object.assign(new Error('Server selection timed out after 5000 ms'),{name:'MongoServerSelectionError'});
+  const fakeMongoose={connect:jest.fn().mockRejectedValueOnce(transientErr).mockResolvedValueOnce(undefined)};
+  await expect(connectWithRetry(fakeMongoose,'test-uri',{},{maxRetries:2,retryDelayMs:1})).resolves.toBeUndefined();
+  expect(fakeMongoose.connect).toHaveBeenCalledTimes(2);
+});
+test('connectWithRetry fails fast on non-transient auth error without retry',async()=>{
+  const authErr=Object.assign(new Error('Authentication failed.'),{name:'MongoServerError',code:8000});
+  const fakeMongoose={connect:jest.fn().mockRejectedValueOnce(authErr)};
+  await expect(connectWithRetry(fakeMongoose,'test-uri',{},{maxRetries:2,retryDelayMs:1})).rejects.toThrow('Authentication failed.');
+  expect(fakeMongoose.connect).toHaveBeenCalledTimes(1);
+});
+test('connectWithRetry exhausts maxRetries on persistent transient error',async()=>{
+  const transientErr=Object.assign(new Error('connection closed'),{name:'MongoNetworkError'});
+  const fakeMongoose={connect:jest.fn().mockRejectedValue(transientErr)};
+  await expect(connectWithRetry(fakeMongoose,'test-uri',{},{maxRetries:2,retryDelayMs:1})).rejects.toThrow('connection closed');
+  expect(fakeMongoose.connect).toHaveBeenCalledTimes(3);
+});
+

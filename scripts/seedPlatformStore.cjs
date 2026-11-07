@@ -97,11 +97,12 @@ async function assertNoForeignReferences(plan,store,session) {
   if(count)fail('SEED_NON_OWNED_DEPENDENCIES_PRESENT');
 }
 
-function prepareRecords(plan,models,{passwordHash}={}) {
+async function prepareRecords(plan,models,{passwordHash}={}) {
   assertPlan(plan);
   if (typeof passwordHash!=='string' || !/^\$2[aby]\$1[2-5]\$/.test(passwordHash)) fail('SEED_UNUSABLE_PASSWORD_HASH_REQUIRED');
   const {writeNicFields}=require('../server/src/security/nicPersistence');
-  return plan.records.map(row=>{
+  const results=[];
+  for(const row of plan.records){
     const Model=models[row.model];if (!Model) fail('SEED_MODEL_REQUIRED');
     const input={...row.document,_id:row.id};
     if (Model.schema.path('password')) input.password=passwordHash;
@@ -110,7 +111,7 @@ function prepareRecords(plan,models,{passwordHash}={}) {
       Object.assign(input,writeNicFields(nic,{legacyFields:row.model==='Patient'||row.model==='LabTest'?['patientNic_bi']:['patientNic_bi','nicHash']}));
     }
     const doc=new Model(input);
-    if (doc.validateSync()) fail('SEED_MODEL_VALIDATION_FAILED');
+    try{await doc.validate();}catch(_){fail('SEED_MODEL_VALIDATION_FAILED');}
     if (typeof doc.encryptFieldsSync==='function') doc.encryptFieldsSync();
     const raw=doc.toObject({depopulate:true,versionKey:false});
     if (idOf(raw._id)!==row.id || raw[row.prefix.field]!==row.prefix.value) fail('SEED_SERIALIZED_OWNERSHIP_INVALID');
@@ -125,8 +126,9 @@ function prepareRecords(plan,models,{passwordHash}={}) {
           !Number.isFinite(+new Date(v.verifiedAt)) || +new Date(v.verifiedAt)>+new Date(plan.now)) fail('SEED_SYNTHETIC_PROVENANCE_REQUIRED');
       metadata.isSimulation=true;metadata.surveillanceVerification={...v};
     }
-    return {...row,raw:{...raw,...metadata}};
-  });
+    results.push({...row,raw:{...raw,...metadata}});
+  }
+  return results;
 }
 
 async function runSeedPlan({plan,store,models,passwordHash,action='seed',apply=false}) {
@@ -139,7 +141,7 @@ async function runSeedPlan({plan,store,models,passwordHash,action='seed',apply=f
   if (!apply) return result;
   if (action==='seed' && before.complete) return {...result,dryRun:false,idempotent:true,inserted:0,deleted:0};
   if (action==='remove' && before.total===0) return {...result,dryRun:false,idempotent:true,inserted:0,deleted:0};
-  const prepared=action==='remove'?[]:prepareRecords(plan,models,{passwordHash});
+  const prepared=action==='remove'?[]:await prepareRecords(plan,models,{passwordHash});
   const session=await store.startSession();let commitStarted=false,commitCompleted=false,primaryError;
   try {
     session.startTransaction({readConcern:{level:'snapshot'},writeConcern:{w:'majority'}});
