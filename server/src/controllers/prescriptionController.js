@@ -9,6 +9,13 @@ const emailService = require('../utils/emailService');
 const { checkAllergyConflict } = require('../utils/ingredientResolver');
 const { prescriptionTiming, DurationError } = require('../utils/prescriptionDuration');
 
+function sanitizeFileRef(rawId) {
+  const cleaned = String(rawId || 'record')
+    .replace(/\b(?:[0-9]{9}[vVxX]|[0-9]{12})\b/g, 'record')
+    .replace(/[^A-Za-z0-9_-]/g, '');
+  return cleaned || 'record';
+}
+
 // POST /api/prescription/issue — Doctor issues prescription
 exports.issuePrescription = async (req, res) => {
   try {
@@ -111,9 +118,10 @@ exports.downloadPrescriptionPdf = async (req, res) => {
       patient.gender || '', labTests, followUpDate, refId, languageOptions
     );
 
+    const safeFileRef = sanitizeFileRef(refId).slice(-24);
     res.set({
       'Content-Type':        'application/pdf',
-      'Content-Disposition': `inline; filename="E-Prescription-${refId}.pdf"`,
+      'Content-Disposition': `inline; filename="E-Prescription-${safeFileRef}.pdf"`,
       'Content-Length':      pdfBuffer.length,
       'Cache-Control':       'private, no-store, no-cache, must-revalidate',
       'Pragma':              'no-cache',
@@ -159,9 +167,20 @@ exports.exportConsultationPdf = async (req, res) => {
     // Access control
     if (req.user.role === 'patient') {
       const patientObjId = consultation.patientId?._id || consultation.patientId;
-      const isOwnerId = patientObjId && String(patientObjId) === String(req.user.id);
-      const isOwnerNic = req.user.nic && consultation.patientNic &&
-        String(req.user.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase();
+      let isOwnerId = Boolean(patientObjId && String(patientObjId) === String(req.user.id));
+      let isOwnerNic = Boolean(
+        req.user.nic && consultation.patientNic &&
+        String(req.user.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase()
+      );
+      if (!isOwnerId && !isOwnerNic && req.user.id && consultation.patientNic && typeof Patient.findById === 'function') {
+        try {
+          const authPatient = await Patient.findById(req.user.id);
+          authPatient?.decryptFieldsSync?.();
+          if (authPatient?.nic && String(authPatient.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase()) {
+            isOwnerNic = true;
+          }
+        } catch (_) {}
+      }
       if (!isOwnerId && !isOwnerNic) {
         return res.status(403).json({ error: 'Access denied' });
       }
@@ -206,10 +225,40 @@ exports.exportConsultationPdf = async (req, res) => {
       ? consultation.doctorId
       : {};
 
-    const pdfBuffer = await generateConsultationSummaryPDF(consultation, patientDetails, doctorDetails);
+    let consultationPayload = consultation.toObject ? consultation.toObject() : { ...consultation };
+    if (
+      !Array.isArray(consultationPayload.medications) &&
+      !Array.isArray(consultationPayload.prescriptions) &&
+      typeof Prescription?.find === 'function'
+    ) {
+      try {
+        const rxOr = [];
+        if (consultation._id) rxOr.push({ consultationId: consultation._id });
+        if (consultation.consultationId) rxOr.push({ consultationRef: consultation.consultationId });
+        if (rxOr.length > 0) {
+          const rxQuery = Prescription.find({ $or: rxOr });
+          const rxDocs = typeof rxQuery?.sort === 'function' ? await rxQuery.sort({ issuedAt: 1, createdAt: 1 }) : await rxQuery;
+          if (Array.isArray(rxDocs) && rxDocs.length > 0) {
+            const decryptedRx = rxDocs.map((rx) => {
+              if (typeof rx?.decryptFieldsSync === 'function') {
+                try { rx.decryptFieldsSync(); } catch (_) {}
+              }
+              return rx?.toObject ? rx.toObject() : rx;
+            });
+            consultationPayload = {
+              ...consultationPayload,
+              medications: decryptedRx,
+              prescriptions: decryptedRx,
+            };
+          }
+        }
+      } catch (_) {}
+    }
+
+    const pdfBuffer = await generateConsultationSummaryPDF(consultationPayload, patientDetails, doctorDetails);
 
     const date = new Date().toISOString().slice(0, 10);
-    const maskedRef = String(consultation.consultationId || consultation._id).replace(/[^a-zA-Z0-9_-]/g, '').slice(-8);
+    const maskedRef = sanitizeFileRef(consultation.consultationId || consultation._id).slice(-8);
     const filename = `MediSync-Consultation-${date}-${maskedRef}.pdf`;
 
     res.set({
@@ -227,5 +276,87 @@ exports.exportConsultationPdf = async (req, res) => {
     }
     console.error('[PDF Export] Generation unavailable.');
     return res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+};
+
+// POST /api/prescriptions/consultations/:id/resend-summary (and /api/patient/consultation/:id/resend-summary)
+exports.resendConsultationSummaryEmail = async (req, res) => {
+  try {
+    if (req.user?.role !== 'patient' || !req.user?.id) {
+      return res.status(403).json({ error: 'Only the patient owner can request a summary email resend' });
+    }
+
+    const { id } = req.params;
+    if (!id) return res.status(404).json({ error: 'Consultation not found' });
+
+    const cleanId = String(id).trim();
+    const isObjId = /^[0-9a-fA-F]{24}$/.test(cleanId);
+    const consultation = await Consultation.findOne({
+      $or: [
+        { consultationId: cleanId },
+        ...(isObjId ? [{ _id: cleanId }] : []),
+      ],
+    });
+
+    if (!consultation) {
+      return res.status(404).json({ error: 'Consultation not found' });
+    }
+
+    if (typeof consultation.decryptFieldsSync === 'function') {
+      try { consultation.decryptFieldsSync(); } catch (_) {}
+    }
+
+    const patientObjId = consultation.patientId?._id || consultation.patientId;
+    let isOwner = Boolean(patientObjId && String(patientObjId) === String(req.user.id));
+    if (!isOwner && consultation.patientNic && typeof Patient.findById === 'function') {
+      const authPatient = await Patient.findById(req.user.id);
+      authPatient?.decryptFieldsSync?.();
+      if (
+        authPatient?.nic &&
+        String(authPatient.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase()
+      ) {
+        isOwner = true;
+      }
+    }
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const {
+      sendConsultationSummaryEmail,
+      checkResendRateLimit,
+    } = require('../services/consultationSummaryEmailService');
+    const consultKey = String(consultation._id || consultation.consultationId);
+    const throttle = checkResendRateLimit(req.user.id, consultKey);
+    if (!throttle.allowed) {
+      return res.status(429).json({
+        error: 'Please wait before requesting another consultation summary email.',
+        code: throttle.errorCode,
+        retryAfterSeconds: throttle.retryAfterSeconds,
+      });
+    }
+
+    const result = await sendConsultationSummaryEmail({
+      consultationId: consultation._id || consultation.consultationId,
+      patientId: req.user.id,
+      doctorId: consultation.doctorId?._id || consultation.doctorId,
+      forceResend: true,
+    });
+
+    if (!result.sent) {
+      return res.status(503).json({
+        error: 'Consultation summary email could not be sent right now.',
+        code: result.errorCode || 'EMAIL_DELIVERY_FAILED',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Consultation summary email sent successfully.',
+      sent: true,
+      pdfAttached: Boolean(result.pdfAttached),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to resend consultation summary email' });
   }
 };

@@ -1,7 +1,8 @@
 'use strict';
 const { clinicalDto } = require('../services/clinicalRecordDto');
 function createConsultationHandler({ execute = req => require('../services/consultationCommandService').executeClinicalWrite(req),
-  prescriptions = filter => require('../models/Prescription').find(filter), labs = filter => require('../models/LabTest').find(filter) } = {}) {
+  prescriptions = filter => require('../models/Prescription').find(filter), labs = filter => require('../models/LabTest').find(filter),
+  notify = payload => require('../services/consultationSummaryEmailService').schedulePostConsultationSummaryEmail(payload) } = {}) {
   const handler = async (req, res) => {
     try {
       const outcome = await execute(req), result = outcome.result;
@@ -9,6 +10,9 @@ function createConsultationHandler({ execute = req => require('../services/consu
       const rxRows = await prescriptions({ _id: { $in: result.prescriptionIds }, ...scope });
       const labRows = await labs({ _id: { $in: result.labTestIds }, referredBy: req.user.id, patientId: scope.patientId });
       if (rxRows.length !== result.prescriptionIds.length || labRows.length !== result.labTestIds.length) return res.status(503).json({ error: 'Committed clinical records cannot be read safely', commandId: outcome.commandId });
+      if (!outcome.replayed && result.consultationId) {
+        try { notify({ consultationId: result.consultationId, patientId: scope.patientId, doctorId: scope.doctorId }); } catch (_) {}
+      }
       return res.status(outcome.replayed ? 200 : 201).json({ message: 'Consultation committed successfully', consultationId: result.consultationId,
         prescriptions: rxRows.map(row => clinicalDto(row, 'prescription')), tests: labRows.map(row => clinicalDto(row, 'lab')),
         conflictWarnings: [], replayed: outcome.replayed, commandId: outcome.commandId,

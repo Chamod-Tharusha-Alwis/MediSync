@@ -889,6 +889,9 @@ const sendMail = async (options = {}) => {
       text: options.text,
       otp: options.otpCode || (otpMatch ? otpMatch[1] : null),
       hasAttachment: Boolean(options.attachments && options.attachments.length > 0),
+      attachmentNames: Array.isArray(options.attachments)
+        ? options.attachments.map((att) => att && (att.filename || att.name)).filter(Boolean)
+        : [],
       capturedAt: new Date().toISOString(),
     });
     if (global.__MEDISYNC_CAPTURED_TEST_EMAILS.length > 200) {

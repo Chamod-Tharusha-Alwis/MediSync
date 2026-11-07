@@ -217,7 +217,14 @@ export const en = {
     "medicalHistorySubtitle": "Review previous clinical records, test orders, and diagnostic logs.",
     "fullName": "Full Name",
     "contactInfo": "Contact Information",
-    "dob": "Date of Birth"
+    "dob": "Date of Birth",
+    "resendSummaryEmail": "Resend summary email",
+    "sendingSummaryEmail": "Sending summary email…",
+    "summaryEmailSent": "Consultation summary email sent to your registered email address.",
+    "summaryEmailRateLimited": "Please wait before requesting another summary email.",
+    "summaryEmailFailed": "Unable to send summary email right now. Please try again later.",
+    "downloadConsultationPdf": "Download Consultation PDF",
+    "downloadLabReportPdf": "Download Lab Report PDF"
   },
   "doctor": {
     "practiceInformation": "Practice Information",

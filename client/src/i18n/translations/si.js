@@ -217,7 +217,14 @@ export const si = {
     "medicalHistorySubtitle": "පෙර සායනික වාර්තා, පරීක්ෂණ සහ රෝග විනිශ්චය සටහන් සමාලෝචනය කරන්න.",
     "fullName": "සම්පූර්ණ නම",
     "contactInfo": "සම්බන්ධතා තොරතුරු",
-    "dob": "උපන් දිනය"
+    "dob": "උපන් දිනය",
+    "resendSummaryEmail": "සාරාංශ ඊමේල් පණිවිඩය නැවත යවන්න",
+    "sendingSummaryEmail": "සාරාංශ ඊමේල් පණිවිඩය යවමින් පවතී…",
+    "summaryEmailSent": "ඔබගේ ලියාපදිංචි ඊමේල් ලිපිනයට උපදේශන සාරාංශය යවන ලදී.",
+    "summaryEmailRateLimited": "කරුණාකර තවත් සාරාංශ ඊමේල් පණිවිඩයක් ඉල්ලීමට පෙර මඳක් රැඳී සිටින්න.",
+    "summaryEmailFailed": "මේ මොහොතේ සාරාංශ ඊමේල් පණිවිඩය යැවිය නොහැක. කරුණාකර පසුව නැවත උත්සාහ කරන්න.",
+    "downloadConsultationPdf": "උපදේශන PDF බාගත කරන්න",
+    "downloadLabReportPdf": "පරීක්ෂණ වාර්තා PDF බාගත කරන්න"
   },
   "doctor": {
     "practiceInformation": "වෛද්‍ය සේවා තොරතුරු",

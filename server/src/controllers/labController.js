@@ -1382,9 +1382,20 @@ exports.exportLabReportPdf = async (req, res) => {
 
     // Access control
     if (req.user.role === 'patient') {
-      const isOwnerId = labTest.patientId && String(labTest.patientId) === String(req.user.id);
-      const isOwnerNic = req.user.nic && labTest.patientNic &&
-        String(req.user.nic).trim().toUpperCase() === String(labTest.patientNic).trim().toUpperCase();
+      const isOwnerId = Boolean(labTest.patientId && String(labTest.patientId) === String(req.user.id));
+      let isOwnerNic = Boolean(
+        req.user.nic && labTest.patientNic &&
+        String(req.user.nic).trim().toUpperCase() === String(labTest.patientNic).trim().toUpperCase()
+      );
+      if (!isOwnerId && !isOwnerNic && req.user.id && labTest.patientNic && typeof Patient?.findById === 'function') {
+        try {
+          const authPatient = await Patient.findById(req.user.id);
+          authPatient?.decryptFieldsSync?.();
+          if (authPatient?.nic && String(authPatient.nic).trim().toUpperCase() === String(labTest.patientNic).trim().toUpperCase()) {
+            isOwnerNic = true;
+          }
+        } catch (_) {}
+      }
       if (!isOwnerId && !isOwnerNic) {
         return res.status(403).json({ message: 'Access denied' });
       }
@@ -1427,7 +1438,10 @@ exports.exportLabReportPdf = async (req, res) => {
     const pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest);
 
     const date = new Date().toISOString().slice(0, 10);
-    const maskedRef = String(labTest.reportId || labTest.labTestId || labTest._id).replace(/[^a-zA-Z0-9_-]/g, '').slice(-8);
+    const maskedRef = String(labTest.reportId || labTest.labTestId || labTest._id)
+      .replace(/\b(?:[0-9]{9}[vVxX]|[0-9]{12})\b/g, 'record')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(-8);
     const filename = `MediSync-LabReport-${date}-${maskedRef}.pdf`;
 
     res.set({

@@ -12,35 +12,29 @@ import PageTransition from '../../components/common/PageTransition';
 import { toast } from 'react-toastify';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName } from '../../utils/labTestFormatter';
+import { isPdfExportClientEnabled, downloadClinicalPdf } from '../../utils/pdfDownload';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PDF Download helper — streams the prescription PDF and triggers browser save
    ───────────────────────────────────────────────────────────────────────────── */
-const downloadPdf = async (prescriptionId, setDownloading) => {
+const downloadPdf = async (prescriptionId, setDownloading, t) => {
   if (!prescriptionId) {
     toast.error('No prescription ID available for this record.');
     return;
   }
   setDownloading(true);
   try {
-    const response = await api.get(`/prescription/download/${prescriptionId}`, {
-      responseType: 'blob',
-    });
-
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href     = url;
-    link.download = `E-Prescription-${prescriptionId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success('E-Prescription downloaded.');
-  } catch (err) {
-    const msg = err.response?.data?.error || err.message || 'Download failed';
-    toast.error(msg);
+    const result = await downloadClinicalPdf(
+      `/prescription/download/${prescriptionId}`,
+      `E-Prescription-${prescriptionId}.pdf`
+    );
+    if (!result.ok) {
+      toast.info(
+        typeof t === 'function'
+          ? t('pdfUnavailable', 'PDF export temporarily unavailable')
+          : 'PDF export temporarily unavailable'
+      );
+    }
   } finally {
     setDownloading(false);
   }
@@ -143,24 +137,39 @@ const PrescriptionCard = ({ rx, badge, index }) => {
         </div>
 
         {/* PDF download — shown for all statuses so patients can always retrieve their record */}
-        {rx.prescriptionId && (
-          <button
-            id={`download-pdf-${rx.prescriptionId}`}
-            disabled
-            aria-disabled="true"
-            title={t("pdfUnavailable", "PDF export temporarily unavailable")}
-            className={`
-              w-full flex items-center justify-center gap-2.5
-              px-4 py-2.5 rounded-xl
-              text-sm font-bold tracking-wide
-              border transition-all duration-300
-              bg-slate-800/40 border-slate-600/40 text-slate-400
-              opacity-50 cursor-not-allowed
-            `}
-          >
-            <Download className="w-4 h-4" />
-            {t("pdfUnavailable", "PDF export temporarily unavailable")}
-          </button>
+        {(rx.prescriptionId || rx.consultationRef) && (
+          isPdfExportClientEnabled() ? (
+            <button
+              id={`download-pdf-${rx.prescriptionId || rx.consultationRef}`}
+              type="button"
+              disabled={downloading}
+              onClick={() => downloadPdf(rx.prescriptionId || rx.consultationRef, setDownloading, t)}
+              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold tracking-wide border transition-all duration-300 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50"
+            >
+              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {downloading
+                ? t('patient.generatingPdf', 'Generating PDF…')
+                : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
+            </button>
+          ) : (
+            <button
+              id={`download-pdf-${rx.prescriptionId || rx.consultationRef}`}
+              disabled
+              aria-disabled="true"
+              title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+              className={`
+                w-full flex items-center justify-center gap-2.5
+                px-4 py-2.5 rounded-xl
+                text-sm font-bold tracking-wide
+                border transition-all duration-300
+                bg-slate-800/40 border-slate-600/40 text-slate-400
+                opacity-50 cursor-not-allowed
+              `}
+            >
+              <Download className="w-4 h-4" />
+              {t("pdfUnavailable", "PDF export temporarily unavailable")}
+            </button>
+          )
         )}
       </div>
     </motion.div>

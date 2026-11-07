@@ -537,6 +537,10 @@ exports.getPrescriptions = async (req, res) => {
   }
 };
 
+exports.resendConsultationSummaryEmail = async (req, res) => {
+  return require('./prescriptionController').resendConsultationSummaryEmail(req, res);
+};
+
 exports.rateConsultation = async (req, res) => {
   try {
     const { id } = req.params;

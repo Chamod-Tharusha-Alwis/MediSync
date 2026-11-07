@@ -36,6 +36,7 @@ router.put('/:nic', protect(['patient']), patientRouteIdentity, patientControlle
 router.get('/:nic/timeline', protect(['patient', 'doctor', 'hospital_admin']), patientRouteIdentity, patientController.getTimeline);
 router.get('/:nic/prescriptions', protect(['patient', 'doctor', 'admin', 'super_admin']), patientRouteIdentity, patientController.getPrescriptions);
 router.post('/consultation/:id/rate', protect(['patient']), patientController.rateConsultation);
+router.post('/consultation/:id/resend-summary', protect(['patient']), patientController.resendConsultationSummaryEmail);
 
 // Patient privacy — OTP gated access
 router.post('/request-access', protect(['doctor', 'pharmacist', 'pharmacy_admin', 'assistant', 'hospital_admin']), patientController.requestPatientAccess);

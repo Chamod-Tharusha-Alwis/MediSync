@@ -18,10 +18,11 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 1 complete)
 
 ## Phase 2 — Consultation email and PDF
-- [ ] TODO 2.1 patient summary email (idempotent, non-blocking, capped, NIC-free, PDF attached only when `PDF_EXPORT_ENABLED=true`, resend button rate limited)
-- [ ] TODO 2.2 PDF download root cause + fix (gate default off)
-- [ ] TODO 2.3 tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 2.0 Root cause documented in `DECISIONS.md` (`D-011`)
+- [x] DONE 2.1 patient summary email (`consultationSummaryEmailService.js`: idempotent, non-blocking, capped, NIC-free, PDF attached only when `PDF_EXPORT_ENABLED=true`, resend button rate limited with EN/SI/TA strings)
+- [x] DONE 2.2 PDF download root cause + fix (`exportConsultationPdf` loads prescriptions, `exportLabReportPdf` resolves patient NIC via `Patient.findById`, client `pdfDownload.js` parses Blob 503 payload, gate default off)
+- [x] DONE 2.3 tests (`server/tests/phase2ConsultationEmailAndPdf.test.js` — 5 tests)
+- [x] DONE Gate + build + commit + push + report (Phase 2 complete: 3,423 PASS / 0 FAIL)
 
 ## Phase 3 — Grouped prescriptions and dispensing
 - [ ] TODO 3.1 patient grouped Active Prescriptions

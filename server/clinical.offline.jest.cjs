@@ -63,4 +63,7 @@ module.exports.testMatch.push(
   '<rootDir>/tests/removeDemoBatchOffline.test.js'
 );
 
-module.exports.testMatch.push('<rootDir>/tests/tempDirsOutsideRepo.test.js');
+module.exports.testMatch.push(
+  '<rootDir>/tests/tempDirsOutsideRepo.test.js',
+  '<rootDir>/tests/phase2ConsultationEmailAndPdf.test.js'
+);
