@@ -1,7 +1,7 @@
 # MediSync Sub-Project 1: Phase 2 Polish and Cleanup — Master Plan
 
 Branch: `feat/phase2-polish-and-cleanup` (off `main` @ `0871fd3`, contains PRs #17, #18, #19).
-Status: **PLAN READY — awaiting owner APPROVED**. No Phase 1 work starts before approval.
+Status: **APPROVED BY OWNER (2026-11-07) — Phase 1 Complete; awaiting owner confirmation to begin Phase 2**.
 
 ## 0. Ground rules (apply to every phase)
 
@@ -106,14 +106,14 @@ Side effect to note: Province/Island aggregation will usually cross the N >= 5 f
 - A7. Phase 4.3 investigation uses read-only queries (find/count/aggregate) against `medisync_prod` only if needed; offline reproduction preferred.
 - A8. Network fetches (DCS site, colmozzie dataset) may be blocked; then BLOCKED with owner steps, no fabricated data.
 
-## 5. Open questions for the owner
+## 5. Open questions for the owner (RESOLVED 2026-11-07)
 
-- Q1. Confirm "3 levels" = District / Province / Island-wide (primary interpretation above)?
-- Q2. Keep a small curated copy of `medisync-qa-evidence/` in git, or ignore it entirely?
-- Q3. Should the consultation summary email attach the PDF even when `PDF_EXPORT_ENABLED` is off? Proposed default: attach only when the flag is on; otherwise send the prescription list without attachment.
-- Q4. Restock warnings (3.3): remove entirely, or repurpose as "District health burden" link (already exists from M2)? Proposed: remove the sidebar item.
-- Q5. Phase 4.3: allowed to run read-only aggregate queries against `medisync_prod`, or offline reproduction only?
-- Q6. Province mapping: use the official 9-province district mapping (standard administrative split). OK?
+- Q1. Confirm "3 levels" = District / Province / Island-wide (primary interpretation above)? -> **APPROVED: YES (District 25 / Province 9 / Island-wide 1).**
+- Q2. Keep a small curated copy of `medisync-qa-evidence/` in git, or ignore it entirely? -> **APPROVED: Ignore `medisync-qa-evidence/` entirely in `.gitignore` (optionally a few small PNGs in `docs/evidence/` later).**
+- Q3. Should the consultation summary email attach the PDF even when `PDF_EXPORT_ENABLED` is off? -> **APPROVED: Attach PDF only when `PDF_EXPORT_ENABLED=true`; otherwise send the prescription list email only.**
+- Q4. Restock warnings (3.3): remove entirely, or repurpose as "District health burden" link? -> **APPROVED: Remove the "Predictive Restock Warnings" sidebar item.**
+- Q5. Phase 4.3: allowed to run read-only aggregate queries against `medisync_prod`, or offline reproduction only? -> **APPROVED: Read-only `count`/`aggregate` queries on `medisync_prod` are allowed (never print document contents or PII, zero writes). Owner runs `remove_demo_batch` dry-run first and will paste counts.**
+- Q6. Province mapping: use the official 9-province district mapping (standard administrative split). OK? -> **APPROVED: YES, official 9 provinces / 25 districts, with a test that each district maps to exactly one province.**
 
 ## 6. Risks
 

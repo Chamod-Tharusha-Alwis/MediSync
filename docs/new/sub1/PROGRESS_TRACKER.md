@@ -5,13 +5,14 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 
 | Phase | Task | Status | Commit | Evidence |
 |---|---|---|---|---|
-| 0 | Plan and tracking docs | DONE (awaiting approval) | see session log | `docs/new/sub1/*` |
-| 1 | 1.1 Size audit | TODO | - | - |
-| 1 | 1.2 Git history report | TODO | - | - |
-| 1 | 1.3 .gitignore + untrack | TODO | - | - |
-| 1 | 1.4 Dead code list | TODO | - | - |
-| 1 | 1.5 size_report.ps1 | TODO | - | - |
-| 1 | 1.6 Owner delete commands | TODO | - | - |
+| 0 | Plan and tracking docs | DONE (Approved) | `e1a3d6e` | `docs/new/sub1/*` |
+| 1 | 1.0 Opening baseline gate + client build | DONE | Phase 1 commit | `docs/new/sub1/TEST_LOG.md` (3,477 PASS / 0 FAIL; client build exit 0) |
+| 1 | 1.1 Size audit (`SIZE_AUDIT.md`) | DONE | Phase 1 commit | `docs/new/sub1/SIZE_AUDIT.md` (43.81 GB audited; `scratch/` = 41.18 GB explained) |
+| 1 | 1.2 Git history report | DONE | Phase 1 commit | `docs/new/sub1/SIZE_AUDIT.md` §5 (`git count-objects -vH`: 85.94 MiB packed + 15.12 MiB loose) |
+| 1 | 1.3 `.gitignore` + `git rm --cached` | DONE | Phase 1 commit | `.gitignore` updated; `docs/b6_live_verification_execution.log` untracked via `git rm --cached` |
+| 1 | 1.4 Dead code audit & safe removal | DONE | Phase 1 commit | `SIZE_AUDIT.md` §6; removed 3 verified unreferenced files (`universityProvisionPlan.js`, `requireOTP.js`, `validateRequest.js`) |
+| 1 | 1.5 `scripts/size_report.ps1` | DONE | Phase 1 commit | `scripts/size_report.ps1` (supports full walk and `-FastSummary`) |
+| 1 | 1.6 Owner delete commands & OneDrive advice | DONE | Phase 1 commit | `docs/new/sub1/OWNER_ACTIONS.md` §1 (~42.20 GB reclaimable) |
 | 2 | 2.1 Consultation summary email | TODO | - | - |
 | 2 | 2.2 PDF download fix | TODO | - | - |
 | 2 | 2.3 Tests | TODO | - | - |
@@ -34,4 +35,5 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 
 | Date | Event |
 |---|---|
-| 2026-11-07 | Branch created off `main` @ `0871fd3` (PRs #17, #18, #19). Phase 0 docs written. Stopped for owner approval. |
+| 2026-11-07 | Branch created off `main` @ `0871fd3` (PRs #17, #18, #19). Phase 0 docs written and pushed (`e1a3d6e`). Stopped for owner approval. |
+| 2026-11-07 | Owner replied APPROVED with Q1–Q6 answers (recorded in `DECISIONS.md` D-003..D-008). Ran Phase 1 opening baseline gate (3,477 PASS / 0 FAIL) and client build (exit 0). Completed Tasks 1.1–1.6, ran post-Phase-1 gate + client build, committed, pushed, and stopped for Phase 2 go-ahead. |
