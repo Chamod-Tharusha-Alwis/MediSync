@@ -22,11 +22,11 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 3 | 3.3 Restock warnings removal | DONE | `44b4908` | `client/src/pages/pharmacy/Dashboard.jsx` (`/pharmacy/dashboard/restock` removed per Owner Q4) |
 | 3 | 3.4 Dispensing analytics + SEED_2026_11_B seeder | DONE | `44b4908` | `scripts/seed-dispensing-sample.js`, `client/src/pages/pharmacy/Dashboard.jsx`, `docs/new/sub1/OWNER_ACTIONS.md` |
 | 3 | 3.5 Tests | DONE | `44b4908` | `server/tests/phase3GroupingAndDispensingSeeder.test.js` (3,426 PASS / 0 FAIL; client build exit 0) |
-| 4 | 4.1 ML status resilience | DONE | `pending` | `server/src/services/adminMlStatusService.js` (available/waking/down, cache, retry jitter), `NewConsultation.jsx` debounce |
-| 4 | 4.2 Session Monitor filter + masking | DONE | `pending` | `server/src/controllers/deviceController.js` (role/search filter), `adminController.js` (`revealIdentifier`), `SessionMonitor.jsx` |
-| 4 | 4.3 6 vs 5 alerts investigation | DONE | `pending` | Root cause in `DECISIONS.md` (`D-013`), strict detector `dailyZ > 2.0` in `surveillanceService.js`, S3 fixture in `seedPlatformPlan.cjs` |
-| 4 | 4.4 Outbreak 3 levels | DONE | `pending` | Bijective 9 province / 25 district mapping, `evaluateMultiLevelOutbreakCriteria`, selectors in `OutbreakMonitor.jsx` & `PublicHealth.jsx` |
-| 4 | 4.5 Wording cleanup | DONE | `pending` | Removed dead `nav.mlalerts`, audited UI translation parity (781 keys exact parity across en/si/ta) |
+| 4 | 4.1 ML status resilience | DONE | `e599206` | `server/src/services/adminMlStatusService.js` (available/waking/down, cache, retry jitter), `NewConsultation.jsx` debounce |
+| 4 | 4.2 Session Monitor filter + masking | DONE | `e599206` | `server/src/controllers/deviceController.js` (role/search filter), `adminController.js` (`revealIdentifier`), `SessionMonitor.jsx` |
+| 4 | 4.3 6 vs 5 alerts investigation | DONE | `e599206` | Root cause in `DECISIONS.md` (`D-013`), strict detector `dailyZ > 2.0` in `surveillanceService.js`, S3 fixture in `seedPlatformPlan.cjs` |
+| 4 | 4.4 Outbreak 3 levels | DONE | `e599206` | Bijective 9 province / 25 district mapping, `evaluateMultiLevelOutbreakCriteria`, selectors in `OutbreakMonitor.jsx` & `PublicHealth.jsx` |
+| 4 | 4.5 Wording cleanup | DONE | `e599206` | Removed dead `nav.mlalerts`, audited UI translation parity (781 keys exact parity across en/si/ta) |
 | 5 | 5.1 Population JSON | TODO | - | - |
 | 5 | 5.2 Incidence + offset | TODO | - | - |
 | 6 | 6.1–6.4 ML evaluation | TODO | - | - |
