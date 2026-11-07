@@ -438,15 +438,7 @@ exports.verifyOtpAndFetchTests = async (req, res) => {
       await deleteOtp(OTP_NS_HOSPITAL + hashedNic, { clearAttempts: false });
       return res.status(401).json({ message: 'OTP has expired. Please request a new one.' });
     }
-    let isTestMatch = false;
-    if (process.env.TEST_OTP_ENABLED === 'true') {
-      try {
-        const { verifyTestOtp } = require('../security/testOtpHarness');
-        const patientDoc = await Patient.findOne(boundNicFilter(cleanNic, {}, { plainFields: ['nic'] })).select('email').lean();
-        isTestMatch = verifyTestOtp(patientDoc?.email, otp);
-      } catch (_) {}
-    }
-    if (!isTestMatch && String(storedOtp.otp).trim() !== String(otp).trim()) {
+    if (String(storedOtp.otp).trim() !== String(otp).trim()) {
       await incrementAttempts(OTP_NS_HOSPITAL + hashedNic);
       return res.status(401).json({ message: 'Invalid OTP' });
     }

@@ -27,7 +27,7 @@ module.exports.testMatch.push('<rootDir>/tests/brevoFallback429Offline.test.js')
 module.exports.testMatch.push('<rootDir>/tests/prescriptionPdfHoldResponse.test.js');
 module.exports.testMatch.push('<rootDir>/tests/clinicalPdfExportPhase7.test.js');
 
-module.exports.testMatch.push('<rootDir>/tests/testOtpHarnessOffline.test.js');
+module.exports.testMatch.push('<rootDir>/tests/testOtpRemovalOffline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/outbreakNotificationPipeline.test.js');
 module.exports.testMatch.push('<rootDir>/tests/outbreakForecasting.test.js');
 module.exports.testMatch.push('<rootDir>/tests/adversarialOutbreakSeedVerification.test.js');
