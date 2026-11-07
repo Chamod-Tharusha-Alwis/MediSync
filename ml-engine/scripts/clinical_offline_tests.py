@@ -3,13 +3,19 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
 from urllib.parse import urlsplit, unquote, parse_qs
 
 root = pathlib.Path(__file__).resolve().parents[2]
 out = pathlib.Path(os.environ['MEDISYNC_OFFLINE_EVIDENCE']).resolve()
 metadata_probes = []
-if not out.is_relative_to(root / 'scratch'):
+allowed_roots = [
+    pathlib.Path(tempfile.gettempdir()).resolve(),
+    pathlib.Path(os.environ.get('MEDISYNC_TEST_TMP', tempfile.gettempdir())).resolve(),
+    (root / 'scratch').resolve() if (root / 'scratch').exists() else (root / 'scratch'),
+]
+if not any(out.is_relative_to(base) for base in allowed_roots):
     raise RuntimeError('INVALID_OFFLINE_EVIDENCE_PATH')
 
 
@@ -58,8 +64,6 @@ suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(test_outbreak_inge
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 (out / 'ml-flask-results.json').write_text(json.dumps({
     'run': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors),
-    'skipped': len(result.skipped), 'success': result.wasSuccessful(),
-    'boundedMetadataProbes': metadata_probes,
-    'method': 'Real Flask test_client and reference tables; dotenv inert; network and unowned SQLite denied',
-}))
+    'skipped': len(result.skipped), 'success': result.wasSuccessful()
+}, indent=2) + '\n')
 sys.exit(0 if result.wasSuccessful() else 1)

@@ -1,7 +1,8 @@
 'use strict';
 const path = require('path');
+const { isAllowedTempChild } = require('./run_offline_tests.js');
 const root = path.resolve(__dirname, '..'), mode = process.argv[2], out = process.env.MEDISYNC_COMBINED_EVIDENCE;
-if (!['backend', 'client', 'email-pdf'].includes(mode) || mode !== process.env.MEDISYNC_COMBINED_MODE || !out || !path.resolve(out).startsWith(path.join(root, 'scratch') + path.sep)) throw Error('INVALID_OFFLINE_CHILD_CONTRACT');
+if (!['backend', 'client', 'email-pdf'].includes(mode) || mode !== process.env.MEDISYNC_COMBINED_MODE || !out || !isAllowedTempChild(out)) throw Error('INVALID_OFFLINE_CHILD_CONTRACT');
 require('./agent_b_combined_boundary.cjs');
 let config, jest;
 if (mode === 'backend') {

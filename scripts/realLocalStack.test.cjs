@@ -1,7 +1,7 @@
 'use strict';
 // Enroll names-only reconciliation/startup negatives in the existing CI root profile.
 require('./checkRenderEnvironmentNames.test.cjs');
-const {test}=require('node:test'),assert=require('node:assert/strict'),cp=require('child_process'),path=require('path'),fs=require('fs');
+const {test}=require('node:test'),assert=require('node:assert/strict'),cp=require('child_process'),os=require('os'),path=require('path'),fs=require('fs');
 const stack=require('./realLocalStack.cjs');
 
 // The backend profile intentionally forbids every socket/child. Real seed
@@ -9,13 +9,18 @@ const stack=require('./realLocalStack.cjs');
 // using only an already installed binary. CI never downloads a server binary;
 // its explicitly reduced scope is listed in the runner's notRun receipt.
 if(process.env.MEDISYNC_OFFLINE_CI!=='true')test('real seed memory replica ownership, encryption and transaction contracts',{timeout:160000},async t=>{
-  const root=path.resolve(__dirname,'..'),out=fs.mkdtempSync(path.join(root,'scratch/seed-memory-'));
-  const env={...require('./run_offline_tests.js').cleanEnvironment(),MONGOMS_RUNTIME_DOWNLOAD:'false',MONGOMS_DISABLE_POSTINSTALL:'1'};
-  const r=cp.spawnSync(process.execPath,[path.join(root,'scripts/seedPlatformMemoryProof.cjs'),out],{cwd:root,env,encoding:'utf8',windowsHide:true,timeout:150000,maxBuffer:5*1024*1024});
-  fs.writeFileSync(path.join(out,'exit.json'),JSON.stringify({code:r.status,error:r.error?.code}));
-  let proof;try{proof=JSON.parse(fs.readFileSync(path.join(out,'seed-memory-results.json'),'utf8'));}catch(_){assert.fail('OWNED_SEED_MEMORY_RECEIPT_MISSING');}
-  assert.equal(r.status,0,'OWNED_SEED_MEMORY_PROOF_FAILED');assert.equal(proof.success,true);assert.equal(proof.loopback,true);
-  for(const row of proof.checks)await t.test(row.name,()=>assert.equal(row.passed,true));
+  const {cleanEnvironment,testTmpBase,bestEffortCleanup}=require('./run_offline_tests.js');
+  const root=path.resolve(__dirname,'..'),out=fs.mkdtempSync(path.join(testTmpBase(),'seed-memory-'));
+  try{
+    const env={...cleanEnvironment(),MONGOMS_RUNTIME_DOWNLOAD:'false',MONGOMS_DISABLE_POSTINSTALL:'1'};
+    const r=cp.spawnSync(process.execPath,[path.join(root,'scripts/seedPlatformMemoryProof.cjs'),out],{cwd:root,env,encoding:'utf8',windowsHide:true,timeout:150000,maxBuffer:5*1024*1024});
+    fs.writeFileSync(path.join(out,'exit.json'),JSON.stringify({code:r.status,error:r.error?.code}));
+    let proof;try{proof=JSON.parse(fs.readFileSync(path.join(out,'seed-memory-results.json'),'utf8'));}catch(_){assert.fail('OWNED_SEED_MEMORY_RECEIPT_MISSING');}
+    assert.equal(r.status,0,'OWNED_SEED_MEMORY_PROOF_FAILED');assert.equal(proof.success,true);assert.equal(proof.loopback,true);
+    for(const row of proof.checks)await t.test(row.name,()=>assert.equal(row.passed,true));
+  }finally{
+    bestEffortCleanup(out);
+  }
 });
 test('root npm start selects only real orchestrator; mock API is not an execution target',()=>{
   const root=require('../package.json');assert.equal(root.scripts.start,'node scripts/startLocalDev.js');assert.equal(root.scripts['start:mock'],undefined);
@@ -59,7 +64,7 @@ test('Redis containment refuses wildcard bindings and accepts inspected loopback
 
 test('actual launcher stops before Redis contact or child startup on exposed publishing',async()=>{
   const vm=require('vm'),mod={exports:{}},contacts=[];
-  const builtins={fs,path,net:{connect(){contacts.push('redis');throw Error('NETWORK_FORBIDDEN');}},http:{},crypto:require('crypto'),child_process:{
+  const builtins={fs,os,path,net:{connect(){contacts.push('redis');throw Error('NETWORK_FORBIDDEN');}},http:{},crypto:require('crypto'),child_process:{
     execFileSync(){return '{"6379/tcp":[{"HostPort":"6379","HostIp":"0.0.0.0"}]}';},
     spawn(){contacts.push('child');throw Error('CHILD_FORBIDDEN');}
   }};
@@ -96,5 +101,5 @@ test('non-IPC shutdown removes an owned interpreter-launcher tree, including its
   const grandchild=await new Promise((resolve,reject)=>{own.stdout.once('data',x=>resolve(Number(String(x).trim())));own.once('error',reject);});
   assert.ok(Number.isSafeInteger(grandchild));
   try{await stack.stopChildren([own],1000);await stack.waitFor(async()=>{try{process.kill(grandchild,0);throw Error('ALIVE');}catch(error){if(error.code==='ESRCH')return;throw error;}},()=>true,3000);}
-  finally{try{process.kill(grandchild);}catch(_){}if(own.exitCode===null&&own.signalCode===null)own.kill();}
+  finally{try{process.kill(grandchild);}catch(_){}if(own.exitCode===null&&own.signalCode!==null)own.kill();}
 });

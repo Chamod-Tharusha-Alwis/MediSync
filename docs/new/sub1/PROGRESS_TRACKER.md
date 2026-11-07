@@ -13,6 +13,7 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 1 | 1.4 Dead code audit & safe removal | DONE | `06f13a3` | `SIZE_AUDIT.md` §6; removed 3 verified unreferenced files (`universityProvisionPlan.js`, `requireOTP.js`, `validateRequest.js`) |
 | 1 | 1.5 `scripts/size_report.ps1` | DONE | `06f13a3` | `scripts/size_report.ps1` (supports full walk and `-FastSummary`) |
 | 1 | 1.6 Owner delete commands & OneDrive advice | DONE | `06f13a3` | `docs/new/sub1/OWNER_ACTIONS.md` §1 (~42.20 GB reclaimable) |
+| 1 | 1.7 Test temp directories outside repo (`os.tmpdir()`) | DONE | `pending` | `scripts/run_offline_tests.js`, `server/tests/tempDirsOutsideRepo.test.js` (`Test-Path scratch` = `False`, 3,418 PASS / 0 FAIL) |
 | 2 | 2.1 Consultation summary email | TODO | - | - |
 | 2 | 2.2 PDF download fix | TODO | - | - |
 | 2 | 2.3 Tests | TODO | - | - |
@@ -37,3 +38,4 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 |---|---|
 | 2026-11-07 | Branch created off `main` @ `0871fd3` (PRs #17, #18, #19). Phase 0 docs written and pushed (`e1a3d6e`). Stopped for owner approval. |
 | 2026-11-07 | Owner replied APPROVED with Q1–Q6 answers (recorded in `DECISIONS.md` D-003..D-008). Ran Phase 1 opening baseline gate (3,477 PASS / 0 FAIL) and client build (exit 0). Completed Tasks 1.1–1.6, ran post-Phase-1 gate + client build, committed, pushed, and stopped for Phase 2 go-ahead. |
+| 2026-11-08 | Resumed in full-autonomy mode. Completed Step 0 (restored workspace synced to `origin/feat/phase2-polish-and-cleanup` @ `ef1b30c`, backup diffs stashed in `stash@{0}`/`stash@{1}`, recorded in `DECISIONS.md` D-009) and Task 1.7 (moved offline test temp dirs to `os.tmpdir()`, verified `scratch/` not recreated, 3,418 PASS / 0 FAIL, client build exit 0). |

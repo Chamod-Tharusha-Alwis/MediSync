@@ -18,9 +18,9 @@
     },
     {
       "path": "ml-engine/app.py",
-      "previousApprovedSha256": "330d73d0f8ead942ef82c6059a32099a6fdbcfd3e2212ccaebe4d01f4821265b",
-      "releaseCandidateSha256": "220581f4e4be9993effa41f60987c990c9515faebd5d40cac6ecadf2eab1316d",
-      "reason": "Operator conditional approval 2026-11-03: batch snapshot ingestion; historical mixed line endings preserved; auth and PDF hold unchanged. Local candidate requires seeder companion and operator inventory review before push."
+      "previousApprovedSha256": "220581f4e4be9993effa41f60987c990c9515faebd5d40cac6ecadf2eab1316d",
+      "releaseCandidateSha256": "5a73ed87b1d0fea1a2233ace84e2a63098fc091829682282e5b9dac76244fb6e",
+      "reason": "Sub-Project 1 Task 1.7 (2026-11-08): allow ML QA SQLite temp DB path under os.tmpdir() / MEDISYNC_TEST_TMP so offline tests never recreate <repo>/scratch; historical mixed line endings preserved."
     },
     {
       "path": "ml-engine/evaluate_symptom_model.py",

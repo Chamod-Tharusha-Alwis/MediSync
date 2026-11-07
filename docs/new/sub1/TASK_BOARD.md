@@ -14,6 +14,7 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE 1.4 Dead-code candidates with search proof; removed 3 clearly unused source files (`universityProvisionPlan.js`, `requireOTP.js`, `validateRequest.js`)
 - [x] DONE 1.5 `scripts/size_report.ps1` (read-only PowerShell walker with `-FastSummary` mode)
 - [x] DONE 1.6 `OWNER_ACTIONS.md` copy-paste delete commands (~42.20 GB savings) + OneDrive move advice
+- [x] DONE 1.7 Test temp directories outside repo (`os.tmpdir()` / `MEDISYNC_TEST_TMP`), best-effort cleanup, `tempDirsOutsideRepo.test.js`, `scratch/` not recreated
 - [x] DONE Gate + build + commit + push + report (Phase 1 complete)
 
 ## Phase 2 — Consultation email and PDF

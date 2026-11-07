@@ -41,3 +41,13 @@ Format: ID — decision — alternatives — reason.
 - Decision: Phase 1 produces `SIZE_AUDIT.md`, `scripts/size_report.ps1`, `.gitignore` updates, and copy-paste owner deletion commands in `OWNER_ACTIONS.md`; agent only uses `git rm --cached` and removes small, proven-unused code.
 - Alternatives: agent deletes `scratch/`, `Python/`, `.venv/` directly.
 - Reason: brief rule; prevents irreversible data loss.
+
+## D-009 — Step 0 Backup Restore Sync and Git Stash Preservation
+- Decision: After the working directory was restored from a pre-Phase-1 backup without `.git/`, re-initialized git, attached `origin` (`https://github.com/Chamod-Tharusha-Alwis/MediSync.git`), fetched all branches, aligned `HEAD` to `origin/feat/phase2-polish-and-cleanup` (`ef1b30c`), and preserved the pre-Phase-1 backup differences in `stash@{0}` (`restored-backup`, containing 332 untracked pre-Phase-1 backup files such as `research/`, `docs/brand/`, `server/scripts/phase5x*`, and 4 untracked local recovery test files) and `stash@{1}` (`restored-backup-tracked`, containing 14 tracked files from the pre-PR-#18 / pre-Phase-1 snapshot).
+- Alternatives: overwrite working directory destructively.
+- Reason: strictly obeys the no-destructive-commands rule (`git stash push` preserves every byte of the restored backup while keeping the branch clean and matched to `origin/feat/phase2-polish-and-cleanup`).
+
+## D-010 — Task 1.7 Test Temp Directories Moved Outside Repo (`os.tmpdir()`)
+- Decision: Updated `scripts/run_offline_tests.js`, `scripts/clinicalOfflineChild.cjs`, `scripts/seedPlatformMemoryProof.cjs`, `server/tests/helpers/seedPlatformMemoryCases.cjs`, `scripts/realLocalStack.cjs`, `scripts/realLocalStack.test.cjs`, `scripts/verifyMlStatusContractOffline.cjs`, `server/tests/websiteReferencePackaging.test.js`, `ml-engine/scripts/clinical_offline_tests.py`, `ml-engine/scripts/seed_platform_contract.py`, `ml-engine/test_reference_catalog.py`, and `ml-engine/app.py` to allocate all offline test/MongoMemoryReplSet/SQLite temp directories under `process.env.MEDISYNC_TEST_TMP || path.join(os.tmpdir(), 'medisync-test-tmp')` with non-fatal `bestEffortCleanup` (`EBUSY`/`EPERM`/`ENOTEMPTY` ignored so Windows file locks never fail the gate). Re-pinned `ml-engine/app.py` in `docs/release/PROTECTED_HASHES.json` (`220581f4e4...` -> `5a73ed87b1...`).
+- Alternatives: keep writing to `<repo>/scratch` and delete after each run.
+- Reason: prevents `scratch/` from ever being recreated inside the repo (or synced by OneDrive) and satisfies Task 1.7 verified by `server/tests/tempDirsOutsideRepo.test.js`.

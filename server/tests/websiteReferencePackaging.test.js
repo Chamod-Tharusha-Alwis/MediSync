@@ -1,10 +1,16 @@
 'use strict';
-const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const fs=require('fs'),os=require('os'),path=require('path'),crypto=require('crypto');
 const {loadReferenceCatalogs}=require('../src/utils/referenceCatalogs');
 const {symptomCatalog}=require('../scripts/prepareReferenceBundle.cjs');
+const {testTmpBase,bestEffortCleanup}=require('../../scripts/run_offline_tests.js');
 const root=path.resolve(__dirname,'../..');
+const createdDirs=[];
+afterAll(()=>{
+  for(const d of createdDirs)bestEffortCleanup(d);
+});
 function fixture(change){
- const dir=fs.mkdtempSync(path.join(root,'scratch/reference-negative-')),entries=[];
+ const dir=fs.mkdtempSync(path.join(testTmpBase(),'reference-negative-')),entries=[];
+ createdDirs.push(dir);
  for(const [catalog,file,data]of [['drugs','drugs_clean.json',[{name:'reference',genericName:'reference'}]],['interactions','interactions_clean.json',[{drug1:'a',drug2:'b',description:'reference',severity:'moderate'}]],['icd10','icd10_clean.json',[{code:'A90',description:'reference'}]],['symptoms','symptoms.json',['itching']]]){
   const bytes=Buffer.from(JSON.stringify(data));fs.writeFileSync(path.join(dir,file),bytes);entries.push({catalog,file,bytes:bytes.length,rows:1,sha256:crypto.createHash('sha256').update(bytes).digest('hex')});
  }
@@ -15,12 +21,13 @@ test('packaged catalog files exactly match canonical source bytes and row counts
  for(const file of ['drugs_clean.json','interactions_clean.json','icd10_clean.json'])expect(fs.readFileSync(path.join(root,'server/reference-data',file)).equals(fs.readFileSync(path.join(root,'ml-engine/data',file)))).toBe(true);
 });
 test('a server-only copied Docker layout loads real catalogs without a sibling ML checkout',()=>{
- const base=fs.mkdtempSync(path.join(root,'scratch/reference-layout-')),utils=path.join(base,'server/src/utils'),ref=path.join(base,'server/reference-data');fs.mkdirSync(utils,{recursive:true});fs.mkdirSync(ref,{recursive:true});
+ const base=fs.mkdtempSync(path.join(testTmpBase(),'reference-layout-')),utils=path.join(base,'server/src/utils'),ref=path.join(base,'server/reference-data');fs.mkdirSync(utils,{recursive:true});fs.mkdirSync(ref,{recursive:true});
+ createdDirs.push(base);
  for(const file of ['loadDatasets.js','referenceCatalogs.js'])fs.copyFileSync(path.join(root,'server/src/utils',file),path.join(utils,file));
  for(const file of fs.readdirSync(path.join(root,'server/reference-data')))fs.copyFileSync(path.join(root,'server/reference-data',file),path.join(ref,file));
  expect(fs.existsSync(path.join(base,'ml-engine'))).toBe(false);expect(require(path.join(utils,'loadDatasets.js')).icd10).toHaveLength(71704);
 });
-test('missing reference directory fails instead of returning an empty successful catalog',()=>expect(()=>loadReferenceCatalogs(path.join(root,'scratch/absent-reference-directory'))).toThrow('REFERENCE_CATALOG_INTEGRITY_REQUIRED'));
+test('missing reference directory fails instead of returning an empty successful catalog',()=>expect(()=>loadReferenceCatalogs(path.join(os.tmpdir(),'absent-reference-directory'))).toThrow('REFERENCE_CATALOG_INTEGRITY_REQUIRED'));
 test.each([
  ['tampered file',({dir})=>fs.appendFileSync(path.join(dir,'interactions_clean.json'),' ')],
  ['missing catalog',({manifest})=>manifest.entries.pop()],

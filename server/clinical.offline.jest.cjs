@@ -62,3 +62,5 @@ module.exports.testMatch.push(
   '<rootDir>/tests/authLimiterSkipS3.test.js',
   '<rootDir>/tests/removeDemoBatchOffline.test.js'
 );
+
+module.exports.testMatch.push('<rootDir>/tests/tempDirsOutsideRepo.test.js');

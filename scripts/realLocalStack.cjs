@@ -1,6 +1,6 @@
 'use strict';
 // No dotenv, application, provider or database imports before authorization.
-const fs=require('fs'),path=require('path'),net=require('net'),http=require('http'),cp=require('child_process'),crypto=require('crypto');
+const fs=require('fs'),os=require('os'),path=require('path'),net=require('net'),http=require('http'),cp=require('child_process'),crypto=require('crypto');
 const ROOT=path.resolve(__dirname,'..');
 const PORTS=Object.freeze({react:3100,express:5100,flask:5101,redis:6379});
 function cleanEnvironment(env) {
@@ -85,8 +85,8 @@ async function main(env=process.env,args=process.argv.slice(2)) {
   for(const file of [python,'server/node_modules/express/package.json','client/node_modules/react-scripts/scripts/start.js'])if(!fs.existsSync(path.isAbsolute(file)?file:path.join(ROOT,file)))throw Error('EXISTING_DEPENDENCY_MISSING: installation is not automatic.');
   if(args.includes('--check')){console.log('[CHECK_ONLY] Ports, dependencies and Redis checked. No Atlas access or service startup. ML startup safety and separate Atlas approval remain required.');return;}
   const qa=authorize(env);
-  fs.mkdirSync(path.join(ROOT,'scratch'),{recursive:true});
-  const runtime=fs.mkdtempSync(path.join(ROOT,'scratch/local-real-stack-'));
+  const tmpBase=env.MEDISYNC_TEST_TMP?path.resolve(env.MEDISYNC_TEST_TMP):path.join(os.tmpdir(),'medisync-test-tmp');fs.mkdirSync(tmpBase,{recursive:true});
+  const runtime=fs.mkdtempSync(path.join(tmpBase,'local-real-stack-'));
   const common={...cleanEnvironment(env),NODE_ENV:'test',MEDISYNC_TEST_MODE:'true',MEDISYNC_QA_BOOTSTRAPPED:'true',MEDISYNC_QA_CREDENTIALS_ROTATED:env.MEDISYNC_QA_CREDENTIALS_ROTATED,MEDISYNC_LOCAL_REAL_STACK:'true',NO_PROXY:'127.0.0.1,localhost'};
   const internalKey=crypto.randomBytes(48).toString('hex'),children=[];
   let stopping=false,stopPromise;

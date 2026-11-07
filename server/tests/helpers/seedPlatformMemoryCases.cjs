@@ -9,7 +9,7 @@ const engine=require('../../../scripts/seedPlatformStore.cjs');
 const {resolvePatientNics}=require('../../../scripts/seed-platform-data.js');
 
 async function runMemoryCases(out) {
-  if(!path.resolve(out).startsWith(path.join(root,'scratch')+path.sep))throw Error('MEMORY_EVIDENCE_TARGET_REJECTED');
+  const {isAllowedTempChild,bestEffortCleanup}=require('../../../scripts/run_offline_tests.js');if(!isAllowedTempChild(out))throw Error('MEMORY_EVIDENCE_TARGET_REJECTED');
   const mongoose=require('../../node_modules/mongoose');
   if(mongoose.connection.readyState!==0||['MONGO_URI','MONGO_URI_TEST','MONGODB_URI','REDIS_URL'].some(k=>process.env[k]))throw Error('MEMORY_ENVIRONMENT_REJECTED');
   const checks=[],scenarios=[],analysisMetrics=[];
@@ -154,7 +154,7 @@ async function runMemoryCases(out) {
     return {success:checks.every(c=>c.passed),checks,scenarios,analysisMetrics,inAppNotificationCalls,externalEmailImports:0,liveNetwork:false,loopback:true,baselinePreserved:await digest()===baselineHash};
   } catch (_) {return {success:false,checks,scenarios,category:'OWNED_MEMORY_PROOF_FAILED'};}
   finally {
-    if(connection)await connection.close();if(owned)await owned.stop({doCleanup:false,force:false});
+    if(connection)await connection.close();if(owned)await owned.stop({doCleanup:true,force:false});bestEffortCleanup(path.join(out,'owned-mongo'));
     delete global.ENCRYPTION_KEY;delete global.ENCRYPTION_KEYS;delete global.ACTIVE_KEY_VERSION;
     require('module')._load=moduleLoad;Object.assign(console,oldConsole);
   }

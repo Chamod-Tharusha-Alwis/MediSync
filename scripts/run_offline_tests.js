@@ -2,10 +2,31 @@
 
 // Current clinical regression only. Each invocation retains its own receipts.
 // These offline checks do not establish Atlas or five-role browser integration.
-const fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
+const fs = require('fs'), os = require('os'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
 const root = path.resolve(__dirname, '..');
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const baselinePath = 'docs/release/PROTECTED_HASHES.json';
+function testTmpBase(env = process.env) {
+  const configured = env && env.MEDISYNC_TEST_TMP ? path.resolve(env.MEDISYNC_TEST_TMP) : path.join(os.tmpdir(), 'medisync-test-tmp');
+  fs.mkdirSync(configured, { recursive: true });
+  return fs.realpathSync(configured);
+}
+function bestEffortCleanup(targetPath) {
+  if (!targetPath) return false;
+  try {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+    return true;
+  } catch (err) {
+    if (err && (err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'ENOTEMPTY' || err.code === 'EACCES')) return false;
+    return false;
+  }
+}
+function isAllowedTempChild(candidatePath, env = process.env) {
+  if (!candidatePath) return false;
+  const resolved = fs.existsSync(candidatePath) ? fs.realpathSync(candidatePath) : path.resolve(candidatePath);
+  const bases = [testTmpBase(env), fs.realpathSync(os.tmpdir()), path.join(root, 'scratch')];
+  return bases.some(base => resolved.startsWith(base + path.sep));
+}
 function isSnapshotFile(file) {
   if (/^\.github\/context-mode\/sessions\/stats-pid-\d+\.json$/.test(file)) return false;
   return !/^(scratch|research|docs|Python|medisync-qa-evidence)\//.test(file) && !/(^|\/)\.env($|\.)/i.test(file)
@@ -41,14 +62,15 @@ function snapshot() {
 }
 function cleanEnvironment() {
   const env = {};
-  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER']) if (process.env[key]) env[key] = process.env[key];
+  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER', 'MEDISYNC_TEST_TMP']) if (process.env[key]) env[key] = process.env[key];
+  if (!env.MEDISYNC_TEST_TMP) env.MEDISYNC_TEST_TMP = testTmpBase(process.env);
   return { ...env, NODE_ENV: 'test', BABEL_ENV: 'test', CI: 'true', TZ: 'UTC', MEDISYNC_OFFLINE_ONLY: 'true', ENCRYPTION_KEY: 'synthetic-offline-key-never-for-real-data', REACT_APP_MEDISYNC_QA: 'true', REACT_APP_API_URL: '/api', REACT_APP_SERVER_URL: 'http://127.0.0.1:5100' };
 }
 async function main() {
   const nodeMajor = Number(process.versions.node.split('.')[0]);
   if (![24, 26].includes(nodeMajor)) throw Error('BLOCKED: use the existing reviewed Node 24 runtime; no installation is required');
-  fs.mkdirSync(path.join(root,'scratch'),{recursive:true});
-  const out = fs.mkdtempSync(path.join(root, 'scratch/clinical-offline-'));
+  const tmpRoot = testTmpBase();
+  const out = fs.mkdtempSync(path.join(tmpRoot, 'clinical-offline-'));
   const save = (name, value) => fs.writeFileSync(path.join(out, name), JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
   const before = snapshot(); save('before.json', before);
   if (before.pins.some(row => row.actual !== row.expected)) throw Error('PROTECTED_SOURCE_HASH_MISMATCH');
@@ -123,8 +145,12 @@ async function main() {
         } catch (_) {}
       }
     }
+  } else {
+    for (const cacheMode of ['backend', 'client', 'email-pdf']) {
+      bestEffortCleanup(path.join(out, cacheMode + '-cache'));
+    }
   }
   process.exitCode = summary.success ? 0 : 1;
 }
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { cleanEnvironment, snapshot, isSnapshotFile };
+module.exports = { cleanEnvironment, snapshot, isSnapshotFile, testTmpBase, bestEffortCleanup, isAllowedTempChild };
