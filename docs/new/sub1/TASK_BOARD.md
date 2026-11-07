@@ -33,12 +33,12 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 3 complete: 3,426 PASS / 0 FAIL)
 
 ## Phase 4 — Admin, outbreak, ML service
-- [ ] TODO 4.1 ML status warm-up/retry/cache/states + client debounce
-- [ ] TODO 4.2 Session Monitor role filter + URL query + masking + reveal audit
-- [ ] TODO 4.3 6 vs 5 alerts (read-only) + DECISIONS.md + test
-- [ ] TODO 4.4 District (25) / Province (9) / Island-wide (1) levels + selector + public summary (per Q1 & Q6)
-- [ ] TODO 4.5 remove dead ML Alerts / demo wording
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 4.1 ML status warm-up/retry/cache/states (`adminMlStatusService.js`: available/waking/down) + client debounce in `NewConsultation.jsx`
+- [x] DONE 4.2 Session Monitor role filter + URL query persistence + PII masking + audit-logged reveal (`POST /api/admin/users/:userId/reveal-identifier`)
+- [x] DONE 4.3 6 vs 5 alerts root cause documented in `DECISIONS.md` (`D-013`) + strict detector threshold restored (`dailyZ[i] > 2.0`) + S3 fixture tuned
+- [x] DONE 4.4 Outbreak 3 levels: District (25) / Province (9) / Island-wide (1) + official bijection mapping + OutbreakMonitor selector + PublicHealth scope view
+- [x] DONE 4.5 removed dead ML Alerts nav link (`nav.mlalerts`) + audited translation key parity (781 keys)
+- [x] DONE Gate + build + commit + push + report (Phase 4 complete: 3,436 PASS / 0 FAIL, client build PASS)
 
 ## Phase 5 — Population data
 - [ ] TODO 5.1 districtPopulation2024.json from official DCS source (or nulls + BLOCKED)

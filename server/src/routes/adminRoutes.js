@@ -41,6 +41,7 @@ router.put('/reports/:id/review', protect(['admin', 'super_admin']), adminContro
 
 // ─── Users & Devices ──────────────────────────────────────────────────────────
 router.get('/users/search', protect(['admin', 'super_admin']), adminController.searchUsers);
+router.post('/users/:userId/reveal-identifier', protect(['admin', 'super_admin']), adminController.revealIdentifier);
 router.get('/users/:id/devices', protect(['admin', 'super_admin']), adminController.getUserDevices);
 router.delete('/users/:id/devices/:deviceId', protect(['admin', 'super_admin']), adminController.removeUserDevice);
 router.get('/users/:id/recovery', protect(['admin', 'super_admin']), adminController.getUserRecoveryInfo);

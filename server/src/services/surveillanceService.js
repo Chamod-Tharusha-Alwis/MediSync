@@ -88,6 +88,35 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
 }
 const COLOMBO_OFFSET_MS = 330 * 60000; // Asia/Colombo +05:30
 
+const DISTRICT_TO_PROVINCE = Object.freeze({
+  'Colombo': 'Western', 'Gampaha': 'Western', 'Kalutara': 'Western',
+  'Kandy': 'Central', 'Matale': 'Central', 'Nuwara Eliya': 'Central',
+  'Galle': 'Southern', 'Matara': 'Southern', 'Hambantota': 'Southern',
+  'Jaffna': 'Northern', 'Kilinochchi': 'Northern', 'Mannar': 'Northern', 'Mullaitivu': 'Northern', 'Vavuniya': 'Northern',
+  'Batticaloa': 'Eastern', 'Ampara': 'Eastern', 'Trincomalee': 'Eastern',
+  'Kurunegala': 'North Western', 'Puttalam': 'North Western',
+  'Anuradhapura': 'North Central', 'Polonnaruwa': 'North Central',
+  'Badulla': 'Uva', 'Monaragala': 'Uva',
+  'Ratnapura': 'Sabaragamuwa', 'Kegalle': 'Sabaragamuwa'
+});
+
+const OFFICIAL_PROVINCES = Object.freeze([
+  'Western', 'Central', 'Southern', 'Northern', 'Eastern',
+  'North Western', 'North Central', 'Uva', 'Sabaragamuwa'
+]);
+
+const PROVINCE_TO_DISTRICTS = Object.freeze({
+  'Western': ['Colombo', 'Gampaha', 'Kalutara'],
+  'Central': ['Kandy', 'Matale', 'Nuwara Eliya'],
+  'Southern': ['Galle', 'Matara', 'Hambantota'],
+  'Northern': ['Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya'],
+  'Eastern': ['Batticaloa', 'Ampara', 'Trincomalee'],
+  'North Western': ['Kurunegala', 'Puttalam'],
+  'North Central': ['Anuradhapura', 'Polonnaruwa'],
+  'Uva': ['Badulla', 'Monaragala'],
+  'Sabaragamuwa': ['Ratnapura', 'Kegalle']
+});
+
 /**
  * Returns the UTC timestamp corresponding to local midnight (00:00:00) in Asia/Colombo (+05:30)
  * for the calendar date of the provided timestamp.
@@ -99,18 +128,20 @@ function getColomboMidnight(date = new Date()) {
 }
 
 /**
- * Stage D Outbreak Detector (WP4)
+ * Stage D Outbreak Detector (WP4 & Milestone 4)
  * 
- * Evaluates outbreak criteria for disease x district pairs in Sri Lanka Standard Time (Asia/Colombo).
+ * Evaluates outbreak criteria across Sri Lanka geographic levels:
+ * - Level: 'district' (25 districts), 'province' (9 provinces), or 'island' (National Sri Lanka).
  * - Window W: exactly 7 complete calendar days ending yesterday (excluding today's partial day).
- * - Gate 1 (Floor): N >= 5 distinct episodes per disease x district in W.
+ * - Gate 1 (Floor): N >= 5 distinct episodes per disease x entity in W.
  * - Baseline: 56 complete calendar days prior to window W.
  * - Regularization: if sigma < 0.5, sigma = max(0.5, sqrt(mu)). If mu == 0, mu = 0.1, sigma = 0.5.
  * - Daily z-score for day k (1..7): z_k = (C_k - mu) / sigma.
- * - Gate 2 (Persistence): at least two consecutive complete calendar days in W with z > 2.0 (and C_k > 0).
+ * - Gate 2 (Persistence): at least two consecutive complete calendar days in W with strict z > 2.0 (and C_k > 0).
  * - Severity: Watch (z in [2.0, 3.0)), Alert (z in [3.0, 4.0)), Critical (z >= 4.0).
  */
-function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56 } = {}) {
+function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56, level = 'district' } = {}) {
+  const normLevel = String(level || 'district').toLowerCase();
   const todayMidnight = getColomboMidnight(now);
   const windowEnd = todayMidnight; // End of yesterday
   const windowStart = windowEnd - 7 * DAY;
@@ -118,11 +149,19 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
 
   const groups = new Map();
   for (const c of cases) {
+    let entity = c.district;
+    if (normLevel === 'province') {
+      entity = DISTRICT_TO_PROVINCE[c.district];
+      if (!entity) continue;
+    } else if (normLevel === 'island' || normLevel === 'national') {
+      entity = 'Sri Lanka';
+    }
+
     const diseaseKey = c.diseaseId || c.disease;
-    if (!c.district || !diseaseKey) continue;
-    const key = `${c.district}|${diseaseKey}`;
+    if (!entity || !diseaseKey) continue;
+    const key = `${entity}|${diseaseKey}`;
     if (!groups.has(key)) {
-      groups.set(key, { district: c.district, disease: diseaseKey, windowCases: [], baselineCases: [] });
+      groups.set(key, { entityName: entity, district: entity, level: normLevel, disease: diseaseKey, windowCases: [], baselineCases: [] });
     }
     const g = groups.get(key);
     const t = typeof c.time === 'number' ? c.time : new Date(c.createdAt).getTime();
@@ -146,6 +185,8 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
     if (N < 5) {
       results.push({
         district: g.district,
+        entityName: g.entityName,
+        level: g.level,
         disease: g.disease,
         triggered: false,
         reason: 'CASE_FLOOR_NOT_MET',
@@ -184,7 +225,7 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
     let currentConsecutive = 0;
 
     for (let i = 0; i < 7; i++) {
-      if ((dailyZ[i] > 2.0 || dailyZ[i] >= 1.9) && dailyCounts[i] > 0) {
+      if (dailyZ[i] > 2.0 && dailyCounts[i] > 0) {
         currentConsecutive++;
         if (currentConsecutive > maxConsecutive) maxConsecutive = currentConsecutive;
       } else {
@@ -212,6 +253,8 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
 
     results.push({
       district: g.district,
+      entityName: g.entityName,
+      level: g.level,
       disease: g.disease,
       triggered: hasConsecutiveElevated,
       count: N,
@@ -228,10 +271,33 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
   return results;
 }
 
+function evaluateMultiLevelOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56 } = {}) {
+  return {
+    district: evaluateOutbreakCriteria({ cases, now, baselineDays, level: 'district' }),
+    province: evaluateOutbreakCriteria({ cases, now, baselineDays, level: 'province' }),
+    island: evaluateOutbreakCriteria({ cases, now, baselineDays, level: 'island' })
+  };
+}
+
 async function canReviewSimulation(user) {
   if(!['admin','super_admin','superadmin'].includes(user?.role))return false;
   const admin=await require('../models/Admin').collection.findOne({_id:new mongoose.Types.ObjectId(user.id),isActive:true});
   return Boolean(admin && synthetic(admin));
 }
 
-module.exports={POLICY,synthetic,realAlertFilter,diseaseId,selectCases,loadCases,runAnalysis,canReviewSimulation,evaluateOutbreakCriteria,getColomboMidnight};
+module.exports = {
+  POLICY,
+  synthetic,
+  realAlertFilter,
+  diseaseId,
+  selectCases,
+  loadCases,
+  runAnalysis,
+  canReviewSimulation,
+  evaluateOutbreakCriteria,
+  evaluateMultiLevelOutbreakCriteria,
+  getColomboMidnight,
+  DISTRICT_TO_PROVINCE,
+  OFFICIAL_PROVINCES,
+  PROVINCE_TO_DISTRICTS
+};

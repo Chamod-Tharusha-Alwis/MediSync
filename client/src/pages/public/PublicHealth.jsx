@@ -12,7 +12,7 @@ import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
 import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';
-import { ALL_DISTRICTS, normalizeDistrictName } from '../../utils/districtAdjacency';
+import { ALL_DISTRICTS, normalizeDistrictName, OFFICIAL_PROVINCES, DISTRICT_TO_PROVINCE, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
 import { validateConsultationActivity } from '../../utils/consultationActivity';
 
 /* ─── Leaflet Activity Map for Consultation Activity (Tab 2) ─── */
@@ -178,6 +178,7 @@ export default function PublicHealth() {
   const [surveillanceRange, setSurveillanceRange] = useState(30);
   const [surveillanceDistrict, setSurveillanceDistrict] = useState('all');
   const [activeAlerts, setActiveAlerts] = useState([]);
+  const [surveillanceScope, setSurveillanceScope] = useState('district'); // 'district' | 'province' | 'island-wide'
 
   /* ── Tab 2: Load Consultation Activity Data ── */
   useEffect(() => {
@@ -318,6 +319,63 @@ export default function PublicHealth() {
     return alertDistricts.size;
   }, [activeAlerts, surveillanceData]);
 
+  // Provincial aggregates for official 9 provinces
+  const provinceAggregates = useMemo(() => {
+    if (!surveillanceData?.byDistrict) return [];
+    const map = {};
+    OFFICIAL_PROVINCES.forEach(prov => {
+      map[prov] = { province: prov, totalCases: 0, diseases: {}, alerts: [] };
+    });
+    surveillanceData.byDistrict.forEach(d => {
+      const prov = DISTRICT_TO_PROVINCE[d.district];
+      if (prov && map[prov]) {
+        map[prov].totalCases += (d.totalCases || 0);
+        if (d.topDisease) {
+          map[prov].diseases[d.topDisease] = (map[prov].diseases[d.topDisease] || 0) + (d.totalCases || 0);
+        }
+      }
+    });
+    activeAlerts.forEach(a => {
+      const dName = a.location || a.district;
+      const prov = DISTRICT_TO_PROVINCE[dName] || (OFFICIAL_PROVINCES.includes(dName) ? dName : null);
+      if (prov && map[prov]) {
+        map[prov].alerts.push(a);
+      }
+    });
+    return OFFICIAL_PROVINCES.map(prov => {
+      const item = map[prov];
+      let topDisease = 'None';
+      let maxD = 0;
+      Object.entries(item.diseases).forEach(([dis, cnt]) => {
+        if (cnt > maxD) {
+          maxD = cnt;
+          topDisease = dis;
+        }
+      });
+      return {
+        province: prov,
+        districts: PROVINCE_TO_DISTRICTS[prov] || [],
+        totalCases: item.totalCases,
+        topDisease: maxD > 0 ? topDisease : 'None',
+        alertCount: item.alerts.length,
+        suppressed: item.totalCases < 5,
+        displayCases: item.totalCases >= 5 ? String(item.totalCases) : '<5 (suppressed)'
+      };
+    });
+  }, [surveillanceData, activeAlerts]);
+
+  // Island-wide aggregate
+  const islandWideSummary = useMemo(() => {
+    const total = surveillanceData?.totalCases ?? 0;
+    return {
+      totalCases: total,
+      suppressed: total < 5,
+      displayCases: total >= 5 ? String(total) : '<5 (suppressed)',
+      topDisease: surveillanceData?.byDisease?.[0]?.disease || 'None',
+      alertCount: activeAlerts.length
+    };
+  }, [surveillanceData, activeAlerts]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <PublicNavbar />
@@ -396,133 +454,264 @@ export default function PublicHealth() {
                 </div>
               )}
 
-              {/* Time Range and District Filter Controls */}
+              {/* Scope & Filter Controls */}
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Observation Period:</span>
-                  {[7, 14, 30].map(days => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setSurveillanceRange(days)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                        surveillanceRange === days
-                          ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
-                          : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
-                      }`}
-                    >
-                      {days} Days
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-slate-400" />
-                  <label htmlFor="surveillance-district-select" className="sr-only">Filter District</label>
-                  <select
-                    id="surveillance-district-select"
-                    value={surveillanceDistrict}
-                    onChange={e => setSurveillanceDistrict(e.target.value)}
-                    className="min-h-[38px] rounded-lg border border-slate-700 bg-slate-900 px-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">All Districts (National)</option>
-                    {ALL_DISTRICTS.map(d => (
-                      <option key={d} value={d}>{d}</option>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Scope:</span>
+                    {[
+                      { id: 'district', label: 'District (25)' },
+                      { id: 'province', label: 'Province (9)' },
+                      { id: 'island-wide', label: 'Island-wide (1)' }
+                    ].map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setSurveillanceScope(s.id);
+                          if (s.id !== 'district') setSurveillanceDistrict('all');
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                          surveillanceScope === s.id
+                            ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {s.label}
+                      </button>
                     ))}
-                  </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Period:</span>
+                    {[7, 14, 30].map(days => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setSurveillanceRange(days)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                          surveillanceRange === days
+                            ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {days} Days
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {surveillanceScope === 'district' && (
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <label htmlFor="surveillance-district-select" className="sr-only">Filter District</label>
+                    <select
+                      id="surveillance-district-select"
+                      value={surveillanceDistrict}
+                      onChange={e => setSurveillanceDistrict(e.target.value)}
+                      className="min-h-[38px] rounded-lg border border-slate-700 bg-slate-900 px-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="all">All Districts (National)</option>
+                      {ALL_DISTRICTS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
-              {/* Summary Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Confirmed Cases</span>
-                    <Activity className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <p className="mt-3 text-3xl font-black text-white font-mono">
-                    {surveillanceLoading ? '…' : (surveillanceData?.totalCases ?? '0')}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {surveillanceRange}-day verified cases ({surveillanceDistrict === 'all' ? 'National' : surveillanceDistrict})
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Outbreak Alerts</span>
-                    <ShieldAlert className="w-5 h-5 text-red-400" />
-                  </div>
-                  <p className="mt-3 text-3xl font-black text-red-400 font-mono">
-                    {surveillanceLoading ? '…' : filteredAlerts.length}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Statistically significant 2-day persistent clusters
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Districts Under Advisory</span>
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <p className="mt-3 text-3xl font-black text-amber-400 font-mono">
-                    {surveillanceLoading ? '…' : districtsUnderAdvisoryCount}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Districts with elevated disease vectors (N ≥ 5)
-                  </p>
-                </div>
-              </div>
-
-              {/* Map & Disease Ranking Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
-                  <SurveillanceDistrictMap
-                    healthData={surveillanceData}
-                    alerts={activeAlerts}
-                    selectedDistrict={surveillanceDistrict === 'all' ? null : surveillanceDistrict}
-                    onSelectDistrict={d => setSurveillanceDistrict(d)}
-                    t={t}
-                  />
-                </div>
-
-                {/* Disease Ranking Bar List */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" /> Disease Frequency Ranking ({surveillanceRange}d)
-                  </h3>
-                  {surveillanceData?.byDisease && surveillanceData.byDisease.length > 0 ? (
-                    <div className="space-y-3">
-                      {surveillanceData.byDisease.slice(0, 8).map((d, index) => {
-                        const maxCount = surveillanceData.byDisease[0]?.totalCases || 1;
-                        const pct = Math.max(5, Math.round((d.totalCases / maxCount) * 100));
-                        return (
-                          <div key={d.disease} className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="font-semibold text-slate-200">
-                                <span className="text-slate-500 mr-2">#{index + 1}</span>
-                                {d.disease}
-                              </span>
-                              <span className="font-mono font-bold text-blue-400">{d.totalCases} cases</span>
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-500"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+              {/* Level 1: District View (25) */}
+              {surveillanceScope === 'district' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Confirmed Cases</span>
+                        <Activity className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <p className="mt-3 text-3xl font-black text-white font-mono">
+                        {surveillanceLoading ? '…' : (surveillanceData?.totalCases ?? '0')}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {surveillanceRange}-day verified cases ({surveillanceDistrict === 'all' ? 'National' : surveillanceDistrict})
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-400 py-8 text-center">
-                      No disclosed disease rankings available for selected period.
-                    </p>
-                  )}
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Outbreak Alerts</span>
+                        <ShieldAlert className="w-5 h-5 text-red-400" />
+                      </div>
+                      <p className="mt-3 text-3xl font-black text-red-400 font-mono">
+                        {surveillanceLoading ? '…' : filteredAlerts.length}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Statistically significant 2-day persistent clusters
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Districts Under Advisory</span>
+                        <AlertTriangle className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <p className="mt-3 text-3xl font-black text-amber-400 font-mono">
+                        {surveillanceLoading ? '…' : districtsUnderAdvisoryCount}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Districts with elevated disease vectors (N ≥ 5)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
+                      <SurveillanceDistrictMap
+                        healthData={surveillanceData}
+                        alerts={activeAlerts}
+                        selectedDistrict={surveillanceDistrict === 'all' ? null : surveillanceDistrict}
+                        onSelectDistrict={d => setSurveillanceDistrict(d)}
+                        t={t}
+                      />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
+                      <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-400" /> Disease Frequency Ranking ({surveillanceRange}d)
+                      </h3>
+                      {surveillanceData?.byDisease && surveillanceData.byDisease.length > 0 ? (
+                        <div className="space-y-3">
+                          {surveillanceData.byDisease.slice(0, 8).map((d, index) => {
+                            const maxCount = surveillanceData.byDisease[0]?.totalCases || 1;
+                            const pct = Math.max(5, Math.round((d.totalCases / maxCount) * 100));
+                            return (
+                              <div key={d.disease} className="space-y-1">
+                                <div className="flex justify-between text-xs">
+                                  <span className="font-semibold text-slate-200">
+                                    <span className="text-slate-500 mr-2">#{index + 1}</span>
+                                    {d.disease}
+                                  </span>
+                                  <span className="font-mono font-bold text-blue-400">{d.totalCases} cases</span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-500"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 py-8 text-center">
+                          No disclosed disease rankings available for selected period.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Level 2: Province View (9) */}
+              {surveillanceScope === 'province' && (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                        Official Provincial Surveillance (9 Provinces)
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Aggregated surveillance across Sri Lanka's 9 official administrative provinces. Counts below 5 are suppressed (&lt;5 (suppressed)) for statistical confidentiality.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20">
+                      9 Provinces / 25 Districts
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {provinceAggregates.map(p => (
+                      <div
+                        key={p.province}
+                        className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 relative overflow-hidden"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-white">{p.province} Province</span>
+                          {p.alertCount > 0 ? (
+                            <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40">
+                              {p.alertCount} Alert{p.alertCount > 1 ? 's' : ''}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold text-slate-500 bg-slate-800 border border-slate-700">
+                              Normal
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-400">Total Cases:</span>
+                            <span className={`font-mono font-bold ${p.suppressed ? 'text-slate-500 italic text-xs' : 'text-blue-400'}`}>
+                              {p.displayCases}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-400">Top Disease:</span>
+                            <span className="text-slate-300 font-medium">{p.topDisease}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800/80">
+                          <p className="text-xs text-slate-500 leading-tight">
+                            Districts: {p.districts.join(', ')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Level 3: Island-wide View (1) */}
+              {surveillanceScope === 'island-wide' && (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
+                    <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                      National Island-Wide Epidemiological Summary
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Statutory aggregate across all 9 provinces and 25 districts under the National Health Surveillance framework.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Island-Wide Cases</span>
+                      <p className={`mt-3 text-3xl font-black font-mono ${islandWideSummary.suppressed ? 'text-slate-500 italic text-xl' : 'text-blue-400'}`}>
+                        {surveillanceLoading ? '…' : islandWideSummary.displayCases}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">{surveillanceRange}-day statutory observation</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Island-Wide Alerts</span>
+                      <p className="mt-3 text-3xl font-black text-red-400 font-mono">
+                        {surveillanceLoading ? '…' : islandWideSummary.alertCount}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">Persistent multi-district alert clusters</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Primary Disease Vector</span>
+                      <p className="mt-3 text-2xl font-black text-amber-400 font-mono truncate">
+                        {surveillanceLoading ? '…' : islandWideSummary.topDisease}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">Highest case frequency nationally</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 14-Day Forecast Projection Chart */}
               <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 space-y-4">

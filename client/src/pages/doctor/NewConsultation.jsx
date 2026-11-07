@@ -216,6 +216,7 @@ const NewConsultation = () => {
   const labWrapperRef = useRef(null);
   const labListRef = useRef(null);
   const [followUpDate,       setFollowUpDate]      = useState('');
+  const lastAnalyzeAtRef = useRef(0);
 
   const draftEpoch = useRef(0);
   const generateConsultIdempotencyKey = () => `consult-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
@@ -406,6 +407,10 @@ const NewConsultation = () => {
   const getDiagnosisSuggestions = async () => {
     if (symptoms.length === 0) return toast.error('Add at least one symptom');
     if (inferenceBusy.current) return;
+    const nowAnalyze = Date.now();
+    const debounceMs = process.env.NODE_ENV === 'test' ? 0 : 1500;
+    if (debounceMs > 0 && nowAnalyze - lastAnalyzeAtRef.current < debounceMs) return;
+    lastAnalyzeAtRef.current = nowAnalyze;
     if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
     const epoch = draftEpoch.current, requestId = ++inferenceRequest.current;
     const current = () => inferenceMounted.current && epoch === draftEpoch.current && requestId === inferenceRequest.current;
@@ -1023,7 +1028,7 @@ const NewConsultation = () => {
                         <motion.button
                           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                           onClick={getDiagnosisSuggestions}
-                          disabled={loading || symptoms.length === 0}
+                          disabled={loading || inferenceStatus === 'loading' || inferenceStatus === 'waking' || symptoms.length === 0}
                           className="glass-button px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-50"
                         >
                           {loading
@@ -1108,7 +1113,7 @@ const NewConsultation = () => {
                             <button
                               type="button"
                               onClick={getDiagnosisSuggestions}
-                              disabled={loading || symptoms.length === 0}
+                          disabled={loading || inferenceStatus === 'loading' || inferenceStatus === 'waking' || symptoms.length === 0}
                               className="mt-4 px-4 py-2 rounded-lg bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 border border-teal-500/40 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50"
                             >
                               <FiActivity className="w-3.5 h-3.5" /> Retry Analysis

@@ -179,15 +179,17 @@ describe('Stage D Outbreak Detector (WP4)', () => {
         }
       }
 
-      // 3 cases/day for 2 days -> count 3, z approx (3 - 1) / 1.0 = 2.0 -> Watch
+      // 4 cases/day for 2 days -> count 4, z approx (4 - 1) / 1.009 = 2.97 in [2.0, 3.0) -> Watch
       const watchCases = [
         ...baselineCases,
         { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 2 * DAY + 1000, patientId: 'wp1', consultationId: 'wc1' },
         { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 2 * DAY + 2000, patientId: 'wp2', consultationId: 'wc2' },
         { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 2 * DAY + 3000, patientId: 'wp3', consultationId: 'wc3' },
-        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 1000, patientId: 'wp4', consultationId: 'wc4' },
-        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 2000, patientId: 'wp5', consultationId: 'wc5' },
-        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 3000, patientId: 'wp6', consultationId: 'wc6' }
+        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 2 * DAY + 4000, patientId: 'wp4', consultationId: 'wc4' },
+        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 1000, patientId: 'wp5', consultationId: 'wc5' },
+        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 2000, patientId: 'wp6', consultationId: 'wc6' },
+        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 3000, patientId: 'wp7', consultationId: 'wc7' },
+        { district: 'Kandy', disease: 'ICD10:TEST', time: todayMidnight - 1 * DAY + 4000, patientId: 'wp8', consultationId: 'wc8' }
       ];
 
       const res = evaluateOutbreakCriteria({ cases: watchCases, now });

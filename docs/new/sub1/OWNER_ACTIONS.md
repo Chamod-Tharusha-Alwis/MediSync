@@ -85,11 +85,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\size_report.ps1 -F
 
 ---
 
-## 2. Phase 4 (Upcoming) — Read-Only Demo Batch Count Check on `medisync_prod`
+## 2. Phase 4 — Read-Only Demo Batch & Active Alert Count Check on `medisync_prod`
 
 Per Owner Answer Q5, before any demo batch removal is considered, run the read-only dry-run of `scripts/remove_demo_batch.js` and paste the counts:
 ```powershell
 node scripts/remove_demo_batch.js --dry-run
+```
+
+To verify the active alert counts in production without modifying any documents or printing PII, run:
+```powershell
+# Read-only count of active alerts by batch and status
+node -e "
+const mongoose = require('mongoose');
+require('dotenv').config({ path: 'server/.env' });
+(async () => {
+  const conn = await mongoose.connect(process.env.MONGODB_URI);
+  const col = conn.connection.collection('outbreakalerts');
+  const activeCount = await col.countDocuments({ status: 'Active' });
+  const byBatch = await col.aggregate([
+    { \$group: { _id: { batch: '\$syntheticSeedBatch', status: '\$status' }, count: { \$sum: 1 } } }
+  ]).toArray();
+  console.log('Active alerts count:', activeCount);
+  console.log('Alert counts by batch and status:', JSON.stringify(byBatch, null, 2));
+  await mongoose.disconnect();
+})();
+"
 ```
 
 ---

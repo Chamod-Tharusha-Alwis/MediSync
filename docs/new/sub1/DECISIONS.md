@@ -69,3 +69,24 @@ Format: ID — decision — alternatives — reason.
   2. **Task 3.2**: Added `groupDispensingHistoryByReceipt(records)` in `server/src/controllers/pharmacyController.js` (`getDispensingHistory`) and updated `client/src/pages/pharmacy/Dashboard.jsx` (`History`) so Dispensation History shows one row per `receiptNumber` with all medications (`items`, `medications`, `medicationSummary`) listed together.
   3. **Task 3.3**: Removed the `District Demand` / `Predictive Restock Warnings` sidebar item (`/pharmacy/dashboard/restock`) and route from `client/src/pages/pharmacy/Dashboard.jsx` per Owner Answer Q4 (`D-005`) without dropping any collections.
   4. **Task 3.4**: Updated `RestockAnalytics` in `client/src/pages/pharmacy/Dashboard.jsx` with trilingual empty-state guidance (`pharmacy.noDispensingLogsInInterval`, `pharmacy.emptyRangeHint`) and quick-switch buttons (`7 Days`, `30 Days`), and created `scripts/seed-dispensing-sample.js` under namespace `SEED_2026_11_B` (additive only, dry-run default, idempotent 60-receipt 30-day sample, requiring `--confirm` + `MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"`).
+
+## D-013 — Phase 4 Root Cause of 6 vs 5 Alerts, Strict Outbreak Detector ($z > 2.0$), Multi-Level Surveillance & Session Monitor
+- Decision:
+  1. **Root Cause Analysis (Task 4.3)**:
+     - On production `medisync_prod`, `scripts/seedSyntheticOutbreaks.js` (batch `PHASE6_SYNTHETIC_V1`) explicitly seeded 6 synthetic active alert records (`SIM-HIGH-DENGUE-COLOMBO`, `SIM-HIGH-LEPTO-GAMPAHA`, `SIM-MED-HEPATITIS-KANDY`, `SIM-MED-CHICKENPOX-GALLE`, `SIM-LOW-FLU-RATNAPURA`, `SIM-LOW-MUMPS-MATARA`).
+     - In the platform seed verification (`scripts/seedPlatformPlan.cjs`), exactly 5 scenarios (S1, S3, S4, S5, S6) are expected to alert, while S2, S7, S8 do not alert.
+     - A previous commit had weakened the outbreak detector condition in `server/src/services/surveillanceService.js` to `(dailyZ[i] > 2.0 || dailyZ[i] >= 1.9)` because S3 Galle Chickenpox alternated counts of 2 and 3 cases ($z = 1.92$ on count 2 due to baseline contamination from days 8–14).
+  2. **Detector Strictness Restored**:
+     - Restored strict `dailyZ[i] > 2.0` in `server/src/services/surveillanceService.js`, strictly enforcing $N \ge 5$, 2 consecutive days, $z > 2.0$.
+     - Updated S3 in `scripts/seedPlatformPlan.cjs` to generate 3 cases/day ($z = 3.06 > 2.0$), ensuring all 5 target scenarios trigger cleanly without weakening statistical bounds.
+  3. **Multi-Level Outbreak Surveillance (Task 4.4)**:
+     - Bijective mapping between Sri Lanka's official 9 administrative provinces and 25 districts (`DISTRICT_TO_PROVINCE`, `PROVINCE_TO_DISTRICTS`, `OFFICIAL_PROVINCES`) exported in `server/src/services/surveillanceService.js` and `client/src/utils/districtAdjacency.js`.
+     - Added `evaluateMultiLevelOutbreakCriteria` evaluating District (25), Province (9), and Island-wide (1) levels under identical statutory rules ($N \ge 5$, 2 consecutive days, $z > 2.0$). A provincial cluster can trigger an alert when multiple districts in a province each have $< 5$ cases (e.g. 2 cases/day in Galle + 2 cases/day in Matara = 4 cases/day = 8 window cases $\ge 5$ in Southern Province).
+     - Added scope toggle and provincial/national views in `client/src/pages/public/PublicHealth.jsx` (respecting disclosure threshold $< 5$ suppressed) and `client/src/pages/admin/OutbreakMonitor.jsx`.
+  4. **Admin ML Status Resilience & Waking State (Task 4.1)**:
+     - Implemented `availabilityState` (`'available'`, `'waking'`, `'down'`) in `server/src/services/adminMlStatusService.js` with in-memory short-TTL cache, non-blocking warm-up ping, and exponential backoff retry with random jitter.
+     - Added client debounce in `client/src/pages/doctor/NewConsultation.jsx` with disabled state while waking/loading, preventing HTTP 429 floods while preserving manual clinician assessment.
+  5. **Session Monitor & Audit-Logged PII Reveal (Task 4.2)**:
+     - Added `role` and `search` query filtering in `server/src/controllers/deviceController.js` (`getActiveSessions`).
+     - Added `POST /api/admin/users/:userId/reveal-identifier` in `server/src/controllers/adminController.js` protected for admin/super_admin, creating an append-only `AuditLog` entry (`action: 'ADMIN_REVEAL_PII'`).
+     - Rewritten `client/src/pages/admin/SessionMonitor.jsx` with URL query persistence, accurate session and audit counts, and default PII masking (`maskNic`, `maskEmail`) with audit-logged reveal action.

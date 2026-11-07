@@ -1,10 +1,10 @@
 import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Monitor, ShieldCheck, ShieldAlert, LogOut, Loader2, RefreshCw,
-  ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Smartphone, Search, User, Activity 
+  ScrollText, Calendar, Shield, ChevronLeft, ChevronRight, Smartphone, Search, User, Activity, Eye, EyeOff 
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -45,19 +45,61 @@ const getActionBadge = (action) => {
   return 'bg-slate-800 text-slate-400 border border-slate-700/50';
 };
 
+// Privacy-preserving PII helpers consistent with Users panel
+function maskNic(nic) {
+  if (!nic || nic === '—') return '—';
+  const str = String(nic).trim();
+  if (str.length <= 4) return '****' + str;
+  return '********' + str.slice(-4);
+}
+
+function maskEmail(email) {
+  if (!email || email === '—') return '—';
+  const parts = String(email).trim().split('@');
+  if (parts.length !== 2) return '***@***.com';
+  const [name, domain] = parts;
+  const first = name.length > 0 ? name[0] : 'u';
+  const domainParts = domain.split('.');
+  const ext = domainParts.length > 1 ? domainParts.pop() : 'com';
+  return `${first}***@***.${ext}`;
+}
+
+function maskIdentifier(val) {
+  if (!val || val === '—') return '—';
+  if (String(val).includes('@')) return maskEmail(val);
+  return maskNic(val);
+}
+
 const roles = [
   { value: '', label: 'All Roles' },
   { value: 'admin', label: 'Admin' },
   { value: 'doctor', label: 'Doctor' },
   { value: 'patient', label: 'Patient' },
-  { value: 'pharmacist', label: 'Pharmacist' },
-  { value: 'hospital_admin', label: 'Hospital Admin' }
+  { value: 'pharmacist', label: 'Pharmacy' },
+  { value: 'hospital_admin', label: 'Hospital' }
 ];
 
 const SessionMonitor = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('online'); // 'online' | 'audit'
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab = searchParams.get('tab') || 'online'; // 'online' | 'audit'
+  const roleFilter = searchParams.get('role') || '';
+  const searchTerm = searchParams.get('search') || '';
+
+  // Update query params in URL
+  const updateQuery = useCallback((updates) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') {
+        next.set(k, String(v));
+      } else {
+        next.delete(k);
+      }
+    });
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // --- Online Now State ---
   const [sessions, setSessions] = useState([]);
@@ -68,22 +110,53 @@ const SessionMonitor = () => {
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalLogsCount, setTotalLogsCount] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+
+  // --- PII Reveal state (audit-logged) ---
+  const [revealedMap, setRevealedMap] = useState({});
+  const [revealingId, setRevealingId] = useState(null);
+
+  const handleRevealIdentifier = async (e, userId, currentVal) => {
+    e.stopPropagation();
+    if (revealedMap[userId]) {
+      // Hide
+      setRevealedMap(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+      return;
+    }
+
+    setRevealingId(userId);
+    try {
+      const res = await api.post(`/admin/users/${userId}/reveal-identifier`);
+      const unmasked = res.data?.identifier || currentVal;
+      setRevealedMap(prev => ({ ...prev, [userId]: unmasked }));
+      toast.success('Identifier unmasked; security audit logged');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to reveal identifier');
+    } finally {
+      setRevealingId(null);
+    }
+  };
 
   const fetchSessions = useCallback(async () => {
     setLoadingSessions(true);
     try {
-      const { data } = await api.get('/devices/admin/sessions/active');
+      const params = {};
+      if (roleFilter) params.role = roleFilter;
+      if (searchTerm) params.search = searchTerm;
+      const { data } = await api.get('/devices/admin/sessions/active', { params });
       setSessions(data.data || []);
     } catch (err) {
       toast.error('Failed to load active sessions');
     } finally {
       setLoadingSessions(false);
     }
-  }, []);
+  }, [roleFilter, searchTerm]);
 
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
@@ -97,6 +170,7 @@ const SessionMonitor = () => {
       const res = await api.get(url);
       setLogs(res.data.data || []);
       setTotalPages(res.data.pagination?.pages || 1);
+      setTotalLogsCount(res.data.pagination?.total || (res.data.data ? res.data.data.length : 0));
     } catch (err) {
       toast.error('Failed to load audit logs');
     } finally {
@@ -134,9 +208,9 @@ const SessionMonitor = () => {
         </div>
         
         {/* Tab Toggle */}
-        <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-white/10 shrink-0">
+        <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-white/10 shrink-0 select-none">
           <button
-            onClick={() => setActiveTab('online')}
+            onClick={() => updateQuery({ tab: 'online' })}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'online' 
                 ? 'bg-slate-700/80 text-white shadow shadow-black/20' 
@@ -145,12 +219,12 @@ const SessionMonitor = () => {
           >
             <Activity className="w-4 h-4" /> 
             Online Now 
-            <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-xs">
+            <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-xs font-mono">
               {sessions.length}
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('audit')}
+            onClick={() => updateQuery({ tab: 'audit' })}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'audit' 
                 ? 'bg-slate-700/80 text-white shadow shadow-black/20' 
@@ -159,32 +233,123 @@ const SessionMonitor = () => {
           >
             <ScrollText className="w-4 h-4" /> 
             Audit Log
+            <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-xs font-mono">
+              {totalLogsCount}
+            </span>
           </button>
+        </div>
+      </div>
+
+      {/* Shared Filter Bar (Role & Search kept in URL) */}
+      <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-4">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <Search className="w-3.5 h-3.5" /> Search User / Name / NIC
+            </span>
+            <input
+              type="text"
+              placeholder="Search active users or logs..."
+              value={searchTerm}
+              onChange={(e) => {
+                updateQuery({ search: e.target.value });
+                setPage(1);
+              }}
+              className="glass-input text-xs"
+            />
+          </div>
+
+          {activeTab === 'audit' && (
+            <>
+              <div className="flex-1 min-w-[170px] flex flex-col gap-1.5 select-none">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" /> Start Date
+                </span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                  className="glass-input text-xs"
+                />
+              </div>
+              <div className="flex-1 min-w-[170px] flex flex-col gap-1.5 select-none">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" /> End Date
+                </span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                  className="glass-input text-xs"
+                />
+              </div>
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              setStartDate('');
+              setEndDate('');
+              updateQuery({ role: '', search: '' });
+              setPage(1);
+            }}
+            className="glass-button text-xs py-2.5 px-5 select-none shrink-0"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        {/* Role Filters */}
+        <div className="flex flex-col gap-2 pt-2 border-t border-white/5 select-none">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5" /> Filter by Role
+          </span>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {roles.map(r => (
+              <button
+                key={r.value}
+                onClick={() => {
+                  updateQuery({ role: r.value });
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  roleFilter === r.value
+                    ? 'bg-slate-700/80 border-slate-600 text-white'
+                    : 'bg-slate-950/20 border-white/5 text-slate-400 hover:text-white'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* 🟢 TAB: ONLINE NOW */}
       {activeTab === 'online' && (
         <div className="space-y-4 animate-fade-in">
-          <div className="flex justify-end">
-            <button onClick={fetchSessions} disabled={loadingSessions} className="glass-button text-xs py-2 px-4 flex items-center gap-2">
+          <div className="flex justify-between items-center px-1">
+            <p className="text-xs text-slate-400">
+              Displaying <span className="font-bold text-white font-mono">{sessions.length}</span> active session{sessions.length === 1 ? '' : 's'}. PII masked by default per privacy policy.
+            </p>
+            <button onClick={fetchSessions} disabled={loadingSessions} className="glass-button text-xs py-2 px-4 flex items-center gap-2 select-none">
               <RefreshCw className={`w-3.5 h-3.5 ${loadingSessions ? 'animate-spin' : ''}`} /> Refresh Sessions
             </button>
           </div>
           
           <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
             {loadingSessions ? (
-              <div className="p-12 text-center">
+              <div className="p-12 text-center select-none">
                 <Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" />
               </div>
             ) : sessions.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
                     <tr>
                       <th className="px-6 py-4">User</th>
                       <th className="px-6 py-4">Role</th>
-                      <th className="px-6 py-4">NIC / Reg ID</th>
+                      <th className="px-6 py-4">NIC / Identifier</th>
                       <th className="px-6 py-4">Device Model</th>
                       <th className="px-6 py-4">Login Time</th>
                       <th className="px-6 py-4">Last Activity</th>
@@ -193,53 +358,73 @@ const SessionMonitor = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
-                    {sessions.map(s => (
-                      <tr key={s._id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${s.userId}`)}>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                            <span className="font-bold text-white">{s.fullName}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider">
-                            {s.role?.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs text-slate-400">{s.identifier || '—'}</td>
-                        <td className="px-6 py-4 text-slate-300 text-xs">{s.deviceModel || 'Unknown'}</td>
-                        <td className="px-6 py-4 text-slate-400 text-xs font-mono">
-                          {s.loginTime ? formatSriLankaDateTime(s.loginTime, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                        </td>
-                        <td className="px-6 py-4 text-slate-400 text-xs">{timeAgo(s.lastUsed)}</td>
-                        <td className="px-6 py-4">
-                          {s.isTrusted ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                              <ShieldCheck className="w-3 h-3" /> Trusted
+                    {sessions.map(s => {
+                      const uid = String(s.userId || s._id);
+                      const isRevealed = Boolean(revealedMap[uid]);
+                      const displayIdentifier = isRevealed ? (revealedMap[uid] || s.identifier) : maskIdentifier(s.identifier);
+                      return (
+                        <tr key={s._id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${s.userId}`)}>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                              <span className="font-bold text-white">{s.fullName}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 select-none">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider">
+                              {s.role?.replace('_', ' ')}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold shadow-sm shadow-red-500/10">
-                              <ShieldAlert className="w-3 h-3 text-red-400" /> New Device (Untrusted)
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleForceLogout(s._id, s.fullName); }}
-                            className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5"
-                          >
-                            <LogOut className="w-3 h-3" /> Force Logout
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4 font-mono text-xs text-slate-400">
+                            <div className="flex items-center gap-2">
+                              <span>{displayIdentifier}</span>
+                              {s.identifier && s.identifier !== '—' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleRevealIdentifier(e, uid, s.identifier)}
+                                  disabled={revealingId === uid}
+                                  title={isRevealed ? "Hide identifier" : "Reveal identifier (audit logged)"}
+                                  className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
+                                >
+                                  {revealingId === uid ? <Loader2 className="w-3 h-3 animate-spin" /> : isRevealed ? <EyeOff className="w-3 h-3 text-amber-400" /> : <Eye className="w-3 h-3" />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-300 text-xs">{s.deviceModel || 'Unknown'}</td>
+                          <td className="px-6 py-4 text-slate-400 text-xs font-mono select-none">
+                            {s.loginTime ? formatSriLankaDateTime(s.loginTime, 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-slate-400 text-xs select-none">{timeAgo(s.lastUsed)}</td>
+                          <td className="px-6 py-4 select-none">
+                            {s.isTrusted ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                                <ShieldCheck className="w-3 h-3" /> Trusted
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold shadow-sm shadow-red-500/10">
+                                <ShieldAlert className="w-3 h-3 text-red-400" /> New Device (Untrusted)
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleForceLogout(s._id, s.fullName); }}
+                              className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 transition-colors inline-flex items-center gap-1.5 select-none"
+                            >
+                              <LogOut className="w-3 h-3" /> Force Logout
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             ) : (
               <div className="p-12 text-center text-slate-500 select-none">
                 <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-semibold">No active sessions found.</p>
+                <p className="text-sm font-semibold">No active sessions found matching criteria.</p>
               </div>
             )}
           </div>
@@ -249,40 +434,9 @@ const SessionMonitor = () => {
       {/* 📜 TAB: AUDIT LOG */}
       {activeTab === 'audit' && (
         <div className="space-y-4 animate-fade-in">
-          <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-5">
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Start Date</span>
-                <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className="glass-input text-xs" />
-              </div>
-              <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> End Date</span>
-                <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="glass-input text-xs" />
-              </div>
-              <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 select-none">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><Search className="w-3.5 h-3.5" /> Search User ID / NIC</span>
-                <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }} className="glass-input text-xs" />
-              </div>
-              <button onClick={() => { setStartDate(''); setEndDate(''); setRoleFilter(''); setSearchTerm(''); setPage(1); }} className="glass-button text-xs py-2.5 px-5 select-none shrink-0">Clear Filters</button>
-            </div>
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/5 select-none">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Filter by Actor Role</span>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {roles.map(r => (
-                  <button
-                    key={r.value} onClick={() => { setRoleFilter(r.value); setPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${roleFilter === r.value ? 'bg-slate-700/80 border-slate-600 text-white' : 'bg-slate-950/20 border-white/5 text-slate-400 hover:text-white'}`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
           <div className="flex items-center justify-between px-1">
             <p className="text-xs text-slate-400">
-              <span className="text-slate-300 font-bold">Unique User Activity:</span> Displaying 1 row per user with their most recent action. Click any row to view their full audit profile & history.
+              <span className="text-slate-300 font-bold">Unique User Activity:</span> Displaying latest audit event per user. Total matching users: <span className="font-mono font-bold text-white">{totalLogsCount}</span>.
             </p>
           </div>
           
@@ -294,7 +448,7 @@ const SessionMonitor = () => {
             ) : logs.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
                     <tr>
                       <th className="px-6 py-4">Timestamp</th>
                       <th className="px-6 py-4">Actor</th>
@@ -305,41 +459,64 @@ const SessionMonitor = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm text-slate-200">
-                    {logs.map((log, index) => (
-                      <tr key={log._id || index} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${log.actorId}`)}>
-                        <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
-                          {formatDate(log.timestamp || log.createdAt)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs font-black text-slate-400 select-none shrink-0"><User className="w-3 h-3 text-slate-400" /></div>
-                            <div className="flex flex-col">
-                              <span className="text-white font-bold text-xs">{log.actorName || log.actorId || 'System'}</span>
-                              {log.actorNic && <span className="text-xs text-slate-500 font-mono">{log.actorNic}</span>}
+                    {logs.map((log, index) => {
+                      const actorId = String(log.actorId || index);
+                      const isRevealed = Boolean(revealedMap[actorId]);
+                      const displayNic = isRevealed ? (revealedMap[actorId] || log.actorNic) : maskIdentifier(log.actorNic);
+
+                      return (
+                        <tr key={log._id || index} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => navigate(`/admin/dashboard/sessions/${log.actorId}`)}>
+                          <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
+                            {formatDate(log.timestamp || log.createdAt)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs font-black text-slate-400 select-none shrink-0">
+                                <User className="w-3 h-3 text-slate-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-white font-bold text-xs">{log.actorName || log.actorId || 'System'}</span>
+                                {log.actorNic && (
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-xs text-slate-500 font-mono">{displayNic}</span>
+                                    {log.actorNic !== '—' && log.actorId && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleRevealIdentifier(e, actorId, log.actorNic)}
+                                        disabled={revealingId === actorId}
+                                        title={isRevealed ? "Hide identifier" : "Reveal identifier (audit logged)"}
+                                        className="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-colors"
+                                      >
+                                        {revealingId === actorId ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : isRevealed ? <EyeOff className="w-2.5 h-2.5 text-amber-400" /> : <Eye className="w-2.5 h-2.5" />}
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col items-start gap-1">
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider select-none">{log.actorRole || log.role || 'system'}</span>
-                            {log.isOnline ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><Activity className="w-2.5 h-2.5" /> Online</span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">Offline</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>{log.action || 'Unknown'}</span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
-                          {log.logoutTime ? formatDate(log.logoutTime) : '—'}
-                        </td>
-                        <td className="px-6 py-4 text-slate-400 text-xs text-right">
-                          <span className="inline-flex items-center gap-1"><Smartphone className="w-3.5 h-3.5 opacity-40 shrink-0" />{log.deviceModel || '—'}</span>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col items-start gap-1 select-none">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-300 uppercase tracking-wider">{log.actorRole || log.role || 'system'}</span>
+                              {log.isOnline ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><Activity className="w-2.5 h-2.5" /> Online</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">Offline</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full select-none ${getActionBadge(log.action)}`}>{log.action || 'Unknown'}</span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-400 font-mono text-xs select-none">
+                            {log.logoutTime ? formatDate(log.logoutTime) : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-slate-400 text-xs text-right">
+                            <span className="inline-flex items-center gap-1 select-none"><Smartphone className="w-3.5 h-3.5 opacity-40 shrink-0" />{log.deviceModel || '—'}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

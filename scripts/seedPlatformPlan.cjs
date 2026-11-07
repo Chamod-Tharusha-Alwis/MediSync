@@ -178,7 +178,7 @@ function buildSeedPlatformPlan({ now, compact = false, patientNics } = {}) {
       addEpisode('S1', 'dengue', district, ago, Math.max(1, Math.round(daily * weekdayFactor(ago))));
     }
     for (const district of ['Ratnapura', 'Kalutara', 'Galle']) [2, 3, 5, 7, 8, 8, 7, 5, 3, 2].forEach((n, i) => addEpisode('S2', 'leptospirosis', district, 26 - i, n));
-    for (let ago = 14; ago >= 1; ago--) addEpisode('S3', 'chickenpox', 'Galle', ago, ago % 2 ? 2 : 3);
+    for (let ago = 14; ago >= 1; ago--) addEpisode('S3', 'chickenpox', 'Galle', ago, 3);
     for (const district of DISTRICTS) for (let ago = 30; ago >= 1; ago--) {
       const daily = (ago > 14 ? 1 : ago > 7 ? 2 : 4) * (['Kandy', 'Nuwara Eliya'].includes(district.canonical) ? 2 : 1);
       addEpisode('S4', 'influenza', district.canonical, ago, Math.max(1, Math.round(daily * weekdayFactor(ago))));

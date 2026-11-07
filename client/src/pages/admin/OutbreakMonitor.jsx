@@ -10,7 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Res
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
-import { formatDistrictName } from '../../utils/districtAdjacency';
+import { formatDistrictName, getProvinceForDistrict, OFFICIAL_PROVINCES, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
 
 
 const sevConfig = {
@@ -216,6 +216,8 @@ const OutbreakMonitor = () => {
   const [alertsLoaded, setAlertsLoaded] = useState(false);
   const [error,       setError]       = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [surveillanceLevel, setSurveillanceLevel] = useState('district'); // 'district' | 'province' | 'island'
+  const lastScanAtRef = React.useRef(0);
   
   // New workflow state
   const [approveModal, setApproveModal] = useState({ isOpen: false, alertId: null, scope: 'none' });
@@ -229,8 +231,14 @@ const OutbreakMonitor = () => {
       ]);
       if (!mounted) return;
       const status = s.status === 'fulfilled' ? s.value?.data : null;
-      setModelStatus(status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
-        && status.dataPointUnit === 'reference disease profiles' ? status : null);
+      setModelStatus(
+        status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
+          && status.dataPointUnit === 'reference disease profiles'
+            ? status
+            : (status?.availabilityState === 'waking' || status?.status === 'waking')
+              ? status
+              : null
+      );
       if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
         setAlerts(a.value.data.data);
         setAlertsLoaded(true);
@@ -241,6 +249,11 @@ const OutbreakMonitor = () => {
   }, []);
 
   const handleRunDetection = async () => {
+    const nowScan = Date.now();
+    if (nowScan - lastScanAtRef.current < 2000) return;
+    lastScanAtRef.current = nowScan;
+    if (detecting || modelStatus?.availabilityState === 'waking') return;
+
     setDetecting(true); setMlResult(null); setError(null);
     try {
       const res    = await api.post('/admin/outbreak/trigger', {});
@@ -364,10 +377,19 @@ const OutbreakMonitor = () => {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatTile
-          icon={Activity} label={t("adminStatus.referenceService", "ML reference service")} value={modelStatus ? t("adminStatus.available", "Available") : t("adminStatus.notAvailable", "Not available")}
-          accentText="text-emerald-400" accentBg="bg-emerald-500/10"
-          accentBorder="border-emerald-500/20" glowBg="bg-emerald-500/20"
-          delay={0} pulse
+          icon={Activity} label={t("adminStatus.referenceService", "ML reference service")}
+          value={
+            modelStatus?.available === true
+              ? t("adminStatus.available", "Available")
+              : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking')
+                ? t("adminStatus.waking", "Service waking up, retry in 30-60s")
+                : t("adminStatus.notAvailable", "Not available")
+          }
+          accentText={modelStatus?.available === true ? "text-emerald-400" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "text-amber-400" : "text-slate-400"}
+          accentBg={modelStatus?.available === true ? "bg-emerald-500/10" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "bg-amber-500/10" : "bg-slate-800/20"}
+          accentBorder={modelStatus?.available === true ? "border-emerald-500/20" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "border-amber-500/20" : "border-slate-700/30"}
+          glowBg={modelStatus?.available === true ? "bg-emerald-500/20" : "bg-slate-800/10"}
+          delay={0} pulse={modelStatus?.available === true || modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking'}
         />
         <StatTile
           icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Reference disease profiles")}
@@ -526,6 +548,36 @@ const OutbreakMonitor = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Surveillance Geographic Level Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-white/5">
+        <div>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">Surveillance Geographic Aggregation</span>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Evaluate epidemic aberration across official administrative tiers (N ≥ 5 floor, 2 consecutive days, z &gt; 2.0). Higher levels can alert when individual districts are below threshold.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 border border-white/10 rounded-xl select-none">
+          {[
+            { id: 'district', label: 'District (25)' },
+            { id: 'province', label: 'Province (9)' },
+            { id: 'island', label: 'Island-wide (1)' }
+          ].map(lvl => (
+            <button
+              key={lvl.id}
+              type="button"
+              onClick={() => { setSurveillanceLevel(lvl.id); setSelectedDistrict(null); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                surveillanceLevel === lvl.id
+                  ? 'bg-red-600/30 text-red-300 border border-red-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-white border border-transparent'
+              }`}
+            >
+              {lvl.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Sri Lanka District Risk Surveillance Map */}
