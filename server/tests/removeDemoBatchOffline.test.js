@@ -7,6 +7,7 @@ const {
   parseCliArgs,
   verifyRemovalAdmission,
   buildQuery,
+  buildAlertQuery,
   inspectOrRemoveBatch
 } = require('../../scripts/remove_demo_batch.js');
 
@@ -94,6 +95,20 @@ describe('Guarded Demo Batch Removal (remove_demo_batch.js)', () => {
       const query = buildQuery(TARGET_BATCH);
       expect(query.$and).toBeDefined();
       const seedFilter = query.$and.find(clause => clause.syntheticSeedBatch && clause.syntheticSeedBatch.$ne);
+      expect(seedFilter).toBeDefined();
+      expect(seedFilter.syntheticSeedBatch.$ne).toBe(PROTECTED_SEED_BATCH);
+    });
+
+    test('alert query explicitly matches target batch and isolates from protected seed', () => {
+      const alertQuery = buildAlertQuery(TARGET_BATCH);
+      expect(alertQuery.$and).toBeDefined();
+      const batchClause = alertQuery.$and.find(clause => clause.$or);
+      expect(batchClause).toBeDefined();
+      expect(batchClause.$or).toEqual([
+        { demoBatchId: TARGET_BATCH },
+        { isSimulatedDemo: true, demoBatchId: TARGET_BATCH }
+      ]);
+      const seedFilter = alertQuery.$and.find(clause => clause.syntheticSeedBatch && clause.syntheticSeedBatch.$ne);
       expect(seedFilter).toBeDefined();
       expect(seedFilter.syntheticSeedBatch.$ne).toBe(PROTECTED_SEED_BATCH);
     });

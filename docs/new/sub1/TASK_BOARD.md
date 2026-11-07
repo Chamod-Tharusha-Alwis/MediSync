@@ -53,6 +53,6 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 6 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 7 — Docs, gate, handover
-- [ ] TODO 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
-- [ ] TODO 7.2 acceptance matrix regenerated honestly + protected ledger reconciled
-- [ ] TODO 7.3 full gate, push, compare link, OWNER_ACTIONS live-test checklist
+- [x] DONE 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
+- [x] DONE 7.2 acceptance matrix regenerated honestly + protected ledger reconciled
+- [x] DONE 7.3 full gate, push, compare link, OWNER_ACTIONS live-test checklist

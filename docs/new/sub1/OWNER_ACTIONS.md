@@ -143,6 +143,91 @@ To unblock Task 5.1 and activate live incidence per 100,000:
 
 ---
 
-## 5. Later Phases (Reference)
-- **Phase 2**: Set `PDF_EXPORT_ENABLED=true` on Render when ready to enable PDF downloads and consultation summary PDF attachments (default remains `false` → `503`).
-- **Phase 7**: Ordered live-test checklist (max 50 OTPs/day, no retries after a failure).
+## 5. Render Configuration (Environment Variables)
+
+Add or verify these environment variables on the Render Backend Web Service (`https://dashboard.render.com`):
+
+| Variable | Recommended Value | Purpose / Notes |
+|---|---|---|
+| `PDF_EXPORT_ENABLED` | `false` (default) -> `true` when ready | Gates consultation & lab report PDF downloads and consultation summary email attachments. When `false` or omitted, endpoints return HTTP 503 `SECURITY_HOLD`. Set to `true` only when the owner wishes to activate production PDF exports. |
+| `MEDISYNC_PROTOTYPE_MODE` | `true` | Enables prototype release operational mode (`server/src/app.js:60-70`). |
+| `MEDISYNC_ALLOW_OPERATOR_KEYS` | `true` | Bypasses external HashiCorp Vault for prototype release, loading validated AES-256-GCM encryption keys directly from environment. |
+| `BREVO_DAILY_FREE_LIMIT` | `300` | Safety ceiling for transactional emails to prevent account exhaustion. |
+| `ML_ENGINE_URL` | `https://medisync-ml.onrender.com` | Internal or public URL of the Python Flask ML service. |
+
+---
+
+## 6. Phase 7 — Ordered Live Production Verification Checklist
+
+Follow this checklist strictly in order after merging `feat/phase2-polish-and-cleanup` into `main` and deploying to Render.
+
+### Safety Rules During Live Testing
+- **Hard OTP Cap**: Maximum **50 OTPs per day** across all live tests combined.
+- **Fail-Stop Rule**: If ANY login, OTP verification, or endpoint fails: **STOP IMMEDIATELY**. Do NOT retry in a loop. Open Render logs (`https://dashboard.render.com`) to inspect the error stack.
+
+### Step-by-Step Order of Operations
+
+#### Step 6.1: Public Read-Only Verification (Zero Authentication, Zero Side-Effects)
+Open an Incognito / Private browser window and visit:
+1. `GET https://medisync.chamodtharusha.com.lk/`
+   - [ ] Page renders without errors. Header, footer, navigation work.
+2. `GET https://medisync.chamodtharusha.com.lk/public-health`
+   - [ ] Epidemiological surveillance dashboard loads.
+   - [ ] Scope selector toggles between: **District (25)**, **Province (9)**, and **Island-wide (1)**.
+   - [ ] Map tooltips and cards render the mandatory badge: `clinicalValidation: not_established`.
+   - [ ] Incidence metric displays `"population data pending"` (due to neutral 2024 census nulls).
+   - [ ] In Province view, any province with $< 5$ cases shows `<5 (suppressed)`.
+3. `GET https://medisync.chamodtharusha.com.lk/doctors`
+   - [ ] Doctor directory loads with non-diagnostic advisory notice.
+4. `GET https://medisync.chamodtharusha.com.lk/hospitals`
+   - [ ] Hospital directory loads with institutional directory notice.
+5. `GET https://medisync.chamodtharusha.com.lk/pharmacies`
+   - [ ] Pharmacy directory loads with licensing notice.
+
+#### Step 6.2: Single-Login Authenticated Role Checks (1 Login / Role Only)
+1. **Patient Role**:
+   - [ ] Login as a test patient account.
+   - [ ] Dashboard `/patient/dashboard`: **Active Prescriptions** are grouped by consultation (`CON-...`).
+   - [ ] Prescriptions `/patient/prescriptions`: verify status badges and grouped medicines.
+   - [ ] Medical History `/patient/history`: consultation history renders.
+2. **Doctor Role**:
+   - [ ] Login as a test doctor account.
+   - [ ] Consultation Form `/doctor/consultations/new`:
+     - [ ] Enter symptoms; verify TF-IDF analysis button is debounced (1.5s delay to prevent request spam).
+     - [ ] Verify `clinicalValidation: not_established` badge is rendered next to ML recommendations.
+     - [ ] Search and select ICD-10 diagnostic code from dropdown; verify zero crashes.
+3. **Pharmacy Role**:
+   - [ ] Login as a pharmacy staff account.
+   - [ ] Dashboard `/pharmacy/dashboard`:
+     - [ ] Active Prescriptions are grouped by consultation ID.
+     - [ ] Dispensation History is grouped by unique receipt ID.
+     - [ ] Verify sidebar does **NOT** contain "Predictive Restock Warnings" (removed per Owner Q4).
+     - [ ] Dispensing Volume Analytics chart renders (if `SEED_2026_11_B` was seeded per §3).
+4. **Admin Role**:
+   - [ ] Login as an administrator account.
+   - [ ] User Directory `/admin/users`:
+     - [ ] Filter by role (`doctor`, `patient`, `pharmacy_staff`, `hospital`).
+     - [ ] Search by name or email. Verify user identifiers are partially masked.
+     - [ ] Open a user detail drawer and click the Eye icon to reveal identifier. Check that `ADMIN_REVEAL_PII` audit log is created.
+   - [ ] Outbreak Monitor `/admin/outbreak-monitor`:
+     - [ ] Verify 3 levels (District, Province, Island-wide).
+     - [ ] Verify active alerts match strict $z > 2.0$ detector criteria.
+
+#### Step 6.3: Consultation Summary Email Test (1 Transactional Email)
+1. In the Patient portal (`/patient/history`), click the **"Resend Email"** button on a completed consultation.
+2. Verify rate-limiting: clicking again within 60 seconds displays a cooldown notice.
+3. Check recipient inbox:
+   - [ ] Email arrives with consultation diagnosis and prescription list.
+   - [ ] Subject and body contain **zero National Identity Card (NIC) numbers** or sensitive PII.
+   - [ ] If `PDF_EXPORT_ENABLED=false` on Render: email contains the prescription text list only (no PDF attachment).
+   - [ ] If `PDF_EXPORT_ENABLED=true` on Render: email contains attached PDF named `consultation_CON-XXXXX.pdf`.
+
+#### Step 6.4: PDF Download Test (After Setting `PDF_EXPORT_ENABLED=true` on Render)
+1. Set `PDF_EXPORT_ENABLED=true` on Render backend service and wait for deployment to complete.
+2. As Patient, click **"Download PDF"** on a consultation.
+   - [ ] PDF downloads without HTTP 503 error.
+   - [ ] Filename is sanitized (e.g., `consultation_CON-12345.pdf`), strictly omitting patient NIC.
+   - [ ] Header, medications table, and trilingual labels render clearly without WinAnsi font crashes.
+3. As Patient, click **"Download Lab PDF"** on a lab report.
+   - [ ] Filename is sanitized (e.g., `lab_report_LAB-12345.pdf`).
+   - [ ] Results and reference ranges render clearly.

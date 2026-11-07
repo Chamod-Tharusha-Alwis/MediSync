@@ -104,6 +104,23 @@ function buildQuery(batchId) {
   };
 }
 
+function buildAlertQuery(batchId) {
+  return {
+    $and: [
+      {
+        $or: [
+          { demoBatchId: batchId },
+          { isSimulatedDemo: true, demoBatchId: batchId }
+        ]
+      },
+      // Guarantee zero intersection with SEED_2026_11_A and protect genuine clinical alerts
+      {
+        syntheticSeedBatch: { $ne: PROTECTED_SEED_BATCH }
+      }
+    ]
+  };
+}
+
 async function inspectOrRemoveBatch(mongooseInstance, options = {}) {
   const { database = 'medisync_prod', dryRun = true, targetBatch = TARGET_BATCH, env = process.env } = options;
 
@@ -115,6 +132,7 @@ async function inspectOrRemoveBatch(mongooseInstance, options = {}) {
   }
 
   const query = buildQuery(targetBatch);
+  const alertQuery = buildAlertQuery(targetBatch);
 
   // Collections that may hold demo outbreak records
   const consultationCol = db.collection('consultations');
@@ -125,17 +143,7 @@ async function inspectOrRemoveBatch(mongooseInstance, options = {}) {
 
   // Count target records
   const consultationsTargeted = await consultationCol.countDocuments(query);
-  const alertsTargeted = await alertCol.countDocuments({
-    $and: [
-      {
-        $or: [
-          { demoBatchId: targetBatch },
-          { isSimulatedDemo: true }
-        ]
-      },
-      { syntheticSeedBatch: { $ne: PROTECTED_SEED_BATCH } }
-    ]
-  });
+  const alertsTargeted = await alertCol.countDocuments(alertQuery);
 
   const result = {
     batchId: targetBatch,
@@ -154,17 +162,7 @@ async function inspectOrRemoveBatch(mongooseInstance, options = {}) {
   if (!dryRun) {
     // Execute guarded deletion
     const conDelete = await consultationCol.deleteMany(query);
-    const alertDelete = await alertCol.deleteMany({
-      $and: [
-        {
-          $or: [
-            { demoBatchId: targetBatch },
-            { isSimulatedDemo: true }
-          ]
-        },
-        { syntheticSeedBatch: { $ne: PROTECTED_SEED_BATCH } }
-      ]
-    });
+    const alertDelete = await alertCol.deleteMany(alertQuery);
 
     result.consultationsDeleted = conDelete.deletedCount || 0;
     result.alertsDeleted = alertDelete.deletedCount || 0;
@@ -233,6 +231,7 @@ module.exports = {
   parseCliArgs,
   verifyRemovalAdmission,
   buildQuery,
+  buildAlertQuery,
   inspectOrRemoveBatch,
   runCli
 };

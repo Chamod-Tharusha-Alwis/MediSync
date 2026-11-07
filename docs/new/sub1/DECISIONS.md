@@ -105,3 +105,28 @@ Format: ID — decision — alternatives — reason.
   3. **Outbreak Detector Operating Characteristic**: Evaluated detection sensitivity across canonical scenarios S1–S8 and continuous threshold sweeps ($z \in [0.5, 4.0]$), generating `04_detector_roc_pr_curves.png` and `05_detector_threshold_tradeoff.png`. Proved why strict $z > 2.0$ is the optimal operating threshold (100% sensitivity on true multi-day outbreaks while achieving 0% false alarms on single-day spikes and chronic noise).
   4. **14-Day OLS Forecast Demonstration**: Rendered 14-day historical observations with OLS trajectory and 95% Student's $t$ confidence intervals for S1 Colombo Dengue (`06_forecast_s1_dengue.png`) and S4 Gampaha Influenza (`07_forecast_s4_influenza.png`).
   5. **External Benchmark Backtest (Colmozzie) (Task 6.4)**: Successfully retrieved the open-access Colombo weekly dengue dataset (`thiyangt/colmozzie/data-raw/dengColombo.csv`) via `urllib.request`. Evaluated 150 weeks of real-world historical dengue incidence against an 8-week rolling mean $\pm 2\sigma$ detector (`08_colmozzie_real_world_backtest.png`). Documented that non-stationary monsoon variance and reporting delays in real-world epidemiology reinforce the invariant that clinical validation is not established. All outputs documented in `docs/ml-evaluation/REPORT.md`.
+
+## D-016 — Phase 7 Documentation Alignment, Demo Batch Removal Runbook Corrections, Honest Acceptance Matrix, and Handover (Tasks 7.1–7.3)
+- Decision:
+  1. **Documentation Alignment (Task 7.1)**:
+     - Updated `ARCHITECTURE.md` and `README.md` to reflect verified test counts: **3,445 tests passed across 122 backend suites and 75 client suites**.
+     - Added explicit architectural note regarding `server/src/app.js:60-70`: When `MEDISYNC_PROTOTYPE_MODE=true` and `MEDISYNC_ALLOW_OPERATOR_KEYS=true`, external HashiCorp Vault is bypassed for prototype release, loading operator encryption keys from environment while strictly forbidding `VAULT_TOKEN=bypass`.
+  2. **Demo Batch Removal Runbook & Script Corrections (Task 7.1)**:
+     - Updated `scripts/remove_demo_batch.js` to define `buildAlertQuery` explicitly matching `demoBatchId: targetBatch` and isolating from `SEED_2026_11_A`, ensuring genuine clinical alerts (which lack a demo batch identifier) are never matched or deleted.
+     - Updated `docs/new/DEMO_BATCH_REMOVAL_RUNBOOK.md` with:
+       - Clear explanation of fail-closed behavior: exiting immediately with code 1 and `APPROVAL_ENV_REQUIRED` when approval flag is missing.
+       - Illustrative counts matching `seed-demo-outbreak.js` / dataset generation (6,309 consultations, 5 active alerts when present; 0 when unseeded/already cleaned).
+       - Explicit verification queries targeting batch `DEMO_OUTBREAK_2026_V1` specifically.
+       - Invariant statement that genuine clinical alerts are never deleted.
+  3. **Honest Acceptance Matrix Regeneration (Task 7.2)**:
+     - Regenerated `docs/new/FINAL_ACCEPTANCE_MATRIX.md` with verified facts:
+       - Reconciled protected file ledger to match the exact 15 files from `docs/release/PROTECTED_HASHES.json` (replacing previous fictional entries).
+       - Marked responsive viewport tests (320px, 375px, 1440px) as "Manual - not run this session" for honest disclosure.
+       - Marked offline regression suites as "PASS (offline in-memory)".
+       - Marked unexecuted authenticated live tests as "Not run - owner to verify".
+  4. **Handover Live-Test Checklist (Task 7.3)**:
+     - Authored complete, ordered live-test checklist in `docs/new/sub1/OWNER_ACTIONS.md` (§5 Render config, §6 ordered verification checklist).
+     - Defined safety constraints: hard cap of **50 OTPs per day** across all live tests, and a fail-stop rule (no repeated retry loops if an attempt fails).
+     - Specified exact order of operations: public read-only verification first (no auth), followed by single-login role checks (Patient, Doctor, Pharmacy, Admin), consultation summary email resend check, and PDF export check (after setting `PDF_EXPORT_ENABLED=true` on Render).
+  5. **Final Quality Gate**: Full offline gate passed: **3,445 PASS / 0 FAIL** (`sourceFrozen: true`, `protectedAccountedFor: 15`). Client build passed (exit code 0, 119 modules).
+

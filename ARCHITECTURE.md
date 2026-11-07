@@ -59,6 +59,7 @@ Sensitive patient identification attributes (National Identity Card - NIC, conta
 - Managed by `server/src/security/operatorKeyPolicy.js`.
 - Supports multi-version key rotation (`ACTIVE_KEY_VERSION` and `ENCRYPTION_KEYS` dictionary).
 - Ciphertext includes version prefix, initialization vector (IV), and authentication tag.
+- **Prototype Mode Key Vault Note**: When `MEDISYNC_PROTOTYPE_MODE=true` and `MEDISYNC_ALLOW_OPERATOR_KEYS=true` are active (`server/src/app.js:60-70`), the external HashiCorp Vault is bypassed for prototype release, loading validated operator encryption keys directly from environment variables via `operatorKeyPolicy.js` without hosted Vault infrastructure. Note that `VAULT_TOKEN=bypass` remains strictly forbidden in production operator-key mode.
 
 ### 2.2 Patient Consent Protocol
 In compliance with clinical privacy principles, doctors cannot view historical patient records without active consent:
@@ -116,10 +117,10 @@ The PDF export subsystem (`server/src/utils/pdfGenerator.js`) generates verifiab
 
 MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. The suite operates entirely offline, using in-memory databases and loopback mock adapters:
 
-- **Backend Jest Suite**: 2,646 tests across 120 suites.
+- **Backend Jest Suite**: 2,625 tests across 122 suites.
 - **Client React Suite**: 656 tests across 75 suites.
 - **Email & PDF Harness**: 31 tests across 2 suites.
-- **ML Scoring & Flask Models**: 71 tests.
-- **Root Security & Contract Assertions**: 62 tests.
-- **Total Offline Verification**: **3,466 passed, 0 failed**.
+- **ML Scoring & Flask Models**: 71 tests (40 scoring + 31 Flask API).
+- **Root Security, Contracts & ML Resilience**: 62 tests (55 root + 7 ML status contracts).
+- **Total Offline Verification**: **3,445 passed, 0 failed**.
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.
