@@ -4,7 +4,7 @@ const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Consultation = require('../models/Consultation');
-const { generateLockedPrescription } = require('../utils/pdfGenerator');
+const { generateLockedPrescription, generateConsultationSummaryPDF } = require('../utils/pdfGenerator');
 const emailService = require('../utils/emailService');
 const { checkAllergyConflict } = require('../utils/ingredientResolver');
 const { prescriptionTiming, DurationError } = require('../utils/prescriptionDuration');
@@ -126,5 +126,106 @@ exports.downloadPrescriptionPdf = async (req, res) => {
       return res.status(503).json({ code: 'PDF_EXPORT_UNAVAILABLE' });
     }
     res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+};
+
+// GET /api/prescriptions/consultations/:id/export-pdf — Clinical Consultation PDF export (Milestone 4 WP5)
+exports.exportConsultationPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(404).json({ error: 'Consultation not found' });
+
+    const cleanId = String(id).trim();
+    const isObjId = /^[0-9a-fA-F]{24}$/.test(cleanId);
+    const query = {
+      $or: [
+        { consultationId: cleanId },
+        ...(isObjId ? [{ _id: cleanId }] : [])
+      ]
+    };
+
+    const consultation = await Consultation.findOne(query)
+      .populate('doctorId', 'fullName slmcNumber')
+      .populate('patientId', 'fullName nic dateOfBirth gender preferredLanguage');
+
+    if (!consultation) {
+      return res.status(404).json({ error: 'Consultation not found' });
+    }
+
+    if (typeof consultation.decryptFieldsSync === 'function') {
+      try { consultation.decryptFieldsSync(); } catch (_) {}
+    }
+
+    // Access control
+    if (req.user.role === 'patient') {
+      const patientObjId = consultation.patientId?._id || consultation.patientId;
+      const isOwnerId = patientObjId && String(patientObjId) === String(req.user.id);
+      const isOwnerNic = req.user.nic && consultation.patientNic &&
+        String(req.user.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase();
+      if (!isOwnerId && !isOwnerNic) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else if (req.user.role === 'doctor') {
+      const doctorObjId = consultation.doctorId?._id || consultation.doctorId;
+      const isAttendingDoctor = doctorObjId && String(doctorObjId) === String(req.user.id);
+      if (!isAttendingDoctor) {
+        const token = req.headers['x-patient-access'] || req.headers['x-patient-access-token'];
+        if (!token) {
+          return res.status(403).json({ error: 'Access denied: Active patient consent required' });
+        }
+        try {
+          const consent = await require('../services/patientConsentService').verifyPatientConsent({
+            actor: req.user,
+            nic: consultation.patientNic,
+            token
+          });
+          const patientObjId = consultation.patientId?._id || consultation.patientId;
+          if (!consent || !consent.patientId || (patientObjId && String(consent.patientId) !== String(patientObjId))) {
+            return res.status(403).json({ error: 'Access denied' });
+          }
+        } catch (_) {
+          return res.status(403).json({ error: 'Access denied: Active patient consent required' });
+        }
+      }
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Flag gate
+    if (process.env.PDF_EXPORT_ENABLED !== 'true') {
+      return res.status(503).json({ error: 'Clinical PDF export is temporarily unavailable', code: 'PDF_EXPORT_UNAVAILABLE' });
+    }
+
+    const patientDetails = consultation.patientId && typeof consultation.patientId === 'object'
+      ? consultation.patientId
+      : { nic: consultation.patientNic };
+    if (typeof patientDetails.decryptFieldsSync === 'function') {
+      try { patientDetails.decryptFieldsSync(); } catch (_) {}
+    }
+    const doctorDetails = consultation.doctorId && typeof consultation.doctorId === 'object'
+      ? consultation.doctorId
+      : {};
+
+    const pdfBuffer = await generateConsultationSummaryPDF(consultation, patientDetails, doctorDetails);
+
+    const date = new Date().toISOString().slice(0, 10);
+    const maskedRef = String(consultation.consultationId || consultation._id).replace(/[^a-zA-Z0-9_-]/g, '').slice(-8);
+    const filename = `MediSync-Consultation-${date}-${maskedRef}.pdf`;
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+      'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    return res.send(pdfBuffer);
+  } catch (err) {
+    if (err?.code === 'SECURITY_HOLD') {
+      return res.status(503).json({ error: 'Clinical PDF export is temporarily unavailable', code: 'PDF_EXPORT_UNAVAILABLE' });
+    }
+    console.error('[PDF Export] Generation unavailable.');
+    return res.status(500).json({ error: 'Failed to generate PDF' });
   }
 };

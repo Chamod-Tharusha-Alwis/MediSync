@@ -8,14 +8,14 @@
   During Stage B1, several bug fixes and security hardening patches were developed on branch `stage-b1/fixes` up to commit `0dc886d` (`docs(stage-b1): record Batch 6 report`). These items were marked "Pending Host Commit" pending verification of whether they were incorporated into `chore/post-seed-verification` and the current HEAD of `feat/final-stage-b2-to-g`.
   
   The items in question include:
-  1. **U2**: Prescription medication catalog filtering in `server/src/controllers/doctorController.js` (commit `d149034`).
-  2. **U7**: Patient consent requirement prior to first prescription lookup in `client/src/pages/pharmacy/PrescriptionFulfillment.jsx` (commit `68ecc6a`).
+  1. **U2**: Prescription medication catalog filtering and non-medicine exclusions in `server/src/controllers/drugController.js`, `server/src/utils/ingredientResolver.js`, and `client/src/components/DrugSearchInput.jsx` (commit `d149034`).
+  2. **U7**: Patient consent requirement prior to first prescription lookup in `client/src/pages/pharmacy/Dashboard.jsx` (commit `68ecc6a`).
   3. **S3**: Auth rate limiter outside test environment in `server/src/app.js` (commit `8375a54`).
-  4. **S4**: Sensitive login notification credential redaction in `server/src/controllers/authController.js` (commit `f773227`).
-  5. **S6**: Public lab status check rate limiting in `server/src/routes/publicRoutes.js` (commit `bdf12a7`).
-  6. **Lockout Policy**: Progressive credential lockout after 5 failed password attempts in 15 minutes (commit `e123b82`).
-  7. **Gate Allowlist**: Inclusion of S1, S6, S3 test suites in the offline gate runner `scripts/run_offline_tests.js` (commits `ffee493`, `c93c73a`).
-  8. **S1 Test Fix**: Lockout policy mock in S1 runtime token test `server/tests/antigravitySecurityRuntime.test.js` (commit `f367702`).
+  4. **S4**: Sensitive login notification credential redaction in `server/src/controllers/authController.js` and `server/src/controllers/pharmacyController.js` (commit `f773227`).
+  5. **S6**: Public lab status check rate limiting in `server/src/routes/labRoutes.js` (commit `bdf12a7`).
+  6. **Lockout Policy**: Progressive credential lockout after 5 failed password attempts in 15 minutes in `server/src/security/passwordAttemptPolicy.js`, `server/src/controllers/authController.js`, and `server/src/controllers/pharmacyController.js` (commit `e123b82`).
+  7. **Gate Allowlist**: Inclusion of security and catalog test suites in the offline gate test configuration `server/clinical.offline.jest.cjs` (commits `ffee493`, `c93c73a`).
+  8. **S1 Test Fix**: Lockout policy mock in S1 runtime token test `server/tests/jwt-patient-nic-removal-s1.test.js` (commit `f367702`).
 
 - **Verification**:
   Executed `git merge-base --is-ancestor 0dc886d HEAD`.

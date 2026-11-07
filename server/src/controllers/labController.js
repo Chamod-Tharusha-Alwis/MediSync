@@ -1373,6 +1373,89 @@ async function sendStatusEmail(labTest, status) {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.migrateNic = async (_req, res) => res.status(403).json({ message: 'Migration requires an approved exact-ID operator procedure' });
 
+// GET /api/labs/reports/:id/export-pdf — Diagnostic Lab Report PDF export (Milestone 4 WP5)
+exports.exportLabReportPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(404).json({ message: 'Lab report not found' });
+
+    const labTest = await (exports._findLabTestByIdentifier || findLabTestByIdentifier)(id);
+    if (!labTest) {
+      return res.status(404).json({ message: 'Lab report not found' });
+    }
+
+    if (typeof labTest.decryptFieldsSync === 'function') {
+      try { labTest.decryptFieldsSync(); } catch (_) {}
+    }
+
+    // Access control
+    if (req.user.role === 'patient') {
+      const isOwnerId = labTest.patientId && String(labTest.patientId) === String(req.user.id);
+      const isOwnerNic = req.user.nic && labTest.patientNic &&
+        String(req.user.nic).trim().toUpperCase() === String(labTest.patientNic).trim().toUpperCase();
+      if (!isOwnerId && !isOwnerNic) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else if (req.user.role === 'doctor') {
+      const isReferringDoctor = labTest.referredBy && String(labTest.referredBy) === String(req.user.id);
+      if (!isReferringDoctor) {
+        const token = req.headers['x-patient-access'] || req.headers['x-patient-access-token'];
+        if (!token) {
+          return res.status(403).json({ message: 'Access denied: Active patient consent required' });
+        }
+        try {
+          const consent = await require('../services/patientConsentService').verifyPatientConsent({
+            actor: req.user,
+            nic: labTest.patientNic,
+            token
+          });
+          if (!consent || !consent.patientId || (labTest.patientId && String(consent.patientId) !== String(labTest.patientId))) {
+            return res.status(403).json({ message: 'Access denied' });
+          }
+        } catch (_) {
+          return res.status(403).json({ message: 'Access denied: Active patient consent required' });
+        }
+      }
+    } else if (req.user.role === 'hospital_admin' || req.user.role === 'labTechnician') {
+      const userHospitalId = req.user.hospitalId || req.user.id;
+      const isMatchingHospital = (labTest.hospitalId && String(labTest.hospitalId) === String(userHospitalId)) ||
+        (labTest.acceptedBy && String(labTest.acceptedBy) === String(req.user.id));
+      if (!isMatchingHospital) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Flag gate
+    if (process.env.PDF_EXPORT_ENABLED !== 'true') {
+      return res.status(503).json({ message: 'Clinical PDF export is temporarily unavailable', code: 'PDF_EXPORT_UNAVAILABLE' });
+    }
+
+    const pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest);
+
+    const date = new Date().toISOString().slice(0, 10);
+    const maskedRef = String(labTest.reportId || labTest.labTestId || labTest._id).replace(/[^a-zA-Z0-9_-]/g, '').slice(-8);
+    const filename = `MediSync-LabReport-${date}-${maskedRef}.pdf`;
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+      'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    return res.send(pdfBuffer);
+  } catch (err) {
+    if (err?.code === 'SECURITY_HOLD') {
+      return res.status(503).json({ message: 'Clinical PDF export is temporarily unavailable', code: 'PDF_EXPORT_UNAVAILABLE' });
+    }
+    console.error('[Lab PDF Export] Generation unavailable.');
+    return res.status(500).json({ message: 'Server error generating PDF report' });
+  }
+};
+
 exports._otpHelpers              = { setOtp, getOtp, deleteOtp };
 exports._findLabTestByIdentifier = findLabTestByIdentifier;
 exports.OTP_NS_HOSPITAL          = OTP_NS_HOSPITAL;

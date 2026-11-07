@@ -681,7 +681,7 @@ const ManualDispenseOTC = () => {
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("pharmacy.manualOtc", "Manual OTC Checkout")}</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.otcSubtitle", "Record direct over-the-counter checkouts and generate simulated receipts.")}</p>
+          <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.otcSubtitle", "Record direct over-the-counter checkouts and generate official receipts.")}</p>
         </div>
       </div>
 
