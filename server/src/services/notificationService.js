@@ -104,7 +104,23 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
 
   const titlePrefix = isSimulation ? '[SIMULATION] ' : '';
   const title = `${titlePrefix}Outbreak Alert: ${disease} (${location})`;
-  const message = alert.message || `${severity} outbreak alert: Elevated case frequency for ${disease} detected in ${location}.`;
+
+  // Plain language trilingual alert message (U20)
+  const getTrilingualPlainMessage = (role) => {
+    if (role === 'admin' || role === 'super_admin') {
+      return [
+        `Outbreak alert: ${disease} rising in ${location}. ${severity} level. View Outbreak Monitor.`,
+        `වසංගත අනතුරු ඇඟවීම: ${location} හි ${disease} වැඩිවේ. ${severity} මට්ටම. Outbreak Monitor බලන්න.`,
+        `தொற்றுநோய் எச்சரிக்கை: ${location} இல் ${disease} பரவல் உயர்கிறது. ${severity} நிலை. Outbreak Monitor பார்க்கவும்.`
+      ].join('\n');
+    }
+    // doctor, hospital_admin
+    return [
+      `Alert in your district: ${disease} cases increasing in ${location}. Check district dashboard.`,
+      `ඔබගේ දිස්ත්‍රික්කයේ අනතුරු ඇඟවීමක්: ${location} හි ${disease} රෝගීන් සංඛ්‍යාව වැඩිවේ. දිස්ත්‍රික් පුවරුව පරීක්ෂා කරන්න.`,
+      `உங்கள் மாவட்டத்தில் எச்சரிக்கை: ${location} இல் ${disease} பாதிப்புகள் அதிகரிக்கின்றன. மாவட்ட டாஷ்போர்டை சரிபார்க்கவும்.`
+    ].join('\n');
+  };
 
   const docsToInsert = recipients
     .filter(r => !existingUserIds.has(String(r.userId)))
@@ -112,7 +128,9 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
       userId: r.userId,
       role: r.role,
       title,
-      message,
+      message: alert.message && !alert.message.includes('Unreviewed statistical signal')
+        ? alert.message
+        : getTrilingualPlainMessage(r.role),
       type: 'outbreak_alert',
       referenceId: alertId,
       actionLink: r.actionLink,
@@ -142,7 +160,7 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
           location,
           severity,
           isSimulation,
-          message
+          message: getTrilingualPlainMessage('admin')
         });
       } catch (_) {}
     }
