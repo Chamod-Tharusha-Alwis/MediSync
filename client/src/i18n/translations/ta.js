@@ -155,6 +155,7 @@ export const ta = {
     "patient": "நோயாளி",
     "doctor": "மருத்துவர்",
     "hospitalAdmin": "மருத்துவமனை நிர்வாகி",
+    "pharmacyAdmin": "மருந்தக நிர்வாகி",
     "pharmacist": "மருந்தாளர்",
     "admin": "கணினி நிர்வாகி",
     "superAdmin": "முதன்மை நிர்வாகி"

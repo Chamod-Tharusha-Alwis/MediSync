@@ -44,11 +44,11 @@ router.get('/history', pharmacyAuth, pharmacyController.getDispensingHistory);
 router.get('/receipt/:receiptNo', pharmacyAuth, pharmacyController.getReceipt);
 router.get('/stats', pharmacyAuth, pharmacyController.getStats);
 
-// Inventory
-router.get('/inventory', pharmacyAuth, pharmacyController.getInventory);
-router.put('/inventory', pharmacyAuth, pharmacyController.updateInventoryItem);
+// District demand & epidemiological burden (U11)
+router.get('/district-demand', pharmacyAuth, pharmacyController.getDistrictDemand);
 
-// Analytics & ML
+// Analytics & volume ranges in Asia/Colombo (U12)
+router.get('/analytics/dispensing', pharmacyAuth, pharmacyController.getRestockAnalytics);
 router.get('/analytics/restock', pharmacyAuth, pharmacyController.getRestockAnalytics);
 router.post('/predict-restock', pharmacyAuth, pharmacyController.predictRestock);
 router.get('/restock-alerts', pharmacyAuth, pharmacyController.getDistrictRestockAlerts);

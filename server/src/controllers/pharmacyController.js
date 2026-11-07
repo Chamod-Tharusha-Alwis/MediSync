@@ -8,6 +8,8 @@ const PharmacyStaff = require('../models/PharmacyStaff');
 const Prescription = require('../models/Prescription');
 const Dispensing = require('../models/Dispensing');
 const Patient = require('../models/Patient');
+const Hospital = require('../models/Hospital');
+const Consultation = require('../models/Consultation');
 const SessionToken = require('../models/SessionToken');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -635,56 +637,176 @@ exports.getDistrictRestockAlerts = async (req, res) => {
   }
 };
 
-exports.getInventory = async (req, res) => {
+/* ─────────────────────────────────────────────────────────────────────────────
+   District Health Demand — Epidemiological burdens & top dispensed medications (U11)
+   ───────────────────────────────────────────────────────────────────────────── */
+exports.getDistrictDemand = async (req, res) => {
   try {
-    const staff = await PharmacyStaff.findById(req.user.id);
+    const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
     if (!staff || !staff.pharmacyId) {
       return res.status(400).json({ error: 'Pharmacist is not linked to a pharmacy' });
     }
-    const pharmacy = await Pharmacy.findById(staff.pharmacyId);
-    res.json({ data: pharmacy.inventory || [] });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch inventory' });
-  }
-};
 
-exports.updateInventoryItem = async (req, res) => {
-  try {
-    const staff = await PharmacyStaff.findById(req.user.id);
-    if (!staff || !staff.pharmacyId) {
-      return res.status(400).json({ error: 'Pharmacist is not linked to a pharmacy' });
+    const district = staff.pharmacyId.district || 'Colombo';
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // 1. Top district health burdens from Consultation (diagnoses in pharmacy district)
+    const districtHospitals = await Hospital.find({
+      district: new RegExp(`^${district}$`, 'i')
+    }).select('_id');
+    const hospitalIds = districtHospitals.map(h => h._id);
+
+    const burdenPipeline = [
+      {
+        $match: {
+          $or: [
+            { hospitalId: { $in: hospitalIds } },
+            { district: new RegExp(`^${district}$`, 'i') }
+          ],
+          createdAt: { $gte: thirtyDaysAgo },
+          diagnosis: { $exists: true, $ne: '' }
+        }
+      },
+      {
+        $group: {
+          _id: '$diagnosis',
+          caseCount: { $sum: 1 },
+          lastReported: { $max: '$createdAt' }
+        }
+      },
+      { $sort: { caseCount: -1 } },
+      { $limit: 10 }
+    ];
+
+    let topBurdens = await Consultation.aggregate(burdenPipeline);
+    if (!topBurdens || topBurdens.length === 0) {
+      topBurdens = await Consultation.aggregate([
+        { $match: { diagnosis: { $exists: true, $ne: '' } } },
+        { $group: { _id: '$diagnosis', caseCount: { $sum: 1 }, lastReported: { $max: '$createdAt' } } },
+        { $sort: { caseCount: -1 } },
+        { $limit: 10 }
+      ]);
     }
-    const { drugName, stock, reorderLevel, unit } = req.body;
-    if (!drugName) return res.status(400).json({ error: 'Drug name is required' });
 
-    const pharmacy = await Pharmacy.findById(staff.pharmacyId);
-    const existingItem = pharmacy.inventory.find(
-      i => i.drugName.toLowerCase().trim() === drugName.toLowerCase().trim()
-    );
-
-    if (existingItem) {
-      if (stock !== undefined) existingItem.stock = stock;
-      if (reorderLevel !== undefined) existingItem.reorderLevel = reorderLevel;
-      if (unit !== undefined) existingItem.unit = unit;
-    } else {
-      pharmacy.inventory.push({
-        drugName,
-        stock: stock || 0,
-        reorderLevel: reorderLevel || 50,
-        unit: unit || 'tablets'
-      });
+    // 2. Top dispensed medications in the district over the last 30 days
+    const districtPharmacies = await Pharmacy.find({
+      district: new RegExp(`^${district}$`, 'i')
+    }).select('_id');
+    const pharmacyIds = districtPharmacies.map(p => p._id);
+    if (!pharmacyIds.some(id => String(id) === String(staff.pharmacyId._id))) {
+      pharmacyIds.push(staff.pharmacyId._id);
     }
 
-    await pharmacy.save();
-    res.json({ message: 'Inventory updated successfully', data: pharmacy.inventory });
+    const medPipeline = [
+      {
+        $match: {
+          pharmacyId: { $in: pharmacyIds },
+          $or: [
+            { dispensedAt: { $gte: thirtyDaysAgo } },
+            { createdAt: { $gte: thirtyDaysAgo } }
+          ]
+        }
+      },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: { $trim: { input: { $toLower: '$items.drugName' } } },
+          drugName: { $first: '$items.drugName' },
+          totalQuantity: { $sum: { $ifNull: ['$items.quantityDispensed', 1] } },
+          dispenseEvents: { $sum: 1 }
+        }
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 15 }
+    ];
+
+    let topMedications = await Dispensing.aggregate(medPipeline);
+    if (!topMedications || topMedications.length === 0) {
+      topMedications = await Dispensing.aggregate([
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: { $trim: { input: { $toLower: '$items.drugName' } } },
+            drugName: { $first: '$items.drugName' },
+            totalQuantity: { $sum: { $ifNull: ['$items.quantityDispensed', 1] } },
+            dispenseEvents: { $sum: 1 }
+          }
+        },
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 15 }
+      ]);
+    }
+
+    res.json({
+      success: true,
+      district,
+      pharmacyName: staff.pharmacyId.name,
+      topBurdens: topBurdens.map((b, i) => ({
+        rank: i + 1,
+        diagnosis: b._id,
+        cases: b.caseCount,
+        lastReported: b.lastReported
+      })),
+      topMedications: topMedications.map((m, i) => ({
+        rank: i + 1,
+        drugName: m.drugName || m._id,
+        totalQuantity: m.totalQuantity,
+        dispenseEvents: m.dispenseEvents
+      })),
+      generatedAt: new Date().toISOString()
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update inventory' });
+    console.error('[getDistrictDemand]', error);
+    res.status(500).json({ error: 'Failed to fetch district demand data' });
   }
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   24-Hour Local Restock Analytics — No ML dependency
+   Dispensing Volume Analytics — Range selectors aligned with Asia/Colombo (U12)
    ───────────────────────────────────────────────────────────────────────────── */
+function getColomboDateRange(range = '24h', customStart, customEnd) {
+  const COLOMBO_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const now = new Date();
+
+  if (range === 'custom' && customStart && customEnd) {
+    const startColombo = new Date(`${customStart}T00:00:00+05:30`);
+    const endColombo = new Date(`${customEnd}T23:59:59.999+05:30`);
+    return {
+      startDate: isNaN(startColombo.getTime()) ? new Date(Date.now() - 24 * 60 * 60 * 1000) : startColombo,
+      endDate: isNaN(endColombo.getTime()) ? now : endColombo,
+      rangeLabel: `Custom (${customStart} to ${customEnd})`
+    };
+  }
+
+  if (range === 'month') {
+    const colomboTime = new Date(now.getTime() + COLOMBO_OFFSET_MS);
+    const year = colomboTime.getUTCFullYear();
+    const month = colomboTime.getUTCMonth();
+    const monthStartUTC = new Date(Date.UTC(year, month, 1) - COLOMBO_OFFSET_MS);
+    return {
+      startDate: monthStartUTC,
+      endDate: now,
+      rangeLabel: 'This Month'
+    };
+  }
+
+  const hoursMap = {
+    '24h': 24,
+    '48h': 48,
+    '72h': 72,
+    '7d': 7 * 24,
+    '14d': 14 * 24,
+    '30d': 30 * 24
+  };
+
+  const hours = hoursMap[range] || 24;
+  return {
+    startDate: new Date(now.getTime() - hours * 60 * 60 * 1000),
+    endDate: now,
+    rangeLabel: range
+  };
+}
+
 exports.getRestockAnalytics = async (req, res) => {
   try {
     const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
@@ -692,16 +814,16 @@ exports.getRestockAnalytics = async (req, res) => {
       return res.status(400).json({ error: 'Pharmacist is not linked to a pharmacy' });
     }
 
-    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const range = req.query.range || '24h';
+    const { startDate, endDate, rangeLabel } = getColomboDateRange(range, req.query.startDate, req.query.endDate);
 
-    // Aggregate dispensing records for this pharmacy in the last 24 hours
     const pipeline = [
       {
         $match: {
           pharmacyId: staff.pharmacyId._id,
           $or: [
-            { dispensedAt: { $gte: since24h } },
-            { createdAt: { $gte: since24h } }
+            { dispensedAt: { $gte: startDate, $lte: endDate } },
+            { createdAt: { $gte: startDate, $lte: endDate } }
           ]
         }
       },
@@ -710,52 +832,40 @@ exports.getRestockAnalytics = async (req, res) => {
         $group: {
           _id: { $trim: { input: { $toLower: '$items.drugName' } } },
           displayName: { $first: '$items.drugName' },
-          totalDispensed: { $sum: { $ifNull: ['$items.quantityDispensed', 1] } }
+          unit: { $first: '$items.unit' },
+          totalDispensed: { $sum: { $ifNull: ['$items.quantityDispensed', 1] } },
+          dispenseEvents: { $sum: 1 }
         }
       },
       { $sort: { totalDispensed: -1 } },
-      { $limit: 20 }
+      { $limit: 25 }
     ];
 
     const results = await Dispensing.aggregate(pipeline);
 
-    // Cross-reference with inventory
-    const inventory = staff.pharmacyId.inventory || [];
-    const inventoryMap = {};
-    for (const item of inventory) {
-      inventoryMap[item.drugName.toLowerCase().trim()] = item;
-    }
-
-    const leaderboard = results.map((r, idx) => {
-      const inv = inventoryMap[r._id] || null;
-      const currentStock = inv ? inv.stock : null;
-      const reorderLevel = inv ? inv.reorderLevel : null;
-      const percentDepleted = (inv && inv.stock + r.totalDispensed > 0)
-        ? Math.round((r.totalDispensed / (inv.stock + r.totalDispensed)) * 100)
-        : null;
-      return {
-        rank: idx + 1,
-        drugName: r.displayName || r._id,
-        totalDispensed24h: r.totalDispensed,
-        currentStock,
-        reorderLevel,
-        percentDepleted,
-        isCritical: inv ? inv.stock <= inv.reorderLevel : false,
-        unit: inv ? inv.unit : 'units'
-      };
-    });
+    const leaderboard = results.map((r, idx) => ({
+      rank: idx + 1,
+      drugName: r.displayName || r._id,
+      totalDispensed: r.totalDispensed,
+      totalDispensed24h: r.totalDispensed,
+      dispenseEvents: r.dispenseEvents,
+      unit: r.unit || 'units'
+    }));
 
     res.json({
       data: leaderboard,
       meta: {
         pharmacyName: staff.pharmacyId.name,
-        since: since24h.toISOString(),
+        range: rangeLabel,
+        since: startDate.toISOString(),
+        until: endDate.toISOString(),
+        timezone: 'Asia/Colombo (+05:30)',
         drugsAnalyzed: results.length
       }
     });
   } catch (error) {
-    console.error('[getRestockAnalytics]');
-    res.status(500).json({ error: 'Failed to fetch restock analytics' });
+    console.error('[getRestockAnalytics]', error);
+    res.status(500).json({ error: 'Failed to fetch dispensing analytics' });
   }
 };
 

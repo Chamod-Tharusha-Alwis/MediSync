@@ -9,6 +9,7 @@ router.get('/analytics/dashboard', protect(['admin', 'super_admin']), analyticsC
 
 // ─── Core stats & users ──────────────────────────────────────────────────────
 router.get('/stats', protect(['admin', 'super_admin']), adminController.getSystemStats);
+router.get('/system-health', protect(['admin', 'super_admin']), adminController.getSystemHealth);
 router.get('/users', protect(['admin', 'super_admin']), adminController.getAllUsers);
 router.put('/users/toggle', protect(['admin', 'super_admin']), adminController.toggleUserStatus);
 router.put('/users/toggle-status', protect(['admin', 'super_admin']), adminController.toggleUserStatus); // alias

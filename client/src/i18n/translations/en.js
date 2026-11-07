@@ -155,6 +155,7 @@ export const en = {
     "patient": "Patient",
     "doctor": "Doctor",
     "hospitalAdmin": "Hospital Admin",
+    "pharmacyAdmin": "Pharmacy Admin",
     "pharmacist": "Pharmacist",
     "admin": "System Admin",
     "superAdmin": "Super Administrator"

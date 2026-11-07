@@ -155,6 +155,7 @@ export const si = {
     "patient": "රෝගියා",
     "doctor": "වෛද්‍යවරයා",
     "hospitalAdmin": "රෝහල් පරිපාලක",
+    "pharmacyAdmin": "ඖෂධසල් පරිපාලක",
     "pharmacist": "ඖෂධවේදියා",
     "admin": "පද්ධති පරිපාලක",
     "superAdmin": "ප්‍රධාන පරිපාලක"
