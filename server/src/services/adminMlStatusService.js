@@ -68,7 +68,7 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
     const model = data?.models?.diseasePrediction;
     failedFields = failedStatusFields(data);
     if (failedFields.length) throw Error('INVALID_STATUS_RESPONSE');
-    return { status: 'available', available: true, dataPoints: data.dataPoints,
+    return { status: 'available', available: true, availabilityState: 'available', dataPoints: data.dataPoints,
       dataPointUnit: 'reference disease profiles', modelType: model,
       clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
   } catch (error) {
@@ -79,9 +79,9 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
       ['ERR_INVALID_URL', 'ERR_BAD_OPTION', 'ERR_BAD_OPTION_VALUE', 'ERR_NOT_SUPPORT', 'ERR_DEPRECATED'].includes(error?.code);
     const category = stage === 'prepare' ||
       (stage === 'request' && ((!dispatched && !responseSeen && !error?.request && !error?.response) || localOptionError)) ? 'config' : categoryOf(error);
+    const errorStatus = safeStatus(error?.response?.status);
+    if (errorStatus !== 'none') upstreamStatus = errorStatus;
     if (category === 'bad_response') {
-      const errorStatus = safeStatus(error?.response?.status);
-      if (errorStatus !== 'none') upstreamStatus = errorStatus;
       const reason = failedFields.length ? 'schema' :
         (upstreamStatus >= 300 && upstreamStatus < 400 || error?.code === 'ERR_FR_TOO_MANY_REDIRECTS') ? 'redirect' :
           upstreamStatus !== 'none' && (upstreamStatus < 200 || upstreamStatus >= 300) ? 'http_status' : 'other';
@@ -89,10 +89,60 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
       // Never serialize an exception, URL, headers, response body or key.
       log(`[AdminMlStatus] category=bad_response reason=${reason} upstreamStatus=${upstreamStatus} failedFields=${failedFields.length ? failedFields.join(',') : 'none'}`);
     } else log(`[AdminMlStatus] category=${category}`);
-    return { status: 'unavailable', available: false, category, dataPoints: null,
+    const isWaking = ['timeout', 'connection'].includes(category) || [502, 503, 504].includes(upstreamStatus);
+    const availabilityState = isWaking ? 'waking' : 'down';
+    return { status: 'unavailable', available: false, availabilityState, category, dataPoints: null,
       dataPointUnit: 'reference disease profiles', modelType: null,
       clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
   }
+}
+
+let statusCache = null;
+
+function clearAdminMlStatusCache() {
+  statusCache = null;
+}
+
+async function probeAdminMlStatusWithRetry({
+  get, token, baseUrl, allowLoopbackHttp = false, log = console.warn,
+  useCache = false, cacheTtlMs = 10000, maxRetries = 1, baseDelayMs = 150, ping = null
+}) {
+  const now = Date.now();
+  if (useCache && statusCache && statusCache.expiresAt > now && statusCache.baseUrl === baseUrl) {
+    return statusCache.data;
+  }
+
+  // Non-blocking warm-up ping to /health if ping helper is provided
+  if (typeof ping === 'function') {
+    try {
+      const url = new URL(baseUrl);
+      const healthUrl = `${url.origin}/health`;
+      Promise.resolve(ping(healthUrl)).catch(() => {});
+    } catch (_) {}
+  }
+
+  let result = await readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp, log });
+
+  // Retry with backoff + jitter if upstream is in waking state
+  if (!result.available && result.availabilityState === 'waking' && maxRetries > 0) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const jitter = Math.floor(Math.random() * 50);
+      const delay = (baseDelayMs * Math.pow(2, attempt)) + jitter;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      result = await readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp, log });
+      if (result.available) break;
+    }
+  }
+
+  if (useCache && result) {
+    statusCache = {
+      baseUrl,
+      expiresAt: Date.now() + Math.max(1000, cacheTtlMs),
+      data: result
+    };
+  }
+
+  return result;
 }
 
 function createStatusGet(client, resolveAdapter = client?.getAdapter) {
@@ -109,4 +159,12 @@ function createStatusGet(client, resolveAdapter = client?.getAdapter) {
   });
 }
 
-module.exports = { readAdminMlStatus, categoryOf, modelStatusUrl, createStatusGet, failedStatusFields };
+module.exports = {
+  readAdminMlStatus,
+  probeAdminMlStatusWithRetry,
+  clearAdminMlStatusCache,
+  categoryOf,
+  modelStatusUrl,
+  createStatusGet,
+  failedStatusFields
+};

@@ -337,6 +337,7 @@ exports.updateMyDeviceLabel = async (req, res) => {
 // Admin: get all active sessions
 exports.getActiveSessions = async (req, res) => {
   try {
+    const { role, search } = req.query || {};
     const sessions = await SessionToken.find({ isValid: true })
       .sort({ lastUsed: -1 })
       .limit(200)
@@ -400,7 +401,23 @@ exports.getActiveSessions = async (req, res) => {
       };
     });
 
-    res.json({ data: enriched });
+    let filtered = enriched;
+    if (role) {
+      const normRole = role.toLowerCase().replace(/[^a-z]/g, '');
+      filtered = filtered.filter(s => {
+        const r = (s.role || '').toLowerCase().replace(/[^a-z]/g, '');
+        return r === normRole || (normRole === 'pharmacy' && (r === 'pharmacist' || r === 'pharmacyadmin')) || (normRole === 'hospital' && r === 'hospitaladmin');
+      });
+    }
+    if (search) {
+      const q = search.toLowerCase().trim();
+      filtered = filtered.filter(s =>
+        (s.fullName || '').toLowerCase().includes(q) ||
+        (s.identifier || '').toLowerCase().includes(q) ||
+        (s.deviceModel || '').toLowerCase().includes(q)
+      );
+    }
+    res.json({ data: filtered, total: filtered.length });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch sessions' });
   }

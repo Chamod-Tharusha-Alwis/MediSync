@@ -13,23 +13,28 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 1 | 1.4 Dead code audit & safe removal | DONE | `06f13a3` | `SIZE_AUDIT.md` §6; removed 3 verified unreferenced files (`universityProvisionPlan.js`, `requireOTP.js`, `validateRequest.js`) |
 | 1 | 1.5 `scripts/size_report.ps1` | DONE | `06f13a3` | `scripts/size_report.ps1` (supports full walk and `-FastSummary`) |
 | 1 | 1.6 Owner delete commands & OneDrive advice | DONE | `06f13a3` | `docs/new/sub1/OWNER_ACTIONS.md` §1 (~42.20 GB reclaimable) |
-| 2 | 2.1 Consultation summary email | TODO | - | - |
-| 2 | 2.2 PDF download fix | TODO | - | - |
-| 2 | 2.3 Tests | TODO | - | - |
-| 3 | 3.1 Patient grouped prescriptions | TODO | - | - |
-| 3 | 3.2 Pharmacy grouped receipts | TODO | - | - |
-| 3 | 3.3 Restock warnings removal | TODO | - | - |
-| 3 | 3.4 Dispensing analytics + SEED_2026_11_B seeder | TODO | - | - |
-| 3 | 3.5 Tests | TODO | - | - |
-| 4 | 4.1 ML status resilience | TODO | - | - |
-| 4 | 4.2 Session Monitor filter + masking | TODO | - | - |
-| 4 | 4.3 6 vs 5 alerts investigation | TODO | - | - |
-| 4 | 4.4 Outbreak 3 levels | TODO | - | - |
-| 4 | 4.5 Wording cleanup | TODO | - | - |
-| 5 | 5.1 Population JSON | TODO | - | - |
-| 5 | 5.2 Incidence + offset | TODO | - | - |
-| 6 | 6.1–6.4 ML evaluation | TODO | - | - |
-| 7 | 7.1–7.3 Docs, gate, handover | TODO | - | - |
+| 1 | 1.7 Test temp directories outside repo (`os.tmpdir()`) | DONE | `146ab90` | `scripts/run_offline_tests.js`, `server/tests/tempDirsOutsideRepo.test.js` (`Test-Path scratch` = `False`, 3,418 PASS / 0 FAIL) |
+| 2 | 2.1 Consultation summary email | DONE | `35db3eb` | `server/src/services/consultationSummaryEmailService.js`, `clinicalCommandController.js`, `History.jsx` (`POST /api/patient/consultation/:id/resend-summary`) |
+| 2 | 2.2 PDF download fix | DONE | `35db3eb` | `prescriptionController.js`, `labController.js`, `client/src/utils/pdfDownload.js`, `DECISIONS.md` (`D-011`) |
+| 2 | 2.3 Tests | DONE | `35db3eb` | `server/tests/phase2ConsultationEmailAndPdf.test.js` (3,423 PASS / 0 FAIL; client build exit 0) |
+| 3 | 3.1 Patient grouped prescriptions | DONE | `44b4908` | `client/src/utils/patientPrescriptionStatus.js`, `client/src/pages/patient/Dashboard.jsx`, `client/src/pages/patient/Prescriptions.jsx` |
+| 3 | 3.2 Pharmacy grouped receipts | DONE | `44b4908` | `server/src/controllers/pharmacyController.js` (`groupDispensingHistoryByReceipt`), `client/src/pages/pharmacy/Dashboard.jsx` |
+| 3 | 3.3 Restock warnings removal | DONE | `44b4908` | `client/src/pages/pharmacy/Dashboard.jsx` (`/pharmacy/dashboard/restock` removed per Owner Q4) |
+| 3 | 3.4 Dispensing analytics + SEED_2026_11_B seeder | DONE | `44b4908` | `scripts/seed-dispensing-sample.js`, `client/src/pages/pharmacy/Dashboard.jsx`, `docs/new/sub1/OWNER_ACTIONS.md` |
+| 3 | 3.5 Tests | DONE | `44b4908` | `server/tests/phase3GroupingAndDispensingSeeder.test.js` (3,426 PASS / 0 FAIL; client build exit 0) |
+| 4 | 4.1 ML status resilience | DONE | `e599206` | `server/src/services/adminMlStatusService.js` (available/waking/down, cache, retry jitter), `NewConsultation.jsx` debounce |
+| 4 | 4.2 Session Monitor filter + masking | DONE | `e599206` | `server/src/controllers/deviceController.js` (role/search filter), `adminController.js` (`revealIdentifier`), `SessionMonitor.jsx` |
+| 4 | 4.3 6 vs 5 alerts investigation | DONE | `e599206` | Root cause in `DECISIONS.md` (`D-013`), strict detector `dailyZ > 2.0` in `surveillanceService.js`, S3 fixture in `seedPlatformPlan.cjs` |
+| 4 | 4.4 Outbreak 3 levels | DONE | `e599206` | Bijective 9 province / 25 district mapping, `evaluateMultiLevelOutbreakCriteria`, selectors in `OutbreakMonitor.jsx` & `PublicHealth.jsx` |
+| 4 | 4.5 Wording cleanup | DONE | `e599206` | Removed dead `nav.mlalerts`, audited UI translation parity (781 keys exact parity across en/si/ta) |
+| 5 | 5.1 Population JSON schema & nulls | BLOCKED | `3eb95f4` | `server/src/data/districtPopulation2024.json`, `client/src/data/districtPopulation2024.json` (25 nulls, DCS 2024 owner entry pending) |
+| 5 | 5.2 Incidence per 100k calculation | DONE | `3eb95f4` | `server/src/services/incidenceService.js`, `client/src/utils/populationIncidence.js`, `OutbreakMonitor.jsx`, `PublicHealth.jsx` |
+| 5 | 5.3 Tests | DONE | `3eb95f4` | `server/tests/phase5PopulationIncidence.test.js` (3,444 PASS / 0 FAIL; client build exit 0) |
+| 6 | 6.1 ML evaluation suite scaffolding | DONE | `aa4859d` | `ml-engine/evaluation/generate_evaluation_charts.py` (seed 42, 200 DPI, headless) |
+| 6 | 6.2 Evaluation charts + synthetic disclaimers | DONE | `aa4859d` | `docs/ml-evaluation/` (8 charts: CM, metrics, ROC/PR, detector ROC, threshold tradeoff, S1/S4 OLS forecasts, Colmozzie) |
+| 6 | 6.3 Data leakage verification | DONE | `aa4859d` | `ml-engine/evaluation/generate_evaluation_charts.py` (0 train/test query overlaps verified) |
+| 6 | 6.4 External real-world Colmozzie backtest | DONE | `aa4859d` | `thiyangt/colmozzie/data-raw/dengColombo.csv` fetched, 150 weeks evaluated, `docs/ml-evaluation/REPORT.md` |
+| 7 | 7.1–7.3 Docs, gate, handover | DONE | `b0a9976` | `ARCHITECTURE.md`, `README.md`, `docs/new/DEMO_BATCH_REMOVAL_RUNBOOK.md`, `docs/new/FINAL_ACCEPTANCE_MATRIX.md`, `docs/new/sub1/OWNER_ACTIONS.md` (3,445 PASS / 0 FAIL, client build exit 0) |
 
 ## Session log
 
@@ -37,3 +42,10 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 |---|---|
 | 2026-11-07 | Branch created off `main` @ `0871fd3` (PRs #17, #18, #19). Phase 0 docs written and pushed (`e1a3d6e`). Stopped for owner approval. |
 | 2026-11-07 | Owner replied APPROVED with Q1–Q6 answers (recorded in `DECISIONS.md` D-003..D-008). Ran Phase 1 opening baseline gate (3,477 PASS / 0 FAIL) and client build (exit 0). Completed Tasks 1.1–1.6, ran post-Phase-1 gate + client build, committed, pushed, and stopped for Phase 2 go-ahead. |
+| 2026-11-08 | Resumed in full-autonomy mode. Completed Step 0 (restored workspace synced to `origin/feat/phase2-polish-and-cleanup` @ `ef1b30c`, backup diffs stashed in `stash@{0}`/`stash@{1}`, recorded in `DECISIONS.md` D-009) and Task 1.7 (moved offline test temp dirs to `os.tmpdir()`, verified `scratch/` not recreated, 3,418 PASS / 0 FAIL, client build exit 0, commit `146ab90`). |
+| 2026-11-08 | Completed Phase 2 (Tasks 2.0–2.3): root-cause analysis in `DECISIONS.md` D-011, `consultationSummaryEmailService.js` (idempotent, zero-NIC, exponential backoff, conditional PDF attachment when `PDF_EXPORT_ENABLED=true`, rate-limited resend endpoint + trilingual UI button), consultation & lab PDF fixes, and `phase2ConsultationEmailAndPdf.test.js`. Offline gate: 3,423 PASS / 0 FAIL; client build exit 0 (118 modules). Committed & pushed (`35db3eb`). |
+| 2026-11-08 | Completed Phase 3 (Tasks 3.1–3.5): consultation-grouped Active Prescriptions in patient dashboard/prescriptions, receipt-grouped Dispensation History in pharmacy dashboard/controller, removed `/pharmacy/dashboard/restock` sidebar item per Q4, added trilingual empty-range hint in Dispensing Volume Analytics, created `scripts/seed-dispensing-sample.js` (`SEED_2026_11_B`), and added `phase3GroupingAndDispensingSeeder.test.js`. Offline gate: 3,426 PASS / 0 FAIL; client build exit 0 (118 modules). Committed & pushed (`44b4908`). |
+| 2026-11-08 | Completed Phase 4 (Tasks 4.1–4.5): ML status resilience (`adminMlStatusService.js` available/waking/down states, short-TTL cache, retry with jitter, debounced analysis button in `NewConsultation.jsx`), Session Monitor role/search filtering and PII masking with audit-logged `ADMIN_REVEAL_PII`, resolved 6-vs-5 alert root cause with strict $z > 2.0$ detector, implemented official 9-province / 25-district bijective mapping and multi-level outbreak evaluation (`evaluateMultiLevelOutbreakCriteria`) with selectors in `OutbreakMonitor.jsx` and `PublicHealth.jsx`, and audited UI translations (781 keys exact parity across en/si/ta). Offline gate: 3,436 PASS / 0 FAIL; client build exit 0 (118 modules). Committed & pushed (`e599206`, `0c287e6`). |
+| 2026-11-08 | Completed Phase 5 (Tasks 5.1–5.2): created `server/src/data/districtPopulation2024.json` and `client/src/data/districtPopulation2024.json` with 25 neutral null values pending owner DCS 2024 Table 2 manual entry (Task 5.1 marked BLOCKED per rule never to type numbers from memory). Implemented `incidenceService.js` and `populationIncidence.js` displaying "population data pending" when null on Outbreak Monitor and Public Health pages. Added `server/tests/phase5PopulationIncidence.test.js`. Offline gate: 3,444 PASS / 0 FAIL; client build exit 0 (119 modules). Committed & pushed (`3eb95f4`, `50ce785`). |
+| 2026-11-08 | Completed Phase 6 (Tasks 6.1–6.4): built `ml-engine/evaluation/generate_evaluation_charts.py` generating 8 publication-grade charts (200 DPI, seed 42) and `docs/ml-evaluation/REPORT.md`. Verified zero data leakage on held-out 80/20 partition, proved detector threshold optimality ($z > 2.0$), demonstrated 14-day OLS projections with 95% Student's $t$ bounds for S1 Dengue and S4 Influenza, and executed zero-shot real-world backtest on 279 weeks of Colombo dengue data (`thiyangt/colmozzie`). All outputs include mandatory disclaimer `(SYNTHETIC evaluation, not real-world clinical accuracy; clinicalValidation: not_established)`. Offline gate: 3,444 PASS / 0 FAIL; client build exit 0 (119 modules). Committed (`aa4859d`, `9e37ba6`). |
+| 2026-11-08 | Completed Phase 7 (Tasks 7.1–7.3): updated test suite counts and HashiCorp Vault prototype bypass notes in `ARCHITECTURE.md` and `README.md`. Corrected `docs/new/DEMO_BATCH_REMOVAL_RUNBOOK.md` (fail-closed exit 1 on missing approval flag, illustrative counts matching seed datasets, explicit alert batch query isolating `DEMO_OUTBREAK_2026_V1`, protection of genuine clinical alerts). Regenerated `docs/new/FINAL_ACCEPTANCE_MATRIX.md` with honest verified facts (reconciled all 15 protected file hashes, viewport tests marked manual, offline tests marked offline). Authored complete, ordered live-test checklist in `docs/new/sub1/OWNER_ACTIONS.md` (§5 Render config, §6 ordered live-verification checklist with 50 OTP/day cap and single-attempt fail-stop rule). Full offline test gate: 3,445 PASS / 0 FAIL (122 backend suites, 75 client suites); client build exit 0 (119 modules). Committed (`b0a9976`). |

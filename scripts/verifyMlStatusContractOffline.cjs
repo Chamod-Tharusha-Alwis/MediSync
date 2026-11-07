@@ -1,6 +1,7 @@
 'use strict';
 // Consumes the actual Flask reply produced by the owned, network-fenced profile.
 const fs=require('fs'),path=require('path');
+const {isAllowedTempChild}=require('./run_offline_tests.js');
 const {readAdminMlStatus}=require('../server/src/services/adminMlStatusService');
 async function checkFixture(fixture){
   if(fixture?.httpStatus!==200||fixture.sqliteCallsDuringRoute!==0||
@@ -21,8 +22,8 @@ async function checkFixture(fixture){
 }
 async function main(args){
   if(args.length!==2||args[0]!=='--evidence')throw Error('CONTRACT_ARGUMENT_REJECTED');
-  const root=path.resolve(__dirname,'..'),dir=fs.realpathSync(args[1]);
-  if(!dir.startsWith(fs.realpathSync(path.join(root,'scratch'))+path.sep)||!/^clinical-offline-/.test(path.basename(dir)))throw Error('CONTRACT_EVIDENCE_PATH_REJECTED');
+  const dir=fs.realpathSync(args[1]);
+  if(!isAllowedTempChild(dir)||!/^clinical-offline-/.test(path.basename(dir)))throw Error('CONTRACT_EVIDENCE_PATH_REJECTED');
   const file=path.join(dir,'model-status-empty-input.json');if(fs.statSync(file).size>65536||fs.realpathSync(file)!==file)throw Error('CONTRACT_FIXTURE_REJECTED');
   const result=await checkFixture(JSON.parse(fs.readFileSync(file,'utf8')));
   fs.writeFileSync(path.join(dir,'ml-status-contract-results.json'),JSON.stringify(result,null,2)+'\n',{flag:'wx'});

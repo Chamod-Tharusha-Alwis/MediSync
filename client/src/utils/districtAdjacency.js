@@ -155,10 +155,65 @@ export function computeOutbreakClusters(districtList = []) {
   return { clusters, districtClusterMap };
 }
 
+export const OFFICIAL_PROVINCES = [
+  'Western', 'Central', 'Southern', 'Northern', 'Eastern',
+  'North Western', 'North Central', 'Uva', 'Sabaragamuwa'
+];
+
+export const DISTRICT_TO_PROVINCE = {
+  'Colombo': 'Western',
+  'Gampaha': 'Western',
+  'Kalutara': 'Western',
+  'Kandy': 'Central',
+  'Matale': 'Central',
+  'Nuwara Eliya': 'Central',
+  'Galle': 'Southern',
+  'Matara': 'Southern',
+  'Hambantota': 'Southern',
+  'Jaffna': 'Northern',
+  'Kilinochchi': 'Northern',
+  'Mannar': 'Northern',
+  'Mullaitivu': 'Northern',
+  'Vavuniya': 'Northern',
+  'Batticaloa': 'Eastern',
+  'Ampara': 'Eastern',
+  'Trincomalee': 'Eastern',
+  'Kurunegala': 'North Western',
+  'Puttalam': 'North Western',
+  'Anuradhapura': 'North Central',
+  'Polonnaruwa': 'North Central',
+  'Badulla': 'Uva',
+  'Monaragala': 'Uva',
+  'Ratnapura': 'Sabaragamuwa',
+  'Kegalle': 'Sabaragamuwa'
+};
+
+export const PROVINCE_TO_DISTRICTS = {
+  'Western': ['Colombo', 'Gampaha', 'Kalutara'],
+  'Central': ['Kandy', 'Matale', 'Nuwara Eliya'],
+  'Southern': ['Galle', 'Matara', 'Hambantota'],
+  'Northern': ['Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya'],
+  'Eastern': ['Batticaloa', 'Ampara', 'Trincomalee'],
+  'North Western': ['Kurunegala', 'Puttalam'],
+  'North Central': ['Anuradhapura', 'Polonnaruwa'],
+  'Uva': ['Badulla', 'Monaragala'],
+  'Sabaragamuwa': ['Ratnapura', 'Kegalle']
+};
+
+export function getProvinceForDistrict(district) {
+  if (!district) return null;
+  const canonical = formatDistrictName(district);
+  return DISTRICT_TO_PROVINCE[canonical] || null;
+}
+
 const districtAdjacencyModule = {
   SRI_LANKA_DISTRICT_ADJACENCY,
   DISTRICT_ADJACENCY,
   ALL_DISTRICTS,
+  OFFICIAL_PROVINCES,
+  DISTRICT_TO_PROVINCE,
+  PROVINCE_TO_DISTRICTS,
+  getProvinceForDistrict,
   normalizeDistrictName,
   formatDistrictName,
   RISK_TIERS,

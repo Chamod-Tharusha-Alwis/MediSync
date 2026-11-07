@@ -14,43 +14,45 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE 1.4 Dead-code candidates with search proof; removed 3 clearly unused source files (`universityProvisionPlan.js`, `requireOTP.js`, `validateRequest.js`)
 - [x] DONE 1.5 `scripts/size_report.ps1` (read-only PowerShell walker with `-FastSummary` mode)
 - [x] DONE 1.6 `OWNER_ACTIONS.md` copy-paste delete commands (~42.20 GB savings) + OneDrive move advice
+- [x] DONE 1.7 Test temp directories outside repo (`os.tmpdir()` / `MEDISYNC_TEST_TMP`), best-effort cleanup, `tempDirsOutsideRepo.test.js`, `scratch/` not recreated
 - [x] DONE Gate + build + commit + push + report (Phase 1 complete)
 
 ## Phase 2 — Consultation email and PDF
-- [ ] TODO 2.1 patient summary email (idempotent, non-blocking, capped, NIC-free, PDF attached only when `PDF_EXPORT_ENABLED=true`, resend button rate limited)
-- [ ] TODO 2.2 PDF download root cause + fix (gate default off)
-- [ ] TODO 2.3 tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 2.0 Root cause documented in `DECISIONS.md` (`D-011`)
+- [x] DONE 2.1 patient summary email (`consultationSummaryEmailService.js`: idempotent, non-blocking, capped, NIC-free, PDF attached only when `PDF_EXPORT_ENABLED=true`, resend button rate limited with EN/SI/TA strings)
+- [x] DONE 2.2 PDF download root cause + fix (`exportConsultationPdf` loads prescriptions, `exportLabReportPdf` resolves patient NIC via `Patient.findById`, client `pdfDownload.js` parses Blob 503 payload, gate default off)
+- [x] DONE 2.3 tests (`server/tests/phase2ConsultationEmailAndPdf.test.js` — 5 tests)
+- [x] DONE Gate + build + commit + push + report (Phase 2 complete: 3,423 PASS / 0 FAIL)
 
 ## Phase 3 — Grouped prescriptions and dispensing
-- [ ] TODO 3.1 patient grouped Active Prescriptions
-- [ ] TODO 3.2 pharmacy grouped Dispensation History by receipt
-- [ ] TODO 3.3 remove Predictive Restock Warnings sidebar item (per Q4)
-- [ ] TODO 3.4 analytics zero-state + scripts/seed-dispensing-sample.js (SEED_2026_11_B, test DB only)
-- [ ] TODO 3.5 tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 3.1 patient grouped Active Prescriptions (`groupPrescriptionsByConsultation` in `patientPrescriptionStatus.js`, `Dashboard.jsx`, `Prescriptions.jsx`)
+- [x] DONE 3.2 pharmacy grouped Dispensation History by receipt (`groupDispensingHistoryByReceipt` in `pharmacyController.js` + `pharmacy/Dashboard.jsx`)
+- [x] DONE 3.3 remove Predictive Restock Warnings / District Demand sidebar item (per Q4)
+- [x] DONE 3.4 analytics zero-state + `scripts/seed-dispensing-sample.js` (`SEED_2026_11_B`, additive, dry-run default, idempotent, test DB verified)
+- [x] DONE 3.5 tests (`server/tests/phase3GroupingAndDispensingSeeder.test.js`)
+- [x] DONE Gate + build + commit + push + report (Phase 3 complete: 3,426 PASS / 0 FAIL)
 
 ## Phase 4 — Admin, outbreak, ML service
-- [ ] TODO 4.1 ML status warm-up/retry/cache/states + client debounce
-- [ ] TODO 4.2 Session Monitor role filter + URL query + masking + reveal audit
-- [ ] TODO 4.3 6 vs 5 alerts (read-only) + DECISIONS.md + test
-- [ ] TODO 4.4 District (25) / Province (9) / Island-wide (1) levels + selector + public summary (per Q1 & Q6)
-- [ ] TODO 4.5 remove dead ML Alerts / demo wording
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 4.1 ML status warm-up/retry/cache/states (`adminMlStatusService.js`: available/waking/down) + client debounce in `NewConsultation.jsx`
+- [x] DONE 4.2 Session Monitor role filter + URL query persistence + PII masking + audit-logged reveal (`POST /api/admin/users/:userId/reveal-identifier`)
+- [x] DONE 4.3 6 vs 5 alerts root cause documented in `DECISIONS.md` (`D-013`) + strict detector threshold restored (`dailyZ[i] > 2.0`) + S3 fixture tuned
+- [x] DONE 4.4 Outbreak 3 levels: District (25) / Province (9) / Island-wide (1) + official bijection mapping + OutbreakMonitor selector + PublicHealth scope view
+- [x] DONE 4.5 removed dead ML Alerts nav link (`nav.mlalerts`) + audited translation key parity (781 keys)
+- [x] DONE Gate + build + commit + push + report (Phase 4 complete: 3,436 PASS / 0 FAIL, client build PASS)
 
 ## Phase 5 — Population data
-- [ ] TODO 5.1 districtPopulation2024.json from official DCS source (or nulls + BLOCKED)
-- [ ] TODO 5.2 incidence per 100k + baseline offset + tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] BLOCKED 5.1 `districtPopulation2024.json` schema created with 25 neutral `null` values; owner DCS manual entry pending (documented in `OWNER_ACTIONS.md`, never typed from memory)
+- [x] DONE 5.2 incidence per 100k calculated in `incidenceService.js` and `populationIncidence.js`, displaying "population data pending" when null on OutbreakMonitor and PublicHealth
+- [x] DONE Gate + build + commit + push + report (Phase 5 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 6 — ML evaluation graphs
-- [ ] TODO 6.1 ml-engine/evaluation scaffolding (fixed seed, 200 dpi)
-- [ ] TODO 6.2 symptom / detector / forecast charts (SYNTHETIC suffix)
-- [ ] TODO 6.3 leakage check
-- [ ] TODO 6.4 colmozzie backtest (if network allows)
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 6.1 `ml-engine/evaluation/generate_evaluation_charts.py` suite created (headless, fixed seed 42, 200 DPI)
+- [x] DONE 6.2 symptom model, detector ROC/threshold tradeoff, and 14-day OLS forecast charts generated with mandatory "(SYNTHETIC evaluation, not real-world clinical accuracy; clinicalValidation: not_established)" suffix
+- [x] DONE 6.3 data leakage verified (0 overlapping queries between train/test partitions)
+- [x] DONE 6.4 external real-world Colombo dengue backtest executed on `thiyangt/colmozzie` dataset (279 weeks), results reported in `docs/ml-evaluation/REPORT.md`
+- [x] DONE Gate + build + commit + push + report (Phase 6 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 7 — Docs, gate, handover
-- [ ] TODO 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
-- [ ] TODO 7.2 acceptance matrix regenerated honestly + protected ledger reconciled
-- [ ] TODO 7.3 full gate, push, compare link, OWNER_ACTIONS live-test checklist
+- [x] DONE 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
+- [x] DONE 7.2 acceptance matrix regenerated honestly + protected ledger reconciled
+- [x] DONE 7.3 full gate, push, compare link, OWNER_ACTIONS live-test checklist

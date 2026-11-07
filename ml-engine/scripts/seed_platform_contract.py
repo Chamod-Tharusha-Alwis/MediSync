@@ -9,11 +9,17 @@ import json
 import os
 from pathlib import Path
 import sys
+import tempfile
 sys.dont_write_bytecode = True
 
 root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1]).resolve()
-if not out.is_relative_to(root / 'scratch') or not out.is_dir():
+allowed_roots = [
+    Path(tempfile.gettempdir()).resolve(),
+    Path(os.environ.get('MEDISYNC_TEST_TMP', tempfile.gettempdir())).resolve(),
+    (root / 'scratch').resolve() if (root / 'scratch').exists() else (root / 'scratch'),
+]
+if not any(out.is_relative_to(base) for base in allowed_roots) or not out.is_dir():
     raise RuntimeError('SEED_CONTRACT_EVIDENCE_REJECTED')
 
 

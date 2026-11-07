@@ -437,38 +437,120 @@ exports.getPendingPrescriptions = async (req, res) => {
 
 exports.dispense = require('./dispensingController').dispense;
 
+function groupDispensingHistoryByReceipt(records = []) {
+  const byReceipt = new Map();
+
+  for (const raw of records) {
+    if (!raw) continue;
+    const rec = typeof raw.toObject === "function" ? raw.toObject() : { ...raw };
+    const receiptKey = String(rec.receiptNumber || rec._id || Math.random());
+
+    const extractedItems = [];
+    if (Array.isArray(rec.items) && rec.items.length > 0) {
+      for (const item of rec.items) {
+        if (!item) continue;
+        extractedItems.push({
+          drugName: item.drugName || item.name || "Medication",
+          dosage: item.dosage || "",
+          quantityDispensed: Number(item.quantityDispensed) || 1,
+          unit: item.unit || "units",
+        });
+      }
+    } else if (Array.isArray(rec.prescriptionId?.medications) && rec.prescriptionId.medications.length > 0) {
+      for (const med of rec.prescriptionId.medications) {
+        if (!med) continue;
+        extractedItems.push({
+          drugName: med.name || med.drugName || "Medication",
+          dosage: med.dosage || "",
+          quantityDispensed: Number(med.quantity || med.quantityDispensed) || 1,
+          unit: med.unit || "units",
+        });
+      }
+    } else if (rec.prescriptionId?.drugName) {
+      extractedItems.push({
+        drugName: rec.prescriptionId.drugName,
+        dosage: rec.prescriptionId.dosage || "",
+        quantityDispensed: 1,
+        unit: "units",
+      });
+    }
+
+    if (!byReceipt.has(receiptKey)) {
+      byReceipt.set(receiptKey, {
+        ...rec,
+        receiptNumber: rec.receiptNumber || receiptKey,
+        items: [],
+        medications: [],
+      });
+    }
+
+    const group = byReceipt.get(receiptKey);
+    for (const item of extractedItems) {
+      const existing = group.items.find(
+        i => i.drugName.toLowerCase() === item.drugName.toLowerCase() && (i.dosage || "") === (item.dosage || "")
+      );
+      if (existing) {
+        existing.quantityDispensed = (Number(existing.quantityDispensed) || 0) + (Number(item.quantityDispensed) || 1);
+      } else {
+        group.items.push({ ...item });
+      }
+    }
+  }
+
+  return [...byReceipt.values()].map(group => {
+    const medications = group.items.map(i => ({
+      name: i.drugName,
+      drugName: i.drugName,
+      dosage: i.dosage,
+      quantityDispensed: i.quantityDispensed,
+      unit: i.unit,
+    }));
+    return {
+      ...group,
+      medications,
+      medicationCount: medications.length,
+      medicationSummary: medications
+        .map(m => m.drugName + (m.dosage ? " " + m.dosage : "") + (m.quantityDispensed ? " (" + m.quantityDispensed + " " + (m.unit || "units") + ")" : ""))
+        .join(", "),
+    };
+  });
+}
+
+exports.groupDispensingHistoryByReceipt = groupDispensingHistoryByReceipt;
+
 exports.getDispensingHistory = async (req, res) => {
   try {
     const staff = await PharmacyStaff.findById(req.user.id);
-    if (!staff) return res.status(404).json({ error: 'Staff not found' });
+    if (!staff) return res.status(404).json({ error: "Staff not found" });
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    
-    // Ensure we are querying correctly
+
     const query = { pharmacyId: staff.pharmacyId };
     if (req.query.nic) query.patientNic = req.query.nic;
 
     const history = await Dispensing.find(query)
-      .populate('staffId', 'fullName role')
+      .populate("staffId", "fullName role")
       .populate({
-        path: 'prescriptionId',
-        match: { status: 'dispensed' }, // Ensure we only get dispensed prescriptions
-        select: 'prescriptionId consultationRef drugName medications status isOTC patientNic',
-        populate: { path: 'doctorId', select: 'fullName' }
+        path: "prescriptionId",
+        match: { status: "dispensed" },
+        select: "prescriptionId consultationRef drugName medications status isOTC patientNic",
+        populate: { path: "doctorId", select: "fullName" }
       })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-      
-    // Filter out any where prescription was not matched (if match condition failed)
-    const validHistory = history.filter(h => h.prescriptionId !== null);
-    
+
+    const validHistory = history.filter(
+      h => h.prescriptionId !== null || (Array.isArray(h.items) && h.items.length > 0)
+    );
+    const groupedHistory = groupDispensingHistoryByReceipt(validHistory);
+
     const total = await Dispensing.countDocuments(query);
-    res.json({ data: validHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
+    res.json({ data: groupedHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    console.error('[getDispensingHistory Error]:');
-    res.status(500).json({ error: 'Failed to get history' });
+    console.error("[getDispensingHistory Error]:");
+    res.status(500).json({ error: "Failed to get history" });
   }
 };
 

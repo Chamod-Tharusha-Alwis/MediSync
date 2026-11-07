@@ -11,7 +11,7 @@ export const en = {
     body: 'This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.',
     reload: 'Reload Page'
   },
-  adminStatus: {"notAvailable": "Not available", "available": "Available", "referenceService": "ML reference service", "referenceProfiles": "Reference disease profiles", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count."},
+  adminStatus: {"notAvailable": "Not available", "available": "Available", "waking": "Service waking up, retry in 30-60s", "down": "Service down", "referenceService": "ML reference service", "referenceProfiles": "Reference disease profiles", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count."},
   activity: {
     "districtDailyUnavailable": "Daily counts are not published for district selections.",
     "selectedSuppressed": "The selected district’s total and daily counts are not disclosed below 5.",
@@ -68,7 +68,6 @@ export const en = {
     "support": "Support",
     "newconsultation": "New Consultation",
     "identitydevices": "Identity & Devices",
-    "mlalerts": "ML Alerts",
     "outbreakmonitor": "Outbreak Monitor",
     "broadcast": "Broadcast",
     "sessionmonitor": "Session Monitor",
@@ -217,7 +216,14 @@ export const en = {
     "medicalHistorySubtitle": "Review previous clinical records, test orders, and diagnostic logs.",
     "fullName": "Full Name",
     "contactInfo": "Contact Information",
-    "dob": "Date of Birth"
+    "dob": "Date of Birth",
+    "resendSummaryEmail": "Resend summary email",
+    "sendingSummaryEmail": "Sending summary email…",
+    "summaryEmailSent": "Consultation summary email sent to your registered email address.",
+    "summaryEmailRateLimited": "Please wait before requesting another summary email.",
+    "summaryEmailFailed": "Unable to send summary email right now. Please try again later.",
+    "downloadConsultationPdf": "Download Consultation PDF",
+    "downloadLabReportPdf": "Download Lab Report PDF"
   },
   "doctor": {
     "practiceInformation": "Practice Information",
@@ -354,7 +360,9 @@ export const en = {
     "unconfirmedResponse": "Dispense request received unconfirmed response",
     "otcSuccess": "OTC medication dispensed successfully",
     "otcFailed": "Failed to dispense OTC medication",
-    "dispensedReceiptTitle": "Official Dispense Receipt"
+    "dispensedReceiptTitle": "Official Dispense Receipt",
+    "noDispensingLogsInInterval": "No dispensing logs in this interval",
+    "emptyRangeHint": "No dispensing events were recorded in this window. Try selecting a wider range such as 7 Days, 30 Days, or Custom."
   },
   "hospital": {
     "dashboard": "Hospital Command Center",

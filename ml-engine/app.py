@@ -51,8 +51,10 @@ db_path = os.environ.get('MEDISYNC_ML_DB_PATH') or os.path.join(os.path.dirname(
 if ml_qa_mode:
     if not os.path.isabs(db_path) or os.path.basename(db_path) == 'medisync.db':
         raise RuntimeError('ML QA requires a separate absolute MEDISYNC_ML_DB_PATH')
-    if not os.path.realpath(db_path).startswith(os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'scratch')) + os.sep):
-        raise RuntimeError('ML QA SQLite path must be under scratch/')
+    import tempfile
+    _allowed_qa_dirs = tuple(os.path.realpath(p) + os.sep for p in (tempfile.gettempdir(), os.environ.get('MEDISYNC_TEST_TMP') or tempfile.gettempdir(), os.path.join(os.path.dirname(__file__), '..', 'scratch')))
+    if not os.path.realpath(db_path).startswith(_allowed_qa_dirs):
+        raise RuntimeError('ML QA SQLite path must be under temp or scratch/')
 
 def init_db():
     conn = sqlite3.connect(db_path)

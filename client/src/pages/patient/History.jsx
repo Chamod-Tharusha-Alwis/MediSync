@@ -21,6 +21,7 @@ import LabDetailModal from '../../components/common/LabDetailModal';
 import LabReportDownloadButton from '../../components/common/LabReportDownloadButton';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName, formatLabTestSummary } from '../../utils/labTestFormatter';
+import { isPdfExportClientEnabled, downloadClinicalPdf } from '../../utils/pdfDownload';
 
 /* ─── Framer Motion stagger variants ─────────────────────────────────────── */
 const feedVariants = {
@@ -127,9 +128,49 @@ const HistoryCard = ({ event, onRate }) => {
   const [isLabModalOpen, setIsLabModalOpen] = useState(false);
   const [otpError, setOtpError] = useState(null);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
 
   const details = event.data || {};
   const rawType = event.type || 'consultation';
+  const pdfEnabled = isPdfExportClientEnabled();
+
+  const handleResendSummaryEmail = async (e) => {
+    e.stopPropagation();
+    const consultId = details._id || details.consultationId;
+    if (!consultId || resendingEmail) return;
+    setResendingEmail(true);
+    try {
+      await api.post(`/patient/consultation/${consultId}/resend-summary`);
+      toast.success(t('patient.summaryEmailSent', 'Consultation summary email sent to your registered email address.'));
+    } catch (err) {
+      if (err?.response?.status === 429) {
+        toast.warning(t('patient.summaryEmailRateLimited', 'Please wait before requesting another summary email.'));
+      } else {
+        toast.error(t('patient.summaryEmailFailed', 'Unable to send summary email right now. Please try again later.'));
+      }
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  const handleDownloadConsultationPdf = async (e) => {
+    e.stopPropagation();
+    const consultId = details._id || details.consultationId;
+    if (!consultId || pdfDownloading) return;
+    setPdfDownloading(true);
+    try {
+      const result = await downloadClinicalPdf(
+        `/prescriptions/consultations/${consultId}/export-pdf`,
+        `MediSync-Consultation-${consultId}.pdf`
+      );
+      if (!result.ok) {
+        toast.info(t('pdfUnavailable', 'PDF export temporarily unavailable'));
+      }
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
 
   const resolveReportId = (testItem) =>
     typeof testItem === 'string'
@@ -538,15 +579,45 @@ const HistoryCard = ({ event, onRate }) => {
                       <div className="flex flex-wrap items-center gap-2">
                         {/* PDF E-Prescription Download */}
                         {((details.prescriptions && details.prescriptions.length > 0) || isConsultation) && (
+                          pdfEnabled ? (
+                            <button
+                              type="button"
+                              disabled={pdfDownloading}
+                              onClick={handleDownloadConsultationPdf}
+                              className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              {pdfDownloading
+                                ? t('patient.generatingPdf', 'Generating PDF…')
+                                : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled
+                              aria-disabled="true"
+                              title={t("pdfUnavailable", "PDF export temporarily unavailable")}
+                              className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold opacity-60 cursor-not-allowed"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              {t("pdfUnavailable", "PDF export temporarily unavailable")}
+                            </button>
+                          )
+                        )}
+
+                        {/* Resend Consultation Summary Email */}
+                        {isConsultation && (details._id || details.consultationId) && (
                           <button
                             type="button"
-                            disabled
-                            aria-disabled="true"
-                            title={t("pdfUnavailable", "PDF export temporarily unavailable")}
-                            className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/60 text-xs font-bold opacity-60 cursor-not-allowed"
+                            data-testid="resend-summary-email-btn"
+                            disabled={resendingEmail}
+                            onClick={handleResendSummaryEmail}
+                            className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-bold hover:bg-blue-500/20 transition-all disabled:opacity-50"
                           >
-                            <Download className="w-3.5 h-3.5" />
-                            {t("pdfUnavailable", "PDF export temporarily unavailable")}
+                            <FileText className="w-3.5 h-3.5" />
+                            {resendingEmail
+                              ? t('patient.sendingSummaryEmail', 'Sending summary email…')
+                              : t('patient.resendSummaryEmail', 'Resend summary email')}
                           </button>
                         )}
 

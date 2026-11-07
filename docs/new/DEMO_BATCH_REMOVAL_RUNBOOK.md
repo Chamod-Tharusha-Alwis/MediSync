@@ -26,16 +26,17 @@ The removal script `scripts/remove_demo_batch.js` implements a strict four-pilla
    Executing destructive deletion requires **both** of the following simultaneously:
    - CLI Flag: `--confirm-demo-removal DEMO_OUTBREAK_2026_V1`
    - Environment Variable: `APPROVE_DEMO_OUTBREAK_REMOVAL=true` or `MEDISYNC_DEMO_REMOVAL_APPROVAL=APPROVED`
-   If either barrier is missing, the script fails closed with error code `APPROVAL_ENV_REQUIRED` or `BATCH_UNAPPROVED`.
+   If either barrier is missing, the script immediately halts execution with zero database mutations, emits error code `APPROVAL_ENV_REQUIRED` or `BATCH_UNAPPROVED`, and exits with process exit code 1.
 
-3. **Cryptographic Query Isolation**:
-   Every query executed by `scripts/remove_demo_batch.js` explicitly includes the safeguard:
+3. **Cryptographic Query Isolation & Clinical Alert Protection**:
+   Every query executed by `scripts/remove_demo_batch.js` against both consultations and outbreak alerts explicitly requires `demoBatchId: 'DEMO_OUTBREAK_2026_V1'` and includes the safeguard:
    ```javascript
    {
      syntheticSeedBatch: { $ne: 'SEED_2026_11_A' }
    }
    ```
-   This ensures that even in the event of malformed document tags, no record belonging to `SEED_2026_11_A` can ever be matched or targeted.
+   - **Genuine Clinical Alert Invariant**: Genuine clinical alerts (generated from real patient consultations without synthetic demo batch attribution, where `demoBatchId` is undefined or null) are strictly excluded from the match criteria. They are **NEVER** targeted, modified, or deleted.
+   - **Seed Isolation**: Guarantees zero intersection with `SEED_2026_11_A` (12,907 platform records) or any other operational seed namespaces.
 
 4. **Post-Execution Integrity Assertion**:
    Before committing completion, the script verifies the exact document count of `SEED_2026_11_A`. If the post-deletion count differs from the pre-deletion count by even a single document, it throws `INTEGRITY_BREACH`.
@@ -62,7 +63,7 @@ Execute the script in default dry-run mode:
 node scripts/remove_demo_batch.js --dry-run --db medisync_prod
 ```
 
-**Expected JSON Output**:
+**Expected JSON Output (if batch was previously seeded in database)**:
 ```json
 {
   "batchId": "DEMO_OUTBREAK_2026_V1",
@@ -70,16 +71,16 @@ node scripts/remove_demo_batch.js --dry-run --db medisync_prod
   "dryRun": true,
   "protectedSeedCount": 4500,
   "protectedSeedPreserved": true,
-  "consultationsTargeted": 0,
-  "alertsTargeted": 0,
+  "consultationsTargeted": 6309,
+  "alertsTargeted": 5,
   "consultationsDeleted": 0,
   "alertsDeleted": 0,
   "status": "DRY_RUN_COMPLETED",
-  "timestamp": "2026-11-07T11:00:00.000Z"
+  "timestamp": "2026-11-08T02:20:00.000Z"
 }
 ```
 
-*Note: If `consultationsTargeted` is 0, the batch was either already removed or never written to the target database. No further action is required.*
+*Note: If the batch was never seeded on the target database or has already been decommissioned, `consultationsTargeted` and `alertsTargeted` will report `0`. In that case, zero records exist to delete.*
 
 ---
 
@@ -98,7 +99,15 @@ node scripts/remove_demo_batch.js --confirm-demo-removal DEMO_OUTBREAK_2026_V1 -
 Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL
 ```
 
-**Expected JSON Output**:
+*Note on Missing Approval: If `--confirm-demo-removal` is executed without the environment variable, the script immediately exits with exit code 1 and outputs:*
+```json
+{
+  "error": "[APPROVAL_ENV_REQUIRED] Destructive removal requires APPROVE_DEMO_OUTBREAK_REMOVAL=true or MEDISYNC_DEMO_REMOVAL_APPROVAL=APPROVED",
+  "code": "APPROVAL_ENV_REQUIRED"
+}
+```
+
+**Expected JSON Output (on successful execution)**:
 ```json
 {
   "batchId": "DEMO_OUTBREAK_2026_V1",
@@ -106,12 +115,12 @@ Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL
   "dryRun": false,
   "protectedSeedCount": 4500,
   "protectedSeedPreserved": true,
-  "consultationsTargeted": <N>,
-  "alertsTargeted": <M>,
-  "consultationsDeleted": <N>,
-  "alertsDeleted": <M>,
+  "consultationsTargeted": 6309,
+  "alertsTargeted": 5,
+  "consultationsDeleted": 6309,
+  "alertsDeleted": 5,
   "status": "DELETION_COMPLETED",
-  "timestamp": "2026-11-07T11:05:00.000Z"
+  "timestamp": "2026-11-08T02:25:00.000Z"
 }
 ```
 
@@ -122,7 +131,7 @@ Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL
 Verify that the target batch has been cleanly decommissioned and production seed data remains intact:
 
 ```powershell
-# 1. Verify 0 consultations remain for DEMO_OUTBREAK_2026_V1
+# 1a. Verify 0 consultations remain for DEMO_OUTBREAK_2026_V1
 node -e "
 const mongoose = require('./server/node_modules/mongoose');
 const { selectOperatorDatabase } = require('./server/scripts/operatorDatabaseMode');
@@ -132,10 +141,7 @@ require('dotenv').config({ path: './server/.env' });
   await mongoose.connect(target.uri);
   const db = mongoose.connection.db;
   const count = await db.collection('consultations').countDocuments({
-    \$or: [
-      { demoBatchId: 'DEMO_OUTBREAK_2026_V1' },
-      { isSimulatedDemo: true }
-    ]
+    demoBatchId: 'DEMO_OUTBREAK_2026_V1'
   });
   console.log('Legacy demo consultations remaining:', count);
   await mongoose.disconnect();
@@ -143,6 +149,26 @@ require('dotenv').config({ path: './server/.env' });
 "
 ```
 **Expected**: `Legacy demo consultations remaining: 0`.
+
+```powershell
+# 1b. Verify 0 outbreak alerts remain for DEMO_OUTBREAK_2026_V1 (explicit batch query)
+node -e "
+const mongoose = require('./server/node_modules/mongoose');
+const { selectOperatorDatabase } = require('./server/scripts/operatorDatabaseMode');
+require('dotenv').config({ path: './server/.env' });
+(async () => {
+  const target = selectOperatorDatabase(process.env, false);
+  await mongoose.connect(target.uri);
+  const db = mongoose.connection.db;
+  const count = await db.collection('outbreakalerts').countDocuments({
+    demoBatchId: 'DEMO_OUTBREAK_2026_V1'
+  });
+  console.log('Legacy demo alerts remaining:', count);
+  await mongoose.disconnect();
+})();
+"
+```
+**Expected**: `Legacy demo alerts remaining: 0` (genuine clinical alerts and other batches untouched).
 
 ```powershell
 # 2. Verify SEED_2026_11_A inventory integrity (Expect 12,907 total records)

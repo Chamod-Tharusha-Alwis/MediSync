@@ -588,11 +588,17 @@ exports.triggerMLDetection = async (req, res) => {
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
-  const { readAdminMlStatus, createStatusGet } = require('../services/adminMlStatusService');
+  const { probeAdminMlStatusWithRetry, createStatusGet } = require('../services/adminMlStatusService');
   // Local authentication/RBAC remains enforced by adminRoutes. A failed upstream
   // is explicitly unavailable, not a browser resource error or fabricated telemetry.
-  return res.json(await readAdminMlStatus({ get: createStatusGet(axios), token: generateToken, baseUrl: ML_ENGINE_URL,
-    allowLoopbackHttp: process.env.NODE_ENV !== 'production' }));
+  return res.json(await probeAdminMlStatusWithRetry({
+    get: createStatusGet(axios),
+    token: generateToken,
+    baseUrl: ML_ENGINE_URL,
+    allowLoopbackHttp: process.env.NODE_ENV !== 'production',
+    useCache: true,
+    ping: (url) => axios.get(url, { timeout: 3000 }).catch(() => {})
+  }));
 };
 
 // ─── NEW: BAN USER ────────────────────────────────────────────────────────────
@@ -1117,5 +1123,49 @@ exports.generateRecoveryToken = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate recovery token' });
+  }
+};
+
+// ─── NEW: REVEAL IDENTIFIER (AUDIT LOGGED) ──────────────────────────────────
+exports.revealIdentifier = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!['admin', 'super_admin'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Admin authorization required' });
+    }
+    let identifier = null;
+    let userRole = null;
+    let doc = await Doctor.findById(userId).select('nic licenseNo doctorId email role');
+    if (doc) { identifier = doc.nic || doc.licenseNo || doc.doctorId || doc.email; userRole = doc.role || 'doctor'; }
+    if (!identifier) {
+      doc = await Patient.findById(userId).select('nic email');
+      if (doc) { identifier = doc.nic || doc.email; userRole = 'patient'; }
+    }
+    if (!identifier) {
+      doc = await PharmacyStaff.findById(userId).select('nic email role');
+      if (doc) { identifier = doc.nic || doc.email; userRole = doc.role || 'pharmacist'; }
+    }
+    if (!identifier) {
+      doc = await Hospital.findById(userId).select('regNo email');
+      if (doc) { identifier = doc.regNo || doc.email; userRole = 'hospital_admin'; }
+    }
+    if (!identifier) {
+      doc = await Admin.findById(userId).select('email role');
+      if (doc) { identifier = doc.email; userRole = doc.role || 'admin'; }
+    }
+    if (!identifier) {
+      return res.status(404).json({ error: 'User identifier not found' });
+    }
+    await AuditLog.create({
+      actorId: req.user.id,
+      actorRole: req.user.role || 'admin',
+      action: 'ADMIN_REVEAL_PII',
+      accessedNic: identifier,
+      deviceModel: parseDeviceModel(req.headers['user-agent'] || ''),
+      timestamp: new Date()
+    });
+    return res.json({ success: true, identifier, role: userRole });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to reveal identifier' });
   }
 };
