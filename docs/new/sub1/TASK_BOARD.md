@@ -46,11 +46,11 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 5 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 6 — ML evaluation graphs
-- [ ] TODO 6.1 ml-engine/evaluation scaffolding (fixed seed, 200 dpi)
-- [ ] TODO 6.2 symptom / detector / forecast charts (SYNTHETIC suffix)
-- [ ] TODO 6.3 leakage check
-- [ ] TODO 6.4 colmozzie backtest (if network allows)
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 6.1 `ml-engine/evaluation/generate_evaluation_charts.py` suite created (headless, fixed seed 42, 200 DPI)
+- [x] DONE 6.2 symptom model, detector ROC/threshold tradeoff, and 14-day OLS forecast charts generated with mandatory "(SYNTHETIC evaluation, not real-world clinical accuracy; clinicalValidation: not_established)" suffix
+- [x] DONE 6.3 data leakage verified (0 overlapping queries between train/test partitions)
+- [x] DONE 6.4 external real-world Colombo dengue backtest executed on `thiyangt/colmozzie` dataset (279 weeks), results reported in `docs/ml-evaluation/REPORT.md`
+- [x] DONE Gate + build + commit + push + report (Phase 6 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 7 — Docs, gate, handover
 - [ ] TODO 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
