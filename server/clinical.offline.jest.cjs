@@ -59,5 +59,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/loginNotificationLoggingS4.test.js',
   '<rootDir>/tests/jwt-patient-nic-removal-s1.test.js',
   '<rootDir>/tests/publicLabStatusRateLimitS6.test.js',
-  '<rootDir>/tests/authLimiterSkipS3.test.js'
+  '<rootDir>/tests/authLimiterSkipS3.test.js',
+  '<rootDir>/tests/removeDemoBatchOffline.test.js'
 );

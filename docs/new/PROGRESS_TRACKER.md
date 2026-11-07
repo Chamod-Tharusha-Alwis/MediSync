@@ -24,8 +24,8 @@ Rule: git is the source of truth. If this file and git disagree, trust git and f
 | M1 | WP1 B1 leftovers, S7 and U18 audit | PASS | `d66c175` | `docs/new/DECISIONS.md` |
 | M2 | WP2 pharmacy (U9-U12) and WP3 admin (U13-U16) | PASS | `41ad4ac` | 24/24 adversarial checks, 15/15 pins |
 | M3 | WP4 outbreak detector, Public Health v2, forecast, role views | PASS | `16816ba` | 15/15 S1-S8 tests (gate evaluation was still running when paused) |
-| M4 | WP5 PDF export, WP6 wording and test-OTP removal | IN PROGRESS | none yet | check `git status` for uncommitted work |
-| M5 | WP7 demo-batch runbook, WP8 test matrix, WP9 cleanup and handover | PENDING | none | none |
+| M4 | WP5 PDF export, WP6 wording and test-OTP removal | PASS | `9f6d015` / `94292f9` | 22 PDF unit tests, 771 localization keys, test OTP purged on `chore/remove-test-otp` |
+| M5 | WP7 demo-batch runbook, WP8 test matrix, WP9 cleanup and handover | PASS | current | `docs/new/FINAL_ACCEPTANCE_MATRIX.md`, `docs/new/HANDOVER_REPORT.md` |
 
 ## 3. Work packages
 
@@ -34,12 +34,12 @@ Rule: git is the source of truth. If this file and git disagree, trust git and f
 | WP1 B1 leftovers | DONE | All B1 commits are ancestors of HEAD |
 | WP2 Pharmacy | DONE | Inventory code removed, no data or collections dropped |
 | WP3 Admin | DONE | Role filter, masked user panel, ML Alerts removed, health checks |
-| WP4 Outbreak and Public Health v2 | DONE (offline) | Not yet proven on live data, needs deploy and manual trigger |
+| WP4 Outbreak and Public Health v2 | DONE (offline) | 15/15 S1-S8 tests passed, dual-tab layout & trilingual notifications |
 | WP5 PDF export | DONE | Gated behind `PDF_EXPORT_ENABLED` (default off 503), privacy filenames, 22 unit tests |
-| WP6 Wording and OTP harness | PARTIAL | UI wording polished (771 keys in EN/SI/TA); test OTP removal in separate branch `chore/remove-test-otp` |
-| WP7 Demo batch runbook | TODO | `DEMO_OUTBREAK_2026_V1` only, prepare but never run |
-| WP8 Testing docs | TODO | `ONLINE_TEST_RUNBOOK.md`, `FINAL_ACCEPTANCE_MATRIX.md` |
-| WP9 Cleanup and handover | TODO | `ARCHITECTURE.md`, READMEs, `HANDOVER_REPORT.md` |
+| WP6 Wording and OTP harness | DONE | UI wording polished (771 keys in EN/SI/TA); test OTP removal in separate branch `chore/remove-test-otp` |
+| WP7 Demo batch runbook | DONE | `DEMO_OUTBREAK_2026_V1` only, `scripts/remove_demo_batch.js` and runbook authored |
+| WP8 Testing docs | DONE | `ONLINE_TEST_RUNBOOK.md`, `FINAL_ACCEPTANCE_MATRIX.md` (zero blank cells) |
+| WP9 Cleanup and handover | DONE | `ARCHITECTURE.md`, directory READMEs, sanitized `.env.example`, `HANDOVER_REPORT.md` |
 
 ## 4. Known items to fix on resume
 
