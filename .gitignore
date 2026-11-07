@@ -1,19 +1,50 @@
 # Node dependency directories
 node_modules/
+client/node_modules/
+server/node_modules/
 
 # Local environment variable configuration files
 .env
+.env.*
+!.env.example
 client/.env
+client/.env.*
+!client/.env.example
 server/.env
+server/.env.*
+!server/.env.example
 ml-engine/.env
+ml-engine/.env.*
+!ml-engine/.env.example
 
-# Temporary test/E2E artifacts
+# Temporary test/E2E artifacts & scratch directories
 temp-patient.json
 client/tests/temp-patient.json
+scratch/
+client/scratch/
+client/test-results/
+client/playwright-report/
+medisync-qa-evidence/
+_audit_report/
+.agents/
+.github/context-mode/
+%SystemDrive%/
+
+# Build outputs
+dist/
+build/
+client/build/
 
 # Log files
 *.log
 npm-debug.log*
+
+# Archives
+*.zip
+*.rar
+*.7z
+docs/docs.rar
+docs/new.zip
 
 # OS metadata files
 .DS_Store
@@ -22,25 +53,29 @@ Thumbs.db
 # Backend uploads directory
 server/uploads/
 
-# Python caching and virtual environments
+# Python runtimes, caching, virtual environments, and non-runtime model binaries
+Python/
 __pycache__/
 .venv/
 venv/
+ml-engine/.venv/
+*.pyc
+*.pkl
+*.onnx
+*.h5
+*.pt
+*.pth
+*.joblib
+
+# Large raw datasets (keep only tracked runtime datasets and SQLite reference DB)
 ml-engine/data/*.csv
 !ml-engine/data/dataset.csv
 !ml-engine/data/symptom_Description.csv
 !ml-engine/data/symptom_precaution.csv
 !ml-engine/data/Symptom-severity.csv
 !ml-engine/data/srilanka_dengue_weekly.csv
-*.pyc
+!ml-engine/medisync.db
 
-dist/
-
-ml-engine/medisync.db
-
-
-scratch/
-docs/docs.rar
-client/test-results/
-client/playwright-report/
+# Temporary documentation/audit dumps (keep only candidate fixture required by offline test)
 docs/temp/
+!docs/temp/CODEX_PRODUCTION_DB_GUARD_FOR_APPROVAL.candidate.js
