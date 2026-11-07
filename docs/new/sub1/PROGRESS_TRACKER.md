@@ -27,9 +27,9 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 4 | 4.3 6 vs 5 alerts investigation | DONE | `e599206` | Root cause in `DECISIONS.md` (`D-013`), strict detector `dailyZ > 2.0` in `surveillanceService.js`, S3 fixture in `seedPlatformPlan.cjs` |
 | 4 | 4.4 Outbreak 3 levels | DONE | `e599206` | Bijective 9 province / 25 district mapping, `evaluateMultiLevelOutbreakCriteria`, selectors in `OutbreakMonitor.jsx` & `PublicHealth.jsx` |
 | 4 | 4.5 Wording cleanup | DONE | `e599206` | Removed dead `nav.mlalerts`, audited UI translation parity (781 keys exact parity across en/si/ta) |
-| 5 | 5.1 Population JSON schema & nulls | BLOCKED | `pending` | `server/src/data/districtPopulation2024.json`, `client/src/data/districtPopulation2024.json` (25 nulls, DCS 2024 owner entry pending) |
-| 5 | 5.2 Incidence per 100k calculation | DONE | `pending` | `server/src/services/incidenceService.js`, `client/src/utils/populationIncidence.js`, `OutbreakMonitor.jsx`, `PublicHealth.jsx` |
-| 5 | 5.3 Tests | DONE | `pending` | `server/tests/phase5PopulationIncidence.test.js` (3,444 PASS / 0 FAIL; client build exit 0) |
+| 5 | 5.1 Population JSON schema & nulls | BLOCKED | `3eb95f4` | `server/src/data/districtPopulation2024.json`, `client/src/data/districtPopulation2024.json` (25 nulls, DCS 2024 owner entry pending) |
+| 5 | 5.2 Incidence per 100k calculation | DONE | `3eb95f4` | `server/src/services/incidenceService.js`, `client/src/utils/populationIncidence.js`, `OutbreakMonitor.jsx`, `PublicHealth.jsx` |
+| 5 | 5.3 Tests | DONE | `3eb95f4` | `server/tests/phase5PopulationIncidence.test.js` (3,444 PASS / 0 FAIL; client build exit 0) |
 | 6 | 6.1–6.4 ML evaluation | TODO | - | - |
 | 7 | 7.1–7.3 Docs, gate, handover | TODO | - | - |
 
