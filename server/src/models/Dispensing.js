@@ -60,6 +60,10 @@ const dispensingSchema = new mongoose.Schema({
   isSynthetic: {
     type: Boolean,
     default: false
+  },
+  syntheticSeedBatch: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

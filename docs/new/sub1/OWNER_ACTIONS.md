@@ -94,8 +94,25 @@ node scripts/remove_demo_batch.js --dry-run
 
 ---
 
-## 3. Later Phases (Reference)
+## 3. Phase 3 — 30-Day Dispensing Sample Seeder (`SEED_2026_11_B`)
+
+`scripts/seed-dispensing-sample.js` seeds 60 additive, idempotent multi-medication dispensing receipts spanning the last 30 days under namespace `SEED_2026_11_B`. It never deletes or alters `SEED_2026_11_A` or genuine clinical records.
+
+### Step 1: Run Dry-Run First (Zero Writes)
+```powershell
+node scripts/seed-dispensing-sample.js --db medisync_prod --dry-run
+```
+
+### Step 2: Apply Only After Reviewing Dry-Run Output
+```powershell
+$env:MEDISYNC_SEED_RUN_APPROVAL = "SEED RUN APPROVED"
+node scripts/seed-dispensing-sample.js --db medisync_prod --confirm
+Remove-Item Env:\MEDISYNC_SEED_RUN_APPROVAL -ErrorAction SilentlyContinue
+```
+
+---
+
+## 4. Later Phases (Reference)
 - **Phase 2**: Set `PDF_EXPORT_ENABLED=true` on Render when ready to enable PDF downloads and consultation summary PDF attachments (default remains `false` → `503`).
-- **Phase 3**: Run `scripts/seed-dispensing-sample.js` (`SEED_2026_11_B`) in `--dry-run` mode first before any `--confirm` run.
 - **Phase 5**: If official 2024 Census PDF/table fetch is blocked, provide the DCS 2024 district population table.
 - **Phase 7**: Ordered live-test checklist (max 50 OTPs/day, no retries after a failure).

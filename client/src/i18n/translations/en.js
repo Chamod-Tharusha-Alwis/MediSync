@@ -361,7 +361,9 @@ export const en = {
     "unconfirmedResponse": "Dispense request received unconfirmed response",
     "otcSuccess": "OTC medication dispensed successfully",
     "otcFailed": "Failed to dispense OTC medication",
-    "dispensedReceiptTitle": "Official Dispense Receipt"
+    "dispensedReceiptTitle": "Official Dispense Receipt",
+    "noDispensingLogsInInterval": "No dispensing logs in this interval",
+    "emptyRangeHint": "No dispensing events were recorded in this window. Try selecting a wider range such as 7 Days, 30 Days, or Custom."
   },
   "hospital": {
     "dashboard": "Hospital Command Center",

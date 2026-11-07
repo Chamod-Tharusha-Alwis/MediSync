@@ -16,7 +16,7 @@ import PatientProfile from './Profile';
 import PatientSupport from './Support';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import { useTranslation } from '../../i18n/LanguageContext';
-import { isActivePrescription, patientDashboardTimeline } from '../../utils/patientPrescriptionStatus';
+import { isActivePrescription, groupPrescriptionsByConsultation, patientDashboardTimeline } from '../../utils/patientPrescriptionStatus';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName } from '../../utils/labTestFormatter';
 
@@ -43,6 +43,9 @@ export const Overview = ({ data }) => {
   }
 
   const activeRxs = prescriptions.filter(p => isActivePrescription(p));
+  const activeConsultationGroups = groupPrescriptionsByConsultation(prescriptions, consultations).filter(
+    g => g.hasActiveMedication
+  );
 
   // ── Nearest future follow-up across all consultations ──────────────────────
   const now = new Date();
@@ -257,7 +260,7 @@ export const Overview = ({ data }) => {
       {/* ── Active Prescriptions + Recent Visits ────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-        {/* Active Prescriptions */}
+        {/* Active Prescriptions (One Card per Consultation) */}
         <div className="glass-panel p-6 rounded-2xl">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -266,31 +269,50 @@ export const Overview = ({ data }) => {
             <h3 className="text-xl font-bold text-white">Active Prescriptions</h3>
           </div>
 
-          {activeRxs.length > 0 ? (
+          {activeConsultationGroups.length > 0 ? (
             <div className="space-y-4">
-              {activeRxs.map(rx => (
-                <div key={rx._id} className="bg-slate-800/40 border border-slate-700 p-4 rounded-xl hover:bg-slate-800/60 transition-colors">
+              {activeConsultationGroups.map(group => (
+                <div key={group._id} className="bg-slate-800/40 border border-slate-700 p-4 rounded-xl hover:bg-slate-800/60 transition-colors">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="text-white font-bold text-lg">
-                        {rx.medications?.length > 0 ? rx.medications[0].name : rx.drugName || 'Prescription'}
+                        {group.diagnosis || (group.consultationRef ? `Consultation ${group.consultationRef}` : 'Consultation Prescription')}
                       </p>
-                      <p className="text-slate-400 text-sm">{formatDoctorName(rx.doctorId?.fullName, 'Doctor')}</p>
+                      <p className="text-slate-400 text-sm">{formatDoctorName(group.doctorId?.fullName || group.doctorName, 'Doctor')}</p>
                     </div>
                     <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded uppercase">
                       Awaiting dispensing
                     </span>
                   </div>
-                  {rx.medications?.length > 0 && (
-                    <div className="mt-3 text-sm text-slate-300">
-                      <p><span className="text-slate-500">Dosage:</span> {rx.medications[0].dosage}</p>
-                      <p><span className="text-slate-500">Frequency:</span> {rx.medications[0].frequency}</p>
+                  {group.medications?.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {group.medications.map(med => (
+                        <div key={med._id} className="flex items-start justify-between gap-2 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-300">
+                          <div>
+                            <p className="text-white font-semibold">{med.name}</p>
+                            {(med.dosage || med.frequency) && (
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {med.dosage}{med.dosage && med.frequency ? ' • ' : ''}{med.frequency}
+                              </p>
+                            )}
+                          </div>
+                          <span className={`px-2 py-0.5 text-[11px] font-bold rounded uppercase shrink-0 ${
+                            med.status === 'dispensed'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : med.status === 'expired'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-emerald-500/20 text-emerald-400'
+                          }`}>
+                            {med.status}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {/* Lab test tags */}
-                  {rx.labTests?.length > 0 && (
+                  {group.labTests?.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      {rx.labTests.map((t, i) => (
+                      {group.labTests.map((t, i) => (
                         <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300 text-xs font-bold">
                           <FlaskConical className="w-2.5 h-2.5" />{formatLabTestName(t)}
                         </span>
@@ -298,8 +320,8 @@ export const Overview = ({ data }) => {
                     </div>
                   )}
                   <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs text-slate-500">
-                    <span>ID: {rx.prescriptionId}</span>
-                    <span>Expires: {formatSriLankaDate(rx.expiresAt)}</span>
+                    <span>ID: {group.prescriptionId || group.consultationRef || group._id}</span>
+                    <span>Expires: {formatSriLankaDate(group.expiresAt)}</span>
                   </div>
                 </div>
               ))}

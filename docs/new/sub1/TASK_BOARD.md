@@ -25,12 +25,12 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 2 complete: 3,423 PASS / 0 FAIL)
 
 ## Phase 3 — Grouped prescriptions and dispensing
-- [ ] TODO 3.1 patient grouped Active Prescriptions
-- [ ] TODO 3.2 pharmacy grouped Dispensation History by receipt
-- [ ] TODO 3.3 remove Predictive Restock Warnings sidebar item (per Q4)
-- [ ] TODO 3.4 analytics zero-state + scripts/seed-dispensing-sample.js (SEED_2026_11_B, test DB only)
-- [ ] TODO 3.5 tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] DONE 3.1 patient grouped Active Prescriptions (`groupPrescriptionsByConsultation` in `patientPrescriptionStatus.js`, `Dashboard.jsx`, `Prescriptions.jsx`)
+- [x] DONE 3.2 pharmacy grouped Dispensation History by receipt (`groupDispensingHistoryByReceipt` in `pharmacyController.js` + `pharmacy/Dashboard.jsx`)
+- [x] DONE 3.3 remove Predictive Restock Warnings / District Demand sidebar item (per Q4)
+- [x] DONE 3.4 analytics zero-state + `scripts/seed-dispensing-sample.js` (`SEED_2026_11_B`, additive, dry-run default, idempotent, test DB verified)
+- [x] DONE 3.5 tests (`server/tests/phase3GroupingAndDispensingSeeder.test.js`)
+- [x] DONE Gate + build + commit + push + report (Phase 3 complete: 3,426 PASS / 0 FAIL)
 
 ## Phase 4 — Admin, outbreak, ML service
 - [ ] TODO 4.1 ML status warm-up/retry/cache/states + client debounce

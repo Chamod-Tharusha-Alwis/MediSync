@@ -14,14 +14,14 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 1 | 1.5 `scripts/size_report.ps1` | DONE | `06f13a3` | `scripts/size_report.ps1` (supports full walk and `-FastSummary`) |
 | 1 | 1.6 Owner delete commands & OneDrive advice | DONE | `06f13a3` | `docs/new/sub1/OWNER_ACTIONS.md` §1 (~42.20 GB reclaimable) |
 | 1 | 1.7 Test temp directories outside repo (`os.tmpdir()`) | DONE | `146ab90` | `scripts/run_offline_tests.js`, `server/tests/tempDirsOutsideRepo.test.js` (`Test-Path scratch` = `False`, 3,418 PASS / 0 FAIL) |
-| 2 | 2.1 Consultation summary email | DONE | `pending` | `server/src/services/consultationSummaryEmailService.js`, `clinicalCommandController.js`, `History.jsx` (`POST /api/patient/consultation/:id/resend-summary`) |
-| 2 | 2.2 PDF download fix | DONE | `pending` | `prescriptionController.js`, `labController.js`, `client/src/utils/pdfDownload.js`, `DECISIONS.md` (`D-011`) |
-| 2 | 2.3 Tests | DONE | `pending` | `server/tests/phase2ConsultationEmailAndPdf.test.js` (3,423 PASS / 0 FAIL; client build exit 0) |
-| 3 | 3.1 Patient grouped prescriptions | TODO | - | - |
-| 3 | 3.2 Pharmacy grouped receipts | TODO | - | - |
-| 3 | 3.3 Restock warnings removal | TODO | - | - |
-| 3 | 3.4 Dispensing analytics + SEED_2026_11_B seeder | TODO | - | - |
-| 3 | 3.5 Tests | TODO | - | - |
+| 2 | 2.1 Consultation summary email | DONE | `35db3eb` | `server/src/services/consultationSummaryEmailService.js`, `clinicalCommandController.js`, `History.jsx` (`POST /api/patient/consultation/:id/resend-summary`) |
+| 2 | 2.2 PDF download fix | DONE | `35db3eb` | `prescriptionController.js`, `labController.js`, `client/src/utils/pdfDownload.js`, `DECISIONS.md` (`D-011`) |
+| 2 | 2.3 Tests | DONE | `35db3eb` | `server/tests/phase2ConsultationEmailAndPdf.test.js` (3,423 PASS / 0 FAIL; client build exit 0) |
+| 3 | 3.1 Patient grouped prescriptions | DONE | `pending` | `client/src/utils/patientPrescriptionStatus.js`, `client/src/pages/patient/Dashboard.jsx`, `client/src/pages/patient/Prescriptions.jsx` |
+| 3 | 3.2 Pharmacy grouped receipts | DONE | `pending` | `server/src/controllers/pharmacyController.js` (`groupDispensingHistoryByReceipt`), `client/src/pages/pharmacy/Dashboard.jsx` |
+| 3 | 3.3 Restock warnings removal | DONE | `pending` | `client/src/pages/pharmacy/Dashboard.jsx` (`/pharmacy/dashboard/restock` removed per Owner Q4) |
+| 3 | 3.4 Dispensing analytics + SEED_2026_11_B seeder | DONE | `pending` | `scripts/seed-dispensing-sample.js`, `client/src/pages/pharmacy/Dashboard.jsx`, `docs/new/sub1/OWNER_ACTIONS.md` |
+| 3 | 3.5 Tests | DONE | `pending` | `server/tests/phase3GroupingAndDispensingSeeder.test.js` (3,426 PASS / 0 FAIL; client build exit 0) |
 | 4 | 4.1 ML status resilience | TODO | - | - |
 | 4 | 4.2 Session Monitor filter + masking | TODO | - | - |
 | 4 | 4.3 6 vs 5 alerts investigation | TODO | - | - |
@@ -39,4 +39,5 @@ Branch: `feat/phase2-polish-and-cleanup` (base `main` @ `0871fd3`).
 | 2026-11-07 | Branch created off `main` @ `0871fd3` (PRs #17, #18, #19). Phase 0 docs written and pushed (`e1a3d6e`). Stopped for owner approval. |
 | 2026-11-07 | Owner replied APPROVED with Q1–Q6 answers (recorded in `DECISIONS.md` D-003..D-008). Ran Phase 1 opening baseline gate (3,477 PASS / 0 FAIL) and client build (exit 0). Completed Tasks 1.1–1.6, ran post-Phase-1 gate + client build, committed, pushed, and stopped for Phase 2 go-ahead. |
 | 2026-11-08 | Resumed in full-autonomy mode. Completed Step 0 (restored workspace synced to `origin/feat/phase2-polish-and-cleanup` @ `ef1b30c`, backup diffs stashed in `stash@{0}`/`stash@{1}`, recorded in `DECISIONS.md` D-009) and Task 1.7 (moved offline test temp dirs to `os.tmpdir()`, verified `scratch/` not recreated, 3,418 PASS / 0 FAIL, client build exit 0, commit `146ab90`). |
-| 2026-11-08 | Completed Phase 2 (Tasks 2.0–2.3): root-cause analysis in `DECISIONS.md` D-011, `consultationSummaryEmailService.js` (idempotent, zero-NIC, exponential backoff, conditional PDF attachment when `PDF_EXPORT_ENABLED=true`, rate-limited resend endpoint + trilingual UI button), consultation & lab PDF fixes, and `phase2ConsultationEmailAndPdf.test.js`. Offline gate: 3,423 PASS / 0 FAIL; client build exit 0 (118 modules). |
+| 2026-11-08 | Completed Phase 2 (Tasks 2.0–2.3): root-cause analysis in `DECISIONS.md` D-011, `consultationSummaryEmailService.js` (idempotent, zero-NIC, exponential backoff, conditional PDF attachment when `PDF_EXPORT_ENABLED=true`, rate-limited resend endpoint + trilingual UI button), consultation & lab PDF fixes, and `phase2ConsultationEmailAndPdf.test.js`. Offline gate: 3,423 PASS / 0 FAIL; client build exit 0 (118 modules). Committed & pushed (`35db3eb`). |
+| 2026-11-08 | Completed Phase 3 (Tasks 3.1–3.5): consultation-grouped Active Prescriptions in patient dashboard/prescriptions, receipt-grouped Dispensation History in pharmacy dashboard/controller, removed `/pharmacy/dashboard/restock` sidebar item per Q4, added trilingual empty-range hint in Dispensing Volume Analytics, created `scripts/seed-dispensing-sample.js` (`SEED_2026_11_B`), and added `phase3GroupingAndDispensingSeeder.test.js`. Offline gate: 3,426 PASS / 0 FAIL; client build exit 0 (118 modules). |

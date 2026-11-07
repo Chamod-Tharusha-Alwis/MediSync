@@ -521,15 +521,38 @@ const History = () => {
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
                 {history.map(record => {
-                  const drugLabel = record.prescriptionId?.medications?.length > 0
-                    ? record.prescriptionId.medications.map(m => m.name).join(', ')
-                    : (record.items?.[0]?.drugName || record.prescriptionId?.drugName || '—');
+                  const allMeds = Array.isArray(record.medications) && record.medications.length > 0
+                    ? record.medications
+                    : Array.isArray(record.items) && record.items.length > 0
+                    ? record.items.map(i => ({ name: i.drugName || i.name, dosage: i.dosage, quantityDispensed: i.quantityDispensed, unit: i.unit }))
+                    : Array.isArray(record.prescriptionId?.medications) && record.prescriptionId.medications.length > 0
+                    ? record.prescriptionId.medications.map(m => ({ name: m.name || m.drugName, dosage: m.dosage, quantityDispensed: m.quantity || 1, unit: m.unit || "units" }))
+                    : record.prescriptionId?.drugName
+                    ? [{ name: record.prescriptionId.drugName, dosage: record.prescriptionId.dosage || "", quantityDispensed: 1, unit: "units" }]
+                    : [];
+                  const drugLabel = record.medicationSummary || (allMeds.length > 0
+                    ? allMeds.map(m => m.name + (m.dosage ? " " + m.dosage : "") + (m.quantityDispensed ? " (" + m.quantityDispensed + " " + (m.unit || "units") + ")" : "")).join(", ")
+                    : "?");
                   return (
-                    <tr key={record._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-white text-xs">{record.receiptNumber || '—'}</td>
-                      <td className="px-6 py-4 font-mono text-slate-300 text-xs">{record.patientNic || '—'}</td>
-                      <td className="px-6 py-4 text-slate-300 text-xs font-medium max-w-[200px] truncate" title={drugLabel}>{drugLabel}</td>
-                      <td className="px-6 py-4 text-slate-400 font-bold">{record.staffId?.fullName || '—'}</td>
+                    <tr key={record.receiptNumber || record._id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-white text-xs">{record.receiptNumber || "?"}</td>
+                      <td className="px-6 py-4 font-mono text-slate-300 text-xs">{record.patientNic || "?"}</td>
+                      <td className="px-6 py-4 text-slate-300 text-xs font-medium max-w-[340px]" title={drugLabel}>
+                        {allMeds.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {allMeds.map((m, idx) => (
+                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 border border-white/10 text-slate-200 text-xs">
+                                <span className="font-semibold text-white">{m.name}</span>
+                                {m.dosage && <span className="text-slate-400">{m.dosage}</span>}
+                                {m.quantityDispensed && <span className="text-teal-400 font-mono">x{m.quantityDispensed}</span>}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span>?</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-slate-400 font-bold">{record.staffId?.fullName || "?"}</td>
                       <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right">{formatSriLankaDateTime(record.createdAt)}</td>
                     </tr>
                   );
@@ -1090,9 +1113,32 @@ const RestockAnalytics = () => {
       )}
 
       {!loading && !error && leaderboard.length === 0 && (
-        <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 select-none">
-          <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-50" />
-          <p className="text-slate-400 font-semibold text-lg">No dispensing logs in this interval</p>
+        <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 select-none space-y-3">
+          <Activity className="w-12 h-12 text-slate-600 mx-auto mb-2 opacity-50" />
+          <p className="text-slate-300 font-semibold text-lg">
+            {t("pharmacy.noDispensingLogsInInterval", "No dispensing logs in this interval")}
+          </p>
+          <p className="text-slate-400 text-xs max-w-md mx-auto">
+            {t("pharmacy.emptyRangeHint", "No dispensing events were recorded in this window. Try selecting a wider range such as 7 Days, 30 Days, or Custom.")}
+          </p>
+          {["24h", "48h", "72h", "7d", "14d"].includes(range) && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRange("7d")}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-white/10 transition-all"
+              >
+                7 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setRange("30d")}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold border border-indigo-500/30 transition-all"
+              >
+                30 Days
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1694,9 +1740,7 @@ export default function PharmacyDashboard() {
       { label: t('pharmacy.dispenseOtc', 'Manual OTC'), path: '/pharmacy/dashboard/otc', icon: ShoppingBag },
     ] : []),
     { label: t('pharmacy.dispenseHistory', 'History'),     path: '/pharmacy/dashboard/history',   icon: Clock },
-    ...(isAdmin ? [
-      { label: t('pharmacy.restockAlerts', 'District Demand'),  path: '/pharmacy/dashboard/restock',   icon: Pill },
-      { label: t('nav.analytics', 'Analytics'),   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
+    ...(isAdmin ? [      { label: t('nav.analytics', 'Analytics'),   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
       { label: t('pharmacy.staffManagement', 'Staff'),       path: '/pharmacy/dashboard/staff',     icon: Users }
     ] : []),
     { label: t('common.settings', 'Settings'),    path: '/pharmacy/dashboard/settings',  icon: Settings },
@@ -1723,9 +1767,7 @@ export default function PharmacyDashboard() {
             <Route path="/dashboard" element={<Navigate to={defaultPath} replace />} />
             <Route path="/dashboard/dispense" element={canDispense ? <Dispense /> : <Navigate to={defaultPath} replace />} />
             <Route path="/dashboard/otc" element={canDispense ? <ManualDispenseOTC /> : <Navigate to={defaultPath} replace />} />
-            <Route path="/dashboard/history"        element={<History />} />
-            <Route path="/dashboard/restock"        element={<RestockPredictor />} />
-            
+            <Route path="/dashboard/history"        element={<History />} />            
             {isAdmin && (
               <>
                 <Route path="/dashboard/analytics"      element={<RestockAnalytics />} />

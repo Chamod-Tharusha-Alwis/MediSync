@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName } from '../../utils/labTestFormatter';
 import { isPdfExportClientEnabled, downloadClinicalPdf } from '../../utils/pdfDownload';
+import { groupPrescriptionsByConsultation } from '../../utils/patientPrescriptionStatus';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PDF Download helper — streams the prescription PDF and triggers browser save
@@ -41,12 +42,24 @@ const downloadPdf = async (prescriptionId, setDownloading, t) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PrescriptionCard
+   PrescriptionCard — One card per consultation with all medications & statuses
    ───────────────────────────────────────────────────────────────────────────── */
 const PrescriptionCard = ({ rx, badge, index }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
-  const isActive = rx.status === 'issued' && (!rx.expiresAt || new Date(rx.expiresAt) > new Date());
+  const medications = Array.isArray(rx.medications) && rx.medications.length > 0
+    ? rx.medications
+    : [{
+        _id: rx._id,
+        name: rx.drugName || 'Prescription',
+        dosage: rx.dosage || '',
+        frequency: rx.frequency || '',
+        durationDays: rx.durationDays || null,
+        instructions: rx.instructions || '',
+        status: rx.status || 'issued',
+      }];
+
+  const headerTitle = rx.diagnosis || (medications.length === 1 ? medications[0].name : 'Consultation Prescription');
 
   return (
     <motion.div
@@ -60,7 +73,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-white truncate">{rx.drugName || 'Prescription'}</h3>
+            <h3 className="text-lg font-bold text-white truncate">{headerTitle}</h3>
             {rx.consultationRef && (
               <span className="text-[11px] font-bold text-slate-400 border border-slate-700/50 bg-slate-800/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 mt-0.5">
                 Ref: {rx.consultationRef}
@@ -77,32 +90,50 @@ const PrescriptionCard = ({ rx, badge, index }) => {
         </span>
       </div>
 
-      {/* ── Drug details grid ── */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        {rx.dosage && (
-          <div>
-            <p className="text-slate-500 text-xs uppercase tracking-wide">Dosage</p>
-            <p className="text-slate-200 font-medium mt-0.5">{rx.dosage}</p>
+      {/* ── Grouped Medications List ── */}
+      <div className="space-y-2">
+        {medications.map((med, mIdx) => (
+          <div
+            key={med._id || `${rx._id}-med-${mIdx}`}
+            className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 flex flex-col gap-1.5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-bold text-white">{med.name || med.drugName || 'Prescription'}</p>
+              <span className={`px-2 py-0.5 text-[11px] font-bold rounded uppercase shrink-0 ${
+                med.status === 'dispensed'
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : med.status === 'expired'
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'bg-emerald-500/20 text-emerald-400'
+              }`}>
+                {med.status || rx.status || 'issued'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
+              {med.dosage && (
+                <div>
+                  <span className="text-slate-500">Dosage: </span>
+                  <span className="font-medium">{med.dosage}</span>
+                </div>
+              )}
+              {med.frequency && (
+                <div>
+                  <span className="text-slate-500">Frequency: </span>
+                  <span className="font-medium">{med.frequency}</span>
+                </div>
+              )}
+              {med.durationDays && (
+                <div>
+                  <span className="text-slate-500">Duration: </span>
+                  <span className="font-medium">{med.durationDays} days</span>
+                </div>
+              )}
+            </div>
+            {med.instructions && (
+              <p className="text-slate-400 text-xs italic">Note: {med.instructions}</p>
+            )}
           </div>
-        )}
-        {rx.frequency && (
-          <div>
-            <p className="text-slate-500 text-xs uppercase tracking-wide">Frequency</p>
-            <p className="text-slate-200 font-medium mt-0.5">{rx.frequency}</p>
-          </div>
-        )}
-        {rx.durationDays && (
-          <div>
-            <p className="text-slate-500 text-xs uppercase tracking-wide">Duration</p>
-            <p className="text-slate-200 font-medium mt-0.5">{rx.durationDays} days</p>
-          </div>
-        )}
-        {rx.instructions && (
-          <div className="col-span-2">
-            <p className="text-slate-500 text-xs uppercase tracking-wide">Instructions</p>
-            <p className="text-slate-300 text-xs mt-0.5 italic">{rx.instructions}</p>
-          </div>
-        )}
+        ))}
       </div>
 
       {/* ── Lab test tags ── */}
@@ -119,13 +150,6 @@ const PrescriptionCard = ({ rx, badge, index }) => {
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* ── For (diagnosis) ── */}
-      {rx.diagnosis && (
-        <div className="text-xs text-slate-500 border-t border-slate-700/40 pt-3">
-          <span className="font-semibold text-slate-400">For: </span>{rx.diagnosis}
         </div>
       )}
 
@@ -180,6 +204,7 @@ const PrescriptionCard = ({ rx, badge, index }) => {
    PatientPrescriptions — main page
    ───────────────────────────────────────────────────────────────────────────── */
 const PatientPrescriptions = () => {
+  const { t } = useTranslation();
   const [prescriptions, setPrescriptions] = useState([]);
   const [activeTab,     setActiveTab]     = useState('active');
   const [searchQuery,   setSearchQuery]   = useState('');
@@ -203,48 +228,24 @@ const PatientPrescriptions = () => {
 
   useEffect(() => {
     if (!data) return;
-    const allRx = [];
     const rxDataArray = Array.isArray(data) ? data : [];
-
-    rxDataArray.forEach(rxData => {
-      if (rxData.medications && Array.isArray(rxData.medications) && rxData.medications.length > 0) {
-        rxData.medications.forEach(m => {
-          allRx.push({
-            ...rxData,
-            _id:              `${rxData._id}-${m.name}`,
-            drugName:         m.name,
-            dosage:           m.dosage,
-            frequency:        m.frequency,
-            durationDays:     m.durationDays,
-            doctorName:       rxData.doctorId?.fullName   || 'Doctor',
-            hospitalName:     rxData.hospitalId?.name     || '',
-            consultationDate: rxData.createdAt,
-          });
-        });
-      } else {
-        allRx.push({
-          ...rxData,
-          doctorName:       rxData.doctorId?.fullName   || 'Doctor',
-          hospitalName:     rxData.hospitalId?.name     || '',
-          consultationDate: rxData.createdAt,
-        });
-      }
-    });
-    setPrescriptions(allRx);
+    const grouped = groupPrescriptionsByConsultation(rxDataArray);
+    setPrescriptions(grouped);
   }, [data]);
 
   const now = new Date();
 
   const categorized = {
-    active:    prescriptions.filter(rx => rx.status === 'issued' && (!rx.expiresAt || new Date(rx.expiresAt) > now)),
-    dispensed: prescriptions.filter(rx => rx.status === 'dispensed'),
-    expired:   prescriptions.filter(rx => rx.status === 'expired' || (rx.status === 'issued' && rx.expiresAt && new Date(rx.expiresAt) <= now)),
+    active:    prescriptions.filter(rx => rx.hasActiveMedication),
+    dispensed: prescriptions.filter(rx => !rx.hasActiveMedication && rx.status === 'dispensed'),
+    expired:   prescriptions.filter(rx => !rx.hasActiveMedication && rx.status !== 'dispensed'),
   };
 
   const filteredRx = (categorized[activeTab] || []).filter(rx => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return rx.drugName?.toLowerCase().includes(q) || rx.doctorName?.toLowerCase().includes(q);
+    const matchesDrug = rx.medications?.some(m => (m.name || m.drugName || '').toLowerCase().includes(q));
+    return matchesDrug || rx.doctorName?.toLowerCase().includes(q) || rx.diagnosis?.toLowerCase().includes(q);
   });
 
   const tabs = [
@@ -255,7 +256,7 @@ const PatientPrescriptions = () => {
 
   const getStatusBadge = (rx) => {
     if (rx.status === 'dispensed') return { text: 'Dispensed',        cls: 'bg-blue-500/20 text-blue-400' };
-    if (rx.status === 'expired' || (rx.expiresAt && new Date(rx.expiresAt) <= now))
+    if (rx.status === 'expired' || (!rx.hasActiveMedication && rx.expiresAt && new Date(rx.expiresAt) <= now))
       return { text: 'Expired',           cls: 'bg-red-500/20 text-red-400' };
     return   { text: 'Ready for Pickup',  cls: 'bg-emerald-500/20 text-emerald-400' };
   };
