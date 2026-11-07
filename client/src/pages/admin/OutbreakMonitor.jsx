@@ -10,7 +10,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Res
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
-import { formatDistrictName, getProvinceForDistrict, OFFICIAL_PROVINCES, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
+import { formatDistrictName } from '../../utils/districtAdjacency';
+import { calculateIncidencePer100k } from '../../utils/populationIncidence';
 
 
 const sevConfig = {
@@ -605,6 +606,7 @@ const OutbreakMonitor = () => {
                 <tr>
                   <th className="px-6 py-4">Disease Vector</th>
                   <th className="px-6 py-4">Location</th>
+                  <th className="px-6 py-4">Incidence</th>
                   <th className="px-6 py-4">Severity</th>
                   <th className="px-6 py-4">Audit Verification</th>
                   <th className="px-6 py-4 text-right">Timestamp</th>
@@ -615,6 +617,7 @@ const OutbreakMonitor = () => {
                   const sev = getSev(alert.severity);
                   const isLive = alert.status === 'Active' && (!alert.feedbackStatus || alert.feedbackStatus === 'unverified');
                   const isCrit = alert.severity === 'Critical' || alert.severity === 'High';
+                  const inc = calculateIncidencePer100k(alert.caseCount || alert.affectedCount || 0, alert.location || alert.district);
                   return (
                     <tr key={alert._id} className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-6 py-4">
@@ -637,6 +640,9 @@ const OutbreakMonitor = () => {
                           <MapPin className="w-3.5 h-3.5 text-slate-600" />
                           {formatDistrictName(alert.location || alert.district) || 'N/A'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                        {inc.display}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${sev.text} ${sev.bg} ${sev.border}`}>

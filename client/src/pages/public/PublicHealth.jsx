@@ -14,6 +14,7 @@ import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { ALL_DISTRICTS, normalizeDistrictName, OFFICIAL_PROVINCES, DISTRICT_TO_PROVINCE, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
 import { validateConsultationActivity } from '../../utils/consultationActivity';
+import { calculateIncidencePer100k, calculateProvinceIncidencePer100k } from '../../utils/populationIncidence';
 
 /* ─── Leaflet Activity Map for Consultation Activity (Tab 2) ─── */
 function ActivityMap({ data, onSelect, t }) {
@@ -128,7 +129,8 @@ function SurveillanceDistrictMap({ healthData, alerts = [], selectedDistrict, on
                 const name = canonical(feature);
                 if (name) {
                   const risk = getDistrictRisk(name);
-                  layer.bindTooltip(`<strong>${name}</strong><br/>${risk.label}`, { sticky: true });
+                  const inc = calculateIncidencePer100k(healthData?.byDistrict?.find(d => d.district === name)?.totalCases || 0, name);
+                  layer.bindTooltip(`<strong>${name}</strong><br/>${risk.label}<br/><span style="font-size:11px;color:#94a3b8">Incidence: ${inc.display}</span>`, { sticky: true });
                   layer.on({
                     click: () => onSelectDistrict(name)
                   });
@@ -657,6 +659,12 @@ export default function PublicHealth() {
                             </span>
                           </div>
                           <div className="flex justify-between text-xs">
+                            <span className="text-slate-400">Incidence:</span>
+                            <span className="font-mono text-xs text-slate-400">
+                              {calculateProvinceIncidencePer100k(p.totalCases, p.province).display}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
                             <span className="text-slate-400">Top Disease:</span>
                             <span className="text-slate-300 font-medium">{p.topDisease}</span>
                           </div>
@@ -685,7 +693,7 @@ export default function PublicHealth() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Island-Wide Cases</span>
                       <p className={`mt-3 text-3xl font-black font-mono ${islandWideSummary.suppressed ? 'text-slate-500 italic text-xl' : 'text-blue-400'}`}>
@@ -695,19 +703,27 @@ export default function PublicHealth() {
                     </div>
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Island-Wide Alerts</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Alerts</span>
                       <p className="mt-3 text-3xl font-black text-red-400 font-mono">
                         {surveillanceLoading ? '…' : islandWideSummary.alertCount}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">Persistent multi-district alert clusters</p>
+                      <p className="mt-1 text-xs text-slate-400">Persistent alert clusters</p>
                     </div>
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Primary Disease Vector</span>
-                      <p className="mt-3 text-2xl font-black text-amber-400 font-mono truncate">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Primary Vector</span>
+                      <p className="mt-3 text-xl font-black text-amber-400 font-mono truncate">
                         {surveillanceLoading ? '…' : islandWideSummary.topDisease}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">Highest case frequency nationally</p>
+                      <p className="mt-1 text-xs text-slate-400">Top frequency disease</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">National Incidence</span>
+                      <p className="mt-3 text-sm font-bold text-slate-400 font-mono">
+                        population data pending
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">Census 2024 pending</p>
                     </div>
                   </div>
                 </div>

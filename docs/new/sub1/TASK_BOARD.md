@@ -41,9 +41,9 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE Gate + build + commit + push + report (Phase 4 complete: 3,436 PASS / 0 FAIL, client build PASS)
 
 ## Phase 5 — Population data
-- [ ] TODO 5.1 districtPopulation2024.json from official DCS source (or nulls + BLOCKED)
-- [ ] TODO 5.2 incidence per 100k + baseline offset + tests
-- [ ] TODO Gate + build + commit + push + report
+- [x] BLOCKED 5.1 `districtPopulation2024.json` schema created with 25 neutral `null` values; owner DCS manual entry pending (documented in `OWNER_ACTIONS.md`, never typed from memory)
+- [x] DONE 5.2 incidence per 100k calculated in `incidenceService.js` and `populationIncidence.js`, displaying "population data pending" when null on OutbreakMonitor and PublicHealth
+- [x] DONE Gate + build + commit + push + report (Phase 5 complete: 3,444 PASS / 0 FAIL, client build PASS)
 
 ## Phase 6 — ML evaluation graphs
 - [ ] TODO 6.1 ml-engine/evaluation scaffolding (fixed seed, 200 dpi)

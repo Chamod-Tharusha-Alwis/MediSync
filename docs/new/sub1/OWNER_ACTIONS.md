@@ -132,7 +132,17 @@ Remove-Item Env:\MEDISYNC_SEED_RUN_APPROVAL -ErrorAction SilentlyContinue
 
 ---
 
-## 4. Later Phases (Reference)
+## 4. Phase 5 — Census 2024 Population Table Owner Verification (Task 5.1 BLOCKED)
+
+Per the strict safety invariant (**NEVER type numbers from memory**), `server/src/data/districtPopulation2024.json` and `client/src/data/districtPopulation2024.json` were created with neutral `null` values for all 25 districts, and all UI/API consumers display `"population data pending"`.
+
+To unblock Task 5.1 and activate live incidence per 100,000:
+1. Download the official **Table 2: Population by District (Census of Population and Housing 2024)** from the Department of Census and Statistics portal: [statistics.gov.lk](https://www.statistics.gov.lk).
+2. Open `server/src/data/districtPopulation2024.json` (and `client/src/data/districtPopulation2024.json`) and replace the `null` values with the exact official counts from DCS Table 2.
+3. Update `"status": "verified"` in both files and re-run `node scripts/run_offline_tests.js`.
+
+---
+
+## 5. Later Phases (Reference)
 - **Phase 2**: Set `PDF_EXPORT_ENABLED=true` on Render when ready to enable PDF downloads and consultation summary PDF attachments (default remains `false` → `503`).
-- **Phase 5**: If official 2024 Census PDF/table fetch is blocked, provide the DCS 2024 district population table.
 - **Phase 7**: Ordered live-test checklist (max 50 OTPs/day, no retries after a failure).
