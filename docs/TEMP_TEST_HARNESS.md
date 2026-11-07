@@ -26,13 +26,17 @@ This document inventories all temporary test aids, flags, and bypasses introduce
 
 ---
 
-## 3. Removal Procedure (Final Task of Master Run)
-1. Delete `server/src/security/testOtpHarness.js`.
-2. Remove harness integrations from:
-   - `server/src/utils/emailService.js`
-   - `server/src/controllers/authController.js`
-   - `server/src/controllers/patientController.js`
-   - `server/src/controllers/labController.js`
-3. Add automated regression test `server/tests/testOtpRemoval.test.js` proving no bypass exists.
-4. Remove `TEST_OTP_ENABLED` and `TEST_OTP_CODE` from environment.
-5. Push to `main` and remind user to rotate the five test account passwords.
+## 3. Removal Procedure Status
+- **Status**: EXECUTED on branch `chore/remove-test-otp` (Milestone 4 WP6).
+- **Actions executed**:
+  1. Deleted `server/src/security/testOtpHarness.js`.
+  2. Removed harness integrations from:
+     - `server/src/utils/emailService.js`
+     - `server/src/controllers/authController.js`
+     - `server/src/controllers/patientController.js`
+     - `server/src/controllers/labController.js`
+  3. Added regression verification test suite `server/tests/testOtpRemovalOffline.test.js` proving no bypass exists and `TEST_OTP_ENABLED=true` cannot bypass OTP.
+  4. Removed `testOtpHarnessOffline.test.js` and updated `server/clinical.offline.jest.cjs`.
+  5. Cleaned `server/tests/jwt-patient-nic-removal-s1.test.js`.
+  6. Verified zero references to `testOtpHarness` or `TEST_OTP` in `server/src/`.
+  7. Committed on `chore/remove-test-otp` and pushed to remote (left unmerged pending live verification).

@@ -21,7 +21,8 @@ const {
   verifyOtpAndFetchTests,
   approveTest,
   getTestByReportId,
-  patientDownloadReportByReportId
+  patientDownloadReportByReportId,
+  exportLabReportPdf
 } = require('../controllers/labController');
 
 // ── Multer config — memory storage for envelope encryption before Cloudinary ──
@@ -74,6 +75,9 @@ router.post  ('/accept',                     protect(['hospital_admin', 'labTech
 // LAB ASSISTANT routes — searches by reportId, uploads encrypted PDF
 // ─────────────────────────────────────────────────────────────────────────────
 router.get   ('/assistant/test/:reportId',   protect(['hospital_admin', 'labTechnician']), getTestByReportId);
+
+// Clinical PDF Export (Milestone 4 WP5)
+router.get   ('/reports/:id/export-pdf',     protect(['patient', 'doctor', 'hospital_admin', 'labTechnician']), exportLabReportPdf);
 
 // Dynamic Parameter Routes
 router.patch ('/:labTestId/status',          protect(['hospital_admin', 'labTechnician']), updateStatus);

@@ -16,6 +16,9 @@ const emailService = require('../utils/emailService');
 const { generateToken } = require('../utils/internalAuth');
 const { parseDeviceModel } = require('../utils/deviceParser');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
+const { checkMlHealth } = require('../services/mlPredictionService');
+const { isUsingPersistentRedis } = require('../config/redis');
 
 const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
 
@@ -46,6 +49,77 @@ exports.getSystemStats = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch system stats' });
+  }
+};
+
+// ─── Real System Health Checks (U16) ──────────────────────────────────────────
+exports.getSystemHealth = async (req, res) => {
+  try {
+    const uptimeSeconds = Math.floor(process.uptime());
+    const apiStatus = {
+      status: 'operational',
+      uptime: uptimeSeconds,
+      nodeVersion: process.version,
+      timestamp: new Date().toISOString()
+    };
+
+    const mongoState = mongoose.connection.readyState;
+    const mongoStatus = {
+      status: mongoState === 1 ? 'operational' : 'degraded',
+      readyState: mongoState,
+      details: mongoState === 1 ? 'Connected to MongoDB Atlas replica set' : 'Database disconnected or degraded'
+    };
+
+    let mlStatus = { status: 'unknown' };
+    try {
+      const mlHealth = await checkMlHealth({ timeoutMs: 3000 });
+      mlStatus = {
+        status: mlHealth.availability === 'available' ? 'operational' : (mlHealth.availability === 'waking_up' ? 'waking_up' : 'unavailable'),
+        availability: mlHealth.availability,
+        error: mlHealth.error || null
+      };
+    } catch (err) {
+      mlStatus = {
+        status: 'unavailable',
+        availability: 'unavailable',
+        error: err.message || 'ML probe unreachable'
+      };
+    }
+
+    let redisPersistent = false;
+    try {
+      redisPersistent = typeof isUsingPersistentRedis === 'function' ? isUsingPersistentRedis() : false;
+    } catch (_) {}
+    const redisStatus = {
+      status: redisPersistent ? 'operational' : 'in_memory_fallback',
+      persistent: redisPersistent,
+      details: redisPersistent ? 'Persistent Redis session store operational' : 'In-memory ephemeral session fallback active'
+    };
+
+    const hasResend = Boolean((process.env.RESEND_API_KEY || process.env.RESEND_SMTP_PASS || '').trim());
+    const hasBrevo = Boolean((process.env.BREVO_API_KEY || '').trim());
+    const emailConfigured = hasResend || hasBrevo || process.env.NODE_ENV === 'test';
+    const emailStatus = {
+      status: emailConfigured ? 'operational' : 'unconfigured',
+      configured: emailConfigured,
+      provider: hasResend ? 'Resend API' : (hasBrevo ? 'Brevo SMTP' : (process.env.NODE_ENV === 'test' ? 'Test Mock' : 'None'))
+    };
+
+    return res.json({
+      success: true,
+      data: {
+        api: { ...apiStatus, status: 'ok', operationalStatus: 'operational' },
+        mongodb: mongoStatus,
+        database: { ...mongoStatus, status: mongoState === 1 ? 'connected' : 'disconnected' },
+        mlEngine: mlStatus,
+        redis: redisStatus,
+        email: emailStatus
+      },
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[getSystemHealth]', error);
+    res.status(500).json({ error: 'Failed to retrieve system health' });
   }
 };
 
@@ -83,8 +157,9 @@ exports.getAllUsers = async (req, res) => {
         }))
       );
     }
-    if (!role || role === 'pharmacist') {
-      const pharms = await PharmacyStaff.find()
+    if (!role || role === 'pharmacist' || role === 'pharmacy_admin') {
+      const query = role ? { role } : {};
+      const pharms = await PharmacyStaff.find(query)
         .select('fullName email nic role createdAt isActive lastLoginAt lastSignOutAt').lean();
       users.push(...pharms.map(ph => ({ ...ph, role: ph.role || 'pharmacist' })));
     }

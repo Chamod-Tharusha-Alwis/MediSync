@@ -268,7 +268,7 @@ const Broadcast = () => {
             ) : (
               <div className="text-center py-10 text-slate-500 select-none">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p className="text-xs font-medium">Compose an announcement to populate live notification bell simulation.</p>
+                <p className="text-xs font-medium">Compose an announcement to preview the live notification dispatch.</p>
               </div>
             )}
 

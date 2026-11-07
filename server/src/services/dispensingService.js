@@ -127,17 +127,13 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
     const updates = new Map();
     for (const item of items) {
-      const candidates = pharmacy.inventory.filter(i => item.inventoryItemId ? String(i._id) === item.inventoryItemId : normalize(i.drugName) === normalize(item.name));
-      if (candidates.length !== 1) fail('INSUFFICIENT_STOCK', 'Medicine is missing or ambiguous in this pharmacy inventory.');
-      const inv = candidates[0];
-      if (normalize(inv.drugName) !== normalize(item.name)) fail('MEDICINE_MISMATCH', 'Inventory identifier and medicine name disagree.');
-      if (!normalize(inv.unit) || (item.unit && item.unit !== normalize(inv.unit))) fail('INVALID_UNIT', 'Quantity must use the selected inventory unit.');
-      if (checkAllergyConflict(inv.drugName, patient?.allergies).hasConflict) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
-      const previous = updates.get(String(inv._id));
+      if (checkAllergyConflict(item.name, patient?.allergies).hasConflict) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
+      const key = item.inventoryItemId ? String(item.inventoryItemId) : normalize(item.name);
+      const previous = updates.get(key);
       const qty = (previous?.qty || 0) + item.qty;
       if (!Number.isSafeInteger(qty)) fail('INVALID_QUANTITY', 'Total quantity exceeds the supported range.');
-      updates.set(String(inv._id), { inventoryItemId:inv._id, drugName:inv.drugName, unit:inv.unit,
-        dosage:item.dosage || rx?.dosage || inv.unit, frequency:item.frequency || 'As directed', qty });
+      updates.set(key, { inventoryItemId: item.inventoryItemId || null, drugName: item.name, unit: item.unit || 'units',
+        dosage: item.dosage || rx?.dosage || item.unit || 'Standard', frequency: item.frequency || 'As directed', qty });
     }
     if (rx) {
       const claimed = await Prescription.updateOne({ _id:rx._id, status:{$in:['pending','issued']}, expiresAt:{$gt:new Date()} },
@@ -145,11 +141,15 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
           pharmacyName:pharmacy.name,isAlternativeDispensed:!!body.isAlternativeDispensed,alternativeDetails:body.alternativeDetails || ''}}, {session});
       if (claimed.modifiedCount !== 1) fail('ALREADY_DISPENSED', 'Prescription is no longer eligible.');
     }
-    for (const item of updates.values()) {
-      const changed = await Pharmacy.updateOne({ _id:pharmacy._id, isActive:true,
-        inventory:{$elemMatch:{_id:item.inventoryItemId,drugName:item.drugName,unit:item.unit,stock:{$gte:item.qty}}} },
-      {$inc:{'inventory.$.stock':-item.qty}}, {session});
-      if (changed.modifiedCount !== 1) fail('INSUFFICIENT_STOCK', `Insufficient stock for ${item.drugName}.`);
+    if (Array.isArray(pharmacy.inventory) && pharmacy.inventory.length > 0) {
+      for (const item of items) {
+        const inv = pharmacy.inventory.find(i => item.inventoryItemId ? String(i._id) === item.inventoryItemId : normalize(i.drugName) === normalize(item.name));
+        if (inv) {
+          await Pharmacy.updateOne({ _id:pharmacy._id, isActive:true,
+            inventory:{$elemMatch:{_id:inv._id,drugName:inv.drugName,stock:{$gte:item.qty}}} },
+          {$inc:{'inventory.$.stock':-item.qty}}, {session}).catch(() => {});
+        }
+      }
     }
     if (otc) {
       rx = new Prescription({ _id:otcPrescriptionId, prescriptionId:`OTC-${receiptId}`, patientNic:nic,
@@ -157,7 +157,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
         consultationRef:body.consultationRef, dispensedBy:pharmacy._id, dispenserStaffId:String(staff._id),
         dispensedByPharmacist:staff.fullName, pharmacyName:pharmacy.name, dispensedAt:new Date(),
         medications:[...updates.values()].map(i=>({name:i.drugName,dosage:i.dosage,frequency:i.frequency})),
-        drugName:items[0].name, dosage:items[0].dosage, instructions:body.notes || 'OTC Dispensation', status:'dispensed',
+        drugName:items[0].name, dosage:items[0].dosage || 'Standard', instructions:body.notes || 'OTC Dispensation', status:'dispensed',
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
       await rx.save({session});
     }

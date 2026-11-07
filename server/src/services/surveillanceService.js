@@ -15,22 +15,23 @@ function diseaseId(c) {
 // No invented disease-specific episode interval. A trusted, reviewed episode ID
 // defines a case; repeated visits for that patient/disease/episode count once.
 // Missing clinical provenance/confirmation/episode metadata requires review.
-function selectCases(candidates, { mode = 'real', now = new Date() } = {}) {
+function selectCases(candidates, { mode = 'real', now = new Date(), lookbackDays = 30 } = {}) {
   if (!['real', 'simulation'].includes(mode)) throw new Error('Invalid surveillance mode');
   const cases = [], excluded = {}, seen = new Set();
   const reject = reason => { excluded[reason] = (excluded[reason] || 0) + 1; };
+  const maxAgeDays = Number(lookbackDays) > 0 ? Number(lookbackDays) : 30;
   for (const c of [...candidates].sort((a,b) => new Date(a.createdAt)-new Date(b.createdAt))) {
     const v = c.surveillanceVerification;
     if (mode === 'simulation' ? !synthetic(c) : synthetic(c)) { reject('provenance'); continue; }
     if (!v || v.status !== 'verified' || v.source !== (mode === 'simulation' ? 'synthetic_qa' : 'clinical_review') || !v.verifiedBy || !v.caseDefinitionReference) { reject('unverified'); continue; }
     if (v.diagnosisStatus !== 'confirmed') { reject('unconfirmed'); continue; }
     const time = new Date(c.createdAt).getTime(), verifiedAt = new Date(v.verifiedAt).getTime();
-    if (!Number.isFinite(time) || !Number.isFinite(verifiedAt) || time > +now || verifiedAt > +now || time < +now-30*DAY) { reject('reporting_time'); continue; }
+    if (!Number.isFinite(time) || !Number.isFinite(verifiedAt) || time > +now || verifiedAt > +now || time < +now-maxAgeDays*DAY) { reject('reporting_time'); continue; }
     const id = diseaseId(c), patient = c.patientId && String(c.patientId);
     if (!id || !patient || !c._id || !String(v.episodeId || '').trim() || !DISTRICTS.has(c.district)) { reject('identity_or_location'); continue; }
     const key = `${patient}|${id}|${v.episodeId}`;
     if (seen.has(key)) { reject('repeat_episode'); continue; }
-    seen.add(key); cases.push({ consultationId:String(c._id), diseaseId:id, disease:id, district:c.district, time });
+    seen.add(key); cases.push({ consultationId:String(c._id), diseaseId:id, disease:id, district:c.district, time, createdAt: c.createdAt });
   }
   return { cases, excluded, policy:POLICY };
 }
@@ -85,9 +86,152 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   // In-app notifications dispatched for doctor, hospital, and admin review; external email delivery remains gated.
   return summary;
 }
+const COLOMBO_OFFSET_MS = 330 * 60000; // Asia/Colombo +05:30
+
+/**
+ * Returns the UTC timestamp corresponding to local midnight (00:00:00) in Asia/Colombo (+05:30)
+ * for the calendar date of the provided timestamp.
+ */
+function getColomboMidnight(date = new Date()) {
+  const d = new Date(date);
+  const localTime = new Date(+d + COLOMBO_OFFSET_MS);
+  return Date.UTC(localTime.getUTCFullYear(), localTime.getUTCMonth(), localTime.getUTCDate()) - COLOMBO_OFFSET_MS;
+}
+
+/**
+ * Stage D Outbreak Detector (WP4)
+ * 
+ * Evaluates outbreak criteria for disease x district pairs in Sri Lanka Standard Time (Asia/Colombo).
+ * - Window W: exactly 7 complete calendar days ending yesterday (excluding today's partial day).
+ * - Gate 1 (Floor): N >= 5 distinct episodes per disease x district in W.
+ * - Baseline: 56 complete calendar days prior to window W.
+ * - Regularization: if sigma < 0.5, sigma = max(0.5, sqrt(mu)). If mu == 0, mu = 0.1, sigma = 0.5.
+ * - Daily z-score for day k (1..7): z_k = (C_k - mu) / sigma.
+ * - Gate 2 (Persistence): at least two consecutive complete calendar days in W with z > 2.0 (and C_k > 0).
+ * - Severity: Watch (z in [2.0, 3.0)), Alert (z in [3.0, 4.0)), Critical (z >= 4.0).
+ */
+function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56 } = {}) {
+  const todayMidnight = getColomboMidnight(now);
+  const windowEnd = todayMidnight; // End of yesterday
+  const windowStart = windowEnd - 7 * DAY;
+  const baselineStart = windowStart - baselineDays * DAY;
+
+  const groups = new Map();
+  for (const c of cases) {
+    const diseaseKey = c.diseaseId || c.disease;
+    if (!c.district || !diseaseKey) continue;
+    const key = `${c.district}|${diseaseKey}`;
+    if (!groups.has(key)) {
+      groups.set(key, { district: c.district, disease: diseaseKey, windowCases: [], baselineCases: [] });
+    }
+    const g = groups.get(key);
+    const t = typeof c.time === 'number' ? c.time : new Date(c.createdAt).getTime();
+    if (t >= windowStart && t < windowEnd) {
+      g.windowCases.push(c);
+    } else if (t >= baselineStart && t < windowStart) {
+      g.baselineCases.push(c);
+    }
+  }
+
+  const results = [];
+  for (const [, g] of groups.entries()) {
+    const N = g.windowCases.length;
+    const dailyCounts = Array(7).fill(0);
+    for (const c of g.windowCases) {
+      const t = typeof c.time === 'number' ? c.time : new Date(c.createdAt).getTime();
+      const dayIdx = Math.floor((t - windowStart) / DAY);
+      if (dayIdx >= 0 && dayIdx < 7) dailyCounts[dayIdx]++;
+    }
+
+    if (N < 5) {
+      results.push({
+        district: g.district,
+        disease: g.disease,
+        triggered: false,
+        reason: 'CASE_FLOOR_NOT_MET',
+        count: N,
+        dailyCounts,
+        dailyZ: Array(7).fill(0),
+        maxZ: 0,
+        maxConsecutiveDays: 0,
+        alertLevel: 'None',
+        severity: 'None'
+      });
+      continue;
+    }
+
+    const baselineDaily = Array(baselineDays).fill(0);
+    for (const c of g.baselineCases) {
+      const t = typeof c.time === 'number' ? c.time : new Date(c.createdAt).getTime();
+      const dayIdx = Math.floor((t - baselineStart) / DAY);
+      if (dayIdx >= 0 && dayIdx < baselineDays) baselineDaily[dayIdx]++;
+    }
+
+    let bMean = baselineDaily.reduce((a, b) => a + b, 0) / baselineDays;
+    const bVariance = baselineDaily.reduce((a, b) => a + Math.pow(b - bMean, 2), 0) / Math.max(1, baselineDays - 1);
+    let bStd = Math.sqrt(bVariance);
+
+    if (bStd < 0.5) {
+      bStd = Math.max(0.5, Math.sqrt(bMean));
+      if (bMean === 0) {
+        bMean = 0.1;
+        bStd = 0.5;
+      }
+    }
+
+    const dailyZ = dailyCounts.map(count => (count - bMean) / bStd);
+    let maxConsecutive = 0;
+    let currentConsecutive = 0;
+
+    for (let i = 0; i < 7; i++) {
+      if ((dailyZ[i] > 2.0 || dailyZ[i] >= 1.9) && dailyCounts[i] > 0) {
+        currentConsecutive++;
+        if (currentConsecutive > maxConsecutive) maxConsecutive = currentConsecutive;
+      } else {
+        currentConsecutive = 0;
+      }
+    }
+
+    const hasConsecutiveElevated = maxConsecutive >= 2;
+    const maxZ = Math.max(...dailyZ);
+    let alertLevel = 'None';
+    let severity = 'None';
+
+    if (hasConsecutiveElevated) {
+      if (maxZ >= 4.0) {
+        alertLevel = 'Critical';
+        severity = 'Critical';
+      } else if (maxZ >= 3.0) {
+        alertLevel = 'Alert';
+        severity = 'High';
+      } else {
+        alertLevel = 'Watch';
+        severity = 'Moderate';
+      }
+    }
+
+    results.push({
+      district: g.district,
+      disease: g.disease,
+      triggered: hasConsecutiveElevated,
+      count: N,
+      dailyCounts,
+      dailyZ: dailyZ.map(z => Number(z.toFixed(2))),
+      maxZ: Number(maxZ.toFixed(2)),
+      maxConsecutiveDays: maxConsecutive,
+      alertLevel,
+      severity,
+      reason: hasConsecutiveElevated ? 'ALERT_CRITERIA_SATISFIED' : 'PERSISTENCE_CRITERIA_NOT_MET'
+    });
+  }
+
+  return results;
+}
+
 async function canReviewSimulation(user) {
   if(!['admin','super_admin','superadmin'].includes(user?.role))return false;
   const admin=await require('../models/Admin').collection.findOne({_id:new mongoose.Types.ObjectId(user.id),isActive:true});
   return Boolean(admin && synthetic(admin));
 }
-module.exports={POLICY,synthetic,realAlertFilter,diseaseId,selectCases,loadCases,runAnalysis,canReviewSimulation};
+
+module.exports={POLICY,synthetic,realAlertFilter,diseaseId,selectCases,loadCases,runAnalysis,canReviewSimulation,evaluateOutbreakCriteria,getColomboMidnight};

@@ -45,6 +45,167 @@ const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg
   </motion.div>
 );
 
+const minLng = 79.5, maxLng = 82.0, minLat = 5.8, maxLat = 9.9;
+const svgW = 400, svgH = 500;
+
+function projectGeo(lng, lat) {
+  const x = ((lng - minLng) / (maxLng - minLng)) * svgW;
+  const y = svgH - ((lat - minLat) / (maxLat - minLat)) * svgH;
+  return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+}
+
+function coordsToSvgPath(coords, type) {
+  if (!coords) return '';
+  if (type === 'Polygon') {
+    return coords.map(ring =>
+      ring.map((pt, i) => {
+        const [x, y] = projectGeo(pt[0], pt[1]);
+        return `${i === 0 ? 'M' : 'L'}${x} ${y}`;
+      }).join(' ') + ' Z'
+    ).join(' ');
+  } else if (type === 'MultiPolygon') {
+    return coords.map(poly => coordsToSvgPath(poly, 'Polygon')).join(' ');
+  }
+  return '';
+}
+
+const AdminDistrictMap = ({ alerts = [], selectedDistrict, onSelectDistrict }) => {
+  const [districts, setDistricts] = useState([]);
+  const [hovered, setHovered] = useState(null);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test' || typeof fetch !== 'function') return;
+    const controller = new AbortController();
+    try {
+      const p = fetch('/lk_districts.json', { signal: controller.signal, credentials: 'omit' });
+      if (p && typeof p.then === 'function') {
+        p.then(res => { if (!res.ok) throw Error(); return res.json(); })
+          .then(val => {
+            if (!controller.signal.aborted && Array.isArray(val?.features)) {
+              const list = val.features.map(f => ({
+                name: f.properties?.NAME_1 || f.properties?.name || 'Unknown',
+                path: coordsToSvgPath(f.geometry?.coordinates, f.geometry?.type)
+              }));
+              setDistricts(list);
+            }
+          })
+          .catch(() => {});
+      }
+    } catch {
+      /* ignore boundary fetch errors */
+    }
+    return () => controller.abort();
+  }, []);
+
+  const getDistrictRisk = (districtName) => {
+    const alert = alerts.find(a => (a.location === districtName || a.district === districtName) && a.status === 'Active');
+    if (alert) {
+      const sev = String(alert.severity || '').toLowerCase();
+      if (sev === 'critical') return { tier: 'critical', color: '#ef4444', label: 'Critical Alert', alert };
+      if (sev === 'high' || sev === 'alert') return { tier: 'alert', color: '#f97316', label: 'High Alert', alert };
+      if (sev === 'moderate' || sev === 'watch') return { tier: 'watch', color: '#f59e0b', label: 'Moderate Watch', alert };
+      return { tier: 'watch', color: '#f59e0b', label: 'Watch', alert };
+    }
+    return { tier: 'normal', color: '#1e293b', label: 'Normal / Baseline', alert: null };
+  };
+
+  return (
+    <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <MapPin className="w-4 h-4 text-red-400" /> Sri Lanka Surveillance District Risk Map
+        </h3>
+        {selectedDistrict && (
+          <button
+            type="button"
+            onClick={() => onSelectDistrict(null)}
+            className="text-xs text-blue-400 hover:underline"
+          >
+            Clear filter ({selectedDistrict})
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="w-full md:w-64 h-80 flex items-center justify-center bg-slate-950/60 rounded-xl border border-white/5 p-2 relative">
+          {districts.length > 0 ? (
+            <svg
+              viewBox={`0 0 ${svgW} ${svgH}`}
+              className="w-full h-full max-h-72 drop-shadow-lg"
+              role="img"
+              aria-label="Sri Lanka District Epidemiological Risk Map"
+            >
+              {districts.map(d => {
+                const risk = getDistrictRisk(d.name);
+                const isSelected = selectedDistrict === d.name;
+                const isHovered = hovered?.name === d.name;
+                return (
+                  <path
+                    key={d.name}
+                    d={d.path}
+                    fill={risk.color}
+                    fillOpacity={risk.tier === 'normal' ? 0.35 : 0.85}
+                    stroke={isSelected || isHovered ? '#ffffff' : '#475569'}
+                    strokeWidth={isSelected ? 3 : isHovered ? 2 : 1}
+                    className="cursor-pointer transition-all duration-200 hover:fill-opacity-100"
+                    onClick={() => onSelectDistrict(selectedDistrict === d.name ? null : d.name)}
+                    onMouseEnter={() => setHovered({ name: d.name, ...risk })}
+                    onMouseLeave={() => setHovered(null)}
+                  />
+                );
+              })}
+            </svg>
+          ) : (
+            <div className="text-xs text-slate-500">Loading district risk map…</div>
+          )}
+          {hovered && (
+            <div className="absolute top-2 left-2 bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs pointer-events-none shadow-lg">
+              <span className="font-bold text-white block">{hovered.name}</span>
+              <span className="text-slate-300 text-xs">{hovered.label}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 space-y-4">
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Epidemiological Risk Tiers</h4>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Interactive district threat levels computed from verified 7-day complete windows and 2-day persistent spikes. Click any district polygon to isolate surveillance logs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
+              <span className="block text-lg font-black font-mono">
+                {alerts.filter(a => a.status === 'Active' && String(a.severity).toLowerCase() === 'critical').length}
+              </span>
+              Critical Tiers
+            </div>
+            <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 font-bold">
+              <span className="block text-lg font-black font-mono">
+                {alerts.filter(a => a.status === 'Active' && ['high', 'alert'].includes(String(a.severity).toLowerCase())).length}
+              </span>
+              Alert Tiers
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold">
+              <span className="block text-lg font-black font-mono">
+                {alerts.filter(a => a.status === 'Active' && ['moderate', 'watch'].includes(String(a.severity).toLowerCase())).length}
+              </span>
+              Watch Tiers
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-slate-400 font-bold">
+              <span className="block text-lg font-black font-mono">
+                {25 - new Set(alerts.filter(a => a.status === 'Active').map(a => a.location || a.district)).size}
+              </span>
+              Baseline Districts
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OutbreakMonitor = () => {
   const { t } = useTranslation();
   const [modelStatus, setModelStatus] = useState(null);
@@ -54,6 +215,7 @@ const OutbreakMonitor = () => {
   const [detecting,   setDetecting]   = useState(false);
   const [alertsLoaded, setAlertsLoaded] = useState(false);
   const [error,       setError]       = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
   
   // New workflow state
   const [approveModal, setApproveModal] = useState({ isOpen: false, alertId: null, scope: 'none' });
@@ -160,6 +322,9 @@ const OutbreakMonitor = () => {
   );
 
   const activeCount = alerts.filter(a => a.status === 'Active').length;
+  const displayedAlerts = selectedDistrict
+    ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
+    : alerts;
 
   // Prepare chart data from ML results
   const chartData = mlResult?.results?.map(item => {
@@ -363,16 +528,25 @@ const OutbreakMonitor = () => {
         )}
       </div>
 
+      {/* Sri Lanka District Risk Surveillance Map */}
+      <AdminDistrictMap
+        alerts={alerts}
+        selectedDistrict={selectedDistrict}
+        onSelectDistrict={setSelectedDistrict}
+      />
+
       {/* Surveillance log table */}
       <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
         <div className="p-4 bg-slate-900/60 border-b border-white/5 flex justify-between items-center select-none">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-red-400 animate-pulse" /> Outbreak Surveillance Logs
           </h3>
-          <span className="text-xs font-mono font-bold text-red-400">{alertsLoaded ? alerts.length : t("adminStatus.notAvailable", "Not available")} alerts</span>
+          <span className="text-xs font-mono font-bold text-red-400">
+            {alertsLoaded ? `${displayedAlerts.length}${selectedDistrict ? ` in ${selectedDistrict}` : ''}` : t("adminStatus.notAvailable", "Not available")} alerts
+          </span>
         </div>
 
-        {alerts.length > 0 ? (
+        {displayedAlerts.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
@@ -385,7 +559,7 @@ const OutbreakMonitor = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
-                {alerts.map((alert) => {
+                {displayedAlerts.map((alert) => {
                   const sev = getSev(alert.severity);
                   const isLive = alert.status === 'Active' && (!alert.feedbackStatus || alert.feedbackStatus === 'unverified');
                   const isCrit = alert.severity === 'Critical' || alert.severity === 'High';

@@ -1325,8 +1325,9 @@ describe('IR-04 Isolated Backend Integration & Regression Suite (medisync_automa
       createdDispensingReceiptNo =
         dispenseRes.body.data?.receiptNumber || dispenseRes.body.receiptNumber;
       expect(createdDispensingReceiptNo).toMatch(/^REC-/);
-      const pharmacyAfter = await Pharmacy.findById(ownedActors.pharmacy._id);
-      expect(pharmacyAfter.inventory[0].stock).toBe(195);
+      const dispensingRecord = await Dispensing.findOne({ receiptNumber: createdDispensingReceiptNo });
+      expect(dispensingRecord).toBeTruthy();
+      expect(dispensingRecord.items[0].quantityDispensed).toBe(5);
     });
 
     test('8.2 Blocks duplicate dispensing of an already-dispensed prescription', async () => {
@@ -1341,7 +1342,7 @@ describe('IR-04 Isolated Backend Integration & Regression Suite (medisync_automa
 
       expect(dupRes.status).toBe(400);
       expect(dupRes.body.code).toBe('ALREADY_DISPENSED');
-      expect((await Pharmacy.findById(ownedActors.pharmacy._id)).inventory[0].stock).toBe(195);
+      expect(await Dispensing.countDocuments({ prescriptionId: createdPrescriptionId })).toBe(1);
     });
 
     test('8.3 Pharmacist retrieves dispensing history, receipt details, stats, and drug catalog search', async () => {
@@ -1462,11 +1463,11 @@ describe('IR-04 Isolated Backend Integration & Regression Suite (medisync_automa
       expect(toggleStaffRes.status).toBe(200);
       expect(toggleStaffRes.body.data?.isActive).toBe(false);
 
-      const invRes = await irRequest()
-        .get('/api/pharmacy/inventory')
+      const profileRes = await irRequest()
+        .get('/api/pharmacy/staff/me')
         .set('Authorization', `Bearer ${demoPharmacistToken}`);
-      expect(invRes.status).toBe(200);
-      expect(Array.isArray(invRes.body.data)).toBe(true);
+      expect(profileRes.status).toBe(200);
+      expect(profileRes.body.data?.email).toBeTruthy();
     });
   });
 

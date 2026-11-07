@@ -637,17 +637,7 @@ exports.verifyLoginOTP = async (req, res) => {
     }
 
     const otpRecord = latestOtpRecord;
-    let isMatch = false;
-    if (process.env.TEST_OTP_ENABLED === 'true') {
-      try {
-        const { verifyTestOtp } = require('../security/testOtpHarness');
-        const userEmail = user.email || user.personalEmail || user.contactInfo?.email;
-        isMatch = verifyTestOtp(userEmail, otp);
-      } catch (_) {}
-    }
-    if (!isMatch) {
-      isMatch = await bcrypt.compare(String(otp).trim(), otpRecord.otp);
-    }
+    const isMatch = await bcrypt.compare(String(otp).trim(), otpRecord.otp);
     if (!isMatch) {
       const newAttempts = await incrementAttempts(authOtpKey);
       const nextDocFailures = persistedFailures + 1;

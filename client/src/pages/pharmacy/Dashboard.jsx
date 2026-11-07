@@ -1,4 +1,4 @@
-import { formatCalendarDate, formatSriLankaDateTime } from '../../utils/sriLankaTime';
+import { formatCalendarDate, formatSriLankaDateTime, formatSriLankaDate } from '../../utils/sriLankaTime';
 import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import PatientAccessModal from '../../components/PatientAccessModal';
 import { PatientAccessProvider, usePatientAccess } from '../../context/PatientAccessContext';
@@ -120,21 +120,52 @@ const Dispense = () => {
     }
   };
 
+  const groupedConsultations = useMemo(() => {
+    const groups = new Map();
+    for (const rx of prescriptions) {
+      const key = rx.consultationRef || (typeof rx.consultationId === 'string' ? rx.consultationId : rx.consultationId?._id) || rx._id;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          consultationRef: rx.consultationRef || (typeof rx.consultationId === 'string' ? rx.consultationId : rx.consultationId?._id) || 'Direct Order',
+          doctorName: rx.doctorId?.fullName || rx.doctorName || 'Authorized Medical Officer',
+          hospitalName: rx.hospitalId?.name || rx.hospitalName || rx.clinicName || 'Clinical Health Facility',
+          createdAt: rx.createdAt || rx.date,
+          prescriptions: []
+        });
+      }
+      groups.get(key).prescriptions.push(rx);
+    }
+    return Array.from(groups.values());
+  }, [prescriptions]);
+
   const openDispenseModal = async (rx) => {
     const generation = searchGeneration.current;
+    let stock = [];
     try {
-      const { data } = await api.get('/pharmacy/inventory');
+      const res = await api.get('/pharmacy/inventory').catch(() => null);
       if (generation !== searchGeneration.current) return;
-      const stock = data.data || [];
-      setInventory(stock);
-      const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName }];
-      setDispenseItems(meds.map(m => {
-        const matches = stock.filter(i => i.drugName.trim().toLowerCase() === m.name.trim().toLowerCase());
-        return { prescribed: m.name, inventoryItemId: matches.length === 1 ? matches[0]._id : '', quantity: '' };
-      }));
-      setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
-      setIsAlt(false); setAltDetails(''); setSelectedRx(rx); setShowDispenseModal(true);
-    } catch (_) { toast.error('Cannot load pharmacy inventory.'); }
+      stock = res?.data?.data || [];
+    } catch (_) {}
+    if (generation !== searchGeneration.current) return;
+    setInventory(stock);
+    const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
+    setDispenseItems(meds.map(m => {
+      const matches = stock.filter(i => i.drugName?.trim().toLowerCase() === m.name?.trim().toLowerCase());
+      return {
+        prescribed: m.name,
+        drugName: m.name,
+        dosage: m.dosage || rx.dosage || 'Standard',
+        inventoryItemId: matches.length === 1 ? matches[0]._id : (matches[0]?._id || ''),
+        quantity: m.durationDays ? String(Math.max(1, parseInt(m.durationDays, 10))) : '1',
+        unit: matches[0]?.unit || 'units'
+      };
+    }));
+    setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
+    setIsAlt(false);
+    setAltDetails('');
+    setSelectedRx(rx);
+    setShowDispenseModal(true);
   };
 
   const confirmDispense = async () => {
@@ -142,24 +173,65 @@ const Dispense = () => {
     if (isAlt && !altDetails.trim()) return toast.error('Please describe the alternative medication dispensed.');
     const items = dispenseItems.map(item => {
       const inv = inventory.find(i => i._id === item.inventoryItemId);
-      return { inventoryItemId: inv?._id, drugName: inv?.drugName, unit: inv?.unit, quantityDispensed: Number(item.quantity) };
+      return {
+        inventoryItemId: inv?._id || item.inventoryItemId || undefined,
+        drugName: inv?.drugName || item.drugName || item.prescribed,
+        unit: inv?.unit || item.unit || 'units',
+        dosage: item.dosage || selectedRx.dosage || 'Standard',
+        quantityDispensed: Number(item.quantity)
+      };
     });
-    if (items.some(i => !i.inventoryItemId || !Number.isSafeInteger(i.quantityDispensed) || i.quantityDispensed <= 0)) return toast.error('Select inventory and enter a positive whole quantity for every medicine.');
+    if (items.some(i => !Number.isSafeInteger(i.quantityDispensed) || i.quantityDispensed <= 0)) {
+      return toast.error('Select inventory and enter a positive whole quantity for every medicine.');
+    }
     setDispensing(true);
     try {
-      const patientToken = getPatientToken ? getPatientToken(selectedRx.patientNic) : null;
+      const targetNic = selectedRx.patientNic || loadedNic;
+      const patientToken = getPatientToken ? getPatientToken(targetNic) : null;
       await api.post('/pharmacy/dispense', {
-        prescriptionId: selectedRx.prescriptionId,
-        patientNic: selectedRx.patientNic,
+        prescriptionId: selectedRx.prescriptionId || selectedRx._id,
+        patientNic: targetNic,
         items,
         isAlternativeDispensed: isAlt,
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
       }, { headers: { 'Idempotency-Key': checkoutKey, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
       toast.success('Prescription dispensing recorded.');
-      setPrescriptions(prev => prev.filter(p => p.prescriptionId !== selectedRx.prescriptionId));
+      setPrescriptions(prev => prev.filter(p => (p.prescriptionId || p._id) !== (selectedRx.prescriptionId || selectedRx._id)));
       setShowDispenseModal(false);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to dispense');
+    } finally {
+      setDispensing(false);
+    }
+  };
+
+  const handleBulkDispense = async (group) => {
+    const patientToken = getPatientToken ? getPatientToken(loadedNic) : null;
+    setDispensing(true);
+    let successCount = 0;
+    try {
+      for (const rx of group.prescriptions) {
+        const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
+        const items = meds.map(m => ({
+          drugName: m.name,
+          dosage: m.dosage || rx.dosage || 'Standard',
+          unit: 'units',
+          quantityDispensed: m.durationDays ? Math.max(1, parseInt(m.durationDays, 10)) : 1
+        }));
+        const key = `bulk:rx:${rx._id || rx.prescriptionId}:${Date.now()}`;
+        await api.post('/pharmacy/dispense', {
+          prescriptionId: rx._id || rx.prescriptionId,
+          patientNic: loadedNic,
+          items,
+          isAlternativeDispensed: false,
+          notes: `Consultation bulk dispense ${group.consultationRef}`
+        }, { headers: { 'Idempotency-Key': key, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
+        successCount++;
+      }
+      toast.success(`Successfully dispensed ${successCount} prescription order(s) for consultation ${group.consultationRef}.`);
+      setPrescriptions(prev => prev.filter(p => !group.prescriptions.some(grx => (grx._id || grx.prescriptionId) === (p._id || p.prescriptionId))));
+    } catch (err) {
+      toast.error(err.response?.data?.error || `Failed during bulk dispense (dispensed ${successCount}).`);
     } finally {
       setDispensing(false);
     }
@@ -225,46 +297,93 @@ const Dispense = () => {
       )}
 
       {prescriptions.length > 0 && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-          <div className="p-5 bg-slate-900/60 border-b border-white/5 flex justify-between items-center select-none">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center select-none">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
               <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for NIC: {loadedNic}
             </h2>
-            <span className="text-xs font-mono font-bold text-teal-400">{prescriptions.length} items</span>
+            <span className="text-xs font-mono font-bold text-teal-400">{prescriptions.length} items across {groupedConsultations.length} order(s)</span>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {prescriptions.map((rx) => {
-              const mainDrug = rx.medications && rx.medications.length > 0 ? rx.medications[0] : null;
-              return (
-                <div key={rx._id} className="bg-slate-950/40 border border-white/5 p-5 rounded-2xl flex flex-col justify-between hover:border-teal-500/20 transition-all">
-                  <div>
-                    <div className="flex justify-between items-start mb-3 gap-2">
-                      <h3 className="text-base font-bold text-white truncate">{mainDrug?.name || rx.drugName || 'Medication'}</h3>
-                      <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-mono font-bold rounded">
-                        #{rx.prescriptionId?.split('-')[1] || rx.prescriptionId}
-                      </span>
-                    </div>
-                    {mainDrug && (
-                      <div className="space-y-1.5 mb-4 text-xs text-slate-300 font-semibold pt-1">
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.dosageLabel", "Dosage:")}</span> {mainDrug.dosage}</p>
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.frequencyLabel", "Frequency:")}</span> {mainDrug.frequency}</p>
-                        <p><span className="text-slate-500 w-16 inline-block uppercase tracking-wider">{t("pharmacy.durationLabel", "Duration:")}</span> {mainDrug.durationDays} Days</p>
-                      </div>
-                    )}
-                    <p className="text-xs text-slate-500 mb-4 border-t border-white/5 pt-3 select-none">
-                      Referred by <span className="text-slate-300 font-bold">{formatDoctorName(rx.doctorId?.fullName, 'Practitioner')}</span>
-                    </p>
+
+          {groupedConsultations.map((group) => (
+            <div key={group.key} className="glass-panel rounded-2xl overflow-hidden border border-white/5 space-y-0">
+              {/* Consultation Card Header */}
+              <div className="p-5 bg-slate-900/80 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-mono font-bold">
+                      Ref: {group.consultationRef}
+                    </span>
+                    <span className="text-xs text-slate-500 font-mono">
+                      {group.createdAt ? formatSriLankaDateTime(group.createdAt) : ''}
+                    </span>
                   </div>
-                  <button
-                    onClick={() => openDispenseModal(rx)}
-                    className="w-full py-2.5 bg-teal-600/10 border border-teal-500/25 hover:bg-teal-600 text-teal-400 hover:text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <CheckCircle className="w-4 h-4" /> Dispense Medication
-                  </button>
+                  <p className="text-sm text-slate-300 font-semibold">
+                    Referred by <span className="text-white font-bold">{formatDoctorName(group.doctorName, 'Practitioner')}</span> &bull; <span className="text-slate-400">{group.hospitalName}</span>
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  disabled={dispensing}
+                  onClick={() => handleBulkDispense(group)}
+                  className="px-4 py-2 bg-emerald-600/15 border border-emerald-500/30 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                >
+                  <CheckCircle className="w-4 h-4" /> Dispense Consultation Order
+                </button>
+              </div>
+
+              {/* Medicines Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-5 py-3.5">{t("pharmacy.drugName", "Medication Name")}</th>
+                      <th className="px-5 py-3.5">Prescription ID</th>
+                      <th className="px-5 py-3.5">{t("pharmacy.dosageLabel", "Dosage")}</th>
+                      <th className="px-5 py-3.5">{t("pharmacy.frequencyLabel", "Frequency")}</th>
+                      <th className="px-5 py-3.5">{t("pharmacy.durationLabel", "Duration")}</th>
+                      <th className="px-5 py-3.5 text-right">{t("common.actions", "Actions")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs text-slate-200">
+                    {group.prescriptions.map((rx) => {
+                      const mainDrug = rx.medications && rx.medications.length > 0 ? rx.medications[0] : null;
+                      const drugName = mainDrug?.name || rx.drugName || 'Medication';
+                      const rxDisplayId = rx.prescriptionId?.split('-')[1] || rx.prescriptionId || rx._id;
+                      return (
+                        <tr key={rx._id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-5 py-3.5 font-bold text-white text-sm">
+                            {drugName}
+                          </td>
+                          <td className="px-5 py-3.5 font-mono text-teal-400 font-semibold">
+                            #{rxDisplayId}
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-300 font-medium">
+                            {mainDrug?.dosage || rx.dosage || '—'}
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-300 font-medium">
+                            {mainDrug?.frequency || '—'}
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-300 font-medium">
+                            {mainDrug?.durationDays ? `${mainDrug.durationDays} Days` : '—'}
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openDispenseModal(rx)}
+                              className="px-3 py-1.5 bg-teal-600/10 border border-teal-500/25 hover:bg-teal-600 text-teal-400 hover:text-white rounded-lg font-bold text-xs transition-all inline-flex items-center gap-1.5"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Dispense Medication
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -562,7 +681,7 @@ const ManualDispenseOTC = () => {
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">{t("pharmacy.manualOtc", "Manual OTC Checkout")}</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.otcSubtitle", "Record direct over-the-counter checkouts and generate simulated receipts.")}</p>
+          <p className="text-slate-400 mt-1 text-sm font-medium">{t("pharmacy.otcSubtitle", "Record direct over-the-counter checkouts and generate official receipts.")}</p>
         </div>
       </div>
 
@@ -817,10 +936,13 @@ const ManualDispenseOTC = () => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB: Restock Leaderboard Analytics
+// TAB: Restock Leaderboard Analytics (U12)
 // ─────────────────────────────────────────────────────────────────────────────
 const RestockAnalytics = () => {
   const { t } = useTranslation();
+  const [range, setRange] = useState('24h');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -828,14 +950,19 @@ const RestockAnalytics = () => {
   const fetchData = useCallback(async () => {
     setLoading(true); setError(false);
     try {
-      const res = await api.get('/pharmacy/analytics/restock');
+      const params = new URLSearchParams({ range });
+      if (range === 'custom') {
+        if (customStart) params.set('startDate', customStart);
+        if (customEnd) params.set('endDate', customEnd);
+      }
+      const res = await api.get(`/pharmacy/analytics/dispensing?${params.toString()}`);
       setData(res.data);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [range, customStart, customEnd]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -845,41 +972,108 @@ const RestockAnalytics = () => {
   }, [data]);
 
   const maxDispensed = useMemo(() =>
-    leaderboard.length > 0 ? Math.max(...leaderboard.map(r => r.totalDispensed24h)) : 1,
+    leaderboard.length > 0 ? Math.max(...leaderboard.map(r => r.totalDispensed || r.totalDispensed24h || 1)) : 1,
     [leaderboard]);
+
+  const rangeOptions = [
+    { id: '24h', label: '24 Hours' },
+    { id: '48h', label: '48 Hours' },
+    { id: '72h', label: '72 Hours' },
+    { id: '7d', label: '7 Days' },
+    { id: '14d', label: '14 Days' },
+    { id: '30d', label: '30 Days' },
+    { id: 'month', label: 'This Month' },
+    { id: 'custom', label: 'Custom' }
+  ];
 
   return (
     <PageTransition className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-indigo-400 animate-pulse-subtle" />
-            Restock Depletion Analytics
+            Dispensing Volume Analytics
           </h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">Fastest-depleting medications at {meta.pharmacyName || 'your pharmacy'} in the last 24 hours.</p>
+          <p className="text-slate-400 mt-1 text-sm font-medium">
+            Dispensing volume across medication lines for {meta.pharmacyName || 'your pharmacy'}.
+          </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="glass-button text-xs py-2 px-4 flex items-center gap-1.5"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-indigo-400 border border-indigo-500/20 font-mono font-semibold">
+            {meta.timezone || 'Asia/Colombo (+05:30)'}
+          </span>
+          <button
+            onClick={fetchData}
+            className="glass-button text-xs py-2 px-4 flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
+        </div>
       </div>
+
+      {/* Range Selector Bar */}
+      <div className="flex flex-wrap items-center gap-2 bg-slate-900/60 p-2 rounded-xl border border-white/5">
+        <span className="text-xs font-bold text-slate-400 px-2 uppercase tracking-wider">Range:</span>
+        {rangeOptions.map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => setRange(opt.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              range === opt.id
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {range === 'custom' && (
+        <div className="glass-panel p-4 rounded-xl border border-indigo-500/20 flex flex-wrap items-center gap-4 text-xs font-medium bg-indigo-500/5">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Start Date:</span>
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="glass-input text-xs py-1 px-2 text-white bg-slate-900"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">End Date:</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="glass-input text-xs py-1 px-2 text-white bg-slate-900"
+            />
+          </div>
+          <button
+            onClick={fetchData}
+            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all"
+          >
+            Apply Range
+          </button>
+        </div>
+      )}
 
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-panel p-5 rounded-2xl border border-white/5">
-            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Active Inventory Analyzed</span>
-            <span className="text-2xl font-black text-white mt-1 block font-mono">{meta.drugsAnalyzed || 0}</span>
+            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Medications Dispensed</span>
+            <span className="text-2xl font-black text-white mt-1 block font-mono">{meta.drugsAnalyzed || leaderboard.length}</span>
           </div>
-          <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
-            <span className="text-[11px] text-red-400/80 uppercase font-bold tracking-wider">Critical Inventory Alerts</span>
-            <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{leaderboard.filter(r => r.isCritical).length}</span>
+          <div className="glass-panel p-5 rounded-2xl border border-indigo-500/10">
+            <span className="text-[11px] text-indigo-400/80 uppercase font-bold tracking-wider">Total Units Dispensed</span>
+            <span className="text-2xl font-black text-indigo-400 mt-1 block font-mono">
+              {leaderboard.reduce((sum, r) => sum + (r.totalDispensed || r.totalDispensed24h || 0), 0)}
+            </span>
           </div>
           <div className="glass-panel p-5 rounded-2xl border border-teal-500/10">
-            <span className="text-[11px] text-teal-400/80 uppercase font-bold tracking-wider">Total Dispensed Units</span>
+            <span className="text-[11px] text-teal-400/80 uppercase font-bold tracking-wider">Dispense Events</span>
             <span className="text-2xl font-black text-teal-400 mt-1 block font-mono">
-              {leaderboard.reduce((sum, r) => sum + r.totalDispensed24h, 0)}
+              {leaderboard.reduce((sum, r) => sum + (r.dispenseEvents || 0), 0)}
             </span>
           </div>
         </div>
@@ -898,7 +1092,7 @@ const RestockAnalytics = () => {
       {!loading && !error && leaderboard.length === 0 && (
         <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 select-none">
           <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-50" />
-          <p className="text-slate-400 font-semibold text-lg">No dispensing logs in the last 24 hours</p>
+          <p className="text-slate-400 font-semibold text-lg">No dispensing logs in this interval</p>
         </div>
       )}
 
@@ -909,51 +1103,37 @@ const RestockAnalytics = () => {
               <tr>
                 <th className="px-6 py-4">Rank</th>
                 <th className="px-6 py-4">{t("pharmacy.drugName", "Medication Name")}</th>
-                <th className="px-6 py-4 text-center">Dispensed (24h)</th>
-                <th className="px-6 py-4 text-center">Current Stock</th>
-                <th className="px-6 py-4">Depletion Level</th>
-                <th className="px-6 py-4 text-right">Status</th>
+                <th className="px-6 py-4 text-center">Dispensed Volume</th>
+                <th className="px-6 py-4 text-center">Dispense Events</th>
+                <th className="px-6 py-4">Volume Distribution</th>
+                <th className="px-6 py-4 text-right">Unit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-sm text-slate-200">
               {leaderboard.map((row) => {
-                const barWidth = Math.round((row.totalDispensed24h / maxDispensed) * 100);
-                const isLow = row.isCritical;
-                const stockDisplay = row.currentStock !== null ? `${row.currentStock} ${row.unit}` : '—';
+                const total = row.totalDispensed ?? row.totalDispensed24h ?? 0;
+                const barWidth = Math.round((total / maxDispensed) * 100);
                 return (
-                  <tr key={row.rank} className={isLow ? 'bg-red-500/[0.02] hover:bg-red-500/[0.04]' : 'hover:bg-white/[0.01]'}>
+                  <tr key={row.rank} className="hover:bg-white/[0.01]">
                     <td className="px-6 py-4 font-bold text-slate-400">#{row.rank}</td>
                     <td className="px-6 py-4 font-bold text-white">{row.drugName}</td>
-                    <td className="px-6 py-4 text-center font-mono font-bold text-indigo-400">{row.totalDispensed24h}</td>
-                    <td className="px-6 py-4 text-center font-mono font-semibold">
-                      <span className={isLow ? 'text-red-400' : 'text-slate-300'}>{stockDisplay}</span>
-                      {row.reorderLevel !== null && (
-                        <span className="text-xs text-slate-600 block font-normal">Reorder @ {row.reorderLevel}</span>
-                      )}
-                    </td>
+                    <td className="px-6 py-4 text-center font-mono font-bold text-indigo-400">{total}</td>
+                    <td className="px-6 py-4 text-center font-mono text-slate-300">{row.dispenseEvents || 1}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex-1 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
                           <div
-                            className={`h-full rounded-full transition-all ${isLow ? 'bg-red-400' : 'bg-indigo-400'}`}
+                            className="h-full rounded-full transition-all bg-indigo-400"
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
                         <span className="text-xs text-slate-400 w-10 text-right font-mono font-semibold">
-                          {row.percentDepleted !== null ? `${row.percentDepleted}%` : '—'}
+                          {barWidth}%
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      {isLow ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase select-none">
-                          Critical
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold uppercase select-none">
-                          Stable
-                        </span>
-                      )}
+                    <td className="px-6 py-4 text-right font-mono text-xs text-slate-400">
+                      {row.unit || 'units'}
                     </td>
                   </tr>
                 );
@@ -967,7 +1147,7 @@ const RestockAnalytics = () => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB: District Restock Alerts (ML Predictor)
+// TAB: District Health Demand (U11 Redesign)
 // ─────────────────────────────────────────────────────────────────────────────
 const RestockPredictor = () => {
   const { t } = useTranslation();
@@ -975,10 +1155,10 @@ const RestockPredictor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
-  const fetchAlerts = useCallback(async () => {
+  const fetchDemand = useCallback(async () => {
     setIsLoading(true); setIsError(false);
     try {
-      const res = await api.get('/pharmacy/restock-alerts');
+      const res = await api.get('/pharmacy/district-demand');
       setData(res.data);
     } catch {
       setIsError(true);
@@ -987,85 +1167,133 @@ const RestockPredictor = () => {
     }
   }, []);
 
-  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+  useEffect(() => { fetchDemand(); }, [fetchDemand]);
 
-  const alerts = data?.alerts || [];
-  const district = formatDistrictName(data?.district) || '';
-
-  const getStatusStyles = (status) => {
-    if (status === 'Critical') return { border: 'border-red-500/20', bg: 'bg-red-500/[0.02]', badge: 'bg-red-500/10 text-red-400 border-red-500/20', icon: '🚨', trend: 'text-red-400' };
-    return { border: 'border-amber-500/20', bg: 'bg-amber-500/[0.02]', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: '⚠️', trend: 'text-amber-400' };
-  };
+  const topBurdens = data?.topBurdens || [];
+  const topMedications = data?.topMedications || [];
+  const district = formatDistrictName(data?.district) || 'District';
 
   return (
     <PageTransition className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('pharmacy.restockAlertsTitle', 'District Restock Alerts')}</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">ML demand analysis mapping regional pharmacy trends in {district || 'your district'}.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+            <Pill className="w-8 h-8 text-teal-400 animate-pulse-subtle" />
+            {t('pharmacy.restockAlertsTitle', 'District Health Demand')}
+          </h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">
+            Epidemiological disease burdens and 30-day top dispensed pharmaceuticals across {district}.
+          </p>
         </div>
-        <button onClick={fetchAlerts} className="glass-button text-xs py-2 px-4 flex items-center gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        <button onClick={fetchDemand} className="glass-button text-xs py-2 px-4 flex items-center gap-1.5 shrink-0">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh Demand
         </button>
       </div>
 
       {!isLoading && !isError && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-panel p-5 rounded-2xl border border-white/5">
-            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Medicines Analyzed</span>
-            <span className="text-2xl font-black text-white mt-1 block font-mono">{data?.drugsAnalyzed || 0}</span>
+            <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Target District</span>
+            <span className="text-2xl font-black text-white mt-1 block font-mono">{district}</span>
           </div>
-          <div className="glass-panel p-5 rounded-2xl border border-red-500/10">
-            <span className="text-[11px] text-red-400/80 uppercase font-bold tracking-wider">Critical ML Alerts</span>
-            <span className="text-2xl font-black text-red-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Critical').length}</span>
+          <div className="glass-panel p-5 rounded-2xl border border-teal-500/10">
+            <span className="text-[11px] text-teal-400/80 uppercase font-bold tracking-wider">Top Burdens Tracked</span>
+            <span className="text-2xl font-black text-teal-400 mt-1 block font-mono">{topBurdens.length}</span>
           </div>
-          <div className="glass-panel p-5 rounded-2xl border border-amber-500/10">
-            <span className="text-[11px] text-amber-400/80 uppercase font-bold tracking-wider">Warnings Issued</span>
-            <span className="text-2xl font-black text-amber-400 mt-1 block font-mono">{alerts.filter(a => a.status === 'Warning').length}</span>
+          <div className="glass-panel p-5 rounded-2xl border border-indigo-500/10">
+            <span className="text-[11px] text-indigo-400/80 uppercase font-bold tracking-wider">Top Medications</span>
+            <span className="text-2xl font-black text-indigo-400 mt-1 block font-mono">{topMedications.length}</span>
           </div>
         </div>
       )}
 
       {isLoading && <Skeleton.Card />}
-      
+
       {isError && (
         <div className="glass-panel rounded-2xl p-8 border border-red-500/25 bg-red-500/5 text-center space-y-4 select-none">
           <AlertTriangle className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="text-red-400 font-bold">Failed to connect to ML restock engine.</p>
-          <button onClick={fetchAlerts} className="glass-button text-xs py-2.5 px-6 mx-auto">Retry Engine</button>
+          <p className="text-red-400 font-bold">Failed to load district demand data.</p>
+          <button onClick={fetchDemand} className="glass-button text-xs py-2.5 px-6 mx-auto">Retry Demand</button>
         </div>
       )}
 
-      {!isLoading && !isError && alerts.length === 0 && (
-        <div className="glass-panel rounded-2xl p-12 text-center border border-teal-500/10 bg-teal-500/5 select-none">
-          <CheckCircle className="w-10 h-10 text-teal-400 mx-auto mb-4" />
-          <p className="text-teal-400 font-bold text-lg">Inventory levels are stable</p>
-          <p className="text-slate-400 text-xs mt-1">No significant regional demand spikes detected in {district} over the past 14 days.</p>
-        </div>
-      )}
+      {!isLoading && !isError && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Section 1: Top District Health Burdens */}
+          <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden flex flex-col">
+            <div className="p-5 bg-slate-900/60 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Activity className="w-4 h-4 text-teal-400" />
+                Top Health Burdens ({district})
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Consultation visits aggregated by diagnosis in the last 30 days.</p>
+            </div>
+            <div className="p-4 flex-1">
+              {topBurdens.length > 0 ? (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/40 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-2.5">Rank</th>
+                      <th className="px-4 py-2.5">Diagnosis</th>
+                      <th className="px-4 py-2.5 text-center">Cases</th>
+                      <th className="px-4 py-2.5 text-right">Last Reported</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs text-slate-200">
+                    {topBurdens.map((b) => (
+                      <tr key={b.rank} className="hover:bg-white/[0.01]">
+                        <td className="px-4 py-3 font-bold text-slate-400">#{b.rank}</td>
+                        <td className="px-4 py-3 font-semibold text-white">{b.diagnosis}</td>
+                        <td className="px-4 py-3 text-center font-mono font-bold text-teal-400">{b.cases}</td>
+                        <td className="px-4 py-3 text-right text-slate-400 font-mono">
+                          {b.lastReported ? formatSriLankaDate(b.lastReported) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-slate-500 text-xs">No active health burden records found for this district.</div>
+              )}
+            </div>
+          </div>
 
-      {alerts.length > 0 && (
-        <div className="space-y-4">
-          {alerts.map((alert, idx) => {
-            const styles = getStatusStyles(alert.status);
-            return (
-              <div key={idx} className={`rounded-2xl border p-5 ${styles.border} ${styles.bg} flex items-start gap-4 hover:border-white/10 transition-all`}>
-                <span className="text-2xl shrink-0 select-none">{styles.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="text-base font-bold text-white truncate">{alert.drugName}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase ${styles.badge}`}>{alert.status}</span>
-                    <span className={`text-xs font-mono font-bold ${styles.trend}`}>{alert.trend}</span>
-                  </div>
-                  <p className="text-slate-300 text-xs leading-relaxed">{alert.message}</p>
-                  <div className="mt-3 flex gap-6 text-xs text-slate-500 border-t border-white/5 pt-2 select-none">
-                    <span>Baseline: <span className="text-slate-400 font-bold">{alert.baselineDailyAvg} units/day</span></span>
-                    <span>Recent demand: <span className="text-slate-400 font-bold">{alert.recentDailyAvg} units/day</span></span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {/* Section 2: Top 30-Day Dispensed Medications */}
+          <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden flex flex-col">
+            <div className="p-5 bg-slate-900/60 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Pill className="w-4 h-4 text-indigo-400" />
+                Top Dispensed Medications (30-Day District Volume)
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Aggregated dispensing volume across district pharmacies.</p>
+            </div>
+            <div className="p-4 flex-1">
+              {topMedications.length > 0 ? (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/40 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-2.5">Rank</th>
+                      <th className="px-4 py-2.5">Medication</th>
+                      <th className="px-4 py-2.5 text-center">Total Units</th>
+                      <th className="px-4 py-2.5 text-right">Dispense Events</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs text-slate-200">
+                    {topMedications.map((m) => (
+                      <tr key={m.rank} className="hover:bg-white/[0.01]">
+                        <td className="px-4 py-3 font-bold text-slate-400">#{m.rank}</td>
+                        <td className="px-4 py-3 font-semibold text-white">{m.drugName}</td>
+                        <td className="px-4 py-3 text-center font-mono font-bold text-indigo-400">{m.totalQuantity}</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-400">{m.dispenseEvents}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-slate-500 text-xs">No medication dispensations recorded in the last 30 days.</div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </PageTransition>
@@ -1467,7 +1695,7 @@ export default function PharmacyDashboard() {
     ] : []),
     { label: t('pharmacy.dispenseHistory', 'History'),     path: '/pharmacy/dashboard/history',   icon: Clock },
     ...(isAdmin ? [
-      { label: t('pharmacy.restockAlerts', 'Restock ML'),  path: '/pharmacy/dashboard/restock',   icon: Pill },
+      { label: t('pharmacy.restockAlerts', 'District Demand'),  path: '/pharmacy/dashboard/restock',   icon: Pill },
       { label: t('nav.analytics', 'Analytics'),   path: '/pharmacy/dashboard/analytics', icon: BarChart3 },
       { label: t('pharmacy.staffManagement', 'Staff'),       path: '/pharmacy/dashboard/staff',     icon: Users }
     ] : []),

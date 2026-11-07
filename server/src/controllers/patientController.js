@@ -722,17 +722,7 @@ exports.verifyPatientAccess = async (req, res) => {
       return res.status(429).json({ message: 'Too many failed OTP attempts. Please try again later.' });
     }
 
-    let isMatch = false;
-    if (process.env.TEST_OTP_ENABLED === 'true') {
-      try {
-        const patientDoc = await require('../models/Patient').findById(otpRecord.userId).select('email').lean();
-        const { verifyTestOtp } = require('../security/testOtpHarness');
-        isMatch = verifyTestOtp(patientDoc?.email, otp);
-      } catch (_) {}
-    }
-    if (!isMatch) {
-      isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
-    }
+    const isMatch = await bcrypt.compare(String(otp || '').trim(), otpRecord.otp);
     if (!isMatch) {
       const sAttempts = await incrementAttempts('patient:' + sessionId);
       const pAttempts = await incrementAttempts(patientAccessKey);

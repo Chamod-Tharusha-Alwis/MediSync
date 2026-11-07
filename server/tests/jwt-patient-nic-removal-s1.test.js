@@ -33,7 +33,6 @@ function createController(name, customMocks = {}) {
         NODE_ENV: 'test',
         JWT_SECRET,
         JWT_REFRESH_SECRET,
-        TEST_OTP_ENABLED: 'true',
         SKIP_LOGIN_NOTIFICATION: 'true'
       }
     },
@@ -67,9 +66,6 @@ function createController(name, customMocks = {}) {
         sendWelcomeEmail: jest.fn(async () => ({ providerAccepted: true })),
         sendOTPEmail: jest.fn(async () => ({ providerAccepted: true })),
         sendLoginNotificationEmail: jest.fn(async () => ({ providerAccepted: true }))
-      };
-      if (id === '../security/testOtpHarness') return {
-        verifyTestOtp: () => true
       };
       if (id === '../config/redis') return {
         incrementAttempts: jest.fn(async () => 0),

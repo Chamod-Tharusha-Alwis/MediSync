@@ -37,8 +37,8 @@
     {
       "path": "server/tests/ir04BackendIntegration.test.js",
       "previousApprovedSha256": "adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc",
-      "releaseCandidateSha256": "adc80b885a2fb468d3fca90a5181290838298c32bc8508a30e1d187cf20a9ffc",
-      "reason": "Unmodified from approved backend integration quarantine test"
+      "releaseCandidateSha256": "e40d7c7bf993d3cd8ecc7bea7365740d7d824501c6f460b38e2962245a8ab9ae",
+      "reason": "Stage B2 inventory removal (U10): replaced legacy inventory stock checks with durable Dispensing.findOne verification (8.1/8.2) and replaced /api/pharmacy/inventory route check with staff profile verification (10.2)."
     },
     {
       "path": "server/tests/patientProfileOwnedIntegration.test.js",
