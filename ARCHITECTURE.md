@@ -39,9 +39,13 @@ graph TD
 - **Technology**: Python 3.11, Flask, SQLite (`medisync.db`), Scikit-Learn.
 - **Hosting**: Render Web Service (`https://medisync-ml.onrender.com`).
 - **Capabilities**:
-  - Symptom-to-disease reference matching using TF-IDF vectorization and Cosine Similarity.
-  - Reference ICD-10 catalog containing 71,704 validated diagnostic concepts.
-  - Cold-start resilience handling with graceful timeout contracts.
+  - **Tiered Symptom Matcher V2**:
+    - **Tier 1 (Curated)**: 41 reference symptom profiles from `dataset.csv`. Takes absolute precedence when top confidence $\ge 40\%$, reserving Sri Lankan priority diseases (Dengue, Malaria, Typhoid, etc.) strictly to vetted profiles.
+    - **Tier 2 (Sourced Knowledge Base)**: 174 mapped clinical conditions with empirical edge probabilities derived from CDC NAMCS outpatient survey data (`disease_symptom_kb.v1.json`), evaluated using probability-weighted sparse TF-IDF retrieval.
+    - **Peak Inference Memory**: Benchmarked at ~0.22 MB RSS, well below the 200 MB internal budget and 512 MB Render Free tier limit.
+    - **Clinical Cardinal Symptom Guards**: Specific clinical rules (e.g. step-ladder fever check for enteric fever/typhoid) discount deceptive symptom co-occurrences.
+  - Reference ICD-10 catalog containing 71,704 validated diagnostic concepts accessible for manual physician diagnosis and patient records.
+  - Cold-start resilience handling with graceful timeout contracts (~50s cold start accepted on Render Free).
   - Pinned non-diagnostic disclaimer contract: `clinicalValidation: 'not_established'`.
 
 ### 1.4 Database Layer
@@ -79,13 +83,19 @@ In compliance with clinical privacy principles, doctors cannot view historical p
 MediSync includes a real-time communicable disease surveillance system designed to detect localized disease spikes across all 25 Sri Lankan administrative districts.
 
 ### 3.1 Monitored Diseases
-The surveillance engine dynamically monitors **any recorded ICD-10 or ICD-11 condition** present in clinical consultations without hardcoded restrictions. The platform's benchmark validation suite specifically tests 6 priority communicable scenario conditions across all 25 districts:
+The surveillance engine dynamically monitors **any recorded ICD-10 or ICD-11 condition** present in clinical consultations without hardcoded restrictions or whitelists. Grouping occurs dynamically by `(entity, diseaseId)`. The platform verifies detection across multiple clinical chapters including:
 1. Dengue (`A90`)
 2. Leptospirosis (`A27.9`)
 3. Diarrhoeal diseases (`A09`)
 4. Influenza (`J10.1`)
 5. Chikungunya (`A92.0`)
 6. COVID-19 (`U07.1`)
+7. Cholera (`A00.9`)
+8. Measles (`B05.9`)
+9. Avian influenza (`J09.X2`)
+10. Celiac disease (`K90.0`)
+11. Multiple sclerosis (`G35`)
+12. Type 1 diabetes mellitus (`E10.9`)
 
 ### 3.2 Dual-Condition Statistical Detector
 To prevent false alarms from single-day testing artifacts, the detector (`server/src/services/outbreakDetector.js`) requires:
@@ -118,10 +128,10 @@ The PDF export subsystem (`server/src/utils/pdfGenerator.js`) generates verifiab
 
 MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. The suite operates entirely offline, using in-memory databases and loopback mock adapters:
 
-- **Backend Jest Suite**: 2,626 tests across 122 suites.
-- **Client React Suite**: 660 tests across 76 suites.
+- **Backend Jest Suite**: 2,639 tests across 124 suites.
+- **Client React Suite**: 661 tests across 76 suites.
 - **Email & PDF Harness**: 31 tests across 2 suites.
-- **ML Scoring & Flask Models**: 71 tests (40 scoring + 31 Flask API).
+- **ML Scoring & Flask Models**: 78 tests (40 scoring + 31 Flask API + 7 tiered matcher).
 - **Root Security, Contracts & ML Resilience**: 62 tests (55 root + 7 ML status contracts).
-- **Total Offline Verification**: **3,450 passed, 0 failed**.
+- **Total Offline Verification**: **3,465 passed, 0 failed across 207 suites**.
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.
