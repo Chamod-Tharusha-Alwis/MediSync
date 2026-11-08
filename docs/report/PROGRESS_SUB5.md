@@ -6,7 +6,7 @@
 | Phase | Description | Status | Commits | Tests (Pass/Fail) | Gate | Protected Pins |
 |---|---|:---:|---|:---:|:---:|:---:|
 | **S0** | Preflight (Env setup, branch, baseline gate) | DONE | `1be83ec` | 3,465 / 0 | PASS | 15/15 |
-| **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
+| **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | IN PROGRESS | - | - | - | - |
 | **S3** | System Structure, File Guide, API Reference & Data Model | NOT STARTED | - | - | - | - |
 | **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | NOT STARTED | - | - | - | - |
