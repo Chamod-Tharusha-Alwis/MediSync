@@ -6,7 +6,7 @@
 |---|---|---|:---:|---|:---:|:---:|:---:|:---:|
 | **D0** | Truth Pass (Docs & Claims Correction) | `feat/sub4-d0` | DONE | `31891f7` | 3,457 / 0 | PASS | PASS | 15/15 |
 | **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
-| **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | NOT STARTED | - | - | - | - | - |
+| **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | DONE | `d73e88b` | 3,463 / 0 | PASS | PASS | 15/15 |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
@@ -85,5 +85,28 @@
      - Offline test suite: **3,458 passed, 0 failed across 205 suites**.
      - Client production build: **Exit code 0** (214.35 kB gzip main bundle).
      - Protected file ledger: **15/15 accounted for and valid**.
+
+---
+
+### Phase D2 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Candidate Sources Evaluated in `docs/new/sub4/DATA_SOURCES.md`**:
+     - Evaluated HPO, Orphanet, MONDO, MedlinePlus, and SymCAT against domain, coverage, licensing, and outpatient simulator fit.
+     - Selected SymCAT (CDC NAMCS / NHAMCS outpatient survey data): 801 conditions, 474 standardized symptoms, empirical outpatient frequencies.
+     - License review: CDC survey data is US Government Public Domain (17 U.S.C. § 105); parser pipeline is MIT licensed.
+     - Verified source snapshot: `ml-engine/data_pipeline/raw/symcat_conditions.csv` (12,660,539 bytes, SHA-256 `66ab3e299a4b7b1f6b4a04bacb65194e9edb861b0c9b759995e3c15af4d066ce`).
+  2. **Ingestion & Normalization Pipeline**:
+     - Created `ml-engine/data_pipeline/ingest_disease_symptom_kb.py`.
+     - Maps conditions to ICD-10-CM with strict non-fabrication rule (zero invented symptom lists).
+     - Generated `ml-engine/data/disease_symptom_kb.v1.json` with 280 mapped conditions (83 exact matches, 197 broader matches) conforming to required versioned schema.
+     - Generated `ml-engine/data/unmapped_diseases.v1.json` with 521 unmapped conditions (`icd10: null`, `mappingConfidence: "none"`) strictly separated.
+  3. **Quality Gates & Tests**:
+     - Python unit tests in `ml-engine/test_disease_symptom_kb.py`: 5/5 passed (schema, provenance, no-empty-symptoms, ICD syntax, unmapped separation).
+     - Backend Jest test in `server/tests/phaseD2DiseaseSymptomKbOffline.test.js`: 5/5 passed.
+     - Offline test suite: **3,463 passed, 0 failed across 206 suites**.
+     - Client production build: **Exit code 0** (214.35 kB gzip main bundle).
+     - Protected file ledger: **15/15 accounted for and valid**.
+
 
 
