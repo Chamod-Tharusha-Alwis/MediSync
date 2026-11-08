@@ -317,6 +317,52 @@ if SKLEARN_AVAILABLE and symptom_data:
     tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
     tfidf_matrix = tfidf_vectorizer.fit_transform(disease_docs)
 
+# Tier 2 Knowledge Base: Sourced and filtered empirical disease profiles (SymCAT CDC survey data)
+kb_disease_data = []
+kb_tfidf_vectorizer = None
+kb_tfidf_matrix = None
+
+try:
+    kb_path = os.path.join(data_dir, 'disease_symptom_kb.v1.json')
+    if os.path.exists(kb_path):
+        with open(kb_path, 'r', encoding='utf-8') as f:
+            kb_raw = json.load(f)
+        for item in kb_raw.get('diseases', []):
+            if item.get('mappingConfidence') == 'exact_normalized' and item.get('icd10'):
+                sym_list = []
+                weighted_sym_terms = []
+                for s in item.get('symptoms', []):
+                    s_name = s.get('name', '').strip().lower()
+                    s_prob = float(s.get('probability', 15.0))
+                    if s_name:
+                        sym_list.append(s_name)
+                        repeat_count = max(1, min(10, int(round(s_prob / 10.0))))
+                        weighted_sym_terms.extend([s_name] * repeat_count)
+                
+                kb_disease_data.append({
+                    'disease': item.get('name', ''),
+                    'diseaseId': item.get('diseaseId', ''),
+                    'icd_code': item.get('icd10', ''),
+                    'symptoms': sym_list,
+                    'weighted_terms': weighted_sym_terms,
+                    'source': 'knowledge_base',
+                    'clinicalValidation': 'not_established',
+                    'provenance': item.get('provenance', {})
+                })
+        print(f"Loaded {len(kb_disease_data)} Tier 2 KB disease profiles from disease_symptom_kb.v1.json")
+        
+        if SKLEARN_AVAILABLE and kb_disease_data:
+            kb_docs = []
+            for d in kb_disease_data:
+                terms_text = " ".join(d.get('weighted_terms', []))
+                d_name = d.get('disease', '').lower()
+                doc = f"{d_name} {terms_text}"
+                kb_docs.append(doc)
+            kb_tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
+            kb_tfidf_matrix = kb_tfidf_vectorizer.fit_transform(kb_docs)
+except Exception as e:
+    print("Warning: Could not load disease_symptom_kb.v1.json:", e)
+
 # Specialist Mapping based on ICD-10 chapters and clinical specialties
 def get_specialist_for_disease(disease_name, icd_code):
     disease_name_lower = disease_name.lower()
@@ -412,7 +458,7 @@ def predict_disease():
                 (isinstance(values, list) and all(isinstance(value, str) for value in values))):
             return jsonify({'error': 'INVALID_SYMPTOMS'}), 400
     if not data or 'symptoms' not in data:
-        return jsonify({'predictions': []})
+        return jsonify({'predictions': [], 'clinicalValidation': 'not_established'})
         
     symptoms = data.get('symptoms')
     
@@ -425,10 +471,10 @@ def predict_disease():
         input_symptoms_str = " ".join(symptoms).lower()
         input_symptoms_list = [s.lower() for s in symptoms]
     else:
-        return jsonify({'predictions': []})
+        return jsonify({'predictions': [], 'clinicalValidation': 'not_established'})
         
     if not input_symptoms_str:
-        return jsonify({'predictions': []})
+        return jsonify({'predictions': [], 'clinicalValidation': 'not_established'})
 
     predictions = []
     
@@ -457,6 +503,15 @@ def predict_disease():
             
             # Combined score: 65% cosine similarity + 35% symptom coverage
             combined_score = (0.65 * cos_score) + (0.35 * overlap_ratio)
+
+            # Clinical adjustment:
+            # Typhoid is an enteric fever whose hallmark presentation requires high fever/chills.
+            # Pure localized pain without fever/chills heavily discounts enteric fever likelihood.
+            disease_name_l = disease.get('disease', '').lower()
+            if 'typhoid' in disease_name_l:
+                has_fever = any(f in input_symptoms_str for f in ['fever', 'chills', 'high fever'])
+                if not has_fever:
+                    combined_score = combined_score * 0.55
             
             if combined_score > 0.05 or cos_score > 0.10:
                 # Check for "urgent" condition
@@ -480,11 +535,70 @@ def predict_disease():
                     'severity': disease.get('avg_severity', 5),
                     'matched_symptoms': matched,
                     'description': disease.get('description', ''),
-                    'precautions': disease.get('precautions', [])
+                    'precautions': disease.get('precautions', []),
+                    'source': 'curated',
+                    'clinicalValidation': 'not_established'
                 })
         
         candidates.sort(key=lambda x: (x['confidence'], len(x['matched_symptoms']), x['cosine_sim']), reverse=True)
-        predictions = candidates[:5]
+        
+        # Tiered Blending with Tier 2 KB if available:
+        # Tier 1 wins if top match confidence >= 40.0% (score >= 0.40).
+        # Otherwise, query Tier 2 sparse knowledge base.
+        kb_data = globals().get('kb_disease_data')
+        kb_vec = globals().get('kb_tfidf_vectorizer')
+        kb_mat = globals().get('kb_tfidf_matrix')
+        
+        if kb_data and kb_vec and kb_mat is not None:
+            if candidates and candidates[0]['confidence'] >= 40.0:
+                predictions = candidates[:5]
+            else:
+                kb_input_vec = kb_vec.transform([input_symptoms_str])
+                kb_similarities = cosine_similarity(kb_input_vec, kb_mat).flatten()
+                kb_candidates = []
+                for idx, kb_dis in enumerate(kb_data):
+                    kb_cos = float(kb_similarities[idx])
+                    kb_syms = [s.lower() for s in kb_dis.get('symptoms', [])]
+                    kb_matched = []
+                    for inp_s in input_symptoms_list:
+                        inp_clean = inp_s.strip().lower()
+                        if not inp_clean:
+                            continue
+                        for d_sym in kb_syms:
+                            if inp_clean in d_sym or d_sym in inp_clean:
+                                kb_matched.append(d_sym)
+                    kb_matched = list(dict.fromkeys(kb_matched))
+                    if len(kb_matched) == 0:
+                        continue
+                    kb_overlap = len(kb_matched) / max(1, len(input_symptoms_list))
+                    kb_combined = (0.65 * kb_cos) + (0.35 * kb_overlap)
+                    if kb_combined > 0.05 or (kb_cos > 0.10 and len(kb_matched) >= 1):
+                        kb_name_l = kb_dis.get('disease', '').lower()
+                        kb_emerg = any(em in kb_name_l for em in ['heart attack', 'paralysis', 'pneumonia', 'aids', 'tuberculosis', 'embolism', 'sepsis'])
+                        kb_urgent = kb_emerg and kb_combined >= 0.50 and len(kb_matched) >= 2
+                        kb_spec = get_specialist_for_disease(kb_dis.get('disease', ''), kb_dis.get('icd_code', ''))
+                        kb_candidates.append({
+                            'disease': kb_dis.get('disease', ''),
+                            'icd_code': kb_dis.get('icd_code', ''),
+                            'confidence': round(float(kb_combined * 100), 2),
+                            'score': float(kb_combined),
+                            'cosine_sim': round(float(kb_cos * 100), 2),
+                            'urgent': kb_urgent,
+                            'recommendedSpecialist': kb_spec,
+                            'severity': 3.0,
+                            'matched_symptoms': kb_matched,
+                            'description': f"Reference knowledge base profile for {kb_dis.get('disease', '')}.",
+                            'precautions': ["Consult a healthcare provider for comprehensive evaluation."],
+                            'source': 'knowledge_base',
+                            'clinicalValidation': 'not_established'
+                        })
+                kb_candidates.sort(key=lambda x: (x['confidence'], len(x['matched_symptoms']), x['cosine_sim']), reverse=True)
+                if kb_candidates and (not candidates or kb_candidates[0]['confidence'] >= candidates[0]['confidence']):
+                    predictions = kb_candidates[:5]
+                else:
+                    predictions = candidates[:5]
+        else:
+            predictions = candidates[:5]
     else:
         # Fallback to Intersection method if sklearn fails or missing
         for disease in symptom_data:
@@ -516,7 +630,7 @@ def predict_disease():
         predictions.sort(key=lambda x: x['score'], reverse=True)
         predictions = predictions[:5]
         
-    return jsonify({'predictions': predictions})
+    return jsonify({'predictions': predictions, 'clinicalValidation': 'not_established'})
 
 
 @app.route('/ingest', methods=['POST'])

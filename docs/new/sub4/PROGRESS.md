@@ -7,8 +7,9 @@
 | **D0** | Truth Pass (Docs & Claims Correction) | `feat/sub4-d0` | DONE | `31891f7` | 3,457 / 0 | PASS | PASS | 15/15 |
 | **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | DONE | `d73e88b` | 3,463 / 0 | PASS | PASS | 15/15 |
-| **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `d49d2eb` | 3,464 / 0 | PASS | PASS | 15/15 |
-| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | NOT STARTED | - | - | - | - | - |
+| **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `fd71344` | 3,464 / 0 | PASS | PASS | 15/15 |
+| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `pending` | 3,464 / 0 | PASS | PASS | 15/15 |
+| **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
 | **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | NOT STARTED | - | - | - | - | - |
@@ -143,3 +144,32 @@
      - Offline test suite (`node scripts/run_offline_tests.js`): **3,464 passed, 0 failed across 206 suites**.
      - Client production build (`npm --prefix client run build`): **Exit code 0** (214.35 kB gzip main bundle).
      - Protected file ledger: **15/15 accounted for and valid**.
+
+---
+
+### Phase D3 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Tiered Matcher V2 Architecture in `ml-engine/app.py`**:
+     - Tier 1: 41 curated profiles (`dataset.csv`). Takes absolute precedence whenever top match confidence $\ge 40.0\%$. Sri Lankan priority diseases (Dengue, Malaria, Typhoid, TB, etc.) served exclusively by Tier 1.
+     - Tier 2: 174 active mapped conditions with empirical edge probabilities from `disease_symptom_kb.v1.json`. Evaluated via sparse TF-IDF with empirical probability term weighting.
+     - Peak memory RSS verified via tracemalloc at **0.22 MB**, well below the 200 MB target and 512 MB Render Free tier limit.
+  2. **Clinical Cardinal Symptom Guards**:
+     - Typhoid clinical rule: hallmark step-ladder fever requirement applied. Non-fever localized multi-pain queries discount enteric fever likelihood, preventing false positive top matches.
+     - At-least-one matched symptom rule applied to Tier 1 and Tier 2 candidates.
+  3. **Negative Test Cases & Regressions Verified in `ml-engine/test_tiered_matcher.py` (7/7 passed)**:
+     - Case (a): `['back pain', 'belly pain', 'chest pain', 'abdominal pain']` returns Peritonitis / Kidney stone from Tier 2; Typhoid NOT urgent and NOT top match.
+     - Case (b): `['wrist pain', 'ankle pain']` returns Pseudohypoparathyroidism / Gout / Carpal tunnel from Tier 2; Dengue and Leptospirosis NOT in top 5.
+     - Case (c): Classic dengue presentation returns Dengue from Tier 1 with confidence $\ge 40.0\%$, source: "curated".
+     - Tier 2 lookup: Carpal tunnel syndrome (`['numbness in hand', 'wrist pain', 'hand tingling']`) returns `G56.00`, source: "knowledge_base", `clinicalValidation: "not_established"`.
+     - Graceful degradation: empty/garbage inputs return 200 with empty predictions, `clinicalValidation: "not_established"`, zero 500 error.
+  4. **Pass-Through Integration in `server/src/utils/inferenceResponse.js` and `client/src/utils/inferenceResponse.js`**:
+     - Added `'source'` and `'clinicalValidation'` to validated/preserved fields.
+  5. **Re-pinned Protected Ledger in `docs/release/PROTECTED_HASHES.json`**:
+     - `ml-engine/app.py` SHA-256 updated to `0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37`.
+     - 15/15 protected files accounted for and valid.
+  6. **Quality Gates**:
+     - `ml-scoring`: 40/40 passed (`b13_r2_scoring_checks.py`).
+     - `test_tiered_matcher.py`: 7/7 passed.
+     - `run_offline_tests.js`: 3,464 passed, 0 failed across 206 suites.
+     - Client build: exit code 0.
