@@ -9,7 +9,7 @@
 | **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `d2b7082` | 3,465 / 0 | PASS | 15/15 |
 | **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
-| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | pending | 3,465 / 0 | PASS | 15/15 |
+| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | c57088a | 3,465 / 0 | PASS | 15/15 |
 | **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | IN PROGRESS | - | - | - | - |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
 | **S7** | Final Verification & Link Integrity Check | NOT STARTED | - | - | - | - |
