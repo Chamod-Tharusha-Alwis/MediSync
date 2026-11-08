@@ -11,7 +11,7 @@
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `69ee0c3` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | DONE | `551b0ab` | 3,465 / 0 | PASS | PASS | 15/15 |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | DONE | `2b94d26` | 3,465 / 0 | PASS | PASS | 15/15 |
-| **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | NOT STARTED | - | - | - | - | - |
+| **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | DONE | `pending` | 3,465 / 0 | PASS | PASS | 15/15 |
 
 ---
 
@@ -223,4 +223,24 @@
      - Offline test suite: **3,465 passed, 0 failed across 207 suites**.
      - Client production build: **Exit code 0** (214.59 kB gzip main bundle).
      - Protected file ledger: **15/15 accounted for and valid**.
+
+---
+
+### Phase D6 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Documentation Synchronization**:
+     - Synchronized `README.md` and `ARCHITECTURE.md` to reflect:
+       - 41 curated reference symptom profiles (`dataset.csv`).
+       - 174 mapped clinical conditions with empirical edge probabilities from CDC NAMCS outpatient survey data (`disease_symptom_kb.v1.json`).
+       - 71,704 validated leaf concepts in the ICD-10 diagnostic catalog supported across doctor consultations, patient history, and PDF summaries.
+       - Generic epidemiological surveillance grouping dynamically by `(entity, diseaseId)` for ANY valid ICD code across all clinical chapters.
+  2. **Acceptance Matrix & Final Report**:
+     - Generated `docs/new/sub4/FINAL_ACCEPTANCE_MATRIX.md` mapping all requirements across Phases D0–D5 to exact verification commands and pass counts.
+     - Generated `docs/new/sub4/FINAL_REPORT.md` providing comprehensive audit and implementation details.
+  3. **Final Quality Gate**:
+     - Offline test suite (`node scripts/run_offline_tests.js`): **3,465 passed, 0 failed across 207 suites**.
+     - Client production build (`npm --prefix client run build`): **Exit code 0** (214.59 kB gzip main bundle).
+     - Protected file ledger (`docs/release/PROTECTED_HASHES.json`): **15/15 accounted for and valid**.
+
 
