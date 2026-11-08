@@ -8,7 +8,7 @@
 | **P1** | Medicine Safety Rules | `feat/sub3-p1` | DONE | `8930ef9` | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P2** | QR-verified PDF + history gate | `feat/sub3-p2` | DONE | `2797b82` | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P3** | Platform master plan completion | `feat/sub3-p3` | DONE | `da0fd14` | 3,454 / 0 | PASS | PASS | 15/15 |
-| **P4** | Hardening & Release Readiness | `feat/sub3-p4` | NOT STARTED | - | - | - | - | - |
+| **P4** | Hardening & Release Readiness | `feat/sub3-p4` | DONE | `ae35071` | 3,454 / 0 | PASS | PASS | 15/15 |
 
 ---
 
@@ -107,4 +107,20 @@
   - Protected Ledger: **15/15 accounted for and valid**.
 - **Verified OFFLINE**: All 8 master plan functional areas, offline test harness, build compilation, and documentation alignment.
 - **NOT Verified LIVE**: Production deployment on Render and Vercel (pending owner merge to `main`).
+
+### Phase P4 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Security & Privacy Hardening**: Verified zero PII logging, constant-time identity checks, zero secret leakage, safe error boundaries across all Sub-Project 3 code.
+  2. **Sub-Project 3 Implementation Plan**: Authored `docs/new/sub3/PLAN_p4.md`.
+  3. **Owner Production Runbook**: Authored `docs/new/sub3/OWNER_ACTIONS_SUB3.md` detailing Atlas IP whitelisting fix for `pharmacies.findOne() buffering timed out`, sample dispensing seeding commands, demo batch removal commands, `MEDISYNC_VERIFICATION_TOKENS_APPROVED` activation steps, and Render ML cold-start explanation (50s wake up vs UptimeRobot 30s timeout).
+  4. **Master Acceptance Matrix Update**: Updated `docs/new/FINAL_ACCEPTANCE_MATRIX.md` with 205 test suites (3,454 tests passed), 121 bundled modules, 15/15 protected files, and comprehensive Section 7 for Sub-Project 3 deliverables.
+  5. **Final Comprehensive Delivery Report**: Authored `docs/new/sub3/FINAL_REPORT.md` providing end-to-end audit, cross-phase breakdown, offline verification vs live owner actions.
+- **Quality Gate Results**:
+  - `node scripts/run_offline_tests.js`: **3,454 passed, 0 failed across 205 suites**.
+  - `npm --prefix client run build`: **Exit code 0** (214.11 kB gzip bundle).
+  - Protected Ledger: **15/15 accounted for and valid**.
+- **Verified OFFLINE**: Full test suite pass, zero build warnings/errors, 810-key trilingual parity, zero PII logging.
+- **NOT Verified LIVE**: Live production database updates, demo batch purging, and Render variable activation (reserved for owner per `OWNER_ACTIONS_SUB3.md`).
+
 
