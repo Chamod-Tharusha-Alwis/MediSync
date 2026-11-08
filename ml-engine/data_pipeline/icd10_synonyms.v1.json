@@ -1,0 +1,199 @@
+{
+  "version": "1.0.0",
+  "description": "Verified clinical synonym mappings to exact ICD-10-CM descriptions",
+  "verifiedCount": 32,
+  "synonyms": [
+    {
+      "term": "diabetes",
+      "icdDescription": "Type 2 diabetes mellitus without complications",
+      "icdCode": "E119",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0011860)"
+    },
+    {
+      "term": "uti",
+      "icdDescription": "Urinary tract infection, site not specified",
+      "icdCode": "N390",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0042029)"
+    },
+    {
+      "term": "hiv",
+      "icdDescription": "Human immunodeficiency virus [HIV] disease",
+      "icdCode": "B20",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0019693)"
+    },
+    {
+      "term": "chlamydia",
+      "icdDescription": "Chlamydial infection, unspecified",
+      "icdCode": "A749",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0008035)"
+    },
+    {
+      "term": "crohn disease",
+      "icdDescription": "Crohn's disease, unspecified, without complications",
+      "icdCode": "K5090",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0010346)"
+    },
+    {
+      "term": "cellulitis",
+      "icdDescription": "Cellulitis, unspecified",
+      "icdCode": "L0390",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0007642)"
+    },
+    {
+      "term": "colorectal cancer",
+      "icdDescription": "Malignant neoplasm of colon, unspecified",
+      "icdCode": "C189",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0009402)"
+    },
+    {
+      "term": "adhd",
+      "icdDescription": "Attention-deficit hyperactivity disorder, unspecified type",
+      "icdCode": "F909",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C1263846)"
+    },
+    {
+      "term": "bell palsy",
+      "icdDescription": "Bell's palsy",
+      "icdCode": "G510",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0015469)"
+    },
+    {
+      "term": "alzheimer disease",
+      "icdDescription": "Alzheimer's disease, unspecified",
+      "icdCode": "G309",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0002395)"
+    },
+    {
+      "term": "parkinson disease",
+      "icdDescription": "Parkinson's disease",
+      "icdCode": "G20",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0030567)"
+    },
+    {
+      "term": "huntington disease",
+      "icdDescription": "Huntington's disease",
+      "icdCode": "G10",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0020179)"
+    },
+    {
+      "term": "gerd",
+      "icdDescription": "Gastro-esophageal reflux disease without esophagitis",
+      "icdCode": "K219",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0017168)"
+    },
+    {
+      "term": "copd",
+      "icdDescription": "Chronic obstructive pulmonary disease, unspecified",
+      "icdCode": "J449",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0024117)"
+    },
+    {
+      "term": "bph",
+      "icdDescription": "Benign prostatic hyperplasia without lower urinry tract symp",
+      "icdCode": "N400",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0033570)"
+    },
+    {
+      "term": "pcos",
+      "icdDescription": "Polycystic ovarian syndrome",
+      "icdCode": "E282",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0032460)"
+    },
+    {
+      "term": "dvt",
+      "icdDescription": "Acute embolism and thombos unsp deep vn unsp lower extremity",
+      "icdCode": "I82409",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0149871)"
+    },
+    {
+      "term": "flu",
+      "icdDescription": "Flu due to unidentified influenza virus w oth resp manifest",
+      "icdCode": "J111",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0021400)"
+    },
+    {
+      "term": "kidney stone",
+      "icdDescription": "Calculus of kidney",
+      "icdCode": "N200",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0022650)"
+    },
+    {
+      "term": "heart attack",
+      "icdDescription": "Acute myocardial infarction, unspecified",
+      "icdCode": "I219",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0027051)"
+    },
+    {
+      "term": "stroke",
+      "icdDescription": "Cerebral infarction, unspecified",
+      "icdCode": "I639",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0038454)"
+    },
+    {
+      "term": "hives",
+      "icdDescription": "Urticaria, unspecified",
+      "icdCode": "L509",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0042109)"
+    },
+    {
+      "term": "ringworm",
+      "icdDescription": "Tinea corporis",
+      "icdCode": "B354",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0040247)"
+    },
+    {
+      "term": "athlete's foot",
+      "icdDescription": "Tinea pedis",
+      "icdCode": "B353",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0040251)"
+    },
+    {
+      "term": "shingles",
+      "icdDescription": "Zoster without complications",
+      "icdCode": "B029",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0019360)"
+    },
+    {
+      "term": "strep throat",
+      "icdDescription": "Streptococcal pharyngitis",
+      "icdCode": "J020",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0153138)"
+    },
+    {
+      "term": "common cold",
+      "icdDescription": "Acute nasopharyngitis [common cold]",
+      "icdCode": "J00",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0009443)"
+    },
+    {
+      "term": "high blood pressure",
+      "icdDescription": "Essential (primary) hypertension",
+      "icdCode": "I10",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0020538)"
+    },
+    {
+      "term": "chickenpox",
+      "icdDescription": "Varicella without complication",
+      "icdCode": "B019",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0008049)"
+    },
+    {
+      "term": "whooping cough",
+      "icdDescription": "Whooping cough, unspecified species without pneumonia",
+      "icdCode": "A3790",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0043168)"
+    },
+    {
+      "term": "heartburn",
+      "icdDescription": "Heartburn",
+      "icdCode": "R12",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0018834)"
+    },
+    {
+      "term": "food poisoning",
+      "icdDescription": "Bacterial foodborne intoxication, unspecified",
+      "icdCode": "A059",
+      "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0016479)"
+    }
+  ]
+}

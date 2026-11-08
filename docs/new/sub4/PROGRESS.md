@@ -7,6 +7,7 @@
 | **D0** | Truth Pass (Docs & Claims Correction) | `feat/sub4-d0` | DONE | `31891f7` | 3,457 / 0 | PASS | PASS | 15/15 |
 | **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | DONE | `d73e88b` | 3,463 / 0 | PASS | PASS | 15/15 |
+| **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `pending` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
@@ -110,3 +111,35 @@
 
 
 
+
+---
+
+### Phase D2b Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **License Audit**:
+     - Upstream SymCAT website (Ahead Research, Inc.) proprietary terms documented in `docs/new/sub4/DATA_SOURCES.md`.
+     - Knowledge base marked `"internal research use, licence unverified"` and prohibited from public redistributed releases.
+  2. **Empirical Quality Analysis & Threshold**:
+     - Measured 10-decile histogram of 9,162 edges in `docs/new/sub4/KB_QUALITY.md` (mean 28.93%).
+     - Probability threshold $P \ge 15.0\%$ selected to remove survey noise (nailbiting, cross-eyed) while retaining cardinal presentations.
+     - Minimum 3 surviving symptoms required per condition.
+  3. **Dummy Imputation Cluster Quarantine**:
+     - Isolated 14 conditions sharing identical 12-symptom dummy imputation vector and Jaccard $\ge 0.70$ neighbors (including Typhoid and Dengue fallback clusters).
+     - Quarantined 136 conditions into `ml-engine/data/kb_quarantine.v1.json` with documented reasons (`dummy_imputation_cluster`, `too_few_surviving_symptoms`, `duplicate_condition_profile`, `sl_priority_disease_shield`). Never deleted silently.
+  4. **Sourced ICD-10 Synonyms**:
+     - Created `ml-engine/data_pipeline/build_icd10_synonyms.py`.
+     - Generated `ml-engine/data_pipeline/icd10_synonyms.v1.json` containing 32 clinically verified synonym mappings (UMLS/CMS citations, 100% verified against `icd10_clean.json`).
+  5. **Mapper v2 & Review Ledger**:
+     - Auto-accepted only `exact_normalized` matches (174 conditions with weighted `{ name, probability }` edges in `disease_symptom_kb.v1.json`).
+     - Separated 491 active conditions with candidate proposals into `unmapped_diseases.v1.json` (`icd10: null`, `mappingConfidence: "none"`), marked `needs_owner_review`.
+     - Generated `ml-engine/data_pipeline/mapping_review.csv` (665 review rows).
+  6. **Sri Lankan Priority Disease Protection**:
+     - Dengue, leptospirosis, typhoid, chikungunya, influenza, cholera, dysentery, measles, TB, hepatitis, and malaria protected from KB contamination.
+     - Priority conditions missing in both Tier 1 and KB recorded in `docs/new/sub4/OWNER_ACTIONS_SUB4.md` §4 as `pending_owner_data` with MOH/WHO citations.
+  7. **Quality Gates & Tests**:
+     - Python unit tests in `ml-engine/test_disease_symptom_kb.py`: 6/6 passed.
+     - Backend Jest test in `server/tests/phaseD2DiseaseSymptomKbOffline.test.js`: 6/6 passed.
+     - Offline test suite (`node scripts/run_offline_tests.js`): **3,464 passed, 0 failed across 206 suites**.
+     - Client production build (`npm --prefix client run build`): **Exit code 0** (214.35 kB gzip main bundle).
+     - Protected file ledger: **15/15 accounted for and valid**.
