@@ -8,7 +8,7 @@
 | **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | DONE | `d73e88b` | 3,463 / 0 | PASS | PASS | 15/15 |
 | **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `fd71344` | 3,464 / 0 | PASS | PASS | 15/15 |
-| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `pending` | 3,464 / 0 | PASS | PASS | 15/15 |
+| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `9dd3bbf` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
