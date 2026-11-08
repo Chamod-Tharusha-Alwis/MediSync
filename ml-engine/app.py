@@ -462,9 +462,9 @@ def predict_disease():
                 # Check for "urgent" condition
                 urgent = False
                 disease_name_l = disease.get('disease', '').lower()
-                if any(em in disease_name_l for em in ['heart attack', 'paralysis', 'pneumonia', 'aids', 'tuberculosis']):
-                    urgent = True
-                elif disease.get('avg_severity', 0) >= 4.5 and len(matched) >= 2:
+                is_emergency = any(em in disease_name_l for em in ['heart attack', 'paralysis', 'pneumonia', 'aids', 'tuberculosis'])
+                is_severe = disease.get('avg_severity', 0) >= 4.5
+                if (is_emergency or is_severe) and combined_score >= 0.50 and len(matched) >= 2:
                     urgent = True
                     
                 specialist = get_specialist_for_disease(disease.get('disease', ''), disease.get('icd_code', ''))
@@ -494,7 +494,10 @@ def predict_disease():
             
             if match_count > 0:
                 score = match_count / max(1, len(input_symptoms_list))
-                urgent = disease.get('avg_severity', 5) > 4.5
+                disease_name_l = disease.get('disease', '').lower()
+                is_emergency = any(em in disease_name_l for em in ['heart attack', 'paralysis', 'pneumonia', 'aids', 'tuberculosis'])
+                is_severe = disease.get('avg_severity', 5) >= 4.5
+                urgent = (is_emergency or is_severe) and score >= 0.50 and match_count >= 2
                 specialist = get_specialist_for_disease(disease.get('disease', ''), disease.get('icd_code', ''))
                 
                 predictions.append({

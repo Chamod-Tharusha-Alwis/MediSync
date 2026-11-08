@@ -89,7 +89,9 @@ Before executing the demo batch removal:
 2. Verify that targeted records match:
    - 6,309 consultations
    - 14 outbreak alerts (6 active in monitor + 8 historical/terminal alerts in database)
-3. Once satisfied, execute with explicit confirmation:
+3. Once satisfied, execute with explicit double-barrier confirmation (environment approval + confirm flag):
    ```powershell
+   $env:APPROVE_DEMO_OUTBREAK_REMOVAL = "true"
    node scripts/remove_demo_batch.js --db medisync_prod --confirm-delete
+   Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL -ErrorAction SilentlyContinue
    ```

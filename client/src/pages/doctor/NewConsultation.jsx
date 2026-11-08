@@ -1061,18 +1061,21 @@ const NewConsultation = () => {
                                 <div className="min-w-0">
                                   <p className="font-bold text-white flex items-center gap-2">
                                     {diag.disease}
-                                    {diag.urgent && (
+                                    {diag.urgent && diag.confidence >= 50 && (
                                       <span className="text-[11px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 font-black uppercase tracking-wider animate-pulse">
                                         URGENT
                                       </span>
                                     )}
                                   </p>
-                                  <div className="flex flex-wrap gap-2 mt-1.5">
+                                  <div className="flex flex-wrap gap-2 mt-1.5 items-center">
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 font-mono">
                                       ICD-10: {diag.icd_code}
                                     </span>
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800">
                                       {diag.recommendedSpecialist}
+                                    </span>
+                                    <span className="text-[11px] text-teal-400/90 italic">
+                                      {t('doctor.referenceMatchNotDiagnosis')}
                                     </span>
                                   </div>
                                 </div>

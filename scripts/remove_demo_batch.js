@@ -52,7 +52,7 @@ function parseCliArgs(args = []) {
       confirmBatch = args[++i];
     } else if (arg === '--batch') {
       targetBatch = args[++i];
-    } else if (arg === '--confirm') {
+    } else if (arg === '--confirm' || arg === '--confirm-delete') {
       dryRun = false;
     }
   }

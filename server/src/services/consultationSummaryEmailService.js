@@ -236,16 +236,40 @@ function buildSummaryEmailContent({ consultation, patient, doctor, prescriptions
             );
             const instr = escapeHtml(stripNicFromText(rx.instructions || '-', explicitNic));
             return `<tr>
-              <td style="padding:8px;border:1px solid #cbd5e1;">${idx + 1}</td>
-              <td style="padding:8px;border:1px solid #cbd5e1;font-weight:600;">${drug}</td>
-              <td style="padding:8px;border:1px solid #cbd5e1;">${dosage}</td>
-              <td style="padding:8px;border:1px solid #cbd5e1;">${freq}</td>
-              <td style="padding:8px;border:1px solid #cbd5e1;">${dur}</td>
-              <td style="padding:8px;border:1px solid #cbd5e1;">${instr}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;text-align:center;">${idx + 1}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;">${drug}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;">${dosage}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;">${freq}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;">${dur}</td>
+              <td style="padding:10px 8px;border:1px solid #cbd5e1;word-break:break-word;">${instr}</td>
             </tr>`;
           })
           .join('')
-      : `<tr><td colspan="6" style="padding:10px;border:1px solid #cbd5e1;color:#64748b;">No medications prescribed during this consultation.</td></tr>`;
+      : `<tr><td colspan="6" style="padding:12px;border:1px solid #cbd5e1;color:#64748b;text-align:center;">No medications prescribed during this consultation.</td></tr>`;
+
+  const rxCardsHtml =
+    prescriptions.length > 0
+      ? prescriptions
+          .map((rx, idx) => {
+            const drug = escapeHtml(stripNicFromText(rx.drugName || rx.name || 'Medication', explicitNic));
+            const dosage = escapeHtml(stripNicFromText(rx.dosage || '-', explicitNic));
+            const freq = escapeHtml(stripNicFromText(rx.frequency || '-', explicitNic));
+            const dur = escapeHtml(
+              stripNicFromText(rx.duration || (rx.durationDays ? `${rx.durationDays} days` : '-'), explicitNic)
+            );
+            const instr = escapeHtml(stripNicFromText(rx.instructions || '-', explicitNic));
+            return `<div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin-bottom:10px;">
+              <div style="font-weight:700;color:#0f3b66;font-size:14px;margin-bottom:6px;">${idx + 1}. ${drug}</div>
+              <table style="width:100%;font-size:12px;border-collapse:collapse;">
+                <tr><td style="color:#64748b;padding:2px 0;width:35%;">Dosage:</td><td style="font-weight:600;padding:2px 0;color:#0f172a;">${dosage}</td></tr>
+                <tr><td style="color:#64748b;padding:2px 0;">Frequency:</td><td style="font-weight:600;padding:2px 0;color:#0f172a;">${freq}</td></tr>
+                <tr><td style="color:#64748b;padding:2px 0;">Duration:</td><td style="font-weight:600;padding:2px 0;color:#0f172a;">${dur}</td></tr>
+                <tr><td style="color:#64748b;padding:2px 0;vertical-align:top;">Instructions:</td><td style="font-weight:500;padding:2px 0;color:#0f172a;word-break:break-word;">${instr}</td></tr>
+              </table>
+            </div>`;
+          })
+          .join('')
+      : `<div style="padding:12px;border:1px solid #cbd5e1;color:#64748b;border-radius:6px;text-align:center;">No medications prescribed during this consultation.</div>`;
 
   const rxLinesText =
     prescriptions.length > 0
@@ -265,35 +289,70 @@ function buildSummaryEmailContent({ consultation, patient, doctor, prescriptions
       : 'No medications prescribed during this consultation.';
 
   const html = stripNicFromText(
-    `<div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
+    `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @media only screen and (max-width: 600px) {
+    .rx-desktop-table { display: none !important; }
+    .rx-mobile-cards { display: block !important; }
+    .email-container { width: 100% !important; padding: 12px !important; }
+  }
+  @media only screen and (min-width: 601px) {
+    .rx-desktop-table { display: table !important; width: 100% !important; }
+    .rx-mobile-cards { display: none !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;">
+    <div class="email-container" style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
       <div style="background:#0f3b66;color:#ffffff;padding:18px 24px;border-radius:8px 8px 0 0;">
         <h2 style="margin:0;font-size:18px;">MediSync Consultation Summary</h2>
         <p style="margin:4px 0 0;font-size:13px;color:#cbd5e1;">Reference: ${escapeHtml(consultRef)} | Date: ${escapeHtml(consultDate)}</p>
       </div>
-      <div style="padding:20px 24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;">
+      <div style="padding:20px 24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;background:#ffffff;">
         <p style="margin:0 0 12px;">Dear <strong>${escapeHtml(patientName)}</strong>,</p>
         <p style="margin:0 0 16px;">Your consultation with <strong>${escapeHtml(doctorName)}</strong> has been recorded. Below is your clinical summary and prescription list.</p>
-        <div style="background:#f8fafc;padding:12px 16px;border-radius:6px;margin-bottom:16px;">
+        <div style="background:#f8fafc;padding:12px 16px;border-radius:6px;margin-bottom:16px;border:1px solid #f1f5f9;">
           <p style="margin:0 0 6px;"><strong>Diagnosis:</strong> ${escapeHtml(diagnosis)}</p>
           <p style="margin:0 0 6px;"><strong>Clinical Notes:</strong> ${escapeHtml(notes)}</p>
           ${followUpStr ? `<p style="margin:0;"><strong>Recommended Follow-Up:</strong> ${escapeHtml(followUpStr)}</p>` : ''}
         </div>
         <h3 style="font-size:15px;margin:16px 0 8px;color:#0d9488;">Prescribed Medications</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead>
-            <tr style="background:#f1f5f9;text-align:left;">
-              <th style="padding:8px;border:1px solid #cbd5e1;">#</th>
-              <th style="padding:8px;border:1px solid #cbd5e1;">Medication</th>
-              <th style="padding:8px;border:1px solid #cbd5e1;">Dosage</th>
-              <th style="padding:8px;border:1px solid #cbd5e1;">Frequency</th>
-              <th style="padding:8px;border:1px solid #cbd5e1;">Duration</th>
-              <th style="padding:8px;border:1px solid #cbd5e1;">Instructions</th>
-            </tr>
-          </thead>
-          <tbody>${rxRowsHtml}</tbody>
-        </table>
+        
+        <!-- Desktop Table view (horizontally scrollable fallback) -->
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+          <table class="rx-desktop-table" style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
+            <thead>
+              <tr style="background:#f1f5f9;text-align:left;">
+                <th style="padding:8px;border:1px solid #cbd5e1;width:32px;">#</th>
+                <th style="padding:8px;border:1px solid #cbd5e1;">Medication</th>
+                <th style="padding:8px;border:1px solid #cbd5e1;">Dosage</th>
+                <th style="padding:8px;border:1px solid #cbd5e1;">Frequency</th>
+                <th style="padding:8px;border:1px solid #cbd5e1;">Duration</th>
+                <th style="padding:8px;border:1px solid #cbd5e1;">Instructions</th>
+              </tr>
+            </thead>
+            <tbody>${rxRowsHtml}</tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Stacked Card View (responsive for narrow viewports) -->
+        <div class="rx-mobile-cards" style="display:none;margin-top:8px;">
+          ${rxCardsHtml}
+        </div>
+
+        <!-- Trilingual Confidentiality Notice -->
+        <div style="margin-top:20px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#64748b;line-height:1.5;">
+          <p style="margin:0 0 4px;"><strong>English:</strong> Confidential clinical consultation summary. Keep for medical records.</p>
+          <p style="margin:0 0 4px;"><strong>සිංහල:</strong> රහස්‍ය සායනික උපදේශන සාරාංශයකි. ඔබගේ වෛද්‍ය වාර්තා සඳහා සුරක්ෂිතව තබා ගන්න.</p>
+          <p style="margin:0;"><strong>தமிழ்:</strong> இரகசிய மருத்துவ ஆலோசனைக் குறிப்பு. மருத்துவ பதிவுகளுக்காக இதை வைத்திருக்கவும்.</p>
+        </div>
       </div>
-    </div>`,
+    </div>
+</body>
+</html>`,
     explicitNic
   );
 

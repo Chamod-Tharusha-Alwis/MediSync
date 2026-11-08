@@ -235,6 +235,7 @@ export const en = {
     "patientsDirectory": "Patient Directory",
     "symptomsEntered": "Recorded Symptoms",
     "aiAssist": "AI Diagnostic Differential",
+    "referenceMatchNotDiagnosis": "Reference match, not a diagnosis",
     "clinicalDiagnosis": "Clinical Diagnosis",
     "icdSelection": "ICD Standard Classification",
     "icd10": "ICD-10 (CM)",

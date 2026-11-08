@@ -34,7 +34,7 @@ Reference: `docs/release/PROTECTED_HASHES.json` (15/15 valid, 0 discrepancies)
 |---|:---:|---|
 | `server/src/middleware/auth.js` | MATCH | Unmodified from approved authorization redaction baseline |
 | `server/src/controllers/doctorController.js` | MATCH | Unmodified from approved doctor transaction baseline |
-| `ml-engine/app.py` | MATCH | Sub-Project 1 Task 1.7 (2026-11-08): allow ML QA SQLite temp DB path under os.tmpdir() / MEDISYNC_TEST_TMP; historical mixed line endings preserved |
+| `ml-engine/app.py` | MATCH | Sub-Project 3 Phase P0 (2026-11-08): calibrate doctor ML urgency derivation to require high-risk profile AND similarity score >= 50% AND >= 2 matched symptoms; historical CRLF line endings preserved |
 | `ml-engine/evaluate_symptom_model.py` | MATCH | Unmodified from approved symptom model evaluation baseline |
 | `client/src/components/SymptomTagInput.jsx` | MATCH | Unmodified from approved UI symptom tag input component |
 | `server/tests/ir04BackendIntegration.test.js` | MATCH | Stage B2 inventory removal (U10): replaced legacy inventory stock checks with durable Dispensing.findOne verification (8.1/8.2) |
