@@ -96,7 +96,7 @@ function harness() {
     function requireSource(id) {
       // The alias read route uses the REAL patientController.getPrescriptions.
       // Unexercised sibling write/PDF handlers are tripwires, not fake successes.
-      if (id === '../controllers/prescriptionController') return { issuePrescription: fail, getPendingByNic: fail, dispense: fail, downloadPrescriptionPdf: fail, exportConsultationPdf: fail };
+      if (id === '../controllers/prescriptionController') return { issuePrescription: fail, getPendingByNic: fail, dispense: fail, downloadPrescriptionPdf: fail, exportConsultationPdf: fail, checkMedicineSafety: fail };
       if (id.startsWith('../models/')) {
         const model = models[id.slice('../models/'.length)]; if (!model) throw Error('UNEXPECTED_OFFLINE_MODEL'); return model;
       }

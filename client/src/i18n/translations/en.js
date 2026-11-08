@@ -822,5 +822,19 @@ export const en = {
     "savedBadge": "Saved",
     "policyNotice": "Language updates apply immediately across all portal interfaces and notification dispatches.",
     "saveButton": "Save Account Preference"
+  },
+  "medicineSafety": {
+    "title": "Medicine Safety & Formulary Check",
+    "disclaimer": "Advisory reference only; clinical assessment required. clinicalValidation: not_established.",
+    "interactionsDetected": "Interactions or Dosage Limits Detected",
+    "noInteractions": "No known reference interactions detected.",
+    "acknowledgeCheckbox": "I acknowledge these warnings and confirm this prescription is clinically indicated",
+    "justificationReason": "Clinical reason / justification (minimum 5 characters)",
+    "reasonPlaceholder": "Document clinical justification (e.g., patient closely monitored for pain)",
+    "unconfiguredNotice": "Safety limits not configured (pending formulary data)",
+    "durationExceeded": "Course duration exceeds recommended threshold",
+    "dosageExceeded": "Estimated daily dose exceeds recommended maximum",
+    "duplicateTherapy": "Duplicate active ingredient detected",
+    "interactionWarning": "Potential drug-drug interaction"
   }
 };

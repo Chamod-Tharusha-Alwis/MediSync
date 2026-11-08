@@ -23,6 +23,7 @@ import { prescriptionPayload } from '../../utils/prescriptionDuration';
 import { LayoutDashboard, FlaskConical } from 'lucide-react';
 import { formatDoctorName } from '../../utils/doctorName';
 import HistoryErrorBoundary from '../../components/common/HistoryErrorBoundary';
+import MedicineSafetyPanel from '../../components/common/MedicineSafetyPanel';
 import { formatLabTestName, formatLabTestStatus, getPrescriptionDrugName } from '../../utils/labTestFormatter';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
@@ -198,6 +199,7 @@ const NewConsultation = () => {
   const [icdSearchQuery,     setIcdSearchQuery]    = useState('');
   const [icdSuggestions,     setIcdSuggestions]    = useState([]);
   const [isIcdLoading,       setIsIcdLoading]      = useState(false);
+  const [safetyAck,          setSafetyAck]         = useState({ acknowledged: false, reason: '' });
   const [icdActiveIndex,     setIcdActiveIndex]    = useState(-1);
   const [isIcdOpen,          setIsIcdOpen]         = useState(false);
   const icdWrapperRef = useRef(null);
@@ -593,6 +595,7 @@ const NewConsultation = () => {
         icdVersion:     selectedIcdVersion || 'ICD-10',
         clinicalNotes,
         prescriptions: prescriptionPayload(prescriptions),
+        safetyAcknowledgment: safetyAck,
         orderedTests: labTests.map(t => ({ testName: t, instructions: '' })),
         labTests,
         isFollowUpRequired: !!followUpDate,
@@ -1438,6 +1441,16 @@ const NewConsultation = () => {
                           </div>
                         )}
                       </div>
+                    )}
+
+                    {/* ── Medicine Safety Panel (Sub-Project 3) ──────────── */}
+                    {prescriptions.length > 0 && (
+                      <MedicineSafetyPanel
+                        medications={prescriptions}
+                        patientId={patientData?._id}
+                        acknowledgment={safetyAck}
+                        onAcknowledgmentChange={setSafetyAck}
+                      />
                     )}
 
                     {/* ── Prescription table ───────────────────────────────── */}

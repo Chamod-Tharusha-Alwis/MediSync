@@ -8,6 +8,25 @@ const crypto = require('crypto');
 
 const handler = otc => async (req, res) => {
   try {
+    if (req.body?.safetyAcknowledgment !== undefined || (Array.isArray(req.body?.items) && req.body.items.length > 0)) {
+      const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
+      const medItems = req.body.items || [];
+      const safetyResult = await evaluateMedicineSafety({
+        medications: medItems.map(i => ({ drugName: i.drugName || i.name, dosage: i.dosage, durationDays: i.durationDays, frequency: i.frequency })),
+        patientId: req.body.patientId,
+        acknowledgment: req.body.safetyAcknowledgment,
+        actorId: req.user?.id,
+        actorRole: req.user?.role || 'pharmacist'
+      });
+      if (safetyResult.hasActionableWarnings && !safetyResult.canProceed) {
+        return res.status(400).json({
+          error: 'CLINICAL_ACKNOWLEDGMENT_REQUIRED',
+          code: 'CLINICAL_ACKNOWLEDGMENT_REQUIRED',
+          warnings: safetyResult.warnings,
+          message: 'Clinical acknowledgment with justification reason is required for detected medicine safety warnings.'
+        });
+      }
+    }
     const {receipt,replay} = await dispense({user:req.user,body:req.body,otc,prescriptionRef:req.params?.id,
       idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true,
       authorization:{ consentToken: req.headers['x-patient-access'] || req.headers['x-patient-access-token'], sessionId: req.session?._id }});
