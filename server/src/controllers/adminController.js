@@ -896,13 +896,24 @@ exports.approveAlert = async (req, res) => {
     if (!alert) return res.status(404).json({error:'Alert not found'});
     if (alert.surveillancePolicy !== service.POLICY) return res.status(409).json({error:'Legacy alert requires provenance review.'});
     if (service.synthetic(alert) && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
-    if (!['admin','super_admin','superadmin'].includes(req.user?.role)) return res.status(403).json({error:'Administrator review required.'});
+    if (!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role)) return res.status(403).json({error:'Administrator review required.'});
     if (req.body?.emailScope && req.body.emailScope !== 'none') return res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});
     const updated = await OutbreakAlert.findOneAndUpdate({_id:alert._id,status:'Pending'},{$set:{status:'Active',approvedBy:req.user.id,approvedAt:new Date(),emailScope:'none'}},{new:true});
     if (!updated) return res.status(409).json({error:'Only pending alerts can be approved.'});
     try {
       const { notifyOutbreakAlert } = require('../services/notificationService');
       await notifyOutbreakAlert(updated, { io: req.app?.get('io') });
+    } catch (_) {}
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        actorId: String(req.user?.id || req.user?._id || 'unknown'),
+        actorRole: req.user?.role || 'admin',
+        action: 'ALERT_APPROVED',
+        accessedNic: String(updated._id),
+        deviceModel: 'status:Pending->Active',
+        timestamp: new Date()
+      });
     } catch (_) {}
     res.json({message:'Review recorded. In-app notifications dispatched to clinicians and hospitals.',data:updated});
   } catch (_) { res.status(503).json({error:'Unable to record alert review.'}); }
@@ -921,9 +932,30 @@ exports.resolveAlert = async (req, res) => {
     const service = require('../services/surveillanceService');
     if (alert.surveillancePolicy !== service.POLICY) return res.status(409).json({error:'Legacy provenance review required.'});
     if (service.synthetic(alert) && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
+    if (!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role)) return res.status(403).json({error:'Administrator review required.'});
 
+    if (['Resolved', 'Dismissed'].includes(alert.status)) {
+      return res.status(409).json({ error: 'Alert is already in a terminal state.' });
+    }
+    if (action && !['resolve', 'dismiss'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid resolution action.' });
+    }
+
+    const oldStatus = alert.status;
     alert.status = action === 'dismiss' ? 'Dismissed' : 'Resolved';
     await alert.save();
+
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        actorId: String(req.user?.id || req.user?._id || 'unknown'),
+        actorRole: req.user?.role || 'admin',
+        action: action === 'dismiss' ? 'ALERT_DISMISSED' : 'ALERT_RESOLVED',
+        accessedNic: String(alert._id),
+        deviceModel: `status:${oldStatus}->${alert.status}|feedback:${alert.feedbackStatus}`,
+        timestamp: new Date()
+      });
+    } catch (_) {}
 
     res.json({ message: `Alert ${alert.status.toLowerCase()} successfully`, data: alert });
   } catch (error) {

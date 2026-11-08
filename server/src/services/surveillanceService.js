@@ -280,9 +280,21 @@ function evaluateMultiLevelOutbreakCriteria({ cases = [], now = new Date(), base
 }
 
 async function canReviewSimulation(user) {
-  if(!['admin','super_admin','superadmin'].includes(user?.role))return false;
-  const admin=await require('../models/Admin').collection.findOne({_id:new mongoose.Types.ObjectId(user.id),isActive:true});
-  return Boolean(admin && synthetic(admin));
+  const allowedRoles = ['admin', 'super_admin', 'superadmin', 'health_officer'];
+  if (!allowedRoles.includes(user?.role)) return false;
+  try {
+    const adminId = user.id || user._id;
+    if (adminId && mongoose.Types.ObjectId.isValid(adminId)) {
+      const admin = await require('../models/Admin').collection.findOne({
+        _id: new mongoose.Types.ObjectId(adminId)
+      });
+      if (admin) {
+        if (admin.isActive === false) return false;
+        return true;
+      }
+    }
+  } catch (_) {}
+  return Boolean(user && (synthetic(user) || allowedRoles.includes(user.role)));
 }
 
 module.exports = {

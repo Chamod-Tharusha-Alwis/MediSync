@@ -665,10 +665,26 @@ const OutbreakMonitor = () => {
                               Dismiss
                             </button>
                           </div>
-                        ) : alert.feedbackStatus === 'confirmed' ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl select-none">
-                            Confirmed
+                        ) : alert.status === 'Resolved' ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-blue-400 font-bold bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-xl select-none">
+                            Resolved
                           </span>
+                        ) : alert.status === 'Dismissed' ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold bg-slate-800 border border-slate-700 px-3 py-1 rounded-xl select-none">
+                            Dismissed
+                          </span>
+                        ) : alert.feedbackStatus === 'confirmed' ? (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl select-none">
+                              Confirmed
+                            </span>
+                            <button
+                              onClick={() => handleResolveAlert(alert._id, 'resolve')}
+                              className="px-3 py-1 bg-blue-600/50 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500/25 transition-all"
+                            >
+                              Resolve
+                            </button>
+                          </div>
                         ) : alert.feedbackStatus === 'false_positive' ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-bold bg-slate-800 border border-slate-700 px-3 py-1 rounded-xl select-none">
                             False Alarm
