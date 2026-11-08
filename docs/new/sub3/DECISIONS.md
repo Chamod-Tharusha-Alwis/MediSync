@@ -26,3 +26,20 @@
 - **Context**: `scripts/seed-dispensing-sample.js` accepted `--confirm` and checked `$env:MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"`, while `docs/new/sub2/FINAL_REPORT.md` referenced `$env:APPROVE_SAMPLE_DISPENSING_SEED="true"` and `--confirm-sample-seed`.
 - **Decision**: Support both in `scripts/seed-dispensing-sample.js` so neither form fails. Allow `MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"` OR `APPROVE_SAMPLE_DISPENSING_SEED="true"` OR `SEED_APPROVAL="I_APPROVE_SEED_2026_11_B"`, and accept `--confirm`, `--apply`, or `--confirm-sample-seed`. Update documentation to cite both canonical and convenience forms.
 - **Date**: 2026-11-08
+
+### DECISION-SUB3-005: Medicine Safety Rules Engine & Unconfigured Drug Handling
+- **Context**: Implementing clinical safety rules (duplicate active ingredients, duration limits, dosage limits, pairwise drug interactions) without fabricating medical data.
+- **Decision**:
+  1. All limits (single dose, daily dose, max duration) are strictly sourced from published WHO Model Formulary 2008 & British National Formulary (BNF 86) for verified drugs (Paracetamol, Amoxicillin, Ibuprofen).
+  2. For unconfigured medications, the engine tags entries with `status: "pending_owner_data"` and `severity: "info"`. Informative notices are displayed to clinicians without blocking treatment, adhering to the zero-invented-data rule.
+  3. Actionable warnings (high risk duplicate therapy or exceeded limits) require explicit clinician acknowledgment with a justification reason (>= 5 characters).
+- **Date**: 2026-11-08
+
+### DECISION-SUB3-006: PDF Password Encryption Feasibility & Server-Side NIC Gate
+- **Context**: User prompt requested investigation of PDF password encryption on Render runtime (via pure-JS or `qpdf`), or recording in `DECISIONS.md` while keeping server-side NIC gate as primary control.
+- **Decision**:
+  1. Neither `qpdf` nor native OS C-binaries are available on Render's standard Node runtime environment. `pdf-lib` does not natively support AES-256 password protection without external compiled native modules.
+  2. Applying legacy weak ciphers (RC4-40) is explicitly prohibited by MediSync security policy (`SECURITY_ERROR`).
+  3. In accordance with safety instructions, the primary access control is enforced via the server-side NIC verification gate (`POST /api/verify/:token/history-pdf`). An attacker with a token URL cannot access patient history without the patient's exact National Identity Card number, validated via constant-time comparison against decrypted identity records with IP rate-limiting.
+  4. The generated PDF is streamed over TLS directly to the authenticated requester.
+- **Date**: 2026-11-08

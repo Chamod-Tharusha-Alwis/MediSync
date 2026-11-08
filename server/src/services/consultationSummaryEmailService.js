@@ -454,6 +454,18 @@ async function sendConsultationSummaryEmail({
           return copy;
         });
 
+        let verificationUrl = null;
+        try {
+          const { issueVerificationToken } = require('./verificationTokenService');
+          const tokenRes = await issueVerificationToken({
+            consultationId: consultation?._id,
+            patientId: patient?._id,
+            doctorId: doctor?._id,
+            consultationRef: consultRef,
+          });
+          verificationUrl = tokenRes?.verificationUrl;
+        } catch (_) {}
+
         const pdfBytes = await generateConsultationSummaryPDF(
           {
             ...consultationObj,
@@ -470,7 +482,8 @@ async function sendConsultationSummaryEmail({
           {
             fullName: stripNicFromText(doctor?.fullName || 'Consulting Physician', explicitNic),
             slmcNumber: doctor?.slmcNumber,
-          }
+          },
+          { verificationUrl }
         );
 
         attachments.push({

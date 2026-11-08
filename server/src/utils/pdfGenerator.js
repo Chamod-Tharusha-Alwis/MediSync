@@ -822,11 +822,7 @@ exports.generateLabReportPDF = async (labTest, patientName = null) => {
  * Includes clinical assessment, symptoms, diagnosis, prescribed medications,
  * doctor notes, follow-up date, and digital practitioner verification block.
  */
-exports.generateConsultationSummaryPDF = async (
-  consultationData = {},
-  patientDetails = {},
-  doctorDetails = {}
-) => {
+exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDetails = {}, doctorDetails = {}, options = {}) => {
   const pdfDoc = wrapPdfDoc(await PDFDocument.create());
   let page = pdfDoc.addPage([595, 842]);
   const { width, height } = page.getSize();
@@ -884,6 +880,16 @@ exports.generateConsultationSummaryPDF = async (
     width,
     height,
   });
+  const verificationUrl = options?.verificationUrl || consultationData?.verificationUrl;
+  if (verificationUrl) {
+    try {
+      const QRCode = require('qrcode');
+      const qrPng = await QRCode.toBuffer(verificationUrl, { type: 'png', width: 120, margin: 1 });
+      const qrImg = await pdfDoc.embedPng(qrPng);
+      page.drawImage(qrImg, { x: width - 85, y: height - 85, width: 55, height: 55 });
+      page.drawText('SCAN TO VERIFY', { x: width - 85, y: height - 93, size: 6, font: fontBold, color: WHITE });
+    } catch (_) {}
+  }
 
   // 5. Draw Patient Details
   currentY = drawPatientDetails(page, {
@@ -1229,6 +1235,137 @@ exports.generateAdminAnalyticsReportPDF = async (
   const err = new Error('SECURITY_HOLD: Administrative analytics PDF export contains confidential institutional metrics and requires approved AES-256 encryption engine and authorized delivery.');
   err.code = 'SECURITY_HOLD';
   throw err;
+};
+
+
+/**
+ * Generates an official cumulative patient clinical history PDF document.
+ * Aggregates all recorded consultations, diagnoses, and dispensed/prescribed medications.
+ */
+exports.generatePatientHistoryPDF = async (
+  patientData = {},
+  consultations = [],
+  prescriptions = [],
+  options = {}
+) => {
+  const pdfDoc = wrapPdfDoc(await PDFDocument.create());
+  let page = pdfDoc.addPage([595, 842]);
+  const { width, height } = page.getSize();
+
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  const resolvedName = patientData.fullName || patientData.name || 'Patient';
+  const resolvedNic = patientData.nic || 'N/A';
+  let resolvedAge = 'N/A';
+  if (patientData.dateOfBirth) {
+    const dob = new Date(patientData.dateOfBirth);
+    if (!isNaN(dob.getTime())) {
+      resolvedAge = `${Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000))} years`;
+    }
+  } else if (patientData.age) {
+    resolvedAge = `${patientData.age} years`;
+  }
+  const resolvedGender = patientData.gender || 'N/A';
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  drawConfidentialityWatermark(page, { width, height, fontBold });
+
+  let currentY = drawHeader(page, {
+    title: 'MEDISYNC PATIENT CLINICAL HISTORY',
+    subtitle: 'Official Cumulative Clinical Encounter & Prescription Timeline',
+    refLabel: 'Patient Ref',
+    refValue: maskNIC(resolvedNic),
+    dateString: dateStr,
+    timeString: timeStr,
+    fontRegular,
+    fontBold,
+    width,
+    height,
+  });
+
+  currentY = drawPatientDetails(page, {
+    patientName: resolvedName,
+    patientNIC: resolvedNic,
+    age: resolvedAge,
+    gender: resolvedGender,
+    yStart: currentY,
+    fontRegular,
+    fontBold,
+    width,
+  });
+
+  page.drawText('CLINICAL ENCOUNTER TIMELINE', {
+    x: 40, y: currentY,
+    size: 12, font: fontBold, color: PURPLE,
+  });
+  currentY -= 18;
+
+  const consultList = Array.isArray(consultations) ? consultations : [];
+  const rxList = Array.isArray(prescriptions) ? prescriptions : [];
+
+  if (consultList.length === 0) {
+    page.drawText('No clinical encounters recorded in patient timeline.', {
+      x: 40, y: currentY, size: 10, font: fontOblique, color: MID,
+    });
+    currentY -= 20;
+  } else {
+    for (const c of consultList) {
+      if (currentY < 130) {
+        drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice: 'clinicalValidation: not_established — Official Patient Record Export' });
+        page = pdfDoc.addPage([595, 842]);
+        drawConfidentialityWatermark(page, { width, height, fontBold });
+        currentY = height - 50;
+      }
+
+      const cDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB') : 'Unknown Date';
+      const cRef = c.consultationId || c._id ? String(c.consultationId || c._id) : 'CON-RECORD';
+      const docName = formatDoctorName(c.doctorId?.fullName || c.doctorName || 'Medical Officer');
+      const diag = c.diagnosis || 'Clinical Consultation';
+
+      page.drawRectangle({
+        x: 40, y: currentY - 20,
+        width: width - 80, height: 20,
+        color: BG_GREY, borderColor: BORDER, borderWidth: 1,
+      });
+      page.drawText(`${cDate} — ${cRef}`, { x: 50, y: currentY - 14, size: 9, font: fontBold, color: NAVY });
+      page.drawText(docName, { x: width - 200, y: currentY - 14, size: 9, font: fontBold, color: TEAL });
+      currentY -= 26;
+
+      page.drawText(`Diagnosis: ${diag}`, { x: 50, y: currentY, size: 9, font: fontBold, color: DARK });
+      currentY -= 14;
+
+      if (c.symptoms && c.symptoms.length > 0) {
+        const symStr = Array.isArray(c.symptoms) ? c.symptoms.join(', ') : String(c.symptoms);
+        page.drawText(`Symptoms: ${symStr}`, { x: 50, y: currentY, size: 8.5, font: fontRegular, color: MID });
+        currentY -= 14;
+      }
+
+      const matchRxs = rxList.filter(r => String(r.consultationId || '') === String(c._id || '') || String(r.consultationRef || '') === cRef);
+      if (matchRxs.length > 0) {
+        page.drawText('Prescribed Medications:', { x: 50, y: currentY, size: 8.5, font: fontBold, color: PURPLE });
+        currentY -= 12;
+        for (const rx of matchRxs) {
+          const medName = rx.drugName || rx.name || 'Medication';
+          const medDosage = rx.dosage || 'Standard';
+          const medFreq = rx.frequency || '';
+          const medDur = rx.durationDays ? `${rx.durationDays}d` : '';
+          page.drawText(`• ${medName} ${medDosage} ${medFreq} ${medDur}`.trim(), {
+            x: 60, y: currentY, size: 8, font: fontRegular, color: DARK,
+          });
+          currentY -= 12;
+        }
+      }
+      currentY -= 10;
+    }
+  }
+
+  drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice: 'clinicalValidation: not_established — Official Patient Record Export' });
+  return await applyPDFEncryption(pdfDoc, resolvedNic);
 };
 
 const calculatePDFDocumentChecksum = (pdfBuffer) => {

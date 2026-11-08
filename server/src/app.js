@@ -351,6 +351,7 @@ async function startServer() {
     app.use('/api/support',              require('./routes/supportRoutes'));
     app.use('/api/reviews',              require('./routes/reviewRoutes'));
     app.use('/api/devices',              require('./routes/deviceRoutes'));
+    app.use('/api/verify',               require('./routes/verificationRoutes'));
   }
 
   // Health check endpoints for Docker / Render / orchestrator

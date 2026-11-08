@@ -255,7 +255,19 @@ exports.exportConsultationPdf = async (req, res) => {
       } catch (_) {}
     }
 
-    const pdfBuffer = await generateConsultationSummaryPDF(consultationPayload, patientDetails, doctorDetails);
+    let verificationUrl = null;
+    try {
+      const { issueVerificationToken } = require('../services/verificationTokenService');
+      const tokenRes = await issueVerificationToken({
+        consultationId: consultation._id,
+        patientId: consultation.patientId,
+        doctorId: consultation.doctorId,
+        consultationRef: consultation.consultationId,
+      });
+      verificationUrl = tokenRes?.verificationUrl;
+    } catch (_) {}
+
+    const pdfBuffer = await generateConsultationSummaryPDF(consultationPayload, patientDetails, doctorDetails, { verificationUrl });
 
     const date = new Date().toISOString().slice(0, 10);
     const maskedRef = sanitizeFileRef(consultation.consultationId || consultation._id).slice(-8);

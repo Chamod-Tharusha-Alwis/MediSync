@@ -28,6 +28,7 @@ const DoctorDirectory   = React.lazy(() => import('./pages/public/DoctorDirector
 const HospitalDirectory = React.lazy(() => import('./pages/public/HospitalDirectory'));
 const PharmacyDirectory = React.lazy(() => import('./pages/public/PharmacyDirectory'));
 const PublicHealth      = React.lazy(() => import('./pages/public/PublicHealth'));
+const VerifyConsultation = React.lazy(() => import('./pages/public/VerifyConsultation'));
 
 // Login pages
 const AdminLogin        = React.lazy(() => import('./pages/admin/Login'));
@@ -185,6 +186,7 @@ function AppRoutes() {
           <Route path="/hospitals" element={<HospitalDirectory />} />
           <Route path="/pharmacies" element={<PharmacyDirectory />} />
           <Route path="/public-health" element={<PublicHealth />} />
+          <Route path="/verify/:token" element={<VerifyConsultation />} />
 
           {/* Auth Routes */}
           <Route path="/doctor/select-role" element={<DoctorRoleSelection />} />
