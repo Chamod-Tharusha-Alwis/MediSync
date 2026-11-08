@@ -11,7 +11,7 @@ export const en = {
     body: 'This page could not be displayed. Reload to continue. If a save was in progress, verify its outcome before submitting again.',
     reload: 'Reload Page'
   },
-  adminStatus: {"notAvailable": "Not available", "available": "Available", "waking": "Service waking up, retry in 30-60s", "down": "Service down", "referenceService": "ML reference service", "referenceProfiles": "Reference disease profiles", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count."},
+  adminStatus: {"notAvailable": "Not available", "available": "Available", "waking": "Service waking up, retry in 30-60s", "down": "Service down", "referenceService": "ML reference service", "referenceProfiles": "Symptom reference profiles", "coverageStatement": "Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually", "noAlerts": "No alerts returned.", "caution": "Clinical validation is not established. Forecast: Not available. Symptom reference profiles cover 41 of 71,704 conditions; any ICD code can be selected manually. The reference count is not a patient or outbreak count."},
   activity: {
     "districtDailyUnavailable": "Daily counts are not published for district selections.",
     "selectedSuppressed": "The selected district’s total and daily counts are not disclosed below 5.",
