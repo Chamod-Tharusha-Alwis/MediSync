@@ -21,7 +21,7 @@ graph TD
 - **Hosting**: Vercel (`https://medisync.chamodtharusha.com.lk`).
 - **Features**:
   - Role-specific portals: Patient, Doctor, Pharmacy Staff, Hospital Staff, Administrator.
-  - Native trilingual localization: English (`en`), Sinhala (`si`), and Tamil (`ta`) with 100% key parity across 782 dictionary entries.
+  - Native trilingual localization: English (`en`), Sinhala (`si`), and Tamil (`ta`) with 100% key parity across 794 dictionary entries.
   - Responsive design adapting across 320px (compact mobile), 375px (standard mobile), and 1440px (desktop) viewports.
   - Strict UI typography enforcement: readable font floors (11px+ badges, 12px+ copy).
 

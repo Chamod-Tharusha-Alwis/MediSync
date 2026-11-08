@@ -360,3 +360,21 @@ exports.resendConsultationSummaryEmail = async (req, res) => {
     return res.status(500).json({ error: 'Failed to resend consultation summary email' });
   }
 };
+
+exports.checkMedicineSafety = async (req, res) => {
+  try {
+    const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
+    const { medications, patientId, activePrescriptions, acknowledgment } = req.body || {};
+    const result = await evaluateMedicineSafety({
+      medications,
+      patientId,
+      activePrescriptions,
+      acknowledgment,
+      actorId: req.user?._id || req.user?.id || 'system',
+      actorRole: req.user?.role || 'doctor',
+    });
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({ error: 'SAFETY_CHECK_FAILED', message: err.message });
+  }
+};

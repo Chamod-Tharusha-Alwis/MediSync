@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MediSync Medicine Dosage and Duration Limits Reference Catalog",
+  "status": "active_with_pending_entries",
+  "schemaVersion": "1.0.0",
+  "defaultPolicy": "warn_unconfigured",
+  "limits": [
+    {
+      "drug": "Paracetamol",
+      "canonicalIngredient": "acetaminophen",
+      "synonyms": ["Panadol", "Calpol", "Tylenol", "Disprol"],
+      "maxDailyDoseMg": 4000,
+      "maxSingleDoseMg": 1000,
+      "maxCourseDurationDays": 7,
+      "source": "British National Formulary (BNF 86) / WHO Model Formulary 2008 (Section 2.1 Non-opioids)",
+      "retrievedAt": "2026-11-08T00:00:00.000Z",
+      "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
+      "status": "verified"
+    },
+    {
+      "drug": "Amoxicillin",
+      "canonicalIngredient": "amoxicillin",
+      "synonyms": ["Amoxil", "Moxatag", "Trimox"],
+      "maxDailyDoseMg": 3000,
+      "maxSingleDoseMg": 1000,
+      "maxCourseDurationDays": 14,
+      "source": "WHO Model Formulary 2008 (Section 6.2.1 Beta-lactam medicines) / BNF 86",
+      "retrievedAt": "2026-11-08T00:00:00.000Z",
+      "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
+      "status": "verified"
+    },
+    {
+      "drug": "Ibuprofen",
+      "canonicalIngredient": "ibuprofen",
+      "synonyms": ["Brufen", "Advil", "Motrin", "Nurofen"],
+      "maxDailyDoseMg": 2400,
+      "maxSingleDoseMg": 800,
+      "maxCourseDurationDays": 10,
+      "source": "WHO Model Formulary 2008 (Section 2.1) / BNF 86",
+      "retrievedAt": "2026-11-08T00:00:00.000Z",
+      "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
+      "status": "verified"
+    }
+  ]
+}

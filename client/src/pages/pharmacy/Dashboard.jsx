@@ -19,6 +19,7 @@ import PageTransition from '../../components/common/PageTransition';
 import ActiveOutbreakBanner from '../../components/common/ActiveOutbreakBanner';
 import Modal from '../../components/ui/Modal';
 import ChangePasswordCard from '../../components/common/ChangePasswordCard';
+import MedicineSafetyPanel from '../../components/common/MedicineSafetyPanel';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 
@@ -51,6 +52,7 @@ const Dispense = () => {
   const [inventory, setInventory] = useState([]);
   const [dispenseItems, setDispenseItems] = useState([]);
   const [checkoutKey, setCheckoutKey] = useState('');
+  const [safetyAck, setSafetyAck] = useState({ acknowledged: false, reason: '' });
   const { setPatientSession, getPatientToken } = usePatientAccess();
   const [showConsentModal, setShowConsentModal] = useState(false);
 
@@ -163,6 +165,7 @@ const Dispense = () => {
     }));
     setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
     setIsAlt(false);
+    setSafetyAck({ acknowledged: false, reason: '' });
     setAltDetails('');
     setSelectedRx(rx);
     setShowDispenseModal(true);
@@ -193,6 +196,7 @@ const Dispense = () => {
         patientNic: targetNic,
         items,
         isAlternativeDispensed: isAlt,
+        safetyAcknowledgment: safetyAck,
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
       }, { headers: { 'Idempotency-Key': checkoutKey, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
       toast.success('Prescription dispensing recorded.');
@@ -442,6 +446,13 @@ const Dispense = () => {
                 />
               </div>
             )}
+
+            <MedicineSafetyPanel
+              medications={dispenseItems.map(i => ({ name: i.drugName || i.prescribed, dosage: i.dosage, durationDays: i.quantity }))}
+              patientId={selectedRx?.patientId}
+              acknowledgment={safetyAck}
+              onAcknowledgmentChange={setSafetyAck}
+            />
 
             <div className="flex gap-3 pt-3 border-t border-white/5">
               <button
