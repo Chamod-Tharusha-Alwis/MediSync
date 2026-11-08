@@ -322,9 +322,16 @@ const HistoryCard = ({ event, onRate }) => {
               </div>
 
               {/* Title */}
-              <h4 className="text-base md:text-lg font-bold text-white truncate leading-tight">
-                {cardTitle}
-              </h4>
+              <div className="flex items-center flex-wrap gap-2">
+                <h4 className="text-base md:text-lg font-bold text-white truncate leading-tight">
+                  {cardTitle}
+                </h4>
+                {details.icdCode && (
+                  <span data-testid="consultation-icd-code" className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                    ICD: {details.icdCode}
+                  </span>
+                )}
+              </div>
 
               {/* Doctor / pharmacist / hospital */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">

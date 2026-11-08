@@ -236,6 +236,8 @@ export const en = {
     "symptomsEntered": "Recorded Symptoms",
     "aiAssist": "AI Diagnostic Differential",
     "referenceMatchNotDiagnosis": "Reference match, not a diagnosis",
+    "coverageBadge": "41 reference symptom profiles curated; 71,704 ICD-10 conditions available for manual diagnosis.",
+    "nonProfiledNotice": "No symptom reference profile for this condition; select the diagnosis manually.",
     "clinicalDiagnosis": "Clinical Diagnosis",
     "icdSelection": "ICD Standard Classification",
     "icd10": "ICD-10 (CM)",
