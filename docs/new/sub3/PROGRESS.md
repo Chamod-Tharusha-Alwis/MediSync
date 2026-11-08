@@ -6,8 +6,8 @@
 |---|---|---|---|---|---|---|---|---|
 | **P0** | Stability fixes & Docs reconcile | `feat/sub3-p0` | DONE | `b374c45` | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P1** | Medicine Safety Rules | `feat/sub3-p1` | DONE | `8930ef9` | 3,454 / 0 | PASS | PASS | 15/15 |
-| **P2** | QR-verified PDF + history gate | `feat/sub3-p2` | DONE | Pending P2 Commit | 3,454 / 0 | PASS | PASS | 15/15 |
-| **P3** | Platform master plan completion | `feat/sub3-p3` | IN-PROGRESS | - | - | - | - | - |
+| **P2** | QR-verified PDF + history gate | `feat/sub3-p2` | DONE | `2797b82` | 3,454 / 0 | PASS | PASS | 15/15 |
+| **P3** | Platform master plan completion | `feat/sub3-p3` | DONE | Pending P3 Commit | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P4** | Hardening & Release Readiness | `feat/sub3-p4` | NOT STARTED | - | - | - | - | - |
 
 ---
@@ -84,3 +84,27 @@
   - Protected Ledger: **15/15 accounted for and valid**.
 - **Verified OFFLINE**: Token hashing, resolution, revocation, public zero-PII view, constant-time NIC gate, PDF QR embedding, history generation, 810-key trilingual parity.
 - **NOT Verified LIVE**: Live email dispatch with QR attachment (Resend/Brevo live delivery pending owner credentials).
+
+### Phase P3 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Comprehensive Platform Master Plan Audit (Items 5A through 5H)**:
+     - Authored `docs/new/sub3/PHASE_STATUS.md` detailing every item across the master plan.
+     - 5A: Clinical safety rules & limits verified with WHO Formulary 2008 & BNF 86 references; fallback policy `pending_owner_data`.
+     - 5B: Verification token architecture, constant-time NIC gate, QR embedding, and zero-PII public status view.
+     - 5C: Multi-lingual parity (EN, SI, TA) across 810 translation keys with automated test verification.
+     - 5D: Front-end accessibility and min-font-size floor enforcement (11px+ badges, 12px+ copy).
+     - 5E: Role-based clinical workflow security (Doctor, Patient, Pharmacy, Admin, Hospital).
+     - 5F: Epidemiological outbreak detection rules preserved ($N \ge 5$, two consecutive days, $z > 2.0$, 3 geo levels).
+     - 5G: Immutable audit logging and zero-PII logging standards across all handlers.
+     - 5H: Performance and resilient fallback architecture (offline-first readiness, Render cold-start tolerance, client single-reload guard).
+  2. **Cross-Phase Traceability & Verification Matrix**:
+     - Verified commit provenance from `feat/sub3-p0` through `feat/sub3-p3`.
+     - Explicitly mapped test suites to acceptance criteria in `PHASE_STATUS.md`.
+- **Quality Gate Results**:
+  - `node scripts/run_offline_tests.js`: **3,454 passed, 0 failed across 205 suites**.
+  - `npm --prefix client run build`: **Exit code 0** (214.11 kB gzip bundle).
+  - Protected Ledger: **15/15 accounted for and valid**.
+- **Verified OFFLINE**: All 8 master plan functional areas, offline test harness, build compilation, and documentation alignment.
+- **NOT Verified LIVE**: Production deployment on Render and Vercel (pending owner merge to `main`).
+
