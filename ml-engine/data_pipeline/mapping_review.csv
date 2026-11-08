@@ -1,0 +1,666 @@
+name,candidate_codes,score,confidence,status
+Abdominal aortic aneurysm,"I71.3 (Abdominal aortic aneurysm, ruptured) | I71.4 (Abdominal aortic aneurysm, without rupture) | I77.811 (Abdominal aortic ectasia)",0.75,candidate,needs_owner_review
+Abdominal hernia,K46.1 (Unspecified abdominal hernia with gangrene) | A42.1 (Abdominal actinomycosis) | K45.1 (Other specified abdominal hernia with gangrene),0.40,candidate,needs_owner_review
+Abscess of nose,"D73.3 (Abscess of spleen) | E32.1 (Abscess of thymus) | J34.0 (Abscess, furuncle and carbuncle of nose)",0.50,candidate,needs_owner_review
+Abscess of the lung,J84.83 (Surfactant mutations of the lung) | J85.1 (Abscess of lung with pneumonia) | J85.2 (Abscess of lung without pneumonia),0.50,candidate,needs_owner_review
+Abscess of the pharynx,J39.1 (Other abscess of pharynx) | N61.1 (Abscess of the breast and nipple) | D73.3 (Abscess of spleen),0.60,candidate,needs_owner_review
+Acanthosis nigricans,L83 (Acanthosis nigricans),1.00,exact_normalized,auto_accepted
+Acariasis,B88.0 (Other acariasis),0.50,candidate,needs_owner_review
+Achalasia,K22.0 (Achalasia of cardia),0.33,candidate,needs_owner_review
+Acne,"L70.9 (Acne, unspecified)",1.00,exact_normalized,auto_accepted
+Actinic keratosis,L57.0 (Actinic keratosis),1.00,exact_normalized,auto_accepted
+Acute bronchiolitis,"J21.9 (Acute bronchiolitis, unspecified)",1.00,exact_normalized,auto_accepted
+Acute bronchitis,"J20.9 (Acute bronchitis, unspecified)",1.00,exact_normalized,auto_accepted
+Acute bronchospasm,J98.01 (Acute bronchospasm),1.00,exact_normalized,auto_accepted
+Acute fatty liver of pregnancy (AFLP),C22.3 (Angiosarcoma of liver) | K70.0 (Alcoholic fatty liver) | K75.0 (Abscess of liver),0.33,candidate,needs_owner_review
+Acute glaucoma,"H40.213 (Acute angle-closure glaucoma, bilateral) | H40.211 (Acute angle-closure glaucoma, right eye) | H40.212 (Acute angle-closure glaucoma, left eye)",0.50,candidate,needs_owner_review
+Acute kidney injury,"N17.8 (Other acute kidney failure) | N17.9 (Acute kidney failure, unspecified) | O90.4 (Postpartum acute kidney failure)",0.40,candidate,needs_owner_review
+Acute otitis media,"H65.03 (Acute serous otitis media, bilateral) | H65.00 (Acute serous otitis media, unspecified ear) | H65.01 (Acute serous otitis media, right ear)",0.60,candidate,needs_owner_review
+Acute pancreatitis,A39.2 (Acute meningococcemia) | B25.2 (Cytomegaloviral pancreatitis) | B26.3 (Mumps pancreatitis),0.33,candidate,needs_owner_review
+Acute respiratory distress syndrome (ARDS),J80 (Acute respiratory distress syndrome),1.00,exact_normalized,auto_accepted
+Acute sinusitis,"J01.90 (Acute sinusitis, unspecified)",1.00,exact_normalized,auto_accepted
+Acute stress reaction,F43.0 (Acute stress reaction),1.00,exact_normalized,auto_accepted
+Adhesive capsulitis of the shoulder,M75.00 (Adhesive capsulitis of unspecified shoulder) | M75.01 (Adhesive capsulitis of right shoulder) | M75.02 (Adhesive capsulitis of left shoulder),0.67,candidate,needs_owner_review
+Adjustment reaction,D72.823 (Leukemoid reaction) | F51.02 (Adjustment insomnia),0.33,candidate,needs_owner_review
+Adrenal adenoma,None,0.00,candidate,needs_owner_review
+Adrenal cancer,None,0.00,candidate,needs_owner_review
+Alcohol abuse,"F10.10 (Alcohol abuse, uncomplicated) | F10.11 (Alcohol abuse, in remission) | F10.120 (Alcohol abuse with intoxication, uncomplicated)",0.67,candidate,needs_owner_review
+Alcohol intoxication,"F10.120 (Alcohol abuse with intoxication, uncomplicated) | F10.121 (Alcohol abuse with intoxication delirium) | F10.129 (Alcohol abuse with intoxication, unspecified)",0.40,candidate,needs_owner_review
+Alcohol withdrawal,"F10.230 (Alcohol dependence with withdrawal, uncomplicated) | F10.231 (Alcohol dependence with withdrawal delirium) | F10.239 (Alcohol dependence with withdrawal, unspecified)",0.40,candidate,needs_owner_review
+Alcoholic liver disease,"K70.9 (Alcoholic liver disease, unspecified)",1.00,exact_normalized,auto_accepted
+Allergy,"T78.40XA (Allergy, unspecified, initial encounter)",1.00,exact_normalized,auto_accepted
+Allergy to animals,Z91.010 (Allergy to peanuts) | Z91.012 (Allergy to eggs) | Z91.013 (Allergy to seafood),0.50,candidate,needs_owner_review
+Alopecia,A51.32 (Syphilitic alopecia) | L63.1 (Alopecia universalis) | L65.2 (Alopecia mucinosa),0.50,candidate,needs_owner_review
+Alzheimer disease,"G30.9 (Alzheimer's disease, unspecified)",1.00,exact_normalized,auto_accepted
+Amblyopia,"H53.003 (Unspecified amblyopia, bilateral) | H53.009 (Unspecified amblyopia, unspecified eye) | H53.013 (Deprivation amblyopia, bilateral)",0.33,candidate,needs_owner_review
+Amyloidosis,"E85.9 (Amyloidosis, unspecified)",1.00,exact_normalized,auto_accepted
+Amyotrophic lateral sclerosis (ALS),G12.21 (Amyotrophic lateral sclerosis),1.00,exact_normalized,auto_accepted
+Anal fissure,"K60.2 (Anal fissure, unspecified)",1.00,exact_normalized,auto_accepted
+Anal fistula,K60.3 (Anal fistula),1.00,exact_normalized,auto_accepted
+Anemia,"D64.9 (Anemia, unspecified)",1.00,exact_normalized,auto_accepted
+Anemia due to chronic kidney disease,D63.1 (Anemia in chronic kidney disease) | D64.1 (Secondary sideroblastic anemia due to disease) | E08.22 (Diabetes due to undrl cond w diabetic chronic kidney disease),0.57,candidate,needs_owner_review
+Anemia due to malignancy,"D64.81 (Anemia due to antineoplastic chemotherapy) | D55.0 (Anemia due to glucose-6-phosphate dehydrogenase deficiency) | D55.9 (Anemia due to enzyme disorder, unspecified)",0.50,candidate,needs_owner_review
+Anemia of chronic disease,D63.1 (Anemia in chronic kidney disease) | L12.2 (Chronic bullous disease of childhood) | N71.1 (Chronic inflammatory disease of uterus),0.50,candidate,needs_owner_review
+Angina,"I20.0 (Unstable angina) | I23.7 (Postinfarction angina) | I20.9 (Angina pectoris, unspecified)",0.50,candidate,needs_owner_review
+Ankylosing spondylitis,M08.1 (Juvenile ankylosing spondylitis) | M45.6 (Ankylosing spondylitis lumbar region) | M45.1 (Ankylosing spondylitis of occipito-atlanto-axial region),0.67,candidate,needs_owner_review
+Anxiety,"F41.1 (Generalized anxiety disorder) | F41.9 (Anxiety disorder, unspecified)",0.33,candidate,needs_owner_review
+Aortic valve disease,"I06.9 (Rheumatic aortic valve disease, unspecified) | I35.0 (Nonrheumatic aortic (valve) stenosis) | I35.1 (Nonrheumatic aortic (valve) insufficiency)",0.60,candidate,needs_owner_review
+Aphthous ulcer,None,0.00,candidate,needs_owner_review
+Aplastic anemia,"D61.9 (Aplastic anemia, unspecified)",1.00,exact_normalized,auto_accepted
+Appendicitis,K36 (Other appendicitis) | K37 (Unspecified appendicitis) | K35.80 (Unspecified acute appendicitis),0.50,candidate,needs_owner_review
+Arrhythmia,"I47.0 (Re-entry ventricular arrhythmia) | I49.9 (Cardiac arrhythmia, unspecified)",0.33,candidate,needs_owner_review
+Arthritis of the hip,M05.251 (Rheumatoid vasculitis with rheumatoid arthritis of right hip) | M05.252 (Rheumatoid vasculitis with rheumatoid arthritis of left hip) | M05.259 (Rheumatoid vasculitis with rheumatoid arthritis of unsp hip),0.38,candidate,needs_owner_review
+Ascending cholangitis,K83.0 (Cholangitis),0.50,candidate,needs_owner_review
+Asperger syndrome,F84.5 (Asperger's syndrome),1.00,exact_normalized,auto_accepted
+Aspergillosis,"B44.9 (Aspergillosis, unspecified)",1.00,exact_normalized,auto_accepted
+Asthma,"J45.998 (Other asthma) | J45.909 (Unspecified asthma, uncomplicated) | J45.991 (Cough variant asthma)",0.50,candidate,needs_owner_review
+Astigmatism,"H52.203 (Unspecified astigmatism, bilateral) | H52.209 (Unspecified astigmatism, unspecified eye) | H52.213 (Irregular astigmatism, bilateral)",0.33,candidate,needs_owner_review
+Atelectasis,J98.11 (Atelectasis),1.00,exact_normalized,auto_accepted
+Athlete's foot,B35.3 (Tinea pedis),1.00,exact_normalized,auto_accepted
+Atonic bladder,N32.81 (Overactive bladder),0.33,candidate,needs_owner_review
+Atrial fibrillation,I48.0 (Paroxysmal atrial fibrillation) | I48.1 (Persistent atrial fibrillation) | I48.2 (Chronic atrial fibrillation),0.67,candidate,needs_owner_review
+Atrial flutter,I48.3 (Typical atrial flutter) | I48.4 (Atypical atrial flutter) | I48.92 (Unspecified atrial flutter),0.67,candidate,needs_owner_review
+Atrophic skin condition,"L90.8 (Other atrophic disorders of skin) | L90.9 (Atrophic disorder of skin, unspecified)",0.33,candidate,needs_owner_review
+Atrophic vaginitis,N95.2 (Postmenopausal atrophic vaginitis) | N76.0 (Acute vaginitis),0.67,candidate,needs_owner_review
+Atrophy of the corpus cavernosum,K08.21 (Minimal atrophy of the mandible) | K08.22 (Moderate atrophy of the mandible) | K08.23 (Severe atrophy of the mandible),0.43,candidate,needs_owner_review
+Attention deficit hyperactivity disorder (ADHD),R41.840 (Attention and concentration deficit),0.33,candidate,needs_owner_review
+Autism,None,0.00,candidate,needs_owner_review
+Autonomic nervous system disorder,"G90.9 (Disorder of the autonomic nervous system, unspecified) | G90.8 (Other disorders of autonomic nervous system) | G96.9 (Disorder of central nervous system, unspecified)",0.57,candidate,needs_owner_review
+Avascular necrosis,None,0.00,candidate,needs_owner_review
+Balanitis,N48.1 (Balanitis),1.00,exact_normalized,auto_accepted
+Behcet disease,M35.2 (Behcet's disease),1.00,exact_normalized,auto_accepted
+Bell palsy,G51.0 (Bell's palsy),1.00,exact_normalized,auto_accepted
+Benign kidney cyst,"N28.1 (Cyst of kidney, acquired) | N44.2 (Benign cyst of testis) | N47.4 (Benign cyst of prepuce)",0.40,candidate,needs_owner_review
+Benign paroxysmal positional vertical (BPPV),"H81.13 (Benign paroxysmal vertigo, bilateral)",0.33,candidate,needs_owner_review
+Benign prostatic hyperplasia (BPH),N85.01 (Benign endometrial hyperplasia) | N40.0 (Benign prostatic hyperplasia without lower urinry tract symp) | N40.1 (Benign prostatic hyperplasia with lower urinary tract symp),0.50,candidate,needs_owner_review
+Benign vaginal discharge (leukorrhea),None,0.00,candidate,needs_owner_review
+Bipolar disorder,"F31.9 (Bipolar disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Birth trauma,None,0.00,candidate,needs_owner_review
+Bladder disorder,"N32.9 (Bladder disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Bladder obstruction,Q64.31 (Congenital bladder neck obstruction) | K22.2 (Esophageal obstruction) | N32.0 (Bladder-neck obstruction),0.50,candidate,needs_owner_review
+Blepharitis,None,0.00,candidate,needs_owner_review
+Blepharospasm,G24.5 (Blepharospasm),1.00,exact_normalized,auto_accepted
+Bone cancer,None,0.00,candidate,needs_owner_review
+Bone disorder,"M89.9 (Disorder of bone, unspecified) | M84.9 (Disorder of continuity of bone, unspecified) | F20.81 (Schizophreniform disorder)",0.50,candidate,needs_owner_review
+Bone spur of the calcaneous,None,0.00,candidate,needs_owner_review
+Brachial neuritis,A17.83 (Tuberculous neuritis),0.33,candidate,needs_owner_review
+Brain cancer,G93.82 (Brain death),0.33,candidate,needs_owner_review
+Breast cyst,N60.01 (Solitary cyst of right breast) | N60.02 (Solitary cyst of left breast) | N60.09 (Solitary cyst of unspecified breast),0.40,candidate,needs_owner_review
+Breast infection (mastitis),K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Broken tooth,K03.81 (Cracked tooth) | Z18.32 (Retained tooth),0.33,candidate,needs_owner_review
+Bronchiectasis,"J47.9 (Bronchiectasis, uncomplicated) | Q33.4 (Congenital bronchiectasis)",0.50,candidate,needs_owner_review
+Bruise,None,0.00,candidate,needs_owner_review
+Bunion,None,0.00,candidate,needs_owner_review
+Burn,None,0.00,candidate,needs_owner_review
+Bursitis,"M70.10 (Bursitis, unspecified hand)",1.00,exact_normalized,auto_accepted
+Callus,None,0.00,candidate,needs_owner_review
+Carbon monoxide poisoning,None,0.00,candidate,needs_owner_review
+Cardiac arrest,"I46.9 (Cardiac arrest, cause unspecified) | P29.81 (Cardiac arrest of newborn) | I97.120 (Postprocedural cardiac arrest following cardiac surgery)",0.50,candidate,needs_owner_review
+Cardiomyopathy,"I42.9 (Cardiomyopathy, unspecified)",1.00,exact_normalized,auto_accepted
+Carpal tunnel syndrome,"G56.00 (Carpal tunnel syndrome, unspecified upper limb)",1.00,exact_normalized,auto_accepted
+Cat scratch disease,None,0.00,candidate,needs_owner_review
+Cataract,H26.9 (Unspecified cataract) | Q12.0 (Congenital cataract) | H25.89 (Other age-related cataract),0.50,candidate,needs_owner_review
+Celiac disease,K90.0 (Celiac disease),1.00,exact_normalized,auto_accepted
+Cellulitis or abscess of mouth,K12.2 (Cellulitis and abscess of mouth) | N45.4 (Abscess of epididymis or testis) | D73.3 (Abscess of spleen),0.67,candidate,needs_owner_review
+Central atherosclerosis,I67.2 (Cerebral atherosclerosis) | I70.90 (Unspecified atherosclerosis) | I70.91 (Generalized atherosclerosis),0.33,candidate,needs_owner_review
+Central retinal artery or vein occlusion,"H34.13 (Central retinal artery occlusion, bilateral) | H34.10 (Central retinal artery occlusion, unspecified eye) | H34.11 (Central retinal artery occlusion, right eye)",0.57,candidate,needs_owner_review
+Cerebral edema,G93.6 (Cerebral edema),1.00,exact_normalized,auto_accepted
+Cervical disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Cervicitis,"A60.03 (Herpesviral cervicitis) | A54.03 (Gonococcal cervicitis, unspecified) | O86.11 (Cervicitis following delivery)",0.50,candidate,needs_owner_review
+Chalazion,None,0.00,candidate,needs_owner_review
+Chickenpox,B01.9 (Varicella without complication),1.00,exact_normalized,auto_accepted
+Chlamydia,"A74.9 (Chlamydial infection, unspecified)",1.00,exact_normalized,auto_accepted
+Choledocholithiasis,None,0.00,candidate,needs_owner_review
+Cholesteatoma,"H71.90 (Unspecified cholesteatoma, unspecified ear) | H71.93 (Unspecified cholesteatoma, bilateral)",0.33,candidate,needs_owner_review
+Chondromalacia of the patella,L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium),0.33,candidate,needs_owner_review
+Chorioretinitis,A18.53 (Tuberculous chorioretinitis) | B58.01 (Toxoplasma chorioretinitis),0.50,candidate,needs_owner_review
+Chronic back pain,G89.22 (Chronic post-thoracotomy pain) | G89.29 (Other chronic pain) | G89.4 (Chronic pain syndrome),0.50,candidate,needs_owner_review
+Chronic constipation,K59.04 (Chronic idiopathic constipation) | A39.3 (Chronic meningococcemia) | G03.1 (Chronic meningitis),0.67,candidate,needs_owner_review
+Chronic inflammatory demyelinating polyneuropathy (CIDP),"G61.81 (Chronic inflammatory demyelinating polyneuritis) | G61.9 (Inflammatory polyneuropathy, unspecified)",0.60,candidate,needs_owner_review
+Chronic kidney disease,"N18.9 (Chronic kidney disease, unspecified)",1.00,exact_normalized,auto_accepted
+Chronic knee pain,G89.22 (Chronic post-thoracotomy pain) | G89.29 (Other chronic pain) | G89.4 (Chronic pain syndrome),0.50,candidate,needs_owner_review
+Chronic otitis media,"H65.23 (Chronic serous otitis media, bilateral) | H65.33 (Chronic mucoid otitis media, bilateral) | H65.413 (Chronic allergic otitis media, bilateral)",0.60,candidate,needs_owner_review
+Chronic pain disorder,G89.22 (Chronic post-thoracotomy pain) | G89.29 (Other chronic pain) | G89.4 (Chronic pain syndrome),0.50,candidate,needs_owner_review
+Chronic pancreatitis,K86.0 (Alcohol-induced chronic pancreatitis) | K86.1 (Other chronic pancreatitis) | A39.3 (Chronic meningococcemia),0.67,candidate,needs_owner_review
+Chronic rheumatic fever,I09.2 (Chronic rheumatic pericarditis) | I00 (Rheumatic fever without heart involvement),0.50,candidate,needs_owner_review
+Cirrhosis,"K74.3 (Primary biliary cirrhosis) | K74.4 (Secondary biliary cirrhosis) | K74.5 (Biliary cirrhosis, unspecified)",0.33,candidate,needs_owner_review
+Coagulation (bleeding) disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Cold sore,None,0.00,candidate,needs_owner_review
+Colonic polyp,K62.0 (Anal polyp) | K62.1 (Rectal polyp),0.33,candidate,needs_owner_review
+Common cold,J00 (Acute nasopharyngitis [common cold]),1.00,exact_normalized,auto_accepted
+Complex regional pain syndrome,"G90.50 (Complex regional pain syndrome I, unspecified) | G90.511 (Complex regional pain syndrome I of right upper limb) | G90.512 (Complex regional pain syndrome I of left upper limb)",0.67,candidate,needs_owner_review
+Concussion,None,0.00,candidate,needs_owner_review
+Conduct disorder,"F91.9 (Conduct disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Conductive hearing loss,"H90.2 (Conductive hearing loss, unspecified)",1.00,exact_normalized,auto_accepted
+Congenital malformation syndrome,"P35.0 (Congenital rubella syndrome) | Q89.9 (Congenital malformation, unspecified) | E00.9 (Congenital iodine-deficiency syndrome, unspecified)",0.50,candidate,needs_owner_review
+Conjunctivitis,A36.86 (Diphtheritic conjunctivitis) | A54.31 (Gonococcal conjunctivitis) | A74.0 (Chlamydial conjunctivitis),0.50,candidate,needs_owner_review
+Conjunctivitis due to allergy,B30.1 (Conjunctivitis due to adenovirus) | B60.12 (Conjunctivitis due to Acanthamoeba) | Z91.010 (Allergy to peanuts),0.60,candidate,needs_owner_review
+Conjunctivitis due to bacteria,B30.1 (Conjunctivitis due to adenovirus) | B60.12 (Conjunctivitis due to Acanthamoeba) | M00.89 (Polyarthritis due to other bacteria),0.60,candidate,needs_owner_review
+Conjunctivitis due to virus,B30.1 (Conjunctivitis due to adenovirus) | B60.12 (Conjunctivitis due to Acanthamoeba) | J20.4 (Acute bronchitis due to parainfluenza virus),0.60,candidate,needs_owner_review
+Connective tissue disorder,"L94.9 (Localized connective tissue disorder, unspecified) | M79.9 (Soft tissue disorder, unspecified)",0.60,candidate,needs_owner_review
+Contact dermatitis,"L25.9 (Unspecified contact dermatitis, unspecified cause) | L23.9 (Allergic contact dermatitis, unspecified cause) | L24.9 (Irritant contact dermatitis, unspecified cause)",0.50,candidate,needs_owner_review
+Conversion disorder,"F44.9 (Dissociative and conversion disorder, unspecified) | F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder)",0.40,candidate,needs_owner_review
+Cornea infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Corneal abrasion,None,0.00,candidate,needs_owner_review
+Coronary atherosclerosis,I25.84 (Coronary atherosclerosis due to calcified coronary lesion) | I67.2 (Cerebral atherosclerosis) | I70.90 (Unspecified atherosclerosis),0.33,candidate,needs_owner_review
+Cranial nerve palsy,"G52.9 (Cranial nerve disorder, unspecified) | H49.03 (Third [oculomotor] nerve palsy, bilateral) | H49.13 (Fourth [trochlear] nerve palsy, bilateral)",0.40,candidate,needs_owner_review
+Crohn disease,"K50.90 (Crohn's disease, unspecified, without complications)",1.00,exact_normalized,auto_accepted
+Croup,None,0.00,candidate,needs_owner_review
+Crushing injury,"S07.0XXS (Crushing injury of face, sequela) | S07.1XXS (Crushing injury of skull, sequela) | S38.01XS (Crushing injury of penis, sequela)",0.40,candidate,needs_owner_review
+Cryptococcosis,"B45.9 (Cryptococcosis, unspecified)",1.00,exact_normalized,auto_accepted
+Cushing syndrome,"E24.9 (Cushing's syndrome, unspecified)",1.00,exact_normalized,auto_accepted
+Cyst of the eyelid,D73.4 (Cyst of spleen) | K86.2 (Cyst of pancreas) | N42.83 (Cyst of prostate),0.40,candidate,needs_owner_review
+Cysticercosis,"B69.9 (Cysticercosis, unspecified)",1.00,exact_normalized,auto_accepted
+Cystitis,"N30.90 (Cystitis, unspecified without hematuria)",1.00,exact_normalized,auto_accepted
+De Quervain disease,M65.4 (Radial styloid tenosynovitis [de Quervain]),0.33,candidate,needs_owner_review
+Deep vein thrombosis (DVT),I81 (Portal vein thrombosis) | N48.81 (Thrombosis of superficial vein of penis) | I82.491 (Acute embolism and thrombosis of deep vein of r low extrem),0.50,candidate,needs_owner_review
+Degenerative disc disease,None,0.00,candidate,needs_owner_review
+Dementia,G31.09 (Other frontotemporal dementia),0.33,candidate,needs_owner_review
+Dental caries,"K02.9 (Dental caries, unspecified)",1.00,exact_normalized,auto_accepted
+Depression,P91.4 (Neonatal cerebral depression),0.33,candidate,needs_owner_review
+Dermatitis due to sun exposure,"L27.2 (Dermatitis due to ingested food) | T73.2XXS (Exhaustion due to exposure, sequela) | L23.0 (Allergic contact dermatitis due to metals)",0.43,candidate,needs_owner_review
+Developmental disability,None,0.00,candidate,needs_owner_review
+Deviated nasal septum,J34.2 (Deviated nasal septum),1.00,exact_normalized,auto_accepted
+Diabetes insipidus,E23.2 (Diabetes insipidus),1.00,exact_normalized,auto_accepted
+Diabetic ketoacidosis,None,0.00,candidate,needs_owner_review
+Diabetic peripheral neuropathy,G90.09 (Other idiopathic peripheral autonomic neuropathy),0.33,candidate,needs_owner_review
+Diaper rash,L22 (Diaper dermatitis),0.33,candidate,needs_owner_review
+Dislocation of the ankle,"M24.371 (Pathological dislocation of right ankle, NEC) | M24.372 (Pathological dislocation of left ankle, NEC) | M24.373 (Pathological dislocation of unsp ankle, NEC)",0.43,candidate,needs_owner_review
+Dislocation of the elbow,"M24.321 (Pathological dislocation of right elbow, NEC) | M24.322 (Pathological dislocation of left elbow, NEC) | M24.329 (Pathological dislocation of unsp elbow, NEC)",0.43,candidate,needs_owner_review
+Dislocation of the finger,"S63.259S (Unspecified dislocation of unspecified finger, sequela) | S63.258S (Unspecified dislocation of other finger, sequela) | S63.259A (Unspecified dislocation of unspecified finger, init encntr)",0.50,candidate,needs_owner_review
+Dislocation of the foot,"S93.306S (Unspecified dislocation of unspecified foot, sequela) | M24.374 (Pathological dislocation of right foot, NEC) | M24.375 (Pathological dislocation of left foot, NEC)",0.50,candidate,needs_owner_review
+Dislocation of the hip,"Q65.1 (Congenital dislocation of hip, bilateral) | Q65.2 (Congenital dislocation of hip, unspecified) | S73.006S (Unspecified dislocation of unspecified hip, sequela)",0.50,candidate,needs_owner_review
+Dislocation of the knee,"S83.106S (Unspecified dislocation of unspecified knee, sequela) | M22.00 (Recurrent dislocation of patella, unspecified knee) | M22.01 (Recurrent dislocation of patella, right knee)",0.50,candidate,needs_owner_review
+Dislocation of the vertebra,"S23.101S (Dislocation of unspecified thoracic vertebra, sequela) | S23.111S (Dislocation of T1/T2 thoracic vertebra, sequela) | S23.121S (Dislocation of T2/T3 thoracic vertebra, sequela)",0.43,candidate,needs_owner_review
+Dislocation of the wrist,"M24.331 (Pathological dislocation of right wrist, NEC) | M24.332 (Pathological dislocation of left wrist, NEC) | M24.339 (Pathological dislocation of unsp wrist, NEC)",0.43,candidate,needs_owner_review
+Dissociative disorder,"F44.81 (Dissociative identity disorder) | F44.9 (Dissociative and conversion disorder, unspecified) | F20.81 (Schizophreniform disorder)",0.67,candidate,needs_owner_review
+Diverticulitis,None,0.00,candidate,needs_owner_review
+Down syndrome,"Q90.9 (Down syndrome, unspecified)",1.00,exact_normalized,auto_accepted
+Drug abuse,None,0.00,candidate,needs_owner_review
+Drug abuse (barbiturates),None,0.00,candidate,needs_owner_review
+Drug abuse (cocaine),None,0.00,candidate,needs_owner_review
+Drug abuse (methamphetamine),None,0.00,candidate,needs_owner_review
+Drug poisoning due to medication,L12.31 (Epidermolysis bullosa due to drug) | N46.021 (Azoospermia due to drug therapy) | N46.121 (Oligospermia due to drug therapy),0.43,candidate,needs_owner_review
+Drug reaction,L43.2 (Lichenoid drug reaction) | D72.823 (Leukemoid reaction),0.67,candidate,needs_owner_review
+Drug withdrawal,None,0.00,candidate,needs_owner_review
+Dumping syndrome,A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome) | D59.3 (Hemolytic-uremic syndrome),0.33,candidate,needs_owner_review
+Dyshidrosis,L30.1 (Dyshidrosis [pompholyx]),0.50,candidate,needs_owner_review
+Ear drum damage,None,0.00,candidate,needs_owner_review
+Ear wax impaction,None,0.00,candidate,needs_owner_review
+Eating disorder,"F50.9 (Eating disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Ectopic pregnancy,O00.80 (Other ectopic pregnancy without intrauterine pregnancy) | O00.81 (Other ectopic pregnancy with intrauterine pregnancy) | O00.90 (Unspecified ectopic pregnancy without intrauterine pregnancy),0.40,candidate,needs_owner_review
+Ectropion,Q10.1 (Congenital ectropion),0.50,candidate,needs_owner_review
+Eczema,B00.0 (Eczema herpeticum) | L20.82 (Flexural eczema) | L20.84 (Intrinsic (allergic) eczema),0.50,candidate,needs_owner_review
+Emphysema,"J43.9 (Emphysema, unspecified)",1.00,exact_normalized,auto_accepted
+Empyema,None,0.00,candidate,needs_owner_review
+Encephalitis,A39.81 (Meningococcal encephalitis) | A42.82 (Actinomycotic encephalitis) | A83.0 (Japanese encephalitis),0.50,candidate,needs_owner_review
+Endocarditis,A32.82 (Listerial endocarditis) | A39.51 (Meningococcal endocarditis) | A52.03 (Syphilitic endocarditis),0.50,candidate,needs_owner_review
+Endometrial cancer,None,0.00,candidate,needs_owner_review
+Endometrial hyperplasia,"N85.00 (Endometrial hyperplasia, unspecified)",1.00,exact_normalized,auto_accepted
+Endometriosis,"N80.9 (Endometriosis, unspecified)",1.00,exact_normalized,auto_accepted
+Endophthalmitis,H44.19 (Other endophthalmitis) | B73.01 (Onchocerciasis with endophthalmitis),0.50,candidate,needs_owner_review
+Envenomation from spider or animal bite,None,0.00,candidate,needs_owner_review
+Ependymoma,None,0.00,candidate,needs_owner_review
+Epididymitis,N45.1 (Epididymitis),1.00,exact_normalized,auto_accepted
+Epidural hemorrhage,K94.01 (Colostomy hemorrhage) | K94.11 (Enterostomy hemorrhage) | K94.21 (Gastrostomy hemorrhage),0.33,candidate,needs_owner_review
+Erectile dysfunction,N52.2 (Drug-induced erectile dysfunction) | N52.02 (Corporo-venous occlusive erectile dysfunction) | N52.8 (Other male erectile dysfunction),0.67,candidate,needs_owner_review
+Erythema multiforme,"L51.9 (Erythema multiforme, unspecified)",1.00,exact_normalized,auto_accepted
+Esophageal cancer,K22.2 (Esophageal obstruction) | Q39.4 (Esophageal web),0.33,candidate,needs_owner_review
+Esophageal varices,I85.00 (Esophageal varices without bleeding) | I85.01 (Esophageal varices with bleeding) | I85.10 (Secondary esophageal varices without bleeding),0.50,candidate,needs_owner_review
+Esophagitis,"K20.9 (Esophagitis, unspecified)",1.00,exact_normalized,auto_accepted
+Essential tremor,G25.0 (Essential tremor),1.00,exact_normalized,auto_accepted
+Eustachian tube dysfunction (ear disorder),"H69.03 (Patulous Eustachian tube, bilateral) | Q16.2 (Absence of eustachian tube) | H69.00 (Patulous Eustachian tube, unspecified ear)",0.40,candidate,needs_owner_review
+Extrapyramidal effect of drugs,"T37.1X5S (Adverse effect of antimycobacterial drugs, sequela) | T37.5X5S (Adverse effect of antiviral drugs, sequela) | T38.2X5S (Adverse effect of antithyroid drugs, sequela)",0.43,candidate,needs_owner_review
+Eye alignment disorder,None,0.00,candidate,needs_owner_review
+Factitious disorder,"F68.10 (Factitious disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Female genitalia infection,None,0.00,candidate,needs_owner_review
+Fetal alcohol syndrome,Q86.0 (Fetal alcohol syndrome (dysmorphic)) | Q86.1 (Fetal hydantoin syndrome),0.75,candidate,needs_owner_review
+Fibroadenoma,None,0.00,candidate,needs_owner_review
+Fibromyalgia,M79.7 (Fibromyalgia),1.00,exact_normalized,auto_accepted
+Flat feet,None,0.00,candidate,needs_owner_review
+Fluid overload,"E87.70 (Fluid overload, unspecified)",1.00,exact_normalized,auto_accepted
+Folate deficiency,D52.0 (Dietary folate deficiency anemia) | D52.1 (Drug-induced folate deficiency anemia) | D52.8 (Other folate deficiency anemias),0.50,candidate,needs_owner_review
+Food allergy,Z91.02 (Food additives allergy status),0.50,candidate,needs_owner_review
+Foreign body in the eye,"H02.819 (Retained foreign body in unspecified eye, unspecified eyelid) | T15.00XS (Foreign body in cornea, unspecified eye, sequela) | T15.01XS (Foreign body in cornea, right eye, sequela)",0.50,candidate,needs_owner_review
+Foreign body in the gastrointestinal tract,"T19.9XXS (Foreign body in genitourinary tract, part unsp, sequela) | T17.1XXS (Foreign body in nostril, sequela) | T18.0XXS (Foreign body in mouth, sequela)",0.40,candidate,needs_owner_review
+Foreign body in the throat,"T17.1XXS (Foreign body in nostril, sequela) | T18.0XXS (Foreign body in mouth, sequela) | T18.2XXS (Foreign body in stomach, sequela)",0.43,candidate,needs_owner_review
+Foreign body in the vagina,"T19.2XXS (Foreign body in vulva and vagina, sequela) | T19.2XXA (Foreign body in vulva and vagina, initial encounter) | T19.2XXD (Foreign body in vulva and vagina, subsequent encounter)",0.50,candidate,needs_owner_review
+Fracture of the ankle,"L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium) | S22.21XS (Fracture of manubrium, sequela)",0.33,candidate,needs_owner_review
+Fracture of the arm,"S42.309A (Unsp fracture of shaft of humerus, unsp arm, init) | L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium)",0.38,candidate,needs_owner_review
+Fracture of the facial bones,"S02.92XS (Unspecified fracture of facial bones, sequela) | S02.2XXS (Fracture of nasal bones, sequela) | S02.92XA (Unsp fracture of facial bones, init for clos fx)",0.57,candidate,needs_owner_review
+Fracture of the finger,"S62.608S (Fracture of unspecified phalanx of other finger, sequela) | S62.609S (Fracture of unsp phalanx of unspecified finger, sequela) | L03.011 (Cellulitis of right finger)",0.38,candidate,needs_owner_review
+Fracture of the foot,"S92.909S (Unspecified fracture of unspecified foot, sequela) | S92.811A (Other fracture of right foot, init) | S92.811B (Other fracture of right foot, 7thB)",0.50,candidate,needs_owner_review
+Fracture of the hand,"S62.90XS (Unspecified fracture of unspecified wrist and hand, sequela) | L02.531 (Carbuncle of right hand) | L02.532 (Carbuncle of left hand)",0.38,candidate,needs_owner_review
+Fracture of the jaw,L98.5 (Mucinosis of the skin) | M26.07 (Excessive tuberosity of jaw) | M27.40 (Unspecified cyst of jaw),0.33,candidate,needs_owner_review
+Fracture of the leg,"S82.90XS (Unspecified fracture of unspecified lower leg, sequela) | S82.861A (Displaced Maisonneuve's fracture of right leg, init) | S82.861S (Displaced Maisonneuve's fracture of right leg, sequela)",0.43,candidate,needs_owner_review
+Fracture of the neck,"S12.9XXS (Fracture of neck, unspecified, sequela) | S12.8XXS (Fracture of other parts of neck, sequela) | S12.9XXA (Fracture of neck, unspecified, initial encounter)",0.50,candidate,needs_owner_review
+Fracture of the patella,"S82.009S (Unspecified fracture of unspecified patella, sequela) | S82.001S (Unspecified fracture of right patella, sequela) | S82.002S (Unspecified fracture of left patella, sequela)",0.50,candidate,needs_owner_review
+Fracture of the pelvis,"S32.89XS (Fracture of other parts of pelvis, sequela) | C76.3 (Malignant neoplasm of pelvis) | L98.5 (Mucinosis of the skin)",0.43,candidate,needs_owner_review
+Fracture of the rib,"S22.31XS (Fracture of one rib, right side, sequela) | S22.32XS (Fracture of one rib, left side, sequela) | S22.39XS (Fracture of one rib, unspecified side, sequela)",0.38,candidate,needs_owner_review
+Fracture of the shoulder,"S42.109A (Fracture of unsp part of scapula, unsp shoulder, init) | S42.109S (Fracture of unsp part of scapula, unsp shoulder, sequela) | S42.90XA (Fracture of unsp shoulder girdle, part unsp, init)",0.38,candidate,needs_owner_review
+Fracture of the skull,"S02.0XXS (Fracture of vault of skull, sequela) | S02.91XS (Unspecified fracture of skull, sequela) | S02.19XS (Other fracture of base of skull, sequela)",0.50,candidate,needs_owner_review
+Fracture of the vertebra,"S22.058S (Other fracture of T5-T6 vertebra, sequela) | S22.059S (Unspecified fracture of T5-T6 vertebra, sequela) | S22.069S (Unspecified fracture of T7-T8 vertebra, sequela)",0.43,candidate,needs_owner_review
+Friedrich ataxia,"R27.0 (Ataxia, unspecified)",0.33,candidate,needs_owner_review
+Frostbite,None,0.00,candidate,needs_owner_review
+Fungal infection of the hair,O91.02 (Infection of nipple associated with the puerperium),0.33,candidate,needs_owner_review
+Fungal infection of the skin,"L98.5 (Mucinosis of the skin) | L08.9 (Local infection of the skin and subcutaneous tissue, unsp) | L91.8 (Other hypertrophic disorders of the skin)",0.50,candidate,needs_owner_review
+Galactorrhea of unknown cause,R99 (Ill-defined and unknown cause of mortality),0.43,candidate,needs_owner_review
+Gallbladder cancer,None,0.00,candidate,needs_owner_review
+Gallbladder disease,"K82.9 (Disease of gallbladder, unspecified) | A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease)",0.50,candidate,needs_owner_review
+Ganglion cyst,K04.8 (Radicular cyst) | K83.5 (Biliary cyst) | L72.0 (Epidermal cyst),0.33,candidate,needs_owner_review
+Gastritis,"K29.70 (Gastritis, unspecified, without bleeding)",1.00,exact_normalized,auto_accepted
+Gastroduodenal ulcer,None,0.00,candidate,needs_owner_review
+Gastroesophageal reflux disease (GERD),K21.0 (Gastro-esophageal reflux disease with esophagitis) | K21.9 (Gastro-esophageal reflux disease without esophagitis),0.60,candidate,needs_owner_review
+Gastrointestinal hemorrhage,"K92.2 (Gastrointestinal hemorrhage, unspecified)",1.00,exact_normalized,auto_accepted
+Gastroparesis,K31.84 (Gastroparesis),1.00,exact_normalized,auto_accepted
+Genital herpes,None,0.00,candidate,needs_owner_review
+Gestational diabetes,"Z86.32 (Personal history of gestational diabetes) | E23.2 (Diabetes insipidus) | O24.414 (Gestational diabetes in pregnancy, insulin controlled)",0.40,candidate,needs_owner_review
+Glaucoma,H40.9 (Unspecified glaucoma) | Q15.0 (Congenital glaucoma) | B73.02 (Onchocerciasis with glaucoma),0.50,candidate,needs_owner_review
+Glucocorticoid deficiency,D81.810 (Biotinidase deficiency) | E53.0 (Riboflavin deficiency) | E53.1 (Pyridoxine deficiency),0.33,candidate,needs_owner_review
+Gonorrhea,O98.22 (Gonorrhea complicating childbirth),0.33,candidate,needs_owner_review
+Gout,"M10.9 (Gout, unspecified)",1.00,exact_normalized,auto_accepted
+Granuloma inguinale,A58 (Granuloma inguinale),1.00,exact_normalized,auto_accepted
+Graves disease,A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease) | D47.Z2 (Castleman disease),0.33,candidate,needs_owner_review
+Guillain Barre syndrome,None,0.00,candidate,needs_owner_review
+Gum disease,A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease) | D47.Z2 (Castleman disease),0.33,candidate,needs_owner_review
+Gynecomastia,None,0.00,candidate,needs_owner_review
+Hammer toe,None,0.00,candidate,needs_owner_review
+Head and neck cancer,"C76.0 (Malignant neoplasm of head, face and neck) | L04.0 (Acute lymphadenitis of face, head and neck) | C83.51 (Lymphoblastic lymphoma, nodes of head, face, and neck)",0.38,candidate,needs_owner_review
+Head injury,"S09.90XS (Unspecified injury of head, sequela) | S09.90XA (Unspecified injury of head, initial encounter) | S09.90XD (Unspecified injury of head, subsequent encounter)",0.40,candidate,needs_owner_review
+Headache after lumbar puncture,None,0.00,candidate,needs_owner_review
+Heart attack,"I21.9 (Acute myocardial infarction, unspecified)",1.00,exact_normalized,auto_accepted
+Heart block,Q24.6 (Congenital heart block) | I45.5 (Other specified heart block) | I45.2 (Bifascicular block),0.67,candidate,needs_owner_review
+Heart contusion,"S26.01XS (Contusion of heart with hemopericardium, sequela) | S26.11XS (Contusion of heart without hemopericardium, sequela)",0.33,candidate,needs_owner_review
+Heart failure,"I50.9 (Heart failure, unspecified)",1.00,exact_normalized,auto_accepted
+Heat exhaustion,"T67.5XXA (Heat exhaustion, unspecified, initial encounter)",1.00,exact_normalized,auto_accepted
+Heat stroke,None,0.00,candidate,needs_owner_review
+Hemangioma,D18.00 (Hemangioma unspecified site),0.33,candidate,needs_owner_review
+Hemarthrosis,"M25.00 (Hemarthrosis, unspecified joint)",1.00,exact_normalized,auto_accepted
+Hematoma,None,0.00,candidate,needs_owner_review
+Hemiplegia,"G81.90 (Hemiplegia, unspecified affecting unspecified side)",1.00,exact_normalized,auto_accepted
+Hemolytic anemia,"D58.9 (Hereditary hemolytic anemia, unspecified) | D59.0 (Drug-induced autoimmune hemolytic anemia) | D59.2 (Drug-induced nonautoimmune hemolytic anemia)",0.50,candidate,needs_owner_review
+Hemophilia,D68.311 (Acquired hemophilia),0.50,candidate,needs_owner_review
+Hemorrhoids,K64.8 (Other hemorrhoids) | K64.9 (Unspecified hemorrhoids) | K64.0 (First degree hemorrhoids),0.50,candidate,needs_owner_review
+Hepatic encephalopathy,"E51.2 (Wernicke's encephalopathy) | G92 (Toxic encephalopathy) | G93.40 (Encephalopathy, unspecified)",0.33,candidate,needs_owner_review
+Hepatitis due to a toxin,"A40.0 (Sepsis due to streptococcus, group A)",0.38,candidate,needs_owner_review
+Herpangina,None,0.00,candidate,needs_owner_review
+Hiatal hernia,None,0.00,candidate,needs_owner_review
+Hidradenitis suppurativa,L73.2 (Hidradenitis suppurativa),1.00,exact_normalized,auto_accepted
+Hirschsprung disease,Q43.1 (Hirschsprung's disease),1.00,exact_normalized,auto_accepted
+Hirsutism,L68.0 (Hirsutism),1.00,exact_normalized,auto_accepted
+Histoplasmosis,"B39.9 (Histoplasmosis, unspecified)",1.00,exact_normalized,auto_accepted
+Hormone disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Huntington disease,G10 (Huntington's disease),1.00,exact_normalized,auto_accepted
+Hydatidiform mole,"O01.9 (Hydatidiform mole, unspecified)",1.00,exact_normalized,auto_accepted
+Hydrocele of the testicle,L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium),0.33,candidate,needs_owner_review
+Hydrocephalus,"G91.9 (Hydrocephalus, unspecified)",1.00,exact_normalized,auto_accepted
+Hydronephrosis,N13.30 (Unspecified hydronephrosis) | N13.39 (Other hydronephrosis) | Q62.0 (Congenital hydronephrosis),0.50,candidate,needs_owner_review
+Hypercalcemia,E83.52 (Hypercalcemia),1.00,exact_normalized,auto_accepted
+Hyperemesis gravidarum,O21.0 (Mild hyperemesis gravidarum) | O21.1 (Hyperemesis gravidarum with metabolic disturbance),0.67,candidate,needs_owner_review
+Hyperhidrosis,R61 (Generalized hyperhidrosis) | L74.52 (Secondary focal hyperhidrosis),0.50,candidate,needs_owner_review
+Hyperkalemia,E87.5 (Hyperkalemia),1.00,exact_normalized,auto_accepted
+Hypernatremia,E87.0 (Hyperosmolality and hypernatremia),0.33,candidate,needs_owner_review
+Hyperopia,None,0.00,candidate,needs_owner_review
+Hyperosmotic hyperketotic state,None,0.00,candidate,needs_owner_review
+Hypertension of pregnancy,"O21.2 (Late vomiting of pregnancy) | O21.9 (Vomiting of pregnancy, unspecified) | P29.30 (Pulmonary hypertension of newborn)",0.40,candidate,needs_owner_review
+Hypertensive heart disease,I11.0 (Hypertensive heart disease with heart failure) | I11.9 (Hypertensive heart disease without heart failure) | I27.1 (Kyphoscoliotic heart disease),0.60,candidate,needs_owner_review
+Hypertrophic obstructive cardiomyopathy (HOCM),I42.1 (Obstructive hypertrophic cardiomyopathy) | I42.2 (Other hypertrophic cardiomyopathy),1.00,candidate,needs_owner_review
+Hypocalcemia,E83.51 (Hypocalcemia),1.00,exact_normalized,auto_accepted
+Hypoglycemia,"E16.2 (Hypoglycemia, unspecified)",1.00,exact_normalized,auto_accepted
+Hypokalemia,E87.6 (Hypokalemia),1.00,exact_normalized,auto_accepted
+Hyponatremia,E87.1 (Hypo-osmolality and hyponatremia),0.33,candidate,needs_owner_review
+Hypospadias,"Q54.9 (Hypospadias, unspecified)",1.00,exact_normalized,auto_accepted
+Hypothermia,"T68.XXXS (Hypothermia, sequela) | T68.XXXA (Hypothermia, initial encounter) | T68.XXXD (Hypothermia, subsequent encounter)",0.50,candidate,needs_owner_review
+Hypovolemia,E86.1 (Hypovolemia),1.00,exact_normalized,auto_accepted
+Idiopathic absence of menstruation,Q13.1 (Absence of iris) | Q16.2 (Absence of eustachian tube) | Q52.0 (Congenital absence of vagina),0.40,candidate,needs_owner_review
+Idiopathic excessive menstruation,N92.2 (Excessive menstruation at puberty),0.40,candidate,needs_owner_review
+Idiopathic infrequent menstruation,None,0.00,candidate,needs_owner_review
+Idiopathic irregular menstrual cycle,None,0.00,candidate,needs_owner_review
+Idiopathic nonmenstrual bleeding,None,0.00,candidate,needs_owner_review
+Idiopathic painful menstruation,None,0.00,candidate,needs_owner_review
+Ileus,"K56.7 (Ileus, unspecified)",1.00,exact_normalized,auto_accepted
+Impetigo,"L01.00 (Impetigo, unspecified)",1.00,exact_normalized,auto_accepted
+Impulse control disorder,"F63.9 (Impulse disorder, unspecified)",0.50,candidate,needs_owner_review
+Indigestion,None,0.00,candidate,needs_owner_review
+Induced abortion,O02.1 (Missed abortion) | O20.0 (Threatened abortion),0.33,candidate,needs_owner_review
+Infection of open wound,"O86.0 (Infection of obstetric surgical wound) | S01.00XS (Unspecified open wound of scalp, sequela) | S01.20XS (Unspecified open wound of nose, sequela)",0.50,candidate,needs_owner_review
+Infectious gastroenteritis,"A09 (Infectious gastroenteritis and colitis, unspecified)",0.40,candidate,needs_owner_review
+Ingrown toe nail,None,0.00,candidate,needs_owner_review
+Inguinal hernia,"K40.11 (Bilateral inguinal hernia, with gangrene, recurrent) | K40.41 (Unilateral inguinal hernia, with gangrene, recurrent)",0.33,candidate,needs_owner_review
+Injury of the ankle,"S99.919S (Unspecified injury of unspecified ankle, sequela) | S90.919S (Unspecified superficial injury of unspecified ankle, sequela) | S97.00XS (Crushing injury of unspecified ankle, sequela)",0.50,candidate,needs_owner_review
+Injury to internal organ,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the abdomen,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the arm,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the face,P15.4 (Birth injury to face) | P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver),0.60,candidate,needs_owner_review
+Injury to the hand,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the hip,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the knee,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the leg,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the shoulder,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Injury to the spinal cord,"P11.5 (Birth injury to spine and spinal cord) | S34.139S (Unspecified injury to sacral spinal cord, sequela) | S34.139A (Unspecified injury to sacral spinal cord, initial encounter)",0.50,candidate,needs_owner_review
+Injury to the trunk,P13.2 (Birth injury to femur) | P15.0 (Birth injury to liver) | P15.1 (Birth injury to spleen),0.33,candidate,needs_owner_review
+Insect bite,"S00.06XS (Insect bite (nonvenomous) of scalp, sequela) | S00.36XS (Insect bite (nonvenomous) of nose, sequela) | S00.561S (Insect bite (nonvenomous) of lip, sequela)",0.33,candidate,needs_owner_review
+Insulin overdose,None,0.00,candidate,needs_owner_review
+Interstitial lung disease,"J84.115 (Respiratory bronchiolitis interstitial lung disease) | J84.9 (Interstitial pulmonary disease, unspecified) | J70.2 (Acute drug-induced interstitial lung disorders)",0.60,candidate,needs_owner_review
+Intertrigo (skin condition),L30.4 (Erythema intertrigo),0.50,candidate,needs_owner_review
+Intestinal cancer,B78.0 (Intestinal strongyloidiasis) | B81.1 (Intestinal capillariasis) | B81.3 (Intestinal angiostrongyliasis),0.33,candidate,needs_owner_review
+Intestinal disease,"A07.9 (Protozoal intestinal disease, unspecified) | C88.3 (Immunoproliferative small intestinal disease) | A28.1 (Cat-scratch disease)",0.50,candidate,needs_owner_review
+Intestinal malabsorption,"K90.9 (Intestinal malabsorption, unspecified)",1.00,exact_normalized,auto_accepted
+Intestinal obstruction,K56.690 (Other partial intestinal obstruction) | K56.691 (Other complete intestinal obstruction) | K91.31 (Postprocedural partial intestinal obstruction),0.50,candidate,needs_owner_review
+Intracerebral hemorrhage,"I61.5 (Nontraumatic intracerebral hemorrhage, intraventricular) | I61.8 (Other nontraumatic intracerebral hemorrhage) | I61.9 (Nontraumatic intracerebral hemorrhage, unspecified)",0.50,candidate,needs_owner_review
+Intracranial abscess,G06.0 (Intracranial abscess and granuloma) | J36 (Peritonsillar abscess) | K61.0 (Anal abscess),0.50,candidate,needs_owner_review
+Intracranial hemorrhage,"I62.9 (Nontraumatic intracranial hemorrhage, unspecified) | I69.220 (Aphasia following other nontraumatic intracranial hemorrhage) | I69.221 (Dysphasia following oth nontraumatic intracranial hemorrhage)",0.50,candidate,needs_owner_review
+Intussusception,K56.1 (Intussusception),1.00,exact_normalized,auto_accepted
+Iridocyclitis,A18.54 (Tuberculous iridocyclitis) | A54.32 (Gonococcal iridocyclitis) | B00.51 (Herpesviral iridocyclitis),0.50,candidate,needs_owner_review
+Iron deficiency anemia,"D50.9 (Iron deficiency anemia, unspecified)",1.00,exact_normalized,auto_accepted
+Irritable bowel syndrome,K58.2 (Mixed irritable bowel syndrome) | K58.8 (Other irritable bowel syndrome) | K58.0 (Irritable bowel syndrome with diarrhea),0.75,candidate,needs_owner_review
+Ischemia of the bowel,L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium),0.33,candidate,needs_owner_review
+Itching of unknown cause,R99 (Ill-defined and unknown cause of mortality),0.43,candidate,needs_owner_review
+Jaw disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Joint effusion,"M25.40 (Effusion, unspecified joint) | J94.0 (Chylous effusion)",0.67,candidate,needs_owner_review
+Juvenile rheumatoid arthritis,"M08.029 (Unspecified juvenile rheumatoid arthritis, unspecified elbow) | M08.039 (Unspecified juvenile rheumatoid arthritis, unspecified wrist) | M08.049 (Unspecified juvenile rheumatoid arthritis, unspecified hand)",0.60,candidate,needs_owner_review
+Kaposi sarcoma,"C46.9 (Kaposi's sarcoma, unspecified)",1.00,exact_normalized,auto_accepted
+Kidney failure,N19 (Unspecified kidney failure) | T86.12 (Kidney transplant failure) | N17.8 (Other acute kidney failure),0.67,candidate,needs_owner_review
+Kidney stone,N20.0 (Calculus of kidney),1.00,exact_normalized,auto_accepted
+Knee ligament or meniscus tear,"S83.209A (Unsp tear of unsp meniscus, current injury, unsp knee, init) | S83.209D (Unsp tear of unsp meniscus, current injury, unsp knee, subs)",0.30,candidate,needs_owner_review
+Labyrinthitis,"H83.09 (Labyrinthitis, unspecified ear)",1.00,exact_normalized,auto_accepted
+Lactose intolerance,"E73.9 (Lactose intolerance, unspecified)",1.00,exact_normalized,auto_accepted
+Laryngitis,J04.0 (Acute laryngitis) | J37.0 (Chronic laryngitis),0.50,candidate,needs_owner_review
+Lateral epicondylitis (tennis elbow),"M77.10 (Lateral epicondylitis, unspecified elbow)",1.00,exact_normalized,auto_accepted
+Lewy body dementia,G31.83 (Dementia with Lewy bodies),0.40,candidate,needs_owner_review
+Lice,None,0.00,candidate,needs_owner_review
+Lichen planus,"L43.9 (Lichen planus, unspecified)",1.00,exact_normalized,auto_accepted
+Lichen simplex,L28.0 (Lichen simplex chronicus) | L44.1 (Lichen nitidus) | L44.2 (Lichen striatus),0.67,candidate,needs_owner_review
+Lipoma,None,0.00,candidate,needs_owner_review
+Liver disease,"K76.9 (Liver disease, unspecified)",1.00,exact_normalized,auto_accepted
+Lung cancer,J67.0 (Farmer's lung) | J67.4 (Maltworker's lung) | J67.5 (Mushroom-worker's lung),0.33,candidate,needs_owner_review
+Lung contusion,"S27.321S (Contusion of lung, unilateral, sequela) | S27.322S (Contusion of lung, bilateral, sequela) | S27.329S (Contusion of lung, unspecified, sequela)",0.40,candidate,needs_owner_review
+Lyme disease,"A69.20 (Lyme disease, unspecified)",1.00,exact_normalized,auto_accepted
+Lymphadenitis,"I88.0 (Nonspecific mesenteric lymphadenitis) | I88.8 (Other nonspecific lymphadenitis) | I88.9 (Nonspecific lymphadenitis, unspecified)",0.33,candidate,needs_owner_review
+Lymphangitis,I89.1 (Lymphangitis),1.00,exact_normalized,auto_accepted
+Lymphedema,Q82.0 (Hereditary lymphedema) | I97.2 (Postmastectomy lymphedema syndrome),0.50,candidate,needs_owner_review
+Lymphogranuloma venereum,A55 (Chlamydial lymphogranuloma (venereum)),0.67,candidate,needs_owner_review
+Magnesium deficiency,E61.2 (Magnesium deficiency),1.00,exact_normalized,auto_accepted
+Male genitalia infection,None,0.00,candidate,needs_owner_review
+Malignant hypertension,I15.0 (Renovascular hypertension) | I97.3 (Postprocedural hypertension) | K76.6 (Portal hypertension),0.33,candidate,needs_owner_review
+Marfan syndrome,"Q87.40 (Marfan's syndrome, unspecified)",1.00,exact_normalized,auto_accepted
+Mastoiditis,"H70.13 (Chronic mastoiditis, bilateral) | H70.90 (Unspecified mastoiditis, unspecified ear) | H70.93 (Unspecified mastoiditis, bilateral)",0.33,candidate,needs_owner_review
+Meckel diverticulum,"C17.3 (Meckel's diverticulum, malignant) | Q43.0 (Meckel's diverticulum (displaced) (hypertrophic)) | K31.4 (Gastric diverticulum)",0.67,candidate,needs_owner_review
+Melanoma,None,0.00,candidate,needs_owner_review
+Meniere disease,"H81.09 (Meniere's disease, unspecified ear)",1.00,exact_normalized,auto_accepted
+Meningioma,None,0.00,candidate,needs_owner_review
+Meningitis,"G03.9 (Meningitis, unspecified)",1.00,exact_normalized,auto_accepted
+Menopause,E28.310 (Symptomatic premature menopause) | E28.319 (Asymptomatic premature menopause),0.33,candidate,needs_owner_review
+Migraine,"G43.911 (Migraine, unspecified, intractable, with status migrainosus)",1.00,exact_normalized,auto_accepted
+Mitral valve disease,"I05.9 (Rheumatic mitral valve disease, unspecified) | I34.0 (Nonrheumatic mitral (valve) insufficiency) | I34.1 (Nonrheumatic mitral (valve) prolapse)",0.60,candidate,needs_owner_review
+Mittelschmerz,N94.0 (Mittelschmerz),1.00,exact_normalized,auto_accepted
+Molluscum contagiosum,B08.1 (Molluscum contagiosum),1.00,exact_normalized,auto_accepted
+Mononeuritis,G58.7 (Mononeuritis multiplex),0.50,candidate,needs_owner_review
+Mononucleosis,None,0.00,candidate,needs_owner_review
+Moyamoya disease,I67.5 (Moyamoya disease),1.00,exact_normalized,auto_accepted
+Mucositis,J34.81 (Nasal mucositis (ulcerative)) | K92.81 (Gastrointestinal mucositis (ulcerative)),0.33,candidate,needs_owner_review
+Multiple sclerosis,G35 (Multiple sclerosis),1.00,exact_normalized,auto_accepted
+Mumps,B26.0 (Mumps orchitis) | B26.1 (Mumps meningitis) | B26.2 (Mumps encephalitis),0.50,candidate,needs_owner_review
+Muscle spasm,M62.838 (Other muscle spasm) | M62.830 (Muscle spasm of back) | M62.831 (Muscle spasm of calf),0.67,candidate,needs_owner_review
+Muscular dystrophy,G71.0 (Muscular dystrophy),1.00,exact_normalized,auto_accepted
+Myasthenia gravis,P94.0 (Transient neonatal myasthenia gravis) | G70.00 (Myasthenia gravis without (acute) exacerbation) | G70.01 (Myasthenia gravis with (acute) exacerbation),0.50,candidate,needs_owner_review
+Myocarditis,"I51.4 (Myocarditis, unspecified)",1.00,exact_normalized,auto_accepted
+Myoclonus,G25.3 (Myoclonus),1.00,exact_normalized,auto_accepted
+Myositis,"M60.9 (Myositis, unspecified)",1.00,exact_normalized,auto_accepted
+Narcolepsy,G47.411 (Narcolepsy with cataplexy) | G47.419 (Narcolepsy without cataplexy),0.33,candidate,needs_owner_review
+Nasal polyp,"J33.9 (Nasal polyp, unspecified)",1.00,exact_normalized,auto_accepted
+Necrotizing fasciitis,M72.6 (Necrotizing fasciitis),1.00,exact_normalized,auto_accepted
+Nerve impingement near the shoulder,None,0.00,candidate,needs_owner_review
+Neuralgia,G50.0 (Trigeminal neuralgia) | M54.81 (Occipital neuralgia) | B02.22 (Postherpetic trigeminal neuralgia),0.50,candidate,needs_owner_review
+Neurofibromatosis,"Q85.00 (Neurofibromatosis, unspecified)",1.00,exact_normalized,auto_accepted
+Neuromyelitis optica,G36.0 (Neuromyelitis optica [Devic]),0.67,candidate,needs_owner_review
+Neuropathy due to drugs,"I95.2 (Hypotension due to drugs) | M87.150 (Osteonecrosis due to drugs, pelvis) | M87.180 (Osteonecrosis due to drugs, jaw)",0.60,candidate,needs_owner_review
+Neurosis,None,0.00,candidate,needs_owner_review
+Nonalcoholic liver disease (NASH),"K76.9 (Liver disease, unspecified) | K70.9 (Alcoholic liver disease, unspecified) | K71.9 (Toxic liver disease, unspecified)",0.50,candidate,needs_owner_review
+Normal pressure hydrocephalus,G91.2 ((Idiopathic) normal pressure hydrocephalus),0.75,candidate,needs_owner_review
+Nose disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Obsessive compulsive disorder (OCD),None,0.00,candidate,needs_owner_review
+Obstructive sleep apnea (OSA),"G47.33 (Obstructive sleep apnea (adult) (pediatric)) | G47.30 (Sleep apnea, unspecified) | G47.39 (Other sleep apnea)",0.60,candidate,needs_owner_review
+Omphalitis,P38.9 (Omphalitis without hemorrhage),0.33,candidate,needs_owner_review
+Onychomycosis,None,0.00,candidate,needs_owner_review
+Open wound of the ear,"S01.309S (Unspecified open wound of unspecified ear, sequela) | S01.301S (Unspecified open wound of right ear, sequela) | S01.302S (Unspecified open wound of left ear, sequela)",0.57,candidate,needs_owner_review
+Open wound of the eye,"S01.00XS (Unspecified open wound of scalp, sequela) | S01.20XS (Unspecified open wound of nose, sequela) | S01.309S (Unspecified open wound of unspecified ear, sequela)",0.38,candidate,needs_owner_review
+Open wound of the mouth,"S01.00XS (Unspecified open wound of scalp, sequela) | S01.20XS (Unspecified open wound of nose, sequela) | S01.309S (Unspecified open wound of unspecified ear, sequela)",0.38,candidate,needs_owner_review
+Open wound of the neck,"S11.90XS (Unspecified open wound of unspecified part of neck, sequela) | S11.80XS (Unspecified open wound of oth part of neck, sequela) | S11.89XS (Other open wound of other specified part of neck, sequela)",0.50,candidate,needs_owner_review
+Open wound of the nose,"S01.20XS (Unspecified open wound of nose, sequela) | S01.20XA (Unspecified open wound of nose, initial encounter) | S01.20XD (Unspecified open wound of nose, subsequent encounter)",0.57,candidate,needs_owner_review
+Oppositional disorder,F91.3 (Oppositional defiant disorder) | F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder),0.67,candidate,needs_owner_review
+Optic neuritis,H46.8 (Other optic neuritis) | H46.9 (Unspecified optic neuritis) | A17.83 (Tuberculous neuritis),0.67,candidate,needs_owner_review
+Oral leukoplakia,"K13.21 (Leukoplakia of oral mucosa, including tongue) | K13.3 (Hairy leukoplakia)",0.33,candidate,needs_owner_review
+Oral mucosal lesion,None,0.00,candidate,needs_owner_review
+Oral thrush (yeast infection),None,0.00,candidate,needs_owner_review
+Orbital cellulitis,"L03.213 (Periorbital cellulitis) | L03.90 (Cellulitis, unspecified)",0.33,candidate,needs_owner_review
+Orthostatic hypotension,I95.1 (Orthostatic hypotension),1.00,exact_normalized,auto_accepted
+Osteoarthritis,"M15.4 (Erosive (osteo)arthritis) | M15.0 (Primary generalized (osteo)arthritis) | M19.90 (Unspecified osteoarthritis, unspecified site)",0.50,candidate,needs_owner_review
+Osteochondroma,None,0.00,candidate,needs_owner_review
+Osteochondrosis,"M42.9 (Spinal osteochondrosis, unspecified) | M92.9 (Juvenile osteochondrosis, unspecified)",0.33,candidate,needs_owner_review
+Osteomyelitis,"M86.9 (Osteomyelitis, unspecified)",1.00,exact_normalized,auto_accepted
+Osteoporosis,M81.6 (Localized osteoporosis [Lequesne]),0.33,candidate,needs_owner_review
+Otitis externa (swimmer's ear),"H60.90 (Unspecified otitis externa, unspecified ear) | H60.20 (Malignant otitis externa, unspecified ear) | H60.21 (Malignant otitis externa, right ear)",0.60,candidate,needs_owner_review
+Otosclerosis,"H80.23 (Cochlear otosclerosis, bilateral) | H80.83 (Other otosclerosis, bilateral) | H80.90 (Unspecified otosclerosis, unspecified ear)",0.33,candidate,needs_owner_review
+Ovarian cyst,"Q50.1 (Developmental ovarian cyst) | N83.209 (Unspecified ovarian cyst, unspecified side) | N83.201 (Unspecified ovarian cyst, right side)",0.67,candidate,needs_owner_review
+Ovarian torsion,Q50.32 (Ovarian streak),0.33,candidate,needs_owner_review
+Paget disease,A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease) | D47.Z2 (Castleman disease),0.33,candidate,needs_owner_review
+Pain after an operation,None,0.00,candidate,needs_owner_review
+Pain disorder affecting the neck,None,0.00,candidate,needs_owner_review
+Pancreatic cancer,K90.3 (Pancreatic steatorrhea),0.33,candidate,needs_owner_review
+Panic attack,None,0.00,candidate,needs_owner_review
+Panic disorder,F40.01 (Agoraphobia with panic disorder) | F40.02 (Agoraphobia without panic disorder) | F41.0 (Panic disorder [episodic paroxysmal anxiety]),0.50,candidate,needs_owner_review
+Parasitic disease,B89 (Unspecified parasitic disease) | A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease),0.67,candidate,needs_owner_review
+Parathyroid adenoma,None,0.00,candidate,needs_owner_review
+Parkinson disease,G20 (Parkinson's disease),1.00,exact_normalized,auto_accepted
+Paronychia,None,0.00,candidate,needs_owner_review
+Paroxysmal supraventricular tachycardia,"I47.1 (Supraventricular tachycardia) | I47.9 (Paroxysmal tachycardia, unspecified)",0.67,candidate,needs_owner_review
+Paroxysmal ventricular tachycardia,"I47.2 (Ventricular tachycardia) | I47.9 (Paroxysmal tachycardia, unspecified)",0.67,candidate,needs_owner_review
+Patau syndrome,A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome) | D59.3 (Hemolytic-uremic syndrome),0.33,candidate,needs_owner_review
+Pelvic fistula,I86.2 (Pelvic varices) | K60.3 (Anal fistula) | K60.4 (Rectal fistula),0.33,candidate,needs_owner_review
+Pelvic inflammatory disease,A18.17 (Tuberculous female pelvic inflammatory disease) | A54.24 (Gonococcal female pelvic inflammatory disease) | A56.11 (Chlamydial female pelvic inflammatory disease),0.60,candidate,needs_owner_review
+Pelvic organ prolapse,None,0.00,candidate,needs_owner_review
+Pemphigus,"L10.9 (Pemphigus, unspecified)",1.00,exact_normalized,auto_accepted
+Pericarditis,A39.53 (Meningococcal pericarditis) | B33.23 (Viral pericarditis) | I30.1 (Infective pericarditis),0.50,candidate,needs_owner_review
+Peripheral arterial disease,"I73.9 (Peripheral vascular disease, unspecified)",0.40,candidate,needs_owner_review
+Peripheral arterial embolism,I76 (Septic arterial embolism),0.50,candidate,needs_owner_review
+Peripheral nerve disorder,"G52.9 (Cranial nerve disorder, unspecified) | G50.9 (Disorder of trigeminal nerve, unspecified) | G51.9 (Disorder of facial nerve, unspecified)",0.40,candidate,needs_owner_review
+Perirectal infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Peritonitis,"K65.9 (Peritonitis, unspecified)",1.00,exact_normalized,auto_accepted
+Peritonsillar abscess,J36 (Peritonsillar abscess),1.00,exact_normalized,auto_accepted
+Persistent vomiting of unknown cause,R99 (Ill-defined and unknown cause of mortality),0.38,candidate,needs_owner_review
+Peyronie disease,A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease) | D47.Z2 (Castleman disease),0.33,candidate,needs_owner_review
+Pharyngitis,A54.5 (Gonococcal pharyngitis) | J02.0 (Streptococcal pharyngitis) | J31.2 (Chronic pharyngitis),0.50,candidate,needs_owner_review
+Phimosis,N47.1 (Phimosis),1.00,exact_normalized,auto_accepted
+Pilonidal cyst,L05.01 (Pilonidal cyst with abscess) | L05.91 (Pilonidal cyst without abscess) | K04.8 (Radicular cyst),0.50,candidate,needs_owner_review
+Pinguecula,"H11.159 (Pinguecula, unspecified eye)",1.00,exact_normalized,auto_accepted
+Pinworm infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Pituitary adenoma,None,0.00,candidate,needs_owner_review
+Pityriasis rosea,L42 (Pityriasis rosea),1.00,exact_normalized,auto_accepted
+Placenta previa,P02.0 (Newborn affected by placenta previa),0.40,candidate,needs_owner_review
+Placental abruption,None,0.00,candidate,needs_owner_review
+Plantar fasciitis,B07.0 (Plantar wart) | M72.6 (Necrotizing fasciitis),0.33,candidate,needs_owner_review
+Pleural effusion,"J91.0 (Malignant pleural effusion) | J90 (Pleural effusion, not elsewhere classified) | J94.0 (Chylous effusion)",0.67,candidate,needs_owner_review
+Pneumoconiosis,J60 (Coalworker's pneumoconiosis) | J64 (Unspecified pneumoconiosis),0.50,candidate,needs_owner_review
+Pneumonia,"J18.9 (Pneumonia, unspecified organism)",1.00,exact_normalized,auto_accepted
+Pneumothorax,"J93.9 (Pneumothorax, unspecified)",1.00,exact_normalized,auto_accepted
+Poisoning due to analgesics,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to anticonvulsants,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to antidepressants,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to antihypertensives,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to antimicrobial drugs,"I95.2 (Hypotension due to drugs) | M87.150 (Osteonecrosis due to drugs, pelvis) | M87.180 (Osteonecrosis due to drugs, jaw)",0.50,candidate,needs_owner_review
+Poisoning due to antipsychotics,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to ethylene glycol,None,0.00,candidate,needs_owner_review
+Poisoning due to gas,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to opioids,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Poisoning due to sedatives,A41.4 (Sepsis due to anaerobes) | A41.52 (Sepsis due to Pseudomonas) | A41.53 (Sepsis due to Serratia),0.33,candidate,needs_owner_review
+Polycystic kidney disease,"Q61.3 (Polycystic kidney, unspecified) | N18.9 (Chronic kidney disease, unspecified) | Q61.2 (Polycystic kidney, adult type)",0.50,candidate,needs_owner_review
+Polycystic ovarian syndrome (PCOS),E28.2 (Polycystic ovarian syndrome),1.00,exact_normalized,auto_accepted
+Polycythemia vera,D45 (Polycythemia vera),1.00,exact_normalized,auto_accepted
+Polymyalgia rheumatica,M35.3 (Polymyalgia rheumatica),1.00,exact_normalized,auto_accepted
+Post-traumatic stress disorder (PTSD),"F43.10 (Post-traumatic stress disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Postoperative infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Postpartum depression,O90.5 (Postpartum thyroiditis),0.33,candidate,needs_owner_review
+Preeclampsia,"O14.90 (Unspecified pre-eclampsia, unspecified trimester)",0.33,candidate,needs_owner_review
+Premature atrial contractions (PACs),I49.1 (Atrial premature depolarization),0.50,candidate,needs_owner_review
+Premature ovarian failure,E28.39 (Other primary ovarian failure) | E89.40 (Asymptomatic postprocedural ovarian failure) | E89.41 (Symptomatic postprocedural ovarian failure),0.40,candidate,needs_owner_review
+Premature rupture of amniotic membrane,I77.2 (Rupture of artery) | P01.1 (Newborn affected by premature rupture of membranes),0.33,candidate,needs_owner_review
+Premature ventricular contractions (PVCs),I49.3 (Ventricular premature depolarization),0.50,candidate,needs_owner_review
+Premenstrual tension syndrome,N94.3 (Premenstrual tension syndrome),1.00,exact_normalized,auto_accepted
+Presbyacusis,None,0.00,candidate,needs_owner_review
+Priapism,"N48.30 (Priapism, unspecified)",1.00,exact_normalized,auto_accepted
+Primary immunodeficiency,"D84.9 (Immunodeficiency, unspecified) | E21.0 (Primary hyperparathyroidism) | F51.01 (Primary insomnia)",0.33,candidate,needs_owner_review
+Primary insomnia,F51.01 (Primary insomnia),1.00,exact_normalized,auto_accepted
+Primary kidney disease,"N18.9 (Chronic kidney disease, unspecified) | Q61.9 (Cystic kidney disease, unspecified) | D63.1 (Anemia in chronic kidney disease)",0.40,candidate,needs_owner_review
+Problem during pregnancy,None,0.00,candidate,needs_owner_review
+Prostate cancer,None,0.00,candidate,needs_owner_review
+Prostatitis,A54.22 (Gonococcal prostatitis) | A59.02 (Trichomonal prostatitis) | N41.0 (Acute prostatitis),0.50,candidate,needs_owner_review
+Protein deficiency,D53.0 (Protein deficiency anemia) | D81.810 (Biotinidase deficiency) | E53.0 (Riboflavin deficiency),0.67,candidate,needs_owner_review
+Pseudohypoparathyroidism,E20.1 (Pseudohypoparathyroidism),1.00,exact_normalized,auto_accepted
+Pseudotumor cerebri,None,0.00,candidate,needs_owner_review
+Psoriasis,"L40.9 (Psoriasis, unspecified)",1.00,exact_normalized,auto_accepted
+Psychosexual disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Pulmonary congestion,A21.2 (Pulmonary tularemia) | A22.1 (Pulmonary anthrax) | A42.0 (Pulmonary actinomycosis),0.33,candidate,needs_owner_review
+Pulmonary embolism,I27.82 (Chronic pulmonary embolism) | Z86.711 (Personal history of pulmonary embolism) | A21.2 (Pulmonary tularemia),0.67,candidate,needs_owner_review
+Pulmonary eosinophilia,"D72.1 (Eosinophilia) | J82 (Pulmonary eosinophilia, not elsewhere classified) | A21.2 (Pulmonary tularemia)",0.50,candidate,needs_owner_review
+Pulmonary fibrosis,"J84.10 (Pulmonary fibrosis, unspecified)",1.00,exact_normalized,auto_accepted
+Pulmonary hypertension,"I27.20 (Pulmonary hypertension, unspecified)",1.00,exact_normalized,auto_accepted
+Pulmonic valve disease,"I05.9 (Rheumatic mitral valve disease, unspecified) | I06.9 (Rheumatic aortic valve disease, unspecified) | I07.9 (Rheumatic tricuspid valve disease, unspecified)",0.33,candidate,needs_owner_review
+Pyelonephritis,A02.25 (Salmonella pyelonephritis) | D86.84 (Sarcoid pyelonephritis) | N10 (Acute pyelonephritis),0.50,candidate,needs_owner_review
+Pyloric stenosis,K31.1 (Adult hypertrophic pyloric stenosis) | Q40.0 (Congenital hypertrophic pyloric stenosis),0.50,candidate,needs_owner_review
+Pyogenic skin infection,P39.4 (Neonatal skin infection) | T86.822 (Skin graft (allograft) (autograft) infection),0.50,candidate,needs_owner_review
+Raynaud disease,A28.1 (Cat-scratch disease) | A48.1 (Legionnaires' disease) | D47.Z2 (Castleman disease),0.33,candidate,needs_owner_review
+Reactive arthritis,A01.04 (Typhoid arthritis) | A02.23 (Salmonella arthritis) | A39.83 (Meningococcal arthritis),0.33,candidate,needs_owner_review
+Rectal disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Restless leg syndrome,"G25.81 (Restless legs syndrome) | M76.30 (Iliotibial band syndrome, unspecified leg) | M76.31 (Iliotibial band syndrome, right leg)",0.50,candidate,needs_owner_review
+Retinal detachment,"H33.053 (Total retinal detachment, bilateral) | H33.23 (Serous retinal detachment, bilateral) | H33.043 (Retinal detachment with retinal dialysis, bilateral)",0.50,candidate,needs_owner_review
+Rhabdomyolysis,M62.82 (Rhabdomyolysis),1.00,exact_normalized,auto_accepted
+Rheumatoid arthritis,"M06.9 (Rheumatoid arthritis, unspecified)",1.00,exact_normalized,auto_accepted
+Rosacea,"L71.9 (Rosacea, unspecified)",1.00,exact_normalized,auto_accepted
+Rotator cuff injury,None,0.00,candidate,needs_owner_review
+Salivary gland disorder,K11.0 (Atrophy of salivary gland) | K11.1 (Hypertrophy of salivary gland) | K11.3 (Abscess of salivary gland),0.40,candidate,needs_owner_review
+Sarcoidosis,"D86.9 (Sarcoidosis, unspecified)",1.00,exact_normalized,auto_accepted
+Scabies,B86 (Scabies),1.00,exact_normalized,auto_accepted
+Scar,L91.0 (Hypertrophic scar),0.50,candidate,needs_owner_review
+Scarlet fever,"A38.9 (Scarlet fever, uncomplicated) | A38.1 (Scarlet fever with myocarditis) | A38.0 (Scarlet fever with otitis media)",0.67,candidate,needs_owner_review
+Schizophrenia,"F20.9 (Schizophrenia, unspecified)",1.00,exact_normalized,auto_accepted
+Sciatica,"M54.30 (Sciatica, unspecified side)",1.00,exact_normalized,auto_accepted
+Scleritis,"B02.34 (Zoster scleritis) | H15.003 (Unspecified scleritis, bilateral) | H15.009 (Unspecified scleritis, unspecified eye)",0.50,candidate,needs_owner_review
+Scleroderma,L94.1 (Linear scleroderma) | L94.0 (Localized scleroderma [morphea]),0.50,candidate,needs_owner_review
+Scoliosis,"M41.9 (Scoliosis, unspecified)",1.00,exact_normalized,auto_accepted
+Scurvy,None,0.00,candidate,needs_owner_review
+Seasonal allergies (hay fever),None,0.00,candidate,needs_owner_review
+Sebaceous cyst,L72.3 (Sebaceous cyst),1.00,exact_normalized,auto_accepted
+Seborrheic dermatitis,"L21.9 (Seborrheic dermatitis, unspecified)",1.00,exact_normalized,auto_accepted
+Sensorineural hearing loss,"H90.3 (Sensorineural hearing loss, bilateral) | H90.5 (Unspecified sensorineural hearing loss) | H90.6 (Mixed conductive and sensorineural hearing loss, bilateral)",0.75,candidate,needs_owner_review
+Sepsis,"A41.9 (Sepsis, unspecified organism)",1.00,exact_normalized,auto_accepted
+Septic arthritis,A01.04 (Typhoid arthritis) | A02.23 (Salmonella arthritis) | A39.83 (Meningococcal arthritis),0.33,candidate,needs_owner_review
+Shingles (herpes zoster),B02.9 (Zoster without complications),1.00,exact_normalized,auto_accepted
+Sialoadenitis,"K11.20 (Sialoadenitis, unspecified)",1.00,exact_normalized,auto_accepted
+Sick sinus syndrome,I49.5 (Sick sinus syndrome),1.00,exact_normalized,auto_accepted
+Sickle cell anemia,None,0.00,candidate,needs_owner_review
+Sickle cell crisis,None,0.00,candidate,needs_owner_review
+Sinus bradycardia,"P29.12 (Neonatal bradycardia) | R00.1 (Bradycardia, unspecified)",0.33,candidate,needs_owner_review
+Sjogren syndrome,A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome) | D59.3 (Hemolytic-uremic syndrome),0.33,candidate,needs_owner_review
+Skin polyp,K62.0 (Anal polyp) | K62.1 (Rectal polyp),0.33,candidate,needs_owner_review
+Smoking or tobacco addiction,O99.334 (Smoking (tobacco) complicating childbirth),0.33,candidate,needs_owner_review
+Social phobia,"F40.10 (Social phobia, unspecified)",1.00,exact_normalized,auto_accepted
+Soft tissue sarcoma,C46.1 (Kaposi's sarcoma of soft tissue) | M26.81 (Anterior soft tissue impingement) | M26.82 (Posterior soft tissue impingement),0.60,candidate,needs_owner_review
+Somatization disorder,F45.0 (Somatization disorder),1.00,exact_normalized,auto_accepted
+Spermatocele,None,0.00,candidate,needs_owner_review
+Spherocytosis,D58.0 (Hereditary spherocytosis),0.50,candidate,needs_owner_review
+Spina bifida,"Q05.9 (Spina bifida, unspecified)",1.00,exact_normalized,auto_accepted
+Spinal stenosis,"M48.00 (Spinal stenosis, site unspecified) | M48.01 (Spinal stenosis, occipito-atlanto-axial region) | M48.02 (Spinal stenosis, cervical region)",0.50,candidate,needs_owner_review
+Spinocerebellar ataxia,"R27.0 (Ataxia, unspecified)",0.33,candidate,needs_owner_review
+Spondylitis,L40.53 (Psoriatic spondylitis) | M08.1 (Juvenile ankylosing spondylitis),0.50,candidate,needs_owner_review
+Spondylolisthesis,"Q76.2 (Congenital spondylolisthesis) | M43.10 (Spondylolisthesis, site unspecified) | M43.11 (Spondylolisthesis, occipito-atlanto-axial region)",0.50,candidate,needs_owner_review
+Spontaneous abortion,O03.2 (Embolism following incomplete spontaneous abortion) | O03.31 (Shock following incomplete spontaneous abortion) | O03.37 (Sepsis following incomplete spontaneous abortion),0.40,candidate,needs_owner_review
+Sprain or strain,None,0.00,candidate,needs_owner_review
+Stenosis of the tear duct,H04.551 (Acquired stenosis of right nasolacrimal duct) | H04.552 (Acquired stenosis of left nasolacrimal duct) | H04.553 (Acquired stenosis of bilateral nasolacrimal duct),0.38,candidate,needs_owner_review
+Stomach cancer,None,0.00,candidate,needs_owner_review
+Strep throat,J02.0 (Streptococcal pharyngitis),1.00,exact_normalized,auto_accepted
+Stress incontinence,N39.3 (Stress incontinence (female) (male)) | N39.41 (Urge incontinence) | N39.46 (Mixed incontinence),0.50,candidate,needs_owner_review
+Stricture of the esophagus,Q39.3 (Congenital stenosis and stricture of esophagus) | I77.1 (Stricture of artery) | K22.3 (Perforation of esophagus),0.43,candidate,needs_owner_review
+Stroke,"I63.9 (Cerebral infarction, unspecified)",1.00,exact_normalized,auto_accepted
+Stye,None,0.00,candidate,needs_owner_review
+Subarachnoid hemorrhage,"I60.8 (Other nontraumatic subarachnoid hemorrhage) | I60.9 (Nontraumatic subarachnoid hemorrhage, unspecified) | I69.020 (Aphasia following nontraumatic subarachnoid hemorrhage)",0.50,candidate,needs_owner_review
+Subconjunctival hemorrhage,K94.01 (Colostomy hemorrhage) | K94.11 (Enterostomy hemorrhage) | K94.21 (Gastrostomy hemorrhage),0.33,candidate,needs_owner_review
+Subdural hemorrhage,"I62.00 (Nontraumatic subdural hemorrhage, unspecified) | I62.01 (Nontraumatic acute subdural hemorrhage) | I62.02 (Nontraumatic subacute subdural hemorrhage)",0.50,candidate,needs_owner_review
+Substance-related mental disorder,"F48.9 (Nonpsychotic mental disorder, unspecified) | F99 (Mental disorder, not otherwise specified)",0.40,candidate,needs_owner_review
+Syndrome of inappropriate secretion of ADH (SIADH),E22.2 (Syndrome of inappropriate secretion of antidiuretic hormone),0.57,candidate,needs_owner_review
+Syphilis,"A53.9 (Syphilis, unspecified)",1.00,exact_normalized,auto_accepted
+Syringomyelia,G95.0 (Syringomyelia and syringobulbia),0.33,candidate,needs_owner_review
+Systemic lupus erythematosis (SLE),"M32.0 (Drug-induced systemic lupus erythematosus) | M32.9 (Systemic lupus erythematosus, unspecified) | M32.11 (Endocarditis in systemic lupus erythematosus)",0.40,candidate,needs_owner_review
+Teething syndrome,K00.7 (Teething syndrome),1.00,exact_normalized,auto_accepted
+Temporary or benign blood in urine,None,0.00,candidate,needs_owner_review
+Temporomandibular joint disorder,"M26.601 (Right temporomandibular joint disorder, unspecified) | M26.602 (Left temporomandibular joint disorder, unspecified) | M26.603 (Bilateral temporomandibular joint disorder, unspecified)",0.60,candidate,needs_owner_review
+Tendinitis,None,0.00,candidate,needs_owner_review
+Tension headache,R51 (Headache) | G44.81 (Hypnic headache),0.50,candidate,needs_owner_review
+Testicular cancer,E29.0 (Testicular hyperfunction) | E29.1 (Testicular hypofunction),0.33,candidate,needs_owner_review
+Testicular disorder,E29.0 (Testicular hyperfunction) | E29.1 (Testicular hypofunction) | F20.81 (Schizophreniform disorder),0.33,candidate,needs_owner_review
+Testicular torsion,E29.0 (Testicular hyperfunction) | E29.1 (Testicular hypofunction),0.33,candidate,needs_owner_review
+Thalassemia,"D56.9 (Thalassemia, unspecified)",1.00,exact_normalized,auto_accepted
+Thoracic aortic aneurysm,"I71.1 (Thoracic aortic aneurysm, ruptured) | I71.2 (Thoracic aortic aneurysm, without rupture) | I77.810 (Thoracic aortic ectasia)",0.75,candidate,needs_owner_review
+Thoracic outlet syndrome,None,0.00,candidate,needs_owner_review
+Threatened pregnancy,O20.0 (Threatened abortion) | O48.0 (Post-term pregnancy) | O48.1 (Prolonged pregnancy),0.33,candidate,needs_owner_review
+Thrombophlebitis,I82.1 (Thrombophlebitis migrans) | O86.81 (Puerperal septic thrombophlebitis),0.50,candidate,needs_owner_review
+Thyroid nodule,E04.1 (Nontoxic single thyroid nodule),0.50,candidate,needs_owner_review
+Tic (movement) disorder,"F95.9 (Tic disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Tietze syndrome,M94.0 (Chondrocostal junction syndrome [Tietze]) | A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome),0.50,candidate,needs_owner_review
+Tinnitus of unknown cause,R99 (Ill-defined and unknown cause of mortality),0.43,candidate,needs_owner_review
+Tonsillar hypertrophy,B44.2 (Tonsillar aspergillosis),0.33,candidate,needs_owner_review
+Tonsillitis,"J35.01 (Chronic tonsillitis) | J03.90 (Acute tonsillitis, unspecified)",0.50,candidate,needs_owner_review
+Tooth abscess,J36 (Peritonsillar abscess) | K03.81 (Cracked tooth) | K61.0 (Anal abscess),0.33,candidate,needs_owner_review
+Tooth disorder,"K00.9 (Disorder of tooth development, unspecified) | F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder)",0.40,candidate,needs_owner_review
+Torticollis,M43.6 (Torticollis),1.00,exact_normalized,auto_accepted
+Tourette syndrome,A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome) | D59.3 (Hemolytic-uremic syndrome),0.33,candidate,needs_owner_review
+Toxic multinodular goiter,E04.2 (Nontoxic multinodular goiter) | E05.21 (Thyrotxcosis w toxic multinodular goiter w thyrotoxic crisis) | E01.1 (Iodine-deficiency related multinodular (endemic) goiter),0.50,candidate,needs_owner_review
+Toxoplasmosis,"B58.9 (Toxoplasmosis, unspecified)",1.00,exact_normalized,auto_accepted
+Tracheitis,None,0.00,candidate,needs_owner_review
+Transient ischemic attack,"G45.9 (Transient cerebral ischemic attack, unspecified) | H93.013 (Transient ischemic deafness, bilateral) | H93.011 (Transient ischemic deafness, right ear)",0.60,candidate,needs_owner_review
+Trichiasis,None,0.00,candidate,needs_owner_review
+Trichinosis,None,0.00,candidate,needs_owner_review
+Trichomonas infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Tricuspid valve disease,"I07.9 (Rheumatic tricuspid valve disease, unspecified) | I36.0 (Nonrheumatic tricuspid (valve) stenosis) | I36.1 (Nonrheumatic tricuspid (valve) insufficiency)",0.60,candidate,needs_owner_review
+Trigeminal neuralgia,G50.0 (Trigeminal neuralgia),1.00,exact_normalized,auto_accepted
+Trigger finger (finger disorder),"M65.30 (Trigger finger, unspecified finger)",1.00,exact_normalized,auto_accepted
+Tuberous sclerosis,Q85.1 (Tuberous sclerosis),1.00,exact_normalized,auto_accepted
+Turner syndrome,"Q96.9 (Turner's syndrome, unspecified)",1.00,exact_normalized,auto_accepted
+Urethral disorder,"N36.9 (Urethral disorder, unspecified)",1.00,exact_normalized,auto_accepted
+Urethral valves,Q64.2 (Congenital posterior urethral valves) | N34.0 (Urethral abscess) | N36.0 (Urethral fistula),0.50,candidate,needs_owner_review
+Urethritis,N34.1 (Nonspecific urethritis) | N34.2 (Other urethritis),0.50,candidate,needs_owner_review
+Urge incontinence,N39.41 (Urge incontinence),1.00,exact_normalized,auto_accepted
+Urinary tract infection,"P39.3 (Neonatal urinary tract infection) | N39.0 (Urinary tract infection, site not specified) | N99.531 (Infection of continent stoma of urinary tract)",0.75,candidate,needs_owner_review
+Urinary tract obstruction,P39.3 (Neonatal urinary tract infection) | N21.8 (Other lower urinary tract calculus),0.40,candidate,needs_owner_review
+Uterine atony,None,0.00,candidate,needs_owner_review
+Uterine fibroids,None,0.00,candidate,needs_owner_review
+Uveitis,"H44.133 (Sympathetic uveitis, bilateral)",0.33,candidate,needs_owner_review
+VACTERL syndrome,A39.1 (Waterhouse-Friderichsen syndrome) | A81.82 (Gerstmann-Straussler-Scheinker syndrome) | D59.3 (Hemolytic-uremic syndrome),0.33,candidate,needs_owner_review
+Vaginal cyst,K04.8 (Radicular cyst) | K83.5 (Biliary cyst) | L72.0 (Epidermal cyst),0.33,candidate,needs_owner_review
+Vaginal yeast infection,None,0.00,candidate,needs_owner_review
+Vaginismus,N94.2 (Vaginismus),1.00,exact_normalized,auto_accepted
+Vaginitis,N76.0 (Acute vaginitis) | N95.2 (Postmenopausal atrophic vaginitis) | O86.13 (Vaginitis following delivery),0.50,candidate,needs_owner_review
+Valley fever,A92.4 (Rift Valley fever) | A78 (Q fever) | A79.0 (Trench fever),0.67,candidate,needs_owner_review
+Varicocele of the testicles,L98.5 (Mucinosis of the skin) | O90.81 (Anemia of the puerperium),0.33,candidate,needs_owner_review
+Varicose veins,I86.8 (Varicose veins of other specified sites),0.33,candidate,needs_owner_review
+Vasculitis,"L95.0 (Livedoid vasculitis) | H35.063 (Retinal vasculitis, bilateral)",0.50,candidate,needs_owner_review
+Venous insufficiency,I87.2 (Venous insufficiency (chronic) (peripheral)) | H51.11 (Convergence insufficiency),0.50,candidate,needs_owner_review
+Vertebrobasilar insufficiency,H51.11 (Convergence insufficiency),0.33,candidate,needs_owner_review
+Vesicoureteral reflux,None,0.00,candidate,needs_owner_review
+Viral exanthem,B30.2 (Viral pharyngoconjunctivitis) | B33.21 (Viral endocarditis) | B33.22 (Viral myocarditis),0.33,candidate,needs_owner_review
+Viral warts,B07.8 (Other viral warts) | B30.2 (Viral pharyngoconjunctivitis) | B33.21 (Viral endocarditis),0.67,candidate,needs_owner_review
+Vitamin B deficiency,"E53.9 (Vitamin B deficiency, unspecified)",1.00,exact_normalized,auto_accepted
+Vitreous hemorrhage,"H43.10 (Vitreous hemorrhage, unspecified eye)",1.00,exact_normalized,auto_accepted
+Vocal cord polyp,J38.1 (Polyp of vocal cord and larynx),0.50,candidate,needs_owner_review
+Volvulus,K56.2 (Volvulus),1.00,exact_normalized,auto_accepted
+Von Hippel-Lindau disease,D68.0 (Von Willebrand's disease) | E74.01 (von Gierke disease),0.50,candidate,needs_owner_review
+Von Willebrand disease,D68.0 (Von Willebrand's disease),1.00,exact_normalized,auto_accepted
+Vulvar cancer,N90.7 (Vulvar cyst) | N94.810 (Vulvar vestibulitis),0.33,candidate,needs_owner_review
+Vulvar disorder,F20.81 (Schizophreniform disorder) | F21 (Schizotypal disorder) | F34.0 (Cyclothymic disorder),0.33,candidate,needs_owner_review
+Vulvodynia,"N94.819 (Vulvodynia, unspecified)",1.00,exact_normalized,auto_accepted
+Wernicke Korsakoff syndrome,None,0.00,candidate,needs_owner_review
+White blood cell disease,"D72.818 (Other decreased white blood cell count) | D72.819 (Decreased white blood cell count, unspecified) | D72.828 (Other elevated white blood cell count)",0.43,candidate,needs_owner_review
+Whooping cough,"A37.90 (Whooping cough, unspecified species without pneumonia)",1.00,exact_normalized,auto_accepted
+Wilson disease,E83.01 (Wilson's disease),1.00,exact_normalized,auto_accepted
+Yeast infection,K94.02 (Colostomy infection) | K94.12 (Enterostomy infection) | K94.22 (Gastrostomy infection),0.33,candidate,needs_owner_review
+Zenker diverticulum,K31.4 (Gastric diverticulum) | N36.1 (Urethral diverticulum),0.33,candidate,needs_owner_review

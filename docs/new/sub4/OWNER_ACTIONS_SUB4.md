@@ -61,3 +61,36 @@ node scripts/remove_demo_batch.js --db medisync_prod --dry-run
 $env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
 node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
 ```
+
+
+---
+
+## 4. Sri Lankan Priority Diseases Curated Profile Entry (`pending_owner_data`)
+
+### Background & Non-Fabrication Rule
+Under National Surveillance guidelines in Sri Lanka, 11 communicable diseases require dedicated monitoring:
+1. **Dengue**: Covered in Tier 1 (`Dengue`).
+2. **Malaria**: Covered in Tier 1 (`Malaria`).
+3. **Typhoid**: Covered in Tier 1 (`Typhoid`).
+4. **Tuberculosis**: Covered in Tier 1 (`Tuberculosis`).
+5. **Hepatitis (A, B, C, D, E)**: Covered in Tier 1 (`Hepatitis A` through `E`).
+6. **Influenza / Flu**: Covered in Tier 1 (`Common Cold`) and Tier 2 KB (`Flu` -> `J11.1`).
+7. **Leptospirosis**: MISSING in Tier 1. (Raw SymCAT profile was a 100% dummy imputation fallback artifact and is quarantined).
+8. **Chikungunya**: MISSING in Tier 1 and absent in SymCAT.
+9. **Cholera**: MISSING in Tier 1 and absent in SymCAT.
+10. **Dysentery**: MISSING in Tier 1 and absent in SymCAT.
+11. **Measles**: MISSING in Tier 1 and absent in SymCAT.
+
+### Action for Owner (When Official Case Definitions are Available):
+1. **Source Citation**:
+   - Epidemiology Unit, Ministry of Health Sri Lanka: [Surveillance Case Definitions for Notifiable Diseases](https://www.epid.gov.lk/).
+   - World Health Organization: [WHO Recommended Surveillance Standards](https://www.who.int/).
+2. **Procedure**:
+   - Extract the clinical case definition symptoms for Leptospirosis, Chikungunya, Cholera, Dysentery, and Measles from the official MOH/WHO documentation.
+   - Append the verified cases to `ml-engine/data/dataset.csv` with their standard ICD-10 codes:
+     - Leptospirosis (`A27.9`)
+     - Chikungunya (`A92.0`)
+     - Cholera (`A00.9`)
+     - Dysentery (`A09.0` / `A06.0`)
+     - Measles (`B05.9`)
+   - Re-run `node scripts/run_offline_tests.js`.

@@ -1,0 +1,6640 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-11-08T18:54:32.457290+00:00",
+  "disclaimer": "Quarantined conditions from raw SymCAT source due to dummy cluster overlap, near-identical profiles, or insufficient evidence. clinicalValidation: not_established.",
+  "quarantinedCount": 136,
+  "quarantinedDiseases": [
+    {
+      "diseaseId": "air-embolism",
+      "name": "Air embolism",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "bladder-cancer",
+      "name": "Bladder cancer",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bladder mass",
+          "probability": 9.0
+        },
+        {
+          "name": "blood in urine",
+          "probability": 44.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 7.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 5.0
+        },
+        {
+          "name": "kidney mass",
+          "probability": 2.0
+        },
+        {
+          "name": "mass in scrotum",
+          "probability": 2.0
+        },
+        {
+          "name": "pain during intercourse",
+          "probability": 2.0
+        },
+        {
+          "name": "penile discharge",
+          "probability": 2.0
+        },
+        {
+          "name": "penis redness",
+          "probability": 2.0
+        },
+        {
+          "name": "retention of urine",
+          "probability": 18.0
+        },
+        {
+          "name": "symptoms of bladder",
+          "probability": 14.0
+        },
+        {
+          "name": "symptoms of prostate",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "blastomycosis",
+      "name": "Blastomycosis",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "breast-cancer",
+      "name": "Breast cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "bleeding or discharge from nipple",
+          "probability": 2.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 7.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 2.0
+        },
+        {
+          "name": "lump or mass of breast",
+          "probability": 21.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 9.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "carcinoid-syndrome",
+      "name": "Carcinoid syndrome",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "excessive growth",
+          "probability": 11.0
+        },
+        {
+          "name": "eye strain",
+          "probability": 11.0
+        },
+        {
+          "name": "involuntary urination",
+          "probability": 77.0
+        },
+        {
+          "name": "itchy eyelid",
+          "probability": 11.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 11.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 11.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 11.0
+        },
+        {
+          "name": "nailbiting",
+          "probability": 11.0
+        },
+        {
+          "name": "neck cramps or spasms",
+          "probability": 11.0
+        },
+        {
+          "name": "shoulder swelling",
+          "probability": 11.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 11.0
+        },
+        {
+          "name": "wrist weakness",
+          "probability": 11.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cerebral-palsy",
+      "name": "Cerebral palsy",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "back cramps or spasms",
+          "probability": 4.0
+        },
+        {
+          "name": "blindness",
+          "probability": 4.0
+        },
+        {
+          "name": "cramps and spasms",
+          "probability": 14.0
+        },
+        {
+          "name": "difficulty eating",
+          "probability": 6.0
+        },
+        {
+          "name": "infant feeding problem",
+          "probability": 2.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 6.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 4.0
+        },
+        {
+          "name": "lip sore",
+          "probability": 2.0
+        },
+        {
+          "name": "problems with movement",
+          "probability": 29.0
+        },
+        {
+          "name": "seizures",
+          "probability": 51.0
+        },
+        {
+          "name": "swollen tongue",
+          "probability": 2.0
+        },
+        {
+          "name": "tongue lesions",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cervical-cancer",
+      "name": "Cervical cancer",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "difficulty eating",
+          "probability": 2.0
+        },
+        {
+          "name": "heavy menstrual flow",
+          "probability": 6.0
+        },
+        {
+          "name": "intermenstrual bleeding",
+          "probability": 5.0
+        },
+        {
+          "name": "jaundice",
+          "probability": 2.0
+        },
+        {
+          "name": "mass on vulva",
+          "probability": 2.0
+        },
+        {
+          "name": "painful menstruation",
+          "probability": 5.0
+        },
+        {
+          "name": "pelvic pain",
+          "probability": 13.0
+        },
+        {
+          "name": "swollen abdomen",
+          "probability": 2.0
+        },
+        {
+          "name": "unpredictable menstruation",
+          "probability": 5.0
+        },
+        {
+          "name": "vaginal discharge",
+          "probability": 11.0
+        },
+        {
+          "name": "vaginal itching",
+          "probability": 5.0
+        },
+        {
+          "name": "vulvar irritation",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chagas-disease",
+      "name": "Chagas disease",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 32.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chancroid",
+      "name": "Chancroid",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 32.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chronic-ulcer",
+      "name": "Chronic ulcer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "skin lesion",
+          "probability": 83.0
+        },
+        {
+          "name": "skin on leg or foot looks infected",
+          "probability": 7.0
+        },
+        {
+          "name": "skin pain",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "colorectal-cancer",
+      "name": "Colorectal cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 6,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 6.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 2.0
+        },
+        {
+          "name": "mass or swelling around the anus",
+          "probability": 3.0
+        },
+        {
+          "name": "pain of the anus",
+          "probability": 4.0
+        },
+        {
+          "name": "rectal bleeding",
+          "probability": 14.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 26.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "congenital-heart-defect",
+      "name": "Congenital heart defect",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "arm swelling",
+          "probability": 4.0
+        },
+        {
+          "name": "cross-eyed",
+          "probability": 2.0
+        },
+        {
+          "name": "decreased heart rate",
+          "probability": 2.0
+        },
+        {
+          "name": "excessive appetite",
+          "probability": 2.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 2.0
+        },
+        {
+          "name": "infant feeding problem",
+          "probability": 4.0
+        },
+        {
+          "name": "irregular belly button",
+          "probability": 2.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 6.0
+        },
+        {
+          "name": "lymphedema",
+          "probability": 6.0
+        },
+        {
+          "name": "neck cramps or spasms",
+          "probability": 2.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 26.0
+        },
+        {
+          "name": "slurring words",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "congenital-rubella",
+      "name": "Congenital rubella",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cryptorchidism",
+      "name": "Cryptorchidism",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 10,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "flatulence",
+          "probability": 9.0
+        },
+        {
+          "name": "irritable infant",
+          "probability": 9.0
+        },
+        {
+          "name": "jaundice",
+          "probability": 9.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 9.0
+        },
+        {
+          "name": "mass in scrotum",
+          "probability": 9.0
+        },
+        {
+          "name": "pain in testicles",
+          "probability": 9.0
+        },
+        {
+          "name": "pus draining from ear",
+          "probability": 9.0
+        },
+        {
+          "name": "swelling of scrotum",
+          "probability": 16.0
+        },
+        {
+          "name": "symptoms of the scrotum and testes",
+          "probability": 50.0
+        },
+        {
+          "name": "white discharge from eye",
+          "probability": 9.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cystic-fibrosis",
+      "name": "Cystic Fibrosis",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 10,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bleeding gums",
+          "probability": 4.0
+        },
+        {
+          "name": "cough",
+          "probability": 48.0
+        },
+        {
+          "name": "decreased appetite",
+          "probability": 11.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 4.0
+        },
+        {
+          "name": "feeling ill",
+          "probability": 28.0
+        },
+        {
+          "name": "hemoptysis",
+          "probability": 4.0
+        },
+        {
+          "name": "intermenstrual bleeding",
+          "probability": 4.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 4.0
+        },
+        {
+          "name": "sinus congestion",
+          "probability": 4.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cytomegalovirus-infection",
+      "name": "Cytomegalovirus infection",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "decubitus-ulcer",
+      "name": "Decubitus ulcer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "difficulty speaking",
+          "probability": 11.0
+        },
+        {
+          "name": "disturbance of smell or taste",
+          "probability": 1.0
+        },
+        {
+          "name": "incontinence of stool",
+          "probability": 1.0
+        },
+        {
+          "name": "penis redness",
+          "probability": 1.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 78.0
+        },
+        {
+          "name": "skin on leg or foot looks infected",
+          "probability": 6.0
+        },
+        {
+          "name": "skin pain",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "dengue-fever",
+      "name": "Dengue fever",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fever",
+          "probability": 100.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "sore throat",
+          "probability": 100.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "diabetes",
+      "name": "Diabetes",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 1.0
+        },
+        {
+          "name": "thirst",
+          "probability": 2.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 7.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "diabetic-kidney-disease",
+      "name": "Diabetic kidney disease",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 7.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 7.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 7.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 7.0
+        },
+        {
+          "name": "hurts to breath",
+          "probability": 7.0
+        },
+        {
+          "name": "impotence",
+          "probability": 12.0
+        },
+        {
+          "name": "irregular appearing nails",
+          "probability": 7.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 7.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 7.0
+        },
+        {
+          "name": "leg swelling",
+          "probability": 12.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 7.0
+        },
+        {
+          "name": "thirst",
+          "probability": 7.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "dislocation-of-the-patella",
+      "name": "Dislocation of the patella",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "fluid retention",
+          "probability": 12.0
+        },
+        {
+          "name": "knee pain",
+          "probability": 90.0
+        },
+        {
+          "name": "knee stiffness or tightness",
+          "probability": 12.0
+        },
+        {
+          "name": "knee swelling",
+          "probability": 22.0
+        },
+        {
+          "name": "problems during pregnancy",
+          "probability": 12.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "dislocation-of-the-shoulder",
+      "name": "Dislocation of the shoulder",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 10,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "arm pain",
+          "probability": 32.0
+        },
+        {
+          "name": "arm stiffness or tightness",
+          "probability": 7.0
+        },
+        {
+          "name": "arm swelling",
+          "probability": 5.0
+        },
+        {
+          "name": "leg weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 3.0
+        },
+        {
+          "name": "redness in or around nose",
+          "probability": 3.0
+        },
+        {
+          "name": "shoulder lump or mass",
+          "probability": 3.0
+        },
+        {
+          "name": "shoulder pain",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder stiffness or tightness",
+          "probability": 7.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 11.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "edward-syndrome",
+      "name": "Edward syndrome",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "cross-eyed",
+          "probability": 8.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 8.0
+        },
+        {
+          "name": "eye strain",
+          "probability": 8.0
+        },
+        {
+          "name": "fever",
+          "probability": 68.0
+        },
+        {
+          "name": "itchy eyelid",
+          "probability": 8.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 8.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 8.0
+        },
+        {
+          "name": "nailbiting",
+          "probability": 8.0
+        },
+        {
+          "name": "shoulder swelling",
+          "probability": 8.0
+        },
+        {
+          "name": "suprapubic pain",
+          "probability": 68.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 8.0
+        },
+        {
+          "name": "wrist weakness",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "epilepsy",
+      "name": "Epilepsy",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "abnormal involuntary movements",
+          "probability": 13.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 4.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 9.0
+        },
+        {
+          "name": "eye moves abnormally",
+          "probability": 2.0
+        },
+        {
+          "name": "headache",
+          "probability": 32.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 2.0
+        },
+        {
+          "name": "muscle weakness",
+          "probability": 1.0
+        },
+        {
+          "name": "seizures",
+          "probability": 91.0
+        },
+        {
+          "name": "stiffness all over",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "fat-embolism",
+      "name": "Fat embolism",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "female-infertility-of-unknown-cause",
+      "name": "Female infertility of unknown cause",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 10,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "absence of menstruation",
+          "probability": 2.0
+        },
+        {
+          "name": "bleeding or discharge from nipple",
+          "probability": 2.0
+        },
+        {
+          "name": "infertility",
+          "probability": 92.0
+        },
+        {
+          "name": "irregular belly button",
+          "probability": 2.0
+        },
+        {
+          "name": "long menstrual periods",
+          "probability": 6.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 2.0
+        },
+        {
+          "name": "pain during intercourse",
+          "probability": 2.0
+        },
+        {
+          "name": "scanty menstrual flow",
+          "probability": 3.0
+        },
+        {
+          "name": "unpredictable menstruation",
+          "probability": 15.0
+        },
+        {
+          "name": "unwanted hair",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "flu",
+      "name": "Flu",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ache all over",
+          "probability": 56.0
+        },
+        {
+          "name": "chills",
+          "probability": 38.0
+        },
+        {
+          "name": "coryza",
+          "probability": 37.0
+        },
+        {
+          "name": "cough",
+          "probability": 87.0
+        },
+        {
+          "name": "diarrhea",
+          "probability": 26.0
+        },
+        {
+          "name": "fever",
+          "probability": 91.0
+        },
+        {
+          "name": "flu-like syndrome",
+          "probability": 52.0
+        },
+        {
+          "name": "headache",
+          "probability": 52.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 63.0
+        },
+        {
+          "name": "nausea",
+          "probability": 35.0
+        },
+        {
+          "name": "sore throat",
+          "probability": 63.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 47.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "foreign-body-in-the-ear",
+      "name": "Foreign body in the ear",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bleeding from ear",
+          "probability": 14.0
+        },
+        {
+          "name": "diminished hearing",
+          "probability": 17.0
+        },
+        {
+          "name": "ear pain",
+          "probability": 70.0
+        },
+        {
+          "name": "fluid in ear",
+          "probability": 11.0
+        },
+        {
+          "name": "hysterical behavior",
+          "probability": 4.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 4.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 4.0
+        },
+        {
+          "name": "throat feels tight",
+          "probability": 4.0
+        },
+        {
+          "name": "throat irritation",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "foreign-body-in-the-nose",
+      "name": "Foreign body in the nose",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "coughing up sputum",
+          "probability": 8.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 26.0
+        },
+        {
+          "name": "nosebleed",
+          "probability": 8.0
+        },
+        {
+          "name": "redness in or around nose",
+          "probability": 8.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "g6pd-enzyme-deficiency",
+      "name": "G6PD enzyme deficiency",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "cough",
+          "probability": 43.0
+        },
+        {
+          "name": "elbow cramps or spasms",
+          "probability": 3.0
+        },
+        {
+          "name": "elbow weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "emotional symptoms",
+          "probability": 3.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 3.0
+        },
+        {
+          "name": "feeling hot and cold",
+          "probability": 3.0
+        },
+        {
+          "name": "low back weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "muscle swelling",
+          "probability": 3.0
+        },
+        {
+          "name": "nailbiting",
+          "probability": 3.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 43.0
+        },
+        {
+          "name": "underweight",
+          "probability": 3.0
+        },
+        {
+          "name": "wrist weakness",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "gas-gangrene",
+      "name": "Gas gangrene",
+      "reason": "dummy_imputation_cluster (Jaccard=0.85 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 32.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 100.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "goiter",
+      "name": "Goiter",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "arm weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "bones are painful",
+          "probability": 3.0
+        },
+        {
+          "name": "difficulty in swallowing",
+          "probability": 12.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 22.0
+        },
+        {
+          "name": "feeling hot and cold",
+          "probability": 3.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 10.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 3.0
+        },
+        {
+          "name": "leg weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "lump in throat",
+          "probability": 10.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 12.0
+        },
+        {
+          "name": "neck swelling",
+          "probability": 10.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 15.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hpv",
+      "name": "HPV",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "coughing up sputum",
+          "probability": 6.0
+        },
+        {
+          "name": "eyelid lesion or rash",
+          "probability": 6.0
+        },
+        {
+          "name": "frequent urination",
+          "probability": 12.0
+        },
+        {
+          "name": "hand or finger lump or mass",
+          "probability": 6.0
+        },
+        {
+          "name": "involuntary urination",
+          "probability": 6.0
+        },
+        {
+          "name": "joint pain",
+          "probability": 6.0
+        },
+        {
+          "name": "lump or mass of breast",
+          "probability": 6.0
+        },
+        {
+          "name": "mass or swelling around the anus",
+          "probability": 6.0
+        },
+        {
+          "name": "unpredictable menstruation",
+          "probability": 6.0
+        },
+        {
+          "name": "vaginal discharge",
+          "probability": 12.0
+        },
+        {
+          "name": "vaginal itching",
+          "probability": 12.0
+        },
+        {
+          "name": "warts",
+          "probability": 28.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hashimoto-thyroiditis",
+      "name": "Hashimoto thyroiditis",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "abnormal involuntary movements",
+          "probability": 11.0
+        },
+        {
+          "name": "constipation",
+          "probability": 19.0
+        },
+        {
+          "name": "difficulty in swallowing",
+          "probability": 11.0
+        },
+        {
+          "name": "feeling hot",
+          "probability": 11.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 11.0
+        },
+        {
+          "name": "heavy menstrual flow",
+          "probability": 11.0
+        },
+        {
+          "name": "palpitations",
+          "probability": 11.0
+        },
+        {
+          "name": "premenstrual tension or irritability",
+          "probability": 11.0
+        },
+        {
+          "name": "suprapubic pain",
+          "probability": 11.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 11.0
+        },
+        {
+          "name": "warts",
+          "probability": 11.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 19.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hemochromatosis",
+      "name": "Hemochromatosis",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing skin",
+          "probability": 16.0
+        },
+        {
+          "name": "ache all over",
+          "probability": 28.0
+        },
+        {
+          "name": "bones are painful",
+          "probability": 9.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 9.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 9.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 9.0
+        },
+        {
+          "name": "joint pain",
+          "probability": 9.0
+        },
+        {
+          "name": "pain in testicles",
+          "probability": 9.0
+        },
+        {
+          "name": "pelvic pain",
+          "probability": 9.0
+        },
+        {
+          "name": "recent weight loss",
+          "probability": 9.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 9.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hemorrhagic-fever",
+      "name": "Hemorrhagic fever",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "high-blood-pressure",
+      "name": "High blood pressure",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 2,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "headache",
+          "probability": 26.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 29.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "human-immunodeficiency-virus-infection-hiv",
+      "name": "Human immunodeficiency virus infection (HIV)",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "drug abuse",
+          "probability": 9.0
+        },
+        {
+          "name": "fears and phobias",
+          "probability": 2.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 2.0
+        },
+        {
+          "name": "nightmares",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hypercholesterolemia",
+      "name": "Hypercholesterolemia",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "excessive urination at night",
+          "probability": 3.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 2.0
+        },
+        {
+          "name": "palpitations",
+          "probability": 12.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 26.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hypergammaglobulinemia",
+      "name": "Hypergammaglobulinemia",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 8.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 41.0
+        },
+        {
+          "name": "hip stiffness or tightness",
+          "probability": 8.0
+        },
+        {
+          "name": "knee stiffness or tightness",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hyperlipidemia",
+      "name": "Hyperlipidemia",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "leg cramps or spasms",
+          "probability": 2.0
+        },
+        {
+          "name": "lymphedema",
+          "probability": 2.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 25.0
+        },
+        {
+          "name": "smoking problems",
+          "probability": 2.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "hypothyroidism",
+      "name": "Hypothyroidism",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "absence of menstruation",
+          "probability": 1.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 30.0
+        },
+        {
+          "name": "feeling cold",
+          "probability": 1.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 2.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 2.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 3.0
+        },
+        {
+          "name": "poor circulation",
+          "probability": 1.0
+        },
+        {
+          "name": "thirst",
+          "probability": 1.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 4.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 12.0
+        },
+        {
+          "name": "wrist swelling",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "injury-to-the-finger",
+      "name": "Injury to the finger",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 6,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "hand or finger lump or mass",
+          "probability": 3.0
+        },
+        {
+          "name": "hand or finger pain",
+          "probability": 66.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 8.0
+        },
+        {
+          "name": "hand or finger swelling",
+          "probability": 35.0
+        },
+        {
+          "name": "hand or finger weakness",
+          "probability": 3.0
+        },
+        {
+          "name": "swelling of scrotum",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "kidney-cancer",
+      "name": "Kidney cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "bedwetting",
+          "probability": 4.0
+        },
+        {
+          "name": "blood in urine",
+          "probability": 10.0
+        },
+        {
+          "name": "changes in stool appearance",
+          "probability": 4.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 4.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 7.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 4.0
+        },
+        {
+          "name": "increased heart rate",
+          "probability": 4.0
+        },
+        {
+          "name": "involuntary urination",
+          "probability": 7.0
+        },
+        {
+          "name": "kidney mass",
+          "probability": 35.0
+        },
+        {
+          "name": "retention of urine",
+          "probability": 13.0
+        },
+        {
+          "name": "symptoms of prostate",
+          "probability": 7.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "kidney-disease-due-to-longstanding-hypertension",
+      "name": "Kidney disease due to longstanding hypertension",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "difficulty speaking",
+          "probability": 3.0
+        },
+        {
+          "name": "excessive appetite",
+          "probability": 2.0
+        },
+        {
+          "name": "feeling cold",
+          "probability": 2.0
+        },
+        {
+          "name": "foot or toe cramps or spasms",
+          "probability": 2.0
+        },
+        {
+          "name": "incontinence of stool",
+          "probability": 2.0
+        },
+        {
+          "name": "polyuria",
+          "probability": 2.0
+        },
+        {
+          "name": "shortness of breath",
+          "probability": 31.0
+        },
+        {
+          "name": "stuttering or stammering",
+          "probability": 2.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 24.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 2.0
+        },
+        {
+          "name": "unusual color or odor to urine",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "lead-poisoning",
+      "name": "Lead poisoning",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "leishmaniasis",
+      "name": "Leishmaniasis",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "leptospirosis",
+      "name": "Leptospirosis",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "leukemia",
+      "name": "Leukemia",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bleeding gums",
+          "probability": 1.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 26.0
+        },
+        {
+          "name": "fever",
+          "probability": 25.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 3.0
+        },
+        {
+          "name": "muscle stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "pallor",
+          "probability": 1.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "liver-cancer",
+      "name": "Liver cancer",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "changes in stool appearance",
+          "probability": 9.0
+        },
+        {
+          "name": "decreased appetite",
+          "probability": 9.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 5.0
+        },
+        {
+          "name": "increased heart rate",
+          "probability": 5.0
+        },
+        {
+          "name": "kidney mass",
+          "probability": 5.0
+        },
+        {
+          "name": "leg stiffness or tightness",
+          "probability": 5.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 33.0
+        },
+        {
+          "name": "stomach bloating",
+          "probability": 13.0
+        },
+        {
+          "name": "swollen abdomen",
+          "probability": 5.0
+        },
+        {
+          "name": "symptoms of prostate",
+          "probability": 5.0
+        },
+        {
+          "name": "unusual color or odor to urine",
+          "probability": 5.0
+        },
+        {
+          "name": "upper abdominal pain",
+          "probability": 31.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "lymphoma",
+      "name": "Lymphoma",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "fatigue",
+          "probability": 24.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 2.0
+        },
+        {
+          "name": "hoarse voice",
+          "probability": 3.0
+        },
+        {
+          "name": "itchy ear(s)",
+          "probability": 1.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 2.0
+        },
+        {
+          "name": "mouth ulcer",
+          "probability": 2.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 3.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 5.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 4.0
+        },
+        {
+          "name": "shoulder lump or mass",
+          "probability": 1.0
+        },
+        {
+          "name": "stiffness all over",
+          "probability": 1.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "malaria",
+      "name": "Malaria",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ache all over",
+          "probability": 72.0
+        },
+        {
+          "name": "back pain",
+          "probability": 72.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 9.0
+        },
+        {
+          "name": "fainting",
+          "probability": 72.0
+        },
+        {
+          "name": "fever",
+          "probability": 87.0
+        },
+        {
+          "name": "headache",
+          "probability": 94.0
+        },
+        {
+          "name": "itchy eyelid",
+          "probability": 9.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 9.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 72.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 9.0
+        },
+        {
+          "name": "weakness",
+          "probability": 72.0
+        },
+        {
+          "name": "wrist weakness",
+          "probability": 9.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "mastectomy",
+      "name": "Mastectomy",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "arm stiffness or tightness",
+          "probability": 4.0
+        },
+        {
+          "name": "burning chest pain",
+          "probability": 4.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 4.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 4.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 4.0
+        },
+        {
+          "name": "lump or mass of breast",
+          "probability": 21.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 21.0
+        },
+        {
+          "name": "problems with shape or size of breast",
+          "probability": 8.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 4.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 8.0
+        },
+        {
+          "name": "smoking problems",
+          "probability": 4.0
+        },
+        {
+          "name": "swollen lymph nodes",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "metabolic-disorder",
+      "name": "Metabolic disorder",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "arm stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "difficulty eating",
+          "probability": 1.0
+        },
+        {
+          "name": "infant feeding problem",
+          "probability": 1.0
+        },
+        {
+          "name": "jaundice",
+          "probability": 4.0
+        },
+        {
+          "name": "mouth dryness",
+          "probability": 4.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 4.0
+        },
+        {
+          "name": "problems with shape or size of breast",
+          "probability": 1.0
+        },
+        {
+          "name": "recent weight loss",
+          "probability": 1.0
+        },
+        {
+          "name": "scanty menstrual flow",
+          "probability": 1.0
+        },
+        {
+          "name": "smoking problems",
+          "probability": 3.0
+        },
+        {
+          "name": "underweight",
+          "probability": 1.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 18.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "metastatic-cancer",
+      "name": "Metastatic cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 8,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "decreased appetite",
+          "probability": 9.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 21.0
+        },
+        {
+          "name": "focal weakness",
+          "probability": 4.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 2.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 3.0
+        },
+        {
+          "name": "stomach bloating",
+          "probability": 3.0
+        },
+        {
+          "name": "unusual color or odor to urine",
+          "probability": 2.0
+        },
+        {
+          "name": "vaginal dryness",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "multiple-myeloma",
+      "name": "Multiple myeloma",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "chills",
+          "probability": 9.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 6.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 29.0
+        },
+        {
+          "name": "hip lump or mass",
+          "probability": 3.0
+        },
+        {
+          "name": "impotence",
+          "probability": 3.0
+        },
+        {
+          "name": "lip swelling",
+          "probability": 3.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 3.0
+        },
+        {
+          "name": "problems with movement",
+          "probability": 9.0
+        },
+        {
+          "name": "stiffness all over",
+          "probability": 3.0
+        },
+        {
+          "name": "swollen abdomen",
+          "probability": 3.0
+        },
+        {
+          "name": "symptoms of the face",
+          "probability": 3.0
+        },
+        {
+          "name": "weakness",
+          "probability": 37.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "myelodysplastic-syndrome",
+      "name": "Myelodysplastic syndrome",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "chills",
+          "probability": 11.0
+        },
+        {
+          "name": "coughing up sputum",
+          "probability": 6.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 6.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 50.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "neonatal-jaundice",
+      "name": "Neonatal jaundice",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "changes in stool appearance",
+          "probability": 7.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 4.0
+        },
+        {
+          "name": "flatulence",
+          "probability": 4.0
+        },
+        {
+          "name": "fluid in ear",
+          "probability": 4.0
+        },
+        {
+          "name": "infant feeding problem",
+          "probability": 24.0
+        },
+        {
+          "name": "infant spitting up",
+          "probability": 4.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 4.0
+        },
+        {
+          "name": "irregular belly button",
+          "probability": 4.0
+        },
+        {
+          "name": "irritable infant",
+          "probability": 10.0
+        },
+        {
+          "name": "jaundice",
+          "probability": 86.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 4.0
+        },
+        {
+          "name": "recent weight loss",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "obesity",
+      "name": "Obesity",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "abnormal breathing sounds",
+          "probability": 10.0
+        },
+        {
+          "name": "apnea",
+          "probability": 10.0
+        },
+        {
+          "name": "excessive appetite",
+          "probability": 4.0
+        },
+        {
+          "name": "sleepiness",
+          "probability": 10.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 56.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-due-to-trauma",
+      "name": "Open wound due to trauma",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "shoulder stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "skin on arm or hand looks infected",
+          "probability": 2.0
+        },
+        {
+          "name": "wrist swelling",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-from-surgical-incision",
+      "name": "Open wound from surgical incision",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 8,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "flatulence",
+          "probability": 5.0
+        },
+        {
+          "name": "heavy menstrual flow",
+          "probability": 5.0
+        },
+        {
+          "name": "knee swelling",
+          "probability": 5.0
+        },
+        {
+          "name": "recent pregnancy",
+          "probability": 10.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 21.0
+        },
+        {
+          "name": "skin on leg or foot looks infected",
+          "probability": 5.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 10.0
+        },
+        {
+          "name": "sneezing",
+          "probability": 5.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-abdomen",
+      "name": "Open wound of the abdomen",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "blindness",
+          "probability": 6.0
+        },
+        {
+          "name": "irregular belly button",
+          "probability": 11.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 35.0
+        },
+        {
+          "name": "sweating",
+          "probability": 6.0
+        },
+        {
+          "name": "swollen abdomen",
+          "probability": 6.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-arm",
+      "name": "Open wound of the arm",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "arm pain",
+          "probability": 26.0
+        },
+        {
+          "name": "elbow lump or mass",
+          "probability": 1.0
+        },
+        {
+          "name": "elbow pain",
+          "probability": 12.0
+        },
+        {
+          "name": "elbow swelling",
+          "probability": 1.0
+        },
+        {
+          "name": "hand or finger weakness",
+          "probability": 1.0
+        },
+        {
+          "name": "knee weakness",
+          "probability": 1.0
+        },
+        {
+          "name": "redness in or around nose",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-back",
+      "name": "Open wound of the back",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "irregular heartbeat",
+          "probability": 7.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 18.0
+        },
+        {
+          "name": "lymphedema",
+          "probability": 7.0
+        },
+        {
+          "name": "skin growth",
+          "probability": 7.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 23.0
+        },
+        {
+          "name": "throat feels tight",
+          "probability": 7.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 13.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-cheek",
+      "name": "Open wound of the cheek",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "facial pain",
+          "probability": 29.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 12.0
+        },
+        {
+          "name": "jaw swelling",
+          "probability": 12.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 12.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-chest",
+      "name": "Open wound of the chest",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "drug abuse",
+          "probability": 12.0
+        },
+        {
+          "name": "lip swelling",
+          "probability": 12.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 29.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-face",
+      "name": "Open wound of the face",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "eyelid swelling",
+          "probability": 1.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 22.0
+        },
+        {
+          "name": "feeling hot",
+          "probability": 1.0
+        },
+        {
+          "name": "jaw swelling",
+          "probability": 1.0
+        },
+        {
+          "name": "leg stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "neck swelling",
+          "probability": 1.0
+        },
+        {
+          "name": "redness in or around nose",
+          "probability": 1.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 1.0
+        },
+        {
+          "name": "wrist swelling",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-finger",
+      "name": "Open wound of the finger",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "hand or finger pain",
+          "probability": 28.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 2.0
+        },
+        {
+          "name": "hand or finger swelling",
+          "probability": 11.0
+        },
+        {
+          "name": "skin on arm or hand looks infected",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-foot",
+      "name": "Open wound of the foot",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "foot or toe lump or mass",
+          "probability": 1.0
+        },
+        {
+          "name": "foot or toe pain",
+          "probability": 44.0
+        },
+        {
+          "name": "foot or toe swelling",
+          "probability": 10.0
+        },
+        {
+          "name": "irregular appearing nails",
+          "probability": 4.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 23.0
+        },
+        {
+          "name": "skin on leg or foot looks infected",
+          "probability": 6.0
+        },
+        {
+          "name": "skin pain",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-hand",
+      "name": "Open wound of the hand",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 4,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "hand or finger pain",
+          "probability": 30.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 2.0
+        },
+        {
+          "name": "hand or finger swelling",
+          "probability": 11.0
+        },
+        {
+          "name": "skin on arm or hand looks infected",
+          "probability": 5.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-head",
+      "name": "Open wound of the head",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 2,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 10.0
+        },
+        {
+          "name": "headache",
+          "probability": 30.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-hip",
+      "name": "Open wound of the hip",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "hip pain",
+          "probability": 29.0
+        },
+        {
+          "name": "hip swelling",
+          "probability": 6.0
+        },
+        {
+          "name": "leg pain",
+          "probability": 29.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-jaw",
+      "name": "Open wound of the jaw",
+      "reason": "insufficient_surviving_symptoms (0 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 5,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "facial pain",
+          "probability": 10.0
+        },
+        {
+          "name": "lip swelling",
+          "probability": 10.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 4.0
+        },
+        {
+          "name": "symptoms of the face",
+          "probability": 4.0
+        },
+        {
+          "name": "wrist swelling",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-knee",
+      "name": "Open wound of the knee",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 3,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "leg pain",
+          "probability": 27.0
+        },
+        {
+          "name": "leg swelling",
+          "probability": 10.0
+        },
+        {
+          "name": "skin on leg or foot looks infected",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-lip",
+      "name": "Open wound of the lip",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bleeding gums",
+          "probability": 3.0
+        },
+        {
+          "name": "bleeding in mouth",
+          "probability": 3.0
+        },
+        {
+          "name": "dry lips",
+          "probability": 9.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 19.0
+        },
+        {
+          "name": "lip swelling",
+          "probability": 25.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 11.0
+        },
+        {
+          "name": "mouth ulcer",
+          "probability": 3.0
+        },
+        {
+          "name": "slurring words",
+          "probability": 3.0
+        },
+        {
+          "name": "tongue pain",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "open-wound-of-the-shoulder",
+      "name": "Open wound of the shoulder",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 7,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 14.0
+        },
+        {
+          "name": "arm pain",
+          "probability": 32.0
+        },
+        {
+          "name": "arm swelling",
+          "probability": 14.0
+        },
+        {
+          "name": "elbow pain",
+          "probability": 14.0
+        },
+        {
+          "name": "shoulder pain",
+          "probability": 61.0
+        },
+        {
+          "name": "shoulder stiffness or tightness",
+          "probability": 14.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 14.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "ovarian-cancer",
+      "name": "Ovarian cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "absence of menstruation",
+          "probability": 3.0
+        },
+        {
+          "name": "decreased appetite",
+          "probability": 9.0
+        },
+        {
+          "name": "difficulty eating",
+          "probability": 3.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 6.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 3.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 6.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 35.0
+        },
+        {
+          "name": "stomach bloating",
+          "probability": 6.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "pick-disease",
+      "name": "Pick disease",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "pituitary-disorder",
+      "name": "Pituitary disorder",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "acne or pimples",
+          "probability": 8.0
+        },
+        {
+          "name": "bleeding or discharge from nipple",
+          "probability": 14.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 8.0
+        },
+        {
+          "name": "headache",
+          "probability": 44.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 8.0
+        },
+        {
+          "name": "infertility",
+          "probability": 8.0
+        },
+        {
+          "name": "lack of growth",
+          "probability": 38.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 8.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 14.0
+        },
+        {
+          "name": "postpartum problems of the breast",
+          "probability": 8.0
+        },
+        {
+          "name": "sleepiness",
+          "probability": 14.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "plague",
+      "name": "Plague",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "acne or pimples",
+          "probability": 77.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 11.0
+        },
+        {
+          "name": "eye strain",
+          "probability": 11.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 11.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 11.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 11.0
+        },
+        {
+          "name": "nailbiting",
+          "probability": 11.0
+        },
+        {
+          "name": "neck cramps or spasms",
+          "probability": 11.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 77.0
+        },
+        {
+          "name": "shoulder swelling",
+          "probability": 11.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 11.0
+        },
+        {
+          "name": "wrist weakness",
+          "probability": 11.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "primary-thrombocythemia",
+      "name": "Primary thrombocythemia",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 12.0
+        },
+        {
+          "name": "dizziness",
+          "probability": 28.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 21.0
+        },
+        {
+          "name": "flatulence",
+          "probability": 12.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 12.0
+        },
+        {
+          "name": "frequent urination",
+          "probability": 12.0
+        },
+        {
+          "name": "joint pain",
+          "probability": 12.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 12.0
+        },
+        {
+          "name": "pain of the anus",
+          "probability": 12.0
+        },
+        {
+          "name": "rectal bleeding",
+          "probability": 12.0
+        },
+        {
+          "name": "sweating",
+          "probability": 12.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 12.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "rabies",
+      "name": "Rabies",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "rheumatic-fever",
+      "name": "Rheumatic fever",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "bedwetting",
+          "probability": 14.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 14.0
+        },
+        {
+          "name": "eye strain",
+          "probability": 14.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 84.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 14.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 14.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 14.0
+        },
+        {
+          "name": "nailbiting",
+          "probability": 14.0
+        },
+        {
+          "name": "neck cramps or spasms",
+          "probability": 14.0
+        },
+        {
+          "name": "pelvic pressure",
+          "probability": 14.0
+        },
+        {
+          "name": "shoulder swelling",
+          "probability": 14.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 14.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "rocky-mountain-spotted-fever",
+      "name": "Rocky Mountain spotted fever",
+      "reason": "dummy_imputation_cluster (Jaccard=0.85 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 32.0
+        },
+        {
+          "name": "headache",
+          "probability": 100.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "sporotrichosis",
+      "name": "Sporotrichosis",
+      "reason": "dummy_imputation_cluster (Jaccard=0.71 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "knee pain",
+          "probability": 100.0
+        },
+        {
+          "name": "knee swelling",
+          "probability": 100.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "thrombocytopenia",
+      "name": "Thrombocytopenia",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bleeding gums",
+          "probability": 5.0
+        },
+        {
+          "name": "blood in stool",
+          "probability": 7.0
+        },
+        {
+          "name": "blood in urine",
+          "probability": 13.0
+        },
+        {
+          "name": "eyelid swelling",
+          "probability": 2.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 21.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 2.0
+        },
+        {
+          "name": "irregular belly button",
+          "probability": 2.0
+        },
+        {
+          "name": "lymphedema",
+          "probability": 2.0
+        },
+        {
+          "name": "mouth pain",
+          "probability": 2.0
+        },
+        {
+          "name": "nosebleed",
+          "probability": 11.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 26.0
+        },
+        {
+          "name": "tongue lesions",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "thyroid-cancer",
+      "name": "Thyroid cancer",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "arm weakness",
+          "probability": 7.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 7.0
+        },
+        {
+          "name": "difficulty in swallowing",
+          "probability": 17.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 22.0
+        },
+        {
+          "name": "leg weakness",
+          "probability": 7.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 12.0
+        },
+        {
+          "name": "neck swelling",
+          "probability": 7.0
+        },
+        {
+          "name": "stiffness all over",
+          "probability": 7.0
+        },
+        {
+          "name": "swollen lymph nodes",
+          "probability": 7.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "thyroid-disease",
+      "name": "Thyroid disease",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "blindness",
+          "probability": 3.0
+        },
+        {
+          "name": "difficulty in swallowing",
+          "probability": 14.0
+        },
+        {
+          "name": "double vision",
+          "probability": 3.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 3.0
+        },
+        {
+          "name": "hostile behavior",
+          "probability": 6.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 6.0
+        },
+        {
+          "name": "lump in throat",
+          "probability": 6.0
+        },
+        {
+          "name": "neck mass",
+          "probability": 19.0
+        },
+        {
+          "name": "neck swelling",
+          "probability": 6.0
+        },
+        {
+          "name": "restlessness",
+          "probability": 3.0
+        },
+        {
+          "name": "throat feels tight",
+          "probability": 3.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "tuberculosis",
+      "name": "Tuberculosis",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "back cramps or spasms",
+          "probability": 5.0
+        },
+        {
+          "name": "congestion in chest",
+          "probability": 10.0
+        },
+        {
+          "name": "cough",
+          "probability": 33.0
+        },
+        {
+          "name": "drainage in throat",
+          "probability": 5.0
+        },
+        {
+          "name": "hemoptysis",
+          "probability": 5.0
+        },
+        {
+          "name": "hurts to breath",
+          "probability": 5.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 5.0
+        },
+        {
+          "name": "shortness of breath",
+          "probability": 31.0
+        },
+        {
+          "name": "skin dryness, peeling, scaliness, or roughness",
+          "probability": 5.0
+        },
+        {
+          "name": "sweating",
+          "probability": 10.0
+        },
+        {
+          "name": "vaginal itching",
+          "probability": 5.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "typhoid-fever",
+      "name": "Typhoid fever",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 32.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 32.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 32.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 32.0
+        },
+        {
+          "name": "fever",
+          "probability": 100.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 32.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 32.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 32.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 32.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 32.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 32.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 32.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "uterine-cancer",
+      "name": "Uterine cancer",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "cramps and spasms",
+          "probability": 4.0
+        },
+        {
+          "name": "focal weakness",
+          "probability": 4.0
+        },
+        {
+          "name": "groin mass",
+          "probability": 4.0
+        },
+        {
+          "name": "gum pain",
+          "probability": 4.0
+        },
+        {
+          "name": "heavy menstrual flow",
+          "probability": 4.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 4.0
+        },
+        {
+          "name": "intermenstrual bleeding",
+          "probability": 4.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 4.0
+        },
+        {
+          "name": "pelvic pain",
+          "probability": 10.0
+        },
+        {
+          "name": "tongue lesions",
+          "probability": 4.0
+        },
+        {
+          "name": "unpredictable menstruation",
+          "probability": 4.0
+        },
+        {
+          "name": "vaginal bleeding after menopause",
+          "probability": 19.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "viral-hepatitis",
+      "name": "Viral hepatitis",
+      "reason": "sri_lankan_priority_reserved_for_tier1",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 13.0
+        },
+        {
+          "name": "drug abuse",
+          "probability": 13.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "incontinence of stool",
+          "probability": 1.0
+        },
+        {
+          "name": "low self-esteem",
+          "probability": 1.0
+        },
+        {
+          "name": "melena",
+          "probability": 3.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 26.0
+        },
+        {
+          "name": "stomach bloating",
+          "probability": 2.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "vitamin-a-deficiency",
+      "name": "Vitamin A deficiency",
+      "reason": "insufficient_surviving_symptoms (2 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 2,
+      "rawSymptoms": [
+        {
+          "name": "bedwetting",
+          "probability": 14.0
+        },
+        {
+          "name": "excessive growth",
+          "probability": 14.0
+        },
+        {
+          "name": "eye strain",
+          "probability": 14.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 84.0
+        },
+        {
+          "name": "hand or finger pain",
+          "probability": 84.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 14.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 14.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 14.0
+        },
+        {
+          "name": "neck cramps or spasms",
+          "probability": 14.0
+        },
+        {
+          "name": "pelvic pressure",
+          "probability": 14.0
+        },
+        {
+          "name": "shoulder swelling",
+          "probability": 14.0
+        },
+        {
+          "name": "vulvar sore",
+          "probability": 14.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "vitamin-b12-deficiency",
+      "name": "Vitamin B12 deficiency",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing tongue",
+          "probability": 3.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 14.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 36.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 6.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 6.0
+        },
+        {
+          "name": "knee stiffness or tightness",
+          "probability": 3.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 3.0
+        },
+        {
+          "name": "paresthesia",
+          "probability": 14.0
+        },
+        {
+          "name": "problems with movement",
+          "probability": 9.0
+        },
+        {
+          "name": "sweating",
+          "probability": 6.0
+        },
+        {
+          "name": "symptoms of the face",
+          "probability": 6.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "vitamin-d-deficiency",
+      "name": "Vitamin D deficiency",
+      "reason": "insufficient_surviving_symptoms (1 < 3 at 15.0% threshold)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 1,
+      "rawSymptoms": [
+        {
+          "name": "arm stiffness or tightness",
+          "probability": 3.0
+        },
+        {
+          "name": "back stiffness or tightness",
+          "probability": 3.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 40.0
+        },
+        {
+          "name": "feeling hot",
+          "probability": 3.0
+        },
+        {
+          "name": "hot flashes",
+          "probability": 9.0
+        },
+        {
+          "name": "infrequent menstruation",
+          "probability": 3.0
+        },
+        {
+          "name": "joint pain",
+          "probability": 9.0
+        },
+        {
+          "name": "melena",
+          "probability": 3.0
+        },
+        {
+          "name": "mouth dryness",
+          "probability": 3.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 3.0
+        },
+        {
+          "name": "smoking problems",
+          "probability": 3.0
+        },
+        {
+          "name": "weight gain",
+          "probability": 9.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "west-nile-virus",
+      "name": "West Nile virus",
+      "reason": "dummy_imputation_cluster (Jaccard=1.00 with 12-symptom fallback set)",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 0,
+      "rawSymptoms": [
+        {
+          "name": "ankle pain",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 91.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 91.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 91.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 91.0
+        },
+        {
+          "name": "joint stiffness or tightness",
+          "probability": 91.0
+        },
+        {
+          "name": "knee lump or mass",
+          "probability": 91.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 91.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 91.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 91.0
+        },
+        {
+          "name": "shoulder cramps or spasms",
+          "probability": 91.0
+        },
+        {
+          "name": "wrist pain",
+          "probability": 91.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "seborrheic-keratosis",
+      "name": "Seborrheic keratosis",
+      "reason": "near_identical_profile (Jaccard=0.90 with 'Actinic keratosis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 10,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing skin",
+          "probability": 70.0
+        },
+        {
+          "name": "acne or pimples",
+          "probability": 11.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 16.0
+        },
+        {
+          "name": "itching of skin",
+          "probability": 36.0
+        },
+        {
+          "name": "skin dryness, peeling, scaliness, or roughness",
+          "probability": 36.0
+        },
+        {
+          "name": "skin growth",
+          "probability": 54.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 19.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 71.0
+        },
+        {
+          "name": "skin moles",
+          "probability": 56.0
+        },
+        {
+          "name": "skin rash",
+          "probability": 28.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 25.0
+        },
+        {
+          "name": "warts",
+          "probability": 13.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "skin-cancer",
+      "name": "Skin cancer",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Actinic keratosis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing skin",
+          "probability": 55.0
+        },
+        {
+          "name": "acne or pimples",
+          "probability": 7.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 16.0
+        },
+        {
+          "name": "itching of skin",
+          "probability": 16.0
+        },
+        {
+          "name": "lip swelling",
+          "probability": 7.0
+        },
+        {
+          "name": "skin dryness, peeling, scaliness, or roughness",
+          "probability": 22.0
+        },
+        {
+          "name": "skin growth",
+          "probability": 27.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 6.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 67.0
+        },
+        {
+          "name": "skin moles",
+          "probability": 29.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 19.0
+        },
+        {
+          "name": "warts",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chronic-obstructive-pulmonary-disease-copd",
+      "name": "Chronic obstructive pulmonary disease (COPD)",
+      "reason": "near_identical_profile (Jaccard=0.92 with 'Acute bronchitis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 11,
+      "rawSymptoms": [
+        {
+          "name": "chest tightness",
+          "probability": 12.0
+        },
+        {
+          "name": "congestion in chest",
+          "probability": 22.0
+        },
+        {
+          "name": "coryza",
+          "probability": 31.0
+        },
+        {
+          "name": "cough",
+          "probability": 83.0
+        },
+        {
+          "name": "coughing up sputum",
+          "probability": 23.0
+        },
+        {
+          "name": "difficulty breathing",
+          "probability": 39.0
+        },
+        {
+          "name": "fever",
+          "probability": 49.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 54.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 39.0
+        },
+        {
+          "name": "shortness of breath",
+          "probability": 70.0
+        },
+        {
+          "name": "sore throat",
+          "probability": 42.0
+        },
+        {
+          "name": "wheezing",
+          "probability": 25.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "aphakia",
+      "name": "Aphakia",
+      "reason": "near_identical_profile (Jaccard=0.86 with 'Acute glaucoma')",
+      "rawSymptomsCount": 8,
+      "survivingSymptomsCount": 6,
+      "rawSymptoms": [
+        {
+          "name": "diminished vision",
+          "probability": 73.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 12.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 28.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 28.0
+        },
+        {
+          "name": "mass on eyelid",
+          "probability": 12.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 28.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 21.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 28.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "corneal-disorder",
+      "name": "Corneal disorder",
+      "reason": "near_identical_profile (Jaccard=0.88 with 'Acute glaucoma')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "diminished vision",
+          "probability": 76.0
+        },
+        {
+          "name": "double vision",
+          "probability": 5.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 43.0
+        },
+        {
+          "name": "eyelid lesion or rash",
+          "probability": 5.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 27.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 21.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 24.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 62.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 32.0
+        },
+        {
+          "name": "swollen eye",
+          "probability": 10.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 30.0
+        },
+        {
+          "name": "white discharge from eye",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "presbyopia",
+      "name": "Presbyopia",
+      "reason": "near_identical_profile (Jaccard=0.86 with 'Acute glaucoma')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 6,
+      "rawSymptoms": [
+        {
+          "name": "abnormal movement of eyelid",
+          "probability": 8.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 4.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 83.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 12.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 15.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 12.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 15.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 8.0
+        },
+        {
+          "name": "mass on eyelid",
+          "probability": 4.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 15.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 33.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 35.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "retinopathy-due-to-high-blood-pressure",
+      "name": "Retinopathy due to high blood pressure",
+      "reason": "near_identical_profile (Jaccard=0.88 with 'Acute glaucoma')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "blindness",
+          "probability": 8.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 70.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 15.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 15.0
+        },
+        {
+          "name": "irregular appearing nails",
+          "probability": 8.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 21.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 8.0
+        },
+        {
+          "name": "mass on eyelid",
+          "probability": 15.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 21.0
+        },
+        {
+          "name": "pus draining from ear",
+          "probability": 8.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 38.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 35.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "otitis-media",
+      "name": "Otitis media",
+      "reason": "near_identical_profile (Jaccard=0.92 with 'Acute otitis media')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 11,
+      "rawSymptoms": [
+        {
+          "name": "coryza",
+          "probability": 30.0
+        },
+        {
+          "name": "cough",
+          "probability": 71.0
+        },
+        {
+          "name": "diminished hearing",
+          "probability": 15.0
+        },
+        {
+          "name": "ear pain",
+          "probability": 86.0
+        },
+        {
+          "name": "fever",
+          "probability": 76.0
+        },
+        {
+          "name": "fluid in ear",
+          "probability": 18.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 59.0
+        },
+        {
+          "name": "plugged feeling in ear",
+          "probability": 14.0
+        },
+        {
+          "name": "pulling at ears",
+          "probability": 32.0
+        },
+        {
+          "name": "redness in ear",
+          "probability": 33.0
+        },
+        {
+          "name": "sore throat",
+          "probability": 41.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 33.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "cholecystitis",
+      "name": "Cholecystitis",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Acute pancreatitis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "back pain",
+          "probability": 31.0
+        },
+        {
+          "name": "burning abdominal pain",
+          "probability": 19.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 10.0
+        },
+        {
+          "name": "nausea",
+          "probability": 56.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 8.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 82.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 34.0
+        },
+        {
+          "name": "side pain",
+          "probability": 20.0
+        },
+        {
+          "name": "stomach bloating",
+          "probability": 4.0
+        },
+        {
+          "name": "symptoms of the kidneys",
+          "probability": 2.0
+        },
+        {
+          "name": "upper abdominal pain",
+          "probability": 70.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 51.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "gallstone",
+      "name": "Gallstone",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Acute pancreatitis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "back pain",
+          "probability": 39.0
+        },
+        {
+          "name": "burning abdominal pain",
+          "probability": 28.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 6.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 12.0
+        },
+        {
+          "name": "nausea",
+          "probability": 58.0
+        },
+        {
+          "name": "regurgitation",
+          "probability": 4.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 87.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 27.0
+        },
+        {
+          "name": "side pain",
+          "probability": 26.0
+        },
+        {
+          "name": "sweating",
+          "probability": 4.0
+        },
+        {
+          "name": "upper abdominal pain",
+          "probability": 68.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 52.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chronic-sinusitis",
+      "name": "Chronic sinusitis",
+      "reason": "near_identical_profile (Jaccard=0.92 with 'Acute sinusitis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 11,
+      "rawSymptoms": [
+        {
+          "name": "congestion in chest",
+          "probability": 14.0
+        },
+        {
+          "name": "coryza",
+          "probability": 39.0
+        },
+        {
+          "name": "cough",
+          "probability": 75.0
+        },
+        {
+          "name": "ear pain",
+          "probability": 39.0
+        },
+        {
+          "name": "facial pain",
+          "probability": 23.0
+        },
+        {
+          "name": "fever",
+          "probability": 48.0
+        },
+        {
+          "name": "frontal headache",
+          "probability": 40.0
+        },
+        {
+          "name": "headache",
+          "probability": 62.0
+        },
+        {
+          "name": "nasal congestion",
+          "probability": 75.0
+        },
+        {
+          "name": "painful sinuses",
+          "probability": 34.0
+        },
+        {
+          "name": "sinus congestion",
+          "probability": 27.0
+        },
+        {
+          "name": "sore throat",
+          "probability": 59.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "personality-disorder",
+      "name": "Personality disorder",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Adjustment reaction')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "anxiety and nervousness",
+          "probability": 51.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 13.0
+        },
+        {
+          "name": "depression",
+          "probability": 68.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 70.0
+        },
+        {
+          "name": "drug abuse",
+          "probability": 12.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 16.0
+        },
+        {
+          "name": "fears and phobias",
+          "probability": 8.0
+        },
+        {
+          "name": "hostile behavior",
+          "probability": 24.0
+        },
+        {
+          "name": "insomnia",
+          "probability": 20.0
+        },
+        {
+          "name": "low self-esteem",
+          "probability": 15.0
+        },
+        {
+          "name": "obsessions and compulsions",
+          "probability": 7.0
+        },
+        {
+          "name": "temper problems",
+          "probability": 7.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "drug-abuse-opioids",
+      "name": "Drug abuse (opioids)",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Alcohol abuse')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 30.0
+        },
+        {
+          "name": "antisocial behavior",
+          "probability": 3.0
+        },
+        {
+          "name": "anxiety and nervousness",
+          "probability": 35.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 8.0
+        },
+        {
+          "name": "depression",
+          "probability": 40.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 46.0
+        },
+        {
+          "name": "drug abuse",
+          "probability": 67.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 6.0
+        },
+        {
+          "name": "insomnia",
+          "probability": 13.0
+        },
+        {
+          "name": "low self-esteem",
+          "probability": 3.0
+        },
+        {
+          "name": "restlessness",
+          "probability": 3.0
+        },
+        {
+          "name": "temper problems",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "marijuana-abuse",
+      "name": "Marijuana abuse",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Alcohol abuse')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 56.0
+        },
+        {
+          "name": "anxiety and nervousness",
+          "probability": 31.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 11.0
+        },
+        {
+          "name": "depression",
+          "probability": 34.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 50.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 3.0
+        },
+        {
+          "name": "drug abuse",
+          "probability": 76.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 7.0
+        },
+        {
+          "name": "fears and phobias",
+          "probability": 5.0
+        },
+        {
+          "name": "hostile behavior",
+          "probability": 14.0
+        },
+        {
+          "name": "low self-esteem",
+          "probability": 4.0
+        },
+        {
+          "name": "temper problems",
+          "probability": 6.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "delirium",
+      "name": "Delirium",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Alzheimer disease')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abnormal involuntary movements",
+          "probability": 11.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 13.0
+        },
+        {
+          "name": "depression",
+          "probability": 31.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 48.0
+        },
+        {
+          "name": "difficulty speaking",
+          "probability": 4.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 52.0
+        },
+        {
+          "name": "disturbance of smell or taste",
+          "probability": 2.0
+        },
+        {
+          "name": "focal weakness",
+          "probability": 5.0
+        },
+        {
+          "name": "hostile behavior",
+          "probability": 16.0
+        },
+        {
+          "name": "hysterical behavior",
+          "probability": 2.0
+        },
+        {
+          "name": "problems with movement",
+          "probability": 19.0
+        },
+        {
+          "name": "slurring words",
+          "probability": 2.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "floaters",
+      "name": "Floaters",
+      "reason": "near_identical_profile (Jaccard=0.86 with 'Astigmatism')",
+      "rawSymptomsCount": 8,
+      "survivingSymptomsCount": 6,
+      "rawSymptoms": [
+        {
+          "name": "diminished vision",
+          "probability": 69.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 9.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 9.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 17.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 23.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 17.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 88.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 17.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "vitreous-degeneration",
+      "name": "Vitreous degeneration",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Astigmatism')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "bleeding from eye",
+          "probability": 8.0
+        },
+        {
+          "name": "blindness",
+          "probability": 12.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 71.0
+        },
+        {
+          "name": "double vision",
+          "probability": 8.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 8.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 15.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 12.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 15.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 24.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 27.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 85.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 34.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "overflow-incontinence",
+      "name": "Overflow incontinence",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Atonic bladder')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "blood in urine",
+          "probability": 27.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 15.0
+        },
+        {
+          "name": "focal weakness",
+          "probability": 8.0
+        },
+        {
+          "name": "frequent urination",
+          "probability": 33.0
+        },
+        {
+          "name": "hand or finger stiffness or tightness",
+          "probability": 8.0
+        },
+        {
+          "name": "hesitancy",
+          "probability": 8.0
+        },
+        {
+          "name": "impotence",
+          "probability": 15.0
+        },
+        {
+          "name": "involuntary urination",
+          "probability": 41.0
+        },
+        {
+          "name": "retention of urine",
+          "probability": 55.0
+        },
+        {
+          "name": "suprapubic pain",
+          "probability": 33.0
+        },
+        {
+          "name": "symptoms of bladder",
+          "probability": 35.0
+        },
+        {
+          "name": "symptoms of prostate",
+          "probability": 15.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "psychotic-disorder",
+      "name": "Psychotic disorder",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Bipolar disorder')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "abusing alcohol",
+          "probability": 11.0
+        },
+        {
+          "name": "anxiety and nervousness",
+          "probability": 42.0
+        },
+        {
+          "name": "delusions or hallucinations",
+          "probability": 45.0
+        },
+        {
+          "name": "depression",
+          "probability": 54.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 74.0
+        },
+        {
+          "name": "drug abuse",
+          "probability": 16.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 17.0
+        },
+        {
+          "name": "fears and phobias",
+          "probability": 12.0
+        },
+        {
+          "name": "hostile behavior",
+          "probability": 35.0
+        },
+        {
+          "name": "hysterical behavior",
+          "probability": 5.0
+        },
+        {
+          "name": "insomnia",
+          "probability": 16.0
+        },
+        {
+          "name": "temper problems",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "chronic-glaucoma",
+      "name": "Chronic glaucoma",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Cataract')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "blindness",
+          "probability": 12.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 62.0
+        },
+        {
+          "name": "double vision",
+          "probability": 5.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 10.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 13.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 12.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 15.0
+        },
+        {
+          "name": "mass on eyelid",
+          "probability": 4.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 30.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 26.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 28.0
+        },
+        {
+          "name": "white discharge from eye",
+          "probability": 5.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "diabetic-retinopathy",
+      "name": "Diabetic retinopathy",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Cataract')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abnormal movement of eyelid",
+          "probability": 7.0
+        },
+        {
+          "name": "bleeding from eye",
+          "probability": 7.0
+        },
+        {
+          "name": "blindness",
+          "probability": 7.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 71.0
+        },
+        {
+          "name": "double vision",
+          "probability": 4.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 11.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 11.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 8.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 22.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 25.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 33.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 21.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "macular-degeneration",
+      "name": "Macular degeneration",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Cataract')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abnormal movement of eyelid",
+          "probability": 3.0
+        },
+        {
+          "name": "bleeding from eye",
+          "probability": 6.0
+        },
+        {
+          "name": "blindness",
+          "probability": 13.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 80.0
+        },
+        {
+          "name": "double vision",
+          "probability": 8.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 8.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 11.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 12.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 15.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 18.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 45.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 25.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "lumbago",
+      "name": "Lumbago",
+      "reason": "near_identical_profile (Jaccard=0.88 with 'Chronic back pain')",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "back cramps or spasms",
+          "probability": 3.0
+        },
+        {
+          "name": "back pain",
+          "probability": 84.0
+        },
+        {
+          "name": "hip pain",
+          "probability": 28.0
+        },
+        {
+          "name": "leg pain",
+          "probability": 48.0
+        },
+        {
+          "name": "low back cramps or spasms",
+          "probability": 1.0
+        },
+        {
+          "name": "low back pain",
+          "probability": 85.0
+        },
+        {
+          "name": "low back stiffness or tightness",
+          "probability": 1.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 19.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 3.0
+        },
+        {
+          "name": "neck pain",
+          "probability": 28.0
+        },
+        {
+          "name": "side pain",
+          "probability": 19.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "diverticulosis",
+      "name": "Diverticulosis",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Chronic constipation')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 34.0
+        },
+        {
+          "name": "burning abdominal pain",
+          "probability": 31.0
+        },
+        {
+          "name": "constipation",
+          "probability": 40.0
+        },
+        {
+          "name": "diarrhea",
+          "probability": 37.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 10.0
+        },
+        {
+          "name": "lower abdominal pain",
+          "probability": 20.0
+        },
+        {
+          "name": "melena",
+          "probability": 13.0
+        },
+        {
+          "name": "nausea",
+          "probability": 31.0
+        },
+        {
+          "name": "rectal bleeding",
+          "probability": 40.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 70.0
+        },
+        {
+          "name": "upper abdominal pain",
+          "probability": 12.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 25.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "ischemic-heart-disease",
+      "name": "Ischemic heart disease",
+      "reason": "near_identical_profile (Jaccard=0.86 with 'Chronic rheumatic fever')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "chest tightness",
+          "probability": 26.0
+        },
+        {
+          "name": "difficulty breathing",
+          "probability": 32.0
+        },
+        {
+          "name": "dizziness",
+          "probability": 28.0
+        },
+        {
+          "name": "fatigue",
+          "probability": 27.0
+        },
+        {
+          "name": "increased heart rate",
+          "probability": 5.0
+        },
+        {
+          "name": "lymphedema",
+          "probability": 8.0
+        },
+        {
+          "name": "muscle pain",
+          "probability": 5.0
+        },
+        {
+          "name": "palpitations",
+          "probability": 31.0
+        },
+        {
+          "name": "peripheral edema",
+          "probability": 13.0
+        },
+        {
+          "name": "sharp chest pain",
+          "probability": 57.0
+        },
+        {
+          "name": "shortness of breath",
+          "probability": 48.0
+        },
+        {
+          "name": "throat feels tight",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "dry-eye-of-unknown-cause",
+      "name": "Dry eye of unknown cause",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Cornea infection')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "abnormal movement of eyelid",
+          "probability": 9.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 69.0
+        },
+        {
+          "name": "double vision",
+          "probability": 7.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 33.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 44.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 33.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 45.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 46.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 50.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 29.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 72.0
+        },
+        {
+          "name": "white discharge from eye",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "pterygium",
+      "name": "Pterygium",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Cornea infection')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "acne or pimples",
+          "probability": 8.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 46.0
+        },
+        {
+          "name": "eye burns or stings",
+          "probability": 27.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 52.0
+        },
+        {
+          "name": "eyelid swelling",
+          "probability": 8.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 27.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 8.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 31.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 31.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 56.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 15.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 56.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "ulcerative-colitis",
+      "name": "Ulcerative colitis",
+      "reason": "near_identical_profile (Jaccard=0.88 with 'Crohn disease')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 40.0
+        },
+        {
+          "name": "burning abdominal pain",
+          "probability": 26.0
+        },
+        {
+          "name": "decreased appetite",
+          "probability": 11.0
+        },
+        {
+          "name": "diarrhea",
+          "probability": 65.0
+        },
+        {
+          "name": "discharge in stools",
+          "probability": 11.0
+        },
+        {
+          "name": "lower abdominal pain",
+          "probability": 15.0
+        },
+        {
+          "name": "melena",
+          "probability": 11.0
+        },
+        {
+          "name": "nausea",
+          "probability": 35.0
+        },
+        {
+          "name": "rectal bleeding",
+          "probability": 23.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 53.0
+        },
+        {
+          "name": "swollen lymph nodes",
+          "probability": 11.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 33.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "herniated-disk",
+      "name": "Herniated disk",
+      "reason": "near_identical_profile (Jaccard=0.90 with 'Degenerative disc disease')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "arm pain",
+          "probability": 27.0
+        },
+        {
+          "name": "arm weakness",
+          "probability": 5.0
+        },
+        {
+          "name": "back pain",
+          "probability": 76.0
+        },
+        {
+          "name": "hip pain",
+          "probability": 29.0
+        },
+        {
+          "name": "leg pain",
+          "probability": 66.0
+        },
+        {
+          "name": "leg weakness",
+          "probability": 7.0
+        },
+        {
+          "name": "loss of sensation",
+          "probability": 35.0
+        },
+        {
+          "name": "low back pain",
+          "probability": 78.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 27.0
+        },
+        {
+          "name": "neck pain",
+          "probability": 64.0
+        },
+        {
+          "name": "paresthesia",
+          "probability": 13.0
+        },
+        {
+          "name": "shoulder pain",
+          "probability": 31.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "spondylosis",
+      "name": "Spondylosis",
+      "reason": "near_identical_profile (Jaccard=0.91 with 'Degenerative disc disease')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 11,
+      "rawSymptoms": [
+        {
+          "name": "ache all over",
+          "probability": 26.0
+        },
+        {
+          "name": "arm pain",
+          "probability": 30.0
+        },
+        {
+          "name": "back pain",
+          "probability": 70.0
+        },
+        {
+          "name": "hip pain",
+          "probability": 40.0
+        },
+        {
+          "name": "knee pain",
+          "probability": 24.0
+        },
+        {
+          "name": "leg pain",
+          "probability": 55.0
+        },
+        {
+          "name": "loss of sensation",
+          "probability": 27.0
+        },
+        {
+          "name": "low back pain",
+          "probability": 77.0
+        },
+        {
+          "name": "lower body pain",
+          "probability": 17.0
+        },
+        {
+          "name": "neck pain",
+          "probability": 66.0
+        },
+        {
+          "name": "paresthesia",
+          "probability": 12.0
+        },
+        {
+          "name": "shoulder pain",
+          "probability": 35.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "dysthymic-disorder",
+      "name": "Dysthymic disorder",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Depression')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 4,
+      "rawSymptoms": [
+        {
+          "name": "antisocial behavior",
+          "probability": 2.0
+        },
+        {
+          "name": "anxiety and nervousness",
+          "probability": 72.0
+        },
+        {
+          "name": "depression",
+          "probability": 76.0
+        },
+        {
+          "name": "depressive or psychotic symptoms",
+          "probability": 44.0
+        },
+        {
+          "name": "disturbance of memory",
+          "probability": 6.0
+        },
+        {
+          "name": "excessive anger",
+          "probability": 7.0
+        },
+        {
+          "name": "fears and phobias",
+          "probability": 4.0
+        },
+        {
+          "name": "insomnia",
+          "probability": 22.0
+        },
+        {
+          "name": "loss of sex drive",
+          "probability": 2.0
+        },
+        {
+          "name": "low self-esteem",
+          "probability": 7.0
+        },
+        {
+          "name": "slurring words",
+          "probability": 3.0
+        },
+        {
+          "name": "temper problems",
+          "probability": 4.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "fibrocystic-breast-disease",
+      "name": "Fibrocystic breast disease",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Fibroadenoma')",
+      "rawSymptomsCount": 9,
+      "survivingSymptomsCount": 3,
+      "rawSymptoms": [
+        {
+          "name": "absence of menstruation",
+          "probability": 3.0
+        },
+        {
+          "name": "bleeding or discharge from nipple",
+          "probability": 16.0
+        },
+        {
+          "name": "frequent menstruation",
+          "probability": 3.0
+        },
+        {
+          "name": "intermenstrual bleeding",
+          "probability": 3.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 3.0
+        },
+        {
+          "name": "long menstrual periods",
+          "probability": 3.0
+        },
+        {
+          "name": "lump or mass of breast",
+          "probability": 77.0
+        },
+        {
+          "name": "pain or soreness of breast",
+          "probability": 58.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 3.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "pregnancy",
+      "name": "Pregnancy",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Gestational diabetes')",
+      "rawSymptomsCount": 6,
+      "survivingSymptomsCount": 3,
+      "rawSymptoms": [
+        {
+          "name": "cramps and spasms",
+          "probability": 4.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 25.0
+        },
+        {
+          "name": "pelvic pressure",
+          "probability": 2.0
+        },
+        {
+          "name": "problems during pregnancy",
+          "probability": 24.0
+        },
+        {
+          "name": "spotting or bleeding during pregnancy",
+          "probability": 8.0
+        },
+        {
+          "name": "uterine contractions",
+          "probability": 27.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "subacute-thyroiditis",
+      "name": "Subacute thyroiditis",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Gestational diabetes')",
+      "rawSymptomsCount": 11,
+      "survivingSymptomsCount": 3,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 8.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 8.0
+        },
+        {
+          "name": "heartburn",
+          "probability": 8.0
+        },
+        {
+          "name": "leg cramps or spasms",
+          "probability": 8.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 29.0
+        },
+        {
+          "name": "pain of the anus",
+          "probability": 8.0
+        },
+        {
+          "name": "palpitations",
+          "probability": 14.0
+        },
+        {
+          "name": "problems during pregnancy",
+          "probability": 40.0
+        },
+        {
+          "name": "spotting or bleeding during pregnancy",
+          "probability": 8.0
+        },
+        {
+          "name": "sweating",
+          "probability": 14.0
+        },
+        {
+          "name": "uterine contractions",
+          "probability": 24.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "myopia",
+      "name": "Myopia",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Glaucoma')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 5,
+      "rawSymptoms": [
+        {
+          "name": "abnormal movement of eyelid",
+          "probability": 3.0
+        },
+        {
+          "name": "blindness",
+          "probability": 5.0
+        },
+        {
+          "name": "diminished vision",
+          "probability": 72.0
+        },
+        {
+          "name": "eye deviation",
+          "probability": 3.0
+        },
+        {
+          "name": "eye moves abnormally",
+          "probability": 6.0
+        },
+        {
+          "name": "eye redness",
+          "probability": 15.0
+        },
+        {
+          "name": "foreign body sensation in eye",
+          "probability": 9.0
+        },
+        {
+          "name": "itchiness of eye",
+          "probability": 9.0
+        },
+        {
+          "name": "lacrimation",
+          "probability": 9.0
+        },
+        {
+          "name": "pain in eye",
+          "probability": 27.0
+        },
+        {
+          "name": "spots or clouds in vision",
+          "probability": 31.0
+        },
+        {
+          "name": "symptoms of eye",
+          "probability": 23.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "missed-abortion",
+      "name": "Missed abortion",
+      "reason": "near_identical_profile (Jaccard=0.88 with 'Induced abortion')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "blood clots during menstrual periods",
+          "probability": 12.0
+        },
+        {
+          "name": "blood in stool",
+          "probability": 6.0
+        },
+        {
+          "name": "cramps and spasms",
+          "probability": 25.0
+        },
+        {
+          "name": "heavy menstrual flow",
+          "probability": 6.0
+        },
+        {
+          "name": "infertility",
+          "probability": 6.0
+        },
+        {
+          "name": "intermenstrual bleeding",
+          "probability": 21.0
+        },
+        {
+          "name": "lower abdominal pain",
+          "probability": 43.0
+        },
+        {
+          "name": "pain during pregnancy",
+          "probability": 49.0
+        },
+        {
+          "name": "problems during pregnancy",
+          "probability": 38.0
+        },
+        {
+          "name": "recent pregnancy",
+          "probability": 6.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 51.0
+        },
+        {
+          "name": "spotting or bleeding during pregnancy",
+          "probability": 73.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "noninfectious-gastroenteritis",
+      "name": "Noninfectious gastroenteritis",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Infectious gastroenteritis')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "blood in stool",
+          "probability": 15.0
+        },
+        {
+          "name": "burning abdominal pain",
+          "probability": 40.0
+        },
+        {
+          "name": "chills",
+          "probability": 11.0
+        },
+        {
+          "name": "decreased appetite",
+          "probability": 14.0
+        },
+        {
+          "name": "diarrhea",
+          "probability": 88.0
+        },
+        {
+          "name": "fever",
+          "probability": 58.0
+        },
+        {
+          "name": "fluid retention",
+          "probability": 7.0
+        },
+        {
+          "name": "headache",
+          "probability": 25.0
+        },
+        {
+          "name": "nausea",
+          "probability": 75.0
+        },
+        {
+          "name": "rectal bleeding",
+          "probability": 6.0
+        },
+        {
+          "name": "sharp abdominal pain",
+          "probability": 72.0
+        },
+        {
+          "name": "vomiting",
+          "probability": 93.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "skin-disorder",
+      "name": "Skin disorder",
+      "reason": "near_identical_profile (Jaccard=0.89 with 'Rosacea')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 8,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing skin",
+          "probability": 44.0
+        },
+        {
+          "name": "acne or pimples",
+          "probability": 17.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 12.0
+        },
+        {
+          "name": "itching of skin",
+          "probability": 22.0
+        },
+        {
+          "name": "skin dryness, peeling, scaliness, or roughness",
+          "probability": 14.0
+        },
+        {
+          "name": "skin growth",
+          "probability": 25.0
+        },
+        {
+          "name": "skin irritation",
+          "probability": 8.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 75.0
+        },
+        {
+          "name": "skin moles",
+          "probability": 26.0
+        },
+        {
+          "name": "skin rash",
+          "probability": 44.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 23.0
+        },
+        {
+          "name": "warts",
+          "probability": 8.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "skin-pigmentation-disorder",
+      "name": "Skin pigmentation disorder",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Rosacea')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 9,
+      "rawSymptoms": [
+        {
+          "name": "abnormal appearing skin",
+          "probability": 79.0
+        },
+        {
+          "name": "acne or pimples",
+          "probability": 42.0
+        },
+        {
+          "name": "irregular appearing scalp",
+          "probability": 9.0
+        },
+        {
+          "name": "itching of skin",
+          "probability": 22.0
+        },
+        {
+          "name": "skin dryness, peeling, scaliness, or roughness",
+          "probability": 15.0
+        },
+        {
+          "name": "skin growth",
+          "probability": 25.0
+        },
+        {
+          "name": "skin lesion",
+          "probability": 46.0
+        },
+        {
+          "name": "skin moles",
+          "probability": 44.0
+        },
+        {
+          "name": "skin rash",
+          "probability": 52.0
+        },
+        {
+          "name": "skin swelling",
+          "probability": 16.0
+        },
+        {
+          "name": "too little hair",
+          "probability": 9.0
+        },
+        {
+          "name": "warts",
+          "probability": 10.0
+        }
+      ]
+    },
+    {
+      "diseaseId": "urethral-stricture",
+      "name": "Urethral stricture",
+      "reason": "near_identical_profile (Jaccard=1.00 with 'Stress incontinence')",
+      "rawSymptomsCount": 12,
+      "survivingSymptomsCount": 7,
+      "rawSymptoms": [
+        {
+          "name": "blood in urine",
+          "probability": 24.0
+        },
+        {
+          "name": "excessive urination at night",
+          "probability": 6.0
+        },
+        {
+          "name": "frequent urination",
+          "probability": 34.0
+        },
+        {
+          "name": "involuntary urination",
+          "probability": 27.0
+        },
+        {
+          "name": "painful urination",
+          "probability": 36.0
+        },
+        {
+          "name": "penis redness",
+          "probability": 6.0
+        },
+        {
+          "name": "retention of urine",
+          "probability": 73.0
+        },
+        {
+          "name": "suprapubic pain",
+          "probability": 34.0
+        },
+        {
+          "name": "swelling of scrotum",
+          "probability": 6.0
+        },
+        {
+          "name": "symptoms of bladder",
+          "probability": 16.0
+        },
+        {
+          "name": "symptoms of prostate",
+          "probability": 11.0
+        },
+        {
+          "name": "symptoms of the scrotum and testes",
+          "probability": 6.0
+        }
+      ]
+    }
+  ]
+}
