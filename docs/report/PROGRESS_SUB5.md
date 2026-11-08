@@ -7,8 +7,8 @@
 |---|---|:---:|---|:---:|:---:|:---:|
 | **S0** | Preflight (Env setup, branch, baseline gate) | DONE | `1be83ec` | 3,465 / 0 | PASS | 15/15 |
 | **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
-| **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | IN PROGRESS | - | - | - | - |
-| **S3** | System Structure, File Guide, API Reference & Data Model | NOT STARTED | - | - | - | - |
+| **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
+| **S3** | System Structure, File Guide, API Reference & Data Model | IN PROGRESS | - | - | - | - |
 | **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | NOT STARTED | - | - | - | - |
 | **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | NOT STARTED | - | - | - | - |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
@@ -52,3 +52,14 @@
 - **Quality Gate**:
   - `run_offline_tests.js`: 3,465 passed / 0 failed (207 suites), 15/15 protected files valid.
   - `client run build`: exit code 0.
+
+### Phase S2
+- **Deterministic Inventory (`scripts/generate_project_inventory.js`)**:
+  - Scanned all 1,129 tracked files (204.90 MB, 3,439,304 LOC across 6 components).
+  - Saved full dataset in `docs/report/data/project_inventory.json`.
+- **Quality & Security Scan Report (`docs/report/QUALITY_SCAN.md`)**:
+  - Top 30 largest tracked files tabulated (SQLite DB, interaction JSONs, SymCAT CSV).
+  - `npm audit` recorded: root 0, server 22 (2 high in joi/follow-redirects), client 36 (legacy react-scripts toolchain).
+  - Secret scan: 219 findings audited (186 test fixtures, 33 doc/template placeholders; 0 live leaked secrets).
+  - TODO/FIXME inventory: 123 items cataloged.
+  - Dependency licensing: 100% permissive (MIT/Apache/ISC/BSD); public domain US government data for ICD and CDC survey data.

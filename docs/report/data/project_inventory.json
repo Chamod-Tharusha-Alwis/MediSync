@@ -1,0 +1,2316 @@
+{
+  "generatedAt": "2026-11-08T20:33:10.197Z",
+  "totals": {
+    "trackedFiles": 1129,
+    "totalBytes": 214856335,
+    "totalMB": 204.9,
+    "totalLoc": 3439304
+  },
+  "components": {
+    "root": {
+      "files": 14,
+      "bytes": 59171,
+      "loc": 1478
+    },
+    "client": {
+      "files": 257,
+      "bytes": 3138100,
+      "loc": 63547
+    },
+    "docs": {
+      "files": 281,
+      "bytes": 17953367,
+      "loc": 271012
+    },
+    "ml-engine": {
+      "files": 56,
+      "bytes": 141824055,
+      "loc": 1547351
+    },
+    "scripts": {
+      "files": 55,
+      "bytes": 645698,
+      "loc": 12902
+    },
+    "server": {
+      "files": 466,
+      "bytes": 51235944,
+      "loc": 1543014
+    }
+  },
+  "largestFiles": [
+    {
+      "path": "ml-engine/medisync.db",
+      "sizeBytes": 79306752,
+      "sizeMB": 75.63,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "ml-engine/data/interactions_clean.json",
+      "sizeBytes": 39310355,
+      "sizeMB": 37.49,
+      "loc": 1149248,
+      "binary": false
+    },
+    {
+      "path": "server/reference-data/interactions_clean.json",
+      "sizeBytes": 39310355,
+      "sizeMB": 37.49,
+      "loc": 1149248,
+      "binary": false
+    },
+    {
+      "path": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+      "sizeBytes": 12660539,
+      "sizeMB": 12.07,
+      "loc": 20577,
+      "binary": false
+    },
+    {
+      "path": "ml-engine/data/icd10_clean.json",
+      "sizeBytes": 7428164,
+      "sizeMB": 7.08,
+      "loc": 286818,
+      "binary": false
+    },
+    {
+      "path": "server/reference-data/icd10_clean.json",
+      "sizeBytes": 7428164,
+      "sizeMB": 7.08,
+      "loc": 286818,
+      "binary": false
+    },
+    {
+      "path": "docs/disease_rankings_full.csv",
+      "sizeBytes": 5373914,
+      "sizeMB": 5.12,
+      "loc": 71746,
+      "binary": false
+    },
+    {
+      "path": "ml-engine/data/drugs_clean.json",
+      "sizeBytes": 999032,
+      "sizeMB": 0.95,
+      "loc": 36948,
+      "binary": false
+    },
+    {
+      "path": "server/reference-data/drugs_clean.json",
+      "sizeBytes": 999032,
+      "sizeMB": 0.95,
+      "loc": 36948,
+      "binary": false
+    },
+    {
+      "path": "client/package-lock.json",
+      "sizeBytes": 721523,
+      "sizeMB": 0.69,
+      "loc": 18644,
+      "binary": false
+    },
+    {
+      "path": "ml-engine/data/dataset.csv",
+      "sizeBytes": 632202,
+      "sizeMB": 0.6,
+      "loc": 4922,
+      "binary": false
+    },
+    {
+      "path": "ml-engine/data/unmapped_diseases.v1.json",
+      "sizeBytes": 570575,
+      "sizeMB": 0.54,
+      "loc": 22155,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T132349Z.json",
+      "sizeBytes": 570449,
+      "sizeMB": 0.54,
+      "loc": 21517,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T130601Z.json",
+      "sizeBytes": 570329,
+      "sizeMB": 0.54,
+      "loc": 21516,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T131516Z.json",
+      "sizeBytes": 570329,
+      "sizeMB": 0.54,
+      "loc": 21516,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T085801Z.json",
+      "sizeBytes": 570216,
+      "sizeMB": 0.54,
+      "loc": 21515,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T091358Z.json",
+      "sizeBytes": 570216,
+      "sizeMB": 0.54,
+      "loc": 21515,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_TEST_MATRIX_20261105T112855Z.json",
+      "sizeBytes": 570216,
+      "sizeMB": 0.54,
+      "loc": 21515,
+      "binary": false
+    },
+    {
+      "path": "docs/c3_map_clusters_mobile_375.png",
+      "sizeBytes": 546688,
+      "sizeMB": 0.52,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/screenshots/live_c3_map_mobile_375px.png",
+      "sizeBytes": 542356,
+      "sizeMB": 0.52,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/screenshots/live_public_health_mobile_375px.png",
+      "sizeBytes": 452825,
+      "sizeMB": 0.43,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/temp/CODEX_I18N_SOURCE_AUDIT_20261105T111802Z.json",
+      "sizeBytes": 350680,
+      "sizeMB": 0.33,
+      "loc": 12953,
+      "binary": false
+    },
+    {
+      "path": "docs/temp/CODEX_I18N_AFTER_C7_20261105T131516Z.json",
+      "sizeBytes": 349882,
+      "sizeMB": 0.33,
+      "loc": 12919,
+      "binary": false
+    },
+    {
+      "path": "server/package-lock.json",
+      "sizeBytes": 278914,
+      "sizeMB": 0.27,
+      "loc": 7596,
+      "binary": false
+    },
+    {
+      "path": "docs/ml-evaluation/08_colmozzie_real_world_backtest.png",
+      "sizeBytes": 275727,
+      "sizeMB": 0.26,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/c3_map_clusters_desktop_si.png",
+      "sizeBytes": 270175,
+      "sizeMB": 0.26,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/c3_map_table_view.png",
+      "sizeBytes": 265452,
+      "sizeMB": 0.25,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/c3_map_clusters_desktop_ta.png",
+      "sizeBytes": 252890,
+      "sizeMB": 0.24,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/screenshots/live_c3_map_desktop.png",
+      "sizeBytes": 218645,
+      "sizeMB": 0.21,
+      "loc": 0,
+      "binary": true
+    },
+    {
+      "path": "docs/c3_map_clusters_desktop_en.png",
+      "sizeBytes": 215062,
+      "sizeMB": 0.21,
+      "loc": 0,
+      "binary": true
+    }
+  ],
+  "secretScan": {
+    "totalHits": 219,
+    "findings": [
+      {
+        "file": ".env.example",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://<PROD_DB_USER>:<P**********S>@",
+        "isTestFixture": false
+      },
+      {
+        "file": ".env.example",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://medisync_qa_runner:<R************S>@",
+        "isTestFixture": false
+      },
+      {
+        "file": "client/src/__master_offline__/password-strength-fill.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password=\"ab********kl\"",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/password-strength-fill.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password=\"Ab********kl\"",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/password-strength-fill.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password=\"Cl************3!\"",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/password-ux-recovery.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Va***********@#'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/password-ux-recovery.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Ol***********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/password-ux-recovery.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Ne************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/src/__master_offline__/patient-login-identity.test.jsx",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "PASSWORD = 'Sy************4!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Ad************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-e2e-walkthrough.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Pa********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-live.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'St************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-med-suggestions.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Me************ss'",
+        "isTestFixture": true
+      },
+      {
+        "file": "client/tests/medisync-med-suggestions.spec.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Me************ss'",
+        "isTestFixture": true
+      },
+      {
+        "file": "docs/GATE3_OPERATOR_RUNBOOK.md",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://medisync.p7hjket.mongodb.net/test?tls=true&authSource=admin' --username $BackupUser --",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/PROJECT_AUDIT.md",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://`, cluster `medisync.p7hjket.mongodb.net`, and database `/medisync_prod`.\n  - `MONGO_U",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/PROJECT_AUDIT.md",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://...@medisync.p7hjket.mongodb.net/medisync_prod?...` |\n| `REDIS_URL` | Upstash `rediss:",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z_TEST_SOURCE.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z_TEST_SOURCE.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET:'in************vm'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z_TEST_SOURCE.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET:'in************vm'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z_TEST_SOURCE.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z_PATCH_DOCUMENT.json",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'sy**********ly'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z_PATCH_DOCUMENT.json",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z_PATCH_DOCUMENT.json",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET:'in************vm'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z_PATCH_DOCUMENT.json",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET:'in************vm'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z_PATCH_DOCUMENT.json",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": false
+      },
+      {
+        "file": "docs/temp/CODEX_PRODUCTION_DB_GUARD_FOR_APPROVAL.candidate.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://' : '**************@",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/checkRenderEnvironmentNames.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/checkRenderEnvironmentNames.test.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY = 'in************ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/checkRenderEnvironmentNames.test.cjs",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY = 'in************ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://127.0.0.1/test','mongodb+srv://******rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:in*rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:in*rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:in*rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:in*rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/realLocalStack.test.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:in*rt@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/run_e3_r2_http.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET: 'qa************5x'",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/run_e3_r2_http.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'qa************5x'",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/run_e3_r2_http.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Qa************6!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/run_e3_r2_http.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Qa************6!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/run_e3_r2_http.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Qa************6!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "scripts/test_production_boot_harness.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://synthetic-user:sy**********ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/test_production_boot_harness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET: 'du************bc'",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/test_production_boot_harness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'du************rs'",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/test_production_boot_harness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'du************ng'",
+        "isTestFixture": true
+      },
+      {
+        "file": "scripts/test_production_boot_harness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY: 'du************yz'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/.env.example",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://<PROD_DB_USER>:<P**********S>@",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/.env.example",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://medisync_qa_runner:<R************S>@",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/createSpecificPatient.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/createSpecificPatient.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/createTestAccounts.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "PASSWORD = \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runBackendE2E.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runBackendE2E.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runBackendE2E.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Pa********3!'",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runE2ETests.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runE2ETests.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/scripts/runE2ETests.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"St************3!\"",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/src/config/dbGuard.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://' : '**************@",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/src/security/phase4QaPolicy.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://')) throw Error('QA_NON_SRV_FORBIDDEN');\r\n  if (!raw.startsWith('mongodb+srv://***********",
+        "isTestFixture": false
+      },
+      {
+        "file": "server/tests/agentBAccountSecurity.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBAccountSecurity.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBAuthSocket.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password = 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET: 'sy************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'sy************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET: 'sy************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBClinicalHandlers.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'sy************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBCommandCommit.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBEndpointAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://synthetic:sy**********ly@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBLabEnvelopeCommit.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'sy************et'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBMigrationAndInvitations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Sy************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBModelCompatibility.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'sy************ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBModelCompatibility.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'sy************ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBModelMigration.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBOperations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'sy************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBOperations.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'di************es'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBProfileLanguage.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************et'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBProviderOutbreak.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret: 'sy************et'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBPublicDemoIsolation.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://synthetic@example.invalid/test', 'http://************['@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/agentBPublicDemoIsolation.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************is'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/authenticatedSessionBrowser.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "PASSWORD='St************re'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/bootstrapSyntheticAccounts.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://secretUser:su************23@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/bootstrapSyntheticAccounts.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/brevoFallback429Offline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY: 'of************er'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/brevoFallback429Offline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY: 'of************er'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/clinicalHttpWorkflow.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET = 'qa************5x'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/cloudinaryCompatibility.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "api_key: '12***********45'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/cloudinaryCompatibility.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret: 'mo************45'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://shared_admin:se***t1@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://shared_admin:se***t2@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://restricted_test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://mySecretUser:my***********23@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/dbGuard.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/gate3StorageRepair.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/hardeningHospitalErrors.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'Sy************6!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/doctorPublicationCases.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************ue'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/gate3OperatorEnvironment.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/gate3OperatorEnvironment.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/patientRouteIdentityHarness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret = 'sy************01'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/patientRouteIdentityHarness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Secret = 'sy************02'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/patientRouteIdentityHarness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password = 'Sy************n!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/phase5xD5InertHarness.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret='in************ce'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/helpers/renderEnvironmentStartupProbe.cjs",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/ir04BackendIntegration.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Wr************9!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/jwt-patient-nic-removal-s1.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET = 'te************2b'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/jwt-patient-nic-removal-s1.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET = 'te************2b'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/jwt-patient-nic-removal-s1.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Va************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/jwt-patient-nic-removal-s1.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Va************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/jwt-patient-nic-removal-s1.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'Va************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/lab.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "api_key: 'qa**********er'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/lab.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "secret: 'qa**********er'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/lab.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'ha************23'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/lab.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:    'ha************56'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/lab.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:       'ha************89'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/loginRequestValidation.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterAuthRedaction.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET:'of********ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterLoginAdmission.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'sy**********ly'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterOrganizationPassword.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password:'ne********rd'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterQaAdmissionDiagnostics.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline-user:of************rd@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterQaAdmissionDiagnostics.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://private-user:pr************rd@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/masterSupportSafety.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'pr**********et'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordAttemptPolicy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordAttemptPolicy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET:'in************vm'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordAttemptPolicy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET:'in************vm'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordAttemptPolicy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'in************rd'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: '$2************34'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password = '$2************34'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Va************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Ol***********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Ne***********3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/passwordRecoveryAuthOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'St************3!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/pdfGeneratorPhase6.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: 'Ca************23'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/phase0LoginDiagnostics.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password = 'In************2!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/phase0SafeDiagnostics.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://synthetic-user:PR************RD@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/phase1DoctorAiColdStart.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY: 'te************g!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://...';\r\n    const results = runOfflinePreflight(env);\r\n    const qaGate = results.find(",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET: 'du************bc'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'du************rs'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET: 'du************ng'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/preflightProduction.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY: 'du************yz'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionAtlasAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionAtlasAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionAtlasAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://','mongodb://************ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionAtlasDiagnostic.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://${encodeURIComponent(user)}:${************)}@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionAtlasDiagnostic.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password = 'du************al'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionStorageAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionStorageAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionStorageAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/productionStorageAdmission.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://offline:fi*****al@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/publicHealthMongo.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'PR*********HE'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://synthetic-user:sy**********ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://u:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://u:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://u:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://u:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaAdmissionNegative.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://u:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa_user:pa***23@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/qaNativeDriverPolicy.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://qa:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/realIntegrationTransport.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/realIntegrationTransport.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://in*rt:inert@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/seedDemoOutbreakOffline.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:st************99@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:pr************33@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:te************66@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://staging_user:st********ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb://staging_user:st********ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://prod_user:so*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://test_user:so*****ss@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingDbGuardAdversarial.test.js",
+        "pattern": "MongoDB Auth URI",
+        "maskedSnippet": "mongodb+srv://staging_user:****@",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/stagingSocketAndAnalyticsIntegration.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET = 'st************!!'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/surveillancePolicy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "API_KEY='lo**********ey'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/testOtpRemovalOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "JWT_SECRET = 'te************s1'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/testOtpRemovalOffline.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "SECRET = 'te************s1'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/test_rate_limit.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: \"Se************6!\"",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/test_rate_limit.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "Password: \"Pa********3!\"",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/universityPatientProfile.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password: 'PR********SH'",
+        "isTestFixture": true
+      },
+      {
+        "file": "server/tests/universityPublicPrivacy.test.js",
+        "pattern": "Generic Secret Token",
+        "maskedSnippet": "password:'PR************RD'",
+        "isTestFixture": true
+      }
+    ]
+  },
+  "todoInventory": {
+    "totalCount": 123,
+    "findings": [
+      {
+        "file": "docs/BUGS.md",
+        "line": 5,
+        "tag": "BUG",
+        "snippet": "ID | Symptom | Cause | Fix | Commit | Live-Verified |"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 7,
+        "tag": "BUG",
+        "snippet": "-PRE-1 | React Error #31 on Doctor New Consultation patient lookup | Unformatted Mongoose LabTest object rendered as Rea"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 8,
+        "tag": "BUG",
+        "snippet": "-A1 | `/public-health` statistics request returns 503 (`range=30 days, disease=all`), dashboard shows temporary unavaila"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 9,
+        "tag": "BUG",
+        "snippet": "-A2 | `GET /broadcasts/latest` returns 401 on public unauthenticated page | Unauthenticated visitor or empty/stale strin"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 10,
+        "tag": "BUG",
+        "snippet": "-A3 | Console warning \"WebSocket is closed before the connection is established\" | Chromium emits native warning when `w"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 11,
+        "tag": "BUG",
+        "snippet": "-A4 | `feature_collector.js` \"deprecated parameters\" warning | Audit of entire repository, client/server dependencies, a"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 12,
+        "tag": "BUG",
+        "snippet": "-A5 | Admin Dashboard creates socket with `undefined` or invalid token | `admin/Dashboard.jsx:648` invoked `io(SOCKET_SE"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 13,
+        "tag": "BUG",
+        "snippet": "-A6 | Duplicate notification polling and socket listeners between AppShell and Sidebar | `AppShell.jsx` (header) and `Si"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 14,
+        "tag": "BUG",
+        "snippet": "-B1 | ML service 503 during consultation cold start blocks user flow without retry or manual fallback awareness | In-fli"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 15,
+        "tag": "BUG",
+        "snippet": "-B2 | Medication suggestions empty when backend database collection is empty or unseeded | Client search failed over to "
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 16,
+        "tag": "BUG",
+        "snippet": "-B3 | 409 conflict when saving consultation on rapid double clicks or retries after form validation | Rapid double click"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 17,
+        "tag": "BUG",
+        "snippet": "-B4 | Lab test autocomplete dropdown overlaps adjacent cards and test tags | Fixed dropdown positioning lacked dynamic v"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 18,
+        "tag": "BUG",
+        "snippet": "-B5 | Duplicated \"Dr. Dr.\" prefix in doctor names | Stored profiles or user inputs containing \"Dr.\" had redundant \"Dr.\" "
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 19,
+        "tag": "BUG",
+        "snippet": "-B6 | Full Patient -> Doctor -> Pharmacy flow requires live multi-role execution and OTP verification without real email"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 20,
+        "tag": "BUG",
+        "snippet": "-C1 | Outbreak alerts not appearing in notifications for clinical and administrative roles | Surveillance service upsert"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 21,
+        "tag": "BUG",
+        "snippet": "-C2 | 14-day outbreak forecast unavailable or failing on empty/insufficient historical data; confidence interval bounds "
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 23,
+        "tag": "BUG",
+        "snippet": "-DEMO-INGEST-REPLAY | Repeated tracking ingestion can inflate public case totals | Original /ingest added incoming count"
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 24,
+        "tag": "BUG",
+        "snippet": "-PUBLIC-HEALTH-CURRENT-TOTAL | Operator reported about 10,180; takeover reads initially returned 503 and later 200 with "
+      },
+      {
+        "file": "docs/BUGS.md",
+        "line": 26,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1 | P1: unlabelled host-local email/UI time | Host-local formatting | Explicit Asia/Colombo display, vi"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 1,
+        "tag": "BUG",
+        "snippet": "Report"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 32,
+        "tag": "BUG",
+        "snippet": "-01** | High | `ml-engine/app.py` | **ML Engine 403 Forbidden Auth Failures:** Differences in timezone/clock synchroniza"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 33,
+        "tag": "BUG",
+        "snippet": "-02** | Medium | `client/src/pages/doctor/NewConsultation.jsx` | **React Controlled vs. Uncontrolled Input Warnings:** B"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 34,
+        "tag": "BUG",
+        "snippet": "-03** | Medium | `client/src/pages/patient/Dashboard.jsx` | **Missing Sidebar Props & Hidden Notification Bell:** The pa"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 35,
+        "tag": "BUG",
+        "snippet": "-04** | High | `server/src/app.js` | **Express 5 req.query Read-Only Crash:** express-mongo-sanitize tried to reassign r"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 36,
+        "tag": "BUG",
+        "snippet": "-05** | High | `client/src/context/PatientAccessContext.jsx` | **usePatientAccess Hook Undefined:** Dashboard.jsx and Ne"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 37,
+        "tag": "BUG",
+        "snippet": "-06** | Medium | `client/src/pages/doctor/NewConsultation.jsx` | **Browser Autofill Overlay on Drug/Lab Input:** Browser"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 38,
+        "tag": "BUG",
+        "snippet": "-07** | Medium | `client/src/components/common/LabReportDownloadButton.jsx` | **Lab Report Dropdown Clipping:** Multi-te"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 39,
+        "tag": "BUG",
+        "snippet": "-08** | Low | `server/src/utils/email.js` | **Mock Email Missing OTP Body:** Dev mock email log showed To/Subject but no"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 66,
+        "tag": "BUG",
+        "snippet": "1: PDF Table Column Overlap in Clinical E-Prescriptions"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 77,
+        "tag": "BUG",
+        "snippet": "2: Outbreak Severity Discrepancy Between Admin Scans and Real-Time Dashboard"
+      },
+      {
+        "file": "docs/BUG_REPORT.md",
+        "line": 83,
+        "tag": "BUG",
+        "snippet": "3: Silent SQLite Fallback Failure for Global ICD-10 Disease Danger Levels"
+      },
+      {
+        "file": "docs/CODEBASE.md",
+        "line": 217,
+        "tag": "BUG",
+        "snippet": ". This ensures the user profile badge and the real-time `<NotificationBell />` are correctly rendered and visible to the"
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 181,
+        "tag": "BUG",
+        "snippet": "details."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 182,
+        "tag": "BUG",
+        "snippet": "-A1`: RESOLVED in commit `7cc6947`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 183,
+        "tag": "BUG",
+        "snippet": "-A2`: RESOLVED in commit `88b07a4`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 184,
+        "tag": "BUG",
+        "snippet": "-A3`: RESOLVED in commit `fd39fce`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 185,
+        "tag": "BUG",
+        "snippet": "-A4`: RESOLVED (provenance audit confirmed external origin)."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 186,
+        "tag": "BUG",
+        "snippet": "-A5`: RESOLVED in commits `b99e54b` & `64e92e6`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 187,
+        "tag": "BUG",
+        "snippet": "-A6`: RESOLVED in commit `e246778`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 188,
+        "tag": "BUG",
+        "snippet": "-B1`: RESOLVED in commit `63a2675`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 189,
+        "tag": "BUG",
+        "snippet": "-B2`: RESOLVED in commit `a3726ec`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 190,
+        "tag": "BUG",
+        "snippet": "-B3`: RESOLVED in commit `7e9319f`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 191,
+        "tag": "BUG",
+        "snippet": "-B4`: RESOLVED in commit `6e16bf0`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 192,
+        "tag": "BUG",
+        "snippet": "-B5`: RESOLVED in commit `6e16bf0`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 193,
+        "tag": "BUG",
+        "snippet": "-B6`: RESOLVED in commit `baea9af`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 194,
+        "tag": "BUG",
+        "snippet": "-C1`: RESOLVED in commit `9e0f6c8`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 195,
+        "tag": "BUG",
+        "snippet": "-C2`: RESOLVED in commit `8bc0cf4`, verified live."
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 272,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1 tracks explicit Asia/Colombo event display and labelled email timestamps. UTC storage, quota windows,"
+      },
+      {
+        "file": "docs/MASTER_STATE.md",
+        "line": 276,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1: explicit Asia/Colombo mail/UI display with visible zone; UTC storage/keys/quotas and calendar dates "
+      },
+      {
+        "file": "docs/PROJECT_REVIEW.md",
+        "line": 351,
+        "tag": "BUG",
+        "snippet": "**: The patient portal (`client/src/pages/patient/Dashboard.jsx`) was mounting the `<Sidebar />` component without passi"
+      },
+      {
+        "file": "docs/TEST_LOG.md",
+        "line": 138,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1: explicit Asia/Colombo mail/UI display with visible zone; UTC storage/keys/quotas and calendar dates "
+      },
+      {
+        "file": "docs/agent-work/MASTER_TRACKER.md",
+        "line": 66,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1 tracks explicit Asia/Colombo event display and labelled email timestamps. UTC storage, quota windows,"
+      },
+      {
+        "file": "docs/agent-work/MASTER_TRACKER.md",
+        "line": 70,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1: explicit Asia/Colombo mail/UI display with visible zone; UTC storage/keys/quotas and calendar dates "
+      },
+      {
+        "file": "docs/disease_rankings_full.csv",
+        "line": 26505,
+        "tag": "XXX",
+        "snippet": "\",Q970,Medium,no,3.0"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 74,
+        "tag": "TODO",
+        "snippet": "| Not started |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 101,
+        "tag": "BUG",
+        "snippet": "Present? | Exact Root Cause | Prospective Files to Modify | In Protected Hashes? | Implementation Ready? |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 105,
+        "tag": "BUG",
+        "snippet": "`'{t(\"common.verify\", \"Send Verification OTP\")}'` passes verbatim text rather than evaluating JSX translation expression"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 122,
+        "tag": "BUG",
+        "snippet": ")**:"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 288,
+        "tag": "TODO",
+        "snippet": "| | | | U9 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 289,
+        "tag": "TODO",
+        "snippet": "| | | | U10 — list all files in plan first |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 290,
+        "tag": "TODO",
+        "snippet": "| | | | U11 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 291,
+        "tag": "TODO",
+        "snippet": "| | | | U12 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 292,
+        "tag": "TODO",
+        "snippet": "| | | | U13 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 293,
+        "tag": "TODO",
+        "snippet": "| | | | U14 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 294,
+        "tag": "TODO",
+        "snippet": "| | | | U15 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 295,
+        "tag": "TODO",
+        "snippet": "| | | | U16 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 296,
+        "tag": "TODO",
+        "snippet": "| | | | U20 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 297,
+        "tag": "TODO",
+        "snippet": "| | | | U21 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 303,
+        "tag": "TODO",
+        "snippet": "| Only after Stage E passes |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 309,
+        "tag": "TODO",
+        "snippet": "| Needs APPROVE PDF-DESIGN |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 317,
+        "tag": "TODO",
+        "snippet": "| Needs APPROVE SEED |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 318,
+        "tag": "TODO",
+        "snippet": "| After operator approves dry-run summary |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 326,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 327,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 328,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 329,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 330,
+        "tag": "TODO",
+        "snippet": "| Needs APPROVE DELETE-DEMO for old batch |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 331,
+        "tag": "TODO",
+        "snippet": "| Needs APPROVE DELETE-DEMO |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 339,
+        "tag": "TODO",
+        "snippet": "| EN/SI/TA × 320/375/1440 |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 340,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 341,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 349,
+        "tag": "TODO",
+        "snippet": "| Per CLEANUP_AND_COMMENTING_PLAN.md |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 350,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 351,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 359,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 360,
+        "tag": "TODO",
+        "snippet": "| |"
+      },
+      {
+        "file": "docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md",
+        "line": 401,
+        "tag": "TODO",
+        "snippet": "rows and historical blocker statements above are not newly"
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 21,
+        "tag": "BUG",
+        "snippet": "Present? | Exact Root Cause | Prospective Files to Modify | In Protected Hashes? | Implementation Ready? |"
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 25,
+        "tag": "BUG",
+        "snippet": "`'{t(\"common.verify\", \"Send Verification OTP\")}'` passes verbatim text rather than evaluating JSX translation expression"
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 85,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 118,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 154,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 162,
+        "tag": "BUG",
+        "snippet": "."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 188,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 227,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 280,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 311,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 356,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 515,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/B1_INVESTIGATION_REPORT.md",
+        "line": 573,
+        "tag": "BUG",
+        "snippet": "Presence on Current Commit**: **YES**."
+      },
+      {
+        "file": "docs/new/DECISIONS.md",
+        "line": 8,
+        "tag": "BUG",
+        "snippet": "fixes and security hardening patches were developed on branch `stage-b1/fixes` up to commit `0dc886d` (`docs(stage-b1): "
+      },
+      {
+        "file": "docs/new/MASTER_PROMPT_V3.md",
+        "line": 73,
+        "tag": "BUG",
+        "snippet": "you fix. Keep CI green."
+      },
+      {
+        "file": "docs/new/MASTER_PROMPT_V3.md",
+        "line": 137,
+        "tag": "TODO",
+        "snippet": "/ IN_PROGRESS / PUSHED / LIVE_VERIFIED / BLOCKED / DEFERRED), commit SHA, deploy confirmation, live evidence file, owner"
+      },
+      {
+        "file": "docs/new/PAGE_CHANGE_PROPOSALS.md",
+        "line": 101,
+        "tag": "BUG",
+        "snippet": "— the prop passed to the button is a string literal"
+      },
+      {
+        "file": "docs/new/TRACKER_RECONCILIATION.md",
+        "line": 18,
+        "tag": "BUG",
+        "snippet": ""
+      },
+      {
+        "file": "docs/new/sub1/TASK_BOARD.md",
+        "line": 3,
+        "tag": "TODO",
+        "snippet": "/ IN-PROGRESS / DONE / BLOCKED (reason)"
+      },
+      {
+        "file": "docs/temp/CODEX_P1_SRI_LANKA_TIME_REPAIR_20261104232941414.json",
+        "line": 3,
+        "tag": "BUG",
+        "snippet": "\": \"BUG-EMAIL-TIMEZONE-P1\","
+      },
+      {
+        "file": "docs/temp/CODEX_P1_SRI_LANKA_TIME_REPAIR_20261104232941414.md",
+        "line": 3,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1: OFFLINE PASS; deployment and optional single-login proof pending."
+      },
+      {
+        "file": "docs/temp/CODEX_P1_TIMEZONE_LIVE_CLOSURE_20261104234114440.md",
+        "line": 5,
+        "tag": "BUG",
+        "snippet": "-EMAIL-TIMEZONE-P1: verified by actual offline email templates, fixed UTC/date-rollover tests, and the operator's confir"
+      },
+      {
+        "file": "ml-engine/data/icd10_clean.json",
+        "line": 89408,
+        "tag": "XXX",
+        "snippet": "\""
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15035,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15036,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15037,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15038,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15039,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15040,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15041,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15042,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15043,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15044,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15045,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "ml-engine/data_pipeline/raw/symcat_conditions.csv",
+        "line": 15046,
+        "tag": "BUG",
+        "snippet": ", and stomach virus. Although unrelated to influenza, it has also been called stomach flu and gastric flu.\",\"Within all "
+      },
+      {
+        "file": "server/reference-data/icd10_clean.json",
+        "line": 89408,
+        "tag": "XXX",
+        "snippet": "\""
+      }
+    ]
+  },
+  "dependencyLicensesCount": 55
+}
