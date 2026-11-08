@@ -9,8 +9,8 @@
 | **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `d2b7082` | 3,465 / 0 | PASS | 15/15 |
 | **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
-| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | IN PROGRESS | - | - | - | - |
-| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | NOT STARTED | - | - | - | - |
+| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | pending | 3,465 / 0 | PASS | 15/15 |
+| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | IN PROGRESS | - | - | - | - |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
 | **S7** | Final Verification & Link Integrity Check | NOT STARTED | - | - | - | - |
 | **S8** | Morning Report & Delivery Package | NOT STARTED | - | - | - | - |
@@ -74,3 +74,14 @@
   - Comprehensive reference for all 191 endpoints (187 Express + 4 ML Engine) across 12 functional domains with authentication guards, rate limits, and feature gates.
 - **Complete File Guide (docs/report/FILE_GUIDE.md)**:
   - Generated via scripts/build_file_guide.py: covers all 1,129 tracked files with LOC, role, purpose, and all 15 SHA-256 protected ledger pins highlighted. Historical receipts compacted.
+
+### Phase S4
+- **Deterministic Figure Suite (ml-engine/evaluation/generate_report_figures.py)**:
+  - Implemented all 14 publication figures (F01–F14) at 200 DPI with mandatory regulatory footer.
+  - Confirmed 100% byte-identical SHA-256 digests across successive runs.
+  - All file sizes between 65 KB and 228 KB (well under 500 KB ceiling).
+- **Mermaid Architecture & Sequence Diagrams (docs/report/diagrams/)**:
+  - Authored 9 formal .mmd diagrams: system architecture, deployment infrastructure, consultation-prescription-dispensing, QR verification and NIC gate, outbreak detection pipeline, tiered matcher flow, authentication/OTP flow, medicine safety flow, and ER diagram.
+- **Documentation**:
+  - Created docs/report/figures/FIGURES.md detailing data source, limitations, and hash ledger for all 14 figures.
+  - Created docs/report/ML_METHODOLOGY.md detailing provenance, curation, tiered matching, resource profile, and evaluation protocols.

@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor Anyone as Public User / Verifier
+    participant Browser as Mobile / Desktop Browser
+    participant Gateway as Backend API Gateway
+    participant DB as MongoDB Atlas
+    actor Patient as Patient (Owner)
+
+    Note over Anyone,Browser: Verifier scans physical/PDF QR Code
+    Browser->>Gateway: GET /api/verify/:token
+    Gateway->>Gateway: Compute SHA-256(token)
+    Gateway->>DB: Query VerificationToken (expires 90d)
+    alt Token Invalid or Expired
+        DB-->>Gateway: Null record
+        Gateway-->>Browser: HTTP 404 "Invalid or Expired Verification Token"
+    else Token Valid
+        DB-->>Gateway: Token doc (consultationId, patientNicHash)
+        Gateway->>DB: Fetch Consultation (Hospital, Doctor Name, Date)
+        DB-->>Gateway: Sanitized consultation details
+        Gateway-->>Browser: HTTP 200 Public Authenticity Card (ZERO Patient PII)
+    end
+
+    opt Patient History Download Gate
+        Patient->>Browser: Enters Patient NIC into secure verification modal
+        Browser->>Gateway: POST /api/verify/:token/history-pdf { nic: "..." }
+        Gateway->>Gateway: Hash input NIC with constant salt
+        Gateway->>Gateway: Constant-Time String Comparison against patientNicHash
+        alt NIC Mismatch
+            Gateway-->>Browser: HTTP 403 "Identification Verification Failed" (Rate limited)
+        else NIC Matched
+            Gateway->>DB: Fetch complete patient history timeline
+            Gateway->>Gateway: Generate cumulative history PDF (WinAnsi typography)
+            Gateway-->>Browser: HTTP 200 application/pdf (%PDF- stream)
+        end
+    end

@@ -1,0 +1,24 @@
+flowchart TD
+    Prescribe["Doctor prescribes medication line<br/>(Drug, Strength, Frequency, Duration)"] --> ResolveIngredient["Resolve Active Pharmaceutical Ingredient<br/>(via ingredientResolver.js)"]
+    ResolveIngredient --> CheckDuplicate{"Active Duplicate Ingredient?<br/>(Check against current lines + active patient regimen)"}
+    
+    CheckDuplicate -- "Yes" --> AlertDuplicate["BLOCK / HIGH RISK ALERT<br/>'Duplicate active ingredient detected'"]
+    CheckDuplicate -- "No" --> CheckInteractions{"Pairwise Drug Interactions?<br/>(Query interactions_clean.json)"}
+
+    CheckInteractions -- "Severe Interaction" --> AlertInteraction["CRITICAL SAFETY WARNING<br/>'Known contraindication / severe interaction'"]
+    CheckInteractions -- "None / Moderate" --> CheckFormulary{"Check Formulary Limits<br/>(medicine_safety_limits.json)"}
+
+    CheckFormulary -- "Configured Drug" --> EvalLimits{"Max Single Dose, Daily Dose, or Duration exceeded?"}
+    CheckFormulary -- "Unconfigured Drug" --> UnconfiguredNotice["NOTICE: 'Reference limits pending verification'<br/>(Default policy: warn_unconfigured)"]
+
+    EvalLimits -- "Yes" --> CeilingWarning["DOSAGE CEILING WARNING<br/>(e.g., Paracetamol > 4,000mg/day or Amoxicillin > 14 days)"]
+    EvalLimits -- "No" --> ApprovedSafe["SAFETY CLEARANCE GRANTED"]
+
+    AlertDuplicate --> RequireJustification{"Clinician acknowledges warning?"}
+    AlertInteraction --> RequireJustification
+    CeilingWarning --> RequireJustification
+    UnconfiguredNotice --> PrescribeAllowed["Allowed to Prescribe"]
+
+    RequireJustification -- "Mandatory Reason Entered" --> PrescribeAllowed
+    RequireJustification -- "Dismissed / Canceled" --> AbortPrescribe["Prescription Modification Required"]
+    ApprovedSafe --> PrescribeAllowed

@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor Doctor as Doctor (Clinician)
+    participant Client as Web Client (React)
+    participant Server as Backend API Gateway
+    participant Safety as Medicine Safety Engine
+    participant DB as MongoDB Atlas
+    actor Pharmacist as Pharmacy Staff
+    actor Patient as Patient
+
+    Doctor->>Client: Enters symptoms & patient NIC
+    Client->>Server: POST /api/doctors/predict-disease (symptoms)
+    Server-->>Client: Suggestions (Tier 1 curated / Tier 2 KB)
+    Doctor->>Client: Selects diagnosis & prescribes drugs
+    Client->>Server: POST /api/doctors/consultations
+    Server->>Safety: checkSafety(drugs, dosages, duration)
+    Safety-->>Server: Dosage verified / Warning flagged
+    Server->>DB: Encrypt & insert Consultation (AES-256-GCM)
+    Server->>DB: Insert Prescription (Status: 'pending')
+    Server-->>Client: Consultation saved + Prescription issued
+
+    Patient->>Pharmacist: Presents patient NIC / prescription ID
+    Pharmacist->>Client: Searches pending prescriptions by NIC
+    Client->>Server: GET /api/prescriptions/search?nic=...
+    Server->>DB: Lookup via patientNic_bi (Blind Index)
+    DB-->>Server: Decrypted prescription records
+    Server-->>Client: Pending prescription lines
+    Pharmacist->>Client: Dispenses drugs (or inputs brand alternative)
+    Client->>Server: POST /api/prescriptions/dispense
+    Server->>DB: Atomically update Prescription (Status: 'dispensed')
+    Server->>DB: Insert Dispensing audit record
+    Server-->>Client: Dispensing confirmed & inventory decremented
