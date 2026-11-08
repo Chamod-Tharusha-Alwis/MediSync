@@ -9,7 +9,7 @@ Branch: `fix/post-merge-sub2` (base `main` @ `da438aa`).
 | C | ML Engine status resilience & cold-start warm-up | DONE | `a422eb7` | `adminMlStatusService.js`, `adminController.js`, `OutbreakMonitor.jsx`, `Dashboard.jsx`, `OWNER_ACTIONS_SUB2.md`, `mlStatusContract.test.js` (7/7 PASS) |
 | D | "SYNTHETIC SIMULATION" alert tag audit & scoping | DONE | `a422eb7` | `OutbreakMonitor.jsx`, `Dashboard.jsx`, `ActiveOutbreakBanner.jsx` (scoped strictly to simulated/demo alerts) |
 | E | Documentation corrections (URLs, key counts, runbooks) | DONE | `a422eb7` | `README.md` (backend URL), `ARCHITECTURE.md` (781 keys), `DEMO_BATCH_REMOVAL_RUNBOOK.md` (14 alerts / 6,309 consultations), `FINAL_ACCEPTANCE_MATRIX.md` |
-| F | Full verification (gate, build, protected hashes, final report) | DONE | `pending` | `run_offline_tests.js` (3,450 PASS / 0 FAIL), `npm run build` (Exit 0), 15/15 hashes accounted for, `FINAL_REPORT.md` |
+| F | Full verification (gate, build, protected hashes, final report) | DONE | `6cd52c7` | `run_offline_tests.js` (3,450 PASS / 0 FAIL), `npm run build` (Exit 0), 15/15 hashes accounted for, `FINAL_REPORT.md` |
 
 ## Session Log
 
