@@ -5,7 +5,7 @@
 | Phase | Description | Branch | Status | Commit(s) | Tests Passed / Failed | Offline Gate | Client Build | Protected Pins |
 |---|---|---|:---:|---|:---:|:---:|:---:|:---:|
 | **D0** | Truth Pass (Docs & Claims Correction) | `feat/sub4-d0` | DONE | `31891f7` | 3,457 / 0 | PASS | PASS | 15/15 |
-| **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | NOT STARTED | - | - | - | - | - |
+| **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | NOT STARTED | - | - | - | - | - |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
@@ -61,4 +61,29 @@
   - `node scripts/remove_demo_batch.js --help`: exit 0.
 - **NOT Verified LIVE**:
   - Production database mutations (reserved for owner).
+
+---
+
+### Phase D1 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **ICD Catalog Composition & Measured Audit**:
+     - Documented in `docs/new/sub4/COVERAGE_REPORT.md`:
+       - 71,704 total concepts (100% billable leaf codes, US CDC/CMS ICD-10-CM).
+       - Length breakdown: 49,941 7-character codes driven by 7th-character encounter extensions (`A`, `D`, `S` in Ch. 19/20).
+       - 1,910 distinct 3-character categories, 10,000 distinct 4-character categories, 34,290 base concepts when collapsing 7th-character suffixes.
+       - 41 reference profiles from `dataset.csv`: 0.057% leaf coverage (41 / 71,704), 2.04% 3-character category coverage (39 / 1,910).
+       - Exhaustive table of all 41 profiles with ICD-10 mapping, symptom counts, and clinical chapters.
+       - Platform dependency map: ML symptom predictor depends on the 41; doctor search, consultations, PDF, email, verification, and surveillance dynamically handle ANY valid ICD code.
+  2. **Admin Outbreak Monitor Honest Labeling**:
+     - Updated tile label from "Reference disease profiles: 41" to "Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually".
+     - Preserved `caution` footnote: `"ML engine reference profiles only; not a patient or outbreak count"`.
+     - Trilingual translations in `en.js`, `si.js`, `ta.js` updated with exact key parity (811 keys each, 0 missing, 0 extra).
+  3. **Tests & Quality Gate**:
+     - Updated `admin-ml-status.test.jsx` (8/8 passed) and `outbreak-alert-actions.test.jsx` (5/5 passed).
+     - Verified translation parity across EN, SI, TA with zero mismatches.
+     - Offline test suite: **3,458 passed, 0 failed across 205 suites**.
+     - Client production build: **Exit code 0** (214.35 kB gzip main bundle).
+     - Protected file ledger: **15/15 accounted for and valid**.
+
 

@@ -116,4 +116,20 @@ describe('Outbreak Monitor Alert Action Buttons Lifecycle (Task B)', () => {
     expect(screen.getByRole('button', { name: 'False Alarm' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Resolve' })).toBeInTheDocument();
   });
+
+  test('renders symptom reference profiles coverage statement and honest 71,704 catalog denominator', async () => {
+    const alerts = [{
+      _id: 'alert-sample',
+      disease: 'Dengue',
+      location: 'Colombo',
+      severity: 'High',
+      status: 'Active',
+      feedbackStatus: 'confirmed',
+      createdAt: new Date().toISOString()
+    }];
+    await mountWithAlerts(alerts);
+    expect(screen.getByText('Symptom reference profiles')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument();
+    expect(screen.getByText(/Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually/)).toBeInTheDocument();
+  });
 });

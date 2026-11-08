@@ -29,7 +29,7 @@ const PulseRing = ({ color = 'bg-red-500' }) => (
   </span>
 );
 
-const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg, glowBg, delay = 0, pulse = false }) => (
+const StatTile = ({ icon: Icon, label, value, subtext, accentText, accentBorder, accentBg, glowBg, delay = 0, pulse = false }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4 }}
@@ -43,6 +43,7 @@ const StatTile = ({ icon: Icon, label, value, accentText, accentBorder, accentBg
       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{label}</h3>
     </div>
     <p className={`text-2xl font-black ${accentText} tracking-tight font-mono`}>{value}</p>
+    {subtext && <p className="text-xs text-slate-400 mt-2 font-medium leading-relaxed">{subtext}</p>}
   </motion.div>
 );
 
@@ -410,7 +411,7 @@ const OutbreakMonitor = () => {
           delay={0} pulse={modelStatus?.available === true || modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking'}
         />
         <StatTile
-          icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Reference disease profiles")}
+          icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Symptom reference profiles")}
           value={
             modelStatus?.available === true && Number.isFinite(modelStatus.dataPoints)
               ? modelStatus.dataPoints.toLocaleString()
@@ -418,6 +419,7 @@ const OutbreakMonitor = () => {
                 ? t("adminStatus.waking", "Service waking up, retry in 30-60s")
                 : t("adminStatus.notAvailable", "Not available")
           }
+          subtext={t("adminStatus.coverageStatement", "Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually")}
           accentText={modelStatus?.available === true ? "text-blue-400" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "text-amber-400" : "text-slate-400"}
           accentBg={modelStatus?.available === true ? "bg-blue-500/10" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "bg-amber-500/10" : "bg-slate-800/20"}
           accentBorder={modelStatus?.available === true ? "border-blue-500/20" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "border-amber-500/20" : "border-slate-700/30"}

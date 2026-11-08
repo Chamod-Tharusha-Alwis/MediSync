@@ -21,9 +21,10 @@ test.each(['en','si','ta'])('actual page has honest unavailable copy in %s; GET 
 });
 test('valid top-level envelope displays zero reference profiles, not fabricated clinical telemetry',async()=>{
   mount({available:true,status:'available',dataPoints:0,dataPointUnit:'reference disease profiles'});
-  await screen.findByText('Available');expect(screen.getByText('Reference disease profiles')).toBeInTheDocument();
+  await screen.findByText('Available');expect(screen.getByText('Symptom reference profiles')).toBeInTheDocument();
   expect(screen.getAllByText('0').length).toBeGreaterThan(0);
   expect(screen.getByRole('status')).toHaveTextContent('not a patient or outbreak count');
+  expect(screen.getByText(/Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually/)).toBeInTheDocument();
 });
 test.each([{}, {data:{dataPoints:10}},{available:true,dataPoints:10,dataPointUnit:'patients'}])('invalid envelope remains unavailable %#',async dto=>{
   mount(dto);await screen.findByRole('status');expect(screen.getAllByText('Not available').length).toBeGreaterThan(1);
