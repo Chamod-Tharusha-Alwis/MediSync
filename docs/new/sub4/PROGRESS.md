@@ -10,9 +10,7 @@
 | **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `fd71344` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `69ee0c3` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | DONE | `551b0ab` | 3,465 / 0 | PASS | PASS | 15/15 |
-| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
-| **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
-| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
+| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | DONE | `2b94d26` | 3,465 / 0 | PASS | PASS | 15/15 |
 | **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | NOT STARTED | - | - | - | - | - |
 
 ---
@@ -202,3 +200,27 @@
      - Offline test suite: **3,465 passed, 0 failed across 207 suites**.
      - Client production build: **Exit code 0** (214.59 kB gzip main bundle).
      - Protected file ledger: **15/15 accounted for and valid**.
+
+---
+
+### Phase D5 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Dynamic Generic Outbreak Surveillance Audit**:
+     - Audited `server/src/services/surveillanceService.js`: verified disease grouping is dynamic across all input cases (`(entity, diseaseId)` grouping) with zero hardcoded disease whitelists or switch statements.
+     - Verified `evaluateOutbreakCriteria({ cases, now, baselineDays, level })` applies statistical gates across any clinical condition or ICD code.
+     - Gates verified: Gate 1 (Case Count Floor $N \ge 5$), Gate 2 (Temporal Persistence: at least 2 consecutive elevated days), and Gate 3 (Statistical Deviation $z > 2.0$ against 30-day baseline).
+  2. **Cross-Chapter Multi-Disease Benchmark**:
+     - Created `server/tests/phaseD5GenericSurveillanceOffline.test.js` evaluating 12 distinct diseases across disparate ICD-10 chapters:
+       - 6 profiled conditions: Dengue (`A90`), Malaria (`B54`), Typhoid fever (`A01.0`), Myocardial infarction (`I21.9`), Urinary tract infection (`N39.0`), Pneumonia (`J18.9`).
+       - 6 non-profiled conditions: Cholera (`A00.9`), Measles (`B05.9`), Avian influenza (`J09.X2`), Celiac disease (`K90.0`), Multiple sclerosis (`G35`), Type 1 diabetes mellitus (`E10.9`).
+     - Verified that high case spikes ($N = 8 \ge 5$ across 2 consecutive elevated days with $z > 2.0$) successfully trigger active outbreak alerts for ALL 12 conditions.
+     - Verified Gate 1 sub-threshold suppression ($N = 3 < 5$) returns `triggered: false`, `reason: "CASE_FLOOR_NOT_MET"`.
+     - Verified Gate 2 single-day isolated spikes fail temporal persistence and return `triggered: false`.
+  3. **Quality Gates & Tests**:
+     - `npm --prefix server test tests/phaseD5GenericSurveillanceOffline.test.js`: 3/3 passed.
+     - `npm --prefix server test tests/surveillanceOutbreakDetector.test.js`: 15/15 passed (S1–S8 test scenarios green).
+     - Offline test suite: **3,465 passed, 0 failed across 207 suites**.
+     - Client production build: **Exit code 0** (214.59 kB gzip main bundle).
+     - Protected file ledger: **15/15 accounted for and valid**.
+
