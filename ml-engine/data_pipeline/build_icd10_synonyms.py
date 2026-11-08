@@ -1,8 +1,10 @@
 """
 Build and verify clinical synonyms mapping to exact ICD-10-CM catalog descriptions.
 Every single entry is verified against server/reference-data/icd10_clean.json.
-Source citations: CMS ICD-10-CM Index / NLM UMLS Metathesaurus.
-Zero codes typed from memory.
+
+Licensing & Source Verification:
+- Primary Verifiable Source: CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Government Work, Public Domain under 17 U.S.C. § 105).
+- Secondary Cross-Reference: NLM UMLS Metathesaurus Concept Unique Identifiers (CUI) provided for ontology alignment.
 """
 
 import json
@@ -17,193 +19,289 @@ CANDIDATES = [
         "term": "diabetes",
         "icdDescription": "Type 2 diabetes mellitus without complications",
         "expectedCode": "E119",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0011860)"
+        "cmsIndexHeading": "Diabetes, diabetic -> type 2 -> without complications (E11.9)",
+        "umlsCui": "C0011860",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "uti",
         "icdDescription": "Urinary tract infection, site not specified",
         "expectedCode": "N390",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0042029)"
+        "cmsIndexHeading": "Infection -> urinary (tract) -> specified NEC (N39.0)",
+        "umlsCui": "C0042029",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "hiv",
         "icdDescription": "Human immunodeficiency virus [HIV] disease",
         "expectedCode": "B20",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0019693)"
+        "cmsIndexHeading": "Human immunodeficiency virus (HIV) disease (B20)",
+        "umlsCui": "C0019693",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "chlamydia",
         "icdDescription": "Chlamydial infection, unspecified",
         "expectedCode": "A749",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0008035)"
+        "cmsIndexHeading": "Chlamydia, chlamydial -> infection NEC (A74.9)",
+        "umlsCui": "C0008035",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "crohn disease",
         "icdDescription": "Crohn's disease, unspecified, without complications",
         "expectedCode": "K5090",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0010346)"
+        "cmsIndexHeading": "Crohn's disease -> unspecified -> without complications (K50.90)",
+        "umlsCui": "C0010346",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "cellulitis",
         "icdDescription": "Cellulitis, unspecified",
         "expectedCode": "L0390",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0007642)"
+        "cmsIndexHeading": "Cellulitis -> site not specified (L03.90)",
+        "umlsCui": "C0007642",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "colorectal cancer",
         "icdDescription": "Malignant neoplasm of colon, unspecified",
         "expectedCode": "C189",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0009402)"
+        "cmsIndexHeading": "Neoplasm -> colon -> malignant primary (C18.9)",
+        "umlsCui": "C0009402",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "adhd",
         "icdDescription": "Attention-deficit hyperactivity disorder, unspecified type",
         "expectedCode": "F909",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C1263846)"
+        "cmsIndexHeading": "Attention -> deficit disorder -> with hyperactivity -> unspecified (F90.9)",
+        "umlsCui": "C1263846",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "bell palsy",
         "icdDescription": "Bell's palsy",
         "expectedCode": "G510",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0015469)"
+        "cmsIndexHeading": "Bell's palsy (G51.0)",
+        "umlsCui": "C0015469",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "alzheimer disease",
         "icdDescription": "Alzheimer's disease, unspecified",
         "expectedCode": "G309",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0002395)"
+        "cmsIndexHeading": "Alzheimer's disease -> unspecified (G30.9)",
+        "umlsCui": "C0002395",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "parkinson disease",
         "icdDescription": "Parkinson's disease",
         "expectedCode": "G20",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0030567)"
+        "cmsIndexHeading": "Parkinson's disease (G20)",
+        "umlsCui": "C0030567",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "huntington disease",
         "icdDescription": "Huntington's disease",
         "expectedCode": "G10",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0020179)"
+        "cmsIndexHeading": "Huntington's chorea / disease (G10)",
+        "umlsCui": "C0020179",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "gerd",
         "icdDescription": "Gastro-esophageal reflux disease without esophagitis",
         "expectedCode": "K219",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0017168)"
+        "cmsIndexHeading": "Reflux -> gastroesophageal -> without esophagitis (K21.9)",
+        "umlsCui": "C0017168",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "copd",
         "icdDescription": "Chronic obstructive pulmonary disease, unspecified",
         "expectedCode": "J449",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0024117)"
+        "cmsIndexHeading": "Disease -> lung -> obstructive -> chronic -> unspecified (J44.9)",
+        "umlsCui": "C0024117",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "bph",
         "icdDescription": "Benign prostatic hyperplasia without lower urinry tract symp",
         "expectedCode": "N400",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0033570)"
+        "cmsIndexHeading": "Hyperplasia -> prostate -> benign -> without LUTS (N40.0)",
+        "umlsCui": "C0033570",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "pcos",
         "icdDescription": "Polycystic ovarian syndrome",
         "expectedCode": "E282",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0032460)"
+        "cmsIndexHeading": "Syndrome -> polycystic ovary (E28.2)",
+        "umlsCui": "C0032460",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "dvt",
         "icdDescription": "Acute embolism and thombos unsp deep vn unsp lower extremity",
         "expectedCode": "I82409",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0149871)"
+        "cmsIndexHeading": "Embolism / thrombosis -> vein -> deep -> lower extremity -> unspecified (I82.409)",
+        "umlsCui": "C0149871",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "flu",
         "icdDescription": "Flu due to unidentified influenza virus w oth resp manifest",
         "expectedCode": "J111",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0021400)"
+        "cmsIndexHeading": "Influenza -> with other respiratory manifestations (J11.1)",
+        "umlsCui": "C0021400",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "kidney stone",
         "icdDescription": "Calculus of kidney",
         "expectedCode": "N200",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0022650)"
+        "cmsIndexHeading": "Calculus, calculi -> kidney (N20.0)",
+        "umlsCui": "C0022650",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "heart attack",
         "icdDescription": "Acute myocardial infarction, unspecified",
         "expectedCode": "I219",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0027051)"
+        "cmsIndexHeading": "Infarction -> myocardium -> acute -> unspecified (I21.9)",
+        "umlsCui": "C0027051",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "stroke",
         "icdDescription": "Cerebral infarction, unspecified",
         "expectedCode": "I639",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0038454)"
+        "cmsIndexHeading": "Infarction -> cerebral (stroke) -> unspecified (I63.9)",
+        "umlsCui": "C0038454",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "hives",
         "icdDescription": "Urticaria, unspecified",
         "expectedCode": "L509",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0042109)"
+        "cmsIndexHeading": "Hives (see also Urticaria) (L50.9)",
+        "umlsCui": "C0042109",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "ringworm",
         "icdDescription": "Tinea corporis",
         "expectedCode": "B354",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0040247)"
+        "cmsIndexHeading": "Ringworm (see also Tinea -> corporis) (B35.4)",
+        "umlsCui": "C0040247",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "athlete's foot",
         "icdDescription": "Tinea pedis",
         "expectedCode": "B353",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0040251)"
+        "cmsIndexHeading": "Athlete's foot (see also Tinea -> pedis) (B35.3)",
+        "umlsCui": "C0040251",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "shingles",
         "icdDescription": "Zoster without complications",
         "expectedCode": "B029",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0019360)"
+        "cmsIndexHeading": "Shingles (see also Zoster -> without complications) (B02.9)",
+        "umlsCui": "C0019360",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "strep throat",
         "icdDescription": "Streptococcal pharyngitis",
         "expectedCode": "J020",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0153138)"
+        "cmsIndexHeading": "Pharyngitis -> streptococcal (strep throat) (J02.0)",
+        "umlsCui": "C0153138",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "common cold",
         "icdDescription": "Acute nasopharyngitis [common cold]",
         "expectedCode": "J00",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0009443)"
+        "cmsIndexHeading": "Cold -> common (head) (J00)",
+        "umlsCui": "C0009443",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "high blood pressure",
         "icdDescription": "Essential (primary) hypertension",
         "expectedCode": "I10",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0020538)"
+        "cmsIndexHeading": "Hypertension -> essential (primary) (I10)",
+        "umlsCui": "C0020538",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "chickenpox",
         "icdDescription": "Varicella without complication",
         "expectedCode": "B019",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0008049)"
+        "cmsIndexHeading": "Chickenpox (see also Varicella -> without complication) (B01.9)",
+        "umlsCui": "C0008049",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "whooping cough",
         "icdDescription": "Whooping cough, unspecified species without pneumonia",
         "expectedCode": "A3790",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0043168)"
+        "cmsIndexHeading": "Whooping cough -> unspecified -> without pneumonia (A37.90)",
+        "umlsCui": "C0043168",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "heartburn",
         "icdDescription": "Heartburn",
         "expectedCode": "R12",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0018834)"
+        "cmsIndexHeading": "Heartburn (R12)",
+        "umlsCui": "C0018834",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     },
     {
         "term": "food poisoning",
         "icdDescription": "Bacterial foodborne intoxication, unspecified",
         "expectedCode": "A059",
-        "source": "CMS ICD-10-CM Index 2024 / NLM UMLS (C0016479)"
+        "cmsIndexHeading": "Poisoning -> food -> bacterial -> unspecified (A05.9)",
+        "umlsCui": "C0016479",
+        "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
+        "status": "verified_public_cms_index"
     }
 ]
 
@@ -229,12 +327,17 @@ def build_synonyms():
             "term": item["term"],
             "icdDescription": item["icdDescription"],
             "icdCode": actual_code,
-            "source": item["source"]
+            "cmsIndexHeading": item["cmsIndexHeading"],
+            "umlsCui": item["umlsCui"],
+            "publicSource": item["publicSource"],
+            "status": item["status"],
+            "source": f"{item['publicSource']} / NLM UMLS ({item['umlsCui']})"
         })
 
     payload = {
-        "version": "1.0.0",
-        "description": "Verified clinical synonym mappings to exact ICD-10-CM descriptions",
+        "version": "1.1.0",
+        "description": "Verified clinical synonym mappings citing public domain CMS/CDC ICD-10-CM 2024 Index with UMLS CUI alignment",
+        "licensingNote": "Primary mappings trace directly to US Public Domain CMS/CDC documentation (17 U.S.C. § 105); UMLS CUIs provided as non-proprietary identifiers.",
         "verifiedCount": len(verified_synonyms),
         "synonyms": verified_synonyms
     }

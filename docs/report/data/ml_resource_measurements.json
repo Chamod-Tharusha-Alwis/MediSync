@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "timestamp": "2026-11-08T20:17:37Z",
+    "pythonVersion": "3.14.6",
+    "platform": "win32",
+    "pid": 13644,
+    "clinicalValidation": "not_established",
+    "methodology": "True process Resident Set Size (RSS) via psutil.Process().memory_info().rss"
+  },
+  "memoryRSS": {
+    "unit": "MB",
+    "interpreterStartMB": 20.75,
+    "afterTier1AndTier2LoadMB": 195.91,
+    "after100PredictionsMB": 196.82,
+    "deltaLoadMB": 175.16,
+    "deltaInferenceMB": 0.91,
+    "renderFreeLimitMB": 512,
+    "utilizationOf512MBPercent": 38.44
+  },
+  "inferenceLatency": {
+    "samples": 200,
+    "unit": "milliseconds",
+    "meanMs": 0.77,
+    "p50Ms": 0.64,
+    "p90Ms": 1.203,
+    "p95Ms": 1.24,
+    "minMs": 0.569,
+    "maxMs": 1.723
+  }
+}

@@ -42,7 +42,7 @@ graph TD
   - **Tiered Symptom Matcher V2**:
     - **Tier 1 (Curated)**: 41 reference symptom profiles from `dataset.csv`. Takes absolute precedence when top confidence $\ge 40\%$, reserving Sri Lankan priority diseases (Dengue, Malaria, Typhoid, etc.) strictly to vetted profiles.
     - **Tier 2 (Sourced Knowledge Base)**: 174 mapped clinical conditions with empirical edge probabilities derived from CDC NAMCS outpatient survey data (`disease_symptom_kb.v1.json`), evaluated using probability-weighted sparse TF-IDF retrieval.
-    - **Peak Inference Memory**: Benchmarked at ~0.22 MB RSS, well below the 200 MB internal budget and 512 MB Render Free tier limit.
+    - **Peak Inference Memory**: Process RSS measured via `psutil` at ~196.8 MB after Tier 1 + Tier 2 load and 100 predictions (38.4% utilization of 512 MB Render Free container ceiling; traced Python heap allocation delta ~0.22 MB). Latency: p50 = 0.64 ms, p95 = 1.24 ms over 200 queries.
     - **Clinical Cardinal Symptom Guards**: Specific clinical rules (e.g. step-ladder fever check for enteric fever/typhoid) discount deceptive symptom co-occurrences.
   - Reference ICD-10 catalog containing 71,704 validated diagnostic concepts accessible for manual physician diagnosis and patient records.
   - Cold-start resilience handling with graceful timeout contracts (~50s cold start accepted on Render Free).

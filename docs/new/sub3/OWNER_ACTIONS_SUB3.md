@@ -1,5 +1,8 @@
 # MediSync — Owner Production Actions & Runbook (Sub-Project 3)
 
+> [!NOTE]
+> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
+
 This document contains instructions and exact copy-pasteable commands for the repository owner to execute in production environments (`medisync_prod`, Render, MongoDB Atlas). The automated AI agent operates strictly in offline/in-memory mode and never writes to or alters production infrastructure.
 
 ---

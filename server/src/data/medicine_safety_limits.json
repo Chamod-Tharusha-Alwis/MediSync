@@ -15,7 +15,8 @@
       "source": "British National Formulary (BNF 86) / WHO Model Formulary 2008 (Section 2.1 Non-opioids)",
       "retrievedAt": "2026-11-08T00:00:00.000Z",
       "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
-      "status": "verified"
+      "citationStatus": "unverified_owner_must_check",
+      "status": "unverified_owner_must_check"
     },
     {
       "drug": "Amoxicillin",
@@ -27,7 +28,8 @@
       "source": "WHO Model Formulary 2008 (Section 6.2.1 Beta-lactam medicines) / BNF 86",
       "retrievedAt": "2026-11-08T00:00:00.000Z",
       "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
-      "status": "verified"
+      "citationStatus": "unverified_owner_must_check",
+      "status": "unverified_owner_must_check"
     },
     {
       "drug": "Ibuprofen",
@@ -39,7 +41,8 @@
       "source": "WHO Model Formulary 2008 (Section 2.1) / BNF 86",
       "retrievedAt": "2026-11-08T00:00:00.000Z",
       "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
-      "status": "verified"
+      "citationStatus": "unverified_owner_must_check",
+      "status": "unverified_owner_must_check"
     }
   ]
 }
