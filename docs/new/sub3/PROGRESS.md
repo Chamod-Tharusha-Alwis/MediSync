@@ -8,7 +8,7 @@
 | **P1** | Medicine Safety Rules | `feat/sub3-p1` | DONE | `8930ef9` | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P2** | QR-verified PDF + history gate | `feat/sub3-p2` | DONE | `2797b82` | 3,454 / 0 | PASS | PASS | 15/15 |
 | **P3** | Platform master plan completion | `feat/sub3-p3` | DONE | `da0fd14` | 3,454 / 0 | PASS | PASS | 15/15 |
-| **P4** | Hardening & Release Readiness | `feat/sub3-p4` | DONE | Pending P4 Commit | 3,454 / 0 | PASS | PASS | 15/15 |
+| **P4** | Hardening & Release Readiness | `feat/sub3-p4` | DONE | `ae35071` | 3,454 / 0 | PASS | PASS | 15/15 |
 
 ---
 
