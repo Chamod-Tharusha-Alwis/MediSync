@@ -68,9 +68,12 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
     const model = data?.models?.diseasePrediction;
     failedFields = failedStatusFields(data);
     if (failedFields.length) throw Error('INVALID_STATUS_RESPONSE');
-    return { status: 'available', available: true, availabilityState: 'available', dataPoints: data.dataPoints,
+    return {
+      status: 'available', available: true, availabilityState: 'available', dataPoints: data.dataPoints,
       dataPointUnit: 'reference disease profiles', modelType: model,
-      clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
+      models: data.models || { diseasePrediction: model, outbreakForecasting: 'unavailable' },
+      clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null
+    };
   } catch (error) {
     // Observe the adapter boundary: a response interceptor can throw a plain
     // error with no request/response attached even after a reply was received.
@@ -90,10 +93,27 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = fals
       log(`[AdminMlStatus] category=bad_response reason=${reason} upstreamStatus=${upstreamStatus} failedFields=${failedFields.length ? failedFields.join(',') : 'none'}`);
     } else log(`[AdminMlStatus] category=${category}`);
     const isWaking = ['timeout', 'connection'].includes(category) || [502, 503, 504].includes(upstreamStatus);
-    const availabilityState = isWaking ? 'waking' : 'down';
-    return { status: 'unavailable', available: false, availabilityState, category, dataPoints: null,
-      dataPointUnit: 'reference disease profiles', modelType: null,
-      clinicalValidation: 'not established', forecastAvailable: false, lastTrained: null, nextRun: null };
+    const availabilityState = isWaking ? 'waking' : (category === 'config' ? 'unconfigured' : 'down');
+    return {
+      status: 'unavailable',
+      available: false,
+      availabilityState,
+      category,
+      message: isWaking
+        ? 'ML service is starting up (cold start can take 60-90s on free tier)'
+        : (category === 'config' ? 'ML service URL is unconfigured' : 'ML service is currently unavailable'),
+      dataPoints: null,
+      dataPointUnit: 'reference disease profiles',
+      modelType: null,
+      models: {
+        diseasePrediction: isWaking ? 'warming_up' : 'unavailable',
+        outbreakForecasting: isWaking ? 'warming_up' : 'unavailable'
+      },
+      clinicalValidation: 'not established',
+      forecastAvailable: false,
+      lastTrained: null,
+      nextRun: null
+    };
   }
 }
 
@@ -113,7 +133,7 @@ async function probeAdminMlStatusWithRetry({
   }
 
   // Non-blocking warm-up ping to /health if ping helper is provided
-  if (typeof ping === 'function') {
+  if (typeof ping === 'function' && baseUrl) {
     try {
       const url = new URL(baseUrl);
       const healthUrl = `${url.origin}/health`;

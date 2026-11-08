@@ -540,9 +540,23 @@ const Overview = ({ stats, geo, activeAlerts }) => {
   const [systemHealth, setSystemHealth] = useState(null);
 
   useEffect(() => {
-    api.get('/admin/system-health')
-      .then(res => setSystemHealth(res.data?.data || null))
-      .catch(() => setSystemHealth(null));
+    let timer = null;
+    let count = 0;
+    const fetchHealth = () => {
+      api.get('/admin/system-health')
+        .then(res => {
+          const data = res.data?.data || null;
+          setSystemHealth(data);
+          const isMlWaking = data?.mlEngine?.status === 'waking_up' || data?.mlEngine?.availability === 'waking_up' || data?.mlEngine?.availability === 'waking';
+          if (isMlWaking && count < 6) {
+            count += 1;
+            timer = setTimeout(fetchHealth, 10000);
+          }
+        })
+        .catch(() => setSystemHealth(null));
+    };
+    fetchHealth();
+    return () => { if (timer) clearTimeout(timer); };
   }, []);
 
   if (!stats) return <section role="alert"><h2>Dashboard metrics unavailable</h2><p>Metrics could not be verified. No counts are shown.</p></section>;
@@ -562,7 +576,7 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         <div>
           <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider">{t('outbreak.surveillanceTitle', 'Active System Outbreak Alert')}</h3>
           <p className="text-slate-200 text-xs font-semibold mt-1">{activeAlerts[0].message} (Z-Score: {activeAlerts[0].zScore?.toFixed?.(2) || 'N/A'})</p>
-            {activeAlerts[0].syntheticLabel && (
+            {(activeAlerts[0].isSimulation || activeAlerts[0].isDemoData || activeAlerts[0].isSimulatedDemo) && activeAlerts[0].syntheticLabel && (
               <span className="inline-block mt-1 px-2 py-0.5 rounded text-[11px] bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold uppercase tracking-wider">
                 {activeAlerts[0].syntheticLabel}
               </span>
@@ -720,8 +734,8 @@ const Overview = ({ stats, geo, activeAlerts }) => {
           },
           {
             label: 'ML Engine Intelligence',
-            desc: (systemHealth?.mlEngine?.status === 'available' || systemHealth?.mlEngine?.status === 'operational' || systemHealth?.mlEngine?.availability === 'available') ? 'Neural service online' : 'Analytical outbreak engine',
-            status: (systemHealth?.mlEngine?.status === 'available' || systemHealth?.mlEngine?.status === 'operational' || systemHealth?.mlEngine?.availability === 'available') ? 'Available' : 'Not verified',
+            desc: (systemHealth?.mlEngine?.status === 'available' || systemHealth?.mlEngine?.status === 'operational' || systemHealth?.mlEngine?.availability === 'available') ? 'Neural service online' : (systemHealth?.mlEngine?.status === 'waking_up' || systemHealth?.mlEngine?.availability === 'waking_up' || systemHealth?.mlEngine?.availability === 'waking' || systemHealth?.mlEngine?.status === 'waking') ? 'Waking up (cold start)' : 'Analytical outbreak engine',
+            status: (systemHealth?.mlEngine?.status === 'available' || systemHealth?.mlEngine?.status === 'operational' || systemHealth?.mlEngine?.availability === 'available') ? 'Available' : (systemHealth?.mlEngine?.status === 'waking_up' || systemHealth?.mlEngine?.availability === 'waking_up' || systemHealth?.mlEngine?.availability === 'waking' || systemHealth?.mlEngine?.status === 'waking') ? 'Starting up...' : 'Not verified',
             icon: ActivitySquare
           },
           {

@@ -1,6 +1,6 @@
 # MediSync — Final Acceptance Verification Matrix
 
-**Release Candidate**: `feat/phase2-polish-and-cleanup`  
+**Release Candidate**: `fix/post-merge-sub2` (base `main` @ `da438aa`)  
 **Target Environment**: Production (`https://medisync.chamodtharusha.com.lk`)  
 **Date of Verification**: 2026-11-08  
 **Overall Verdict**: READY FOR OWNER MERGE & DEPLOYMENT  
@@ -10,19 +10,19 @@
 ## 1. Offline Regression Suite Matrix
 
 Command: `node scripts/run_offline_tests.js`  
-Result: **3,445 Passed, 0 Failed, 0 Skipped**  
+Result: **3,450 Passed, 0 Failed, 0 Skipped**  
 Integrity: `sourceFrozen: true`, `protectedAccountedFor: 15/15`  
 
 | Profile | Test Runner | Suites | Passed | Failed | Skipped | Status | Details |
 |---|---|:---:|:---:|:---:|:---:|:---:|---|
-| **backend** | Jest (Clinical Offline) | 122 | 2,625 | 0 | 0 | PASS (offline in-memory) | Auth, consultations, lab routes, PDF export gates, role policies, strict z>2.0 detector, seeder namespaces, demo batch removal |
-| **client** | Jest / React Testing Lib | 75 | 656 | 0 | 0 | PASS (offline in-memory) | Component rendering, trilingual i18n parity, route access, session monitor, multi-level surveillance selectors |
+| **backend** | Jest (Clinical Offline) | 122 | 2,626 | 0 | 0 | PASS (offline in-memory) | Auth, consultations, lab routes, PDF export gates, role policies, strict z>2.0 detector, seeder namespaces, demo batch removal |
+| **client** | Jest / React Testing Lib | 76 | 660 | 0 | 0 | PASS (offline in-memory) | Component rendering, trilingual i18n parity, route access, session monitor, multi-level surveillance selectors |
 | **email-pdf** | Custom Runner | 2 | 31 | 0 | 0 | PASS (offline in-memory) | Resend/Brevo fallback contracts, WinAnsi font replacement, PDF generation buffers, consultation summary email service |
 | **ml-scoring** | Python PyTest | 1 | 40 | 0 | 0 | PASS (offline in-memory) | TF-IDF disease similarity bounds, symptom normalization, inference robustness |
 | **ml-flask** | Flask Test Client | 1 | 31 | 0 | 0 | PASS (offline in-memory) | Endpoint response envelopes, cold-start timeouts, catalog ingestion boundaries |
 | **root** | Node Harness | 1 | 55 | 0 | 0 | PASS (offline in-memory) | Seed validation, key ring policies, database admission contracts |
 | **ml-status-contract** | Diagnostic Runner | 1 | 7 | 0 | 0 | PASS (offline in-memory) | Verification of `clinicalValidation: not_established` contract & payload specs |
-| **TOTAL** | **Multi-Profile Gate** | **203** | **3,445** | **0** | **0** | **PASS (offline in-memory)** | **Full pass with zero defects, zero skipped suites** |
+| **TOTAL** | **Multi-Profile Gate** | **204** | **3,450** | **0** | **0** | **PASS (offline in-memory)** | **Full pass with zero defects, zero skipped suites** |
 
 ---
 

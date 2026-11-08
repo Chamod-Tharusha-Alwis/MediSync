@@ -60,15 +60,32 @@ exports.verifyAlertStatus = async (req, res) => {
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
 
     const service=require('../services/surveillanceService');
-    if(!['admin','super_admin','superadmin'].includes(req.user?.role))return res.status(403).json({error:'Administrator review required.'});
+    if(!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role))return res.status(403).json({error:'Administrator review required.'});
     if(service.synthetic(alert) && !await service.canReviewSimulation(req.user))return res.status(403).json({error:'Synthetic reviewer required.'});
     if(alert.surveillancePolicy!==service.POLICY)return res.status(409).json({error:'Legacy provenance review required.'});
+    if (['Resolved', 'Dismissed'].includes(alert.status)) {
+      return res.status(409).json({ error: 'Alert is already in a terminal state.' });
+    }
+    const oldFeedback = alert.feedbackStatus;
+    const oldStatus = alert.status;
     alert.feedbackStatus = feedbackStatus;
     // Auto-resolve if marked as false_positive
     if (feedbackStatus === 'false_positive') {
       alert.status = 'Resolved';
     }
     await alert.save();
+
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        actorId: String(req.user?.id || req.user?._id || 'unknown'),
+        actorRole: req.user?.role || 'admin',
+        action: feedbackStatus === 'confirmed' ? 'ALERT_CONFIRMED' : 'ALERT_FALSE_ALARM',
+        accessedNic: String(alert._id),
+        deviceModel: 'status:' + oldStatus + '->' + alert.status + '|feedback:' + oldFeedback + '->' + feedbackStatus,
+        timestamp: new Date()
+      });
+    } catch (_) {}
 
     // Do not train a live model from simulation or unvalidated review feedback.
     res.json({ message: 'Alert feedback recorded successfully', data: alert });

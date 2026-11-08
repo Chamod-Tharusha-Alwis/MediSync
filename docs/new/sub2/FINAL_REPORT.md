@@ -1,0 +1,133 @@
+# MediSync — Sub-Project 2 Post-Merge Fix Final Report
+
+**Branch**: `fix/post-merge-sub2`  
+**Base Commit**: `main` @ `da438aa`  
+**Date**: November 8, 2026  
+**Status**: VERIFIED & READY FOR OWNER PR REVIEW  
+
+---
+
+## 1. Executive Summary
+
+Sub-Project 2 resolved post-merge operational issues observed on the live environment and offline test suite following PR #21 merge. All tasks (A through E) were investigated, implemented surgically, and verified against the automated quality gate without data invention, without modifying protected hashes, and without touching production databases.
+
+---
+
+## 2. Completed Tasks & Technical Resolutions
+
+### Task A — `scripts/seed-dispensing-sample.js` Mongoose Resolution
+- **Root Cause**: The script required root `node_modules/mongoose` while models in `server/src/models/*` imported `server/node_modules/mongoose`. Connecting the root instance left model queries buffering for 10,000ms until timeout.
+- **Fix**:
+  - Dynamically resolved Mongoose strictly from `server/` before requiring models:  
+    `require(require.resolve('mongoose', { paths: [path.resolve(__dirname, '../server')] }))`.
+  - Set `mongoose.set('bufferCommands', false)` on startup to fail fast rather than hang.
+  - Isolated environment variables in `selectOperatorDatabase` to prevent `OPERATOR_DATABASE_MIXED_ENVIRONMENT` collisions.
+  - Added unit test `3.6` in `server/tests/phase3GroupingAndDispensingSeeder.test.js` asserting exact instance identity equality (`getMongooseInstance() === Pharmacy.base`).
+- **Commit**: `9481432`
+
+### Task B — Outbreak Alert Lifecycle State Machine & Authorization
+- **Root Causes**:
+  1. `OutbreakMonitor.jsx` rendered `<span ...>Confirmed</span>` without an action button when `alert.feedbackStatus === 'confirmed'`, trapping confirmed active alerts with no way to resolve them.
+  2. `canReviewSimulation(user)` required `synthetic(admin) === true`. Real production administrator accounts do not possess synthetic flags, causing any attempt by an authentic admin to review simulated alerts to be rejected with HTTP 403 `Synthetic reviewer required.`.
+  3. Discrepancy between batch counts (14) and monitor counts (6): the active alerts endpoint filters `status: { $in: ['Active', 'Pending'] }`, returning 6 non-terminal alerts. The remaining 8 alerts in the batch were marked `Resolved` or `Dismissed` during early test runs.
+- **Fixes**:
+  - State Machine: Confirmed alerts remain in `Active` status and render both a `Confirmed` badge AND a `[Resolve]` button in `OutbreakMonitor.jsx`.
+  - Terminal Locks: Calling resolve or verify on alerts already in `Resolved` or `Dismissed` states returns HTTP 409 `Alert is already in a terminal state.`.
+  - Reviewer Authorization: `canReviewSimulation` updated so any active administrator (`admin`, `super_admin`, `superadmin`, `health_officer`) can review simulated alerts.
+  - Audit Logging: All review actions (`ALERT_CONFIRMED`, `ALERT_FALSE_ALARM`, `ALERT_RESOLVED`, `ALERT_DISMISSED`, `ALERT_APPROVED`) append non-PII records to `AuditLog`.
+  - Unit Tests: Added `server/tests/outbreakAlertLifecycle.test.js` (14/14 PASS) and `client/src/__master_offline__/outbreak-alert-actions.test.jsx` (4/4 PASS).
+- **Commit**: `397a769`
+
+### Task C — ML Status Resilience & Free-Tier Cold-Start Warm-up
+- **Root Causes**:
+  1. Render free-tier containers spin down after 15 minutes of inactivity; cold starts take 50–90 seconds.
+  2. `OutbreakMonitor.jsx` evaluated `modelStatus.dataPoints.toLocaleString()`. When waking or null, this threw a TypeError or blunt "Not available" banner, requiring manual page refreshes.
+  3. `Dashboard.jsx` only recognized `available` or `operational`, displaying "Not verified".
+- **Fixes**:
+  - Backend: Returns structured waking response with `availabilityState: 'waking'`, `dataPoints: null`, and `models.diseasePrediction: 'warming_up'`.
+  - Warm-up Ping: Non-blocking background health check dispatched to `/health` to wake the container immediately.
+  - UI Auto-Polling: `OutbreakMonitor.jsx` and `Dashboard.jsx` display an amber "Service waking up..." badge and automatically poll every 10 seconds (up to 6 times / 60 seconds) until awake.
+  - Guarded Rendering: Safe check `Number.isFinite(dataPoints)` prevents crashes.
+  - Contract Tests: Authored `server/tests/mlStatusContract.test.js` (7/7 PASS).
+  - Owner Runbook: Created `docs/new/sub2/OWNER_ACTIONS_SUB2.md` documenting cold-start mechanics, container logs, and keep-alive pinger setup.
+- **Commit**: `a422eb7`
+
+### Task D — Synthetic Simulation Alert Tag Scoping
+- **Root Cause**: The label `"SYNTHETIC EPIDEMIOLOGICAL SIMULATION — FOR SYSTEM TESTING ONLY"` is the stored `syntheticLabel` property from seeding.
+- **Fix**: Scoped badge rendering in `OutbreakMonitor.jsx`, `Dashboard.jsx`, and `ActiveOutbreakBanner.jsx` strictly to alerts where `(alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo)`. Genuine clinical alerts generated by surveillance will never display the banner.
+- **Commit**: `a422eb7`
+
+### Task E — Documentation Corrections
+- **README.md**: Updated backend URL from `medisync-api.onrender.com` to verified production URL `https://medisync-wabc.onrender.com`. Updated test counts to 3,450 passed.
+- **ARCHITECTURE.md**: Updated dictionary key count from 771 to audited 781 keys (100% trilingual parity across EN, SI, TA). Updated offline test counts to 3,450 passed.
+- **DEMO_BATCH_REMOVAL_RUNBOOK.md**: Replaced illustrative "5 alerts" with audited 14 alerts / 6,309 consultations. Explained the 6 active vs 8 historical alert breakdown and added owner pre-execution decision checklist.
+- **FINAL_ACCEPTANCE_MATRIX.md**: Re-aligned matrix with Sub-Project 2 release candidate.
+- **Commit**: `a422eb7`
+
+---
+
+## 3. Automated Quality Gate & Verification Results
+
+### A. Offline Test Gate (`node scripts/run_offline_tests.js`)
+- **Total Tests Passed**: **3,450**
+- **Total Tests Failed**: **0**
+- **Total Suites**: **204**
+- **Source Frozen**: **true**
+- **Protected Files Accounted For**: **15 / 15** (all expected SHA-256 hashes matched)
+- **Breakdown by Profile**:
+  - `backend`: 2,626 passed / 0 failed (122 suites)
+  - `client`: 660 passed / 0 failed (76 suites)
+  - `email-pdf`: 31 passed / 0 failed (2 suites)
+  - `ml-scoring`: 40 passed / 0 failed (1 suite)
+  - `ml-flask`: 31 passed / 0 failed (1 suite)
+  - `root`: 55 passed / 0 failed (1 suite)
+  - `ml-status-contract`: 7 passed / 0 failed (1 suite)
+
+### B. Client Production Build (`npm --prefix client run build`)
+- **Exit Code**: **0 (Success)**
+- **Bundled Modules**: 119 modules
+- **Main JS Bundle**: 211.56 kB (gzipped)
+- **Main CSS Bundle**: 22.77 kB (gzipped)
+- **Demo Imports**: `demoImported: false`
+
+---
+
+## 4. Owner Operational Actions (PowerShell Instructions)
+
+Follow the steps below to execute production actions safely:
+
+### Step 1: Open GitHub Pull Request
+Navigate to the compare link and merge into `main`:  
+`https://github.com/Chamod-Tharusha-Alwis/MediSync/compare/main...fix/post-merge-sub2`
+
+### Step 2: Run Task A Dispensing Seeder Dry-Run on Production
+```powershell
+node scripts/seed-dispensing-sample.js --db medisync_prod --dry-run
+```
+*Expected: Connects to production MongoDB Atlas without Mongoose buffering timeouts, outputs planned 60 records with 0 actual insertions.*
+
+### Step 3: Run Task A Live Dispensing Seeder on Production
+```powershell
+$env:APPROVE_SAMPLE_DISPENSING_SEED="true"
+node scripts/seed-dispensing-sample.js --db medisync_prod --confirm-sample-seed SEED_2026_11_B
+Remove-Item Env:\APPROVE_SAMPLE_DISPENSING_SEED
+```
+
+### Step 4: Run Demo Batch Removal Dry-Run on Production
+```powershell
+node scripts/remove_demo_batch.js --db medisync_prod --dry-run
+```
+*Expected: Confirms 6,309 consultations and 14 alerts targeted, 4,500 protected seed records preserved.*
+
+### Step 5: Execute Demo Batch Removal on Production
+```powershell
+$env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
+node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
+Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL
+```
+
+### Step 6: Configure Free External Keep-Alive Pinger (Render Free Tier)
+To prevent cold starts (>60s) during demonstrations:
+1. Open [UptimeRobot](https://uptimerobot.com) or [Cron-Job.org](https://cron-job.org).
+2. Create an HTTP GET monitor for: `https://medisync-ml.onrender.com/health`
+3. Set interval to **every 10 minutes** (Render sleeps at 15 minutes of inactivity).

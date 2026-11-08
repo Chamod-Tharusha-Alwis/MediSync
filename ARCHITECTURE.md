@@ -21,7 +21,7 @@ graph TD
 - **Hosting**: Vercel (`https://medisync.chamodtharusha.com.lk`).
 - **Features**:
   - Role-specific portals: Patient, Doctor, Pharmacy Staff, Hospital Staff, Administrator.
-  - Native trilingual localization: English (`en`), Sinhala (`si`), and Tamil (`ta`) with 100% key parity across 771 dictionary entries.
+  - Native trilingual localization: English (`en`), Sinhala (`si`), and Tamil (`ta`) with 100% key parity across 781 dictionary entries.
   - Responsive design adapting across 320px (compact mobile), 375px (standard mobile), and 1440px (desktop) viewports.
   - Strict UI typography enforcement: readable font floors (11px+ badges, 12px+ copy).
 
@@ -117,10 +117,10 @@ The PDF export subsystem (`server/src/utils/pdfGenerator.js`) generates verifiab
 
 MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. The suite operates entirely offline, using in-memory databases and loopback mock adapters:
 
-- **Backend Jest Suite**: 2,625 tests across 122 suites.
-- **Client React Suite**: 656 tests across 75 suites.
+- **Backend Jest Suite**: 2,626 tests across 122 suites.
+- **Client React Suite**: 660 tests across 76 suites.
 - **Email & PDF Harness**: 31 tests across 2 suites.
 - **ML Scoring & Flask Models**: 71 tests (40 scoring + 31 Flask API).
 - **Root Security, Contracts & ML Resilience**: 62 tests (55 root + 7 ML status contracts).
-- **Total Offline Verification**: **3,445 passed, 0 failed**.
+- **Total Offline Verification**: **3,450 passed, 0 failed**.
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.

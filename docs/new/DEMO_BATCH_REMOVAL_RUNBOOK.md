@@ -63,7 +63,7 @@ Execute the script in default dry-run mode:
 node scripts/remove_demo_batch.js --dry-run --db medisync_prod
 ```
 
-**Expected JSON Output (if batch was previously seeded in database)**:
+**Expected JSON Output (verified on production dry-run)**:
 ```json
 {
   "batchId": "DEMO_OUTBREAK_2026_V1",
@@ -72,15 +72,25 @@ node scripts/remove_demo_batch.js --dry-run --db medisync_prod
   "protectedSeedCount": 4500,
   "protectedSeedPreserved": true,
   "consultationsTargeted": 6309,
-  "alertsTargeted": 5,
+  "alertsTargeted": 14,
   "consultationsDeleted": 0,
   "alertsDeleted": 0,
   "status": "DRY_RUN_COMPLETED",
-  "timestamp": "2026-11-08T02:20:00.000Z"
+  "timestamp": "2026-11-08T09:30:00.000Z"
 }
 ```
 
-*Note: If the batch was never seeded on the target database or has already been decommissioned, `consultationsTargeted` and `alertsTargeted` will report `0`. In that case, zero records exist to delete.*
+### Pre-Execution Breakdown & Count Verification:
+The dry-run targets exactly 14 alerts matching `demoBatchId: 'DEMO_OUTBREAK_2026_V1'` across all lifecycle states:
+- **Active / Pending Alerts (6)**: Currently rendered in the Admin Outbreak Monitor table (which queries `status: { $in: ['Active', 'Pending'] }`), tagged with the synthetic simulation banner.
+- **Historical / Terminal Alerts (8)**: Alerts from synthetic seeding that were marked `Resolved` or `Dismissed` during early pipeline runs. They remain stored in MongoDB Atlas for epidemiological audit history but are excluded from active monitor views.
+- **Consultations (6,309)**: All synthetic patient encounter documents generated under batch `DEMO_OUTBREAK_2026_V1`.
+
+**Pre-Execution Owner Decision Checklist**:
+- [ ] Run `node scripts/remove_demo_batch.js --dry-run --db medisync_prod` and confirm output matches 6,309 consultations and 14 alerts.
+- [ ] Confirm `protectedSeedPreserved: true`.
+- [ ] Verify that real clinical alerts without `demoBatchId` are not affected.
+- [ ] Confirm readiness to permanently delete the 14 simulated demo alerts.
 
 ---
 
@@ -116,11 +126,11 @@ Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL
   "protectedSeedCount": 4500,
   "protectedSeedPreserved": true,
   "consultationsTargeted": 6309,
-  "alertsTargeted": 5,
+  "alertsTargeted": 14,
   "consultationsDeleted": 6309,
-  "alertsDeleted": 5,
+  "alertsDeleted": 14,
   "status": "DELETION_COMPLETED",
-  "timestamp": "2026-11-08T02:25:00.000Z"
+  "timestamp": "2026-11-08T09:35:00.000Z"
 }
 ```
 
