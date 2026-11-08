@@ -35,6 +35,16 @@ describe('Guarded Demo Batch Removal (remove_demo_batch.js)', () => {
       expect(parsed.dryRun).toBe(false);
       expect(parsed.confirmBatch).toBe(TARGET_BATCH);
     });
+
+    test('supports --help and -h flags', () => {
+      const helpParsed = parseCliArgs(['--help']);
+      expect(helpParsed.isHelp).toBe(true);
+      expect(helpParsed.helpText).toContain('Usage: node scripts/remove_demo_batch.js');
+      expect(helpParsed.helpText).toContain('--confirm-demo-removal');
+
+      const shortHelp = parseCliArgs(['-h']);
+      expect(shortHelp.isHelp).toBe(true);
+    });
   });
 
   describe('Admission Verification & Fail-Closed Guard', () => {

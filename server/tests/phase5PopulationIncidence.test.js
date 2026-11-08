@@ -11,7 +11,8 @@ describe('Phase 5 — Population Data & Incidence per 100k Calculation', () => {
     test('districtPopulation2024.json contains all 25 districts with year 2024 and source URL', () => {
       expect(populationData.year).toBe(2024);
       expect(populationData.source).toContain('statistics.gov.lk');
-      expect(populationData.status).toBe('pending_official_verification');
+      expect(populationData.status).toBe('pending_owner_data');
+      expect(populationData.retrievedAt).toBeNull();
 
       const districts = Object.keys(populationData.districts);
       expect(districts).toHaveLength(25);

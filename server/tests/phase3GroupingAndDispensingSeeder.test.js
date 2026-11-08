@@ -192,6 +192,8 @@ describe('Phase 3 — Grouped Prescriptions, Receipt History, Analytics & SEED_2
 
     // 1. Default invocation is DRY_RUN and writes 0 documents
     expect(parseCliArgs(['--db', 'medisync_automated_test']).dryRun).toBe(true);
+    expect(parseCliArgs(['--help']).isHelp).toBe(true);
+    expect(parseCliArgs(['-h']).helpText).toContain('Usage: node scripts/seed-dispensing-sample.js');
     const dryRunRes = await runDispensingSampleSeed({
       args: ['--db', 'medisync_automated_test'],
       env: {},

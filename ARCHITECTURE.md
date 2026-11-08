@@ -79,6 +79,7 @@ In compliance with clinical privacy principles, doctors cannot view historical p
 MediSync includes a real-time communicable disease surveillance system designed to detect localized disease spikes across all 25 Sri Lankan administrative districts.
 
 ### 3.1 Monitored Diseases
+The surveillance engine dynamically monitors **any recorded ICD-10 or ICD-11 condition** present in clinical consultations without hardcoded restrictions. The platform's benchmark validation suite specifically tests 6 priority communicable scenario conditions across all 25 districts:
 1. Dengue (`A90`)
 2. Leptospirosis (`A27.9`)
 3. Diarrhoeal diseases (`A09`)

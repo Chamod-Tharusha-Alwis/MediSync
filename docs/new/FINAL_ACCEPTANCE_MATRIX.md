@@ -34,7 +34,7 @@ Reference: `docs/release/PROTECTED_HASHES.json` (15/15 valid, 0 discrepancies)
 |---|:---:|---|
 | `server/src/middleware/auth.js` | MATCH | Unmodified from approved authorization redaction baseline |
 | `server/src/controllers/doctorController.js` | MATCH | Unmodified from approved doctor transaction baseline |
-| `ml-engine/app.py` | MATCH | Sub-Project 3 Phase P0 (2026-11-08): calibrated doctor ML urgency derivation to require high-risk profile AND similarity score >= 50% AND >= 2 matched symptoms; re-pinned hash `a84c208c9038f9723ec09c73335bc7be5e523f03bdf8a6ca12e3e9d8d1e43fc0` |
+| `ml-engine/app.py` | MATCH | Sub-Project 3 Phase P0 (2026-11-08): calibrated doctor ML urgency derivation to require high-risk profile AND similarity score >= 50% AND >= 2 matched symptoms; re-pinned hash `a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59` |
 | `ml-engine/evaluate_symptom_model.py` | MATCH | Unmodified from approved symptom model evaluation baseline |
 | `client/src/components/SymptomTagInput.jsx` | MATCH | Unmodified from approved UI symptom tag input component |
 | `server/tests/ir04BackendIntegration.test.js` | MATCH | Stage B2 inventory removal (U10): replaced legacy inventory stock checks with durable Dispensing.findOne verification (8.1/8.2) |
@@ -64,12 +64,6 @@ Result: **Exit Code 0 (Success)**
 | Active Profile | `clinical-production` | PASS |
 | Main Bundle Size | 214.11 kB (gzipped) | PASS |
 | Main CSS Size | 22.84 kB (gzipped) | PASS |
-| Entry Point | `src/index.js` -> `src/App.js` | PASS |
-| Bundled Modules | 119 modules | PASS |
-| Demo Imports | `demoImported: false` | PASS |
-| Active Profile | `clinical-production` | PASS |
-| Main Bundle Size | 211.56 kB (gzipped) | PASS |
-| Main CSS Size | 22.77 kB (gzipped) | PASS |
 
 ---
 
