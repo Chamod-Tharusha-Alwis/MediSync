@@ -8,12 +8,12 @@
 | **S0** | Preflight (Env setup, branch, baseline gate) | DONE | `1be83ec` | 3,465 / 0 | PASS | 15/15 |
 | **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `d2b7082` | 3,465 / 0 | PASS | 15/15 |
-| **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
+| **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `9f6f903` | 3,465 / 0 | PASS | 15/15 |
 | **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | c57088a | 3,465 / 0 | PASS | 15/15 |
-| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
-| **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
-| **S7** | Final Verification & Link Integrity Check | DONE | pending | 3,465 / 0 | PASS | 15/15 |
-| **S8** | Morning Report & Delivery Package | DONE | pending | 3,465 / 0 | PASS | 15/15 |
+| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | DONE | `0c7e2e7` | 3,465 / 0 | PASS | 15/15 |
+| **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | DONE | `dec944e` | 3,465 / 0 | PASS | 15/15 |
+| **S7** | Final Verification & Link Integrity Check | DONE | `f769de2` | 3,465 / 0 | PASS | 15/15 |
+| **S8** | Morning Report & Delivery Package | DONE | `8da469c` | 3,465 / 0 | PASS | 15/15 |
 
 ---
 
