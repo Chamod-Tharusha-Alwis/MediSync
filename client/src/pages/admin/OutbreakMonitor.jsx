@@ -225,28 +225,45 @@ const OutbreakMonitor = () => {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    let pollTimer = null;
+    let pollCount = 0;
+
+    const fetchStatusAndAlerts = async () => {
       const [s, a] = await Promise.allSettled([
         api.get('/admin/ml-status'),
         api.get('/alerts/active'),
       ]);
       if (!mounted) return;
       const status = s.status === 'fulfilled' ? s.value?.data : null;
+      const isAvailable = status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
+        && status.dataPointUnit === 'reference disease profiles';
+      const isWaking = status?.availabilityState === 'waking' || status?.status === 'waking';
+
       setModelStatus(
-        status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
-          && status.dataPointUnit === 'reference disease profiles'
+        isAvailable
+          ? status
+          : isWaking
             ? status
-            : (status?.availabilityState === 'waking' || status?.status === 'waking')
-              ? status
-              : null
+            : null
       );
       if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
         setAlerts(a.value.data.data);
         setAlertsLoaded(true);
       }
       setLoading(false);
-    })();
-    return () => { mounted = false; };
+
+      if (isWaking && pollCount < 6) {
+        pollCount += 1;
+        pollTimer = setTimeout(fetchStatusAndAlerts, 10000);
+      }
+    };
+
+    fetchStatusAndAlerts();
+
+    return () => {
+      mounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
   }, []);
 
   const handleRunDetection = async () => {
@@ -394,9 +411,17 @@ const OutbreakMonitor = () => {
         />
         <StatTile
           icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Reference disease profiles")}
-          value={modelStatus ? modelStatus.dataPoints.toLocaleString() : t("adminStatus.notAvailable", "Not available")}
-          accentText="text-blue-400" accentBg="bg-blue-500/10"
-          accentBorder="border-blue-500/20" glowBg="bg-blue-500/20"
+          value={
+            modelStatus?.available === true && Number.isFinite(modelStatus.dataPoints)
+              ? modelStatus.dataPoints.toLocaleString()
+              : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking')
+                ? t("adminStatus.waking", "Service waking up, retry in 30-60s")
+                : t("adminStatus.notAvailable", "Not available")
+          }
+          accentText={modelStatus?.available === true ? "text-blue-400" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "text-amber-400" : "text-slate-400"}
+          accentBg={modelStatus?.available === true ? "bg-blue-500/10" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "bg-amber-500/10" : "bg-slate-800/20"}
+          accentBorder={modelStatus?.available === true ? "border-blue-500/20" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "border-amber-500/20" : "border-slate-700/30"}
+          glowBg={modelStatus?.available === true ? "bg-blue-500/20" : "bg-slate-800/10"}
           delay={0.08}
         />
         <StatTile
@@ -627,7 +652,7 @@ const OutbreakMonitor = () => {
                             <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
                             {alert.disease || 'Unknown'}
                             </span>
-                            {alert.syntheticLabel && (
+                            {(alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
                               <span className="block text-[11px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
                                 {alert.syntheticLabel}
                               </span>

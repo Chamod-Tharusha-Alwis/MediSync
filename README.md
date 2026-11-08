@@ -4,7 +4,7 @@ MediSync is a secure, full-stack healthcare platform featuring a zero-trust arch
 
 ## Live Deployment
 - **Frontend (Client)**: `https://medisync.chamodtharusha.com.lk`
-- **Backend API**: `https://medisync-api.onrender.com`
+- **Backend API**: `https://medisync-wabc.onrender.com`
 - **ML Engine**: `https://medisync-ml.onrender.com`
 
 ## Architecture Overview

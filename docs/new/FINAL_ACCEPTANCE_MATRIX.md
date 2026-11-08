@@ -1,6 +1,6 @@
 # MediSync — Final Acceptance Verification Matrix
 
-**Release Candidate**: `feat/phase2-polish-and-cleanup`  
+**Release Candidate**: `fix/post-merge-sub2` (base `main` @ `da438aa`)  
 **Target Environment**: Production (`https://medisync.chamodtharusha.com.lk`)  
 **Date of Verification**: 2026-11-08  
 **Overall Verdict**: READY FOR OWNER MERGE & DEPLOYMENT  
