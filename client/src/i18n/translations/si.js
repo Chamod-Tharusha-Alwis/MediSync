@@ -235,6 +235,7 @@ export const si = {
     "patientsDirectory": "රෝගීන්ගේ නාමාවලිය",
     "symptomsEntered": "වාර්තා වූ රෝග ලක්ෂණ",
     "aiAssist": "කෘත්‍රිම බුද්ධි රෝග විනිශ්චය සහාය",
+    "referenceMatchNotDiagnosis": "යොමු ගැලපීමක් පමණි, රෝග විනිශ්චයක් නොවේ",
     "clinicalDiagnosis": "සායනික රෝග විනිශ්චය",
     "icdSelection": "ICD සම්මත වර්ගීකරණය",
     "icd10": "ICD-10 (CM)",

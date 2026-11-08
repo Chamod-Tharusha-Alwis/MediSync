@@ -75,8 +75,39 @@ export class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
+  componentDidMount() {
+    if (!this.state.hasError && typeof window !== 'undefined' && window.sessionStorage) {
+      this.clearReloadTimer = setTimeout(() => {
+        try {
+          if (!this.state.hasError) {
+            sessionStorage.removeItem('medisync_chunk_reload');
+          }
+        } catch (_) {}
+      }, 500);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.clearReloadTimer) clearTimeout(this.clearReloadTimer);
+  }
+
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary] Runtime render error captured (sanitized operational notice)');
+    const isChunkError =
+      error?.name === 'ChunkLoadError' ||
+      /loading (chunk|css chunk)/i.test(error?.message || '') ||
+      /failed to fetch dynamically imported module/i.test(error?.message || '');
+
+    if (isChunkError && typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        const reloadKey = 'medisync_chunk_reload';
+        if (!sessionStorage.getItem(reloadKey)) {
+          sessionStorage.setItem(reloadKey, 'true');
+          window.location.reload();
+          return;
+        }
+      } catch (_) {}
+    }
   }
 
   render() {

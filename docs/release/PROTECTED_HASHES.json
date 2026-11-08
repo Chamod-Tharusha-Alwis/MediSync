@@ -18,9 +18,9 @@
     },
     {
       "path": "ml-engine/app.py",
-      "previousApprovedSha256": "220581f4e4be9993effa41f60987c990c9515faebd5d40cac6ecadf2eab1316d",
-      "releaseCandidateSha256": "5a73ed87b1d0fea1a2233ace84e2a63098fc091829682282e5b9dac76244fb6e",
-      "reason": "Sub-Project 1 Task 1.7 (2026-11-08): allow ML QA SQLite temp DB path under os.tmpdir() / MEDISYNC_TEST_TMP so offline tests never recreate <repo>/scratch; historical mixed line endings preserved."
+      "previousApprovedSha256": "5a73ed87b1d0fea1a2233ace84e2a63098fc091829682282e5b9dac76244fb6e",
+      "releaseCandidateSha256": "a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59",
+      "reason": "Sub-Project 3 Phase P0 (2026-11-08): calibrate doctor ML urgency derivation to require high-risk profile AND similarity score >= 50% AND >= 2 matched symptoms; historical CRLF line endings preserved."
     },
     {
       "path": "ml-engine/evaluate_symptom_model.py",

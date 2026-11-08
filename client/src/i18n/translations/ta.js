@@ -235,6 +235,7 @@ export const ta = {
     "patientsDirectory": "நோயாளிகள் விபரம்",
     "symptomsEntered": "பதிவு செய்யப்பட்ட அறிகுறிகள்",
     "aiAssist": "செயற்கை நுண்ணறிவு நோய் கணிப்பு",
+    "referenceMatchNotDiagnosis": "குறிப்பு பொருத்தம் மட்டுமே, நோய் கண்டறிதல் அல்ல",
     "clinicalDiagnosis": "மருத்துவ நோய் கண்டறிதல்",
     "icdSelection": "ICD நிலையான வகைப்பாடு",
     "icd10": "ICD-10 (CM)",
