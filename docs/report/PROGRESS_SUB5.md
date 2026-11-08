@@ -11,7 +11,7 @@
 | **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
 | **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | c57088a | 3,465 / 0 | PASS | 15/15 |
 | **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
-| **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
+| **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
 | **S7** | Final Verification & Link Integrity Check | NOT STARTED | - | - | - | - |
 | **S8** | Morning Report & Delivery Package | NOT STARTED | - | - | - | - |
 
@@ -99,3 +99,16 @@
   - Plain-language walkthrough of MediSync for all 6 roles, core clinical and surveillance workflows, data flow diagrams, and patient privacy protections.
 - **Export & Conversion Guide (docs/report/export/CONVERSION_GUIDE.md)**:
   - Step-by-step export instructions for owner: VS Code Markdown PDF extension, Pandoc to DOCX/PDF, and Microsoft Word native import.
+
+
+### Phase S6
+- **Comprehensive Demo Script (docs/report/DEMO_SCRIPT.md)**:
+  - 10-to-15 minute sequential role walkthrough (Patient -> Doctor -> Pharmacy -> Hospital Lab -> Epidemiologist -> Admin).
+  - Pre-viva pre-warming protocol for Render Free services (curl 3 minutes prior).
+  - Full fallback contingency plan for examination room network loss.
+- **Academic Viva Q&A Guide (docs/report/VIVA_QA.md)**:
+  - 32 detailed questions and authoritative evidence-based answers covering clinical validity, 41 profiles vs 34k concepts, synthetic evaluation, NIC entropy weaknesses, Render Free cold starts, AES-256-GCM blind indexing, outbreak suppression gates, and production blockers.
+- **Screenshot Checklist (docs/report/SCREENSHOT_CHECKLIST.md)**:
+  - 25 prioritized UI views across all 6 roles with viewport resolutions, exact URL routes, and required visible UI components.
+- **Presentation Slides Outline (docs/report/SLIDES_OUTLINE.md)**:
+  - 19 slide outlines with visual suggestions, bullet points, and word-for-word speaker notes.
