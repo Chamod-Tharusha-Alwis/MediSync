@@ -5,7 +5,7 @@
 | Phase | Description | Branch | Status | Commit(s) | Tests Passed / Failed | Offline Gate | Client Build | Protected Pins |
 |---|---|---|:---:|---|:---:|:---:|:---:|:---:|
 | **D0** | Truth Pass (Docs & Claims Correction) | `feat/sub4-d0` | DONE | `31891f7` | 3,457 / 0 | PASS | PASS | 15/15 |
-| **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `pending` | 3,458 / 0 | PASS | PASS | 15/15 |
+| **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | NOT STARTED | - | - | - | - | - |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
