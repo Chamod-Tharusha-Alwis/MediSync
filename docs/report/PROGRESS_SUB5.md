@@ -10,7 +10,7 @@
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `d2b7082` | 3,465 / 0 | PASS | 15/15 |
 | **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
 | **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | DONE | c57088a | 3,465 / 0 | PASS | 15/15 |
-| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | IN PROGRESS | - | - | - | - |
+| **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
 | **S7** | Final Verification & Link Integrity Check | NOT STARTED | - | - | - | - |
 | **S8** | Morning Report & Delivery Package | NOT STARTED | - | - | - | - |
@@ -85,3 +85,17 @@
 - **Documentation**:
   - Created docs/report/figures/FIGURES.md detailing data source, limitations, and hash ledger for all 14 figures.
   - Created docs/report/ML_METHODOLOGY.md detailing provenance, curation, tiered matching, resource profile, and evaluation protocols.
+
+
+### Phase S5
+- **Technical Report Chapters (docs/report/chapters/)**:
+  - Authored all 14 chapters: Abstract (00), Introduction (01), Objectives & Scope (02), Requirements (03), Architecture (04), Implementation (05), Machine Learning (06), Security & Privacy (07), Testing & Verification (08), Deployment & Operations (09), Results (10), Limitations & Future Work (11), Conclusion (12), Appendices (13).
+  - Quoted all 15 protected ledger hashes directly from docs/release/PROTECTED_HASHES.json.
+  - Cited Figures F01–F14 and Diagrams D01–D09 throughout.
+  - Highlighted regulatory disclaimers (clinicalValidation: not_established) and offline vs. live status distinctions.
+- **Unified Technical Report (docs/report/TECHNICAL_REPORT.md)**:
+  - Concatenated all 14 chapters into single standalone academic technical report (83 KB) with academic cover metadata and evidence traceability.
+- **Plain-Language Project Overview (docs/report/PROJECT_OVERVIEW.md)**:
+  - Plain-language walkthrough of MediSync for all 6 roles, core clinical and surveillance workflows, data flow diagrams, and patient privacy protections.
+- **Export & Conversion Guide (docs/report/export/CONVERSION_GUIDE.md)**:
+  - Step-by-step export instructions for owner: VS Code Markdown PDF extension, Pandoc to DOCX/PDF, and Microsoft Word native import.

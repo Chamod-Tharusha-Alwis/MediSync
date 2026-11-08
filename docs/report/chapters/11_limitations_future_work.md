@@ -1,0 +1,44 @@
+# Chapter 11: Limitations, Known Risks & Future Work
+
+## 11.1 Transparent Academic & Technical Limitations
+In keeping with rigorous academic engineering principles, this chapter explicitly documents the known limitations, architectural boundaries, and operational risks of the MediSync prototype.
+
+### 11.1.1 Descriptive Projections vs. Epidemiological Forecasts
+While MediSync provides 14-day statistical trajectory curves (Figure **F12**), these calculations represent ordinary least squares (OLS) descriptive mathematical extrapolations. They **do not** incorporate dynamic compartmental epidemiological models (such as SEIR), vector breeding indices (Breteau index), or meteorological covariates (rainfall, humidity). Consequently, these curves are strictly labeled as descriptive projections and are suppressed from triggering automated public health lockdown measures.
+
+### 11.1.2 Census Denominator Data Gaps
+Accurate per-capita attack rate calculations require precise district-level age-stratified census denominators. Following the 2024 national census in Sri Lanka, official granular figures remain pending final gazetting. In MediSync, unverified demographic denominators are explicitly marked as `pending_owner_data`, with ingestion scripts prepared to accept verified government data.
+
+### 11.1.3 Knowledge Base Breadth & Coverage
+While the standard ICD-10-CM catalog contains 34,290 distinct clinical concepts (Figure **F06**), MediSync's active diagnostic triage engine currently encompasses:
+- 41 curated high-frequency conditions in Tier 1.
+- 174 auto-accepted, validated condition profiles in Tier 2.
+- **Combined Coverage**: 215 active conditions (Figure **F07**).  
+491 raw profiles from the SymCAT survey dataset remain quarantined (`kb_quarantine.v1.json`) due to unmapped clinical tokens or sparse evidence. These require manual curation by clinical taxonomists before production admission.
+
+### 11.1.4 Unverified Medication Safety Limits
+The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.json` are initialized from published open reference data but carry the explicit metadata tag `citationStatus: "unverified_owner_must_check"`. As documented in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`, all therapeutic limits must undergo formal sign-off by a hospital formulary review committee cross-referencing the British National Formulary (BNF 86) prior to clinical deployment.
+
+### 11.1.5 Cloud Free-Tier Operational Constraints
+- **Cold-Start Dormancy**: The Render Free plan shuts down containers after 15 minutes of inactivity, resulting in cold-boot delays of 50 to 60 seconds.
+- **Lack of Database Backups**: MongoDB Atlas M0 sandboxes do not support automated point-in-time recovery (PITR) or scheduled snapshot backups. A physical disk corruption or catastrophic administrative drop requires manual snapshot restoration from local dumps.
+- **Network Bandwidth**: Render free web services allocate limited shared bandwidth, making the system unsuitable for sustained high-concurrency disaster scenarios without upgrading to dedicated cloud tiers.
+
+### 11.1.6 Heuristic Design Parameters
+The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 0.35, outbreak minimum case threshold of 5) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
+
+---
+
+## 11.2 Future Research & Engineering Roadmap
+
+### 11.2.1 National Health Information System Interoperability
+Future iterations should implement Fast Healthcare Interoperability Resources (FHIR R4) REST APIs and integrate with Sri Lanka's national DHIS2 (District Health Information Software 2) epidemiological reporting infrastructure, automating statutory communicable disease notifications directly to the Epidemiology Unit.
+
+### 11.2.2 Advanced Hardware Key Management (HSM)
+Migrate encryption master keys from container environment variables to managed cloud hardware security modules (such as AWS KMS, Google Cloud KMS, or HashiCorp Vault), enforcing automated key rotation and cryptographic hardware access auditing.
+
+### 11.2.3 Natural Language Processing for Local Clinical Notes
+Develop localized clinical NLP models capable of parsing unstructured, trilingual physician notes written in colloquial Sinhala, Tamil, and English ("Singlish"), automating symptom tag extraction without requiring manual UI selection.
+
+### 11.2.4 Formal Clinical Observational Trials
+Subject the diagnostic decision support assistant and medicine safety engine to formal multi-center prospective observational trials across Sri Lankan provincial general hospitals to establish real-world sensitivity, specificity, and clinician acceptance metrics under ethical committee oversight.
