@@ -26,7 +26,7 @@ Sub-Project 3 focused on platform stability, clinical safety validation, cryptog
 2. **Vercel Edge Cache Headers**: Configured `client/vercel.json` with `Cache-Control: no-cache, no-store, must-revalidate` on `/index.html` and immutable caching on `/static/*`.
 3. **Responsive Summary Email**: Enhanced `server/src/services/consultationSummaryEmailService.js` with desktop tables and mobile stacked cards, complete with trilingual confidentiality notices and zero NIC exposure.
 4. **Provenance Audit**: Formally documented that `feature_collector.js` is a 100% external browser extension script.
-5. **Doctor ML Urgency Calibration**: Refined urgency derivation in `ml-engine/app.py` to require high severity profile + $\ge 50\%$ similarity score + $\ge 2$ matched symptoms. Re-pinned hash `a84c208c9038f9723ec09c73335bc7be5e523f03bdf8a6ca12e3e9d8d1e43fc0` in `PROTECTED_HASHES.json`.
+5. **Doctor ML Urgency Calibration**: Refined urgency derivation in `ml-engine/app.py` to require high severity profile + $\ge 50\%$ similarity score + $\ge 2$ matched symptoms. Re-pinned hash `a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59` in `PROTECTED_HASHES.json`.
 6. **Seeder Parameter Reconciliation**: Fixed parameter parity between `scripts/seed-dispensing-sample.js` and `scripts/remove_demo_batch.js`.
 
 ### Phase P1: Medicine Safety Rules Engine (`feat/sub3-p1` @ `8930ef9`)

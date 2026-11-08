@@ -57,7 +57,26 @@ function fail(code, message) {
   throw err;
 }
 
+function getHelpText() {
+  return `Usage: node scripts/seed-dispensing-sample.js [options]
+
+Options:
+  --db <database>        Target database (medisync_prod | medisync_automated_test) [default: medisync_automated_test]
+  --dry-run              Dry run mode (read-only count; default)
+  --confirm              Apply database writes (requires MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED")
+  --apply                Alias for --confirm
+  --confirm-sample-seed  Alias for --confirm
+  -h, --help             Show this help message
+
+Environment variables:
+  MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"  (or SEED_APPROVAL="I_APPROVE_SEED_2026_11_B"; required when --confirm is passed)
+`;
+}
+
 function parseCliArgs(args = []) {
+  if (args.includes('--help') || args.includes('-h')) {
+    return { isHelp: true, helpText: getHelpText() };
+  }
   let database = 'medisync_automated_test';
   let apply = false;
   let dryRun = true;
@@ -287,6 +306,10 @@ if (require.main === module) {
     dotenv.config({ path: path.join(__dirname, '../server/.env') });
 
     const parsed = parseCliArgs(process.argv.slice(2));
+    if (parsed.isHelp) {
+      console.log(parsed.helpText);
+      process.exit(0);
+    }
     verifySeedApproval(parsed, process.env);
 
     const isTest = parsed.database === 'medisync_automated_test';
@@ -330,6 +353,7 @@ if (require.main === module) {
 module.exports = {
   SEED_NAMESPACE,
   PROTECTED_NAMESPACES,
+  getHelpText,
   parseCliArgs,
   verifySeedApproval,
   buildSampleDispensingPlan,

@@ -188,4 +188,89 @@ describe('Test OTP Harness Removal and Zero-Bypass Specification', () => {
       jest.restoreAllMocks();
     }
   });
+
+  test('5. assertClinicalEntry warns when TEST_OTP_ENABLED or TEST_OTP_CODE is set in production', () => {
+    const { assertClinicalEntry } = require('../src/security/clinicalEntryPolicy');
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      assertClinicalEntry({ NODE_ENV: 'production', TEST_OTP_ENABLED: 'true' });
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[SECURITY WARNING] TEST_OTP_ENABLED or TEST_OTP_CODE detected in production environment'));
+
+      warnSpy.mockClear();
+      assertClinicalEntry({ MEDISYNC_DEPLOYMENT_MODE: 'clinical', TEST_OTP_CODE: '123456' });
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[SECURITY WARNING] TEST_OTP_ENABLED or TEST_OTP_CODE detected in production environment'));
+
+      warnSpy.mockClear();
+      assertClinicalEntry({ NODE_ENV: 'production' });
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('6. Production mode strictly hard-fails any TEST_OTP_CODE bypass attempt', async () => {
+    const originalEnv = { ...process.env };
+    process.env.NODE_ENV = 'production';
+    process.env.MEDISYNC_DEPLOYMENT_MODE = 'clinical';
+    process.env.TEST_OTP_ENABLED = 'true';
+    process.env.TEST_OTP_CODE = '777777';
+
+    try {
+      const authController = require('../src/controllers/authController');
+      const OTPSession = require('../src/models/OTPSession');
+      const Patient = require('../src/models/Patient');
+
+      const realOtp = '112233';
+      const realOtpHash = await bcrypt.hash(realOtp, 10);
+      const userId = '507f191e810c19729de860ea';
+
+      const mockUser = {
+        _id: userId,
+        email: 'patient@example.com',
+        isEmailVerified: true,
+        isActive: true,
+        accountStatus: 'active'
+      };
+
+      const mockOtpRecord = {
+        _id: 'sess-prod-otp-1',
+        userId,
+        userModel: 'Patient',
+        purpose: 'login',
+        otp: realOtpHash,
+        expiresAt: new Date(Date.now() + 60000),
+        used: false,
+        failedAttempts: 0
+      };
+
+      jest.spyOn(Patient, 'findById').mockResolvedValue(mockUser);
+      jest.spyOn(OTPSession, 'findOne').mockReturnValue({
+        sort: () => Promise.resolve(mockOtpRecord)
+      });
+      jest.spyOn(OTPSession.collection, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
+
+      const req = {
+        body: { userId, otp: '777777' }, // attempt bypass using TEST_OTP_CODE
+        headers: {},
+        ip: '127.0.0.1'
+      };
+      let statusCode = null;
+      let responseBody = null;
+      const res = {
+        status(code) { statusCode = code; return this; },
+        json(data) { responseBody = data; return this; }
+      };
+
+      await authController.verifyLoginOTP(req, res);
+
+      // Must hard-fail: cannot bypass in production mode under any circumstances
+      expect([400, 500]).toContain(statusCode);
+      expect(statusCode).not.toBe(200);
+      expect(responseBody.data).toBeUndefined();
+    } finally {
+      process.env = originalEnv;
+      jest.restoreAllMocks();
+    }
+  });
 });

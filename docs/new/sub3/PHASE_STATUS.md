@@ -1,9 +1,9 @@
 # MediSync Platform Master Plan Phase Status (Items 5A through 5H)
 
-**Audit Date**: 2026-11-08  
+**Audit Date**: 2026-11-08 (Sub-Project 4 Truth Pass)  
 **Repository**: MediSync (`c:\Users\chamo\OneDrive\Desktop\Final project\medisync`)  
-**Base Commit**: `main` @ `ed57e28` (Sub-Project 2 PR #22 merged)  
-**Branch**: `feat/sub3-p3` (stacked on `feat/sub3-p2` commit `2797b82`)  
+**Base Commit**: `main` @ `6b328f0` (PR #27 merged)  
+**Branch**: `feat/sub4-d0` (stacked on `main`)  
 **Offline Gate Status**: 3,454 / 3,454 Passed (0 Failed, 205 test suites)  
 **Protected Hashes Ledger**: 15 / 15 accounted for and valid (`sourceFrozen: true`)
 
@@ -12,13 +12,13 @@
 ## 1. Master Plan Matrix (Items 5A – 5H)
 
 | Item | Title / Capability | Status | Primary Implementation Files | Test Suite / Evidence | Verification Scope |
-|---|---|---|---|---|---|
-| **5A** | Dengue Outbreak Forecasting Experiment & Baseline Comparison | **DONE** | `research/forecasting_experiment.py`<br>`research/model_comparison.md`<br>`ml-engine/models/dengue_model.pkl` | `server/tests/phase6OutbreakScenariosOffline.test.js` | Verified offline: Chronological split (train/val/test), SARIMA (2,1,1)(1,1,1,12) vs Seasonal Naïve vs Prophet. |
-| **5B** | Multi-Disease Epidemiological Surveillance (5 Monitored Diseases) | **DONE** | `server/src/services/surveillanceService.js`<br>`server/src/services/outbreakDetector.js`<br>`server/src/models/OutbreakAlert.js` | `server/tests/phase6OutbreakScenariosOffline.test.js`<br>`server/tests/phase4AdminOutbreakMlAndSessions.test.js` | Verified offline: Arbitrary ICD-10/ICD-11 diseases (Dengue, Leptospirosis, Typhoid, Viral Hepatitis, Dysentery) across 25 Sri Lanka districts; N>=5 floor, 2 consecutive days, z>2.0. |
-| **5C** | Census 2024 Population-Scaled Incidence Normalization | **DONE** | `server/src/data/sri_lanka_district_populations_2024.json`<br>`server/src/utils/districtAdjacency.js`<br>`server/src/services/surveillanceService.js` | `server/tests/phase5PopulationIncidence.test.js` (10/10 PASS) | Verified offline: Exact 2024 Census district populations; verified per 100k incidence scaling across all 9 provinces and 25 districts. |
-| **5D** | Admin Outbreak Workflow (Confirm, False Alarm, Resolve Lifecycle) | **DONE** | `server/src/controllers/adminController.js`<br>`client/src/pages/admin/OutbreakAlerts.jsx`<br>`server/src/models/OutbreakAlert.js` | `server/tests/phase4AdminOutbreakMlAndSessions.test.js`<br>`server/tests/adversarialOutbreakSeedVerification.test.js` | Verified offline: Confirmed alerts allow Resolve transition; requires mandatory reason; logs zero-PII audit events. |
-| **5E** | Multi-Disease Outbreak Broadcasts & Public Alert Banners | **DONE** | `server/src/controllers/alertController.js`<br>`client/src/components/common/ActiveOutbreakBanner.jsx`<br>`client/src/components/common/OutbreakBanner.jsx` | `client/src/__master_offline__/outbreak-forecast.test.jsx` | Verified offline: Active banners displayed across Doctor, Patient, Pharmacy, and Admin portals; 100% trilingual parity. |
-| **5F** | Clinical AI Suggester Calibration & Non-Diagnosis Disclaimers | **DONE** | `ml-engine/app.py`<br>`client/src/pages/doctor/NewConsultation.jsx`<br>`docs/release/PROTECTED_HASHES.json` | `server/tests/phase1DoctorAiColdStart.test.js`<br>`client/src/__master_offline__/min-font-size.test.js` | Verified offline: Urgency gated on high risk + >=50% confidence + >=2 matched symptoms; renders "Reference match, not a diagnosis". |
+|---|---|:---:|---|---|---|
+| **5A** | Dengue Outbreak Forecasting Experiment & Baseline Comparison | **NOT VERIFIED** | None (`research/` files not in repo) | None (Suppressed in UI) | `research/forecasting_experiment.py`, `research/model_comparison.md`, and `dengue_model.pkl` do not exist. Live forecast is intentionally suppressed (`Forecast: Not available`) per unestablished clinical validation. Prior metrics removed as unverified. |
+| **5B** | Multi-Disease Epidemiological Surveillance (Generic Any-ICD Engine) | **DONE** | `server/src/services/surveillanceService.js`<br>`server/src/services/outbreakDetector.js`<br>`server/src/models/OutbreakAlert.js` | `server/tests/surveillanceOutbreakDetector.test.js`<br>`server/tests/phase4AdminOutbreakMlAndSessions.test.js` | Verified offline: Surveillance dynamically groups any recorded ICD-10/ICD-11 condition across all 25 Sri Lanka districts; enforces $N \ge 5$ floor, 2 consecutive calendar days persistence, $z > 2.0$. |
+| **5C** | Census 2024 Population-Scaled Incidence Normalization | **PARTIAL** | `server/src/data/districtPopulation2024.json`<br>`client/src/data/districtPopulation2024.json`<br>`server/src/services/incidenceService.js` | `server/tests/phase5PopulationIncidence.test.js` (8/8 PASS) | Verified offline: Pipeline and calculation exist; all 25 districts default to `null` with `status: pending_owner_data`. UI displays "population data pending". Requires owner entry from official DCS table. |
+| **5D** | Admin Outbreak Workflow (Confirm, False Alarm, Resolve Lifecycle) | **DONE** | `server/src/controllers/adminController.js`<br>`client/src/pages/admin/OutbreakAlerts.jsx`<br>`server/src/models/OutbreakAlert.js` | `server/tests/phase4AdminOutbreakMlAndSessions.test.js`<br>`server/tests/outbreakAlertLifecycle.test.js` | Verified offline: Confirmed alerts allow Resolve transition; requires mandatory reason ($\ge 5$ chars); logs zero-PII audit events. |
+| **5E** | Multi-Disease Outbreak Broadcasts & Public Alert Banners | **DONE** | `server/src/controllers/alertController.js`<br>`client/src/components/common/ActiveOutbreakBanner.jsx`<br>`client/src/components/common/OutbreakBanner.jsx` | `client/src/__master_offline__/outbreak-alert-actions.test.jsx` | Verified offline: Active banners displayed across Doctor, Patient, Pharmacy, and Admin portals; 100% trilingual parity. |
+| **5F** | Clinical AI Suggester Calibration & Non-Diagnosis Disclaimers | **DONE** | `ml-engine/app.py`<br>`client/src/pages/doctor/NewConsultation.jsx`<br>`docs/release/PROTECTED_HASHES.json` | `server/tests/phase1DoctorAiColdStart.test.js`<br>`client/src/__master_offline__/min-font-size.test.js` | Verified offline: Urgency gated on high risk + $\ge 50\%$ confidence + $\ge 2$ matched symptoms; renders "Reference match, not a diagnosis"; re-pinned hash `a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59`. |
 | **5G** | Medicine Safety Rules & Formulary Limits Engine | **DONE** | `server/src/utils/medicineSafetyEngine.js`<br>`server/src/data/medicine_safety_limits.json`<br>`client/src/components/common/MedicineSafetyPanel.jsx` | `server/tests/phase1MedicineSafetyRules.test.js` (6/6 PASS) | Verified offline: Duplicate active ingredient detection, WHO/BNF duration/daily dose limits, unconfigured drug pending status, clinician acknowledgment justification. |
 | **5H** | QR-Verified Consultation Records & Patient History Access Gate | **DONE** | `server/src/models/VerificationToken.js`<br>`server/src/services/verificationTokenService.js`<br>`server/src/controllers/verificationController.js`<br>`server/src/utils/pdfGenerator.js`<br>`client/src/pages/public/VerifyConsultation.jsx` | `server/tests/phase2VerificationTokenAndHistoryGate.test.js` (6/6 PASS) | Verified offline: 256-bit token with SHA-256 hash storage; zero PII public status; constant-time NIC comparison for history download; PDF QR code embedding. |
 
@@ -27,35 +27,28 @@
 ## 2. Detailed Audit Findings per Master Plan Item
 
 ### 5A — Dengue Outbreak Forecasting Experiment & Baseline Comparison
-- **Implementation**: `research/forecasting_experiment.py` executes chronological train (2010–2017), val (2018), and test (2019–2020) splits without lookahead leakage.
-- **Model Results**:
-  - Baseline (Seasonal Naïve): MAE 2,054, RMSE 2,892, sMAPE 44.8%.
-  - SARIMA (2,1,1)(1,1,1,12): MAE 1,682, RMSE 2,341, sMAPE 35.2%.
-  - Prophet: MAE 1,914, RMSE 2,612, sMAPE 41.1%.
-- **Status**: **DONE**. Fully documented in `research/model_comparison.md`.
+- **Audit Finding**: `research/forecasting_experiment.py`, `research/model_comparison.md`, and `ml-engine/models/dengue_model.pkl` do NOT exist in the repository. Prior documented metrics (SARIMA, Seasonal Naïve, Prophet) cannot be reproduced in this environment and are removed from verified status.
+- **Runtime Reality**: The admin Outbreak Monitor and Public Health portal intentionally render `Forecast: Not available` (`surveillance.availability = 'not_available'`), which is legally and clinically required because clinical validation is `not_established`.
+- **Status**: **NOT VERIFIED**.
 
-### 5B — Multi-Disease Epidemiological Surveillance (5 Monitored Diseases)
+### 5B — Multi-Disease Epidemiological Surveillance (Generic Any-ICD Engine)
 - **Implementation**:
-  - `server/src/services/surveillanceService.js` standardizes case selection using canonical ICD prefix keys:
-    - Dengue: `ICD10:A90`
-    - Leptospirosis: `ICD10:A27`
-    - Typhoid: `ICD10:A01`
-    - Viral Hepatitis: `ICD10:B15` through `ICD10:B19`
-    - Dysentery: `ICD10:A06` / `ICD10:A09`
-  - Enforces three-tier statistical guard:
+  - `server/src/services/surveillanceService.js` and `outbreakDetector.js` evaluate cases dynamically across all 25 districts, 9 provinces, and national/island-wide levels.
+  - The detector does NOT whitelist 5 or 6 diseases: it groups by `${entity}|${diseaseId}` for any recorded valid ICD-10 or ICD-11 code.
+  - Test suites benchmarked 6 priority scenarios: Dengue (`A90`), Leptospirosis (`A27.9`), Diarrhoeal diseases (`A09`), Influenza (`J10.1`), Chikungunya (`A92.0`), COVID-19 (`U07.1`).
+  - Three-tier statistical guard enforced:
     1. Floor threshold: Minimum 5 confirmed eligible clinical cases ($N \ge 5$).
-    2. Statistical deviation: Standardized z-score exceeding $2.0$ ($z > 2.0$) against historical 56-day regularized baseline.
+    2. Statistical deviation: Standardized z-score exceeding $2.0$ ($z > 2.0$) against 56-day regularized baseline.
     3. Persistence check: Sustained signal across two consecutive calendar days evaluated at Colombo Midnight (SLST +05:30).
-- **Status**: **DONE**. Verified across `server/tests/phase6OutbreakScenariosOffline.test.js`.
+- **Status**: **DONE**. Verified across `server/tests/surveillanceOutbreakDetector.test.js`.
 
 ### 5C — Census 2024 Population-Scaled Incidence Normalization
 - **Implementation**:
-  - `server/src/data/sri_lanka_district_populations_2024.json` stores official Department of Census and Statistics Sri Lanka (2024) district counts.
-  - Test `server/tests/phase5PopulationIncidence.test.js` guarantees:
-    - Exactly 25 districts mapped to exactly 9 provinces.
-    - Zero district population equals zero or NaN.
-    - Population incidence calculation: $\text{Incidence per 100k} = \frac{\text{Cases}}{\text{District Population}} \times 100{,}000$.
-- **Status**: **DONE**. Verified 10/10 tests passing.
+  - Canonical data files: `server/src/data/districtPopulation2024.json` and `client/src/data/districtPopulation2024.json`.
+  - To prevent hallucinated or unverified data, all 25 district populations are set to `null` with `status: "pending_owner_data"`.
+  - `incidenceService.js` and `populationIncidence.js` safely handle `null` population by outputting `"population data pending"`.
+  - Owner must supply verified table numbers from `statistics.gov.lk` Table 2.
+- **Status**: **PARTIAL** (logic verified; population values pending verified owner data).
 
 ### 5D — Admin Outbreak Alert Workflow & Administrative Actions
 - **Implementation**:
@@ -64,7 +57,7 @@
     - `active` $\rightarrow$ `false_alarm` (via `POST /api/admin/outbreak/alerts/:id/false-alarm`)
     - `confirmed` $\rightarrow$ `resolved` (via `POST /api/admin/outbreak/alerts/:id/resolve`)
   - Sub-Project 2 bugfix: Added "Resolve" button for alerts in `confirmed` status, requiring justification notes ($\ge 5$ chars) and logging actor identity to `AuditLog` without exposing patient data.
-- **Status**: **DONE**. Verified in Sub-Project 2 and covered in `phase4AdminOutbreakMlAndSessions.test.js`.
+- **Status**: **DONE**. Verified in `server/tests/outbreakAlertLifecycle.test.js` and `phase4AdminOutbreakMlAndSessions.test.js`.
 
 ### 5E — Multi-Disease Public Outbreak Broadcasts
 - **Implementation**:
@@ -116,4 +109,4 @@ All five core application roles maintain verified offline isolation and operatio
   - 810 trilingual translation keys in 100% parity across English, Sinhala, and Tamil.
 - **NOT Verified LIVE**:
   - Live Atlas collection mutations (deferred to owner execution via exact runbooks).
-  - Live third-party email delivery via Resend/Brevo (tested with inert test otpHarness).
+  - Live third-party email delivery via Resend/Brevo (tested with in-memory test mocks).

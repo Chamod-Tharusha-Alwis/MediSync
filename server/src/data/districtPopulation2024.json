@@ -2,7 +2,9 @@
   "source": "https://www.statistics.gov.lk",
   "censusName": "Census of Population and Housing 2024",
   "year": 2024,
-  "status": "pending_official_verification",
+  "status": "pending_owner_data",
+  "retrievedAt": null,
+  "license": "Department of Census and Statistics Sri Lanka (Open Government Data)",
   "note": "Official DCS Census 2024 table download requires manual entry by owner from statistics.gov.lk Table 2. Never type numbers from memory.",
   "districts": {
     "Ampara": null,

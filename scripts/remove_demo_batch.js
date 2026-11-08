@@ -32,7 +32,26 @@ function fail(code, message) {
   throw err;
 }
 
+function getHelpText() {
+  return `Usage: node scripts/remove_demo_batch.js [options]
+
+Options:
+  --db <database>                        Target database (medisync_prod | medisync_automated_test) [default: medisync_prod]
+  --dry-run                              Dry run inspection mode (read-only count; default)
+  --confirm-demo-removal <batchId>       Confirm removal of targeted demo batch (e.g., DEMO_OUTBREAK_2026_V1)
+  --batch <batchId>                      Specify target batch to remove [default: DEMO_OUTBREAK_2026_V1]
+  --confirm                              Alias to disable dry run
+  -h, --help                             Show this help message
+
+Environment variables:
+  APPROVE_DEMO_OUTBREAK_REMOVAL=true     (or MEDISYNC_DEMO_REMOVAL_APPROVAL=APPROVED; required for deletion)
+`;
+}
+
 function parseCliArgs(args = []) {
+  if (args.includes('--help') || args.includes('-h')) {
+    return { isHelp: true, helpText: getHelpText() };
+  }
   let database = 'medisync_prod';
   let dryRun = true;
   let confirmBatch = null;
@@ -184,6 +203,10 @@ async function runCli(args = process.argv.slice(2)) {
   }
 
   const parsed = parseCliArgs(args);
+  if (parsed.isHelp) {
+    console.log(parsed.helpText);
+    return { isHelp: true };
+  }
   verifyRemovalAdmission(parsed, process.env);
 
   let mongoose;
@@ -228,6 +251,7 @@ module.exports = {
   TARGET_BATCH,
   PROTECTED_SEED_BATCH,
   ALLOWED_DATABASES,
+  getHelpText,
   parseCliArgs,
   verifyRemovalAdmission,
   buildQuery,

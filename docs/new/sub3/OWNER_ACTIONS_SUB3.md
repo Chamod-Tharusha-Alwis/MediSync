@@ -4,67 +4,78 @@ This document contains instructions and exact copy-pasteable commands for the re
 
 ---
 
-## Action 1: MongoDB Atlas Connectivity & IP Whitelisting
+## Action 1: MongoDB Atlas Connectivity & Network Access
 
-### Issue Diagnosed
-When running `node scripts/seed-dispensing-sample.js --db medisync_prod --dry-run`, Mongoose reported:
-```
-Operation pharmacies.findOne() buffering timed out after 10000ms
-```
-This timeout occurs because the local IP address from which the command was executed is not whitelisted in the MongoDB Atlas Network Access control list, or the Atlas cluster was temporarily unreachable.
+### Technical Context
+When executing administrative scripts from a local terminal, connections to MongoDB Atlas require:
+1. **Network Access**: Your current public IP address must be in the Atlas Network Access allowlist (or `0.0.0.0/0` temporarily).
+2. **Shared Mongoose Instance**: Mongoose instance duplication previously caused `Operation buffering timed out` when scripts resolved a distinct Mongoose copy from models. This was resolved in Sub-Project 2 by explicitly resolving Mongoose from `server/node_modules`.
 
-### Remediation Steps
+### Verification Steps
 1. Log in to [MongoDB Atlas Console](https://cloud.mongodb.com/).
 2. Select your project and navigate to **Security** -> **Network Access**.
-3. Click **Add IP Address**.
-4. Choose **Add Current IP Address** (or `0.0.0.0/0` temporarily for script execution, then remove it).
-5. Ensure the database user defined in `server/.env` (`MONGODB_URI`) has `readWrite` permissions on the `medisync_prod` database.
-6. Verify connection from your PowerShell terminal:
+3. Verify your IP is added (click **Add Current IP Address** if changed).
+4. Ensure the database user in `server/.env` (`MONGODB_URI`) has `readWrite` permissions on `medisync_prod`.
+5. Quick connection test from repository root:
    ```powershell
-   node -e "const mongoose = require('mongoose'); require('dotenv').config({ path: 'server/.env' }); mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 }).then(() => { console.log('Atlas Connected Successfully!'); process.exit(0); }).catch(e => { console.error('Connection Failed:', e.message); process.exit(1); });"
+   node -e "const mongoose = require(require.resolve('mongoose', { paths: [require('path').resolve('server')] })); require('dotenv').config({ path: 'server/.env' }); mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 }).then(() => { console.log('Atlas Connected Successfully!'); process.exit(0); }).catch(e => { console.error('Connection Failed:', e.message); process.exit(1); });"
    ```
 
 ---
 
 ## Action 2: Seeding Realistic Dispensing Sample Data
 
-Once Atlas connectivity is verified, populate realistic pharmacy dispensing samples.
+Namespace: `SEED_2026_11_B` (additive & idempotent 30-day pharmacy dispensing samples).
 
-### Step 2A: Dry-Run (Verification Only — No Database Writes)
-Run from repository root in PowerShell:
+### Step 2A: View CLI Contract / Help
+```powershell
+node scripts/seed-dispensing-sample.js --help
+```
+
+### Step 2B: Dry-Run (Verification Only — Read-Only Count, No Database Writes)
 ```powershell
 node scripts/seed-dispensing-sample.js --db medisync_prod --dry-run
 ```
-*Expected Output*: Displays the matched pharmacies, doctors, and simulated dispensing transactions without writing documents.
+*Expected Output*: Displays matched pharmacies, doctors, and simulated dispensing transactions without writing documents.
 
-### Step 2B: Real Seeding Execution
-Run from repository root in PowerShell:
+### Step 2C: Real Seeding Execution (Writes Enabled)
+> [!IMPORTANT]
+> Applying database writes requires both the `--confirm` flag and the approval environment variable `MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"`.
+
+Run in PowerShell:
 ```powershell
-node scripts/seed-dispensing-sample.js --db medisync_prod
+$env:MEDISYNC_SEED_RUN_APPROVAL="SEED RUN APPROVED"
+node scripts/seed-dispensing-sample.js --db medisync_prod --confirm
 ```
-*Expected Output*: Successfully inserts the sample dispensing events and updates prescription statuses.
+*Expected Output*: Inserts sample dispensing events under namespace `SEED_2026_11_B` and updates prescription statuses.
 
 ---
 
 ## Action 3: Purging Synthetic Demo / Test Batch Data
 
-The database contains 6,309 synthetic consultations and 14 simulation alerts generated during test batches (tagged `SYNTHETIC EPIDEMIOLOGICAL SIMULATION — FOR SYSTEM TESTING ONLY`).
+Target batch: `DEMO_OUTBREAK_2026_V1` (6,309 synthetic consultations and 14 simulation alerts tagged `SYNTHETIC EPIDEMIOLOGICAL SIMULATION — FOR SYSTEM TESTING ONLY`). Excludes and protects `SEED_2026_11_A`.
 
-### Step 3A: Dry-Run (Safe Inspection)
-Run from repository root in PowerShell:
+### Step 3A: View CLI Contract / Help
+```powershell
+node scripts/remove_demo_batch.js --help
+```
+
+### Step 3B: Dry-Run (Safe Inspection — Read-Only Count, No Deletions)
 ```powershell
 node scripts/remove_demo_batch.js --db medisync_prod --dry-run
 ```
-*Expected Output*: Prints the count of targeted demo records (consultations, alerts, audit logs) without deleting any data.
+*Expected Output*: Prints counts of targeted demo consultations and alerts without deleting data.
 
-### Step 3B: Permanent Execution (Only When Ready)
+### Step 3C: Permanent Deletion Execution (Destructive Removal)
 > [!CAUTION]
-> This command permanently removes synthetic demo records. Ensure you have reviewed the dry-run output before executing.
+> This command permanently removes targeted demo batch records. Both the explicit `--confirm-demo-removal DEMO_OUTBREAK_2026_V1` CLI argument and the approval environment variable `APPROVE_DEMO_OUTBREAK_REMOVAL=true` are required.
 
-Run from repository root in PowerShell:
+Run in PowerShell:
 ```powershell
-node scripts/remove_demo_batch.js --db medisync_prod --execute
+$env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
+node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
 ```
+*Expected Output*: Deletes targeted records, confirms 0 clinical records affected, and verifies `SEED_2026_11_A` remains intact.
 
 ---
 
@@ -80,10 +91,13 @@ In Phase P2, the `VerificationToken` model was introduced to power QR-verified c
 1. Open the [Render Dashboard](https://dashboard.render.com/).
 2. Select your `medisync-backend` web service.
 3. Navigate to **Environment**.
-4. Add the following environment variable:
+4. Add the following environment variables:
    - **Key**: `MEDISYNC_VERIFICATION_TOKENS_APPROVED`
    - **Value**: `true`
-5. Save changes. Render will automatically redeploy the backend and create the collection indexes (including the 90-day automatic TTL index).
+   - **Key**: `MEDISYNC_AUTO_PROVISION_STORAGE`
+   - **Value**: `true`
+5. Save changes. Render will redeploy the backend and automatically create the missing collection and 5 indexes additively.
+6. **Security Hardening Post-Boot**: Once the `verificationtokens` collection exists on Atlas, remove `MEDISYNC_AUTO_PROVISION_STORAGE` from Render environment variables so the storage boot guard resumes failing closed against unexpected schema modifications.
 
 ---
 
