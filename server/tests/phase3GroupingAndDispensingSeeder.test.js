@@ -11,6 +11,7 @@ const {
   SEED_NAMESPACE,
   parseCliArgs,
   runDispensingSampleSeed,
+  getMongooseInstance,
 } = require('../../scripts/seed-dispensing-sample');
 
 describe('Phase 3 — Grouped Prescriptions, Receipt History, Analytics & SEED_2026_11_B Seeder', () => {
@@ -265,5 +266,41 @@ describe('Phase 3 — Grouped Prescriptions, Receipt History, Analytics & SEED_2
     });
     expect(populatedResPayload.data.length).toBeGreaterThan(0);
     expect(populatedResPayload.meta.drugsAnalyzed).toBeGreaterThan(0);
+  });
+
+  test('3.6 Seeder script and models share the exact same Mongoose instance and dry-run executes without buffering timeout', async () => {
+    const seederMongoose = getMongooseInstance();
+    const serverMongoose = require('../src/models/Pharmacy').base;
+    expect(seederMongoose).toBe(serverMongoose);
+
+    // Assert require.resolve equality for server/node_modules/mongoose
+    const resolvedFromSeeder = require.resolve('mongoose', { paths: [path.resolve(__dirname, '../../server')] });
+    const resolvedFromServer = require.resolve('mongoose', { paths: [path.resolve(__dirname, '../src/models')] });
+    expect(resolvedFromSeeder).toBe(resolvedFromServer);
+
+    const Pharmacy = require('../src/models/Pharmacy');
+    const mockPharmFindOne = jest.spyOn(Pharmacy, 'findOne').mockReturnValue({
+      select: () => ({
+        lean: async () => ({ _id: new mongoose.Types.ObjectId() })
+      })
+    });
+
+    const PharmacyStaff = require('../src/models/PharmacyStaff');
+    const mockStaffFindOne = jest.spyOn(PharmacyStaff, 'findOne').mockReturnValue({
+      select: () => ({
+        lean: async () => ({ _id: new mongoose.Types.ObjectId(), pharmacyId: new mongoose.Types.ObjectId() })
+      })
+    });
+
+    const dryRunRes = await runDispensingSampleSeed({
+      args: ['--db', 'medisync_automated_test', '--dry-run'],
+      env: {},
+    });
+
+    expect(dryRunRes.mode).toBe('DRY_RUN');
+    expect(dryRunRes.plannedRecords).toBe(60);
+
+    mockPharmFindOne.mockRestore();
+    mockStaffFindOne.mockRestore();
   });
 });

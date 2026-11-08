@@ -16,7 +16,16 @@
  */
 
 const crypto = require('crypto');
-const mongoose = require('mongoose');
+const path = require('path');
+
+// Resolve Mongoose strictly from server/ to guarantee single shared instance with server models
+let mongoose;
+try {
+  mongoose = require(require.resolve('mongoose', { paths: [path.resolve(__dirname, '../server')] }));
+} catch (_) {
+  mongoose = require('mongoose');
+}
+
 const Dispensing = require('../server/src/models/Dispensing');
 const Pharmacy = require('../server/src/models/Pharmacy');
 const PharmacyStaff = require('../server/src/models/PharmacyStaff');
@@ -279,12 +288,29 @@ if (require.main === module) {
     const parsed = parseCliArgs(process.argv.slice(2));
     verifySeedApproval(parsed, process.env);
 
-    const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
-    if (!uri) {
-      fail('MONGO_URI_MISSING', 'MONGO_URI is required in server/.env');
+    const isTest = parsed.database === 'medisync_automated_test';
+    const selected = isTest ? 'MONGO_URI_TEST' : 'MONGO_URI';
+    const cleanEnv = {};
+    for (const [k, v] of Object.entries(process.env)) {
+      if (!/^MONGO|^DATABASE_URL$/i.test(k)) cleanEnv[k] = v;
+    }
+    const uriVal = process.env[selected] || (isTest ? process.env.MONGODB_URI_TEST : (process.env.MONGO_URI || process.env.MONGODB_URI));
+    if (!uriVal) {
+      fail('MONGO_URI_MISSING', `${selected} or MONGO_URI is required in server/.env`);
+    }
+    cleanEnv[selected] = uriVal;
+    cleanEnv.NODE_ENV = isTest ? 'test' : (process.env.NODE_ENV || 'production');
+
+    let target;
+    try {
+      const { selectOperatorDatabase } = require('../server/scripts/operatorDatabaseMode');
+      target = selectOperatorDatabase(cleanEnv, isTest);
+    } catch (_) {
+      target = { uri: uriVal, connectionOptions: { dbName: parsed.database, serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 } };
     }
 
-    await mongoose.connect(uri, { dbName: parsed.database });
+    mongoose.set('bufferCommands', false);
+    await mongoose.connect(target.uri, { ...(target.connectionOptions || {}), dbName: parsed.database });
     try {
       const summary = await runDispensingSampleSeed({
         args: process.argv.slice(2),
@@ -307,4 +333,5 @@ module.exports = {
   verifySeedApproval,
   buildSampleDispensingPlan,
   runDispensingSampleSeed,
+  getMongooseInstance: () => mongoose,
 };
