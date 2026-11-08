@@ -836,5 +836,23 @@ export const en = {
     "dosageExceeded": "Estimated daily dose exceeds recommended maximum",
     "duplicateTherapy": "Duplicate active ingredient detected",
     "interactionWarning": "Potential drug-drug interaction"
-  }
+  },
+  "verification": {
+    "title": "Consultation Record Verification",
+    "verified": "Authentic Clinical Consultation Record",
+    "revoked": "Consultation Record Revoked",
+    "expired": "Verification Link Expired",
+    "notFound": "Record Not Found or Invalid Token",
+    "consultationRef": "Consultation Reference",
+    "date": "Encounter Date",
+    "doctor": "Consulting Practitioner",
+    "facility": "Medical Facility",
+    "historyGateTitle": "Download Patient Medical History",
+    "historyGateHelp": "Enter the patient National Identity Card (NIC) number to verify identity and unlock the comprehensive consultation history.",
+    "nicLabel": "Patient NIC Number",
+    "nicPlaceholder": "e.g. 199012345678 or 901234567V",
+    "downloadBtn": "Verify Identity & Download History PDF",
+    "downloading": "Verifying & Generating PDF…",
+    "disclaimer": "Automated electronic record verification confirms practitioner authorization and cryptographic token validity. It does not establish clinical outcomes."
+}
 };

@@ -866,6 +866,59 @@
           "sparse": false
         }
       ]
+    },
+    {
+      "name": "verificationtokens",
+      "model": "VerificationToken",
+      "source": "server/src/models/VerificationToken.js",
+      "purpose": "Cryptographic public verification tokens and patient history gate",
+      "whenAll": [
+        "MEDISYNC_VERIFICATION_TOKENS_APPROVED"
+      ],
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "tokenHash_1",
+          "key": {
+            "tokenHash": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "consultationId_1",
+          "key": {
+            "consultationId": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "patientRef_1",
+          "key": {
+            "patientRef": 1
+          },
+          "unique": false,
+          "sparse": false
+        },
+        {
+          "name": "expiresAt_1",
+          "key": {
+            "expiresAt": 1
+          },
+          "unique": false,
+          "sparse": false,
+          "expireAfterSeconds": 0
+        }
+      ]
     }
   ]
 }
