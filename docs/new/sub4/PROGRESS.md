@@ -10,7 +10,7 @@
 | **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `fd71344` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `69ee0c3` | 3,464 / 0 | PASS | PASS | 15/15 |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | DONE | `551b0ab` | 3,465 / 0 | PASS | PASS | 15/15 |
-| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | DONE | `pending` | 3,465 / 0 | PASS | PASS | 15/15 |
+| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | DONE | `2b94d26` | 3,465 / 0 | PASS | PASS | 15/15 |
 | **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | NOT STARTED | - | - | - | - | - |
 
 ---
