@@ -1,0 +1,37 @@
+flowchart LR
+    User["Clinician / Patient Browser"]
+
+    subgraph VercelEdge["Vercel Global Edge Network"]
+        ClientHost["medisync.chamodtharusha.com.lk<br/>(React Static Bundle)"]
+    end
+
+    subgraph RenderPaaS["Render Cloud Platform (Free Tier Containers)"]
+        BackendAPI["medisync-wabc.onrender.com<br/>(Node.js 20+ Express Gateway)"]
+        MLEngine["medisync-ml.onrender.com<br/>(Python 3.11 Flask Service - 512MB RAM)"]
+    end
+
+    subgraph UpstashCloud["Upstash Managed Caching"]
+        RedisStore["Redis Key-Value Cache / Rate Limiting"]
+    end
+
+    subgraph AtlasCloud["MongoDB Atlas Cloud"]
+        ReplicaSet["medisync_prod<br/>(M0 / Dedicated Cluster Replica Set)"]
+    end
+
+    subgraph EmailGateways["Transactional Email Dispatchers"]
+        ResendAPI["Resend API"]
+        BrevoAPI["Brevo SMTP / API Fallback"]
+    end
+
+    subgraph KeepAlive["UptimeRobot Monitoring"]
+        PingService["5-min HTTP Keepalive Ping"]
+    end
+
+    User -->|HTTPS| ClientHost
+    ClientHost -->|REST API / Bearer JWT| BackendAPI
+    BackendAPI -->|Internal x-internal-key| MLEngine
+    BackendAPI -->|Session Caching| RedisStore
+    BackendAPI -->|AES-256-GCM Encrypted TLS| ReplicaSet
+    BackendAPI -->|Transactional Notification| ResendAPI
+    BackendAPI -->|Fallback Notification| BrevoAPI
+    PingService -.->|GET /health| MLEngine

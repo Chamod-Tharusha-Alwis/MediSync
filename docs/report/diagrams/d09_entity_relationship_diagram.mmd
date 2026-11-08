@@ -1,0 +1,78 @@
+erDiagram
+    PATIENT ||--o{ CONSULTATION : has
+    PATIENT ||--o{ PRESCRIPTION : receives
+    PATIENT ||--o{ LABTEST : undergoes
+    DOCTOR ||--o{ CONSULTATION : conducts
+    DOCTOR ||--o{ PRESCRIPTION : authors
+    HOSPITAL ||--o{ CONSULTATION : hosts
+    HOSPITAL ||--o{ DOCTOR : employs
+    HOSPITAL ||--o{ PHARMACY : contains
+    CONSULTATION ||--o| VERIFICATIONTOKEN : generates
+    CONSULTATION ||--o{ PRESCRIPTION : includes
+    PRESCRIPTION ||--o| DISPENSING : fulfills
+    PHARMACY ||--o{ DISPENSING : records
+    PHARMACY ||--o{ PHARMACYSTAFF : employs
+    ADMIN ||--o{ OUTBREAKALERT : approves
+    CONSULTATION ||--o{ OUTBREAKALERT : triggers
+
+    PATIENT {
+        ObjectId _id PK
+        string nic UK
+        string patientNic_bi
+        string fullName "AES-256-GCM Encrypted"
+        string email UK
+        string contactInfo "AES-256-GCM Encrypted"
+        string district
+        string preferredLanguage
+    }
+
+    CONSULTATION {
+        ObjectId _id PK
+        string consultationId UK
+        ObjectId patientId FK
+        ObjectId doctorId FK
+        ObjectId hospitalId FK
+        string diagnosis "AES-256-GCM Encrypted"
+        string icdCode
+        string notes "AES-256-GCM Encrypted"
+        string district
+    }
+
+    PRESCRIPTION {
+        ObjectId _id PK
+        string prescriptionId UK
+        ObjectId consultationId FK
+        ObjectId patientId FK
+        ObjectId doctorId FK
+        string drugName
+        string dosage
+        int durationDays
+        string status
+    }
+
+    DISPENSING {
+        ObjectId _id PK
+        ObjectId prescriptionId FK
+        ObjectId patientId FK
+        ObjectId pharmacyId FK
+        ObjectId staffId FK
+        date dispensedDate
+    }
+
+    VERIFICATIONTOKEN {
+        ObjectId _id PK
+        string token UK "SHA-256 Hash"
+        ObjectId consultationId FK
+        string patientNicHash
+        date expiresAt "90-Day TTL"
+    }
+
+    OUTBREAKALERT {
+        ObjectId _id PK
+        string disease
+        string location
+        string severity
+        string status
+        int affectedCount
+        ObjectId approvedBy FK
+    }

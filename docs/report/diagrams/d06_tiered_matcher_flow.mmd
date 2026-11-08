@@ -1,0 +1,21 @@
+flowchart TD
+    Input["Clinician enters symptom tokens<br/>(e.g., ['fever', 'joint pain', 'headache'])"] --> Tokenize["Normalize & Standardize Tokens (Lower, Trim)"]
+    Tokenize --> CheckTier1["Query Tier 1: 41 Curated Profiles (dataset.csv)<br/>TF-IDF + Cosine Centroid Sim"]
+    CheckTier1 --> EvalTier1{"Tier 1 Top Match Confidence >= 40.0%?"}
+
+    EvalTier1 -- "Yes (Confidence >= 40%)" --> ApplyGuards["Apply Clinical Cardinal Symptom Guards"]
+    ApplyGuards --> TyphoidCheck{"Disease is Typhoid & missing step-ladder fever?"}
+    TyphoidCheck -- "Yes" --> TyphoidPenalty["Apply 0.55x Confidence Penalty"]
+    TyphoidCheck -- "No" --> PassTier1["Retain Curated Match"]
+    TyphoidPenalty --> FinalSort
+    PassTier1 --> FinalSort
+
+    EvalTier1 -- "No (Confidence < 40%)" --> QueryTier2["Query Tier 2: Sourced Knowledge Base (174 Profiles)<br/>Sparse TF-IDF with Empirical Edge Probability Weights (P >= 15%)"]
+    QueryTier2 --> CheckAtLeastOne{"At least 1 symptom matched?"}
+    CheckAtLeastOne -- "No" --> EmptyReturn["Return Empty List<br/>(clinicalValidation: not_established)"]
+    CheckAtLeastOne -- "Yes" --> BlendMatches["Blend Tier 1 and Tier 2 Results"]
+    BlendMatches --> FinalSort["Rank Candidates by Confidence"]
+
+    FinalSort --> TagSource["Tag Provenance (source: 'curated' vs. 'knowledge_base')"]
+    TagSource --> AttachDisclaimer["Attach Mandatory Contract:<br/>clinicalValidation: 'not_established'"]
+    AttachDisclaimer --> Response["Return HTTP 200 JSON Array"]

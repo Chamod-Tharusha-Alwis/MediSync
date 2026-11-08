@@ -1,5 +1,8 @@
 # Sub-Project 1 — Owner Actions
 
+> [!NOTE]
+> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
+
 Only the owner performs these actions. The agent never executes destructive local cleanups, production mutations, or Render environment changes.
 
 ---

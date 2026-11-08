@@ -69,8 +69,9 @@ All 3,465 automated offline tests passed with zero failures across 207 test suit
 1. **Tiered Inference Pipeline**:
    - **Tier 1 (Curated)**: 41 reference profiles (`dataset.csv`). Takes absolute precedence when top match confidence $\ge 40.0\%$.
    - **Tier 2 (Sourced KB)**: 174 mapped conditions queried using probability-weighted sparse TF-IDF vectors.
-2. **Resource Consumption on Render Free**:
-   - Peak inference RAM measured via `tracemalloc` at **0.22 MB RSS**, well below the 200 MB internal budget and 512 MB Render Free container ceiling.
+2. **Resource Consumption & Latency on Render Free**:
+   - Process Resident Set Size (RSS) measured via `psutil` at **196.82 MB** after Tier 1 + Tier 2 load and 100 predictions (38.44% utilization of the 512 MB Render Free container ceiling; Python heap allocation delta during inference is ~0.22 MB via `tracemalloc`).
+   - Inference Latency (200 test queries): mean = 0.77 ms, median (p50) = 0.64 ms, p95 = 1.24 ms.
 3. **Clinical Cardinal Symptom Guards**:
    - Typhoid rule: Requires hallmark step-ladder fever. Multi-pain queries without fever receive a 0.55x confidence penalty.
 4. **Unit Verification (`ml-engine/test_tiered_matcher.py` - 7/7 passed)**:

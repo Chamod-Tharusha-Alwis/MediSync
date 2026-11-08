@@ -1,10 +1,10 @@
 # MediSync Platform Master Plan Phase Status (Items 5A through 5H)
 
-**Audit Date**: 2026-11-08 (Sub-Project 4 Truth Pass)  
+**Audit Date**: 2026-11-09 (Sub-Project 5 Claims Audit)  
 **Repository**: MediSync (`c:\Users\chamo\OneDrive\Desktop\Final project\medisync`)  
-**Base Commit**: `main` @ `6b328f0` (PR #27 merged)  
-**Branch**: `feat/sub4-d0` (stacked on `main`)  
-**Offline Gate Status**: 3,454 / 3,454 Passed (0 Failed, 205 test suites)  
+**Base Commit**: `main` @ `7ba2840` (PR #35 merged)  
+**Branch**: `feat/sub5-submission-pack` (stacked on `main`)  
+**Offline Gate Status**: 3,465 / 3,465 Passed (0 Failed, 207 test suites)  
 **Protected Hashes Ledger**: 15 / 15 accounted for and valid (`sourceFrozen: true`)
 
 ---
@@ -18,8 +18,8 @@
 | **5C** | Census 2024 Population-Scaled Incidence Normalization | **PARTIAL** | `server/src/data/districtPopulation2024.json`<br>`client/src/data/districtPopulation2024.json`<br>`server/src/services/incidenceService.js` | `server/tests/phase5PopulationIncidence.test.js` (8/8 PASS) | Verified offline: Pipeline and calculation exist; all 25 districts default to `null` with `status: pending_owner_data`. UI displays "population data pending". Requires owner entry from official DCS table. |
 | **5D** | Admin Outbreak Workflow (Confirm, False Alarm, Resolve Lifecycle) | **DONE** | `server/src/controllers/adminController.js`<br>`client/src/pages/admin/OutbreakAlerts.jsx`<br>`server/src/models/OutbreakAlert.js` | `server/tests/phase4AdminOutbreakMlAndSessions.test.js`<br>`server/tests/outbreakAlertLifecycle.test.js` | Verified offline: Confirmed alerts allow Resolve transition; requires mandatory reason ($\ge 5$ chars); logs zero-PII audit events. |
 | **5E** | Multi-Disease Outbreak Broadcasts & Public Alert Banners | **DONE** | `server/src/controllers/alertController.js`<br>`client/src/components/common/ActiveOutbreakBanner.jsx`<br>`client/src/components/common/OutbreakBanner.jsx` | `client/src/__master_offline__/outbreak-alert-actions.test.jsx` | Verified offline: Active banners displayed across Doctor, Patient, Pharmacy, and Admin portals; 100% trilingual parity. |
-| **5F** | Clinical AI Suggester Calibration & Non-Diagnosis Disclaimers | **DONE** | `ml-engine/app.py`<br>`client/src/pages/doctor/NewConsultation.jsx`<br>`docs/release/PROTECTED_HASHES.json` | `server/tests/phase1DoctorAiColdStart.test.js`<br>`client/src/__master_offline__/min-font-size.test.js` | Verified offline: Urgency gated on high risk + $\ge 50\%$ confidence + $\ge 2$ matched symptoms; renders "Reference match, not a diagnosis"; re-pinned hash `a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59`. |
-| **5G** | Medicine Safety Rules & Formulary Limits Engine | **DONE** | `server/src/utils/medicineSafetyEngine.js`<br>`server/src/data/medicine_safety_limits.json`<br>`client/src/components/common/MedicineSafetyPanel.jsx` | `server/tests/phase1MedicineSafetyRules.test.js` (6/6 PASS) | Verified offline: Duplicate active ingredient detection, WHO/BNF duration/daily dose limits, unconfigured drug pending status, clinician acknowledgment justification. |
+| **5F** | Clinical AI Suggester Calibration & Non-Diagnosis Disclaimers | **DONE** | `ml-engine/app.py`<br>`client/src/pages/doctor/NewConsultation.jsx`<br>`docs/release/PROTECTED_HASHES.json` | `server/tests/phase1DoctorAiColdStart.test.js`<br>`client/src/__master_offline__/min-font-size.test.js` | Verified offline: Tiered Matcher V2 with 41 Tier 1 curated profiles and 174 Tier 2 KB profiles; step-ladder fever check for Typhoid; renders "Reference match, not a diagnosis"; re-pinned hash `0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37`. |
+| **5G** | Medicine Safety Rules & Formulary Limits Engine | **DONE** | `server/src/utils/medicineSafetyEngine.js`<br>`server/src/data/medicine_safety_limits.json`<br>`client/src/components/common/MedicineSafetyPanel.jsx` | `server/tests/phase1MedicineSafetyRules.test.js` (6/6 PASS) | Verified offline: Duplicate active ingredient detection, WHO/BNF duration/daily dose limits (status: `unverified_owner_must_check`), unconfigured drug pending status, clinician acknowledgment justification. |
 | **5H** | QR-Verified Consultation Records & Patient History Access Gate | **DONE** | `server/src/models/VerificationToken.js`<br>`server/src/services/verificationTokenService.js`<br>`server/src/controllers/verificationController.js`<br>`server/src/utils/pdfGenerator.js`<br>`client/src/pages/public/VerifyConsultation.jsx` | `server/tests/phase2VerificationTokenAndHistoryGate.test.js` (6/6 PASS) | Verified offline: 256-bit token with SHA-256 hash storage; zero PII public status; constant-time NIC comparison for history download; PDF QR code embedding. |
 
 ---
@@ -68,7 +68,7 @@
 
 ### 5F — Clinical AI Suggester Calibration & Non-Diagnosis Disclaimers
 - **Implementation**:
-  - `ml-engine/app.py`: High severity alone no longer triggers emergency badge; requires $combined\_score \ge 0.50$ AND $\ge 2$ symptoms. Re-pinned in `docs/release/PROTECTED_HASHES.json` (`a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59`).
+  - `ml-engine/app.py`: High severity alone no longer triggers emergency badge; requires $combined\_score \ge 0.50$ AND $\ge 2$ symptoms. Re-pinned in `docs/release/PROTECTED_HASHES.json` (`0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37`).
   - `client/src/pages/doctor/NewConsultation.jsx`: Renders `"Reference match, not a diagnosis"` disclaimer under all prediction cards.
 - **Status**: **DONE**. Re-pinned and passed full offline suite.
 

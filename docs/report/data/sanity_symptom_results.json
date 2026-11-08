@@ -1,0 +1,274 @@
+{
+  "testCases": [
+    {
+      "id": "SC-01",
+      "description": "Upper respiratory presentation with anosmia",
+      "inputSymptoms": [
+        "dry cough",
+        "fatigue",
+        "loss of taste"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Tuberculosis",
+      "topConfidence": 39.88,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-02",
+      "description": "Gastroesophageal reflux clinical presentation",
+      "inputSymptoms": [
+        "heartburn",
+        "acid reflux",
+        "chest tightness"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Esophagitis",
+      "topConfidence": 42.77,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-03",
+      "description": "Dependent edema with exertional breathlessness",
+      "inputSymptoms": [
+        "swollen ankles",
+        "weight gain",
+        "shortness of breath on exertion"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Acanthosis nigricans",
+      "topConfidence": 45.33,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-04",
+      "description": "Allergic rhinoconjunctivitis presentation",
+      "inputSymptoms": [
+        "sneezing",
+        "itchy eyes",
+        "watery eyes",
+        "clear rhinorrhea"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Allergy",
+      "topConfidence": 27.49,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-05",
+      "description": "Resting tremor and extrapyramidal signs",
+      "inputSymptoms": [
+        "tremor",
+        "bradykinesia",
+        "muscle rigidity"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Malaria",
+      "topConfidence": 13.07,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-06",
+      "description": "Podagra / acute monoarthritis presentation",
+      "inputSymptoms": [
+        "pain in big toe",
+        "joint redness",
+        "swelling in toe"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Dimorphic hemmorhoids(piles)",
+      "topConfidence": 18.45,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-07",
+      "description": "Otitis media clinical presentation",
+      "inputSymptoms": [
+        "ear pain",
+        "impaired hearing",
+        "fluid draining from ear"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Conductive hearing loss",
+      "topConfidence": 42.94,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-08",
+      "description": "Endocrine polyuria/polydipsia triad",
+      "inputSymptoms": [
+        "frequent urination",
+        "excessive thirst",
+        "unexplained weight loss"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Urge incontinence",
+      "topConfidence": 37.33,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-09",
+      "description": "Meningism / intracranial acute headache",
+      "inputSymptoms": [
+        "sudden severe headache",
+        "stiff neck",
+        "photophobia"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Migraine",
+      "topConfidence": 44.6,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-10",
+      "description": "Autoimmune malar rash presentation",
+      "inputSymptoms": [
+        "skin rash on face",
+        "malar butterfly rash",
+        "joint stiffness"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Scabies",
+      "topConfidence": 36.58,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-11",
+      "description": "Irritable bowel functional triad",
+      "inputSymptoms": [
+        "abdominal bloating",
+        "cramping",
+        "alternating constipation and diarrhea"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Ileus",
+      "topConfidence": 49.4,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-12",
+      "description": "B-symptom constitutional lymphadenopathy query",
+      "inputSymptoms": [
+        "intermittent fever",
+        "night sweats",
+        "swollen lymph nodes in neck"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Sialoadenitis",
+      "topConfidence": 41.19,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-13",
+      "description": "Laryngeal hoarseness and dysphagia",
+      "inputSymptoms": [
+        "hoarseness of voice",
+        "chronic dry cough",
+        "difficulty swallowing"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Diabetes insipidus",
+      "topConfidence": 23.24,
+      "topSource": "knowledge_base",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-14",
+      "description": "Postprandial retrosternal burning",
+      "inputSymptoms": [
+        "burning sensation in chest after eating",
+        "sour taste in mouth"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 5,
+      "topDisease": "Dimorphic hemmorhoids(piles)",
+      "topConfidence": 14.4,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    },
+    {
+      "id": "SC-15",
+      "description": "Inflammatory axial back stiffness presentation",
+      "inputSymptoms": [
+        "lower back stiffness in morning",
+        "hip stiffness improving with exercise"
+      ],
+      "httpStatus": 200,
+      "disclaimerVerified": true,
+      "validShape": true,
+      "predictionCount": 4,
+      "topDisease": "Arthritis",
+      "topConfidence": 12.69,
+      "topSource": "curated",
+      "topUrgent": false,
+      "status": "PASS"
+    }
+  ],
+  "allPassed": true
+}

@@ -152,7 +152,7 @@
   1. **Tiered Matcher V2 Architecture in `ml-engine/app.py`**:
      - Tier 1: 41 curated profiles (`dataset.csv`). Takes absolute precedence whenever top match confidence $\ge 40.0\%$. Sri Lankan priority diseases (Dengue, Malaria, Typhoid, TB, etc.) served exclusively by Tier 1.
      - Tier 2: 174 active mapped conditions with empirical edge probabilities from `disease_symptom_kb.v1.json`. Evaluated via sparse TF-IDF with empirical probability term weighting.
-     - Peak memory RSS verified via tracemalloc at **0.22 MB**, well below the 200 MB target and 512 MB Render Free tier limit.
+     - Process RSS memory verified via psutil at **196.82 MB** (38.44% of 512 MB Render Free limit; Python heap allocation delta is ~0.22 MB via tracemalloc). Inference latency p50 = 0.64 ms, p95 = 1.24 ms.
   2. **Clinical Cardinal Symptom Guards**:
      - Typhoid clinical rule: hallmark step-ladder fever requirement applied. Non-fever localized multi-pain queries discount enteric fever likelihood, preventing false positive top matches.
      - At-least-one matched symptom rule applied to Tier 1 and Tier 2 candidates.

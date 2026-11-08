@@ -21,7 +21,7 @@ This document maps all architectural, clinical, and data requirements across Pha
 | **REQ-D2b-3** | D2b | Quarantine Isolation | `pytest ml-engine/test_disease_symptom_kb.py` | PASS | 136 noisy/dummy cluster conditions isolated in `kb_quarantine.v1.json` |
 | **REQ-D2b-4** | D2b | SL Priority Disease Protection | `pytest ml-engine/test_disease_symptom_kb.py` | PASS | Dengue, Malaria, Typhoid, Leptospirosis protected from KB contamination |
 | **REQ-D3-1** | D3 | Tiered Retrieval Architecture | `pytest ml-engine/test_tiered_matcher.py` | PASS (7/7) | Tier 1 curated wins at $\ge 40\%$; Tier 2 queries probability-weighted TF-IDF |
-| **REQ-D3-2** | D3 | ML RSS Memory Budget | `pytest ml-engine/test_tiered_matcher.py` | PASS | Peak inference memory ~0.22 MB RSS (well within 512 MB Render Free limit) |
+| **REQ-D3-2** | D3 | ML RSS Memory Budget | `pytest ml-engine/test_tiered_matcher.py` | PASS | Process RSS ~196.8 MB via psutil (38.4% of 512 MB Render Free limit); traced heap delta ~0.22 MB; p50 latency 0.64 ms |
 | **REQ-D3-3** | D3 | Cardinal Symptom Guards | `pytest ml-engine/test_tiered_matcher.py` | PASS | Typhoid requires step-ladder fever; pure pain discounts enteric fever |
 | **REQ-D3-4** | D3 | Negative & Degraded Cases | `pytest ml-engine/test_tiered_matcher.py` | PASS | Pure pain query doesn't suggest Typhoid; empty query returns 200 without crash |
 | **REQ-D3-5** | D3 | Protected Pin Update | `node scripts/run_offline_tests.js` | PASS (15/15) | `ml-engine/app.py` SHA-256 updated and accounted for |

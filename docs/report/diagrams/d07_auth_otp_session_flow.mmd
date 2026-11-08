@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    actor User as User (Clinician / Patient / Staff)
+    participant Client as Frontend SPA
+    participant Server as Backend API
+    participant Mail as Email Dispatcher
+    participant DB as MongoDB Atlas
+
+    User->>Client: Enters Email / NIC and Password
+    Client->>Server: POST /api/auth/login
+    Server->>DB: Query User by identifier
+    alt Password Mismatch / Account Locked
+        Server-->>Client: HTTP 401 "Invalid Credentials" (Rate limited)
+    else Password Verified
+        Server->>Server: Generate cryptographically secure 6-digit OTP
+        Server->>DB: Insert OTPSession (expires: 300 seconds TTL)
+        Server->>Mail: Dispatch OTP to registered email
+        Server-->>Client: HTTP 200 { requireOtp: true, sessionId: "..." }
+    end
+
+    User->>Client: Enters received 6-digit OTP code
+    Client->>Server: POST /api/auth/verify-otp { sessionId, code }
+    Server->>DB: Lookup OTPSession by sessionId
+    alt OTP Expired or Code Mismatch
+        Server-->>Client: HTTP 400 "Invalid or Expired OTP"
+    else OTP Valid
+        Server->>DB: Delete OTPSession (Single-use consumption)
+        Server->>Server: Sign Access JWT (Role, User ID, Expiry)
+        Server->>Server: Generate Refresh Session Token
+        Server-->>Client: HTTP 200 { token, user: { role, preferredLanguage } }
+        Client->>Client: Store JWT in secure memory / session state
+        Client-->>User: Redirect to role-specific dashboard
+    end

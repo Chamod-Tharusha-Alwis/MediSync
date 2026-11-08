@@ -24,6 +24,16 @@ MediSync is a secure, full-stack healthcare platform featuring a zero-trust arch
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.
 - **Clinical Validation Disclaimer**: All ML inference and epidemiological trend observation endpoints operate under the regulatory contract `clinicalValidation: not_established`.
 
+## Documentation & Capstone Submission Pack
+- **Master Documentation Index**: [`docs/report/INDEX.md`](docs/report/INDEX.md)
+- **Technical Report (Full Thesis)**: [`docs/report/TECHNICAL_REPORT.md`](docs/report/TECHNICAL_REPORT.md)
+- **Project Overview (Plain Language)**: [`docs/report/PROJECT_OVERVIEW.md`](docs/report/PROJECT_OVERVIEW.md)
+- **Viva Defense Guide (32 Q&As)**: [`docs/report/VIVA_QA.md`](docs/report/VIVA_QA.md)
+- **Live Demonstration Script**: [`docs/report/DEMO_SCRIPT.md`](docs/report/DEMO_SCRIPT.md)
+- **Presentation Slides Outline**: [`docs/report/SLIDES_OUTLINE.md`](docs/report/SLIDES_OUTLINE.md)
+- **Publication Figures (F01–F14)**: [`docs/report/figures/FIGURES.md`](docs/report/figures/FIGURES.md)
+- **Document Export Guide (DOCX/PDF)**: [`docs/report/export/CONVERSION_GUIDE.md`](docs/report/export/CONVERSION_GUIDE.md)
+
 ## Local Development
 
 You can run the entire stack via Docker:

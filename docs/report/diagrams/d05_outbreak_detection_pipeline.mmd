@@ -1,0 +1,24 @@
+flowchart TD
+    Start["Scheduled Cron (0 2 * * * Asia/Colombo) or Admin Scan"] --> FetchCases["Query Clinical Consultations (Last 37 Days)"]
+    FetchCases --> DynamicGrouping["Dynamic Grouping by (District, DiseaseId)<br/>No Disease Whitelist: Evaluates Any Recorded ICD Code"]
+
+    subgraph EvaluationPipeline["Statistical Verification Gates"]
+        Gate1{"Gate 1: Episode Floor<br/>N >= 5 confirmed cases?"}
+        Gate2{"Gate 2: Temporal Persistence<br/>Signal elevated across 2 consecutive calendar days?"}
+        Gate3{"Gate 3: Statistical Deviation<br/>z-score > +2.0 relative to rolling 30-day baseline?"}
+    end
+
+    DynamicGrouping --> Gate1
+    Gate1 -- "No (N < 5)" --> Suppress1["SUPPRESSED<br/>(Reason: CASE_FLOOR_NOT_MET)"]
+    Gate1 -- "Yes (N >= 5)" --> Gate2
+    Gate2 -- "No (Isolated 1-Day Spike)" --> Suppress2["SUPPRESSED<br/>(Prevents Single-Day Artifact Alarms)"]
+    Gate2 -- "Yes (Sustained >= 2 Days)" --> Gate3
+    Gate3 -- "No (z <= 2.0)" --> NormalBaseline["NORMAL BASELINE FLUCTUATION"]
+    Gate3 -- "Yes (z > 2.0)" --> TriggerAlert["CREATE / ESCALATE OUTBREAK ALERT"]
+
+    TriggerAlert --> InsertAlert["Persist OutbreakAlert (Status: 'Pending', Danger: High/Critical)"]
+    InsertAlert --> AdminNotify["Notify Epidemiologist in Admin Outbreak Monitor"]
+    AdminNotify --> AdminReview{"Super Admin Review"}
+    AdminReview -- "Approve" --> PublicBroadcast["Public Broadcast Banner + Regional Email Notice"]
+    AdminReview -- "False Alarm" --> MarkFalseAlarm["Mark False Alarm (Audit Logged)"]
+    PublicBroadcast --> ResolveFlow["Resolve Flow (Requires Mandatory Notes >= 5 chars)"]

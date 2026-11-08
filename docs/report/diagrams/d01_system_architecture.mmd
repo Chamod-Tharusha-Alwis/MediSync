@@ -1,0 +1,44 @@
+flowchart TD
+    subgraph ClientLayer["Frontend Client (React 18 / Vercel)"]
+        UI_Patient["Patient Portal"]
+        UI_Doctor["Doctor Portal"]
+        UI_Pharmacy["Pharmacy Portal"]
+        UI_Admin["Hospital / Admin Portal"]
+        UI_Public["Public Health Map & QR Verify"]
+    end
+
+    subgraph GatewayLayer["Backend API Gateway (Express.js / Render)"]
+        AuthMiddleware["JWT & Consent Middleware"]
+        EncryptionEngine["AES-256-GCM Field Encryption"]
+        SurveillanceSvc["Outbreak Surveillance Service"]
+        MedicineSafety["Medicine Safety & Formularies Engine"]
+        PDFGenerator["WinAnsi PDF Summary Generator"]
+    end
+
+    subgraph ServiceLayer["Machine Learning Microservice (Flask / Render)"]
+        Tier1["Tier 1: Curated Reference Profiles (41)"]
+        Tier2["Tier 2: Empirical Sparse KB (174)"]
+        ICD_Catalog["ICD-10-CM Leaf Catalog (71,704)"]
+    end
+
+    subgraph DataLayer["Persistence & Storage (MongoDB Atlas)"]
+        MongoCore["Encrypted Core: Patient / Consultation / Prescription"]
+        MongoOps["Operational: OutbreakAlert / AuditLog / Dispensing"]
+        MongoTTL["TTL Tokens: VerificationToken (90d) / OTPSession (300s)"]
+    end
+
+    subgraph ExternalServices["External Providers"]
+        MailService["Transactional Email (Resend / Brevo)"]
+    end
+
+    ClientLayer -->|HTTPS / REST / JWT| AuthMiddleware
+    AuthMiddleware --> EncryptionEngine
+    EncryptionEngine --> MongoCore
+    SurveillanceSvc --> MongoOps
+    AuthMiddleware --> SurveillanceSvc
+    AuthMiddleware --> MedicineSafety
+    AuthMiddleware --> PDFGenerator
+    MedicineSafety --> ServiceLayer
+    AuthMiddleware -->|HMAC-SHA256 Internal Token| ServiceLayer
+    PDFGenerator --> MongoTTL
+    GatewayLayer --> MailService
