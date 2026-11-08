@@ -46,8 +46,9 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
   });
 
   test('2. ML state "waking" on cold-start timeout (>5s ECONNABORTED): returns clean waking status', async () => {
-    const timeoutErr = new Error('timeout of 5000ms exceeded');
+    const timeoutErr = new Error('timeout of 10000ms exceeded');
     timeoutErr.code = 'ECONNABORTED';
+    timeoutErr.request = {};
     const mockGet = jest.fn().mockRejectedValue(timeoutErr);
 
     const res = await readAdminMlStatus({
@@ -58,7 +59,7 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
     });
 
     expect(res.available).toBe(false);
-    expect(res.status).toBe('waking');
+    expect(res.status).toBe('unavailable');
     expect(res.availabilityState).toBe('waking');
     expect(res.dataPoints).toBeNull();
     expect(res.models.diseasePrediction).toBe('warming_up');
@@ -79,7 +80,7 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
       });
 
       expect(res.available).toBe(false);
-      expect(res.status).toBe('waking');
+      expect(res.status).toBe('unavailable');
       expect(res.availabilityState).toBe('waking');
       expect(res.models.diseasePrediction).toBe('warming_up');
     }
@@ -88,6 +89,7 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
   test('4. ML state "waking" on connection reset / refused: returns waking status', async () => {
     const connErr = new Error('connect ECONNREFUSED 127.0.0.1:5001');
     connErr.code = 'ECONNREFUSED';
+    connErr.request = {};
     const mockGet = jest.fn().mockRejectedValue(connErr);
 
     const res = await readAdminMlStatus({
@@ -98,7 +100,7 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
     });
 
     expect(res.available).toBe(false);
-    expect(res.status).toBe('waking');
+    expect(res.status).toBe('unavailable');
     expect(res.availabilityState).toBe('waking');
   });
 
@@ -120,10 +122,17 @@ describe('Task C — ML Status Resilience Contract Tests', () => {
     expect(res.category).toBe('not_found');
   });
 
-  test('6. Missing baseUrl defaults cleanly without throwing INVALID_ML_CONFIGURATION', () => {
-    expect(() => modelStatusUrl()).not.toThrow();
-    const defaultUrl = modelStatusUrl();
-    expect(defaultUrl).toMatch(/\/model-status$/);
+  test('6. Production URL resolution and clean unconfigured handling', async () => {
+    expect(modelStatusUrl('https://medisync-ml.onrender.com')).toBe('https://medisync-ml.onrender.com/model-status');
+    expect(() => modelStatusUrl('')).toThrow('INVALID_ML_CONFIGURATION');
+
+    const unconfigured = await readAdminMlStatus({
+      baseUrl: '',
+      get: jest.fn(),
+      token: jest.fn()
+    });
+    expect(unconfigured.available).toBe(false);
+    expect(unconfigured.category).toBe('config');
   });
 
   test('7. probeAdminMlStatusWithRetry dispatches non-blocking warm-up ping to /health', async () => {

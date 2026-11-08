@@ -28,11 +28,10 @@ function failedStatusFields(data) {
   return fields;
 }
 
-function modelStatusUrl(baseUrl, { allowLoopbackHttp = (process.env.NODE_ENV !== 'production') } = {}) {
-  const effective = baseUrl || (process.env.NODE_ENV === 'production' ? 'https://medisync-ml.onrender.com' : 'http://127.0.0.1:5001');
-  if (typeof effective !== 'string' || !effective || effective !== effective.trim() || /[\s\\@?#]/.test(effective)) throw Error('INVALID_ML_CONFIGURATION');
-  if (!/^[a-z][a-z\d+.-]*:\/\/[^/]+(?:\/+)?$/i.test(effective)) throw Error('INVALID_ML_CONFIGURATION');
-  const url = new URL(effective);
+function modelStatusUrl(baseUrl, { allowLoopbackHttp = false } = {}) {
+  if (typeof baseUrl !== 'string' || !baseUrl || baseUrl !== baseUrl.trim() || /[\s\\@?#]/.test(baseUrl)) throw Error('INVALID_ML_CONFIGURATION');
+  if (!/^[a-z][a-z\d+.-]*:\/\/[^/]+(?:\/+)?$/i.test(baseUrl)) throw Error('INVALID_ML_CONFIGURATION');
+  const url = new URL(baseUrl);
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if (!url.hostname || url.username || url.password || !/^\/+$/u.test(url.pathname) ||
       (loopback && !allowLoopbackHttp) ||
@@ -41,29 +40,26 @@ function modelStatusUrl(baseUrl, { allowLoopbackHttp = (process.env.NODE_ENV !==
   return `${url.origin}/model-status`;
 }
 
-async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = (process.env.NODE_ENV !== 'production'), log = console.warn }) {
+async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = false, log = console.warn }) {
   let stage = 'prepare';
   let dispatched = false;
   let responseSeen = false;
   let upstreamStatus = 'none';
   let failedFields = [];
   try {
-    const effective = baseUrl || (process.env.NODE_ENV === 'production' ? 'https://medisync-ml.onrender.com' : 'http://127.0.0.1:5001');
-    const isLoopback = ['localhost', '127.0.0.1'].some(h => effective.includes(h));
-    const url = modelStatusUrl(effective, { allowLoopbackHttp: allowLoopbackHttp || (process.env.NODE_ENV !== 'production' && isLoopback) });
+    const url = modelStatusUrl(baseUrl, { allowLoopbackHttp });
     if (typeof get !== 'function' || typeof token !== 'function') throw Error('INVALID_ML_CONFIGURATION');
     const key = token();
     if (typeof key !== 'string' || !key || key !== key.trim() || /[\r\n\0]/.test(key)) throw Error('INVALID_ML_CONFIGURATION');
-    stage = 'request';
-    dispatched = true;
     const pending = get(url, {
-      timeout: 5000, maxRedirects: 0, maxContentLength: 65536,
+      timeout: 10000, maxRedirects: 0, maxContentLength: 65536,
       headers: { 'x-internal-key': key }
     }, {
       onDispatch: () => { dispatched = true; },
       onResponse: response => { responseSeen = true; upstreamStatus = safeStatus(response?.status); }
     });
     if (!pending || typeof pending.then !== 'function') throw Error('INVALID_ML_CONFIGURATION');
+    stage = 'request';
     const response = await pending;
     stage = 'response';
     upstreamStatus = safeStatus(response?.status);
@@ -99,7 +95,7 @@ async function readAdminMlStatus({ get, token, baseUrl, allowLoopbackHttp = (pro
     const isWaking = ['timeout', 'connection'].includes(category) || [502, 503, 504].includes(upstreamStatus);
     const availabilityState = isWaking ? 'waking' : (category === 'config' ? 'unconfigured' : 'down');
     return {
-      status: isWaking ? 'waking' : 'unavailable',
+      status: 'unavailable',
       available: false,
       availabilityState,
       category,
@@ -137,7 +133,7 @@ async function probeAdminMlStatusWithRetry({
   }
 
   // Non-blocking warm-up ping to /health if ping helper is provided
-  if (typeof ping === 'function') {
+  if (typeof ping === 'function' && baseUrl) {
     try {
       const url = new URL(baseUrl);
       const healthUrl = `${url.origin}/health`;

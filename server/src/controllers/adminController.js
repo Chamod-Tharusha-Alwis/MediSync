@@ -20,7 +20,7 @@ const mongoose = require('mongoose');
 const { checkMlHealth } = require('../services/mlPredictionService');
 const { isUsingPersistentRedis } = require('../config/redis');
 
-const ML_ENGINE_URL = process.env.ML_ENGINE_URL || (process.env.NODE_ENV === 'production' ? 'https://medisync-ml.onrender.com' : 'http://127.0.0.1:5001');
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
 
 // ─── EXISTING: getSystemStats ─────────────────────────────────────────────────
 exports.getSystemStats = async (req, res) => {
