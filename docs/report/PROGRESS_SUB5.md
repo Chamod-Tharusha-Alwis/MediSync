@@ -8,8 +8,8 @@
 | **S0** | Preflight (Env setup, branch, baseline gate) | DONE | `1be83ec` | 3,465 / 0 | PASS | 15/15 |
 | **S1** | Truth & Safety Corrections (RSS, Heuristics, Limits, Synonyms, Claims, Owner Checklist) | DONE | `b47cf2b` | 3,465 / 0 | PASS | 15/15 |
 | **S2** | Project Inventory & Quality Scan (Deterministic scan, security, license, coverage) | DONE | `d2b7082` | 3,465 / 0 | PASS | 15/15 |
-| **S3** | System Structure, File Guide, API Reference & Data Model | IN PROGRESS | - | - | - | - |
-| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | NOT STARTED | - | - | - | - |
+| **S3** | System Structure, File Guide, API Reference & Data Model | DONE | `pending` | 3,465 / 0 | PASS | 15/15 |
+| **S4** | ML Evaluation Figures (F01–F14) & System Diagrams | IN PROGRESS | - | - | - | - |
 | **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | NOT STARTED | - | - | - | - |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | NOT STARTED | - | - | - | - |
 | **S7** | Final Verification & Link Integrity Check | NOT STARTED | - | - | - | - |
@@ -63,3 +63,14 @@
   - Secret scan: 219 findings audited (186 test fixtures, 33 doc/template placeholders; 0 live leaked secrets).
   - TODO/FIXME inventory: 123 items cataloged.
   - Dependency licensing: 100% permissive (MIT/Apache/ISC/BSD); public domain US government data for ICD and CDC survey data.
+
+### Phase S3
+- **Annotated Project Structure (docs/report/PROJECT_STRUCTURE.md)**:
+  - Complete hierarchical tree across all 67 tracked directories with single-line purpose per folder.
+- **Data Model & Cryptographic Schema (docs/report/DATA_MODEL.md)**:
+  - Complete specification of all 29 Mongoose models across core clinical, facility, surveillance, and operations collections.
+  - Documented AES-256-GCM field encryption, key ring rotation (keyVersion), blind indices (_bi), and TTL indexes (OTPSession 300s, RecoveryToken 900s, VerificationToken 90d, ClinicalCommand 24h).
+- **REST API Reference (docs/report/API_REFERENCE.md)**:
+  - Comprehensive reference for all 191 endpoints (187 Express + 4 ML Engine) across 12 functional domains with authentication guards, rate limits, and feature gates.
+- **Complete File Guide (docs/report/FILE_GUIDE.md)**:
+  - Generated via scripts/build_file_guide.py: covers all 1,129 tracked files with LOC, role, purpose, and all 15 SHA-256 protected ledger pins highlighted. Historical receipts compacted.
