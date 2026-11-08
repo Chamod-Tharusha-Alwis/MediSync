@@ -90,6 +90,14 @@ const LAB_TEST_SUGGESTIONS = [
   'Complement C3 / C4',
 ];
 
+const CURATED_REFERENCE_ICD_CODES = new Set([
+  'H81.1', 'B20', 'L70.0', 'K70.1', 'T78.4', 'M13.9', 'J45.9', 'M47.8',
+  'B01.9', 'K83.1', 'J00', 'A90', 'E11.9', 'K64.9', 'T88.7', 'B35.9',
+  'K21.9', 'K52.9', 'I21.9', 'B16.9', 'B17.1', 'B17.0', 'B17.2', 'I10',
+  'E05.9', 'E16.2', 'E03.9', 'L01.0', 'R17', 'B54', 'G43.9', 'M19.9',
+  'I61.9', 'K27.9', 'J18.9', 'L40.9', 'A15.0', 'A01.0', 'B15.9', 'N39.0'
+]);
+
 /* ─── Wizard step metadata ──────────────────────────────────────────────────── */
 const STEPS = [
   { id: 1, label: 'Identify Patient', short: 'Patient', icon: FiUser },
@@ -1040,6 +1048,11 @@ const NewConsultation = () => {
                         </motion.button>
                       </div>
 
+                      <div data-testid="disease-coverage-badge" className="mb-3 text-[11px] text-slate-300 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-teal-500/20 flex items-center gap-1.5 relative z-10">
+                        <FiInfo className="text-teal-400 w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{t('doctor.coverageBadge', '41 reference symptom profiles curated; 71,704 ICD-10 conditions available for manual diagnosis.')}</span>
+                      </div>
+
                       <p role="note" data-testid="clinical-validation-disclaimer" className="mb-5 text-sm text-amber-200/90 relative z-10 flex flex-wrap items-center gap-2">
                         <span data-testid="clinical-validation-badge" className="text-[11px] font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">clinicalValidation: not_established</span>
                         <span>Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.</span>
@@ -1074,6 +1087,11 @@ const NewConsultation = () => {
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 font-mono">
                                       ICD-10: {diag.icd_code}
                                     </span>
+                                    {diag.source === 'knowledge_base' && (
+                                      <span className="text-[11px] text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800 font-mono font-semibold">
+                                        KB Reference
+                                      </span>
+                                    )}
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800">
                                       {diag.recommendedSpecialist}
                                     </span>
@@ -1301,6 +1319,13 @@ const NewConsultation = () => {
                             />
                           </div>
                         </div>
+
+                        {((selectedDiagnosis && !CURATED_REFERENCE_ICD_CODES.has(selectedIcd?.trim())) || manualDiagnosis) && (
+                          <div data-testid="non-profiled-notice" className="mt-2 text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+                            <FiInfo className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <span>{t('doctor.nonProfiledNotice', 'No symptom reference profile for this condition; select the diagnosis manually.')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

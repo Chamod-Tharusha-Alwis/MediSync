@@ -8,8 +8,9 @@
 | **D1** | Coverage Audit (71,704 ICD Catalog & Profiles) | `feat/sub4-d1` | DONE | `48627eb` | 3,458 / 0 | PASS | PASS | 15/15 |
 | **D2** | Sourced Disease–Symptom Knowledge Base | `feat/sub4-d2` | DONE | `d73e88b` | 3,463 / 0 | PASS | PASS | 15/15 |
 | **D2b** | KB Quality Filter, Probabilities, Quarantine & Mapper v2 | `feat/sub4-d2b` | DONE | `fd71344` | 3,464 / 0 | PASS | PASS | 15/15 |
-| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `9dd3bbf` | 3,464 / 0 | PASS | PASS | 15/15 |
-| **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
+| **D3** | Matcher V2 (Tiered Sparse Retrieval, 512MB RAM) | `feat/sub4-d3` | DONE | `69ee0c3` | 3,464 / 0 | PASS | PASS | 15/15 |
+| **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | DONE | `551b0ab` | 3,465 / 0 | PASS | PASS | 15/15 |
+| **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
 | **D4** | Doctor/Patient UX for "Any Disease" | `feat/sub4-d4` | NOT STARTED | - | - | - | - | - |
 | **D5** | Generic Surveillance for Any ICD Code | `feat/sub4-d5` | NOT STARTED | - | - | - | - | - |
 | **D6** | Final Hardening, Acceptance Matrix & Owner Next Steps | `feat/sub4-d6` | NOT STARTED | - | - | - | - | - |
@@ -173,3 +174,31 @@
      - `test_tiered_matcher.py`: 7/7 passed.
      - `run_offline_tests.js`: 3,464 passed, 0 failed across 206 suites.
      - Client build: exit code 0.
+
+---
+
+### Phase D4 Log
+- **Status**: COMPLETE
+- **Scope Completed**:
+  1. **Full 71,704 ICD Catalog Coverage Verified**:
+     - `icd10_clean.json` contains 71,704 leaf concepts; non-profiled diseases (Celiac disease `K90.0`, Type 1 diabetes `E10.x`, Multiple sclerosis `G35`, Crohn's disease `K50.x`, Rheumatoid arthritis `M06.9`) searched and returned via `/api/drugs/icd/search`.
+     - `Consultation` schema persists any arbitrary ICD code and diagnosis string without blocking.
+  2. **Doctor Consultation UX in `client/src/pages/doctor/NewConsultation.jsx`**:
+     - Trilingual coverage badge added above symptom suggestions: `"41 reference symptom profiles curated; 71,704 ICD-10 conditions available for manual diagnosis."`
+     - Suggestion items labeled with source badge (`KB Reference` for Tier 2 knowledge base results).
+     - Neutral notice rendered when a non-profiled condition is selected: `"No symptom reference profile for this condition; select the diagnosis manually."`
+     - "Next / Build Prescription" button enabled whenever a diagnosis is entered; never blocks consultation.
+  3. **Patient Portal UX in `client/src/pages/patient/History.jsx`**:
+     - Consultation history timeline card displays condition name and ICD badge (`ICD: <code >`) clearly.
+     - Non-profiled condition renders all clinical notes, doctor name, hospital, prescriptions, and follow-up indicators normally.
+  4. **PDF Generation & Security-Hold Compliance**:
+     - `generateConsultationSummaryPDF` generates valid `%PDF-` document buffers for non-profiled conditions when `PDF_EXPORT_ENABLED === 'true'`.
+     - Fails closed with typed `SECURITY_HOLD` when `PDF_EXPORT_ENABLED !== 'true'`.
+  5. **Trilingual Translation Parity (813 keys each)**:
+     - Added `doctor.coverageBadge` and `doctor.nonProfiledNotice` to `en.js`, `si.js`, and `ta.js` with 100% key parity (0 missing, 0 extra).
+  6. **Quality Gates & Tests**:
+     - `server/tests/phaseD4NonProfiledConsultationOffline.test.js`: 3/3 passed.
+     - `client/src/__master_offline__/d4-any-disease-coverage.test.jsx`: 1/1 passed.
+     - Offline test suite: **3,465 passed, 0 failed across 207 suites**.
+     - Client production build: **Exit code 0** (214.59 kB gzip main bundle).
+     - Protected file ledger: **15/15 accounted for and valid**.
