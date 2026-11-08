@@ -18,9 +18,9 @@
     },
     {
       "path": "ml-engine/app.py",
-      "previousApprovedSha256": "5a73ed87b1d0fea1a2233ace84e2a63098fc091829682282e5b9dac76244fb6e",
-      "releaseCandidateSha256": "a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59",
-      "reason": "Sub-Project 3 Phase P0 (2026-11-08): calibrate doctor ML urgency derivation to require high-risk profile AND similarity score >= 50% AND >= 2 matched symptoms; historical CRLF line endings preserved."
+      "previousApprovedSha256": "a84c208208332fe60a68e46624bdd8504e6623c0fbfe4474710fffa53443cb59",
+      "releaseCandidateSha256": "0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37",
+      "reason": "Sub-Project 4 Phase D3 (2026-11-09): integrate Tier 2 sparse knowledge base retrieval (174 mapped profiles from SymCAT CDC survey data) with Tier 1 precedence (41 curated profiles), clinical Typhoid fever cardinal symptom check, and peak RSS < 200 MB; historical CRLF line endings preserved."
     },
     {
       "path": "ml-engine/evaluate_symptom_model.py",

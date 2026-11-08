@@ -8,9 +8,11 @@ function inferencePredictions(payload) {
         typeof row.confidence !== 'number' || !Number.isFinite(row.confidence) || row.confidence < 0 || row.confidence > 100 ||
         (row.icd_code !== undefined && typeof row.icd_code !== 'string') ||
         (row.recommendedSpecialist !== undefined && typeof row.recommendedSpecialist !== 'string') ||
-        (row.urgent !== undefined && typeof row.urgent !== 'boolean')) throw new Error('Invalid inference response');
-    // Return only the established fields used by the clinician's suggestion display.
-    return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
+        (row.urgent !== undefined && typeof row.urgent !== 'boolean') ||
+        (row.source !== undefined && typeof row.source !== 'string') ||
+        (row.clinicalValidation !== undefined && typeof row.clinicalValidation !== 'string')) throw new Error('Invalid inference response');
+    // Return established fields used by the clinician's suggestion display.
+    return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent','source','clinicalValidation'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
   });
 }
 
