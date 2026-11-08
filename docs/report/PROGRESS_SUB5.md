@@ -13,7 +13,7 @@
 | **S5** | Technical Report (Chapters 1–12, Full Document, Project Overview) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
 | **S6** | Demo & Viva Kit (Script, Viva QA, Screenshots checklist, Slides outline) | DONE | pending | 3,465 / 0 | PASS | 15/15 |
 | **S7** | Final Verification & Link Integrity Check | DONE | pending | 3,465 / 0 | PASS | 15/15 |
-| **S8** | Morning Report & Delivery Package | NOT STARTED | - | - | - | - |
+| **S8** | Morning Report & Delivery Package | DONE | pending | 3,465 / 0 | PASS | 15/15 |
 
 ---
 
@@ -127,3 +127,12 @@ pm --prefix client run build)**:
   - Authored comprehensive index linking all 26 deliverables, 14 publication figures, 9 Mermaid diagrams, and machine-readable datasets.
 - **README & Architecture Updates**:
   - Updated README.md and ARCHITECTURE.md linking directly to docs/report/INDEX.md and docs/report/TECHNICAL_REPORT.md with verified counts only.
+
+
+### Phase S8
+- **Master Morning Delivery Report (docs/report/MORNING_REPORT.md)**:
+  - Full phase-by-phase completion matrix (S0 through S8 all 100% DONE).
+  - Complete inventory of all 26 deliverables with file sizes and relative links.
+  - Verification reproduction commands and offline vs. live boundaries.
+  - Top 10 owner actions in priority order with exact CLI commands.
+  - GitHub PR compare URL generated: https://github.com/Chamod-Tharusha-Alwis/MediSync/compare/main...feat/sub5-submission-pack
