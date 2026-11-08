@@ -135,3 +135,16 @@ MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. Th
 - **Root Security, Contracts & ML Resilience**: 62 tests (55 root + 7 ML status contracts).
 - **Total Offline Verification**: **3,465 passed, 0 failed across 207 suites**.
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.
+
+---
+
+## 6. Master Deliverables & Technical Report
+- **Master Documentation Index**: [`docs/report/INDEX.md`](docs/report/INDEX.md)
+- **Technical Report (Full Thesis)**: [`docs/report/TECHNICAL_REPORT.md`](docs/report/TECHNICAL_REPORT.md)
+- **Data Model & Cryptography Schema**: [`docs/report/DATA_MODEL.md`](docs/report/DATA_MODEL.md)
+- **REST API Reference (191 Endpoints)**: [`docs/report/API_REFERENCE.md`](docs/report/API_REFERENCE.md)
+- **Project Structure (67 Folders)**: [`docs/report/PROJECT_STRUCTURE.md`](docs/report/PROJECT_STRUCTURE.md)
+- **Complete File Guide (1,129 Files)**: [`docs/report/FILE_GUIDE.md`](docs/report/FILE_GUIDE.md)
+- **Quality & Security Scan**: [`docs/report/QUALITY_SCAN.md`](docs/report/QUALITY_SCAN.md)
+- **Architectural Diagrams (D01–D09)**: [`docs/report/diagrams/`](docs/report/diagrams/)
+- **Publication Figures (F01–F14)**: [`docs/report/figures/FIGURES.md`](docs/report/figures/FIGURES.md)
