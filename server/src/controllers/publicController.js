@@ -45,7 +45,7 @@ exports.getHealthStats = async (req, res) => {
       try { cachedDto = healthDto(cachedData.data); }
       catch (_) { console.warn('[PublicHealth] stage=CACHE_DECODE category=OPTIONAL_CACHE_INVALID'); }
     }
-    if (cachedDto) return res.json({ data: cachedDto, cached: true });
+    if (cachedDto) return res.json({ data: { ...cachedDto, verifiedCases: cachedData.data?.verifiedCases ?? cachedDto.totalCases, awaitingReviewCount: cachedData.data?.awaitingReviewCount ?? 0, state: cachedData.data?.state || 'ok' }, cached: true });
 
     stage = 'SOURCE_READ_AND_VERIFY';
     const aggregate = await loadPublicHealthStats(Consultation.collection, { connection: mongoose.connection, ...filters, mode: 'real', now: reportTime });
@@ -55,10 +55,15 @@ exports.getHealthStats = async (req, res) => {
     const forecastResult = aggregate.trend.filter(day => day.count > 0).length >= 3
       ? calculate14DayForecast(aggregate.trend)
       : { forecast: [] };
-    const statsData = healthDto({
-      ...aggregate,
-      forecast: forecastResult.forecast
-    });
+    const statsData = {
+      ...healthDto({
+        ...aggregate,
+        forecast: forecastResult.forecast
+      }),
+      verifiedCases: aggregate.verifiedCases ?? aggregate.totalCases,
+      awaitingReviewCount: aggregate.awaitingReviewCount ?? 0,
+      state: aggregate.state || 'ok'
+    };
 
     // Optional cache storage is isolated from the previous SQLite-derived values.
     try { await setCache(cacheKey, { policy: CACHE_POLICY, mode: 'real', data: statsData }, 300); }

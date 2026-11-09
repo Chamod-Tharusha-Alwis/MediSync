@@ -111,8 +111,14 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 - **Role**: Regional Epidemiologist / Public Health Inspector.
 - **URL**: `/public-health` (Public View) and `/admin/dashboard/outbreak` (Administrative Monitor).
 - **Actions**:
-  1. Navigate to the Epidemiological Surveillance interface.
-  2. Show the Sri Lanka 25-district map color-coded by active disease incidence.
+  1. Navigate to the Epidemiological Surveillance interface (/public-health).
+  2. **Demonstrate Resilient Public Baseline**:
+     - When consultations are newly recorded without clinical verification, /public-health shows a clean neutral state (0 confirmed cases, clean map, zero false alarms) rather than an error banner.
+     - Public alert telemetry (GET /api/alerts/active) loads freely without authentication.
+  3. **Clinical Provenance Review**:
+     - In the administrative surveillance console (/admin/dashboard/outbreak / GET /api/admin/surveillance/pending), show consultations pending review.
+     - Review and approve the clinical episode (PUT /api/admin/surveillance/:id/review with status: verified).
+  4. Inspect the updated Sri Lanka 25-district map color-coded by active verified disease incidence.
   3. Inspect a highlighted district (e.g., *Gampaha*).
   4. Show an active **Outbreak Alert**: Dengue Fever ($z\text{-score} = +3.82$).
   5. Demonstrate the **Dual Noise Suppression Gates** (`server/src/services/surveillanceService.js:136-140`):

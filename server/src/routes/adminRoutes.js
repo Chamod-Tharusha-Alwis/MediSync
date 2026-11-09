@@ -50,6 +50,10 @@ router.post('/users/:id/recovery', protect(['admin', 'super_admin']), adminContr
 // ─── Broadcasts ──────────────────────────────────────────────────────────────
 router.get('/broadcasts', protect(['admin', 'super_admin']), adminController.getBroadcasts);
 
+// ─── Surveillance review (F6) ────────────────────────────────────────────────
+router.get('/surveillance/pending', protect(['admin', 'super_admin', 'health_officer']), adminController.getPendingSurveillanceConsultations);
+router.put('/surveillance/:id/review', protect(['admin', 'super_admin', 'health_officer']), adminController.reviewSurveillanceConsultation);
+
 // Dataset maintenance requires a separately approved exact-ID operator procedure.
 const maintenanceDenied = (_req, res) => res.status(403).json({ error: 'Dataset maintenance is not available over HTTP' });
 router.post('/seed-outbreak-demo', protect(['admin', 'super_admin']), maintenanceDenied);

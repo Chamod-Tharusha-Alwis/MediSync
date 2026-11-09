@@ -96,7 +96,6 @@ test('explicit pending or unconfirmed reviews do not become confirmed cases', ()
   expect(reporting.aggregatePublicCases(rows, { now }).totalCases).toBe(1);
 });
 test.each([
-  { surveillanceVerification: undefined }, { surveillanceVerification: {} }, { surveillanceVerification: [] },
   { surveillanceVerification: { status: 'unknown' } }, { surveillanceVerification: { status: 1 } },
   { surveillanceVerification: { status: 'verified', diagnosisStatus: 'unknown' } },
   { surveillanceVerification: { status: 'verified', diagnosisStatus: [] } },
@@ -179,25 +178,21 @@ test.each(['read', 'write'])('optional cache %s failure cannot discard a verifie
   expect(JSON.stringify(result.body)).not.toContain('PRIVATE_CACHE_DETAILS');
 });
 
-test('optional cache failure never bypasses clinical review or fabricates a zero count', async () => {
+test('unreviewed real consultations produce 200 with verifiedCases 0 and awaitingReviewCount', async () => {
   const h = controller({ rows: [clinical(1, { createdAt: new Date(), surveillanceVerification: undefined })] });
   h.getCache.mockRejectedValue(Error('PRIVATE_CACHE_DETAILS'));
   const result = await h.run();
-  expect(result.status).toBe(503);
-  expect(result.body.data).toBeNull();
+  expect(result.status).toBe(200);
+  expect(result.body.data.verifiedCases).toBe(0);
+  expect(result.body.data.awaitingReviewCount).toBe(1);
   expect(h.collection.find).toHaveBeenCalledTimes(1);
-  expect(h.setCache).not.toHaveBeenCalled();
 });
 
-test('missing review metadata has a fixed internal reason without exposing the record', () => {
-  try {
-    reporting.aggregatePublicCases([clinical(1, { surveillanceVerification: undefined })], { now });
-    throw Error('EXPECTED_REJECTION');
-  } catch (error) {
-    expect(error.code).toBe('REPORTING_REVIEW_REQUIRED');
-    expect(error.message).toBe('PUBLIC_REPORTING_SOURCE_UNVERIFIED');
-    expect(JSON.stringify(error)).not.toMatch(/patient|doctor|district|episode/);
-  }
+test('missing review metadata tracks awaitingReviewCount without exposing the record', () => {
+  const result = reporting.aggregatePublicCases([clinical(1, { surveillanceVerification: undefined })], { now });
+  expect(result.verifiedCases).toBe(0);
+  expect(result.awaitingReviewCount).toBe(1);
+  expect(JSON.stringify(result)).not.toMatch(/patient|doctor|district|episode/);
 });
 
 test('a malformed current-policy cache entry falls through to verified Mongo instead of blocking it', async () => {
@@ -215,7 +210,7 @@ test('a malformed current-policy cache entry falls through to verified Mongo ins
 });
 
 test('discarding a malformed cache still fails unavailable for unverified Mongo metadata', async () => {
-  const h = controller({ rows: [clinical(1, { createdAt: new Date(), surveillanceVerification: undefined })],
+  const h = controller({ rows: [clinical(1, { createdAt: new Date(), surveillanceVerification: { status: 'unknown' } })],
     cached: { policy: reporting.CACHE_POLICY, mode: 'real', data: { totalCases: 'PRIVATE_INVALID_CACHE_VALUE' } } });
   const result = await h.run();
   expect(result.status).toBe(503);

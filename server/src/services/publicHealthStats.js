@@ -97,6 +97,7 @@ function selectReportingCases(documents, options = {}) {
   if (documents.length > MAX_REPORTING_ROWS) unavailable('REPORTING_READ_LIMIT_EXCEEDED');
   const cases = [], seen = new Set();
   const candidates = [];
+  let awaitingReviewCount = 0;
   for (const row of documents) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) unavailable();
     if (mode === 'real' ? isSynthetic(row) : !isSynthetic(row) || row.isSimulatedDemo !== true || row.demoBatchId !== batchId) continue;
@@ -104,11 +105,17 @@ function selectReportingCases(documents, options = {}) {
     if (!Number.isFinite(time)) unavailable();
     if (time < +start || time > +end) continue;
     const verification = row.surveillanceVerification;
-    // Missing legacy provenance cannot truthfully be converted to a zero count.
-    if (!verification || typeof verification !== 'object' || Array.isArray(verification)) unavailable('REPORTING_REVIEW_REQUIRED');
+    // Missing review metadata is counted towards pending review rather than throwing 503
+    if (!verification || typeof verification !== 'object' || Array.isArray(verification)) {
+      awaitingReviewCount++;
+      continue;
+    }
     if (!['verified', 'pending', 'unverified', 'rejected'].includes(verification.status) ||
         (verification.status === 'verified' && !['confirmed', 'suspected', 'unconfirmed', 'rejected'].includes(verification.diagnosisStatus))) unavailable();
-    if (verification.status !== 'verified' || verification.diagnosisStatus !== 'confirmed') continue;
+    if (verification.status !== 'verified' || verification.diagnosisStatus !== 'confirmed') {
+      if (verification.status === 'pending' || verification.status === 'unverified') awaitingReviewCount++;
+      continue;
+    }
     if (verification.source !== (mode === 'real' ? 'clinical_review' : 'synthetic_qa')) unavailable();
     const verifiedAt = validDate(verification.verifiedAt) ? +verification.verifiedAt : NaN;
     const patient = identity(row.patientId), consultation = identity(row._id), reviewer = identity(verification.verifiedBy);
@@ -129,12 +136,12 @@ function selectReportingCases(documents, options = {}) {
     seen.add(key);
     cases.push({ time: row.time, diseaseId: row.diseaseId, disease: row.disease, district: row.district });
   }
-  return { cases, policy: POLICY };
+  return { cases, policy: POLICY, awaitingReviewCount };
 }
 
 function aggregatePublicCases(documents, options = {}) {
   const filters = validateFilters(options);
-  const { cases } = selectReportingCases(documents, options);
+  const { cases, awaitingReviewCount = 0 } = selectReportingCases(documents, options);
   const diseaseCounts = new Map(), districtCounts = new Map(), dates = new Map();
   const { start, end } = reportingWindow(filters.rangeDays, options.now || new Date());
   for (let day = +start; day <= +end; day += DAY) dates.set(new Date(day).toISOString().slice(0, 10), 0);
@@ -154,6 +161,9 @@ function aggregatePublicCases(documents, options = {}) {
   const byCount = (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]);
   const result = {
     totalCases,
+    verifiedCases: totalCases,
+    awaitingReviewCount,
+    state: totalCases > 0 ? 'ok' : (awaitingReviewCount > 0 ? 'awaiting_review' : 'ok'),
     byDistrict: [...districtCounts].filter(([, value]) => value.totalCases >= 5).map(([district, value]) => ({
       district, totalCases: value.totalCases, topDisease: [...value.diseases].sort(byCount)[0][0]
     })).sort((a, b) => b.totalCases - a.totalCases || a.district.localeCompare(b.district)),
