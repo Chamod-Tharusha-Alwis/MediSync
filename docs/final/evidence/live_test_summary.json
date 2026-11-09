@@ -1,0 +1,266 @@
+[
+  {
+    "testId": "LT-01",
+    "name": "Backend Health Check",
+    "url": "https://medisync-wabc.onrender.com/health",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 453.9,
+    "success": true,
+    "evidenceFile": "lt-01_backend_health_check.json"
+  },
+  {
+    "testId": "LT-02",
+    "name": "ML Health Check",
+    "url": "https://medisync-ml.onrender.com/health",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 404.9,
+    "success": true,
+    "evidenceFile": "lt-02_ml_health_check.json"
+  },
+  {
+    "testId": "LT-03",
+    "name": "Vercel Web Shell",
+    "url": "https://medisync.chamodtharusha.com.lk/",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 587.3,
+    "success": true,
+    "evidenceFile": "lt-03_vercel_web_shell.json"
+  },
+  {
+    "testId": "LT-04",
+    "name": "Public Health Stats Fail-Closed",
+    "url": "https://medisync-wabc.onrender.com/api/public/health-stats",
+    "method": "GET",
+    "status": 503,
+    "expected": [
+      200,
+      503
+    ],
+    "durationMs": 890.3,
+    "success": true,
+    "evidenceFile": "lt-04_public_health_stats_fail-closed.json"
+  },
+  {
+    "testId": "LT-05",
+    "name": "Active Outbreak Alerts Auth Guard 401",
+    "url": "https://medisync-wabc.onrender.com/api/alerts/active",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 356.5,
+    "success": true,
+    "evidenceFile": "lt-05_active_outbreak_alerts_auth_guard_401.json"
+  },
+  {
+    "testId": "LT-06",
+    "name": "Public Consultation Activity",
+    "url": "https://medisync-wabc.onrender.com/api/public/consultation-activity",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 560.0,
+    "success": true,
+    "evidenceFile": "lt-06_public_consultation_activity.json"
+  },
+  {
+    "testId": "LT-07",
+    "name": "Public Directory Doctors",
+    "url": "https://medisync-wabc.onrender.com/api/public/doctors",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 1325.9,
+    "success": true,
+    "evidenceFile": "lt-07_public_directory_doctors.json"
+  },
+  {
+    "testId": "LT-08",
+    "name": "Public Directory Hospitals",
+    "url": "https://medisync-wabc.onrender.com/api/public/hospitals",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 633.6,
+    "success": true,
+    "evidenceFile": "lt-08_public_directory_hospitals.json"
+  },
+  {
+    "testId": "LT-09",
+    "name": "Public Directory Pharmacies",
+    "url": "https://medisync-wabc.onrender.com/api/public/pharmacies",
+    "method": "GET",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "durationMs": 1060.3,
+    "success": true,
+    "evidenceFile": "lt-09_public_directory_pharmacies.json"
+  },
+  {
+    "testId": "LT-10",
+    "name": "Verify Non-Existent Token",
+    "url": "https://medisync-wabc.onrender.com/api/verify/non-existent-token-12345",
+    "method": "GET",
+    "status": 404,
+    "expected": [
+      404
+    ],
+    "durationMs": 396.8,
+    "success": true,
+    "evidenceFile": "lt-10_verify_non-existent_token.json"
+  },
+  {
+    "testId": "LT-11",
+    "name": "Verify OTP Request Missing Token",
+    "url": "https://medisync-wabc.onrender.com/api/verify/request-otp",
+    "method": "POST",
+    "status": 404,
+    "expected": [
+      400,
+      404
+    ],
+    "durationMs": 399.9,
+    "success": true,
+    "evidenceFile": "lt-11_verify_otp_request_missing_token.json"
+  },
+  {
+    "testId": "LT-12",
+    "name": "Verify OTP Unlock Missing Token",
+    "url": "https://medisync-wabc.onrender.com/api/verify/unlock",
+    "method": "POST",
+    "status": 404,
+    "expected": [
+      400,
+      404
+    ],
+    "durationMs": 399.2,
+    "success": true,
+    "evidenceFile": "lt-12_verify_otp_unlock_missing_token.json"
+  },
+  {
+    "testId": "LT-13",
+    "name": "Maintenance Seed Denied HTTP 403",
+    "url": "https://medisync-wabc.onrender.com/api/admin/seed-outbreak-demo",
+    "method": "POST",
+    "status": 401,
+    "expected": [
+      401,
+      403
+    ],
+    "durationMs": 399.6,
+    "success": true,
+    "evidenceFile": "lt-13_maintenance_seed_denied_http_403.json"
+  },
+  {
+    "testId": "LT-14",
+    "name": "Invalid JSON Format Defense",
+    "url": "https://medisync-wabc.onrender.com/api/auth/login",
+    "method": "POST",
+    "status": 400,
+    "expected": [
+      400
+    ],
+    "durationMs": 385.8,
+    "success": true,
+    "evidenceFile": "lt-14_invalid_json_format_defense.json"
+  },
+  {
+    "testId": "LT-15",
+    "name": "Unauthenticated Doctor Route 401",
+    "url": "https://medisync-wabc.onrender.com/api/doctor/consultations",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 444.7,
+    "success": true,
+    "evidenceFile": "lt-15_unauthenticated_doctor_route_401.json"
+  },
+  {
+    "testId": "LT-16",
+    "name": "Unauthenticated Patient Route 401",
+    "url": "https://medisync-wabc.onrender.com/api/patient/consultations",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 402.2,
+    "success": true,
+    "evidenceFile": "lt-16_unauthenticated_patient_route_401.json"
+  },
+  {
+    "testId": "LT-17",
+    "name": "Unauthenticated Pharmacy Route 401",
+    "url": "https://medisync-wabc.onrender.com/api/pharmacy/history",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 409.8,
+    "success": true,
+    "evidenceFile": "lt-17_unauthenticated_pharmacy_route_401.json"
+  },
+  {
+    "testId": "LT-18",
+    "name": "Unauthenticated Hospital Route 401",
+    "url": "https://medisync-wabc.onrender.com/api/hospital/doctors",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 391.3,
+    "success": true,
+    "evidenceFile": "lt-18_unauthenticated_hospital_route_401.json"
+  },
+  {
+    "testId": "LT-19",
+    "name": "Unauthenticated Admin Route 401",
+    "url": "https://medisync-wabc.onrender.com/api/admin/system-health",
+    "method": "GET",
+    "status": 401,
+    "expected": [
+      401
+    ],
+    "durationMs": 781.7,
+    "success": true,
+    "evidenceFile": "lt-19_unauthenticated_admin_route_401.json"
+  },
+  {
+    "testId": "LT-20",
+    "name": "Non-Existent API Route 404",
+    "url": "https://medisync-wabc.onrender.com/api/non-existent-probe-route",
+    "method": "GET",
+    "status": 404,
+    "expected": [
+      404
+    ],
+    "durationMs": 403.1,
+    "success": true,
+    "evidenceFile": "lt-20_non-existent_api_route_404.json"
+  }
+]

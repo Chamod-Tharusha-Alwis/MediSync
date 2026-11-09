@@ -1,0 +1,6 @@
+{
+  "valid": false,
+  "authentic": false,
+  "reason": "INVALID_TOKEN_FORMAT",
+  "clinicalValidation": "not_established"
+}

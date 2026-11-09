@@ -1,0 +1,147 @@
+{
+  "data": {
+    "metric": "recorded_consultation_visits",
+    "source": "mongodb",
+    "mode": "real",
+    "unit": "visits",
+    "period": {
+      "start": "2026-10-11T00:00:00.000Z",
+      "end": "2026-11-09T14:44:00.341Z",
+      "rangeDays": 30
+    },
+    "totalVisits": 11,
+    "byDistrict": [],
+    "trend": [
+      {
+        "date": "2026-10-11",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-12",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-13",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-14",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-15",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-16",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-17",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-18",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-19",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-20",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-21",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-22",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-23",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-24",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-25",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-26",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-27",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-28",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-29",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-10-30",
+        "visitCount": 2
+      },
+      {
+        "date": "2026-10-31",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-11-01",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-11-02",
+        "visitCount": 2
+      },
+      {
+        "date": "2026-11-03",
+        "visitCount": 3
+      },
+      {
+        "date": "2026-11-04",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-11-05",
+        "visitCount": 1
+      },
+      {
+        "date": "2026-11-06",
+        "visitCount": 0
+      },
+      {
+        "date": "2026-11-07",
+        "visitCount": 2
+      },
+      {
+        "date": "2026-11-08",
+        "visitCount": 1
+      },
+      {
+        "date": "2026-11-09",
+        "visitCount": 0
+      }
+    ],
+    "disclosure": {
+      "districtMinCount": 5
+    },
+    "surveillance": {
+      "availability": "not_available",
+      "confirmedCases": null,
+      "outbreakClusters": null,
+      "forecast": null
+    }
+  },
+  "cached": true
+}
