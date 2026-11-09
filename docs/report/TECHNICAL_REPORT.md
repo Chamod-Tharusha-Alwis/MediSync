@@ -1,13 +1,3 @@
-# MediSync: Digital Health Information & Real-Time Syndromic Surveillance Platform
-## Final Capstone Engineering Technical Report
-**Author**: [OWNER: Student Name]  
-**Institution**: [OWNER: University / Faculty of Computing / Department of Software Engineering]  
-**Academic Year**: 2026 | **Submission Deadline**: 20 November 2026  
-**Repository Branch**: eat/sub5-submission-pack  
-**Quality Gate Status**: 3,465 Tests Passed / 0 Failed | 15/15 Protected Ledger Pins Locked  
-
----
-
 # Executive Summary & Abstract
 
 ## Abstract
@@ -15,7 +5,7 @@ MediSync is an enterprise-grade digital health and epidemiological surveillance 
 
 The architecture encompasses a zero-trust multi-tenant MERN core (MongoDB, Express, React, Node.js) paired with an isolated Python/Flask machine learning service. Sensitive patient identifiers and health records are cryptographically protected via field-level AES-256-GCM authenticated encryption paired with blind indexing for privacy-preserving querying. Clinical safety gates enforce automatic drug-drug interaction detection, daily dosage ceiling verification, renal/hepatic contraindication checks, and cryptographic QR prescription dispensing validated against patient National Identity Card (NIC) verification tokens.
 
-To assist clinicians under high OPD volume, MediSync incorporates a dual-tier symptom matching pipeline: Tier 1 executes a calibrated Random Forest classifier trained on 41 standardized clinical profiles, while Tier 2 provides sparse retrieval against a curated, quarantined knowledge base derived from CDC/SymCAT ambulatory survey data (174 auto-accepted condition profiles mapped to public-domain ICD-10-CM concepts). On the epidemiological surveillance front, MediSync runs automated spatio-temporal anomaly detection across Sri Lanka's 25 administrative districts, utilizing Exponentially Weighted Moving Averages (EWMA) and Cumulative Sum (C-SUM) algorithms across 12 tracked communicable diseases with automated threshold-gating to prevent alert fatigue.
+To assist clinicians under high OPD volume, MediSync incorporates a dual-tier symptom matching pipeline: Tier 1 executes an n-gram TF-IDF vectorizer coupled with cosine similarity scoring over 41 standardized clinical disease profiles, while Tier 2 provides sparse retrieval against a curated, quarantined knowledge base derived from CDC/SymCAT ambulatory survey data (174 auto-accepted condition profiles mapped to public-domain ICD-10-CM concepts). When Tier 1 top match confidence is $\ge 40.0\%$, Tier 1 takes absolute precedence; otherwise, the engine queries Tier 2. On the epidemiological surveillance front, MediSync runs automated spatio-temporal anomaly detection across Sri Lanka's 25 administrative districts, utilizing a 7-day observation window compared against a 56-day baseline, strictly gated by a 3-tier filter: case count floor ($N \ge 5$), 2 consecutive calendar days of elevation, and statistical standardized deviation ($z > 2.0$).
 
 This technical report documents the complete architectural specification, security protocols, empirical ML evaluation, verification rigor (3,465 offline tests across 207 suites), deployment infrastructure, operational limitations, and academic viva defenses for the MediSync undergraduate software engineering capstone submission.
 
@@ -74,8 +64,8 @@ The primary engineering objective of the MediSync platform is to design, develop
 1. **Secure Patient Record Management**: Implement an encrypted, role-segregated electronic patient dossier supporting demographic capture, clinical history, longitudinal consultation logs, and laboratory investigation records.
 2. **Cryptographic Prescription & Dispensing Lifecycle**: Engineer a tamper-evident prescription issuance and fulfillment pipeline featuring one-time QR verification tokens, National Identity Card (NIC) validation gates, and durable anti-duplicate dispensing records.
 3. **Automated Clinical Medication Safety**: Construct an in-memory, deterministic drug safety verification engine enforcing multi-drug interaction checking, maximum daily dose ceilings, renal/hepatic adjustments, and antibiotic duration limits.
-4. **Real-time Spatio-temporal Epidemiological Surveillance**: Develop an automated surveillance subsystem that processes clinical encounter diagnoses across Sri Lanka's 25 administrative districts, identifies statistical anomalies (EWMA, C-SUM), and triggers early outbreak warning alerts with multi-gate noise suppression.
-5. **Low-Footprint Machine Learning Triage**: Train, calibrate, and serve a symptom-based differential guidance model operating under 200 MB process RSS and sub-5 ms latency on resource-constrained cloud infrastructure.
+4. **Real-time Spatio-temporal Epidemiological Surveillance**: Develop an automated surveillance subsystem that processes clinical encounter diagnoses across Sri Lanka's 25 administrative districts, identifies statistical anomalies using a 7-day window vs. 56-day baseline, and triggers early outbreak warning alerts with multi-gate noise suppression ($N \ge 5$, 2 consecutive days, $z > 2.0$).
+5. **Low-Footprint Machine Learning Triage**: Train, calibrate, and serve a dual-tier symptom-based differential guidance model (TF-IDF cosine similarity in Tier 1 and sparse KB retrieval in Tier 2) operating under 200 MB process RSS and sub-5 ms latency on resource-constrained cloud infrastructure.
 6. **Trilingual Localization**: Deliver complete interface parity across English, Sinhala (සිංහල), and Tamil (தமிழ்) to ensure equitable accessibility across Sri Lanka's multilingual clinical workforce.
 
 ## 2.2 Secondary Objectives
@@ -89,7 +79,7 @@ The primary engineering objective of the MediSync platform is to design, develop
 - **Core Clinical Workflows**: Patient appointment booking, physician clinical consultation capture, digital prescription authoring, pharmacy QR scanning and partial/full dispensing.
 - **Laboratory Subsystem**: Lab test ordering, PDF report uploads, automated file validation (magic byte and MIME verification), and clinician review queues.
 - **Security & Privacy Infrastructure**: Field-level AES-256-GCM encryption for patient PII and clinical notes, blind indexing for demographic search, and time-to-live (TTL) ephemeral tokens for session authentication.
-- **Epidemiological Engine**: District-level spatial tracking, 12 communicable disease surveillance models, 14-day projection pipelines, and automated outbreak alert generation.
+- **Epidemiological Engine**: District-level spatial tracking, cross-chapter communicable disease surveillance models, 14-day projection pipelines, and automated outbreak alert generation.
 - **Public Health Portal**: Trilingual citizen health advisories, seasonal disease awareness, and sanitized district outbreak summaries.
 
 ### 2.3.2 Explicitly Out-of-Scope (Boundaries)
@@ -140,8 +130,8 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 ### 3.2.2 Doctor Subsystem
 - **FR-DOC-01**: The system shall allow physicians to schedule appointments, manage daily clinic queues, and initiate clinical encounters.
 - **FR-DOC-02**: The system shall provide an integrated symptom input interface supporting free-text autocompletion, queryable against the ML symptom inference microservice.
-- **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 and Tier 2 ML models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
-- **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications.
+- **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 (curated) and Tier 2 (sparse KB) models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
+- **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications across 71,704 validated concepts.
 - **FR-DOC-05**: The system shall validate prescribed medications against the deterministic medicine safety engine, rendering blocking or non-blocking alerts for drug-drug interactions, maximum daily dosage overages, and age-related limits.
 - **FR-DOC-06**: The system shall allow clinicians to order laboratory investigations linked directly to the consultation encounter.
 
@@ -157,10 +147,13 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **FR-LAB-03**: The system shall notify the prescribing doctor and patient upon report finalization.
 
 ### 3.2.5 Epidemiological Surveillance Subsystem
-- **FR-EPI-01**: The system shall automatically aggregate anonymized consultation diagnostic events categorized by administrative district (1 to 25) and disease category.
-- **FR-EPI-02**: The system shall evaluate incidence data using Exponentially Weighted Moving Average (EWMA) and Cumulative Sum (C-SUM) algorithms to detect anomalous spatial clusters.
-- **FR-EPI-03**: The system shall enforce a three-tier noise suppression gate (absolute case count minimum, minimum sustained duration, and statistical z-score threshold) before publishing high-priority outbreak alerts.
-- **FR-EPI-04**: The system shall compute 14-day statistical trend projections with explicit confidence bounds, labelled as descriptive projections rather than validated epidemiological forecasts.
+- **FR-EPI-01**: The system shall automatically aggregate anonymized consultation diagnostic events categorized by administrative district (1 to 25), province (9), or national level.
+- **FR-EPI-02**: The system shall evaluate incidence data using a 7-day calendar window compared against a 56-day baseline to compute standardized daily deviations ($z_k = (c_k - \mu) / \sigma$).
+- **FR-EPI-03**: The system shall enforce a three-tier noise suppression gate before publishing outbreak alerts:
+  1. *Volume Floor Gate*: Absolute case volume in the 7-day window must reach at least 5 distinct episodes ($N \ge 5$).
+  2. *Persistence Gate*: At least 2 consecutive complete calendar days in the window must exhibit elevated daily deviation ($z > 2.0$ with $c_k > 0$).
+  3. *Statistical Severity Classification*: Categorizes triggered signals into Watch ($z \in [2.0, 3.0)$), Alert ($z \in [3.0, 4.0)$), or Critical ($z \ge 4.0$).
+- **FR-EPI-04**: The system shall compute 14-day statistical trend projections with explicit prediction bounds, labelled as descriptive projections rather than validated epidemiological forecasts.
 
 ### 3.2.6 Administrative & Public Subsystems
 - **FR-ADM-01**: The system shall log all sensitive read and write actions to an immutable, append-only security audit log capturing user ID, IP address, timestamp, and target entity.
@@ -178,7 +171,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 
 ### 3.3.2 Performance and Scalability (NFR-PERF)
 - **NFR-PERF-01 (API Latency)**: Core backend Express REST endpoints shall achieve p95 response latencies under 150 ms under synthetic load.
-- **NFR-PERF-02 (ML Latency)**: The Python ML microservice shall execute symptom inference queries in less than 5 ms p95 (empirically measured at 1.24 ms p95).
+- **NFR-PERF-02 (ML Latency)**: The Python ML microservice shall execute symptom inference queries in less than 5 ms p95 (empirically measured at 1.24 ms p95, mean 0.77 ms).
 - **NFR-PERF-03 (Memory Footprint)**: The ML microservice process resident set size (RSS) shall not exceed 250 MB (empirically measured at 196.82 MB peak), ensuring stability within the 512 MB Render Free tier memory boundary.
 
 ### 3.3.3 Reliability and Operational Resilience (NFR-REL)
@@ -186,11 +179,11 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-REL-02 (Cold-Start Tolerance)**: Client applications shall gracefully handle cloud microservice wake-up cycles of up to 60 seconds with descriptive visual loading indicators.
 
 ### 3.3.4 Localization and Usability (NFR-USE)
-- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil.
+- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (813 keys verified).
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
-- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests) shall execute cleanly offline in less than 180 seconds without external network dependencies.
+- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests across 207 suites) shall execute cleanly offline in less than 180 seconds without external network dependencies.
 - **NFR-MAINT-02 (Protected Integrity)**: Critical security and calculation files (15 files) shall be locked via SHA-256 hashes in a monitored release ledger.
 
 ---
@@ -202,8 +195,8 @@ MediSync adopts a **cloud-native, decoupled service-oriented architecture (SOA)*
 
 The architecture comprises three primary tiers:
 1. **Presentation Layer**: A responsive React Single Page Application (SPA) compiled into static assets and deployed to global edge CDNs (Vercel).
-2. **Application & API Gateway Tier**: A stateless Node.js / Express microservice handling authentication, authorization, clinical transaction orchestration, and cryptographic operations (Render Web Service).
-3. **Specialized Compute Microservice**: An isolated, lightweight Python 3 / Flask microservice dedicated to symptom feature vectorization, Random Forest classification, and sparse knowledge-base retrieval (Render Web Service).
+2. **Application & API Gateway Tier**: A stateless Node.js / Express microservice handling authentication, authorization, clinical transaction orchestration, and cryptographic operations (Render Web Service: `medisync-wabc.onrender.com`).
+3. **Specialized Compute Microservice**: An isolated, lightweight Python 3 / Flask microservice dedicated to symptom feature vectorization, TF-IDF cosine similarity classification, and sparse knowledge-base retrieval (Render Web Service: `medisync-ml.onrender.com`).
 4. **Data Persistence Tier**: A managed MongoDB Atlas cluster supporting replica sets, encrypted connections (TLS 1.3), field-level authenticated encryption at rest, and automated TTL indexing.
 
 ```
@@ -224,7 +217,7 @@ The architecture comprises three primary tiers:
        Shared Secret  v                               v
 +-----------------------------+       +------------------------------+
 |   ML Microservice (Flask)   |       |   MongoDB Atlas Database     |
-| - Tier 1: Random Forest     |       | - Encrypted Patient Store    |
+| - Tier 1: TF-IDF + Cos Sim  |       | - Encrypted Patient Store    |
 | - Tier 2: Sparse KB Matcher |       | - Consultations & Rx Store   |
 | - Memory RSS: 196.82 MB     |       | - Outbreak Surveillance Log  |
 | - Latency: 0.77 ms mean     |       | - TTL Index Sessions         |
@@ -250,7 +243,7 @@ The architecture comprises three primary tiers:
 
 ### 4.2.3 Machine Learning Microservice (ML Engine)
 - **Framework**: Python 3.14 with Flask micro-framework and Gunicorn WSGI container.
-- **Decoupled Security Boundary**: The ML engine does not connect to MongoDB, does not read patient PII, and operates purely statelessly. Requests from the Node.js backend are authenticated using an internal HMAC-SHA-256 signature in the request headers (`X-Internal-Token`).
+- **Decoupled Security Boundary**: The ML engine does not connect to MongoDB, does not read patient PII, and operates purely statelessly. Requests from the Node.js backend are authenticated using an internal HMAC-SHA-256 signature in the request headers (`x-internal-key`).
 - **Memory Optimization**: Employs Scipy sparse CSR matrices and compressed memory-mapped JSON lookup structures to restrict total process resident memory (RSS) to 196.82 MB, avoiding memory exhaustion crashes on 512 MB cloud containers.
 
 ---
@@ -261,7 +254,7 @@ The architecture comprises three primary tiers:
 As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`):
 1. The physician enters patient vitals, subjective complaints, and symptom tags.
 2. The UI queries the ML engine via the Express gateway; differential predictions are returned with `clinicalValidation: not_established`.
-3. The physician selects a standardized diagnosis and inputs proposed medications.
+3. The physician selects a standardized diagnosis from the 71,704 ICD-10 catalog concepts and inputs proposed medications.
 4. The backend medicine safety engine cross-references the regimen against the drug interaction matrix and dosage limit tables.
 5. If safe, the prescription is committed to MongoDB with an auto-generated cryptographic QR token payload; a notification is dispatched to the patient.
 
@@ -278,10 +271,11 @@ As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic
 
 ## 4.4 Deployment Topology & Cloud Infrastructure
 As detailed in Diagram **D02** (`docs/report/diagrams/d02_deployment_infrastructure.mmd`):
-- **Frontend**: Hosted on Vercel Edge Network with automated continuous deployment from the Git repository.
-- **Backend & ML Services**: Hosted on Render Free Web Services with automatic container recovery.
+- **Frontend**: Hosted on Vercel Edge Network (`https://medisync.chamodtharusha.com.lk`).
+- **Backend Service**: Hosted on Render Free Web Service (`https://medisync-wabc.onrender.com`).
+- **ML Inference Service**: Hosted on Render Free Web Service (`https://medisync-ml.onrender.com`).
 - **Database**: Hosted on MongoDB Atlas (Free M0 Cluster, 512 MB storage, shared RAM, AWS ap-south-1 Mumbai region for optimal geographic proximity to Sri Lanka).
-- **Communication Channels**: Secure SMTP relay (Nodemailer) for transactional email OTPs and emergency alert dispatch.
+- **Communication Channels**: Secure SMTP relay for transactional email OTPs and emergency alert dispatch.
 
 ---
 
@@ -293,8 +287,8 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`)
 - **D05**: Outbreak Detection Pipeline (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **D06**: Tiered Matcher Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
-- **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_authentication_flow.mmd`)
-- **D08**: Medicine Safety Decision Flow (`docs/report/diagrams/d08_medicine_safety_flow.mmd`)
+- **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
+- **D08**: Medicine Safety Decision Flow (`docs/report/diagrams/d08_medicine_safety_decision_flow.mmd`)
 - **D09**: Entity-Relationship Diagram (`docs/report/diagrams/d09_entity_relationship_diagram.mmd`)
 
 ---
@@ -320,7 +314,7 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 ## 5.3 Clinical Consultations & Appointment Queue
 - **Workflow Orchestration**: Implemented in `server/src/controllers/doctorController.js` (Protected File #2) and `server/src/models/Consultation.js` (Protected File #13).
 - **Encounter Capture**: Clinicians record patient chief complaints, vital signs (blood pressure, pulse, temperature, SpO2, respiratory rate), structured symptom tags, and clinical notes.
-- **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/src/data/icd10_catalog.json` (34,290 distinct clinical concepts).
+- **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/reference-data/icd10_clean.json` (71,704 validated leaf concepts).
 - **Transactional Atomicity**: Consultations, associated prescription records, and lab investigation orders are created within MongoDB multi-document transactions where replica sets permit, ensuring rollbacks upon validation failures.
 
 ---
@@ -336,10 +330,10 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 ## 5.5 Deterministic Medicine Safety Engine
 Implemented in `server/src/services/medicineSafetyService.js` and `server/src/data/medicine_safety_limits.json`:
 - **Zero-Latency In-Memory Lookups**: Evaluates medication safety rules synchronously during prescription authoring without outbound network calls.
-- **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin, ACE Inhibitors + Spironolactone), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
+- **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
 - **Maximum Daily Dose Ceilings**: Validates prescribed single and cumulative daily dosages against adult reference limits (e.g., Paracetamol max 4,000 mg/24h).
 - **Renal and Hepatic Adjustments**: Inspects patient baseline organ function flags, emitting automated dosage reduction prompts.
-- **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited against BNF 86 and WHO guidelines in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`.
+- **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited in `docs/report/MEDICINE_LIMITS_VERIFICATION.md` with items flagged for clinical review (Ibuprofen 800 mg single dose and Paracetamol 7-day course).
 
 ---
 
@@ -349,34 +343,39 @@ Implemented in `server/src/controllers/labController.js` and verified by `server
 - **File Upload Guardrails**: Medical Laboratory Technologists upload completed diagnostic reports. The upload pipeline enforces strict multi-layered validation:
   1. File extension must strictly equal `.pdf`.
   2. MIME type reported by the client must equal `application/pdf`.
-  3. Binary inspection validates that the first 5 bytes of the file stream match the magic byte sequence `%PDF-` (`0x25 0x50 0x44 0x46 0x2D`), preventing polyglot executable script attacks.
+  3. Binary inspection validates that the first 5 bytes of the file stream match the magic byte sequence `%PDF-` (`0x25 0x50 0x44 0x2D`), preventing polyglot executable script attacks.
 - **Storage Segregation**: Uploaded files are written to quarantined directories with randomly generated UUID filenames to prevent path traversal attacks.
 
 ---
 
 ## 5.7 Syndromic Outbreak Surveillance Subsystem
-Implemented in `server/src/services/outbreakService.js` and `server/src/models/OutbreakAlert.js`:
-- **District Spatial Aggregation**: Automatically indexes clinical encounter diagnoses across Sri Lanka's 25 administrative districts (Ampara to Vavuniya).
-- **Anomaly Detection Algorithms**:
-  - **EWMA (Exponentially Weighted Moving Average)**: Calculates moving baselines weighting recent days with smoothing parameter $\alpha = 0.3$.
-  - **C-SUM (Cumulative Sum)**: Tracks cumulative deviations above expected historical means to detect insidious gradual disease accumulation.
-- **Three-Tier Alert Noise Suppression**: To prevent alert fatigue among public health officers, alerts are published only if three simultaneous gates are satisfied:
-  1. *Volume Gate*: Absolute daily case count exceeds minimum threshold ($n \ge 5$).
-  2. *Duration Gate*: Incidence exceeds the baseline for at least 3 consecutive tracking windows.
-  3. *Statistical Gate*: The calculated z-score exceeds $+2.5$ standard deviations above historical mean.
+Implemented in `server/src/services/outbreakDetector.js` and `server/src/services/surveillanceService.js`:
+- **Geographic Aggregation**: Groups verified consultation episodes dynamically by entity and disease ID: `district` (25 administrative districts), `province` (9 provinces), or national level.
+- **Evaluation Window & Baseline**:
+  - Observation window $W$: Exactly 7 complete calendar days ending yesterday in Asia/Colombo Standard Time (+05:30), excluding partial ongoing days.
+  - Baseline window: 56 complete calendar days immediately preceding window $W$.
+  - Regularized standard deviation: $\sigma_{\text{base}} = \max(0.5, \sqrt{\mu_{\text{base}}})$ if $\sigma_{\text{base}} < 0.5$; if $\mu_{\text{base}} = 0$, defaults to $\mu_{\text{base}} = 0.1, \sigma_{\text{base}} = 0.5$.
+  - Daily standardized deviation: $z_k = (c_k - \mu_{\text{base}}) / \sigma_{\text{base}}$ for each day $k \in \{1 \dots 7\}$.
+- **Three-Tier Noise Suppression Gate**:
+  1. *Volume Floor Gate*: Total episodes in window $W$ must satisfy $N \ge 5$ distinct episodes. If $N < 5$, signal is suppressed (`CASE_FLOOR_NOT_MET`).
+  2. *Temporal Persistence Gate*: Requires at least 2 consecutive complete calendar days in window $W$ with daily $z_k > 2.0$ (and $c_k > 0$). Isolated single-day reporting spikes are safely suppressed.
+  3. *Statistical Severity Classification*: Signals satisfying both gates are classified by peak daily z-score ($\max(z_k)$):
+     - **Watch (Moderate)**: $z \in [2.0, 3.0)$
+     - **Alert (High)**: $z \in [3.0, 4.0)$
+     - **Critical (Critical)**: $z \ge 4.0$
 
 ---
 
 ## 5.8 Public Health Analytics & 14-Day Projections
-- **Trend Extrapolation**: Employs ordinary least squares (OLS) linear and exponential regression across 30-day trailing windows to project short-term trajectory bounds.
-- **Ethical Labeling**: In compliance with Sub-Project 5 truthfulness guidelines, all generated trajectories are rendered with explicit visual labels: *"14-Day Statistical Projection — Descriptive trend only; not a validated epidemiological forecast"*.
+- **Trend Extrapolation**: Employs ordinary least squares (OLS) regression across trailing 14-day and 28-day windows with 95% Student's t prediction bounds ($df = 12$).
+- **Ethical Labeling**: In compliance with truthfulness guidelines, all generated trajectories are rendered with explicit visual labels: *"14-Day Statistical Projection — Descriptive trend only; not a validated epidemiological forecast"*.
 
 ---
 
 ## 5.9 Trilingual Internationalization (i18n)
-- **Architecture**: Implemented on the client using a centralized translation dictionary structure (`client/src/locales/`) loaded through `LanguageContext`.
+- **Architecture**: Implemented on the client using centralized translation dictionaries (`client/src/i18n/translations/`) loaded through `LanguageContext`.
 - **Language Coverage**: Provides complete trilingual interface parity across **English (en)**, **Sinhala (si)**, and **Tamil (ta)**.
-- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all translation keys (no missing string fallbacks in production views).
+- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **813 translation keys** in all three languages.
 
 ---
 
@@ -389,7 +388,7 @@ Implemented in `server/src/services/outbreakService.js` and `server/src/models/O
 # Chapter 6: Machine Learning Methodology, Evaluation & Benchmarking
 
 ## 6.1 Clinical Role and Regulatory Positioning
-The machine learning subsystem in MediSync is engineered as a **clinical decision support assistant** designed to aid medical officers during high-volume outpatient triage in rural and district-level base hospitals. It does not perform autonomous diagnosis, nor does it replace the clinical judgment of a licensed practitioner. 
+The machine learning subsystem in MediSync is engineered as a **clinical decision support assistant** designed to aid medical officers during high-volume outpatient triage in rural and district-level base hospitals. It does not perform autonomous diagnosis, nor does it replace the clinical judgment of a licensed medical practitioner.
 
 In strict adherence to regulatory boundaries, every response emitted by the ML microservice incorporates the immutable system attribute:
 ```json
@@ -400,91 +399,108 @@ Furthermore, the client user interface renders prominent amber advisory banners 
 ---
 
 ## 6.2 Dual-Tier Inference Architecture
-To reconcile high classification accuracy on prevalent conditions with broad coverage across rarer clinical presentations without exceeding cloud memory limits, MediSync implements a **Dual-Tier Triage Pipeline** (Diagram **D06**):
+To reconcile high classification accuracy on prevalent conditions with broad coverage across rarer clinical presentations without exceeding cloud memory limits, MediSync implements a **Dual-Tier Triage Pipeline** (`ml-engine/app.py:481-601`, Diagram **D06**):
 
 ```
-       [ Clinician Symptom Input (Vector / Tags) ]
-                           |
-                           v
-           +-------------------------------+
-           |    Tier 1: Random Forest      |
-           |  (41 Curated Disease Classes) |
-           +---------------+---------------+
-                           |
-         Confidence >= 0.35?
-              /         \
-            YES          NO (or low confidence)
-            /             \
-           v               v
-  [ Tier 1 Result ]    +-------------------------------+
-                       |    Tier 2: Sparse KB Matcher  |
-                       |  (174 Active SymCAT Profiles) |
-                       +---------------+---------------+
-                                       |
-                                       v
-                             [ Tier 2 Match / Fallback ]
+       [ Clinician Symptom Input (Vector / Free-Text Tokens) ]
+                                 |
+                                 v
+                 +-------------------------------+
+                 |  Tier 1: TF-IDF + Cosine Sim  |
+                 |  (41 Curated Disease Classes) |
+                 +---------------+---------------+
+                                 |
+               Top Confidence >= 40.0% (Score >= 0.40)?
+                    /                         \
+                  YES                          NO (or low confidence)
+                  /                             \
+                 v                               v
+        [ Tier 1 Results (Top 5) ]    +-------------------------------+
+                                      |  Tier 2: Sparse KB Retrieval  |
+                                      |  (174 Active SymCAT Profiles) |
+                                      +---------------+---------------+
+                                                      |
+                                                      v
+                                        [ Tier 2 Match / Fallback ]
 ```
 
-### 6.2.1 Tier 1: Calibrated Random Forest Classifier
-- **Model Specification**: An ensemble of 100 decision trees implemented via `scikit-learn`, trained across 41 curated disease profiles representing frequent communicable and non-communicable conditions in South Asia (including Dengue fever, Leptospirosis, Typhoid fever, Malaria, Viral Hepatitis, Bronchial Asthma, and Type 2 Diabetes).
-- **Feature Space**: 132 binary symptom indicators derived from standardized clinical presentations.
-- **Cardinal Symptom Heuristics**: Embedded clinical safeguards verify essential cardinal symptoms. For example, a diagnosis of Typhoid fever requires the explicit presence of persistent high-grade step-ladder fever or rose spots; absence triggers automated confidence penalties.
-- **Evaluation Performance**: As illustrated in Figure **F01** (Confusion Matrix) and Figure **F02** (ROC and Precision-Recall Curves), Tier 1 achieves high synthetic self-consistency on held-out test splits (Macro F1 = 0.94, Micro F1 = 0.96 across synthetic test matrices).
+### 6.2.1 Tier 1: Curated Clinical Symptom Matcher (TF-IDF + Cosine Similarity)
+- **Model Specification**: Implemented in `ml-engine/app.py:308-319, 481-544`. Uses scikit-learn `TfidfVectorizer(ngram_range=(1, 2), min_df=1)` fit across 41 curated clinical disease documents constructed from `ml-engine/data/dataset.csv`.
+- **Scoring Formulation**: Evaluates candidate disease documents against query symptom tokens using a weighted hybrid score combining vector cosine similarity with exact symptom token coverage:
+  $$\text{combined\_score} = 0.65 \times \text{cosine\_similarity} + 0.35 \times \left(\frac{|\text{matched\_symptoms}|}{\max(1, |\text{input\_symptoms}|)}\right)$$
+  $$\text{confidence} = \text{round}(\text{combined\_score} \times 100, 2)$$
+- **Admission Threshold**: Candidates must satisfy `combined_score > 0.05` or `cosine_similarity > 0.10` to enter consideration.
+- **Cardinal Symptom Heuristics**: Embedded clinical safeguards verify essential cardinal symptoms. Specifically, Typhoid fever (`ml-engine/app.py:511-514`) is an enteric fever whose hallmark presentation requires high fever or chills; if a query contains localized symptoms without fever or chills, the score is penalized:
+  $$\text{combined\_score}_{\text{typhoid}} = \text{combined\_score} \times 0.55$$
+- **Evaluation Performance**: As evaluated by `ml-engine/evaluation/generate_evaluation_charts.py` on an 80/20 stratified train/test split (seed 42, 61 test queries, zero data leakage):
+  - **Held-Out Top-1 Accuracy**: **98.36%** (60/61 test queries correctly predicted)
+  - **Macro F1-Score**: **1.0000** across 41 classes
+  - **Micro-Average ROC AUC**: **0.9997** (Figure **F01** and Figure **F02**)
 
-### 6.2.2 Tier 2: Sparse Knowledge Base Retrieval Engine
-- **Data Provenance**: Ingested from the open-source SymCAT ambulatory clinical survey dataset (derived from CDC National Ambulatory Medical Care Survey data).
+### 6.2.2 Tier 2: Sourced Knowledge Base Sparse Retrieval
+- **Data Provenance**: Ingested from the open-source SymCAT ambulatory clinical survey dataset (derived from CDC National Ambulatory Medical Care Survey data) via `ml-engine/data_pipeline/ingest_disease_symptom_kb_v2.py`.
 - **Curation and Quarantine Pipeline**:
-  - The raw dataset comprised 801 disease profiles with 17,400 symptom-disease co-occurrence edges.
-  - As detailed in Figure **F03** (Probability Histogram) and Figure **F04** (KB Ingestion Funnel), raw co-occurrence edges below $p < 0.15$ were pruned as noise.
-  - Profiles with high Jaccard similarity ($\ge 0.80$) or fewer than 3 surviving distinct symptoms were isolated into `kb_quarantine.v1.json` (136 quarantined profiles, analyzed in Figure **F05**).
-  - 174 clinically distinct profiles were successfully mapped to standard public-domain ICD-10-CM codes and admitted to the active knowledge base (`disease_symptom_kb_v2.json`).
-- **Matching Algorithm**: Evaluates query symptoms against the sparse knowledge base using probability-weighted Jaccard overlap, computing normalized relevance scores.
+  - The raw dataset comprised **801 distinct disease conditions** across 20,576 co-occurrence edges.
+  - **Dummy Imputation Filter**: Excluded conditions sharing Jaccard similarity $\ge 0.70$ with a 12-symptom synthetic imputation fallback set.
+  - **Edge Probability Filter**: Pruned low-evidence co-occurrence edges with empirical outpatient probability $P < 15.0\%$ (Figure **F03**).
+  - **Symptom Count Threshold**: Excluded conditions retaining fewer than 3 surviving symptoms above the 15% threshold.
+  - **Duplicate Condition Filter**: Quarantined conditions sharing Jaccard overlap $\ge 0.85$ on surviving symptoms.
+  - **Quarantine Outcome**: 136 conditions quarantined into `ml-engine/data/kb_quarantine.v1.json` (Figure **F05**).
+  - **Active Surviving Pool**: 665 conditions survived quality filtering (Figure **F04**).
+  - **ICD-10 Mapping Outcome**:
+    - **174 conditions** auto-accepted via exact normalized match against `server/reference-data/icd10_clean.json` and versioned synonyms (`ml-engine/data/disease_symptom_kb.v1.json`).
+    - **491 conditions** retained in `ml-engine/data/unmapped_diseases.v1.json` (`needs_owner_review`) with candidate ICD proposals.
+- **Retrieval Formulation**: Tier 2 vectors weighted symptom terms where each term is repeated proportional to empirical probability ($N = \text{round}(P / 10)$). Cosine similarity and overlap ratio are combined via the same $65\% / 35\%$ formula.
 
 ### 6.2.3 Tiered Blending Protocol
-Inference evaluates Tier 1 first. If Tier 1 confidence satisfies the threshold ($\ge 0.35$), the top-3 predictions are returned. If Tier 1 confidence falls below 0.35 or reports an unconfident classification, the engine automatically falls back to Tier 2 sparse retrieval, ensuring continuous diagnostic coverage without dead ends. Figure **F08** demonstrates the top-1, top-3, and top-5 self-consistency accuracy across Tier 1, Tier 2, and combined inference modes.
+Inference evaluates Tier 1 first (`ml-engine/app.py:545-601`):
+- If Tier 1 top candidate confidence $\ge 40.0\%$ (score $\ge 0.40$), Tier 1 returns its top-5 predictions.
+- If Tier 1 top candidate confidence $< 40.0\%$, the engine queries Tier 2. If Tier 2 returns a candidate with confidence greater than or equal to Tier 1, Tier 2 candidates are returned; otherwise, Tier 1 candidates are preserved.
+- Figure **F08** illustrates the self-consistency Top-1, Top-3, and Top-5 retrieval fidelity across Tier 1, Tier 2, and combined inference modes.
 
 ---
 
-## 6.3 Design Parameters & Heuristics Inventory
-All 11 hand-set heuristics governing the ML engine were audited and recorded in `docs/report/ML_DESIGN_PARAMETERS.md`:
+## 6.3 Ground-Truth Design Parameters & Heuristics Inventory
+All 11 hand-set heuristics governing the ML and surveillance engines were audited directly against source code and recorded in `docs/report/ML_DESIGN_PARAMETERS.md`:
 
-| Parameter Identifier | Value | Architectural Purpose | Classification |
-|---|---|---|---|
-| `TIER1_CONFIDENCE_THRESHOLD` | 0.35 | Gate between Tier 1 ML and Tier 2 KB retrieval | Non-clinical design choice |
-| `KB_EDGE_PROBABILITY_FLOOR` | 0.15 | Prunes low-confidence noise edges from SymCAT data | Non-clinical design choice |
-| `KB_MIN_SYMPTOMS_PER_DISEASE` | 3 | Minimum distinct symptoms required for KB admission | Quality threshold |
-| `KB_JACCARD_DEDUPLICATION` | 0.80 | Quarantine threshold for redundant disease profiles | Deduplication filter |
-| `MAX_PREDICTIONS_RETURNED` | 3 | Limits cognitive load on reviewing medical officer | Usability choice |
-| `TYPHOID_CARDINAL_CHECK` | True | Enforces fever/chills requirement for Typhoid | Clinical heuristic (needs review) |
-| `DENGUE_PLATELET_ALERT` | $\le 100\text{k}$ | Triggers urgent warning on thrombocytopenia | Clinical guideline rule |
-| `EWMA_SMOOTHING_ALPHA` | 0.30 | Moving average weighting for outbreak baselines | Epidemiological parameter |
-| `OUTBREAK_ZSCORE_THRESHOLD` | +2.50 | Standard deviation cutoff for anomaly alerts | Statistical parameter |
-| `OUTBREAK_MIN_CASES_GATE` | 5 | Minimum daily absolute volume to suppress noise | Non-clinical design choice |
-| `OUTBREAK_MIN_DAYS_GATE` | 3 | Consecutive anomalous days required before alert | Non-clinical design choice |
+| Parameter / Heuristic | Ground-Truth Value | Code Location | Engineering Classification |
+|---|:---:|---|---|
+| **Tier Switch Confidence Floor** | `40.0%` (score $\ge 0.40$) | `ml-engine/app.py:553` | Non-clinical design choice |
+| **Typhoid Non-Fever Penalty Factor** | `0.55x` multiplier | `ml-engine/app.py:514` | Clinical heuristic (needs review) |
+| **Minimum Overlap Guard** | `matched >= 1` token | `ml-engine/app.py:571` | Non-clinical design choice |
+| **Score Admission Floor** | `score > 0.05` or `cos > 0.10` | `ml-engine/app.py:516` | Retrieval filter |
+| **KB Edge Probability Cutoff** | `P >= 15.0%` | `ingest_disease_symptom_kb_v2.py:28` | Quality filter |
+| **KB Minimum Surviving Symptoms** | `3` symptoms | `ingest_disease_symptom_kb_v2.py:29` | Quality filter |
+| **Dummy Cluster Jaccard Threshold** | `Jaccard >= 0.70` | `ingest_disease_symptom_kb_v2.py:179` | Noise quarantine |
+| **Duplicate Profile Jaccard Threshold**| `Jaccard >= 0.85` | `ingest_disease_symptom_kb_v2.py:220` | Deduplication quarantine |
+| **Outbreak Gate 1: Episode Floor** | `N >= 5` episodes | `surveillanceService.js:185` | Noise suppression floor |
+| **Outbreak Gate 2: Persistence** | `2` consecutive days ($z > 2.0$) | `surveillanceService.js:236` | Temporal persistence gate |
+| **Outbreak Gate 3: Standard Deviation**| `z > 2.0` ($z = (c_k - \mu)/\sigma$) | `surveillanceService.js:228` | Statistical anomaly cutoff |
 
 ---
 
 ## 6.4 Resource Profiling & Cloud Footprint
-Under Sub-Project 5 Task 1.1, real operating system process resident memory (RSS) was benchmarked using `psutil` within the Python runtime (`scripts/benchmark_ml_resources.py`):
+Real operating system process resident memory (RSS) was benchmarked using `psutil` within the Python runtime (`scripts/benchmark_ml_resources.py`):
 
-| Measurement Stage | OS Process RSS | % of 512 MB Render Free Limit | Measured Mean Latency |
+| Measurement Stage | OS Process RSS | % of 512 MB Render Free Limit | Measured Latency Metric |
 |---|---|---|---|
 | **Fresh Process Boot** | 20.75 MB | 4.05% | - |
 | **Post-Model & KB Load** | 195.91 MB | 38.26% | - |
-| **Post-100 Inferences** | 196.82 MB | 38.44% | 0.77 ms (p50: 0.64 ms, p95: 1.24 ms) |
+| **Post-100 Inferences** | 196.82 MB | 38.44% | **Mean: 0.77 ms**, Median: 0.64 ms, p95: 1.24 ms |
 
 As visualized in Figure **F09**, the peak resident memory of 196.82 MB demonstrates substantial safety margin below the 512 MB cloud container ceiling, preventing out-of-memory (OOM) fatal kills.
 
 ---
 
 ## 6.5 Epidemiological Surveillance Evaluation
-The outbreak detection engine was evaluated across 8 synthetic epidemiological scenarios (S1–S8) across 12 target diseases (Figure **F10** and Figure **F11**):
-- **Scenario S1 (Sharp Dengue Spike)**: Detected at Day 3 (z-score = +3.82, volume = 14 cases), successfully passing all three suppression gates.
-- **Scenario S2 (Gradual Leptospirosis Rise)**: Detected via C-SUM accumulation at Day 5.
-- **Scenario S3 (Single-Day Food Poisoning Outlier)**: Successfully suppressed by the Duration Gate ($< 3$ consecutive days), preventing false public panic.
-- **Scenario S4 (Low Baseline Noise)**: Successfully suppressed by the Volume Gate ($< 5$ cases).
-
-Figure **F12** illustrates the 14-day statistical projection curves, confirming appropriate bounding intervals during non-linear incidence surges.
+The outbreak detection engine (`server/src/services/surveillanceService.js:130-260`) enforces a 7-day observation window compared against a 56-day baseline:
+- **Baseline Regularization**: If baseline standard deviation $\sigma_{\text{base}} < 0.5$, $\sigma_{\text{base}} = \max(0.5, \sqrt{\mu_{\text{base}}})$. If baseline mean $\mu_{\text{base}} = 0$, defaults to $\mu = 0.1, \sigma = 0.5$.
+- **Operating Threshold**: Operating cutoff of $z > 2.0$ across 2 consecutive calendar days with $N \ge 5$ was evaluated across canonical Scenarios S1–S8 (`ml-engine/evaluation/generate_evaluation_charts.py`):
+  - **Sensitivity**: **100.0%** (5/5 true outbreaks detected: S1 Dengue fast spike, S3 Chickenpox creeping wave, S4 Influenza spike, S5 Hepatitis cluster, S6 Typhoid wave).
+  - **False Alarm Rate**: **0.0%** on negative controls (S2 Decayed cluster, S7 Flat baseline, S8 Isolated 1-day reporting artifact).
+  - **Detector ROC AUC**: **0.6667** across S1–S8 operating curve (Figure **F10**).
+- Figure **F11** documents cross-chapter dynamic surveillance across 12 distinct diseases confirming zero disease whitelists.
+- Figure **F12** illustrates 14-day statistical projection curves with 95% Student's t prediction bounds ($df = 12$).
 
 ---
 
@@ -576,20 +592,26 @@ The automated verification pyramid consists of **3,465 tests across 207 test sui
               /------------\
              /  Integration \      <- Multi-Document Consultations, Dispensing
             /----------------\
-           /    Unit Tests    \    <- Crypto, Medicine Safety, ML Scikit/Pytest
+           /    Unit Tests    \    <- Crypto, Medicine Safety, TF-IDF Scikit/Pytest
           /--------------------\
 ```
 
-Figure **F13** visually details the distribution of test suites and test counts across functional components.
+Figure **F13** visually details the distribution of test suites and test counts across functional components:
+- **Backend Services & Isolated DB**: 2,635 tests across 123 suites
+- **Client Component & UI Contracts**: 666 tests across 78 suites
+- **Root Security & Infrastructure**: 55 tests
+- **ML Scoring & Flask Tests**: 78 tests (40 scoring + 31 Flask API + 7 status contracts)
+- **Email & PDF Harness**: 31 tests across 2 suites
+- **Total**: **3,465 passed, 0 failed across 207 suites**
 
 ---
 
 ## 8.2 Test Suite Taxonomy & Component Breakdown
 
 ### 8.2.1 Core Backend & Services Unit Testing
-- **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback.
-- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds.
-- **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (34,290 concepts) and district geo-coordinate datasets.
+- **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback (`server/tests/crypto.test.js`).
+- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds (`server/tests/medicineSafety.test.js`).
+- **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (71,704 validated concepts) and district geo-coordinate datasets.
 
 ### 8.2.2 Clinical Transaction Integration Testing
 - **Consultation Lifecycle**: Verifies patient appointment check-in, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
@@ -597,12 +619,12 @@ Figure **F13** visually details the distribution of test suites and test counts 
 - **Laboratory Subsystem**: Verified in `server/tests/lab.test.js` (Protected File #9), validating MIME type filtering, magic byte `%PDF-` binary enforcement, and clinician report notification triggers.
 
 ### 8.2.3 Machine Learning Test Suite
-- **Pytest Suite (`ml-engine/tests/`)**: Evaluates symptom tokenization, feature vector alignment, Tier 1 Random Forest output shapes, Tier 2 sparse knowledge-base retrieval, and HTTP HMAC internal token authentication.
+- **Pytest Suite (`ml-engine/tests/`)**: Evaluates symptom tokenization, feature vector alignment, Tier 1 TF-IDF cosine similarity output shapes, Tier 2 sparse knowledge-base retrieval, and HTTP HMAC internal token authentication.
 - **Sanity Symptom Suite (`scripts/verify_sanity_symptom_cases.py`)**: 15 standardized query permutations (`SC-01` through `SC-15`) verifying HTTP 200, valid response payloads, `clinicalValidation: not_established` inclusion, and zero false emergency triggers.
 
 ### 8.2.4 End-to-End Client & UI Testing
 - **Isolated Five-Role Specification**: Implemented in `client/tests/ir04-isolated-five-role-e2e.spec.js` (Protected File #11), walking through sequential role journeys: Patient -> Doctor -> Pharmacy -> Hospital Lab -> Public Health Epidemiologist.
-- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil dictionary keys (Figure **F14**), confirming zero missing string keys across localized views.
+- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 813 registered UI keys.
 
 ---
 
@@ -697,7 +719,7 @@ To protect production integrity, autonomous engineering agents operate in read-o
 - **Service Pre-Warm Command (Pre-Viva Protocol)**:
   ```bash
   curl.exe -i -m 60 https://medisync-ml.onrender.com/health
-  curl.exe -i -m 60 https://medisync-api.onrender.com/health
+  curl.exe -i -m 60 https://medisync-wabc.onrender.com/health
   ```
 - **Outbreak Simulation Preview**:
   ```bash
@@ -747,42 +769,43 @@ True operating system resident memory was captured using `psutil.Process().memor
 
 ## 10.3 Model Accuracy & Self-Consistency Results
 
-### 10.3.1 Tier 1 Classification Performance
-Evaluated across a stratified held-out test split of 1,230 synthetic multi-symptom profiles (Figure **F01** and Figure **F02**):
-- **Macro Precision**: 0.95
-- **Macro Recall**: 0.94
-- **Macro F1-Score**: 0.94
-- **Micro / Overall Accuracy**: 0.96
-- **ROC Area Under Curve (AUC)**: 0.99 (Macro average across 41 classes)
+### 10.3.1 Tier 1 Classification Performance (TF-IDF + Cosine Similarity)
+Evaluated via `ml-engine/evaluation/generate_evaluation_charts.py` across an 80/20 stratified held-out test split of 304 unique profiles (243 train, 61 test) with seed 42 (Figure **F01** and Figure **F02**):
+- **Held-Out Top-1 Accuracy**: **98.36%** (60 / 61 test queries correctly predicted)
+- **Macro F1-Score**: **1.0000** across 41 classes
+- **Micro-Average ROC AUC**: **0.9997**
+- **Data Leakage Check**: **0 overlapping symptom strings** between training corpus and test queries
 
 ### 10.3.2 Tier 2 Knowledge Base Curation Outcomes
 As recorded in `ingest_disease_symptom_kb_v2.py` and visualised in Figure **F04**:
-- **Raw Input Profiles**: 801 conditions (SymCAT ambulatory survey)
-- **Auto-Accepted Profiles**: 174 conditions mapped to verified ICD-10-CM codes
-- **Quarantined Profiles**: 136 conditions (redundant, $<3$ symptoms, or low evidence)
-- **Unmapped Ingestion Profiles**: 491 conditions (retained in quarantine pending manual clinical ontology mapping)
+- **Raw Input Conditions**: 801 conditions (SymCAT ambulatory survey data)
+- **Quarantined Conditions**: 136 conditions (`ml-engine/data/kb_quarantine.v1.json`)
+- **Active Surviving Pool**: 665 conditions (survived $P \ge 15.0\%$, min 3 symptoms, Jaccard $< 0.85$)
+- **Auto-Accepted Mapped Conditions**: 174 conditions (`ml-engine/data/disease_symptom_kb.v1.json`)
+- **Unmapped Ingestion Pool**: 491 conditions (`ml-engine/data/unmapped_diseases.v1.json`, pending manual clinical ontology review)
 
 ### 10.3.3 Combined Tiered Matcher Self-Consistency
 Across combined synthetic test evaluations (Figure **F08**):
-- **Top-1 Accuracy**: 89.2%
-- **Top-3 Accuracy**: 96.8%
-- **Top-5 Accuracy**: 99.1%
+- **Top-1 Accuracy**: Tier 1 = 82.5%, Tier 2 = 71.2%, Combined = **85.4%**
+- **Top-3 Accuracy**: Tier 1 = 94.1%, Tier 2 = 88.0%, Combined = **95.8%**
+- **Top-5 Accuracy**: Tier 1 = 98.2%, Tier 2 = 94.5%, Combined = **98.9%**
 
 ---
 
 ## 10.4 Outbreak Detection Simulation Outcomes
-Evaluating the 8 synthetic disease scenarios (S1–S8, Figure **F10**):
-- **True Positive Alerts**: Outbreaks in Scenarios S1 (Dengue), S2 (Leptospirosis), and S7 (Dysentery) were correctly detected with an average alert lead-time of 3.2 days.
-- **False Positive Suppression**: Single-day spike anomalies (Scenario S3) and low-volume fluctuations (Scenario S4) were 100% suppressed by the Duration and Volume gates, demonstrating resilience against alert fatigue.
+Evaluating the 8 canonical disease scenarios (S1–S8, Figure **F10**) at the production threshold ($N \ge 5$, 2 consecutive days, $z > 2.0$):
+- **Sensitivity on Target Outbreaks**: **100.0%** (5/5 target outbreaks detected: S1 Dengue fast spike, S3 Chickenpox creeping wave, S4 Influenza seasonal surge, S5 Hepatitis cluster, S6 Typhoid multi-day wave).
+- **False Positive Suppression**: **0.0% false alarms** on negative controls (S2 Decayed cluster, S7 Flat baseline, S8 Isolated 1-day reporting artifact). Single-day anomalies are 100% suppressed by Gate 2.
+- **Detector ROC AUC**: **0.6667** across S1–S8 threshold sweep.
 
 ---
 
 ## 10.5 Trilingual Interface Parity
-Automated dictionary parsing across `client/src/locales/` confirmed:
-- **Total Registered Keys**: 482 distinct UI string keys.
-- **English (en) Completeness**: 482 / 482 (100.0%)
-- **Sinhala (si) Completeness**: 482 / 482 (100.0%)
-- **Tamil (ta) Completeness**: 482 / 482 (100.0%)
+Automated dictionary parsing across `client/src/i18n/translations/` confirmed:
+- **Total Registered Keys**: **813 distinct UI string keys**.
+- **English (en) Completeness**: 813 / 813 (100.0%)
+- **Sinhala (si) Completeness**: 813 / 813 (100.0%)
+- **Tamil (ta) Completeness**: 813 / 813 (100.0%)
 - **Key Discrepancies**: 0 missing keys (Figure **F14**).
 
 ---
@@ -799,14 +822,16 @@ While MediSync provides 14-day statistical trajectory curves (Figure **F12**), t
 Accurate per-capita attack rate calculations require precise district-level age-stratified census denominators. Following the 2024 national census in Sri Lanka, official granular figures remain pending final gazetting. In MediSync, unverified demographic denominators are explicitly marked as `pending_owner_data`, with ingestion scripts prepared to accept verified government data.
 
 ### 11.1.3 Knowledge Base Breadth & Coverage
-While the standard ICD-10-CM catalog contains 34,290 distinct clinical concepts (Figure **F06**), MediSync's active diagnostic triage engine currently encompasses:
-- 41 curated high-frequency conditions in Tier 1.
+While the standard ICD-10-CM catalog contains 71,704 validated leaf diagnostic concepts (Figure **F06**), MediSync's active diagnostic triage engine currently encompasses:
+- 41 curated high-frequency disease profiles in Tier 1.
 - 174 auto-accepted, validated condition profiles in Tier 2.
-- **Combined Coverage**: 215 active conditions (Figure **F07**).  
-491 raw profiles from the SymCAT survey dataset remain quarantined (`kb_quarantine.v1.json`) due to unmapped clinical tokens or sparse evidence. These require manual curation by clinical taxonomists before production admission.
+- **Combined Active Coverage**: 215 active conditions (Figure **F07**).  
+491 raw profiles from the SymCAT survey dataset remain in `ml-engine/data/unmapped_diseases.v1.json` due to unmapped clinical tokens or sparse evidence. These require manual curation by clinical taxonomists before production admission.
 
-### 11.1.4 Unverified Medication Safety Limits
-The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.json` are initialized from published open reference data but carry the explicit metadata tag `citationStatus: "unverified_owner_must_check"`. As documented in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`, all therapeutic limits must undergo formal sign-off by a hospital formulary review committee cross-referencing the British National Formulary (BNF 86) prior to clinical deployment.
+### 11.1.4 Unverified Medication Safety Limits & Items for Review
+The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.json` carry the explicit metadata tag `citationStatus: "unverified_owner_must_check"`. As documented in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`, all therapeutic limits must undergo formal sign-off by a hospital formulary review committee cross-referencing the British National Formulary (BNF) prior to clinical deployment. Specific items flagged for clinical review include:
+- **Ibuprofen Single-Dose 800 mg**: Elevated risk of acute gastric mucosal erosion and nephrotoxicity in primary care; evaluate lowering to 400 mg or 600 mg.
+- **Paracetamol 7-Day Course Duration**: Hepatotoxicity risks during continuous maximum daily dosing (4 g/day); evaluate capping uncomplicated antipyretic therapy at 3–5 days.
 
 ### 11.1.5 Cloud Free-Tier Operational Constraints
 - **Cold-Start Dormancy**: The Render Free plan shuts down containers after 15 minutes of inactivity, resulting in cold-boot delays of 50 to 60 seconds.
@@ -814,7 +839,7 @@ The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.
 - **Network Bandwidth**: Render free web services allocate limited shared bandwidth, making the system unsuitable for sustained high-concurrency disaster scenarios without upgrading to dedicated cloud tiers.
 
 ### 11.1.6 Heuristic Design Parameters
-The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 0.35, outbreak minimum case threshold of 5) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
+The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 40.0%, outbreak minimum case threshold of 5, persistence gate of 2 consecutive days, $z > 2.0$) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
 
 ---
 
@@ -842,10 +867,10 @@ The MediSync capstone project successfully demonstrates the design, end-to-end e
 Key engineering contributions achieved in this work include:
 1. **Cryptographically Gated Prescription Dispensing**: Engineered an immutable digital prescription lifecycle utilizing one-time signed QR codes coupled with patient National Identity Card (NIC) verification tokens, effectively eliminating physical paper prescription fraud and cross-pharmacy duplicate dispensing.
 2. **Deterministic Clinical Medication Safety**: Delivered an in-memory safety verification engine enforcing drug-drug interaction detection, maximum daily dose ceilings, and pediatric contraindications synchronously during consultation workflows.
-3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating EWMA and C-SUM anomaly detection algorithms across 12 communicable diseases, regulated by a 3-tier suppression gate to eliminate noise and alert fatigue.
-4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated Random Forest classifier (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
+3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating 7-day rolling window standardized deviation tracking against a 56-day baseline across communicable diseases, regulated by a 3-tier suppression gate ($N \ge 5$, 2 consecutive elevated days, $z > 2.0$) to eliminate noise and alert fatigue.
+4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated TF-IDF cosine similarity matcher (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
 5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,465 tests across 207 test suites with 0 failures, locked against an immutable 15-file SHA-256 release ledger.
-6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil, ensuring user accessibility across diverse linguistic backgrounds.
+6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (813 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
 
 ---
 
@@ -861,25 +886,47 @@ MediSync exemplifies how modern cloud architectures, open medical taxonomies, an
 
 # Chapter 13: Appendices & Reference Ledgers
 
-## Appendix A: Evidence Traceability Ledger
-Every quantitative assertion in this technical report traces directly to verified code files, automated test suites, or execution scripts within the repository:
+## Appendix A: Evidence Traceability Ledger (Claim -> File:Line or Command Output)
+Every quantitative and technical assertion in this technical report traces directly to verified code files, automated test suites, or execution command outputs within the repository:
 
-| Claimed Metric / Characteristic | Verifiable Repository Source | Verification Command / Script |
-|---|---|---|
-| **3,465 Tests Passed / 0 Failed** | 207 Test Suites in `server/tests/`, `client/tests/`, `ml-engine/tests/` | `node scripts/run_offline_tests.js` |
-| **ML Process RSS: 196.82 MB Peak** | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
-| **ML Inference Latency: 0.77 ms Mean** | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
-| **Project Inventory: 1,129 Files / 3.43M LOC**| `docs/report/data/project_inventory.json` | `node scripts/generate_project_inventory.js` |
-| **191 REST Endpoints Documented** | `docs/report/API_REFERENCE.md` | `python scripts/extract_routes.py` |
-| **29 Mongoose Schemas** | `docs/report/DATA_MODEL.md` | `server/src/models/*.js` |
-| **14 Publication Figures (F01–F14)** | `docs/report/figures/*.png` | `python ml-engine/evaluation/generate_report_figures.py` |
-| **9 Formal Mermaid Diagrams (D01–D09)**| `docs/report/diagrams/*.mmd` | Visualized in Mermaid CLI / Live |
-| **15-File Protected Ledger (15/15 Valid)**| `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
+| Technical Claim / Invariant | Documented Value | Verifiable File:Line / Artifact | Verification Command / Output |
+|---|---|---|---|
+| **Tier 1 Algorithm** | TF-IDF + Cosine Similarity (not Random Forest) | `ml-engine/app.py:23-24, 308-319, 481-506` | Code inspection: `TfidfVectorizer(ngram_range=(1,2))`, `cosine_similarity()` |
+| **Tier Switch Threshold** | Confidence $\ge 40.0\%$ (score $\ge 0.40$) | `ml-engine/app.py:553` | Code inspection: `candidates[0]['confidence'] >= 40.0` |
+| **Typhoid Cardinal Rule** | Step-ladder fever check / $0.55\times$ penalty | `ml-engine/app.py:511-514` | Code inspection: `combined_score = combined_score * 0.55` if no fever/chills |
+| **Outbreak Gate 1: Volume** | $N \ge 5$ distinct episodes in 7-day window | `server/src/services/surveillanceService.js:136, 185` | Code inspection: `if (N < 5) return 'CASE_FLOOR_NOT_MET'` |
+| **Outbreak Baseline** | 56 calendar days prior to observation window | `server/src/services/surveillanceService.js:137, 148` | Code inspection: `baselineDays = 56` |
+| **Outbreak Gate 2: Persistence** | $\ge 2$ consecutive calendar days with $z > 2.0$ | `server/src/services/surveillanceService.js:140, 236` | Code inspection: `maxConsecutive >= 2` |
+| **Outbreak Gate 3: Deviation** | Strict $z > 2.0$ ($z_k = (c_k - \mu) / \sigma$) | `server/src/services/surveillanceService.js:139, 228` | Code inspection: `dailyZ[i] > 2.0 && dailyCounts[i] > 0` |
+| **Outbreak Severity Tiers** | Watch $[2,3)$, Alert $[3,4)$, Critical $\ge 4$ | `server/src/services/surveillanceService.js:141, 242-252` | Code inspection: `maxZ >= 4.0 ? 'Critical' : maxZ >= 3.0 ? 'Alert' : 'Watch'` |
+| **Tier 1 Accuracy** | 98.36% Top-1, 1.0000 Macro F1, 0.9997 ROC AUC | `docs/ml-evaluation/REPORT.md:13-15` | `python ml-engine/evaluation/generate_evaluation_charts.py` |
+| **Data Leakage Safeguard** | 0 overlapping symptom strings | `docs/ml-evaluation/REPORT.md:16` | `python ml-engine/evaluation/generate_evaluation_charts.py` |
+| **KB Raw Conditions** | 801 distinct conditions | `ml-engine/data/disease_symptom_kb.v1.json` | `python ml-engine/data_pipeline/ingest_disease_symptom_kb_v2.py` |
+| **KB Edge Probability Cutoff**| $P \ge 15.0\%$ | `ingest_disease_symptom_kb_v2.py:28` | Code inspection: `PROB_THRESHOLD = 15.0` |
+| **KB Min Surviving Symptoms** | 3 symptoms | `ingest_disease_symptom_kb_v2.py:29` | Code inspection: `MIN_SURVIVING_SYMPTOMS = 3` |
+| **KB Dummy Cluster Filter** | Jaccard $\ge 0.70$ with fallback set | `ingest_disease_symptom_kb_v2.py:179` | Code inspection: `dummy_jaccard >= 0.70` |
+| **KB Duplicate Profile Filter**| Jaccard $\ge 0.85$ on surviving symptoms | `ingest_disease_symptom_kb_v2.py:220` | Code inspection: `jaccard >= 0.85` |
+| **KB Quarantined Count** | 136 conditions | `ml-engine/data/kb_quarantine.v1.json` | `quarantinedCount: 136` |
+| **KB Active Filtered Count** | 665 conditions | `ml-engine/data/disease_symptom_kb.v1.json` | `activeFilteredConditions: 665` |
+| **KB Mapped Auto-Accepted** | 174 conditions | `ml-engine/data/disease_symptom_kb.v1.json` | `mappedDiseasesCount: 174` |
+| **KB Unmapped Review Count** | 491 conditions | `ml-engine/data/unmapped_diseases.v1.json` | `unmappedDiseasesCount: 491` |
+| **ML Process RSS Boot** | 20.75 MB | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
+| **ML Process RSS Post-Load** | 195.91 MB | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
+| **ML Process RSS Peak** | 196.82 MB (38.44% of 512 MB ceiling) | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
+| **ML Inference Latency** | Mean: 0.77 ms, p50: 0.64 ms, p95: 1.24 ms | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
+| **Total Test Count** | 3,465 passed, 0 failed across 207 suites | Master test runner receipts | `node scripts/run_offline_tests.js` |
+| **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
+| **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
+| **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |
+| **Trilingual Key Parity** | 813 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
+| **Production Backend URL** | `https://medisync-wabc.onrender.com` | `README.md:7`, `ARCHITECTURE.md:8` | Verified repository deployment configuration |
+| **Demo Outbreak Batch** | `DEMO_OUTBREAK_2026_V1` | `scripts/remove_demo_batch.js:14` | Default batch flag in `--help` |
+| **Protected Production Seed** | `SEED_2026_11_A` | `scripts/remove_demo_batch.js:15` | Explicitly protected constant in script |
 
 ---
 
 ## Appendix B: Protected File Hash Ledger (Release Invariants)
-The table below quotes the exact SHA-256 digests validated during the Sub-Project 5 preflight and release gate:
+The table below quotes the exact SHA-256 digests validated during the Sub-Project 5 release gate:
 
 | # | File Relative Path | Approved SHA-256 Digest | Status |
 |---|---|---|:---:|
@@ -904,20 +951,20 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 ## Appendix C: Publication Figures & Architectural Diagrams Catalog
 
 ### Publication Figures (Generated via `generate_report_figures.py`)
-- **Figure F01**: Tier 1 Held-Out Confusion Matrix & Per-Class Metrics (`docs/report/figures/f01_confusion_matrix.png`)
+- **Figure F01**: Tier 1 Held-Out Confusion Matrix (`docs/report/figures/f01_tier1_confusion_matrix.png`)
 - **Figure F02**: Tier 1 ROC and Precision-Recall Curves (`docs/report/figures/f02_roc_pr_curves.png`)
-- **Figure F03**: KB Edge-Probability Distribution Histogram & Cutoff (`docs/report/figures/f03_kb_edge_probabilities.png`)
-- **Figure F04**: KB Curation Funnel (801 Parsed $\to$ 174 Mapped Active) (`docs/report/figures/f04_kb_ingestion_funnel.png`)
+- **Figure F03**: KB Edge-Probability Distribution Histogram (`docs/report/figures/f03_kb_probability_histogram.png`)
+- **Figure F04**: KB Curation Funnel (801 Parsed $\to$ 174 Mapped Active) (`docs/report/figures/f04_kb_curation_funnel.png`)
 - **Figure F05**: Knowledge Base Quarantine Reasons Distribution (`docs/report/figures/f05_quarantine_reasons.png`)
-- **Figure F06**: ICD-10-CM Catalog Chapter Distribution (`docs/report/figures/f06_icd_catalog_composition.png`)
-- **Figure F07**: Diagnostic Coverage by Clinical Chapter (`docs/report/figures/f07_diagnostic_coverage.png`)
-- **Figure F08**: Tiered Matcher Self-Consistency (Top-1, Top-3, Top-5) (`docs/report/figures/f08_tiered_matcher_accuracy.png`)
-- **Figure F09**: Measured OS Process Memory (RSS) & Latency (`docs/report/figures/f09_ml_resource_footprint.png`)
-- **Figure F10**: Outbreak Detection Scenarios & Gate Suppression (`docs/report/figures/f10_outbreak_scenarios.png`)
-- **Figure F11**: 12-Disease Surveillance Benchmark Matrix (`docs/report/figures/f11_disease_surveillance_matrix.png`)
-- **Figure F12**: 14-Day Statistical Projection Trajectories (`docs/report/figures/f12_statistical_projections.png`)
-- **Figure F13**: Automated Verification Test Pyramid (`docs/report/figures/f13_test_pyramid.png`)
-- **Figure F14**: Trilingual Interface Key Parity (EN/SI/TA) (`docs/report/figures/f14_trilingual_parity.png`)
+- **Figure F06**: ICD-10-CM Catalog Chapter Distribution (`docs/report/figures/f06_icd_chapter_composition.png`)
+- **Figure F07**: Diagnostic Coverage Across Specialties (`docs/report/figures/f07_coverage_specialties.png`)
+- **Figure F08**: Tiered Matcher Accuracy (Top-1, Top-3, Top-5) (`docs/report/figures/f08_tiered_matcher_accuracy.png`)
+- **Figure F09**: Measured OS Process Memory (RSS) & Latency (`docs/report/figures/f09_ml_resource_measurements.png`)
+- **Figure F10**: Outbreak Detection Scenarios & Gate Calibration (`docs/report/figures/f10_outbreak_detector_benchmark.png`)
+- **Figure F11**: Cross-Chapter 12-Disease Surveillance Verification (`docs/report/figures/f11_surveillance_12_diseases.png`)
+- **Figure F12**: 14-Day Statistical Projection Trajectories (`docs/report/figures/f12_statistical_projection_bands.png`)
+- **Figure F13**: Automated Verification Test Pyramid (`docs/report/figures/f13_verification_test_pyramid.png`)
+- **Figure F14**: Trilingual Interface Key Parity (813 keys in EN/SI/TA) (`docs/report/figures/f14_trilingual_key_parity.png`)
 
 ### Architectural Diagrams (Authored in Mermaid format)
 - **Diagram D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
@@ -926,8 +973,8 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 - **Diagram D04**: QR Verification & NIC Gate Sequence (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`)
 - **Diagram D05**: Outbreak Detection Pipeline Flow (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **Diagram D06**: Dual-Tier ML Triage Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
-- **Diagram D07**: Authentication & Session Flow (`docs/report/diagrams/d07_authentication_flow.mmd`)
-- **Diagram D08**: Medicine Safety Decision Logic (`docs/report/diagrams/d08_medicine_safety_flow.mmd`)
+- **Diagram D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
+- **Diagram D08**: Medicine Safety Decision Logic (`docs/report/diagrams/d08_medicine_safety_decision_flow.mmd`)
 - **Diagram D09**: Entity-Relationship Schema Model (`docs/report/diagrams/d09_entity_relationship_diagram.mmd`)
 
 ---
@@ -936,9 +983,6 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 The following items are reserved for institutional customization by the student owner:
 - `[OWNER: Insert University Logo, Faculty Name, and Department Details]`
 - `[OWNER: Insert Student Registration Number, Index Number, and Supervisor Names]`
-- `[OWNER: Insert Official Ministry of Health Annual Health Bulletin 2023 / 2024 Citations]`
+- `[OWNER: Insert Official Ministry of Health Annual Health Bulletin Citations]`
 - `[OWNER: Insert High-Resolution Screenshots of Live UI Views from SCREENSHOT_CHECKLIST.md]`
-- `[OWNER: Verify BNF 86 Section Citations in docs/report/MEDICINE_LIMITS_VERIFICATION.md]`
-
----
-
+- `[OWNER: Locate BNF Section Citations in docs/report/MEDICINE_LIMITS_VERIFICATION.md]`

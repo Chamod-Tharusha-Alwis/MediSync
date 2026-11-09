@@ -26,8 +26,8 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 ### 3.2.2 Doctor Subsystem
 - **FR-DOC-01**: The system shall allow physicians to schedule appointments, manage daily clinic queues, and initiate clinical encounters.
 - **FR-DOC-02**: The system shall provide an integrated symptom input interface supporting free-text autocompletion, queryable against the ML symptom inference microservice.
-- **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 and Tier 2 ML models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
-- **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications.
+- **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 (curated) and Tier 2 (sparse KB) models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
+- **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications across 71,704 validated concepts.
 - **FR-DOC-05**: The system shall validate prescribed medications against the deterministic medicine safety engine, rendering blocking or non-blocking alerts for drug-drug interactions, maximum daily dosage overages, and age-related limits.
 - **FR-DOC-06**: The system shall allow clinicians to order laboratory investigations linked directly to the consultation encounter.
 
@@ -43,10 +43,13 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **FR-LAB-03**: The system shall notify the prescribing doctor and patient upon report finalization.
 
 ### 3.2.5 Epidemiological Surveillance Subsystem
-- **FR-EPI-01**: The system shall automatically aggregate anonymized consultation diagnostic events categorized by administrative district (1 to 25) and disease category.
-- **FR-EPI-02**: The system shall evaluate incidence data using Exponentially Weighted Moving Average (EWMA) and Cumulative Sum (C-SUM) algorithms to detect anomalous spatial clusters.
-- **FR-EPI-03**: The system shall enforce a three-tier noise suppression gate (absolute case count minimum, minimum sustained duration, and statistical z-score threshold) before publishing high-priority outbreak alerts.
-- **FR-EPI-04**: The system shall compute 14-day statistical trend projections with explicit confidence bounds, labelled as descriptive projections rather than validated epidemiological forecasts.
+- **FR-EPI-01**: The system shall automatically aggregate anonymized consultation diagnostic events categorized by administrative district (1 to 25), province (9), or national level.
+- **FR-EPI-02**: The system shall evaluate incidence data using a 7-day calendar window compared against a 56-day baseline to compute standardized daily deviations ($z_k = (c_k - \mu) / \sigma$).
+- **FR-EPI-03**: The system shall enforce a three-tier noise suppression gate before publishing outbreak alerts:
+  1. *Volume Floor Gate*: Absolute case volume in the 7-day window must reach at least 5 distinct episodes ($N \ge 5$).
+  2. *Persistence Gate*: At least 2 consecutive complete calendar days in the window must exhibit elevated daily deviation ($z > 2.0$ with $c_k > 0$).
+  3. *Statistical Severity Classification*: Categorizes triggered signals into Watch ($z \in [2.0, 3.0)$), Alert ($z \in [3.0, 4.0)$), or Critical ($z \ge 4.0$).
+- **FR-EPI-04**: The system shall compute 14-day statistical trend projections with explicit prediction bounds, labelled as descriptive projections rather than validated epidemiological forecasts.
 
 ### 3.2.6 Administrative & Public Subsystems
 - **FR-ADM-01**: The system shall log all sensitive read and write actions to an immutable, append-only security audit log capturing user ID, IP address, timestamp, and target entity.
@@ -64,7 +67,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 
 ### 3.3.2 Performance and Scalability (NFR-PERF)
 - **NFR-PERF-01 (API Latency)**: Core backend Express REST endpoints shall achieve p95 response latencies under 150 ms under synthetic load.
-- **NFR-PERF-02 (ML Latency)**: The Python ML microservice shall execute symptom inference queries in less than 5 ms p95 (empirically measured at 1.24 ms p95).
+- **NFR-PERF-02 (ML Latency)**: The Python ML microservice shall execute symptom inference queries in less than 5 ms p95 (empirically measured at 1.24 ms p95, mean 0.77 ms).
 - **NFR-PERF-03 (Memory Footprint)**: The ML microservice process resident set size (RSS) shall not exceed 250 MB (empirically measured at 196.82 MB peak), ensuring stability within the 512 MB Render Free tier memory boundary.
 
 ### 3.3.3 Reliability and Operational Resilience (NFR-REL)
@@ -72,9 +75,9 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-REL-02 (Cold-Start Tolerance)**: Client applications shall gracefully handle cloud microservice wake-up cycles of up to 60 seconds with descriptive visual loading indicators.
 
 ### 3.3.4 Localization and Usability (NFR-USE)
-- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil.
+- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (813 keys verified).
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
-- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests) shall execute cleanly offline in less than 180 seconds without external network dependencies.
+- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests across 207 suites) shall execute cleanly offline in less than 180 seconds without external network dependencies.
 - **NFR-MAINT-02 (Protected Integrity)**: Critical security and calculation files (15 files) shall be locked via SHA-256 hashes in a monitored release ledger.

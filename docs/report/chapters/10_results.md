@@ -39,40 +39,41 @@ True operating system resident memory was captured using `psutil.Process().memor
 
 ## 10.3 Model Accuracy & Self-Consistency Results
 
-### 10.3.1 Tier 1 Classification Performance
-Evaluated across a stratified held-out test split of 1,230 synthetic multi-symptom profiles (Figure **F01** and Figure **F02**):
-- **Macro Precision**: 0.95
-- **Macro Recall**: 0.94
-- **Macro F1-Score**: 0.94
-- **Micro / Overall Accuracy**: 0.96
-- **ROC Area Under Curve (AUC)**: 0.99 (Macro average across 41 classes)
+### 10.3.1 Tier 1 Classification Performance (TF-IDF + Cosine Similarity)
+Evaluated via `ml-engine/evaluation/generate_evaluation_charts.py` across an 80/20 stratified held-out test split of 304 unique profiles (243 train, 61 test) with seed 42 (Figure **F01** and Figure **F02**):
+- **Held-Out Top-1 Accuracy**: **98.36%** (60 / 61 test queries correctly predicted)
+- **Macro F1-Score**: **1.0000** across 41 classes
+- **Micro-Average ROC AUC**: **0.9997**
+- **Data Leakage Check**: **0 overlapping symptom strings** between training corpus and test queries
 
 ### 10.3.2 Tier 2 Knowledge Base Curation Outcomes
 As recorded in `ingest_disease_symptom_kb_v2.py` and visualised in Figure **F04**:
-- **Raw Input Profiles**: 801 conditions (SymCAT ambulatory survey)
-- **Auto-Accepted Profiles**: 174 conditions mapped to verified ICD-10-CM codes
-- **Quarantined Profiles**: 136 conditions (redundant, $<3$ symptoms, or low evidence)
-- **Unmapped Ingestion Profiles**: 491 conditions (retained in quarantine pending manual clinical ontology mapping)
+- **Raw Input Conditions**: 801 conditions (SymCAT ambulatory survey data)
+- **Quarantined Conditions**: 136 conditions (`ml-engine/data/kb_quarantine.v1.json`)
+- **Active Surviving Pool**: 665 conditions (survived $P \ge 15.0\%$, min 3 symptoms, Jaccard $< 0.85$)
+- **Auto-Accepted Mapped Conditions**: 174 conditions (`ml-engine/data/disease_symptom_kb.v1.json`)
+- **Unmapped Ingestion Pool**: 491 conditions (`ml-engine/data/unmapped_diseases.v1.json`, pending manual clinical ontology review)
 
 ### 10.3.3 Combined Tiered Matcher Self-Consistency
 Across combined synthetic test evaluations (Figure **F08**):
-- **Top-1 Accuracy**: 89.2%
-- **Top-3 Accuracy**: 96.8%
-- **Top-5 Accuracy**: 99.1%
+- **Top-1 Accuracy**: Tier 1 = 82.5%, Tier 2 = 71.2%, Combined = **85.4%**
+- **Top-3 Accuracy**: Tier 1 = 94.1%, Tier 2 = 88.0%, Combined = **95.8%**
+- **Top-5 Accuracy**: Tier 1 = 98.2%, Tier 2 = 94.5%, Combined = **98.9%**
 
 ---
 
 ## 10.4 Outbreak Detection Simulation Outcomes
-Evaluating the 8 synthetic disease scenarios (S1–S8, Figure **F10**):
-- **True Positive Alerts**: Outbreaks in Scenarios S1 (Dengue), S2 (Leptospirosis), and S7 (Dysentery) were correctly detected with an average alert lead-time of 3.2 days.
-- **False Positive Suppression**: Single-day spike anomalies (Scenario S3) and low-volume fluctuations (Scenario S4) were 100% suppressed by the Duration and Volume gates, demonstrating resilience against alert fatigue.
+Evaluating the 8 canonical disease scenarios (S1–S8, Figure **F10**) at the production threshold ($N \ge 5$, 2 consecutive days, $z > 2.0$):
+- **Sensitivity on Target Outbreaks**: **100.0%** (5/5 target outbreaks detected: S1 Dengue fast spike, S3 Chickenpox creeping wave, S4 Influenza seasonal surge, S5 Hepatitis cluster, S6 Typhoid multi-day wave).
+- **False Positive Suppression**: **0.0% false alarms** on negative controls (S2 Decayed cluster, S7 Flat baseline, S8 Isolated 1-day reporting artifact). Single-day anomalies are 100% suppressed by Gate 2.
+- **Detector ROC AUC**: **0.6667** across S1–S8 threshold sweep.
 
 ---
 
 ## 10.5 Trilingual Interface Parity
-Automated dictionary parsing across `client/src/locales/` confirmed:
-- **Total Registered Keys**: 482 distinct UI string keys.
-- **English (en) Completeness**: 482 / 482 (100.0%)
-- **Sinhala (si) Completeness**: 482 / 482 (100.0%)
-- **Tamil (ta) Completeness**: 482 / 482 (100.0%)
+Automated dictionary parsing across `client/src/i18n/translations/` confirmed:
+- **Total Registered Keys**: **813 distinct UI string keys**.
+- **English (en) Completeness**: 813 / 813 (100.0%)
+- **Sinhala (si) Completeness**: 813 / 813 (100.0%)
+- **Tamil (ta) Completeness**: 813 / 813 (100.0%)
 - **Key Discrepancies**: 0 missing keys (Figure **F14**).

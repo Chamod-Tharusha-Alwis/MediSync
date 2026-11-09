@@ -10,14 +10,16 @@ While MediSync provides 14-day statistical trajectory curves (Figure **F12**), t
 Accurate per-capita attack rate calculations require precise district-level age-stratified census denominators. Following the 2024 national census in Sri Lanka, official granular figures remain pending final gazetting. In MediSync, unverified demographic denominators are explicitly marked as `pending_owner_data`, with ingestion scripts prepared to accept verified government data.
 
 ### 11.1.3 Knowledge Base Breadth & Coverage
-While the standard ICD-10-CM catalog contains 34,290 distinct clinical concepts (Figure **F06**), MediSync's active diagnostic triage engine currently encompasses:
-- 41 curated high-frequency conditions in Tier 1.
+While the standard ICD-10-CM catalog contains 71,704 validated leaf diagnostic concepts (Figure **F06**), MediSync's active diagnostic triage engine currently encompasses:
+- 41 curated high-frequency disease profiles in Tier 1.
 - 174 auto-accepted, validated condition profiles in Tier 2.
-- **Combined Coverage**: 215 active conditions (Figure **F07**).  
-491 raw profiles from the SymCAT survey dataset remain quarantined (`kb_quarantine.v1.json`) due to unmapped clinical tokens or sparse evidence. These require manual curation by clinical taxonomists before production admission.
+- **Combined Active Coverage**: 215 active conditions (Figure **F07**).  
+491 raw profiles from the SymCAT survey dataset remain in `ml-engine/data/unmapped_diseases.v1.json` due to unmapped clinical tokens or sparse evidence. These require manual curation by clinical taxonomists before production admission.
 
-### 11.1.4 Unverified Medication Safety Limits
-The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.json` are initialized from published open reference data but carry the explicit metadata tag `citationStatus: "unverified_owner_must_check"`. As documented in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`, all therapeutic limits must undergo formal sign-off by a hospital formulary review committee cross-referencing the British National Formulary (BNF 86) prior to clinical deployment.
+### 11.1.4 Unverified Medication Safety Limits & Items for Review
+The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.json` carry the explicit metadata tag `citationStatus: "unverified_owner_must_check"`. As documented in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`, all therapeutic limits must undergo formal sign-off by a hospital formulary review committee cross-referencing the British National Formulary (BNF) prior to clinical deployment. Specific items flagged for clinical review include:
+- **Ibuprofen Single-Dose 800 mg**: Elevated risk of acute gastric mucosal erosion and nephrotoxicity in primary care; evaluate lowering to 400 mg or 600 mg.
+- **Paracetamol 7-Day Course Duration**: Hepatotoxicity risks during continuous maximum daily dosing (4 g/day); evaluate capping uncomplicated antipyretic therapy at 3–5 days.
 
 ### 11.1.5 Cloud Free-Tier Operational Constraints
 - **Cold-Start Dormancy**: The Render Free plan shuts down containers after 15 minutes of inactivity, resulting in cold-boot delays of 50 to 60 seconds.
@@ -25,7 +27,7 @@ The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.
 - **Network Bandwidth**: Render free web services allocate limited shared bandwidth, making the system unsuitable for sustained high-concurrency disaster scenarios without upgrading to dedicated cloud tiers.
 
 ### 11.1.6 Heuristic Design Parameters
-The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 0.35, outbreak minimum case threshold of 5) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
+The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 40.0%, outbreak minimum case threshold of 5, persistence gate of 2 consecutive days, $z > 2.0$) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
 
 ---
 

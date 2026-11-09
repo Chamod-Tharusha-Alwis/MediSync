@@ -13,20 +13,26 @@ The automated verification pyramid consists of **3,465 tests across 207 test sui
               /------------\
              /  Integration \      <- Multi-Document Consultations, Dispensing
             /----------------\
-           /    Unit Tests    \    <- Crypto, Medicine Safety, ML Scikit/Pytest
+           /    Unit Tests    \    <- Crypto, Medicine Safety, TF-IDF Scikit/Pytest
           /--------------------\
 ```
 
-Figure **F13** visually details the distribution of test suites and test counts across functional components.
+Figure **F13** visually details the distribution of test suites and test counts across functional components:
+- **Backend Services & Isolated DB**: 2,635 tests across 123 suites
+- **Client Component & UI Contracts**: 666 tests across 78 suites
+- **Root Security & Infrastructure**: 55 tests
+- **ML Scoring & Flask Tests**: 78 tests (40 scoring + 31 Flask API + 7 status contracts)
+- **Email & PDF Harness**: 31 tests across 2 suites
+- **Total**: **3,465 passed, 0 failed across 207 suites**
 
 ---
 
 ## 8.2 Test Suite Taxonomy & Component Breakdown
 
 ### 8.2.1 Core Backend & Services Unit Testing
-- **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback.
-- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds.
-- **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (34,290 concepts) and district geo-coordinate datasets.
+- **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback (`server/tests/crypto.test.js`).
+- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds (`server/tests/medicineSafety.test.js`).
+- **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (71,704 validated concepts) and district geo-coordinate datasets.
 
 ### 8.2.2 Clinical Transaction Integration Testing
 - **Consultation Lifecycle**: Verifies patient appointment check-in, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
@@ -34,12 +40,12 @@ Figure **F13** visually details the distribution of test suites and test counts 
 - **Laboratory Subsystem**: Verified in `server/tests/lab.test.js` (Protected File #9), validating MIME type filtering, magic byte `%PDF-` binary enforcement, and clinician report notification triggers.
 
 ### 8.2.3 Machine Learning Test Suite
-- **Pytest Suite (`ml-engine/tests/`)**: Evaluates symptom tokenization, feature vector alignment, Tier 1 Random Forest output shapes, Tier 2 sparse knowledge-base retrieval, and HTTP HMAC internal token authentication.
+- **Pytest Suite (`ml-engine/tests/`)**: Evaluates symptom tokenization, feature vector alignment, Tier 1 TF-IDF cosine similarity output shapes, Tier 2 sparse knowledge-base retrieval, and HTTP HMAC internal token authentication.
 - **Sanity Symptom Suite (`scripts/verify_sanity_symptom_cases.py`)**: 15 standardized query permutations (`SC-01` through `SC-15`) verifying HTTP 200, valid response payloads, `clinicalValidation: not_established` inclusion, and zero false emergency triggers.
 
 ### 8.2.4 End-to-End Client & UI Testing
 - **Isolated Five-Role Specification**: Implemented in `client/tests/ir04-isolated-five-role-e2e.spec.js` (Protected File #11), walking through sequential role journeys: Patient -> Doctor -> Pharmacy -> Hospital Lab -> Public Health Epidemiologist.
-- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil dictionary keys (Figure **F14**), confirming zero missing string keys across localized views.
+- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 813 registered UI keys.
 
 ---
 

@@ -61,7 +61,7 @@ To protect production integrity, autonomous engineering agents operate in read-o
 - **Service Pre-Warm Command (Pre-Viva Protocol)**:
   ```bash
   curl.exe -i -m 60 https://medisync-ml.onrender.com/health
-  curl.exe -i -m 60 https://medisync-api.onrender.com/health
+  curl.exe -i -m 60 https://medisync-wabc.onrender.com/health
   ```
 - **Outbreak Simulation Preview**:
   ```bash

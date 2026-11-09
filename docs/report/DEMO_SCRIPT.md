@@ -8,7 +8,7 @@ Because MediSync's backend and ML microservices run on Render Free cloud contain
 
 Run the pre-warm commands in your terminal 3 minutes before your viva:
 ```bash
-curl.exe -i -m 60 https://medisync-api.onrender.com/health
+curl.exe -i -m 60 https://medisync-wabc.onrender.com/health
 curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 ```
 - Confirm HTTP 200 OK responses with commit hash and `"status": "ready"`.
@@ -74,7 +74,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   3. **Demonstrate Machine Learning Triage Assistant**:
      - In the symptom input field, add: `high_fever`, `retro_orbital_pain`, `joint_pain`, `rash`.
      - Click **Analyze Symptoms**.
-     - Point out the differential suggestion: *Dengue Fever* (Tier 1 Random Forest high-confidence match).
+     - Point out the differential suggestion: *Dengue Fever* (Tier 1 TF-IDF symptom matcher high-confidence match).
      - Point out the amber disclaimer banner: `clinicalValidation: not_established` (*"AI Clinical Decision Aid — For guidance only, not a validated diagnosis"*).
   4. **Select Standardized Diagnosis**: Search and select `Dengue fever, unspecified [A90]` from the ICD-10 catalog.
   5. **Demonstrate Deterministic Medicine Safety Engine**:

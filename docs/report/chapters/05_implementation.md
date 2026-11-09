@@ -19,7 +19,7 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 ## 5.3 Clinical Consultations & Appointment Queue
 - **Workflow Orchestration**: Implemented in `server/src/controllers/doctorController.js` (Protected File #2) and `server/src/models/Consultation.js` (Protected File #13).
 - **Encounter Capture**: Clinicians record patient chief complaints, vital signs (blood pressure, pulse, temperature, SpO2, respiratory rate), structured symptom tags, and clinical notes.
-- **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/src/data/icd10_catalog.json` (34,290 distinct clinical concepts).
+- **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/reference-data/icd10_clean.json` (71,704 validated leaf concepts).
 - **Transactional Atomicity**: Consultations, associated prescription records, and lab investigation orders are created within MongoDB multi-document transactions where replica sets permit, ensuring rollbacks upon validation failures.
 
 ---
@@ -35,10 +35,10 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 ## 5.5 Deterministic Medicine Safety Engine
 Implemented in `server/src/services/medicineSafetyService.js` and `server/src/data/medicine_safety_limits.json`:
 - **Zero-Latency In-Memory Lookups**: Evaluates medication safety rules synchronously during prescription authoring without outbound network calls.
-- **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin, ACE Inhibitors + Spironolactone), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
+- **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
 - **Maximum Daily Dose Ceilings**: Validates prescribed single and cumulative daily dosages against adult reference limits (e.g., Paracetamol max 4,000 mg/24h).
 - **Renal and Hepatic Adjustments**: Inspects patient baseline organ function flags, emitting automated dosage reduction prompts.
-- **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited against BNF 86 and WHO guidelines in `docs/report/MEDICINE_LIMITS_VERIFICATION.md`.
+- **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited in `docs/report/MEDICINE_LIMITS_VERIFICATION.md` with items flagged for clinical review (Ibuprofen 800 mg single dose and Paracetamol 7-day course).
 
 ---
 
@@ -48,34 +48,39 @@ Implemented in `server/src/controllers/labController.js` and verified by `server
 - **File Upload Guardrails**: Medical Laboratory Technologists upload completed diagnostic reports. The upload pipeline enforces strict multi-layered validation:
   1. File extension must strictly equal `.pdf`.
   2. MIME type reported by the client must equal `application/pdf`.
-  3. Binary inspection validates that the first 5 bytes of the file stream match the magic byte sequence `%PDF-` (`0x25 0x50 0x44 0x46 0x2D`), preventing polyglot executable script attacks.
+  3. Binary inspection validates that the first 5 bytes of the file stream match the magic byte sequence `%PDF-` (`0x25 0x50 0x44 0x2D`), preventing polyglot executable script attacks.
 - **Storage Segregation**: Uploaded files are written to quarantined directories with randomly generated UUID filenames to prevent path traversal attacks.
 
 ---
 
 ## 5.7 Syndromic Outbreak Surveillance Subsystem
-Implemented in `server/src/services/outbreakService.js` and `server/src/models/OutbreakAlert.js`:
-- **District Spatial Aggregation**: Automatically indexes clinical encounter diagnoses across Sri Lanka's 25 administrative districts (Ampara to Vavuniya).
-- **Anomaly Detection Algorithms**:
-  - **EWMA (Exponentially Weighted Moving Average)**: Calculates moving baselines weighting recent days with smoothing parameter $\alpha = 0.3$.
-  - **C-SUM (Cumulative Sum)**: Tracks cumulative deviations above expected historical means to detect insidious gradual disease accumulation.
-- **Three-Tier Alert Noise Suppression**: To prevent alert fatigue among public health officers, alerts are published only if three simultaneous gates are satisfied:
-  1. *Volume Gate*: Absolute daily case count exceeds minimum threshold ($n \ge 5$).
-  2. *Duration Gate*: Incidence exceeds the baseline for at least 3 consecutive tracking windows.
-  3. *Statistical Gate*: The calculated z-score exceeds $+2.5$ standard deviations above historical mean.
+Implemented in `server/src/services/outbreakDetector.js` and `server/src/services/surveillanceService.js`:
+- **Geographic Aggregation**: Groups verified consultation episodes dynamically by entity and disease ID: `district` (25 administrative districts), `province` (9 provinces), or national level.
+- **Evaluation Window & Baseline**:
+  - Observation window $W$: Exactly 7 complete calendar days ending yesterday in Asia/Colombo Standard Time (+05:30), excluding partial ongoing days.
+  - Baseline window: 56 complete calendar days immediately preceding window $W$.
+  - Regularized standard deviation: $\sigma_{\text{base}} = \max(0.5, \sqrt{\mu_{\text{base}}})$ if $\sigma_{\text{base}} < 0.5$; if $\mu_{\text{base}} = 0$, defaults to $\mu_{\text{base}} = 0.1, \sigma_{\text{base}} = 0.5$.
+  - Daily standardized deviation: $z_k = (c_k - \mu_{\text{base}}) / \sigma_{\text{base}}$ for each day $k \in \{1 \dots 7\}$.
+- **Three-Tier Noise Suppression Gate**:
+  1. *Volume Floor Gate*: Total episodes in window $W$ must satisfy $N \ge 5$ distinct episodes. If $N < 5$, signal is suppressed (`CASE_FLOOR_NOT_MET`).
+  2. *Temporal Persistence Gate*: Requires at least 2 consecutive complete calendar days in window $W$ with daily $z_k > 2.0$ (and $c_k > 0$). Isolated single-day reporting spikes are safely suppressed.
+  3. *Statistical Severity Classification*: Signals satisfying both gates are classified by peak daily z-score ($\max(z_k)$):
+     - **Watch (Moderate)**: $z \in [2.0, 3.0)$
+     - **Alert (High)**: $z \in [3.0, 4.0)$
+     - **Critical (Critical)**: $z \ge 4.0$
 
 ---
 
 ## 5.8 Public Health Analytics & 14-Day Projections
-- **Trend Extrapolation**: Employs ordinary least squares (OLS) linear and exponential regression across 30-day trailing windows to project short-term trajectory bounds.
-- **Ethical Labeling**: In compliance with Sub-Project 5 truthfulness guidelines, all generated trajectories are rendered with explicit visual labels: *"14-Day Statistical Projection — Descriptive trend only; not a validated epidemiological forecast"*.
+- **Trend Extrapolation**: Employs ordinary least squares (OLS) regression across trailing 14-day and 28-day windows with 95% Student's t prediction bounds ($df = 12$).
+- **Ethical Labeling**: In compliance with truthfulness guidelines, all generated trajectories are rendered with explicit visual labels: *"14-Day Statistical Projection — Descriptive trend only; not a validated epidemiological forecast"*.
 
 ---
 
 ## 5.9 Trilingual Internationalization (i18n)
-- **Architecture**: Implemented on the client using a centralized translation dictionary structure (`client/src/locales/`) loaded through `LanguageContext`.
+- **Architecture**: Implemented on the client using centralized translation dictionaries (`client/src/i18n/translations/`) loaded through `LanguageContext`.
 - **Language Coverage**: Provides complete trilingual interface parity across **English (en)**, **Sinhala (si)**, and **Tamil (ta)**.
-- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all translation keys (no missing string fallbacks in production views).
+- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **813 translation keys** in all three languages.
 
 ---
 

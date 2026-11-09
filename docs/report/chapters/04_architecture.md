@@ -5,8 +5,8 @@ MediSync adopts a **cloud-native, decoupled service-oriented architecture (SOA)*
 
 The architecture comprises three primary tiers:
 1. **Presentation Layer**: A responsive React Single Page Application (SPA) compiled into static assets and deployed to global edge CDNs (Vercel).
-2. **Application & API Gateway Tier**: A stateless Node.js / Express microservice handling authentication, authorization, clinical transaction orchestration, and cryptographic operations (Render Web Service).
-3. **Specialized Compute Microservice**: An isolated, lightweight Python 3 / Flask microservice dedicated to symptom feature vectorization, Random Forest classification, and sparse knowledge-base retrieval (Render Web Service).
+2. **Application & API Gateway Tier**: A stateless Node.js / Express microservice handling authentication, authorization, clinical transaction orchestration, and cryptographic operations (Render Web Service: `medisync-wabc.onrender.com`).
+3. **Specialized Compute Microservice**: An isolated, lightweight Python 3 / Flask microservice dedicated to symptom feature vectorization, TF-IDF cosine similarity classification, and sparse knowledge-base retrieval (Render Web Service: `medisync-ml.onrender.com`).
 4. **Data Persistence Tier**: A managed MongoDB Atlas cluster supporting replica sets, encrypted connections (TLS 1.3), field-level authenticated encryption at rest, and automated TTL indexing.
 
 ```
@@ -27,7 +27,7 @@ The architecture comprises three primary tiers:
        Shared Secret  v                               v
 +-----------------------------+       +------------------------------+
 |   ML Microservice (Flask)   |       |   MongoDB Atlas Database     |
-| - Tier 1: Random Forest     |       | - Encrypted Patient Store    |
+| - Tier 1: TF-IDF + Cos Sim  |       | - Encrypted Patient Store    |
 | - Tier 2: Sparse KB Matcher |       | - Consultations & Rx Store   |
 | - Memory RSS: 196.82 MB     |       | - Outbreak Surveillance Log  |
 | - Latency: 0.77 ms mean     |       | - TTL Index Sessions         |
@@ -53,7 +53,7 @@ The architecture comprises three primary tiers:
 
 ### 4.2.3 Machine Learning Microservice (ML Engine)
 - **Framework**: Python 3.14 with Flask micro-framework and Gunicorn WSGI container.
-- **Decoupled Security Boundary**: The ML engine does not connect to MongoDB, does not read patient PII, and operates purely statelessly. Requests from the Node.js backend are authenticated using an internal HMAC-SHA-256 signature in the request headers (`X-Internal-Token`).
+- **Decoupled Security Boundary**: The ML engine does not connect to MongoDB, does not read patient PII, and operates purely statelessly. Requests from the Node.js backend are authenticated using an internal HMAC-SHA-256 signature in the request headers (`x-internal-key`).
 - **Memory Optimization**: Employs Scipy sparse CSR matrices and compressed memory-mapped JSON lookup structures to restrict total process resident memory (RSS) to 196.82 MB, avoiding memory exhaustion crashes on 512 MB cloud containers.
 
 ---
@@ -64,7 +64,7 @@ The architecture comprises three primary tiers:
 As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`):
 1. The physician enters patient vitals, subjective complaints, and symptom tags.
 2. The UI queries the ML engine via the Express gateway; differential predictions are returned with `clinicalValidation: not_established`.
-3. The physician selects a standardized diagnosis and inputs proposed medications.
+3. The physician selects a standardized diagnosis from the 71,704 ICD-10 catalog concepts and inputs proposed medications.
 4. The backend medicine safety engine cross-references the regimen against the drug interaction matrix and dosage limit tables.
 5. If safe, the prescription is committed to MongoDB with an auto-generated cryptographic QR token payload; a notification is dispatched to the patient.
 
@@ -81,10 +81,11 @@ As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic
 
 ## 4.4 Deployment Topology & Cloud Infrastructure
 As detailed in Diagram **D02** (`docs/report/diagrams/d02_deployment_infrastructure.mmd`):
-- **Frontend**: Hosted on Vercel Edge Network with automated continuous deployment from the Git repository.
-- **Backend & ML Services**: Hosted on Render Free Web Services with automatic container recovery.
+- **Frontend**: Hosted on Vercel Edge Network (`https://medisync.chamodtharusha.com.lk`).
+- **Backend Service**: Hosted on Render Free Web Service (`https://medisync-wabc.onrender.com`).
+- **ML Inference Service**: Hosted on Render Free Web Service (`https://medisync-ml.onrender.com`).
 - **Database**: Hosted on MongoDB Atlas (Free M0 Cluster, 512 MB storage, shared RAM, AWS ap-south-1 Mumbai region for optimal geographic proximity to Sri Lanka).
-- **Communication Channels**: Secure SMTP relay (Nodemailer) for transactional email OTPs and emergency alert dispatch.
+- **Communication Channels**: Secure SMTP relay for transactional email OTPs and emergency alert dispatch.
 
 ---
 
@@ -96,6 +97,6 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`)
 - **D05**: Outbreak Detection Pipeline (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **D06**: Tiered Matcher Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
-- **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_authentication_flow.mmd`)
-- **D08**: Medicine Safety Decision Flow (`docs/report/diagrams/d08_medicine_safety_flow.mmd`)
+- **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
+- **D08**: Medicine Safety Decision Flow (`docs/report/diagrams/d08_medicine_safety_decision_flow.mmd`)
 - **D09**: Entity-Relationship Diagram (`docs/report/diagrams/d09_entity_relationship_diagram.mmd`)

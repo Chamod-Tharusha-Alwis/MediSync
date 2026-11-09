@@ -116,7 +116,7 @@ node scripts/generate_project_inventory.js
 ## 6. Explicit Demarcation of What is NOT Verified Live
 In compliance with project ethical rules, the following operational boundaries are explicitly recorded:
 - **Atlas Production Database Queries**: NEVER queried or modified during this session. All automated tests ran strictly in offline in-memory databases.
-- **Production Data Deletions**: The demo batch (`SEED_2026_11_A`) remains in production database. Deletions are strictly reserved for the owner.
+- **Production Data Deletions**: The demo outbreak batch (`DEMO_OUTBREAK_2026_V1`) and protected production seed (`SEED_2026_11_A`) remain in the database. Deletions are strictly reserved for the owner.
 - **Render Free Live Uptime**: The live ML service runs on Render Free tier (15-minute inactivity dormancy, ~50-second cold start). External monitoring blips on free uptime checkers reflect 30-second HTTP timeouts during container initialization, not fatal crashes.
 - **Clinical Validation**: The platform has not undergone hospital clinical trials or NMRA certification and carries the immutable disclaimer `clinicalValidation: not_established`.
 
@@ -134,7 +134,7 @@ Follow `docs/OWNER_CHECKLIST_FINAL.md` for exact steps:
    ```
 3. **Pre-Warm Cloud Services (Before Live Demos / Vivas)**:
    ```bash
-   curl.exe -i -m 60 https://medisync-api.onrender.com/health
+   curl.exe -i -m 60 https://medisync-wabc.onrender.com/health
    curl.exe -i -m 60 https://medisync-ml.onrender.com/health
    ```
 4. **Capture UI Screenshots**:
@@ -149,8 +149,13 @@ Follow `docs/OWNER_CHECKLIST_FINAL.md` for exact steps:
    - Rehearse answers to the 32 questions in [`docs/report/VIVA_QA.md`](./VIVA_QA.md).
 9. **Clinical Formulary Audit**:
    - Cross-reference dosage limits in `server/src/data/medicine_safety_limits.json` against BNF 86 using [`docs/report/MEDICINE_LIMITS_VERIFICATION.md`](./MEDICINE_LIMITS_VERIFICATION.md).
-10. **(Optional) Remove Demo Batch from Production**:
-    - When ready to purge synthetic demonstration data from production:
-      ```bash
-      node scripts/remove_demo_batch.js --batch SEED_2026_11_A --db medisync_prod
+10. **(Optional) Remove Demo Outbreak Batch from Production**:
+    - When ready to purge the temporary demonstration outbreak batch (`DEMO_OUTBREAK_2026_V1`), run the guarded removal (protected seed `SEED_2026_11_A` is shielded and never removed):
+      ```powershell
+      # Inspect first (dry-run):
+      node scripts/remove_demo_batch.js --db medisync_prod --dry-run
+
+      # Apply removal (guarded by env var and confirm flag):
+      $env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
+      node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
       ```

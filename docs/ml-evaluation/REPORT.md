@@ -19,7 +19,7 @@
 | **Outbreak Detector** | Sensitivity at z > 2.0 | `100.0%` | 5/5 Target Outbreaks Detected (S1, S3, S4, S5, S6) |
 | **Outbreak Detector** | False Alarm Rate (z > 2.0) | `0.0%` | Zero False Alarms on S2 (Decayed), S7 (Flat), S8 (1-Day Spike) |
 | **14-Day Forecast** | Confidence Bounds | `95% Student's t` | Ordinary Least Squares (df = 12) |
-| **External Benchmark** | Colmozzie Backtest | `SUCCESS` | Colombo Weekly Dengue Telemetry (150 weeks) |
+| **External Benchmark** | Colmozzie Backtest | `NOT VERIFIED` | Colombo Weekly Dengue Telemetry (External dataset unverified in offline gate) |
 
 ---
 
@@ -72,7 +72,9 @@ Ordinary Least Squares (OLS) trend estimation with 95% Student's t prediction bo
 
 ---
 
-## 5. External Real-World Benchmark Backtest (Colmozzie)
+## 5. External Real-World Benchmark Backtest (Colmozzie: NOT VERIFIED)
+
+> **Status**: **NOT VERIFIED**. The Colmozzie backtest relies on external network telemetry data and is not part of the verified offline test gate. No project deliverable or report cites this backtest as verified evidence.
 
 To assess how the anomaly detector behaves on non-synthetic data, a zero-shot backtest was run against the public Colombo Dengue dataset (`thiyangt/colmozzie`):
 
