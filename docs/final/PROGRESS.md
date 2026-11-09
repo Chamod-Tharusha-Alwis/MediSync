@@ -1,6 +1,6 @@
 # MediSync Development & Verification Progress (docs/final/PROGRESS.md)
 
-Updated through **PHASE 4** (`final/p4-clinical-safety`). Updated sequentially through all phases.
+Updated through **PHASE 5** (`final/p5-ml-coverage`). Updated sequentially through all phases.
 
 > **Truth Standard**: An item is only marked "Verified live" if tested on the live Render/Vercel platform this session. Items marked "Verified in tests only" are covered by automated offline regression suites (`node scripts/run_offline_tests.js`). Never claim unbuilt or unverified items.
 
@@ -13,7 +13,7 @@ Updated through **PHASE 4** (`final/p4-clinical-safety`). Updated sequentially t
 | **1. Auth & roles** | JWT auth, 5 distinct roles (Doctor, Pharmacist, Lab Tech, MoH Officer, Patient), OTP consent, role middleware, account lockouts | Live login endpoints active; token contract verified | 5-role isolated E2E tests (`ir04-isolated-five-role-e2e.spec.js`), session timeout tests | None | 90% |
 | **2. Patient portal** | View consultation history, access consultation summary PDFs, view lab reports, edit profile & trilingual language preference | Live web shell loads, language toggle active | Patient consultation fetch tests, profile update tests | No appointment booking or queue position tracking (by design) | 85% |
 | **3. Doctor consultation** | Patient NIC lookup, OTP-gated history unlock, consultation recording (vitals, symptoms, ICD-10 diagnosis), prescription builder, emergency red-flag advisory | Live doctor consultation routes responsive | Clinical command controller tests, consultation creation tests, emergency advisory suite (`clinicalSafetyPhase4.test.js` 17/17 PASS) | Emergency red-flag advisory implemented in Phase 4; queue management omitted by design | 88% |
-| **4. ML triage** | TF-IDF lexical cosine similarity over canonical symptoms, ICD-10 auto-suggest, unweighted bipartite edge graph, fallback heuristic | Microservice `/health` responds 200 OK (`references: 7, icd10: 71,704`) | ML flask contract tests, scoring tests, latency tests | Synthetic self-consistency only (`clinicalValidation: not_established`); no Random Forest / SVM | 85% |
+| **4. ML triage** | TF-IDF lexical cosine similarity over canonical symptoms, ICD-10 auto-suggest, unweighted bipartite edge graph, fallback heuristic | Microservice `/health` responds 200 OK (`references: 7, icd10: 71,704`) | ML flask contract tests, scoring tests, latency tests, memory benchmark (197.37 MB RSS / 38.55% of 512 MB) | Synthetic self-consistency only (`clinicalValidation: not_established`); no Random Forest / SVM; 491 unmapped conditions pending physician review | 88% |
 | **5. Medicine safety** | Active ingredient resolution, pairwise DDI checks, single & daily dose ceilings, course duration limits, patient allergy alerts | Safety validation endpoints operational | 5-point safety engine verified in `clinicalSafetyPhase4.test.js` & `ingredientResolver.test.js` | Citation status `unverified_owner_must_check`; no renal/hepatic/pediatric/geriatric rules | 88% |
 | **6. Pharmacy dispensing** | Prescription retrieval by NIC + OTP, item availability check, partial dispense, atomic dispense status (`ALREADY_DISPENSED` guard), receipt generation, release data integrity | Pharmacy endpoints deployed | Dispensing atomic status tests, duplicate dispense lockout tests, partial dispense transitions (`dispensingIntegrityPhase3.test.js` 9/9 PASS) | No live QR scanning at pharmacy; inventory/stock endpoints omitted by design | 90% |
 | **7. Lab** | Test order creation, lab report upload, PDF parsing & extraction, range validation, report delivery | Lab endpoints deployed | Lab tech workflow tests, report validation tests | Automated analyzer hardware integrations omitted by design | 80% |
@@ -31,6 +31,6 @@ Updated through **PHASE 4** (`final/p4-clinical-safety`). Updated sequentially t
 ## 2. Summary Metric Calculation
 
 - **Total Areas Tracked**: 15
-- **Average Implementation & Verification Score**: **87.9%** (up from 86.9%)
-- **Offline Quality Gate**: 3,465 passed / 0 failed (207 suites) + 17 Phase 4 clinical safety tests passed
+- **Average Implementation & Verification Score**: **88.1%** (up from 87.9%)
+- **Offline Quality Gate**: 3,465 passed / 0 failed (207 suites) | Client build exit 0 | Links 96/96 OK
 - **Protected Ledger**: 15 / 15 files locked
