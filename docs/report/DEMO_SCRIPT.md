@@ -45,10 +45,10 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 - **Actions**:
   1. Open the MediSync landing page.
   2. Point out the language selector in the navigation bar. Toggle between **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)**.
-  3. Show that 100% of the UI labels, navigation buttons, and public health advisories immediately re-render in the selected language without page reload (verified across 813 dictionary keys).
+  3. Show that 100% of the UI labels, navigation buttons, and public health advisories immediately re-render in the selected language without page reload (verified across 835 dictionary keys).
   4. Highlight the public health advisory card (e.g., Monsoon Season Dengue Prevention).
 - **Key Talking Point for Examiners**:
-  > *"Healthcare delivery in Sri Lanka is multilingual. MediSync enforces strict 100% key parity across English, Sinhala, and Tamil across 813 interface terms to ensure universal accessibility across rural and urban clinics."*
+  > *"Healthcare delivery in Sri Lanka is multilingual. MediSync enforces strict 100% key parity across English, Sinhala, and Tamil across 835 interface terms to ensure universal accessibility across rural and urban clinics."*
 
 ---
 
@@ -59,7 +59,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   1. Log into the Patient Portal.
   2. Demonstrate the personal medical timeline (`/patient/dashboard/history`): show historical consultations, standardized diagnoses, and verified laboratory reports.
   3. Inspect active prescriptions: point out the consultation verification QR code rendered on the official consultation summary PDF.
-  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that accessing the full medical history PDF requires passing the **Patient NIC Gate**. <!-- TODO-P2 -->
+  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that unlocking the clinical encounter and medicine release history uses a secure **OTP verification flow** sent to the patient's registered email (no NIC entry required on mobile). Note contingency: if email delivery is delayed, clinician can demonstrate authenticated doctor view. 
 - **Key Talking Point for Examiners**:
   > *"All patient demographic information and clinical visit notes are encrypted at rest using field-level AES-256-GCM. The database never stores plaintext National Identity Card numbers or unencrypted clinical histories."*
 

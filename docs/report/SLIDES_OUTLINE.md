@@ -139,7 +139,7 @@ This outline provides the slide structure, visual layout recommendations, and de
   - Pharmacy dispensing authenticates via Patient NIC with OTP consent (`x-patient-access`).
   - Atomic database status transition to `dispensed`; duplicate dispensing atomically rejected with `ALREADY_DISPENSED`.
 - **Speaker Notes**:
-  > *"Prescriptions carry cryptographic capability QR tokens. When scanned, anyone can verify document authenticity without seeing patient PII, while full medical history download requires passing a constant-time Patient NIC gate. At the pharmacy, dispensing is authenticated via patient consent and commits atomically, rendering duplicate dispensing impossible."* <!-- TODO-P2 -->
+  > *"Prescriptions carry cryptographic capability QR tokens. When scanned, anyone can verify document authenticity without seeing patient PII, while full clinical and release history requires passing a dynamic email OTP verification gate. At the pharmacy, dispensing is authenticated via patient consent and commits atomically, rendering duplicate dispensing impossible."* 
 
 ---
 
@@ -177,10 +177,10 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Visuals**: Figure **F14** (Trilingual Parity Chart) and screenshots **SS-01**, **SS-02**, **SS-03**.
 - **Key Points**:
   - Complete language parity across English, Sinhala (සිංහල), and Tamil (தமிழ்).
-  - 813 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
+  - 835 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
   - Dynamic client-side language switching without page refresh.
 - **Speaker Notes**:
-  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 813 interface keys, verified by automated tests."*
+  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 835 interface keys, verified by automated tests."*
 
 ---
 
@@ -225,7 +225,7 @@ This outline provides the slide structure, visual layout recommendations, and de
 
 ### Slide 18: Summary of Engineering Contributions
 - **Key Points**:
-  1. Tamper-evident digital prescription pipeline with QR and NIC-gate verification. <!-- TODO-P2 -->
+  1. Tamper-evident digital prescription pipeline with QR capability and OTP-gated verification. 
   2. Sub-millisecond deterministic medicine safety engine.
   3. Real-time syndromic surveillance with automated 3-tier outbreak gating.
   4. Ultra-lightweight ML triage operating in $< 200\text{ MB}$ memory.

@@ -76,7 +76,7 @@ The primary engineering objective of the MediSync platform is to design, develop
 ## 2.3 Scope and System Boundaries
 
 ### 2.3.1 In-Scope Deliverables
-- **Core Clinical Workflows**: Patient registration and medical timeline review, physician clinical encounter capture with NIC-gated consent, digital prescription authoring, public QR capability verification, and atomic pharmacy dispensing. <!-- TODO-P2 -->
+- **Core Clinical Workflows**: Patient registration and medical timeline review, physician clinical encounter capture with NIC-gated consent, digital prescription authoring, public QR capability verification, and atomic pharmacy dispensing. 
 - **Laboratory Subsystem**: Lab test ordering, PDF report uploads, automated file validation (magic byte and MIME verification), and clinician review queues.
 - **Security & Privacy Infrastructure**: Field-level AES-256-GCM encryption for patient PII and clinical notes, blind indexing for demographic search, and time-to-live (TTL) ephemeral tokens for session authentication.
 - **Epidemiological Engine**: District-level spatial tracking, cross-chapter communicable disease surveillance models, 14-day projection pipelines, and automated outbreak alert generation.
@@ -179,7 +179,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-REL-02 (Cold-Start Tolerance)**: Client applications shall gracefully handle cloud microservice wake-up cycles of up to 60 seconds with descriptive visual loading indicators.
 
 ### 3.3.4 Localization and Usability (NFR-USE)
-- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (813 keys verified).
+- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (835 keys verified).
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
@@ -259,7 +259,7 @@ As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescr
 5. If safe, the prescription is committed to MongoDB with an auto-generated cryptographic QR token payload; a notification is dispatched to the patient.
 
 ### 4.3.2 QR Verification and Identity-Gated Dispensing
-As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`): <!-- TODO-P2 -->
+As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`): 
 1. The patient presents their mobile or physical QR prescription token to a community pharmacy.
 2. The pharmacy terminal scans the token and requests prescription details.
 3. The server validates the token's signature and expiration, returning non-sensitive prescription items.
@@ -284,7 +284,7 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
 - **D02**: Deployment Infrastructure (`docs/report/diagrams/d02_deployment_infrastructure.mmd`)
 - **D03**: Consultation to Dispensing Flow (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`)
-- **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) <!-- TODO-P2 -->
+- **D04**: QR Verification & OTP Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) 
 - **D05**: Outbreak Detection Pipeline (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **D06**: Tiered Matcher Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
 - **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
@@ -375,7 +375,7 @@ Implemented in `server/src/services/outbreakDetector.js` and `server/src/service
 ## 5.9 Trilingual Internationalization (i18n)
 - **Architecture**: Implemented on the client using centralized translation dictionaries (`client/src/i18n/translations/`) loaded through `LanguageContext`.
 - **Language Coverage**: Provides complete trilingual interface parity across **English (en)**, **Sinhala (si)**, and **Tamil (ta)**.
-- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **813 translation keys** in all three languages.
+- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **835 translation keys** in all three languages.
 
 ---
 
@@ -570,7 +570,7 @@ Any unauthorized modification immediately halts the release pipeline with an exi
 
 ## 7.5 Known Security Weaknesses & Architectural Trade-offs
 Honesty and transparency are paramount in academic engineering evaluation. The following architectural weaknesses are recognized:
-1. **Low-Entropy National Identity Card (NIC) Credentials**: In Sri Lanka, citizen NICs follow predictable deterministic formats (9 digits + 'V' for pre-2016 cards, or 12 digits post-2016 encoding birth year and sequential gender offsets). An attacker possessing a victim's birthdate can brute-force candidate NICs. *Mitigation*: The NIC gate in MediSync is strictly paired with one-time dynamic QR tokens and rate-limited. <!-- TODO-P2 -->
+1. **Low-Entropy National Identity Card (NIC) Credentials**: In Sri Lanka, citizen NICs follow predictable deterministic formats (9 digits + 'V' for pre-2016 cards, or 12 digits post-2016). To protect against candidate brute-force enumeration, the Public Verification Portal (`/verify/:token`) does NOT require NIC entry on mobile; instead, it enforces dynamic, single-use 6-digit OTP verification dispatched to the patient's registered email address with strict rate limiting (10 attempts / 15 min). 
 2. **Prototype Key Management**: Currently, cryptographic master keys reside in runtime environment variables (`ENCRYPTION_KEY`). In a commercial production deployment, keys must be managed via hardware security modules (HSM) or dedicated key management services (AWS KMS / HashiCorp Vault).
 3. **Free-Tier Denial-of-Service Surface**: While in-memory rate limiting throttles API endpoints, the Render Free tier provides limited network-layer DDoS mitigation compared to enterprise cloud firewalls.
 4. **Absence of Point-in-Time Database Recovery (PITR)**: MongoDB Atlas Free M0 clusters do not support continuous automated snapshot backups or PITR. Production migration requires Atlas M10+ tier provisioning.
@@ -624,7 +624,7 @@ Figure **F13** visually details the distribution of test suites and test counts 
 
 ### 8.2.4 End-to-End Client & UI Testing
 - **Isolated Five-Role Specification**: Implemented in `client/tests/ir04-isolated-five-role-e2e.spec.js` (Protected File #11), walking through sequential role journeys: Patient -> Doctor -> Pharmacy -> Hospital Lab -> Public Health Epidemiologist.
-- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 813 registered UI keys.
+- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 835 registered UI keys.
 
 ---
 
@@ -802,10 +802,10 @@ Evaluating the 8 canonical disease scenarios (S1–S8, Figure **F10**) at the pr
 
 ## 10.5 Trilingual Interface Parity
 Automated dictionary parsing across `client/src/i18n/translations/` confirmed:
-- **Total Registered Keys**: **813 distinct UI string keys**.
-- **English (en) Completeness**: 813 / 813 (100.0%)
-- **Sinhala (si) Completeness**: 813 / 813 (100.0%)
-- **Tamil (ta) Completeness**: 813 / 813 (100.0%)
+- **Total Registered Keys**: **835 distinct UI string keys**.
+- **English (en) Completeness**: 835 / 835 (100.0%)
+- **Sinhala (si) Completeness**: 835 / 835 (100.0%)
+- **Tamil (ta) Completeness**: 835 / 835 (100.0%)
 - **Key Discrepancies**: 0 missing keys (Figure **F14**).
 
 ---
@@ -877,7 +877,7 @@ Key engineering contributions achieved in this work include:
 3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating 7-day rolling window standardized deviation tracking against a 56-day baseline across communicable diseases, regulated by a 3-tier suppression gate ($N \ge 5$, 2 consecutive elevated days, $z > 2.0$) to eliminate noise and alert fatigue.
 4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated TF-IDF cosine similarity matcher (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
 5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,465 tests across 207 test suites with 0 failures, locked against an immutable 15-file SHA-256 release ledger.
-6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (813 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
+6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (835 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
 
 ---
 
@@ -925,7 +925,7 @@ Every quantitative and technical assertion in this technical report traces direc
 | **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
 | **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
 | **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |
-| **Trilingual Key Parity** | 813 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
+| **Trilingual Key Parity** | 835 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
 | **Production Backend URL** | `https://medisync-wabc.onrender.com` | `README.md:7`, `ARCHITECTURE.md:8` | Verified repository deployment configuration |
 | **Demo Outbreak Batch** | `DEMO_OUTBREAK_2026_V1` | `scripts/remove_demo_batch.js:14` | Default batch flag in `--help` |
 | **Protected Production Seed** | `SEED_2026_11_A` | `scripts/remove_demo_batch.js:15` | Explicitly protected constant in script |
@@ -971,13 +971,13 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 - **Figure F11**: Cross-Chapter 12-Disease Surveillance Verification (`docs/report/figures/f11_surveillance_12_diseases.png`)
 - **Figure F12**: 14-Day Statistical Projection Trajectories (`docs/report/figures/f12_statistical_projection_bands.png`)
 - **Figure F13**: Automated Verification Test Pyramid (`docs/report/figures/f13_verification_test_pyramid.png`)
-- **Figure F14**: Trilingual Interface Key Parity (813 keys in EN/SI/TA) (`docs/report/figures/f14_trilingual_key_parity.png`)
+- **Figure F14**: Trilingual Interface Key Parity (835 keys in EN/SI/TA) (`docs/report/figures/f14_trilingual_key_parity.png`)
 
 ### Architectural Diagrams (Authored in Mermaid format)
 - **Diagram D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
 - **Diagram D02**: Cloud Deployment Topology (`docs/report/diagrams/d02_deployment_infrastructure.mmd`)
 - **Diagram D03**: Consultation to Dispensing Sequence (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`)
-- **Diagram D04**: QR Verification & NIC Gate Sequence (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) <!-- TODO-P2 -->
+- **Diagram D04**: QR Verification & NIC Gate Sequence (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) 
 - **Diagram D05**: Outbreak Detection Pipeline Flow (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **Diagram D06**: Dual-Tier ML Triage Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
 - **Diagram D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)

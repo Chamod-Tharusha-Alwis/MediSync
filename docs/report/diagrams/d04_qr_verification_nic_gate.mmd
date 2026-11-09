@@ -3,33 +3,41 @@ sequenceDiagram
     actor Anyone as Public User / Verifier
     participant Browser as Mobile / Desktop Browser
     participant Gateway as Backend API Gateway
+    participant Email as Email Service (Resend/Brevo)
     participant DB as MongoDB Atlas
-    actor Patient as Patient (Owner)
+    actor Patient as Patient (Document Owner)
 
-    Note over Anyone,Browser: Verifier scans physical/PDF QR Code
+    Note over Anyone,Browser: Verifier scans physical/PDF QR Code (/verify/:token)
     Browser->>Gateway: GET /api/verify/:token
     Gateway->>Gateway: Compute SHA-256(token)
     Gateway->>DB: Query VerificationToken (expires 90d)
     alt Token Invalid or Expired
         DB-->>Gateway: Null record
-        Gateway-->>Browser: HTTP 404 "Invalid or Expired Verification Token"
+        Gateway-->>Browser: HTTP 404 "TOKEN_NOT_FOUND"
     else Token Valid
-        DB-->>Gateway: Token doc (consultationId, patientNicHash)
+        DB-->>Gateway: Token doc (consultationId, patientRef)
         Gateway->>DB: Fetch Consultation (Hospital, Doctor Name, Date)
-        DB-->>Gateway: Sanitized consultation details
+        DB-->>Gateway: Sanitized consultation issuance details
         Gateway-->>Browser: HTTP 200 Public Authenticity Card (ZERO Patient PII)
     end
 
-    opt Patient History Download Gate
-        Patient->>Browser: Enters Patient NIC into secure verification modal
-        Browser->>Gateway: POST /api/verify/:token/history-pdf { nic: "..." }
-        Gateway->>Gateway: Hash input NIC with constant salt
-        Gateway->>Gateway: Constant-Time String Comparison against patientNicHash
-        alt NIC Mismatch
-            Gateway-->>Browser: HTTP 403 "Identification Verification Failed" (Rate limited)
-        else NIC Matched
-            Gateway->>DB: Fetch complete patient history timeline
-            Gateway->>Gateway: Generate cumulative history PDF (WinAnsi typography)
-            Gateway-->>Browser: HTTP 200 application/pdf (%PDF- stream)
+    opt OTP-Gated Clinical & Medicine Release Unlock
+        Browser->>Gateway: POST /api/verify/request-otp { token }
+        Gateway->>DB: Fetch Patient masked email & generate 6-digit OTP
+        Gateway->>Email: Dispatch OTP verification email
+        Email-->>Patient: Delivers 6-digit verification code
+        Patient->>Browser: Enters 6-digit OTP code (no NIC entry required)
+        Browser->>Gateway: POST /api/verify/unlock { token, otp }
+        Gateway->>Gateway: Verify OTP (rate-limited, 5 attempts max)
+        alt OTP Invalid or Expired
+            Gateway-->>Browser: HTTP 400 / 429 "INVALID_OTP"
+        else OTP Valid
+            Gateway->>DB: Fetch complete consultation details & dispensing records
+            Gateway->>Gateway: Compile clinical data + medicine release summary
+            Gateway-->>Browser: HTTP 200 Unlocked Clinical Encounter & Medicine Release Data
+            opt History PDF Download
+                Browser->>Gateway: POST /api/verify/:token/history-pdf { token }
+                Gateway-->>Browser: HTTP 200 application/pdf (Signed Cumulative History PDF)
+            end
         end
     end

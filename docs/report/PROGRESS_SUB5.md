@@ -81,7 +81,7 @@
   - Confirmed 100% byte-identical SHA-256 digests across successive runs.
   - All file sizes between 65 KB and 228 KB (well under 500 KB ceiling).
 - **Mermaid Architecture & Sequence Diagrams (docs/report/diagrams/)**:
-  - Authored 9 formal .mmd diagrams: system architecture, deployment infrastructure, consultation-prescription-dispensing, QR verification and NIC gate, outbreak detection pipeline, tiered matcher flow, authentication/OTP flow, medicine safety flow, and ER diagram. <!-- TODO-P2 -->
+  - Authored 9 formal .mmd diagrams: system architecture, deployment infrastructure, consultation-prescription-dispensing, QR verification and OTP-gated clinical unlock, outbreak detection pipeline, tiered matcher flow, authentication/OTP flow, medicine safety flow, and ER diagram. 
 - **Documentation**:
   - Created docs/report/figures/FIGURES.md detailing data source, limitations, and hash ledger for all 14 figures.
   - Created docs/report/ML_METHODOLOGY.md detailing provenance, curation, tiered matching, resource profile, and evaluation protocols.
@@ -171,7 +171,7 @@ pm --prefix client run build)**:
     - Corrected client route targets across screenshot checklist and demo scripts (`/public-health`, `/hospital/dashboard/tests`, `/pharmacy/dashboard/dispense`, `/admin/dashboard/sessions`).
 - **Algorithm & Parameter Calibration**:
   - Slide 13 and `PROJECT_OVERVIEW.md`: repaired garbled math; aligned outbreak detection to 7-day window vs. 56-day district baseline with dual-gate thresholding ($N \ge 5$, 2 consecutive days with $z > 2.0$).
-  - Slide 14: verified trilingual dictionary key parity at exactly **813 keys** in `en.js`, `si.js`, and `ta.js`.
+  - Slide 14: verified trilingual dictionary key parity at exactly **835 keys** in `en.js`, `si.js`, and `ta.js`.
   - Slide 6 & `DEMO_SCRIPT.md`: updated diagnostic catalog reference to **US ICD-10-CM (71,704 searchable leaf concepts)**.
   - Slide 7: aligned ML accuracy numbers strictly to Figure **F08** held-out synthetic test set: Tier 1 Top-1 82.5%, Tier 2 Top-1 71.2%, Combined V2 Top-1 **85.4%**, Top-3 **95.8%**, Top-5 **98.9%**.
   - `ML_DESIGN_PARAMETERS.md`: cited `server/src/services/surveillanceService.js:136-140` and corrected baseline duration to **56 days**.

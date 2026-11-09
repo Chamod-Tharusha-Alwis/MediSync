@@ -48,7 +48,7 @@ Parameters such as the Tier 1 confidence floor ($40.0\%$, score 0.40), the KB pr
 **Answer**:  
 Traditional paper prescriptions can be duplicated by photocopying or presented sequentially at multiple dispensaries ("pharmacy hopping"). In MediSync:
 1. Every consultation summary PDF embeds a SHA-256 capability QR token (`/verify/:token`) allowing public authenticity verification (facility, clinician, timestamp) with zero patient PII.
-2. To download full longitudinal medical records from the verification portal, a constant-time Patient NIC gate must be satisfied. <!-- TODO-P2 -->
+2. To unlock full clinical records and medicine release details from the verification portal, a dynamic 6-digit OTP sent to the patient's registered email must be verified (no NIC entry required on mobile). 
 3. In pharmacy dispensing (`/pharmacy/dashboard/dispense`), the pharmacist looks up the patient via their NIC, which triggers a patient OTP consent challenge (`x-patient-access`).
 4. The pharmacist confirms prescribed medications, evaluates active allergy conflicts, and submits dispensing.
 5. Upon checkout, the prescription atomically transitions to `dispensed` in a single MongoDB transaction.

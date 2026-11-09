@@ -45,7 +45,7 @@ Figure **F13** visually details the distribution of test suites and test counts 
 
 ### 8.2.4 End-to-End Client & UI Testing
 - **Isolated Five-Role Specification**: Implemented in `client/tests/ir04-isolated-five-role-e2e.spec.js` (Protected File #11), walking through sequential role journeys: Patient -> Doctor -> Pharmacy -> Hospital Lab -> Public Health Epidemiologist.
-- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 813 registered UI keys.
+- **Trilingual Key Parity**: Iterates across English, Sinhala, and Tamil translation dictionaries (Figure **F14**), confirming zero missing string keys across 835 registered UI keys.
 
 ---
 

@@ -80,7 +80,7 @@ Implemented in `server/src/services/outbreakDetector.js` and `server/src/service
 ## 5.9 Trilingual Internationalization (i18n)
 - **Architecture**: Implemented on the client using centralized translation dictionaries (`client/src/i18n/translations/`) loaded through `LanguageContext`.
 - **Language Coverage**: Provides complete trilingual interface parity across **English (en)**, **Sinhala (si)**, and **Tamil (ta)**.
-- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **813 translation keys** in all three languages.
+- **Key Parity Verification**: Verified by automated test suites ensuring 100% mutual inclusion across all **835 translation keys** in all three languages.
 
 ---
 
