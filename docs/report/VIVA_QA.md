@@ -12,18 +12,18 @@ This document contains 32 likely viva questions with authoritative, technically 
 
 ### Q2: Why does Tier 1 only support 41 disease profiles?
 **Answer**:  
-Tier 1 prioritizes high-confidence, high-precision classification over sheer volume. The 41 disease classes represent the most prevalent communicable and non-communicable conditions encountered in outpatient departments in South Asia (e.g., Dengue fever, Leptospirosis, Typhoid fever, Malaria, Bronchial Asthma, Type 2 Diabetes). Training a smaller, well-calibrated ensemble ensures high macro F1 (0.94) while maintaining an ultra-lightweight memory footprint. Diagnostic coverage for conditions outside these 41 classes is delegated to Tier 2 sparse retrieval.
+Tier 1 prioritizes high-confidence, high-precision classification over sheer volume. The 41 disease classes represent the most prevalent communicable and non-communicable conditions encountered in outpatient departments in South Asia (e.g., Dengue fever, Leptospirosis, Typhoid fever, Malaria, Bronchial Asthma, Type 2 Diabetes). Training a curated set of 41 clinical profiles evaluated with n-gram TF-IDF vectorization, cosine similarity, and exact overlap scoring ensures high macro F1 (1.000) and 98.4% Top-1 accuracy while maintaining an ultra-lightweight memory footprint. Diagnostic coverage for conditions outside these 41 classes is delegated to Tier 2 sparse retrieval.
 
 ### Q3: Why did you use synthetic data instead of real hospital patient records?
 **Answer**:  
 Under the Sri Lanka Personal Data Protection Act No. 9 of 2022 and international ethical standards (CIOMS/WHO), training models on real patient electronic health records requires formal institutional review board (IRB) ethical clearance and informed patient consent. As an undergraduate engineering capstone, synthetic data generation provided an ethically unencumbered, statistically calibrated environment to design and test architectural pipelines without risking patient confidentiality.
 
-### Q4: Why did you choose Random Forest over a modern Large Language Model (LLM) like GPT-4 or Llama?
+### Q4: Why did you choose TF-IDF and Cosine Similarity over a modern Large Language Model (LLM) like GPT-4 or Llama?
 **Answer**:  
 Three critical architectural reasons:
-1. **Zero-Latency In-Memory Execution**: The Random Forest classifier executes in $0.77\text{ ms}$ mean latency, whereas cloud LLM API calls require 1,000 to 3,000 ms over high-latency rural internet connections.
-2. **Predictable Deterministic Footprint**: The entire Random Forest model occupies $< 5\text{ MB}$ of storage and runs comfortably within a 196 MB process memory footprint on a zero-cost cloud container. Serving an open-source 7B parameter LLM locally requires 16 GB+ of VRAM, which is economically infeasible for rural clinics.
-3. **No Hallucination Risk**: Random Forest probability distributions over fixed classes eliminate generative text hallucinations, such as fabricating non-existent medication doses or invalid disease names.
+1. **Zero-Latency In-Memory Execution**: The TF-IDF symptom matcher executes in $< 1\text{ ms}$ mean latency, whereas cloud LLM API calls require 1,000 to 3,000 ms over high-latency rural internet connections.
+2. **Predictable Deterministic Footprint**: The TF-IDF vectorizer and disease profiles occupy $< 2\text{ MB}$ of storage and run comfortably within a 196 MB process memory footprint on a zero-cost cloud container. Serving an open-source 7B parameter LLM locally requires 16 GB+ of VRAM, which is economically infeasible for rural clinics.
+3. **No Hallucination Risk**: Deterministic n-gram vocabulary and overlap matching over curated ICD-10 clinical profiles eliminates generative text hallucinations, such as fabricating non-existent medication doses or invalid disease names.
 
 ### Q5: What is the real memory footprint of the ML service, and why did previous project reports claim 0.22 MB?
 **Answer**:  
@@ -34,11 +34,11 @@ The previous claim of "0.22 MB" was a measurement artifact resulting from Python
 
 ### Q6: How does Tier 2 knowledge base matching work, and why are 491 profiles quarantined?
 **Answer**:  
-Tier 2 ingests ambulatory survey data from the CDC/SymCAT dataset (801 conditions, 17,400 symptom edges). Raw co-occurrence edges with probability $p < 0.15$ were pruned as clinical noise. Profiles with fewer than 3 surviving symptoms or high Jaccard redundancy ($\ge 0.80$) were quarantined. 174 profiles with clean mappings to public-domain ICD-10-CM codes were admitted to the active knowledge base. The remaining 491 profiles are retained in `kb_quarantine.v1.json` because their symptom strings lacked deterministic automated mapping to standard ICD concepts and require manual expert curation.
+Tier 2 ingests ambulatory survey data from the CDC/SymCAT dataset (801 conditions, 17,400 symptom edges). Raw co-occurrence edges with probability $p < 0.15$ were pruned as clinical noise. Profiles with fewer than 3 surviving symptoms or high Jaccard redundancy ($\ge 0.80$) were quarantined. 174 profiles with clean mappings to public-domain ICD-10-CM concepts were admitted to the active knowledge base (`disease_symptom_kb.v1.json`). 136 noisy/unreliable profiles are quarantined in `kb_quarantine.v1.json`, and 491 unmapped profiles requiring clinical review are indexed in `unmapped_diseases.v1.json`.
 
 ### Q7: How were the 11 heuristic design parameters in the ML engine chosen?
 **Answer**:  
-Parameters such as the Tier 1 confidence floor ($0.35$), the KB probability cutoff ($0.15$), and the outbreak alert minimum case gate ($n=5$) were established as empirical engineering design choices during synthetic benchmarking. They are documented in `docs/report/ML_DESIGN_PARAMETERS.md` with explicit notes that they require multi-center clinical calibration before real-world adoption.
+Parameters such as the Tier 1 confidence floor ($40.0\%$, score 0.40), the KB probability cutoff ($0.15$), and the outbreak alert minimum case gate ($N=5$) were established as empirical engineering design choices during synthetic benchmarking. They are documented in `docs/report/ML_DESIGN_PARAMETERS.md` with explicit notes that they require multi-center clinical calibration before real-world adoption.
 
 ---
 
@@ -104,18 +104,18 @@ Every encrypted payload begins with a `keyVersion` identifier (e.g., `v1`, `v2`)
 
 ## Category 4: Epidemiological Outbreak Surveillance
 
-### Q16: Why did you choose EWMA and C-SUM over deep learning (e.g., LSTMs or Transformers) for outbreak detection?
+### Q16: Why did you choose statistical baseline z-score anomaly detection over deep learning (e.g., LSTMs or Transformers) for outbreak detection?
 **Answer**:  
 1. **Sample Efficiency**: Deep learning time-series models require tens of thousands of historical training sequences. In regional public health outposts, emerging disease clusters occur infrequently, providing insufficient training data for complex neural networks.
-2. **Interpretability**: Public Health Inspectors and Epidemiologists require transparent mathematical justification before declaring an outbreak. An EWMA baseline with a z-score of $+2.8$ is immediately interpretable; an opaque neural network weight is not.
-3. **Computational Footprint**: EWMA and C-SUM run in microseconds during transaction logging without requiring GPU acceleration.
+2. **Interpretability**: Public Health Inspectors and Epidemiologists require transparent mathematical justification before declaring an outbreak. A 56-day district baseline with a standardized z-score of $+2.8$ is immediately interpretable; an opaque neural network weight is not.
+3. **Computational Footprint**: Evaluating 7-day windows against 56-day historical baselines executes in microseconds during batch analysis without requiring GPU acceleration.
 
-### Q17: What is the Three-Tier Noise Suppression Gate in outbreak detection?
+### Q17: What are the Noise Suppression Gates in outbreak detection?
 **Answer**:  
-To prevent alert fatigue caused by random daily statistical fluctuations, an outbreak alert is generated only if three simultaneous criteria are satisfied:
-1. **Volume Gate**: Absolute daily case volume must reach at least 5 cases ($n \ge 5$).
-2. **Duration Gate**: Incidence must remain elevated above baseline for at least 3 consecutive tracking days.
-3. **Statistical Gate**: The calculated z-score must exceed $+2.5$ standard deviations above historical mean.
+To prevent alert fatigue caused by random daily statistical fluctuations and data-entry artifacts, MediSync enforces strict code-verified anomaly gates (`server/src/services/surveillanceService.js:136-140`):
+1. **Gate 1 (Case Threshold)**: Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
+2. **Historical Baseline**: Compares 7-day window rate against a 56-day historical district baseline with regularized variance ($\sigma \ge 0.5$).
+3. **Gate 2 (Persistence Gate)**: Incidence must exceed threshold ($z > 2.0$) for **2 consecutive calendar days** before promoting to an Outbreak Alert. Severity is categorized into Watch ($z \in [2.0, 3.0)$), Alert ($z \in [3.0, 4.0)$), and Critical ($z \ge 4.0$).
 
 ### Q18: Why is the 14-day projection labeled "projection, not validated forecast"?
 **Answer**:  
@@ -156,7 +156,7 @@ The test suite enforces complete non-regression across all critical clinical inv
 - **Unit Tests**: Cryptographic encryption/decryption, blind index generation, medicine safety rules, dosage limits, dataset loaders.
 - **Integration Tests**: Multi-document consultations, prescription state transitions, duplicate dispensing prevention, lab PDF validation.
 - **Security Tests**: Role-based access control, route-level authorization, database injection guards, token expiration.
-- **ML Tests**: Feature vectorization, Random Forest classification, Tier 2 sparse KB retrieval, and 15 standardized sanity symptom cases.
+- **ML Tests**: Feature vectorization, TF-IDF cosine similarity symptom matching, Tier 2 sparse KB retrieval, and 15 standardized sanity symptom cases.
 - **E2E & Localization**: 5-role isolated user journeys and 100% trilingual dictionary key parity.
 
 ### Q24: What is the 15-File Protected Ledger?

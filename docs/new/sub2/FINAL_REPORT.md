@@ -58,7 +58,7 @@ Sub-Project 2 resolved post-merge operational issues observed on the live enviro
 - **Commit**: `a422eb7`
 
 ### Task E — Documentation Corrections
-- **README.md**: Updated backend URL from `medisync-api.onrender.com` to verified production URL `https://medisync-wabc.onrender.com`. Updated test counts to 3,450 passed.
+- **README.md**: Updated backend URL from `medisync-wabc.onrender.com` to verified production URL `https://medisync-wabc.onrender.com`. Updated test counts to 3,450 passed.
 - **ARCHITECTURE.md**: Updated dictionary key count from 771 to audited 781 keys (100% trilingual parity across EN, SI, TA). Updated offline test counts to 3,450 passed.
 - **DEMO_BATCH_REMOVAL_RUNBOOK.md**: Replaced illustrative "5 alerts" with audited 14 alerts / 6,309 consultations. Explained the 6 active vs 8 historical alert breakdown and added owner pre-execution decision checklist.
 - **FINAL_ACCEPTANCE_MATRIX.md**: Re-aligned matrix with Sub-Project 2 release candidate.

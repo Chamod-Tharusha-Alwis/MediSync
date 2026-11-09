@@ -136,3 +136,24 @@ pm --prefix client run build)**:
   - Verification reproduction commands and offline vs. live boundaries.
   - Top 10 owner actions in priority order with exact CLI commands.
   - GitHub PR compare URL generated: https://github.com/Chamod-Tharusha-Alwis/MediSync/compare/main...feat/sub5-submission-pack
+
+### Phase S9 — Accuracy Pass & Code Alignment (fix/sub5-report-accuracy)
+- **Code Ground-Truth Re-derivation**:
+  - Re-derived all ML and epidemiological facts directly from code (`ml-engine/app.py`, `ml-engine/data_pipeline/*`, `server/src/services/surveillanceService.js`).
+  - Tier 1 symptom matcher aligned to TF-IDF n-gram vectorizer + cosine similarity + exact token overlap scoring (removed legacy "Random Forest" claims).
+  - Tier switch threshold aligned to **40.0%** (`ml-engine/app.py:553`), replacing 0.35 / 35%.
+  - Outbreak detection aligned to 7-day window vs. 56-day baseline with dual-gate thresholding ($N \ge 5$, 2 consecutive days with $z > 2.0$), removing legacy "EWMA" and "C-SUM" references.
+  - Sourced KB counts aligned: 801 raw conditions -> 136 quarantined (`kb_quarantine.v1.json`) -> 665 active filtered -> 174 auto-accepted mapped (`disease_symptom_kb.v1.json`) and 491 unmapped review (`unmapped_diseases.v1.json`). Filter: $P \ge 15.0\%$, min 3 symptoms, dummy Jaccard $\ge 0.70$, duplicate Jaccard $\ge 0.85$.
+  - Tier 1 metrics verified from `generate_evaluation_charts.py`: Top-1 Accuracy = 98.36%, Macro F1 = 1.0000, ROC AUC = 0.9997, 0 data leakage.
+- **Figures Re-run & Re-verified**:
+  - Re-executed `ml-engine/evaluation/generate_evaluation_charts.py` and `generate_report_figures.py`. All 14 figures (F01–F14) and 8 ML evaluation charts re-generated.
+- **Licensing & Reference Data Audits**:
+  - Updated `icd10_synonyms.v1.json` and `build_icd10_synonyms.py`: CMS Index headings marked `NOT VERIFIED / owner_must_check`; local ICD-10 catalog verified.
+  - Updated `MEDICINE_LIMITS_VERIFICATION.md`: removed unverified page numbers, retained section names as `owner to locate`, flagged Ibuprofen 800 mg and Paracetamol 7-day course for clinician review.
+- **Infrastructure URL & Demo Batch Alignment**:
+  - Replaced `medisync-api.onrender.com` with real backend URL `https://medisync-wabc.onrender.com`.
+  - Clarified demo batch is `DEMO_OUTBREAK_2026_V1` and protected seed is `SEED_2026_11_A`. Removed erroneous `--batch SEED_2026_11_A` cleanup instructions.
+- **Deliverables & Report Assembly**:
+  - Re-assembled `TECHNICAL_REPORT.md` (14 chapters, 90,776 chars).
+  - Updated `DEMO_SCRIPT.md`, `SLIDES_OUTLINE.md`, `PROJECT_OVERVIEW.md`, `VIVA_QA.md`, and `CLAIMS_AUDIT.md`.
+  - Link check: `python scripts/check_report_links.py` passed with 100% valid links (95 relative links across 36 files).

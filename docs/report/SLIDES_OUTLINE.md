@@ -81,12 +81,12 @@ This outline provides the slide structure, visual layout recommendations, and de
 ### Slide 7: Machine Learning Triage: Dual-Tier Architecture
 - **Visuals**: Figure **F08** (Tiered Matcher Accuracy) and Diagram **D06** (Tiered Matcher Flow).
 - **Key Points**:
-  - **Tier 1 (High Confidence)**: Calibrated Random Forest (100 trees, 41 curated South Asian disease classes, Macro F1 = 0.94).
+  - **Tier 1 (High Confidence)**: TF-IDF + Cosine Similarity symptom matcher (41 curated clinical profiles, Macro F1 = 1.000, Top-1 accuracy = 98.4%).
   - **Tier 2 (Broad Coverage)**: Sparse Knowledge Base retrieval (174 validated SymCAT conditions mapped to ICD-10-CM).
-  - Blended inference logic: Confidence floor of 0.35 gates fallback to Tier 2.
+  - Blended inference logic: Confidence floor of 40.0% gates fallback to Tier 2.
   - Combined accuracy: Top-1 = 89.2%, Top-3 = 96.8%, Top-5 = 99.1%.
 - **Speaker Notes**:
-  > *"To provide broad clinical coverage without bloating memory, we engineered a Dual-Tier triage pipeline. Tier 1 uses a calibrated Random Forest covering 41 high-frequency tropical conditions with 94% Macro F1. If confidence falls below 35%, the engine falls back to Tier 2 sparse knowledge-base retrieval across 174 additional conditions."*
+  > *"To provide broad clinical coverage without bloating memory, we engineered a Dual-Tier triage pipeline. Tier 1 uses an exact n-gram TF-IDF and overlap matcher covering 41 standardized clinical profiles (98.4% Top-1 accuracy, 1.000 Macro F1). If confidence falls below 40.0%, the engine falls back to Tier 2 sparse knowledge-base retrieval across 174 quarantined, CDC-derived condition profiles."*
 
 ---
 
@@ -158,14 +158,14 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Visuals**: Figure **F10** (Outbreak Scenarios) and Figure **F11** (Surveillance Benchmark Matrix).
 - **Key Points**:
   - Continuous district-level aggregation across Sri Lanka's 25 districts.
-  - Dual statistical anomaly detection: EWMA (moving baseline) and C-SUM (cumulative deviation).
+  - Spatio-temporal syndromic surveillance: 7-day window vs. 56-day district baseline with dual-gate suppression ($N \ge 5$ and 2 consecutive calendar days with $z > 2.0$).
   - **Three-Tier Alert Noise Suppression Gate**:
     - Volume Gate ($n \ge 5\text{ cases}$).
     - Duration Gate ($d \ge 3\text{ consecutive days}$).
     - Statistical Gate ($z\text{-score} \ge +2.5\sigma$).
   - 14-day descriptive statistical projections with confidence intervals.
 - **Speaker Notes**:
-  > *"For disease surveillance, MediSync aggregates clinical diagnoses across all 25 districts in real time. Using EWMA and C-SUM algorithms, outbreaks are detected in days rather than weeks. Crucially, our 3-tier suppression gate filters out isolated spikes, preventing false alarms."*
+  > *"For disease surveillance, MediSync aggregates clinical diagnoses across all 25 districts in real time. Evaluating 7-day windows against 56-day historical district baselines ($z > 2.0$), outbreaks are detected in days rather than weeks. Crucially, our dual suppression gates ($N \ge 5$ and 2 consecutive days) filter out isolated anomalies and data-entry artifacts."*
 
 ---
 

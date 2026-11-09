@@ -46,7 +46,7 @@ MediSync solves these issues by:
 
 ### 2.5 The Regional Epidemiologist / Public Health Inspector
 - **District Map**: Views a map of Sri Lanka's 25 districts color-coded by current disease activity.
-- **Automated Outbreak Detection**: As doctors across the island enter diagnoses, MediSync continuously runs statistical algorithms (EWMA and C-SUM) in the background. If cases of an infectious disease (like Dengue, Typhoid, or Chickenpox) spike higher than normal in a particular district, an Outbreak Alert is generated automatically.
+- **Automated Outbreak Detection**: As doctors across the island enter diagnoses, MediSync continuously evaluates a 7-day window against a 56-day district historical baseline ( > 2.0$) with dual-gate thresholding ( \ge 5$ cases and 2 consecutive calendar days). If cases of an infectious disease (like Dengue, Typhoid, or Chickenpox) spike higher than normal in a particular district, an Outbreak Alert is generated automatically.
 - **Smart Filtering (No False Alarms)**: To avoid unnecessary panic, the system filters out small random spikes. An alert is only triggered if cases rise significantly above the normal baseline for at least 3 days in a row and involve at least 5 cases.
 - **Trend Projections**: Displays 14-day statistical trend lines showing whether cases are rising, leveling off, or falling.
 
@@ -79,7 +79,7 @@ MediSync solves these issues by:
      |          |
      |          v
      |     [ Outbreak Detection Engine ] 
-     |     (Checks EWMA/C-SUM -> Alerts Public Health Officers)
+     |     (Checks 56-day baseline z-score & dual gates -> Alerts Public Health Officers)
      |
      v
 [ Pharmacist ]

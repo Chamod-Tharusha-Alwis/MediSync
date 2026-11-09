@@ -22,7 +22,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Diabetes, diabetic -> type 2 -> without complications (E11.9)",
         "umlsCui": "C0011860",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "uti",
@@ -31,7 +31,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Infection -> urinary (tract) -> specified NEC (N39.0)",
         "umlsCui": "C0042029",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "hiv",
@@ -40,7 +40,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Human immunodeficiency virus (HIV) disease (B20)",
         "umlsCui": "C0019693",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "chlamydia",
@@ -49,7 +49,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Chlamydia, chlamydial -> infection NEC (A74.9)",
         "umlsCui": "C0008035",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "crohn disease",
@@ -58,7 +58,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Crohn's disease -> unspecified -> without complications (K50.90)",
         "umlsCui": "C0010346",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "cellulitis",
@@ -67,7 +67,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Cellulitis -> site not specified (L03.90)",
         "umlsCui": "C0007642",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "colorectal cancer",
@@ -76,7 +76,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Neoplasm -> colon -> malignant primary (C18.9)",
         "umlsCui": "C0009402",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "adhd",
@@ -85,7 +85,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Attention -> deficit disorder -> with hyperactivity -> unspecified (F90.9)",
         "umlsCui": "C1263846",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "bell palsy",
@@ -94,7 +94,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Bell's palsy (G51.0)",
         "umlsCui": "C0015469",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "alzheimer disease",
@@ -103,7 +103,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Alzheimer's disease -> unspecified (G30.9)",
         "umlsCui": "C0002395",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "parkinson disease",
@@ -112,7 +112,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Parkinson's disease (G20)",
         "umlsCui": "C0030567",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "huntington disease",
@@ -121,7 +121,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Huntington's chorea / disease (G10)",
         "umlsCui": "C0020179",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "gerd",
@@ -130,7 +130,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Reflux -> gastroesophageal -> without esophagitis (K21.9)",
         "umlsCui": "C0017168",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "copd",
@@ -139,7 +139,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Disease -> lung -> obstructive -> chronic -> unspecified (J44.9)",
         "umlsCui": "C0024117",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "bph",
@@ -148,7 +148,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Hyperplasia -> prostate -> benign -> without LUTS (N40.0)",
         "umlsCui": "C0033570",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "pcos",
@@ -157,7 +157,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Syndrome -> polycystic ovary (E28.2)",
         "umlsCui": "C0032460",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "dvt",
@@ -166,7 +166,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Embolism / thrombosis -> vein -> deep -> lower extremity -> unspecified (I82.409)",
         "umlsCui": "C0149871",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "flu",
@@ -175,7 +175,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Influenza -> with other respiratory manifestations (J11.1)",
         "umlsCui": "C0021400",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "kidney stone",
@@ -184,7 +184,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Calculus, calculi -> kidney (N20.0)",
         "umlsCui": "C0022650",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "heart attack",
@@ -193,7 +193,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Infarction -> myocardium -> acute -> unspecified (I21.9)",
         "umlsCui": "C0027051",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "stroke",
@@ -202,7 +202,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Infarction -> cerebral (stroke) -> unspecified (I63.9)",
         "umlsCui": "C0038454",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "hives",
@@ -211,7 +211,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Hives (see also Urticaria) (L50.9)",
         "umlsCui": "C0042109",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "ringworm",
@@ -220,7 +220,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Ringworm (see also Tinea -> corporis) (B35.4)",
         "umlsCui": "C0040247",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "athlete's foot",
@@ -229,7 +229,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Athlete's foot (see also Tinea -> pedis) (B35.3)",
         "umlsCui": "C0040251",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "shingles",
@@ -238,7 +238,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Shingles (see also Zoster -> without complications) (B02.9)",
         "umlsCui": "C0019360",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "strep throat",
@@ -247,7 +247,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Pharyngitis -> streptococcal (strep throat) (J02.0)",
         "umlsCui": "C0153138",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "common cold",
@@ -256,7 +256,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Cold -> common (head) (J00)",
         "umlsCui": "C0009443",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "high blood pressure",
@@ -265,7 +265,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Hypertension -> essential (primary) (I10)",
         "umlsCui": "C0020538",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "chickenpox",
@@ -274,7 +274,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Chickenpox (see also Varicella -> without complication) (B01.9)",
         "umlsCui": "C0008049",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "whooping cough",
@@ -283,7 +283,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Whooping cough -> unspecified -> without pneumonia (A37.90)",
         "umlsCui": "C0043168",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "heartburn",
@@ -292,7 +292,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Heartburn (R12)",
         "umlsCui": "C0018834",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     },
     {
         "term": "food poisoning",
@@ -301,7 +301,7 @@ CANDIDATES = [
         "cmsIndexHeading": "Poisoning -> food -> bacterial -> unspecified (A05.9)",
         "umlsCui": "C0016479",
         "publicSource": "CMS / CDC ICD-10-CM Alphabetic Index 2024 (US Public Domain, 17 U.S.C. § 105)",
-        "status": "verified_public_cms_index"
+        "status": "owner_must_check"
     }
 ]
 
