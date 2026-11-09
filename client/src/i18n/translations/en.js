@@ -237,6 +237,7 @@ export const en = {
     "aiAssist": "AI Diagnostic Differential",
     "referenceMatchNotDiagnosis": "Reference match, not a diagnosis",
     "coverageBadge": "41 reference symptom profiles curated; 71,704 ICD-10 conditions available for manual diagnosis.",
+    "emergencyAdvisoryTitle": "Possible emergency presentation: urgent clinical assessment recommended",
     "nonProfiledNotice": "No symptom reference profile for this condition; select the diagnosis manually.",
     "clinicalDiagnosis": "Clinical Diagnosis",
     "icdSelection": "ICD Standard Classification",

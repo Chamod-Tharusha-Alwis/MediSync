@@ -15,14 +15,14 @@ describe('Phase D4 — Trilingual Coverage Badge and Non-Profiled Notice Parity'
     return keys;
   }
 
-  test('trilingual translations define coverageBadge and nonProfiledNotice with exact key parity (834 keys each)', () => {
+  test('trilingual translations define coverageBadge and nonProfiledNotice with exact key parity (835 keys each)', () => {
     const enKeys = extractKeys(en);
     const siKeys = extractKeys(si);
     const taKeys = extractKeys(ta);
 
-    expect(enKeys.length).toBe(834);
-    expect(siKeys.length).toBe(834);
-    expect(taKeys.length).toBe(834);
+    expect(enKeys.length).toBe(835);
+    expect(siKeys.length).toBe(835);
+    expect(taKeys.length).toBe(835);
 
     expect(en.doctor.coverageBadge).toContain('41 reference symptom profiles curated');
     expect(en.doctor.coverageBadge).toContain('71,704 ICD-10 conditions');

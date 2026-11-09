@@ -73,6 +73,15 @@ Inference evaluates Tier 1 first (`ml-engine/app.py:545-601`):
 
 ---
 
+### 6.2.4 Deterministic Emergency Red-Flag Advisory Screen
+In parallel with the statistical lexical similarity engine, the backend executes a deterministic, rule-based emergency red-flag screen (`server/src/utils/emergencyAdvisory.js`, `server/src/data/emergencyRedFlags.json`) on every symptom submission:
+- **Heuristic Rule Set**: Evaluates 6 conservative presentation profiles (acute meningism, acute cardiorespiratory compromise, acute coronary syndrome, acute altered mental status, suspected anaphylaxis, and severe active hemorrhage).
+- **Invariance Guarantee**: The emergency screen is strictly informational and non-blocking. It attaches an advisory object (`emergencyAdvisory`) to the response without modifying ML candidate ordering, scores, or probabilities.
+- **Fail-Open Safety**: During ML engine cold starts, timeouts, or 503 fallback states, `predictDiseaseResilient` continues to evaluate and surface the emergency advisory alongside the fallback response.
+- **Regulatory Status**: Marked `clinicalValidation: not_established` (`status: needs_clinician_review`), preserving clinician diagnostic authority.
+
+---
+
 ## 6.3 Ground-Truth Design Parameters & Heuristics Inventory
 All 11 hand-set heuristics governing the ML and surveillance engines were audited directly against source code and recorded in `docs/report/ML_DESIGN_PARAMETERS.md`:
 

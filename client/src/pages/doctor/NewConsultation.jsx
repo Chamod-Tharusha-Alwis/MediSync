@@ -187,6 +187,7 @@ const NewConsultation = () => {
   const [symptoms,           setSymptoms]          = useState([]);
   const [clinicalNotes,      setClinicalNotes]     = useState('');
   const [diagnosesOptions,   setDiagnosesOptions]  = useState([]);
+  const [emergencyAdvisory,  setEmergencyAdvisory] = useState(null);
   const [inferenceStatus, setInferenceStatus] = useState('idle');
   const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true), inferenceRetryTimer = useRef(null);
   useEffect(() => {
@@ -239,7 +240,7 @@ const NewConsultation = () => {
     if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
     inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle');
     setShowOtpModal(false); setStep(1); setLoading(false);
-    setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setSelectedDiagnosis('');
+    setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setEmergencyAdvisory(null); setSelectedDiagnosis('');
     setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
     setIsIcdOpen(false); setIcdActiveIndex(-1);
     setPrescriptions([]); setInteractionAnalysis(null); setLabTests([]); setLabTestInput('');
@@ -425,7 +426,7 @@ const NewConsultation = () => {
     const epoch = draftEpoch.current, requestId = ++inferenceRequest.current;
     const current = () => inferenceMounted.current && epoch === draftEpoch.current && requestId === inferenceRequest.current;
     inferenceBusy.current = true;
-    setLoading(true); setDiagnosesOptions([]); setInferenceStatus('loading');
+    setLoading(true); setDiagnosesOptions([]); setEmergencyAdvisory(null); setInferenceStatus('loading');
     const RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 50 : 2500;
     try {
       let res;
@@ -447,10 +448,14 @@ const NewConsultation = () => {
       if (!current()) return;
       const predictions = inferencePredictions(res.data);
       setDiagnosesOptions(predictions);
+      setEmergencyAdvisory(res.data?.emergencyAdvisory || null);
       setInferenceStatus(predictions.length ? 'available' : 'empty');
-    } catch {
+    } catch (err) {
       if (!current()) return;
       setDiagnosesOptions([]); setInferenceStatus('unavailable');
+      if (err?.response?.data?.emergencyAdvisory) {
+        setEmergencyAdvisory(err.response.data.emergencyAdvisory);
+      }
       toast.error('AI suggestions unavailable');
     } finally { if (current()) { inferenceBusy.current = false; setLoading(false); } }
   };
@@ -1057,6 +1062,36 @@ const NewConsultation = () => {
                         <span data-testid="clinical-validation-badge" className="text-[11px] font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">clinicalValidation: not_established</span>
                         <span>Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.</span>
                       </p>
+
+                      {emergencyAdvisory?.hasEmergencyRedFlag && (
+                        <div
+                          data-testid="emergency-red-flag-advisory"
+                          className="mb-4 bg-rose-500/10 border border-rose-500/40 rounded-xl p-3.5 text-rose-200 text-xs relative z-10 shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                        >
+                          <div className="flex items-center gap-2 font-bold text-rose-300 text-sm">
+                            <FiAlertTriangle className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+                            <span>{t('doctor.emergencyAdvisoryTitle', 'Possible emergency presentation: urgent clinical assessment recommended')}</span>
+                          </div>
+                          <p className="mt-1.5 text-rose-200/90 leading-relaxed font-medium">
+                            {emergencyAdvisory.advisory}
+                          </p>
+                          {Array.isArray(emergencyAdvisory.flaggedRules) && emergencyAdvisory.flaggedRules.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {emergencyAdvisory.flaggedRules.map((r) => (
+                                <span
+                                  key={r.id}
+                                  className="bg-rose-950/70 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded text-xs font-mono"
+                                >
+                                  {r.label}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <p className="mt-2 text-xs text-rose-300/70 italic border-t border-rose-500/20 pt-1.5">
+                            Design heuristic, not clinically validated. Does not alter candidate suggestions, provide a diagnosis, or block clinical judgment.
+                          </p>
+                        </div>
+                      )}
 
                       {diagnosesOptions.length > 0 ? (
                         <div className="space-y-3 relative z-10 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">

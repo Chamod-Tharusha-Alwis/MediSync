@@ -18,6 +18,7 @@
 | **Outbreak Gate 1: Episode Count Floor** | `N >= 5` cases | `server/src/services/surveillanceService.js:136-140` | Suppresses alert storms caused by small isolated case numbers ($N < 5$) in low-population districts. | `design_choice` |
 | **Outbreak Gate 2: Temporal Persistence** | `2` consecutive days | `server/src/services/surveillanceService.js:136-140` | Requires elevated z-score across 2 consecutive evaluation calendar days to eliminate single-day reporting artifacts. | `design_choice` |
 | **Outbreak Gate 3: Statistical Deviation** | `z > 2.0` | `server/src/services/surveillanceService.js:136-140` | Triggers alert only when rolling 7-day incidence exceeds $2.0$ standard deviations over the 56-day district historical baseline ($\sigma \ge 0.5$). | `design_choice` |
+| **Emergency Red-Flag Advisory Screen** | 6 conservative presentation rules | `server/src/utils/emergencyAdvisory.js` | Evaluates deterministic emergency presentations (meningism, chest pain, anaphylaxis, severe hemorrhage) to surface informational advisory without modifying ML rankings. | `needs_clinician_review` |
 | **Urgency Classification Heuristic** | High confidence or severe condition list | `ml-engine/app.py` | Automatically flags predictions as urgent for emergency triage routing. | `needs_clinician_review` |
 
 ---
@@ -62,6 +63,6 @@ To evaluate JSON schema compliance and contract execution across diverse symptom
 > - **SC-10** (*Malar butterfly rash + joint stiffness*, classic Systemic Lupus Erythematosus): Top prediction is *Fungal infection* (31.25%).
 >
 > **Critical System Limitations**:
-> 1. **No Emergency / Red-Flag Rule Engine**: MediSync possesses **zero emergency red-flag escalation rules** for life-threatening presentations (e.g., chest pain radiating to jaw, thunderclap headache with meningism, anaphylaxis).
+> 1. **Advisory Red-Flag Screen Present (Unvalidated Heuristic)**: MediSync implements an informational, deterministic red-flag advisory screen (`server/src/utils/emergencyAdvisory.js`, `server/src/data/emergencyRedFlags.json`) evaluated alongside ML suggestions. It flags critical patterns (acute meningism, acute cardiorespiratory distress, acute coronary symptoms, altered mental status, suspected anaphylaxis, severe hemorrhage) as an advisory banner. It does NOT auto-diagnose, triage, or alter statistical rankings, and remains an unvalidated heuristic (`clinicalValidation: not_established`) requiring clinician review.
 > 2. **Lexical Similarity Reference Only**: The dual-tier pipeline computes unweighted lexical n-gram token overlap and TF-IDF similarity. It does not model clinical pathophysiological relationships, disease timelines, or physical examination findings.
 > 3. **Non-Diagnostic Prototype**: Under no circumstances should the system's differential suggestions be presented as diagnostic opinions or used in patient triage without independent human physician review.

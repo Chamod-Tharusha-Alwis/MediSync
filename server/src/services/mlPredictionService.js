@@ -3,6 +3,7 @@
 const axios = require('axios');
 const { generateToken } = require('../utils/internalAuth');
 const { inferencePredictions } = require('../utils/inferenceResponse');
+const { evaluateEmergencyRedFlags } = require('../utils/emergencyAdvisory');
 
 const DEFAULT_TIMEOUT_MS = 90000; // 90s extended cold-start timeout for Render free tier
 const DEFAULT_RETRY_DELAY_MS = 1500; // 1.5s delay before single retry
@@ -39,6 +40,7 @@ function sanitizeErrorMessage(error, isColdStart = false) {
  * - Sanitized responses (zero internal secrets or IP exposure)
  */
 async function predictDiseaseResilient(symptoms, options = {}) {
+  const emergencyAdvisory = evaluateEmergencyRedFlags(symptoms);
   const timeoutMs = options.timeoutMs || parseInt(process.env.ML_ENGINE_TIMEOUT_MS || process.env.ML_TIMEOUT_MS, 10) || DEFAULT_TIMEOUT_MS;
   const retryDelayMs = options.retryDelayMs !== undefined ? options.retryDelayMs : (parseInt(process.env.ML_RETRY_DELAY_MS, 10) || DEFAULT_RETRY_DELAY_MS);
   const mlUrl = getMlEngineUrl();
@@ -65,6 +67,7 @@ async function predictDiseaseResilient(symptoms, options = {}) {
       data: {
         availability: 'available',
         predictions,
+        emergencyAdvisory,
       },
     };
   } catch (err) {
@@ -96,6 +99,7 @@ async function predictDiseaseResilient(symptoms, options = {}) {
         data: {
           availability: isWakingUp ? 'waking_up' : 'unavailable',
           predictions: [],
+          emergencyAdvisory,
           error: sanitizeErrorMessage(secondError, isWakingUp),
         },
       };
@@ -110,6 +114,7 @@ async function predictDiseaseResilient(symptoms, options = {}) {
     data: {
       availability: isWakingUp ? 'waking_up' : 'unavailable',
       predictions: [],
+      emergencyAdvisory,
       error: sanitizeErrorMessage(firstError, isWakingUp),
     },
   };

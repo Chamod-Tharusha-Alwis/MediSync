@@ -1,0 +1,112 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "status": "needs_clinician_review",
+    "provenance": "design heuristic, not clinically validated",
+    "disclaimer": "This heuristic rule set highlights potentially critical clinical presentations for urgent review. It does not provide medical diagnosis or replace clinical judgment."
+  },
+  "rules": [
+    {
+      "id": "ACUTE_MENINGISM",
+      "label": "Meningism / Acute Severe Headache",
+      "requiredAny": [
+        "sudden severe headache",
+        "severe headache",
+        "thunderclap headache"
+      ],
+      "accompaniedByAny": [
+        "stiff neck",
+        "neck stiffness",
+        "photophobia",
+        "altered consciousness",
+        "vomiting"
+      ],
+      "advisoryMessage": "Possible acute meningism or intracranial emergency: urgent assessment recommended."
+    },
+    {
+      "id": "ACUTE_CARDIORESPIRATORY_DISTRESS",
+      "label": "Dependent Edema with Exertional Dyspnea",
+      "requiredAny": [
+        "shortness of breath on exertion",
+        "breathlessness at rest",
+        "breathlessness",
+        "dyspnea",
+        "orthopnea"
+      ],
+      "accompaniedByAny": [
+        "swollen ankles",
+        "dependent edema",
+        "ankle swelling",
+        "pedal edema",
+        "swelling in legs"
+      ],
+      "advisoryMessage": "Possible acute cardiac or respiratory compromise: urgent assessment recommended."
+    },
+    {
+      "id": "ACUTE_CORONARY_SYNDROME",
+      "label": "Acute Coronary Symptoms",
+      "requiredAny": [
+        "chest pain",
+        "angina",
+        "retrosternal chest pain",
+        "chest tightness"
+      ],
+      "accompaniedByAny": [
+        "sweating",
+        "cold sweats",
+        "pain radiating to left arm",
+        "pain radiating to arm",
+        "pain radiating to jaw",
+        "diaphoresis",
+        "breathlessness"
+      ],
+      "advisoryMessage": "Possible acute coronary syndrome: emergency assessment recommended."
+    },
+    {
+      "id": "ALTERED_CONSCIOUSNESS",
+      "label": "Acute Altered Mental Status",
+      "requiredAny": [
+        "loss of consciousness",
+        "syncope",
+        "unresponsive",
+        "acute confusion",
+        "altered mental status"
+      ],
+      "accompaniedByAny": [],
+      "advisoryMessage": "Acute neurological or conscious state change: immediate clinical evaluation required."
+    },
+    {
+      "id": "ANAPHYLAXIS",
+      "label": "Suspected Anaphylaxis",
+      "requiredAny": [
+        "throat tightness",
+        "stridor",
+        "facial swelling",
+        "tongue swelling",
+        "swelling of lips"
+      ],
+      "accompaniedByAny": [
+        "wheezing",
+        "difficulty breathing",
+        "skin rash",
+        "urticaria",
+        "hypotension"
+      ],
+      "advisoryMessage": "Possible acute anaphylactic reaction: immediate airway and hemodynamic evaluation required."
+    },
+    {
+      "id": "SEVERE_HEMORRHAGE",
+      "label": "Severe Active Hemorrhage",
+      "requiredAny": [
+        "heavy bleeding",
+        "hematemesis",
+        "vomiting blood",
+        "hemoptysis",
+        "coughing blood",
+        "melena"
+      ],
+      "accompaniedByAny": [],
+      "advisoryMessage": "Signs of acute or significant hemorrhage: urgent assessment recommended."
+    }
+  ]
+}

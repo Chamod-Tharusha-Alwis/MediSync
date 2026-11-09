@@ -35,3 +35,5 @@
 | **CIT-02** | `[OWNER: cite MOH Epidemiology Unit notification protocol]` | Chapter 01 & Demo Script (Traditional Form H-544 manual card dispatch) | Ministry of Health Epidemiology Unit Surveillance Manual | `PENDING_OWNER` |
 | **CIT-03** | `[OWNER: cite notification delay study]` | Chapter 01 & Demo Script (Multi-week postal aggregation delay) | Published epidemiological reporting delay literature in Sri Lanka | `PENDING_OWNER` |
 | **CIT-04** | `[OWNER: Census 2024 citations]` | Chapter 11 (2024 national census district populations) | Department of Census and Statistics Sri Lanka (Census 2024 preliminary report) | `PENDING_OWNER` |
+
+- [ ] **Emergency Red-Flag Rule Review**: Have a licensed medical officer review `server/src/data/emergencyRedFlags.json` (6 conservative heuristic rules: acute meningism, acute cardiorespiratory distress, acute coronary symptoms, altered mental status, suspected anaphylaxis, severe active hemorrhage) to validate trigger keywords and advisory language before clinical deployment.

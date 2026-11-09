@@ -82,6 +82,11 @@ export default function MedicineSafetyPanel({
         {t('medicineSafety.disclaimer')}
       </p>
 
+      <div data-testid="medicine-safety-scope" className="text-xs text-teal-300/90 bg-teal-950/40 border border-teal-500/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+        <FiCheckCircle className="w-4 h-4 text-teal-400 shrink-0" />
+        <span>Checks performed: DDI, duplicate ingredient, allergy, dose ceiling, duration limit</span>
+      </div>
+
       {loading ? (
         <div className="py-2 text-xs text-slate-400 flex items-center gap-2 animate-pulse">
           <span>Checking drug interactions and formulary limits…</span>
