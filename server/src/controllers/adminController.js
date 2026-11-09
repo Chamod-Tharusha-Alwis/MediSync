@@ -1201,3 +1201,56 @@ exports.revealIdentifier = async (req, res) => {
     return res.status(500).json({ error: 'Failed to reveal identifier' });
   }
 };
+
+// ─── SURVEILLANCE CLINICAL REVIEW (F6) ──────────────────────────────────────────
+exports.getPendingSurveillanceConsultations = async (req, res) => {
+  try {
+    const Consultation = require('../models/Consultation');
+    const { SYNTHETIC_FLAGS, SYNTHETIC_MARKERS } = require('../services/publicHealthStats');
+    const query = {
+      $or: [
+        { surveillanceVerification: { $exists: false } },
+        { 'surveillanceVerification.status': { $in: ['pending', 'unverified'] } }
+      ]
+    };
+    for (const field of SYNTHETIC_FLAGS) query[field] = { $in: [false, null] };
+    for (const field of SYNTHETIC_MARKERS) query[field] = { $exists: false };
+    const consultations = await Consultation.find(query)
+      .select('_id district diagnosis icdCode icdVersion createdAt surveillanceVerification')
+      .sort({ createdAt: -1 })
+      .limit(50);
+    return res.json({ data: consultations });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch pending surveillance consultations' });
+  }
+};
+
+exports.reviewSurveillanceConsultation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, diagnosisStatus, caseDefinitionReference } = req.body || {};
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be verified or rejected' });
+    }
+    const Consultation = require('../models/Consultation');
+    const consultation = await Consultation.findById(id);
+    if (!consultation) return res.status(404).json({ error: 'Consultation not found' });
+
+    const episodeId = consultation.surveillanceVerification?.episodeId || `EP-${consultation.district || 'SL'}-${consultation.createdAt ? consultation.createdAt.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}-${String(consultation._id).slice(-4)}`;
+    const update = {
+      status,
+      diagnosisStatus: status === 'verified' ? (diagnosisStatus || 'confirmed') : 'rejected',
+      source: 'clinical_review',
+      verifiedBy: req.user?.id || 'admin',
+      verifiedAt: new Date(),
+      episodeId,
+      caseDefinitionReference: caseDefinitionReference || 'SL-EPID-CASE-DEF-V1'
+    };
+
+    consultation.surveillanceVerification = update;
+    await consultation.save();
+    return res.json({ message: `Consultation surveillance status updated to ${status}`, data: consultation.surveillanceVerification });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to review surveillance consultation' });
+  }
+};
