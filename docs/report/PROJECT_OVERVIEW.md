@@ -34,10 +34,10 @@ MediSync solves these issues by:
 - **Lab Ordering**: Orders blood tests and lab investigations directly linked to the visit.
 
 ### 2.3 The Pharmacist
-- **QR Code Scanning**: Scans the patient's prescription QR code using a phone camera, barcode scanner, or enters the prescription ID.
-- **Identity Check (NIC Gate)**: For safety and legal compliance, the pharmacist asks the patient for their National Identity Card (NIC) number and enters it into the system. MediSync confirms that the person holding the card matches the patient on the prescription.
-- **Dispensing & Inventory**: The pharmacist records the items dispensed (full or partial).
-- **Anti-Fraud Protection**: The moment medication is dispensed, the prescription status updates immediately to "Dispensed". If someone tries to take the same paper slip or screenshot to another pharmacy down the street, the second pharmacy's screen will instantly say: *"This prescription has already been dispensed."*
+- **Prescription Lookup via NIC**: Enters the patient's National Identity Card (NIC) number; patient confirms authorization via OTP consent to load pending prescriptions.
+- **Verification Capability**: Prescription summaries embed a cryptographic QR code linking to the Public Verification Portal (`/verify/:token`), allowing authenticity verification with zero patient PII, while full history PDF downloads require passing the patient NIC gate.
+- **Dispensing Safety**: The pharmacist reviews prescribed items, verifies them against recorded patient allergies, and records the dispensation.
+- **Anti-Fraud Protection**: The moment medication is dispensed, the prescription status updates atomically to "Dispensed". Any attempt to re-dispense the same prescription at any pharmacy is immediately blocked: *"Prescription is not eligible for dispensing." (code: ALREADY_DISPENSED)*.
 
 ### 2.4 The Hospital Laboratory
 - **Pending Orders**: Sees an electronic list of lab tests requested by doctors.
@@ -46,8 +46,8 @@ MediSync solves these issues by:
 
 ### 2.5 The Regional Epidemiologist / Public Health Inspector
 - **District Map**: Views a map of Sri Lanka's 25 districts color-coded by current disease activity.
-- **Automated Outbreak Detection**: As doctors across the island enter diagnoses, MediSync continuously evaluates a 7-day window against a 56-day district historical baseline ( > 2.0$) with dual-gate thresholding ( \ge 5$ cases and 2 consecutive calendar days). If cases of an infectious disease (like Dengue, Typhoid, or Chickenpox) spike higher than normal in a particular district, an Outbreak Alert is generated automatically.
-- **Smart Filtering (No False Alarms)**: To avoid unnecessary panic, the system filters out small random spikes. An alert is only triggered if cases rise significantly above the normal baseline for at least 3 days in a row and involve at least 5 cases.
+- **Automated Outbreak Detection**: As doctors across the island enter diagnoses, MediSync continuously evaluates a 7-day window against a 56-day district historical baseline ($z > 2.0$) with dual-gate thresholding ($N \ge 5$ cases and 2 consecutive calendar days). If cases of an infectious disease (like Dengue, Typhoid, or Chickenpox) spike higher than normal in a particular district, an Outbreak Alert is generated automatically.
+- **Smart Filtering (No False Alarms)**: To avoid unnecessary panic, the system filters out small random spikes. An alert is only triggered if cases rise significantly above the normal baseline ($z > 2.0$) for at least 2 consecutive calendar days and involve at least 5 cases ($N \ge 5$).
 - **Trend Projections**: Displays 14-day statistical trend lines showing whether cases are rising, leveling off, or falling.
 
 ### 2.6 The System Administrator

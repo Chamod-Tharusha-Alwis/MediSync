@@ -34,6 +34,7 @@ This directory serves as the unified submission and defense kit for the MediSync
 
 | Deliverable Document | Relative Path | Purpose & Target Audience |
 |---|---|---|
+| **Feature Existence Matrix** | [`FEATURE_EXISTENCE_MATRIX.md`](./FEATURE_EXISTENCE_MATRIX.md) | Comprehensive docs-vs-code reconciliation matrix auditing all 16 claimed features against routes, controllers, and tests. |
 | **System Architecture Guide** | [`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md) | Annotated directory tree covering all 67 repository directories with a single-line architectural purpose. |
 | **REST API Reference** | [`API_REFERENCE.md`](./API_REFERENCE.md) | Comprehensive reference for all 191 endpoints (187 Express + 4 ML Engine) with RBAC guards and rate limits. |
 | **Data Model & Cryptography Schema**| [`DATA_MODEL.md`](./DATA_MODEL.md) | Complete specification of all 29 Mongoose schemas, AES-256-GCM field encryption, blind indexes, and TTLs. |

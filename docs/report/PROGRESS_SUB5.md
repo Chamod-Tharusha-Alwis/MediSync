@@ -157,3 +157,35 @@ pm --prefix client run build)**:
   - Re-assembled `TECHNICAL_REPORT.md` (14 chapters, 90,776 chars).
   - Updated `DEMO_SCRIPT.md`, `SLIDES_OUTLINE.md`, `PROJECT_OVERVIEW.md`, `VIVA_QA.md`, and `CLAIMS_AUDIT.md`.
   - Link check: `python scripts/check_report_links.py` passed with 100% valid links (95 relative links across 36 files).
+
+### Phase S10 — Documentation vs. Code Reconciliation Pass (fix/sub5-doc-code-reconcile)
+- **Feature Existence Matrix Authored (`docs/report/FEATURE_EXISTENCE_MATRIX.md`)**:
+  - Comprehensive 16-feature audit comparing all claimed capabilities against backend routes, Mongoose models, React router definitions, and offline test suites.
+  - Reconciled and excised unbuilt features:
+    - Excised appointment booking / doctor scheduling (zero routes, zero models).
+    - Excised OPD waiting queue / queue numbers (doctor looks up patient by NIC with OTP consent).
+    - Reconciled prescription QR code: capability QR is printed on the Consultation Summary PDF (`/verify/:token`), while pharmacy checkout is NIC-based with OTP consent (`/pharmacy/dashboard/dispense`).
+    - Aligned duplicate dispensing error to exact code message: `'Prescription is not eligible for dispensing.' (code: ALREADY_DISPENSED)`.
+    - Excised non-existent renal, hepatic, pediatric, and geriatric contraindication claims.
+    - Excised non-existent pharmacy inventory endpoints (`/api/pharmacies/inventory`).
+    - Corrected client route targets across screenshot checklist and demo scripts (`/public-health`, `/hospital/dashboard/tests`, `/pharmacy/dashboard/dispense`, `/admin/dashboard/sessions`).
+- **Algorithm & Parameter Calibration**:
+  - Slide 13 and `PROJECT_OVERVIEW.md`: repaired garbled math; aligned outbreak detection to 7-day window vs. 56-day district baseline with dual-gate thresholding ($N \ge 5$, 2 consecutive days with $z > 2.0$).
+  - Slide 14: verified trilingual dictionary key parity at exactly **813 keys** in `en.js`, `si.js`, and `ta.js`.
+  - Slide 6 & `DEMO_SCRIPT.md`: updated diagnostic catalog reference to **US ICD-10-CM (71,704 searchable leaf concepts)**.
+  - Slide 7: aligned ML accuracy numbers strictly to Figure **F08** held-out synthetic test set: Tier 1 Top-1 82.5%, Tier 2 Top-1 71.2%, Combined V2 Top-1 **85.4%**, Top-3 **95.8%**, Top-5 **98.9%**.
+  - `ML_DESIGN_PARAMETERS.md`: cited `server/src/services/surveillanceService.js:136-140` and corrected baseline duration to **56 days**.
+  - `PROJECT_STRUCTURE.md`: aligned test suite counts to real gate outputs (Client: 78 suites / 666 tests; Backend: 123 suites / 2,635 tests).
+  - `docs/Feature_Breakdown.md`: replaced legacy 3-model ensemble claims with the verified dual-tier TF-IDF + Cosine Similarity symptom matcher.
+  - `API_REFERENCE.md`: reconciled all route mount points with registered Express routers.
+  - `DATA_MODEL.md`: reconciled `VerificationToken` schema table to exact code fields.
+- **Sanity Test Cases Clinical Assessment**:
+  - Renamed Sanity Test Suite result column to "Format Check".
+  - Added an honest "Clinical Plausibility (Owner Review)" analysis detailing poor predictions on SC-03 (edema -> Acanthosis nigricans), SC-05 (tremor -> Malaria), SC-09 (meningism -> Migraine), and SC-10 (malar rash -> Fungal infection).
+  - Explicitly documented the absence of emergency red-flag rules and framed the ML engine as an unweighted lexical similarity reference aid only.
+- **Citation Tags for Uncited Statistics**:
+  - Added `[OWNER: cite national OPD workload study]` and `[OWNER: cite notification delay study]` across Chapter 01 and Demo Script.
+- **Report & Deliverable Synchronization**:
+  - Re-assembled `TECHNICAL_REPORT.md` (14 chapters, 92,350 chars).
+  - Re-generated all 14 publication figures (F01–F14).
+  - Validated 100% of relative links (96 links across 37 markdown files) with `scripts/check_report_links.py`.

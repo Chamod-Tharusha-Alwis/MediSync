@@ -31,11 +31,11 @@ Figure **F13** visually details the distribution of test suites and test counts 
 
 ### 8.2.1 Core Backend & Services Unit Testing
 - **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback (`server/tests/crypto.test.js`).
-- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds (`server/tests/medicineSafety.test.js`).
+- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, duplicate ingredient alerts, and duration thresholds (`server/tests/medicineSafety.test.js`).
 - **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (71,704 validated concepts) and district geo-coordinate datasets.
 
 ### 8.2.2 Clinical Transaction Integration Testing
-- **Consultation Lifecycle**: Verifies patient appointment check-in, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
+- **Consultation Lifecycle**: Verifies patient consent validation, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
 - **Dispensing Workflows**: Implemented across `server/tests/ir04BackendIntegration.test.js` (Protected File #6), verifying that prescription state transitions atomically to `dispensed` or `partially_dispensed`, and confirming that multi-pharmacy duplicate dispensing attempts fail with HTTP 409 Conflict.
 - **Laboratory Subsystem**: Verified in `server/tests/lab.test.js` (Protected File #9), validating MIME type filtering, magic byte `%PDF-` binary enforcement, and clinician report notification triggers.
 

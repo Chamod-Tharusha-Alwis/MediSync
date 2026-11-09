@@ -29,6 +29,13 @@ The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.
 ### 11.1.6 Heuristic Design Parameters
 The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 40.0%, outbreak minimum case threshold of 5, persistence gate of 2 consecutive days, $z > 2.0$) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
 
+### 11.1.7 Absence of Emergency Red-Flag Engine & Diagnostic Plausibility Limits
+Evaluation of the 15 sanity symptom scenarios (`docs/report/ML_DESIGN_PARAMETERS.md`) demonstrates that while the dual-tier engine adheres strictly to JSON API schemas, it operates solely as an unweighted lexical similarity reference aid. Crucially, MediSync **lacks an emergency red-flag escalation engine**:
+- Dangerous presentations—such as acute meningism/subarachnoid hemorrhage (SC-09: sudden severe headache, stiff neck, photophobia) or congestive heart failure (SC-03: dependent edema with exertional breathlessness)—are matched against superficial word co-occurrences (yielding Migraine and Acanthosis nigricans, respectively) without triggering mandatory emergency escalation.
+- Chronic neurodegenerative presentations (SC-05: resting tremor, bradykinesia, rigidity) default to low-confidence tropical febrile entities (Malaria) due to the absence of movement disorder profiles in the curated catalog.
+- Autoimmune rheumatologic presentations (SC-10: malar butterfly rash, joint stiffness) yield unhelpful top suggestions (Fungal infection).
+- Consequently, the system makes no claim of clinical diagnostic plausibility or algorithmic quality, and must strictly remain disclaimed with `clinicalValidation: not_established`.
+
 ---
 
 ## 11.2 Future Research & Engineering Roadmap

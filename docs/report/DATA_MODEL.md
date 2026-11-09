@@ -111,17 +111,22 @@ Auditable record of physical pharmaceutical handover events.
 | `syntheticSeedBatch` | `String` | Optional | Tag for synthetic demonstration seed batches |
 
 ### 2.5 `VerificationToken` (`verificationtokens`)
-Cryptographic capability tokens enabling public authenticity verification via QR code.
+Cryptographic capability tokens enabling public authenticity verification via QR code (`server/src/models/VerificationToken.js`).
 
 | Field | Type | Attributes | Description |
 |---|---|---|---|
 | `_id` | `ObjectId` | Primary Key | Unique capability record identifier |
-| `token` | `String` | Required, Unique, Index | SHA-256 hash of the 256-bit unguessable random token |
-| `consultationId` | `ObjectId` | Ref: `Consultation`, Required | Verified consultation summary |
-| `patientNicHash` | `String` | Required, Index | Salted hash of patient NIC for constant-time comparison |
+| `tokenHash` | `String` | Required, Unique, Index | SHA-256 hash of the 256-bit unguessable random capability token |
+| `consultationId` | `ObjectId` | Ref: `Consultation`, Required, Index | Bound consultation encounter reference |
+| `patientRef` | `ObjectId` | Ref: `Patient`, Required, Index | Reference to patient record for NIC gate validation |
+| `doctorRef` | `ObjectId` | Ref: `Doctor`, Optional | Attending medical officer reference |
+| `consultationRef` | `String` | Optional, Trim | Human-readable consultation reference code |
 | `expiresAt` | `Date` | Index (`expireAfterSeconds: 0`) | **TTL Index**: Automatic document deletion after 90 days |
-| `accessCount` | `Number` | Default: `0` | Rate and usage tracking counter |
-| `lastAccessedAt` | `Date` | Optional | Audit timestamp of most recent scan |
+| `revokedAt` | `Date` | Default: `null` | Timestamp when capability token was explicitly revoked |
+| `revokedBy` | `ObjectId` | Default: `null` | User account that executed the revocation |
+| `revocationReason` | `String` | Max length: 250 | Justification recorded for revocation |
+| `useCount` | `Number` | Default: `0`, Min: `0` | Cumulative scan count |
+| `lastUsedAt` | `Date` | Default: `null` | Audit timestamp of most recent scan |
 
 ---
 
@@ -168,7 +173,7 @@ Append-only immutable record of sensitive security, authentication, and clinical
 | `clinicalcommands`| `ClinicalCommand.js` | `commandId` | **24 hours** | Idempotency deduplication for clinical actions |
 | `accountinvitations` | `AccountInvitation.js` | `invitationToken` | **48 hours** | Onboarding invitation tokens for hospital staff |
 | `banrecords` | `BanRecord.js` | `identifier` | **Dynamic** | Temporary IP and account blocks following security violations |
-| `verificationtokens` | `VerificationToken.js` | `token` (hash) | **90 days** | QR code capability tokens for consultation verification |
+| `verificationtokens` | `VerificationToken.js` | `expiresAt` (tokenHash) | **90 days** | QR code capability tokens for consultation verification |
 
 ---
 

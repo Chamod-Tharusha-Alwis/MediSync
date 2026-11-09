@@ -3,7 +3,7 @@
 ## Abstract
 MediSync is an enterprise-grade digital health and epidemiological surveillance platform designed for developing healthcare ecosystems, contextualized to the public and private health landscape of Sri Lanka. Addressing critical systemic bottlenecks—including physical outpatient department (OPD) congestion, manual paper-based prescription fraud, uncontrolled multi-pharmacy dispensing, unmonitored antibiotic stewardship, and fragmented, delayed infectious disease reporting—MediSync integrates a decentralized clinical workflow engine with real-time syndromic surveillance and machine learning-assisted clinical triage. 
 
-The architecture encompasses a zero-trust multi-tenant MERN core (MongoDB, Express, React, Node.js) paired with an isolated Python/Flask machine learning service. Sensitive patient identifiers and health records are cryptographically protected via field-level AES-256-GCM authenticated encryption paired with blind indexing for privacy-preserving querying. Clinical safety gates enforce automatic drug-drug interaction detection, daily dosage ceiling verification, renal/hepatic contraindication checks, and cryptographic QR prescription dispensing validated against patient National Identity Card (NIC) verification tokens.
+The architecture encompasses a zero-trust multi-tenant MERN core (MongoDB, Express, React, Node.js) paired with an isolated Python/Flask machine learning service. Sensitive patient identifiers and health records are cryptographically protected via field-level AES-256-GCM authenticated encryption paired with blind indexing for privacy-preserving querying. Clinical safety gates enforce automatic drug-drug interaction detection, daily dosage ceiling verification, active allergy cross-checking, and cryptographic capability QR codes with constant-time patient National Identity Card (NIC) verification gates.
 
 To assist clinicians under high OPD volume, MediSync incorporates a dual-tier symptom matching pipeline: Tier 1 executes an n-gram TF-IDF vectorizer coupled with cosine similarity scoring over 41 standardized clinical disease profiles, while Tier 2 provides sparse retrieval against a curated, quarantined knowledge base derived from CDC/SymCAT ambulatory survey data (174 auto-accepted condition profiles mapped to public-domain ICD-10-CM concepts). When Tier 1 top match confidence is $\ge 40.0\%$, Tier 1 takes absolute precedence; otherwise, the engine queries Tier 2. On the epidemiological surveillance front, MediSync runs automated spatio-temporal anomaly detection across Sri Lanka's 25 administrative districts, utilizing a 7-day observation window compared against a 56-day baseline, strictly gated by a 3-tier filter: case count floor ($N \ge 5$), 2 consecutive calendar days of elevation, and statistical standardized deviation ($z > 2.0$).
 
@@ -25,7 +25,7 @@ The Sri Lankan healthcare system represents an internationally recognized model 
 2. **Private Healthcare Sector**: Operating on an out-of-pocket and private medical insurance model, comprising private hospitals, corporate clinics, and independent general practitioner (GP) surgeries.
 
 Despite extensive geographical reach, the operational reality of public outpatient departments (OPDs) is characterized by severe resource asymmetry:
-- Single medical officers routinely evaluate between 40 and 80 patients per hour during peak morning clinics, translating to less than 90 seconds of clinical evaluation time per patient.
+- Single medical officers routinely evaluate between 40 and 80 patients per hour during peak morning clinics, translating to less than 90 seconds of clinical evaluation time per patient [OWNER: cite national OPD workload study].
 - Diagnostic workflows remain heavily reliant on paper physical bed-head tickets (BHTs), paper prescription slips, and physical laboratory reports carried by patients.
 - Centralized electronic medical record (EMR) adoption is fragmented across tertiary teaching institutions, with zero interoperability connecting public hospital dispensaries, private community pharmacies, and regional public health inspectors (PHIs).
 
@@ -35,10 +35,10 @@ Despite extensive geographical reach, the operational reality of public outpatie
 Under traditional paper prescription workflows, prescriptions lack tamper-evidence and transactional finality. Patients can present the same physical slip across multiple private community pharmacies ("pharmacy hopping"), resulting in unauthorized multi-refilling of controlled substances, benzodiazepines, and habit-forming analgesics. Furthermore, manual alteration of prescribed quantities and illegible physician handwriting introduce critical medication dispensing errors.
 
 ### 1.2.2 Unmonitored Medication Safety and Antibiotic Stewardship
-In resource-constrained settings, community dispensaries lack automated decision support. Clinicians under severe time pressure cannot cross-reference complex multi-drug regimens against drug-drug interaction (DDI) databases, maximum daily dosing ceilings, or organ-specific contraindications (e.g., prescribing nephrotoxic NSAIDs in pre-existing chronic kidney disease). Uncontrolled dispensing of broad-spectrum antibiotics for viral self-limiting syndromes accelerates antimicrobial resistance (AMR), a primary public health crisis identified by the World Health Organization.
+In resource-constrained settings, community dispensaries lack automated decision support. Clinicians under severe time pressure cannot cross-reference complex multi-drug regimens against drug-drug interaction (DDI) databases, maximum daily dosing ceilings, or contraindicated drug-drug interactions and maximum daily dosage ceilings. Uncontrolled dispensing of broad-spectrum antibiotics for viral self-limiting syndromes accelerates antimicrobial resistance (AMR), a primary public health crisis identified by the World Health Organization.
 
 ### 1.2.3 Latent, Fragmented Disease Outbreak Surveillance
-The current national communicable disease surveillance apparatus relies on the manual completion and postal dispatch of epidemiological notification cards (Form H-544) by treating physicians to local Medical Officers of Health (MOH). By the time physical notifications are aggregated and entered into centralized databases, an emerging vector-borne outbreak (such as Dengue fever during monsoon season) or water-borne cluster (such as Leptospirosis during paddy cultivation) has typically progressed through multiple replication cycles, eliminating opportunities for proactive larval control or prophylactic antimicrobial deployment.
+The current national communicable disease surveillance apparatus relies on the manual completion and postal dispatch of epidemiological notification cards (Form H-544) by treating physicians to local Medical Officers of Health (MOH) [OWNER: cite MOH Epidemiology Unit notification protocol]. By the time physical notifications are aggregated and entered into centralized databases (often involving multi-week delays [OWNER: cite notification delay study]), an emerging vector-borne outbreak (such as Dengue fever during monsoon season) or water-borne cluster (such as Leptospirosis during paddy cultivation) has typically progressed through multiple replication cycles, eliminating opportunities for proactive larval control or prophylactic antimicrobial deployment.
 
 ### 1.2.4 Diagnostic Decision Fatigue in High-Volume Clinics
 Junior medical officers in rural base hospitals face diagnostic exhaustion when confronting complex multi-symptom presentations. While computerized clinical decision support systems (CDSS) exist in western commercial hospital EHRs, they are resource-intensive, rely on proprietary taxonomies, and are ill-suited for low-bandwidth, low-compute infrastructure.
@@ -46,7 +46,7 @@ Junior medical officers in rural base hospitals face diagnostic exhaustion when 
 ## 1.3 Project Motivation and Scope
 MediSync was initiated as an undergraduate software engineering capstone project to conceptualize, engineer, and evaluate a lightweight, cloud-native, trilingual (English, Sinhala, Tamil) health information and surveillance platform tailored for developing healthcare architectures. The core system objectives include:
 1. **Digital Prescription Integrity**: Immutable digital prescriptions signed with cryptographic QR codes, verifiable at dispensing, and constrained by patient identity token confirmation to eliminate duplicate dispensing.
-2. **Deterministic Medication Safety**: Automated, zero-latency drug-drug interaction checks, dosage ceiling validations, and pediatric/geriatric warnings evaluated prior to signature.
+2. **Deterministic Medication Safety**: Automated, zero-latency drug-drug interaction checks, dosage ceiling validations, and course duration limits evaluated prior to signature.
 3. **Syndromic Epidemiological Surveillance**: Real-time spatio-temporal outbreak detection utilizing automated statistical anomaly surveillance across all 25 districts of Sri Lanka.
 4. **Lightweight Triage Support**: Dual-tier AI/ML clinical symptom matching optimized to operate within a 512 MB memory footprint on cloud-free infrastructure.
 
@@ -63,7 +63,7 @@ MediSync was initiated as an undergraduate software engineering capstone project
 The primary engineering objective of the MediSync platform is to design, develop, and empirically verify an end-to-end cloud-native clinical management and surveillance platform. Specifically:
 1. **Secure Patient Record Management**: Implement an encrypted, role-segregated electronic patient dossier supporting demographic capture, clinical history, longitudinal consultation logs, and laboratory investigation records.
 2. **Cryptographic Prescription & Dispensing Lifecycle**: Engineer a tamper-evident prescription issuance and fulfillment pipeline featuring one-time QR verification tokens, National Identity Card (NIC) validation gates, and durable anti-duplicate dispensing records.
-3. **Automated Clinical Medication Safety**: Construct an in-memory, deterministic drug safety verification engine enforcing multi-drug interaction checking, maximum daily dose ceilings, renal/hepatic adjustments, and antibiotic duration limits.
+3. **Automated Clinical Medication Safety**: Construct an in-memory, deterministic drug safety verification engine enforcing multi-drug interaction checking, maximum daily dose ceilings, active allergy conflicts, and course duration limits.
 4. **Real-time Spatio-temporal Epidemiological Surveillance**: Develop an automated surveillance subsystem that processes clinical encounter diagnoses across Sri Lanka's 25 administrative districts, identifies statistical anomalies using a 7-day window vs. 56-day baseline, and triggers early outbreak warning alerts with multi-gate noise suppression ($N \ge 5$, 2 consecutive days, $z > 2.0$).
 5. **Low-Footprint Machine Learning Triage**: Train, calibrate, and serve a dual-tier symptom-based differential guidance model (TF-IDF cosine similarity in Tier 1 and sparse KB retrieval in Tier 2) operating under 200 MB process RSS and sub-5 ms latency on resource-constrained cloud infrastructure.
 6. **Trilingual Localization**: Deliver complete interface parity across English, Sinhala (සිංහල), and Tamil (தமிழ்) to ensure equitable accessibility across Sri Lanka's multilingual clinical workforce.
@@ -76,7 +76,7 @@ The primary engineering objective of the MediSync platform is to design, develop
 ## 2.3 Scope and System Boundaries
 
 ### 2.3.1 In-Scope Deliverables
-- **Core Clinical Workflows**: Patient appointment booking, physician clinical consultation capture, digital prescription authoring, pharmacy QR scanning and partial/full dispensing.
+- **Core Clinical Workflows**: Patient registration and medical timeline review, physician clinical encounter capture with NIC-gated consent, digital prescription authoring, public QR capability verification, and atomic pharmacy dispensing.
 - **Laboratory Subsystem**: Lab test ordering, PDF report uploads, automated file validation (magic byte and MIME verification), and clinician review queues.
 - **Security & Privacy Infrastructure**: Field-level AES-256-GCM encryption for patient PII and clinical notes, blind indexing for demographic search, and time-to-live (TTL) ephemeral tokens for session authentication.
 - **Epidemiological Engine**: District-level spatial tracking, cross-chapter communicable disease surveillance models, 14-day projection pipelines, and automated outbreak alert generation.
@@ -128,7 +128,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **FR-PAT-04**: The system shall allow patients to grant or revoke clinician access to their historical electronic health record.
 
 ### 3.2.2 Doctor Subsystem
-- **FR-DOC-01**: The system shall allow physicians to schedule appointments, manage daily clinic queues, and initiate clinical encounters.
+- **FR-DOC-01**: The system shall allow physicians to look up patients via National Identity Card (NIC) blind indexing, verify patient OTP consent, and initiate clinical consultation encounters.
 - **FR-DOC-02**: The system shall provide an integrated symptom input interface supporting free-text autocompletion, queryable against the ML symptom inference microservice.
 - **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 (curated) and Tier 2 (sparse KB) models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
 - **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications across 71,704 validated concepts.
@@ -231,7 +231,7 @@ The architecture comprises three primary tiers:
 ### 4.2.1 Presentation Tier (Client)
 - **Framework**: React 18 with modern functional hooks, React Router v6 for role-segmented client routing, and Context API for global state (AuthContext, LanguageContext, SocketContext).
 - **Styling & Accessibility**: Tailwind CSS utility framework, styled to WCAG 2.1 AA contrast standards.
-- **Client Resilience**: Offline detection interceptors with automated retry logic, optimistic UI state updates for high-throughput OPD queue navigation, and graceful cold-start countdown modals for sleep-dormant ML services.
+- **Client Resilience**: Offline detection interceptors with automated retry logic, optimistic UI state updates for consultation forms, and graceful cold-start countdown modals for sleep-dormant ML services.
 
 ### 4.2.2 Backend Application Gateway (Server)
 - **Framework**: Express.js on Node.js runtime, organized into a clean layered pattern:
@@ -311,7 +311,7 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 
 ---
 
-## 5.3 Clinical Consultations & Appointment Queue
+## 5.3 Clinical Consultations & Encounter Lifecycle
 - **Workflow Orchestration**: Implemented in `server/src/controllers/doctorController.js` (Protected File #2) and `server/src/models/Consultation.js` (Protected File #13).
 - **Encounter Capture**: Clinicians record patient chief complaints, vital signs (blood pressure, pulse, temperature, SpO2, respiratory rate), structured symptom tags, and clinical notes.
 - **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/reference-data/icd10_clean.json` (71,704 validated leaf concepts).
@@ -332,7 +332,7 @@ Implemented in `server/src/services/medicineSafetyService.js` and `server/src/da
 - **Zero-Latency In-Memory Lookups**: Evaluates medication safety rules synchronously during prescription authoring without outbound network calls.
 - **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
 - **Maximum Daily Dose Ceilings**: Validates prescribed single and cumulative daily dosages against adult reference limits (e.g., Paracetamol max 4,000 mg/24h).
-- **Renal and Hepatic Adjustments**: Inspects patient baseline organ function flags, emitting automated dosage reduction prompts.
+- **Active Allergy & Duplicate Ingredient Checks**: Inspects recorded patient allergy history against drug formulations and detects overlapping active ingredients across co-prescribed medications.
 - **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited in `docs/report/MEDICINE_LIMITS_VERIFICATION.md` with items flagged for clinical review (Ibuprofen 800 mg single dose and Paracetamol 7-day course).
 
 ---
@@ -610,11 +610,11 @@ Figure **F13** visually details the distribution of test suites and test counts 
 
 ### 8.2.1 Core Backend & Services Unit Testing
 - **Cryptographic Primitives**: Evaluates AES-256-GCM encryption, decryption, invalid authentication tag rejection, ciphertext tampering detection, and versioned key fallback (`server/tests/crypto.test.js`).
-- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, pediatric age contraindications, and duration thresholds (`server/tests/medicineSafety.test.js`).
+- **Medicine Safety Engine**: Evaluates pairwise drug-drug interaction detection, cumulative daily dose calculations, duplicate ingredient alerts, and duration thresholds (`server/tests/medicineSafety.test.js`).
 - **Dataset Loaders**: Tests offline parsing of ICD-10 catalog JSON (71,704 validated concepts) and district geo-coordinate datasets.
 
 ### 8.2.2 Clinical Transaction Integration Testing
-- **Consultation Lifecycle**: Verifies patient appointment check-in, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
+- **Consultation Lifecycle**: Verifies patient consent validation, vital sign recording, multi-symptom capture, ICD-10 linking, and automated prescription generation.
 - **Dispensing Workflows**: Implemented across `server/tests/ir04BackendIntegration.test.js` (Protected File #6), verifying that prescription state transitions atomically to `dispensed` or `partially_dispensed`, and confirming that multi-pharmacy duplicate dispensing attempts fail with HTTP 409 Conflict.
 - **Laboratory Subsystem**: Verified in `server/tests/lab.test.js` (Protected File #9), validating MIME type filtering, magic byte `%PDF-` binary enforcement, and clinician report notification triggers.
 
@@ -841,6 +841,13 @@ The dosage ceilings and drug-drug interaction matrix in `medicine_safety_limits.
 ### 11.1.6 Heuristic Design Parameters
 The 11 operational parameters documented in `ML_DESIGN_PARAMETERS.md` (e.g., Tier 1 confidence floor of 40.0%, outbreak minimum case threshold of 5, persistence gate of 2 consecutive days, $z > 2.0$) were established empirically during software development. While effective at suppressing false positives in synthetic simulations, they have not undergone multi-center clinical calibration.
 
+### 11.1.7 Absence of Emergency Red-Flag Engine & Diagnostic Plausibility Limits
+Evaluation of the 15 sanity symptom scenarios (`docs/report/ML_DESIGN_PARAMETERS.md`) demonstrates that while the dual-tier engine adheres strictly to JSON API schemas, it operates solely as an unweighted lexical similarity reference aid. Crucially, MediSync **lacks an emergency red-flag escalation engine**:
+- Dangerous presentations—such as acute meningism/subarachnoid hemorrhage (SC-09: sudden severe headache, stiff neck, photophobia) or congestive heart failure (SC-03: dependent edema with exertional breathlessness)—are matched against superficial word co-occurrences (yielding Migraine and Acanthosis nigricans, respectively) without triggering mandatory emergency escalation.
+- Chronic neurodegenerative presentations (SC-05: resting tremor, bradykinesia, rigidity) default to low-confidence tropical febrile entities (Malaria) due to the absence of movement disorder profiles in the curated catalog.
+- Autoimmune rheumatologic presentations (SC-10: malar butterfly rash, joint stiffness) yield unhelpful top suggestions (Fungal infection).
+- Consequently, the system makes no claim of clinical diagnostic plausibility or algorithmic quality, and must strictly remain disclaimed with `clinicalValidation: not_established`.
+
 ---
 
 ## 11.2 Future Research & Engineering Roadmap
@@ -866,7 +873,7 @@ The MediSync capstone project successfully demonstrates the design, end-to-end e
 
 Key engineering contributions achieved in this work include:
 1. **Cryptographically Gated Prescription Dispensing**: Engineered an immutable digital prescription lifecycle utilizing one-time signed QR codes coupled with patient National Identity Card (NIC) verification tokens, effectively eliminating physical paper prescription fraud and cross-pharmacy duplicate dispensing.
-2. **Deterministic Clinical Medication Safety**: Delivered an in-memory safety verification engine enforcing drug-drug interaction detection, maximum daily dose ceilings, and pediatric contraindications synchronously during consultation workflows.
+2. **Deterministic Clinical Medication Safety**: Delivered an in-memory safety verification engine enforcing drug-drug interaction detection, maximum daily dose ceilings, and duration limits synchronously during consultation workflows.
 3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating 7-day rolling window standardized deviation tracking against a 56-day baseline across communicable diseases, regulated by a 3-tier suppression gate ($N \ge 5$, 2 consecutive elevated days, $z > 2.0$) to eliminate noise and alert fatigue.
 4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated TF-IDF cosine similarity matcher (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
 5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,465 tests across 207 test suites with 0 failures, locked against an immutable 15-file SHA-256 release ledger.

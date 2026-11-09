@@ -44,26 +44,32 @@ Parameters such as the Tier 1 confidence floor ($40.0\%$, score 0.40), the KB pr
 
 ## Category 2: Prescription Security & Dispensing Fraud
 
-### Q8: How does the QR verification and National Identity Card (NIC) gate prevent prescription fraud?
+### Q8: How does the cryptographic verification and National Identity Card (NIC) gate prevent prescription fraud?
 **Answer**:  
-Traditional paper prescriptions can be duplicated by photocopying or presented sequentially at different community dispensaries. In MediSync:
-1. Every digital prescription generates a signed cryptographic QR token containing the prescription ID and an HMAC signature.
-2. At the dispensary, scanning the token loads the prescription in a locked state.
-3. The pharmacist must input the patient's physical National Identity Card (NIC) number.
-4. The server compares the blind index of the submitted NIC against the patient record.
-5. Only upon a cryptographic match is dispensing unlocked.
-6. Upon fulfillment, the prescription record atomically transitions to `dispensed`. Any subsequent scan at any other pharmacy triggers a blocking alert: *"Prescription already dispensed"*.
+Traditional paper prescriptions can be duplicated by photocopying or presented sequentially at multiple dispensaries ("pharmacy hopping"). In MediSync:
+1. Every consultation summary PDF embeds a SHA-256 capability QR token (`/verify/:token`) allowing public authenticity verification (facility, clinician, timestamp) with zero patient PII.
+2. To download full longitudinal medical records from the verification portal, a constant-time Patient NIC gate must be satisfied.
+3. In pharmacy dispensing (`/pharmacy/dashboard/dispense`), the pharmacist looks up the patient via their NIC, which triggers a patient OTP consent challenge (`x-patient-access`).
+4. The pharmacist confirms prescribed medications, evaluates active allergy conflicts, and submits dispensing.
+5. Upon checkout, the prescription atomically transitions to `dispensed` in a single MongoDB transaction.
+6. Any subsequent attempt to re-dispense the same prescription at any pharmacy is atomically rejected: *"Prescription is not eligible for dispensing." (code: ALREADY_DISPENSED)*.
 
 ### Q9: What is the architectural weakness of using the Sri Lankan NIC as a verification credential?
 **Answer**:  
 Sri Lankan National Identity Cards have relatively low cryptographic entropy:
 - Old 10-character NICs encode birth year (first 2 digits), day of year + gender offset (next 3 digits), serial sequence, and a check letter ('V' or 'X').
 - New 12-character NICs encode the full 4-digit birth year followed by day/gender and serial sequence.  
-An attacker who knows a patient's date of birth and gender can brute-force the remaining search space. *Mitigation*: MediSync rate-limits dispensing attempts, requires the dynamic one-time QR token as a pre-requisite, and pairs dispensing with authenticated pharmacist credentials.
+An attacker who knows a patient's date of birth and gender can brute-force the remaining search space. *Mitigation*: MediSync rate-limits verification attempts, requires ephemeral OTP consent tokens (`x-patient-access`), encrypts NICs via AES-256-GCM, and uses blind indexing so raw NICs are never stored in plaintext.
 
-### Q10: How do you handle partial dispensing if a pharmacy does not have all prescribed medications in stock?
+### Q10: Does MediSync support partial dispensing across multiple community pharmacies?
 **Answer**:  
-The `Dispensing` collection records partial fills. If a doctor prescribes Amoxicillin and Paracetamol, but the pharmacy only stocks Paracetamol, the pharmacist inputs the dispensed quantity for Paracetamol and marks Amoxicillin as unfulfilled. The prescription transitions to `partially_dispensed`. The patient can take the same QR token to a second pharmacy, which can dispense the remaining Amoxicillin, at which point the record transitions to `dispensed`.
+No. To maintain complete transactional atomicity and eliminate complex distributed reconciliation hazards across independent pharmacies, the dispensing engine (`server/src/services/dispensingService.js:69`) explicitly enforces:
+```javascript
+if (item.status && item.status !== 'dispensed') {
+  fail('PARTIAL_DISPENSE_REQUIRES_REVIEW', 'Partial dispensing is not supported by this full-prescription checkout.');
+}
+```
+All medications on a prescription order must be fulfilled together in a single checkout, or an explicit brand substitution with clinical justification must be recorded. If a patient requires split fulfillment across facilities, the prescribing clinician authors distinct prescription orders.
 
 ---
 
