@@ -56,7 +56,7 @@ async function runTransaction(work, startSession = () => mongoose.startSession()
   } finally { await session.endSession().catch(() => {}); }
 }
 
-function validateItems(raw) {
+function validateItems(raw, isPartial = false) {
   if (!Array.isArray(raw) || !raw.length || raw.length > 50) fail('INVALID_ITEM', 'Provide 1 to 50 medicines with explicit quantities.');
   return raw.map(item => {
     if (!item || typeof item !== 'object') fail('INVALID_ITEM', 'Each dispensing item must be an object.');
@@ -66,11 +66,12 @@ function validateItems(raw) {
       fail('INVALID_QUANTITY', 'Quantity must be a positive whole number of inventory units.');
     }
     if (!name) fail('INVALID_ITEM', 'Medicine name is required.');
-    if (item.status && item.status !== 'dispensed') fail('PARTIAL_DISPENSE_REQUIRES_REVIEW', 'Partial dispensing is not supported by this full-prescription checkout.');
+    if (!isPartial && item.status && item.status !== 'dispensed') fail('PARTIAL_DISPENSE_REQUIRES_REVIEW', 'Partial dispensing is not supported by this full-prescription checkout.');
+    const itemStatus = ['dispensed', 'partial', 'out_of_stock'].includes(item.status) ? item.status : (isPartial ? 'partial' : 'dispensed');
     if (item.inventoryItemId && !mongoose.isObjectIdOrHexString(item.inventoryItemId)) fail('INVALID_ITEM', 'Invalid inventory item identifier.');
     return { name, qty: Number(rawQty), inventoryItemId: item.inventoryItemId ? String(item.inventoryItemId) : null,
       unit: normalize(item.unit), dosage: typeof item.dosage === 'string' ? item.dosage.trim() : '',
-      frequency: typeof item.frequency === 'string' ? item.frequency.trim() : '' };
+      frequency: typeof item.frequency === 'string' ? item.frequency.trim() : '', status: itemStatus };
   });
 }
 
@@ -78,7 +79,8 @@ const { recordClinicalEvent, ACTIONS } = require('./clinicalAuditService');
 
 async function dispense({ user, body = {}, prescriptionRef, otc = false, idempotencyKey, skipAuditProjection = false, authorization }) {
   if (!user?.id || !['pharmacist','pharmacy_admin','assistant'].includes(user.role)) fail('FORBIDDEN', 'Authorized pharmacy staff required.', 403);
-  const items = validateItems(otc ? body.medications : body.items);
+  const isPartial = Boolean(body.isPartialDispense || body.partial);
+  const items = validateItems(otc ? body.medications : body.items, isPartial);
   const nic = typeof body.patientNic === 'string' ? body.patientNic.trim().toUpperCase() : '';
   if (!nic) fail('INVALID_PATIENT', 'Patient NIC is required.');
   const key = idempotencyKey || body.idempotencyKey;
@@ -100,7 +102,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     if (body.pharmacyId && String(body.pharmacyId) !== String(pharmacy._id)) fail('FORBIDDEN', 'Cannot dispense for another pharmacy.', 403);
     let rx = otc ? null : await Prescription.findOne(mongoose.isObjectIdOrHexString(ref) ? { _id:ref } : { prescriptionId:ref }).session(session);
     if (!otc && !rx) fail('PRESCRIPTION_NOT_FOUND', 'Prescription not found.', 404);
-    const operationKey = otc ? `otc:${pharmacy._id}:${key}` : `rx:${rx._id}`;
+    const operationKey = otc ? `otc:${pharmacy._id}:${key}` : (rx.status === 'partially_dispensed' ? `rx:${rx._id}:complete:${key || 'completion'}` : (isPartial ? `rx:${rx._id}:partial:${key || 'partial'}` : `rx:${rx._id}`));
     const receiptId = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(operationKey).digest('hex').slice(0,24));
     const prior = await Dispensing.findById(receiptId).session(session).lean();
     if (prior) {
@@ -111,7 +113,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     }
     if (rx) {
       if (String(rx.patientNic).trim().toUpperCase() !== nic) fail('PATIENT_MISMATCH', 'Prescription does not belong to this patient.', 403);
-      if (!['pending','issued'].includes(rx.status)) fail('ALREADY_DISPENSED', 'Prescription is not eligible for dispensing.');
+      if (!['pending','issued','partially_dispensed'].includes(rx.status)) fail('ALREADY_DISPENSED', 'Prescription is not eligible for dispensing.');
       if (!rx.expiresAt || rx.expiresAt <= new Date()) fail('PRESCRIPTION_EXPIRED', 'A valid prescription expiry is required.');
       if (!body.isAlternativeDispensed) {
         const prescribed = rx.medications?.length ? rx.medications.map(m => normalize(m.name)) : [normalize(rx.drugName)];
@@ -133,11 +135,12 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
       const qty = (previous?.qty || 0) + item.qty;
       if (!Number.isSafeInteger(qty)) fail('INVALID_QUANTITY', 'Total quantity exceeds the supported range.');
       updates.set(key, { inventoryItemId: item.inventoryItemId || null, drugName: item.name, unit: item.unit || 'units',
-        dosage: item.dosage || rx?.dosage || item.unit || 'Standard', frequency: item.frequency || 'As directed', qty });
+        dosage: item.dosage || rx?.dosage || item.unit || 'Standard', frequency: item.frequency || 'As directed', qty, status: item.status || (isPartial ? 'partial' : 'dispensed') });
     }
     if (rx) {
-      const claimed = await Prescription.updateOne({ _id:rx._id, status:{$in:['pending','issued']}, expiresAt:{$gt:new Date()} },
-        {$set:{status:'dispensed',dispensedAt:new Date(),dispensedBy:pharmacy._id,dispenserStaffId:String(staff._id),dispensedByPharmacist:staff.fullName,
+      const targetStatus = isPartial ? 'partially_dispensed' : 'dispensed';
+      const claimed = await Prescription.updateOne({ _id:rx._id, status:{$in:['pending','issued','partially_dispensed']}, expiresAt:{$gt:new Date()} },
+        {$set:{status:targetStatus,dispensedAt:new Date(),dispensedBy:pharmacy._id,dispenserStaffId:String(staff._id),dispensedByPharmacist:staff.fullName,
           pharmacyName:pharmacy.name,isAlternativeDispensed:!!body.isAlternativeDispensed,alternativeDetails:body.alternativeDetails || ''}}, {session});
       if (claimed.modifiedCount !== 1) fail('ALREADY_DISPENSED', 'Prescription is no longer eligible.');
     }
@@ -162,10 +165,11 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
       await rx.save({session});
     }
     const receipt = new Dispensing({ _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:rx._id,
-      pharmacyId:pharmacy._id,staffId:staff._id,patientNic:nic,notes:body.notes,
+      pharmacyId:pharmacy._id,pharmacyName:pharmacy.name,staffId:staff._id,pharmacistName:staff.fullName,patientNic:nic,notes:body.notes,
       idempotencyKey:key,requestHash:hash,
+      isAlternativeDispensed:Boolean(body.isAlternativeDispensed),alternativeDetails:body.alternativeDetails || '',
       audit:{actorId:String(staff._id),actorRole:user.role||'pharmacist',action:otc?'OTC_PRESCRIPTION_DISPENSED':'PRESCRIPTION_DISPENSED',timestamp:new Date()},
-      items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:'dispensed'})) });
+      items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:i.status || (isPartial ? 'partial' : 'dispensed')})) });
     await claimPharmacyAuthorization({ user, nic, authorization, session });
     await receipt.save({session});
     return {receipt:receipt.toObject(),replay:false};

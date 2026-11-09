@@ -6,6 +6,103 @@ const Pharmacy = require('../models/Pharmacy');
 const PharmacyStaff = require('../models/PharmacyStaff');
 
 /**
+ * Standard group helper for dispensing receipts.
+ * Shared between Pharmacy History controller and Public Verification views.
+ */
+function groupDispensingHistoryByReceipt(records = []) {
+  const byReceipt = new Map();
+
+  for (const raw of records) {
+    if (!raw) continue;
+    const rec = typeof raw.toObject === 'function' ? raw.toObject() : { ...raw };
+    const receiptKey = String(rec.receiptNumber || rec._id || Math.random());
+
+    const extractedItems = [];
+    if (Array.isArray(rec.items) && rec.items.length > 0) {
+      for (const item of rec.items) {
+        if (!item) continue;
+        extractedItems.push({
+          drugName: item.drugName || item.name || 'Medication',
+          dosage: item.dosage || '',
+          quantityDispensed: Number(item.quantityDispensed) || 1,
+          unit: item.unit || 'units',
+          status: item.status || 'dispensed',
+        });
+      }
+    } else if (Array.isArray(rec.prescriptionId?.medications) && rec.prescriptionId.medications.length > 0) {
+      for (const med of rec.prescriptionId.medications) {
+        if (!med) continue;
+        extractedItems.push({
+          drugName: med.name || med.drugName || 'Medication',
+          dosage: med.dosage || '',
+          quantityDispensed: Number(med.quantity || med.quantityDispensed) || 1,
+          unit: med.unit || 'units',
+          status: 'dispensed',
+        });
+      }
+    } else if (rec.prescriptionId?.drugName) {
+      extractedItems.push({
+        drugName: rec.prescriptionId.drugName,
+        dosage: rec.prescriptionId.dosage || '',
+        quantityDispensed: 1,
+        unit: 'units',
+        status: 'dispensed',
+      });
+    }
+
+    if (!byReceipt.has(receiptKey)) {
+      byReceipt.set(receiptKey, {
+        ...rec,
+        receiptNumber: rec.receiptNumber || receiptKey,
+        pharmacyName: rec.pharmacyName || rec.pharmacyId?.name || 'Verified Network Pharmacy',
+        pharmacistName: rec.pharmacistName || rec.staffId?.fullName || 'Licensed Pharmacist',
+        district: rec.pharmacyId?.district || 'Not recorded',
+        isAlternativeDispensed: Boolean(rec.isAlternativeDispensed || rec.prescriptionId?.isAlternativeDispensed),
+        alternativeDetails: rec.alternativeDetails || rec.prescriptionId?.alternativeDetails || '',
+        items: [],
+        medications: [],
+      });
+    }
+
+    const group = byReceipt.get(receiptKey);
+    for (const item of extractedItems) {
+      const existing = group.items.find(
+        (i) => i.drugName.toLowerCase() === item.drugName.toLowerCase() && (i.dosage || '') === (item.dosage || '')
+      );
+      if (existing) {
+        existing.quantityDispensed = (Number(existing.quantityDispensed) || 0) + (Number(item.quantityDispensed) || 1);
+      } else {
+        group.items.push({ ...item });
+      }
+    }
+  }
+
+  return [...byReceipt.values()].map((group) => {
+    const medications = group.items.map((i) => ({
+      name: i.drugName,
+      drugName: i.drugName,
+      dosage: i.dosage,
+      quantityDispensed: i.quantityDispensed,
+      unit: i.unit,
+      status: i.status || 'dispensed',
+    }));
+    return {
+      ...group,
+      medications,
+      medicationCount: medications.length,
+      medicationSummary: medications
+        .map(
+          (m) =>
+            m.drugName +
+            (m.dosage ? ' ' + m.dosage : '') +
+            (m.quantityDispensed ? ' (' + m.quantityDispensed + ' ' + (m.unit || 'units') + ')' : '')
+        )
+        .join(', '),
+    };
+  });
+}
+
+/**
  * Compute unified medicine release summary for a consultation or prescription set.
  * Used identically by:
  * 1. Verification Portal (/api/verify/:token/otp/verify)
@@ -13,7 +110,7 @@ const PharmacyStaff = require('../models/PharmacyStaff');
  *
  * Handles:
  * - not_released (all pending)
- * - partially_released (some pending, some dispensed)
+ * - partially_released (some pending, some dispensed, or partially_dispensed)
  * - released (all dispensed)
  * - cancelled
  * - brand substitution (isAlternativeDispensed + alternativeDetails)
@@ -71,6 +168,7 @@ async function computeReleaseSummary(consultationId, options = {}) {
   // 3. Assemble per-item release status
   const items = [];
   let dispensedCount = 0;
+  let partialCount = 0;
   let cancelledCount = 0;
   let pendingCount = 0;
 
@@ -79,16 +177,20 @@ async function computeReleaseSummary(consultationId, options = {}) {
     const linkedDispensing = dispensingByRxId.get(rxIdStr);
 
     const isReleased = rx.status === 'dispensed';
+    const isPartial = rx.status === 'partially_dispensed';
+
     if (isReleased) dispensedCount++;
+    else if (isPartial) partialCount++;
     else if (rx.status === 'cancelled') cancelledCount++;
     else pendingCount++;
 
     // Resolve pharmacy details
     const pharmacyName =
+      linkedDispensing?.pharmacyName ||
       linkedDispensing?.pharmacyId?.name ||
       rx.dispensedBy?.name ||
       rx.pharmacyName ||
-      (isReleased ? 'Verified Network Pharmacy' : 'Not recorded');
+      (isReleased || isPartial ? 'Verified Network Pharmacy' : 'Not recorded');
 
     const pharmacyDistrict =
       linkedDispensing?.pharmacyId?.district ||
@@ -97,9 +199,18 @@ async function computeReleaseSummary(consultationId, options = {}) {
 
     // Resolve releasing pharmacist name
     const pharmacistName =
+      linkedDispensing?.pharmacistName ||
       linkedDispensing?.staffId?.fullName ||
       rx.dispensedByPharmacist ||
-      (isReleased ? 'Licensed Pharmacist' : 'Not recorded');
+      (isReleased || isPartial ? 'Licensed Pharmacist' : 'Not recorded');
+
+    const itemReleaseStatus = isReleased
+      ? 'released'
+      : isPartial
+      ? 'partially_released'
+      : rx.status === 'cancelled'
+      ? 'cancelled'
+      : 'not_released';
 
     // Handle single drug or multiple drugs in prescription
     if (Array.isArray(rx.medications) && rx.medications.length > 0) {
@@ -112,6 +223,7 @@ async function computeReleaseSummary(consultationId, options = {}) {
           durationDays: rx.durationDays || null,
           instructions: rx.instructions || '',
           released: isReleased,
+          status: itemReleaseStatus,
           releasedAt: linkedDispensing?.dispensedAt || rx.dispensedAt || null,
           pharmacy: {
             name: pharmacyName,
@@ -120,8 +232,8 @@ async function computeReleaseSummary(consultationId, options = {}) {
           releasedBy: {
             name: pharmacistName,
           },
-          isSubstituted: Boolean(rx.isAlternativeDispensed),
-          substitutionDetails: rx.alternativeDetails || '',
+          isSubstituted: Boolean(rx.isAlternativeDispensed || linkedDispensing?.isAlternativeDispensed),
+          substitutionDetails: rx.alternativeDetails || linkedDispensing?.alternativeDetails || '',
         });
       }
     } else {
@@ -133,6 +245,7 @@ async function computeReleaseSummary(consultationId, options = {}) {
         durationDays: rx.durationDays || null,
         instructions: rx.instructions || '',
         released: isReleased,
+        status: itemReleaseStatus,
         releasedAt: linkedDispensing?.dispensedAt || rx.dispensedAt || null,
         pharmacy: {
           name: pharmacyName,
@@ -141,8 +254,8 @@ async function computeReleaseSummary(consultationId, options = {}) {
         releasedBy: {
           name: pharmacistName,
         },
-        isSubstituted: Boolean(rx.isAlternativeDispensed),
-        substitutionDetails: rx.alternativeDetails || '',
+        isSubstituted: Boolean(rx.isAlternativeDispensed || linkedDispensing?.isAlternativeDispensed),
+        substitutionDetails: rx.alternativeDetails || linkedDispensing?.alternativeDetails || '',
       });
     }
   }
@@ -152,7 +265,7 @@ async function computeReleaseSummary(consultationId, options = {}) {
   if (prescriptions.length > 0) {
     if (dispensedCount === prescriptions.length) {
       overallStatus = 'released';
-    } else if (dispensedCount > 0) {
+    } else if (dispensedCount > 0 || partialCount > 0) {
       overallStatus = 'partially_released';
     } else if (cancelledCount === prescriptions.length) {
       overallStatus = 'cancelled';
@@ -165,10 +278,12 @@ async function computeReleaseSummary(consultationId, options = {}) {
   const dispensings = dispensingRecords.map((d) => ({
     receiptNo: d.receiptNumber,
     dispensedAt: d.dispensedAt,
-    pharmacy: d.pharmacyId?.name || 'Verified Network Pharmacy',
+    pharmacy: d.pharmacyName || d.pharmacyId?.name || 'Verified Network Pharmacy',
     district: d.pharmacyId?.district || 'Not recorded',
-    pharmacist: d.staffId?.fullName || 'Licensed Pharmacist',
+    pharmacist: d.pharmacistName || d.staffId?.fullName || 'Licensed Pharmacist',
     itemCount: Array.isArray(d.items) ? d.items.length : 1,
+    isAlternativeDispensed: Boolean(d.isAlternativeDispensed),
+    alternativeDetails: d.alternativeDetails || '',
   }));
 
   return {
@@ -180,4 +295,5 @@ async function computeReleaseSummary(consultationId, options = {}) {
 
 module.exports = {
   computeReleaseSummary,
+  groupDispensingHistoryByReceipt,
 };

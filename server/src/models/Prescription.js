@@ -34,7 +34,7 @@ const prescriptionSchema = new mongoose.Schema({
   pharmacyName: { type: String },          // Pharmacy name at time of dispensing
   status: { 
     type: String, 
-    enum: ['pending', 'dispensed', 'issued', 'expired', 'cancelled'],
+    enum: ['pending', 'dispensed', 'issued', 'partially_dispensed', 'expired', 'cancelled'],
     default: 'pending'
   },
   issuedAt: { type: Date, default: Date.now },
