@@ -10,7 +10,7 @@ medisync/
 │   ├── public/                      # Static assets, HTML entry point, and Sri Lanka district GeoJSON
 │   ├── scripts/                     # Client build validation and production compilation scripts
 │   ├── src/                         # Application source code
-│   │   ├── __master_offline__/      # Master offline Jest component and contract test suites (82 suites)
+│   │   ├── __master_offline__/      # Master offline Jest component and contract test suites (78 suites, 666 tests)
 │   │   ├── api/                     # Axios HTTP client configuration and interceptors
 │   │   ├── components/              # Shared UI components across all application roles
 │   │   │   ├── auth/                # Authentication forms, password meters, and registration steps
@@ -29,11 +29,11 @@ medisync/
 │   │   │   ├── dev/                 # Offline development simulator and component sandbox views
 │   │   │   ├── doctor/              # Doctor portal: new consultations, symptom tagging, prescription builder
 │   │   │   ├── hospital/            # Hospital admin views: doctor affiliation roster, facility metrics
-│   │   │   ├── patient/             # Patient portal: medical timeline, prescriptions, appointment booking
-│   │   │   ├── pharmacy/            # Pharmacy staff portal: stock inventory, order queue, dispensing view
+│   │   │   ├── patient/             # Patient portal: medical timeline, prescriptions, profile management
+│   │   │   ├── pharmacy/            # Pharmacy staff portal: prescription dispensing, OTC checkout, history, and district demand
 │   │   │   └── public/              # Public unauthenticated views: home, public health map, QR verification
 │   │   └── utils/                   # Client helper utilities (date formatting, encryption helpers, PDF triggers)
-│   └── tests/                       # Playwright E2E and integration test specifications
+│   └── tests/                       # Offline integration test specifications
 ├── docs/                            # Comprehensive engineering, audit, and operational documentation
 │   ├── agent-work/                  # Historical multi-agent trajectory logs and verification matrices
 │   ├── ml-evaluation/               # Machine learning evaluation metrics, feature importances, and benchmarks
@@ -74,6 +74,6 @@ medisync/
     │   ├── security/                # Cryptographic policy: AES-256-GCM field encryption, key ring rotation
     │   ├── services/                # Business services: outbreak surveillance, token issuing, audit logging
     │   └── utils/                   # Server utility modules: PDF generator, email dispatchers, token helpers
-    └── tests/                       # Backend offline Jest test suites (163 suites)
+    └── tests/                       # Backend offline Jest test suites (123 suites, 2,635 tests)
         └── helpers/                 # Test harnesses, in-memory MongoDB replica set runners, mock factories
 ```

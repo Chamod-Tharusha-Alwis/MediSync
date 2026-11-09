@@ -16,7 +16,7 @@ To comply with the Sri Lanka Personal Data Protection Act No. 9 of 2022, patient
 
 ---
 
-## 5.3 Clinical Consultations & Appointment Queue
+## 5.3 Clinical Consultations & Encounter Lifecycle
 - **Workflow Orchestration**: Implemented in `server/src/controllers/doctorController.js` (Protected File #2) and `server/src/models/Consultation.js` (Protected File #13).
 - **Encounter Capture**: Clinicians record patient chief complaints, vital signs (blood pressure, pulse, temperature, SpO2, respiratory rate), structured symptom tags, and clinical notes.
 - **ICD-10 Diagnostic Linking**: Diagnoses are linked directly to standardized ICD-10-CM codes loaded from `server/reference-data/icd10_clean.json` (71,704 validated leaf concepts).
@@ -37,7 +37,7 @@ Implemented in `server/src/services/medicineSafetyService.js` and `server/src/da
 - **Zero-Latency In-Memory Lookups**: Evaluates medication safety rules synchronously during prescription authoring without outbound network calls.
 - **Drug-Drug Interaction (DDI) Detection**: Cross-references pairwise combinations against a matrix of documented clinical interactions (e.g., Warfarin + Ciprofloxacin), returning severity tiers (`critical_contraindication`, `major_warning`, `minor_monitoring`).
 - **Maximum Daily Dose Ceilings**: Validates prescribed single and cumulative daily dosages against adult reference limits (e.g., Paracetamol max 4,000 mg/24h).
-- **Renal and Hepatic Adjustments**: Inspects patient baseline organ function flags, emitting automated dosage reduction prompts.
+- **Active Allergy & Duplicate Ingredient Checks**: Inspects recorded patient allergy history against drug formulations and detects overlapping active ingredients across co-prescribed medications.
 - **Verification Status**: Reference datasets are marked with `status: "unverified_owner_must_check"` and audited in `docs/report/MEDICINE_LIMITS_VERIFICATION.md` with items flagged for clinical review (Ibuprofen 800 mg single dose and Paracetamol 7-day course).
 
 ---

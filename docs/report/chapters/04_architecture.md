@@ -41,7 +41,7 @@ The architecture comprises three primary tiers:
 ### 4.2.1 Presentation Tier (Client)
 - **Framework**: React 18 with modern functional hooks, React Router v6 for role-segmented client routing, and Context API for global state (AuthContext, LanguageContext, SocketContext).
 - **Styling & Accessibility**: Tailwind CSS utility framework, styled to WCAG 2.1 AA contrast standards.
-- **Client Resilience**: Offline detection interceptors with automated retry logic, optimistic UI state updates for high-throughput OPD queue navigation, and graceful cold-start countdown modals for sleep-dormant ML services.
+- **Client Resilience**: Offline detection interceptors with automated retry logic, optimistic UI state updates for consultation forms, and graceful cold-start countdown modals for sleep-dormant ML services.
 
 ### 4.2.2 Backend Application Gateway (Server)
 - **Framework**: Express.js on Node.js runtime, organized into a clean layered pattern:

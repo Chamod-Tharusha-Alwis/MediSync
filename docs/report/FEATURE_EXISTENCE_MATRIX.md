@@ -1,0 +1,71 @@
+# MediSync Platform Feature Existence Matrix (Docs vs. Code Reconciliation)
+
+> **Standard**: Every feature claimed in documentation must be backed by concrete file:line evidence or a passing test in the repository. Features lacking code backing are classified as **MISSING** and systematically reconciled (rewritten or removed from all user-facing and capstone documentation).
+> **Quality Gate Context**: Sub-Project 5 Phase S10 Reconciliation Pass (`fix/sub5-doc-code-reconcile`).
+
+---
+
+## 1. Feature Existence & Code Ground-Truth Matrix
+
+| # | Feature / Flow Claimed in Docs | Documented Location(s) | Code Status | Verified Evidence (File:Line / Test) | Reconciled Documentation Action |
+|:---:|---|---|:---:|---|---|
+| **01** | **Appointment Booking / Doctor Scheduling** | `DEMO_SCRIPT.md:33, 55-65`, `SLIDES_OUTLINE.md:69`, `PROJECT_STRUCTURE.md:32` | **MISSING** | No appointment routes in `server/src/routes/`, no controller in `server/src/controllers/`, no Mongoose `Appointment` model. | **REMOVED**: Removed appointment booking from demo script, slide outline, and project structure. Replaced with patient registration, medical timeline inspection, and profile management. |
+| **02** | **OPD Waiting Queue / Queue Numbers** | `DEMO_SCRIPT.md:72`, `SLIDES_OUTLINE.md:70, 72` | **MISSING** | Grep of `server/src/` confirms "queue" only appears in email delivery metadata (`deliveryQueued`). No queue numbering or patient queue state machine exists. | **REPLACED**: Replaced "daily OPD queue selection" with patient lookup by National Identity Card (NIC) with OTP-gated clinical record access (`/doctor/consultation/new`). |
+| **03** | **Prescription QR Code Scan at Pharmacy Dispense** | `DEMO_SCRIPT.md:35, 91-105`, `PROJECT_OVERVIEW.md:37`, `SLIDES_OUTLINE.md:105` | **MISCHARACTERIZED** | `client/src/pages/pharmacy/Dashboard.jsx:37-120` shows pharmacy dispensing operates via Patient NIC entry (`GET /api/pharmacy/prescriptions/pending/:nic`) with patient consent token (`x-patient-access`). | **RECONCILED**: Clarified that the QR code is printed on the Consultation Summary PDF (`server/src/utils/pdfGenerator.js:886`) pointing to `/verify/:token` (Public Verification Portal). Pharmacy dispensing is accessed by entering the patient's NIC with OTP consent. |
+| **04** | **Consultation Verification Portal (`/verify/:token`) & NIC Gate** | `TECHNICAL_REPORT.md`, `DATA_MODEL.md:113-125`, `API_REFERENCE.md:87-94` | **VERIFIED** | `server/src/routes/verificationRoutes.js:14-25`<br>`server/src/controllers/verificationController.js:19-125`<br>`server/src/models/VerificationToken.js:5-67`<br>`client/src/pages/public/VerifyConsultation.jsx` | Retained and prominently highlighted as the actual cryptographic capability verification architecture. |
+| **05** | **Duplicate Dispensing Prevention ("Already Dispensed")** | `DEMO_SCRIPT.md:103-106`, `PROJECT_OVERVIEW.md:40` | **VERIFIED (Message Exact)** | `server/src/services/dispensingService.js:110, 114`: Throws `DispenseError('ALREADY_DISPENSED')` with message `'Prescription is not eligible for dispensing.'` or `'Checkout already exists or its payload differs.'` | **CORRECTED MESSAGE**: Replaced fictional toast string with verified code message `'Prescription is not eligible for dispensing.' (code: ALREADY_DISPENSED)`. |
+| **06** | **Renal, Hepatic, Pediatric & Geriatric Checks** | `TECHNICAL_REPORT.md:Ch01, Ch05`, `DEMO_SCRIPT.md:80`, `SLIDES_OUTLINE.md:120` | **MISSING** | Grep for `renal`, `hepatic`, `pediatric`, `geriatric` in `server/src/utils/ingredientResolver.js` confirms zero implementations. Safety engine evaluates pairwise DDI, active ingredients, patient allergies, dosage ceilings, and duration limits only. | **REWRITTEN**: Removed claims of renal/hepatic/pediatric/geriatric rule engines. Accurately described the 5 implemented safety checks in `ingredientResolver.js`. |
+| **07** | **Pharmacy Inventory Endpoints (`/api/pharmacies/inventory`)** | `API_REFERENCE.md:65-68`, `PROJECT_STRUCTURE.md:33` | **MISSING** | Excised during Sub-Project 2 (Task B2). No inventory routes exist in `server/src/routes/pharmacyRoutes.js`. Real pharmacy endpoints handle dispensing, OTC checkout, history, and district epidemiological demand. | **REMOVED**: Excised all `/inventory` endpoint tables from `API_REFERENCE.md`. Corrected pharmacy portal description in `PROJECT_STRUCTURE.md`. |
+| **08** | **Public Health Map Route (`/public-health/map`)** | `SCREENSHOT_CHECKLIST.md:70` | **INCORRECT ROUTE** | Route is mounted at `/public-health` (`client/src/App.js:188`, rendering `<PublicHealth />`). | **CORRECTED**: Updated route in `SCREENSHOT_CHECKLIST.md` to `/public-health`. |
+| **09** | **Public Advisories Route (`/advisories`)** | `SCREENSHOT_CHECKLIST.md:18` | **INCORRECT ROUTE** | Advisories are rendered as components on `/` (Home) and `/public-health`, and broadcast via `/admin/dashboard/broadcast`. No standalone `/advisories` route exists. | **CORRECTED**: Updated route in `SCREENSHOT_CHECKLIST.md` to `/public-health`. |
+| **10** | **Lab Orders Route (`/lab/orders`)** | `SCREENSHOT_CHECKLIST.md:61, 62` | **INCORRECT ROUTE** | Hospital lab management is mounted at `/hospital/dashboard/tests` (`client/src/pages/hospital/Dashboard.jsx:493`, rendering `<LabManagement />`). | **CORRECTED**: Updated route in `SCREENSHOT_CHECKLIST.md` to `/hospital/dashboard/tests`. |
+| **11** | **Pharmacy Dispense Route (`/pharmacy/dispense`)** | `DEMO_SCRIPT.md:93` | **INCORRECT ROUTE** | Dispense view is nested inside the pharmacy dashboard at `/pharmacy/dashboard/dispense` (`client/src/pages/pharmacy/Dashboard.jsx:1780`). | **CORRECTED**: Updated route in `DEMO_SCRIPT.md` and `API_REFERENCE.md` to `/pharmacy/dashboard/dispense`. |
+| **12** | **US ICD-10-CM Leaf Concept Catalog** | `SLIDES_OUTLINE.md:74`, `DEMO_SCRIPT.md:79`, `API_REFERENCE.md:102` | **VERIFIED** | `ml-engine/app.py:73-82`, `server/src/controllers/drugController.js:123-145`: Exactly 71,704 validated leaf concepts from 2024 CMS/CDC release loaded and searchable. | **RECONCILED**: Updated claims from "WHO ICD-10 (34,290 concepts)" to "US ICD-10-CM (71,704 leaf concepts)". |
+| **13** | **Dual-Tier ML Symptom Matcher** | `Feature_Breakdown.md:17-21`, `TECHNICAL_REPORT.md:Ch06` | **VERIFIED (Post-S9)** | `ml-engine/app.py:308-319, 481-560`: Tier 1 TF-IDF + Cosine Similarity over 41 curated profiles (threshold 40.0%); Tier 2 fallback over 174 quarantined SymCAT profiles. | **RECONCILED**: Replaced legacy "SVM + Random Forest + Naive Bayes ensemble" in `docs/Feature_Breakdown.md` with verified Dual-Tier TF-IDF architecture. |
+| **14** | **Surveillance Anomaly Detection Gates** | `PROJECT_OVERVIEW.md:49-50`, `SLIDES_OUTLINE.md:161-165` | **VERIFIED (Post-S9)** | `server/src/services/surveillanceService.js:136-140`: 7-day window vs. 56-day district baseline with $\sigma \ge 0.5$. Gate 1: $N \ge 5$ cases. Gate 2: 2 consecutive calendar days with $z > 2.0$. | **CORRECTED**: Repaired broken LaTeX math in `PROJECT_OVERVIEW.md`; replaced unverified "3-tier gate (n=5, d=3 days, z > 2.5)" in Slide 13 with verified code parameters. |
+| **15** | **Trilingual Interface Localization** | `SLIDES_OUTLINE.md:176`, `CHAPTER 05` | **VERIFIED** | `client/src/i18n/translations/` (`en.js`, `si.js`, `ta.js`): Exactly 813 keys in each locale, 100% key parity verified by `d4-any-disease-coverage.test.jsx`. | **CORRECTED**: Updated Slide 14 from "482 keys" to verified "813 keys". |
+| **16** | **Verification Token Schema Fields** | `DATA_MODEL.md:113-125` | **MISALIGNED IN DOCS** | `server/src/models/VerificationToken.js:5-67`: Fields are `tokenHash`, `consultationId`, `patientRef`, `doctorRef`, `consultationRef`, `expiresAt`, `revokedAt`, `revokedBy`, `revocationReason`, `useCount`, `lastUsedAt`. | **CORRECTED**: Updated `DATA_MODEL.md` table to match real schema field names. |
+
+---
+
+## 2. Summary of Documentation Corrections Executed
+
+1. **`DEMO_SCRIPT.md`**:
+   - Replaced appointment booking step with Patient Portal overview and historical medical records view.
+   - Replaced "daily OPD queue" with doctor patient lookup via NIC with OTP verification.
+   - Corrected pharmacy URL to `/pharmacy/dashboard/dispense`.
+   - Clarified that the QR code is on the Consultation Summary PDF, while pharmacy checkout is NIC-based with OTP consent.
+   - Updated duplicate dispensing toast message to `'Prescription is not eligible for dispensing.' (code: ALREADY_DISPENSED)`.
+   - Updated ICD-10 reference to "US ICD-10-CM (71,704 leaf concepts)".
+   - Updated outbreak alert duration gate to 2 consecutive calendar days and 56-day baseline.
+   - Marked uncited epidemiological notification delay claim with `[OWNER: cite notification delay study]`.
+
+2. **`SLIDES_OUTLINE.md`**:
+   - Slide 6: Removed "instant OPD queue progression"; updated to US ICD-10-CM with 71,704 searchable leaf concepts.
+   - Slide 7: Aligned accuracy numbers strictly to Figure F08: Tier 1 Top-1 82.5%, Top-3 94.1%, Top-5 98.2%; Tier 2 Top-1 71.2%, Top-3 88.0%, Top-5 94.5%; Combined V2 Top-1 **85.4%**, Top-3 **95.8%**, Top-5 **98.9%**.
+   - Slide 13: Repaired math and aligned suppression gate to $N \ge 5$, 2 consecutive calendar days, $z > 2.0$, 56-day baseline.
+   - Slide 14: Updated key count from 482 to **813 keys** (100% trilingual parity).
+
+3. **`PROJECT_OVERVIEW.md`**:
+   - Repaired garbled LaTeX math in paragraph 49: `7-day window against a 56-day district historical baseline ($z > 2.0$) with dual-gate thresholding ($N \ge 5$ cases and 2 consecutive calendar days)`.
+   - Removed inventory tracking claim; corrected duplicate dispense message to `'Prescription is not eligible for dispensing.'`.
+
+4. **`ML_DESIGN_PARAMETERS.md`**:
+   - Corrected code citation for outbreak detection to `server/src/services/surveillanceService.js:136-140`.
+   - Corrected baseline duration from 30 days to **56 days**.
+   - Renamed Sanity Test Suite result column to "Format Check" and added honest "Clinical Plausibility (Owner Review)" analysis explaining that SC-03 (edema $\rightarrow$ Acanthosis nigricans), SC-05 (tremor $\rightarrow$ Malaria), SC-09 (meningism $\rightarrow$ Migraine), and SC-10 (malar rash $\rightarrow$ Fungal infection) are poor/implausible predictions highlighting the absence of emergency red-flag rules.
+
+5. **`PROJECT_STRUCTURE.md`**:
+   - Aligned test suite counts to real gate outputs: Client = **78 suites** (666 tests), Backend = **123 suites** (2,635 tests).
+   - Removed appointment booking from Patient portal description and stock inventory from Pharmacy portal description.
+
+6. **`docs/Feature_Breakdown.md`**:
+   - Replaced legacy "SVM + Random Forest + Naive Bayes" text with Dual-Tier TF-IDF + Cosine Similarity symptom matcher.
+
+7. **`API_REFERENCE.md`**:
+   - Replaced singular/plural route discrepancies (`/api/doctor` vs `/api/doctors`, `/api/pharmacy` vs `/api/pharmacies`).
+   - Excised all non-existent `/api/pharmacies/inventory` endpoints.
+   - Updated all paths to match registered Express routers.
+
+8. **`DATA_MODEL.md`**:
+   - Reconciled `VerificationToken` schema table to exact code fields: `tokenHash`, `patientRef`, `doctorRef`, `consultationRef`, `useCount`, `lastUsedAt`, `revokedAt`, `revokedBy`, `revocationReason`.

@@ -24,7 +24,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **FR-PAT-04**: The system shall allow patients to grant or revoke clinician access to their historical electronic health record.
 
 ### 3.2.2 Doctor Subsystem
-- **FR-DOC-01**: The system shall allow physicians to schedule appointments, manage daily clinic queues, and initiate clinical encounters.
+- **FR-DOC-01**: The system shall allow physicians to look up patients via National Identity Card (NIC) blind indexing, verify patient OTP consent, and initiate clinical consultation encounters.
 - **FR-DOC-02**: The system shall provide an integrated symptom input interface supporting free-text autocompletion, queryable against the ML symptom inference microservice.
 - **FR-DOC-03**: The system shall display differential diagnostic suggestions from both Tier 1 (curated) and Tier 2 (sparse KB) models, clearly annotated with the mandatory disclaimer: `clinicalValidation: not_established`.
 - **FR-DOC-04**: The system shall provide an ICD-10 diagnostic catalog search enabling clinicians to select standardized disease classifications across 71,704 validated concepts.

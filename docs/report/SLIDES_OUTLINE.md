@@ -66,15 +66,15 @@ This outline provides the slide structure, visual layout recommendations, and de
 
 ---
 
-### Slide 6: Clinical Workflow: Consultation & Appointment Lifecycle
-- **Visuals**: Screenshots **SS-09** and **SS-10** showing OPD queue, vitals entry, and ICD-10 selection.
+### Slide 6: Clinical Workflow: Consultation & Standardized Diagnosis
+- **Visuals**: Screenshots **SS-09** and **SS-10** showing patient NIC lookup, vitals entry, and ICD-10 selection.
 - **Key Points**:
-  - Instant OPD queue progression for fast clinic throughput.
+  - Secure patient record access gated by National Identity Card (NIC) with OTP consent.
   - Vitals capture: Blood pressure, pulse, temperature, oxygen saturation.
-  - WHO ICD-10-CM clinical catalog integration (34,290 searchable concepts).
+  - US ICD-10-CM clinical catalog integration (71,704 searchable leaf concepts).
   - Multi-document transactional atomicity.
 - **Speaker Notes**:
-  > *"The consultation workflow is tailored for high-speed clinical encounters. Doctors can view their waiting queue, record vitals, and link standardized ICD-10 disease codes with minimal clicks."*
+  > *"The consultation workflow is tailored for high-speed clinical encounters. Doctors look up the patient by NIC, record vitals, and link standardized ICD-10 disease codes from the 71,704 searchable leaf concepts with minimal clicks."*
 
 ---
 
@@ -84,7 +84,10 @@ This outline provides the slide structure, visual layout recommendations, and de
   - **Tier 1 (High Confidence)**: TF-IDF + Cosine Similarity symptom matcher (41 curated clinical profiles, Macro F1 = 1.000, Top-1 accuracy = 98.4%).
   - **Tier 2 (Broad Coverage)**: Sparse Knowledge Base retrieval (174 validated SymCAT conditions mapped to ICD-10-CM).
   - Blended inference logic: Confidence floor of 40.0% gates fallback to Tier 2.
-  - Combined accuracy: Top-1 = 89.2%, Top-3 = 96.8%, Top-5 = 99.1%.
+  - Self-consistency evaluation (Figure **F08**, held-out 25% synthetic perturbation test set):
+    - Tier 1 (Curated 41): Top-1 = 82.5%, Top-3 = 94.1%, Top-5 = 98.2%.
+    - Tier 2 (Sourced KB 174): Top-1 = 71.2%, Top-3 = 88.0%, Top-5 = 94.5%.
+    - Combined Tiered Matcher V2: Top-1 = **85.4%**, Top-3 = **95.8%**, Top-5 = **98.9%**.
 - **Speaker Notes**:
   > *"To provide broad clinical coverage without bloating memory, we engineered a Dual-Tier triage pipeline. Tier 1 uses an exact n-gram TF-IDF and overlap matcher covering 41 standardized clinical profiles (98.4% Top-1 accuracy, 1.000 Macro F1). If confidence falls below 40.0%, the engine falls back to Tier 2 sparse knowledge-base retrieval across 174 quarantined, CDC-derived condition profiles."*
 
@@ -120,23 +123,23 @@ This outline provides the slide structure, visual layout recommendations, and de
   - Zero-latency synchronous evaluation on the backend API server.
   - Pairwise drug-drug interaction matrix (e.g., Warfarin + Ciprofloxacin $\to$ Severe bleeding alert).
   - Maximum single and cumulative adult daily dose ceilings (e.g., Paracetamol max 4g/24h).
-  - Renal and hepatic contraindication prompts.
+  - Active allergy cross-checking and duplicate ingredient detection.
   - Documented BNF 86 / WHO audit status (`unverified_owner_must_check`).
 - **Speaker Notes**:
   > *"Prescriptions are checked synchronously before finalization. The deterministic safety engine catches dangerous drug-drug interactions and dosage limit overages instantly without making external network calls."*
 
 ---
 
-### Slide 11: Cryptographic Prescriptions & QR Dispensing Gate
-- **Visuals**: Screenshots **SS-07**, **SS-16**, and **SS-18** (Prescription QR, NIC Input Gate, Duplicate Block).
+### Slide 11: Cryptographic Prescriptions & Verification Architecture
+- **Visuals**: Screenshots **SS-07**, **SS-16**, and **SS-18** (Prescription QR, Verification Portal, Duplicate Block).
 - **Key Points**:
-  - One-time dynamic HMAC-signed QR token issued to patient.
-  - Identity verification gate: Pharmacist must input patient's physical National Identity Card (NIC).
-  - Server confirms NIC blind index equality before unlocking dispensing.
-  - Atomic database status transition to `dispensed`.
-  - Instant blocking alert if presented a second time at any pharmacy.
+  - Consultation Summary PDF embeds cryptographic QR capability token pointing to `/verify/:token`.
+  - Public authenticity check returns hospital, doctor, and timestamp with zero patient PII.
+  - Cumulative medical history PDF download is gated by constant-time Patient NIC verification.
+  - Pharmacy dispensing authenticates via Patient NIC with OTP consent (`x-patient-access`).
+  - Atomic database status transition to `dispensed`; duplicate dispensing atomically rejected with `ALREADY_DISPENSED`.
 - **Speaker Notes**:
-  > *"To eliminate paper prescription fraud, prescriptions carry dynamic cryptographic QR codes. When presented at a pharmacy, the pharmacist must verify the patient's physical NIC number. Once dispensed, the transaction commits atomically. Any subsequent attempt to fill the same prescription at another pharmacy is instantly blocked."*
+  > *"Prescriptions carry cryptographic capability QR tokens. When scanned, anyone can verify document authenticity without seeing patient PII, while full medical history download requires passing a constant-time Patient NIC gate. At the pharmacy, dispensing is authenticated via patient consent and commits atomically, rendering duplicate dispensing impossible."*
 
 ---
 
@@ -159,10 +162,11 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Key Points**:
   - Continuous district-level aggregation across Sri Lanka's 25 districts.
   - Spatio-temporal syndromic surveillance: 7-day window vs. 56-day district baseline with dual-gate suppression ($N \ge 5$ and 2 consecutive calendar days with $z > 2.0$).
-  - **Three-Tier Alert Noise Suppression Gate**:
-    - Volume Gate ($n \ge 5\text{ cases}$).
-    - Duration Gate ($d \ge 3\text{ consecutive days}$).
-    - Statistical Gate ($z\text{-score} \ge +2.5\sigma$).
+  - **Dual Noise Suppression Gates (`server/src/services/surveillanceService.js:136-140`)**:
+    - Gate 1 (Volume Floor): Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
+    - Historical Baseline: 7-day window rate compared to 56-day district baseline ($\sigma \ge 0.5$).
+    - Gate 2 (Persistence Gate): Incidence must exceed threshold ($z > 2.0$) for 2 consecutive calendar days.
+    - Severity Classification: Watch ($z \in [2.0, 3.0)$), Alert ($z \in [3.0, 4.0)$), Critical ($z \ge 4.0$).
   - 14-day descriptive statistical projections with confidence intervals.
 - **Speaker Notes**:
   > *"For disease surveillance, MediSync aggregates clinical diagnoses across all 25 districts in real time. Evaluating 7-day windows against 56-day historical district baselines ($z > 2.0$), outbreaks are detected in days rather than weeks. Crucially, our dual suppression gates ($N \ge 5$ and 2 consecutive days) filter out isolated anomalies and data-entry artifacts."*
@@ -173,10 +177,10 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Visuals**: Figure **F14** (Trilingual Parity Chart) and screenshots **SS-01**, **SS-02**, **SS-03**.
 - **Key Points**:
   - Complete language parity across English, Sinhala (සිංහල), and Tamil (தமிழ்).
-  - 482 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
+  - 813 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
   - Dynamic client-side language switching without page refresh.
 - **Speaker Notes**:
-  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 482 interface keys, verified by automated tests."*
+  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 813 interface keys, verified by automated tests."*
 
 ---
 
