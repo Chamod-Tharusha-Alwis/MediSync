@@ -6,12 +6,12 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `PHASE_8: Final reconciliation`
-- **Active Git Branch**: `main` (Phases 0, 1, 2, 3, 4, 5, 6, 7 merged)
-- **Latest Commit on `main`**: `79e33b2` (Phase 7 merged into `main`)
+- **Current Phase**: `COMPLETE`
+- **Active Git Branch**: `main` (All Phases 0 through 9 complete)
+- **Latest Commit on `main`**: `54956a0` (Merged into `main`, tagged `v1.0.0-capstone`)
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
-- **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | Links 96/96 100% OK | 20/20 Live Production Tests PASS
-- **Next Action**: Create branch `final/p8-final-reconcile`, update `FEATURE_EXISTENCE_MATRIX.md` (add verified evidence for OTP verify page, release data integrity, emergency advisory), replace all `<!-- TODO-P2 -->` markers with OTP-gated verification flows, update citation lists in `OWNER_ACTIONS.md`, update `DEMO_SCRIPT.md` and `CLAIMS_AUDIT.md`, re-generate figures, and verify gates.
+- **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | Links 96/96 100% OK | 20/20 Live Production Tests PASS | Zero `TODO-P2` markers | 835 keys trilingual parity
+- **Next Action**: Capstone complete. Hand off to owner for viva preparation and final thesis assembly.
 
 ---
 
@@ -27,8 +27,8 @@
 | **P5** | ML coverage improvement (time-boxed) | `final/p5-ml-coverage` | **COMPLETE** | `f3a680a` | Evaluated 491 conditions, documented no-guesswork outcome, memory verified (197.37 MB, 38.55%) |
 | **P6** | Security & operations hardening | `final/p6-security-hardening` | **COMPLETE** | `f71b17f` | SECURITY_STATUS.md complete, rate limits, headers, zero secrets, zero stack traces, injection defense |
 | **P7** | Full live-site testing (all 5 roles + verify) | `final/p7-live-testing` | **COMPLETE** | `79e33b2` | 20/20 live production tests PASS, evidence in docs/final/evidence/, zero email budget exceeded |
-| **P8** | Final reconciliation | `final/p8-final-reconcile` | **PENDING** | - | FEATURE_EXISTENCE_MATRIX updated, all TODOs resolved, links valid |
-| **P9** | Release readiness & final status | `final/p9-release-readiness` | **PENDING** | - | Tag v1.0.0-capstone, PROGRESS.md and FINAL_STATUS.md complete |
+| **P8** | Final reconciliation | `final/p8-final-reconcile` | **COMPLETE** | `157a502` / `54956a0` | FEATURE_EXISTENCE_MATRIX updated, all TODOs resolved, links 96/96 valid, all 14 figures regenerated |
+| **P9** | Release readiness & final status | `final/p9-release-readiness` | **COMPLETE** | `v1.0.0-capstone` | Tag v1.0.0-capstone, PROGRESS.md and FINAL_STATUS.md complete (92.5% verified) |
 
 ---
 
