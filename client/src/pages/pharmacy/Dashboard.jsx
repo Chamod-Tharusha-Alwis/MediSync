@@ -800,7 +800,7 @@ const ManualDispenseOTC = () => {
                       }}
                       className="col-span-12 sm:col-span-4 glass-card rounded-lg px-2.5 py-2 text-white text-xs focus:border-teal-500 outline-none"
                     >
-                      <option value="" className="bg-slate-900 text-slate-400">Select Stock Drug...</option>
+                      <option value="" className="bg-slate-900 text-slate-400">Select drug</option>
                       {availableStock.map(i => (
                         <option key={i._id} value={i._id} className="bg-slate-900 text-white">
                           {i.drugName} (Stock: {i.quantity ?? i.stock ?? 0} {i.unit || 'units'})

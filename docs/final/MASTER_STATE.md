@@ -6,13 +6,13 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `P11-C` (Pharmacy OTC Atomic Failures & Label)
-- **Active Git Branch**: `final/p11-lab-upload` (merged to `main`)
-- **Latest Commit on `main`**: `f112288` (P11-A Privacy Fixes)
+- **Current Phase**: `P10-A` (Doctor Override Engine: Warn, Never Block)
+- **Active Git Branch**: `final/p10-doctor-override`
+- **Latest Commit on `main`**: `2667388` (P11-B Lab Report Upload & State Machine)
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
 - **Quality Gate Baseline**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Next Action**: Commit `final/p11-lab-upload`, merge to `main`, checkout branch `final/p11-otc-atomic` for Task P11-C.
+- **Next Action**: Checkout branch `final/p10-doctor-override`, implement doctor override engine (warn, never block, SHA-256 findingsHash, downstream visibility).
 
 ---
 
@@ -22,8 +22,8 @@
 |:---:|:---:|---|---|:---:|
 | 1 | **P11-A** | Privacy fixes: no clinical email, locked PDF, layout/time, no NIC on pharmacy UI, human disclaimers | `final/p11-privacy-fixes` | **COMPLETED** |
 | 2 | **P11-B** | Lab report upload idempotency (fix 409) & state machine propagation | `final/p11-lab-upload` | **COMPLETED** |
-| 3 | **P11-C** | Pharmacy OTC atomic checkout retry & label fix | `final/p11-otc-atomic` | **IN PROGRESS** |
-| 4 | **P10-A** | Doctor override engine: warn, never block, SHA-256 findingsHash, downstream visibility, F7 integration | `final/p10-doctor-override` | PENDING |
+| 3 | **P11-C** | Pharmacy OTC atomic checkout retry & label fix | `final/p11-otc-atomic` | **COMPLETED** |
+| 4 | **P10-A** | Doctor override engine: warn, never block, SHA-256 findingsHash, downstream visibility, F7 integration | `final/p10-doctor-override` | **IN PROGRESS** |
 | 5 | **P11-E** | Audit log completeness matrix & email-to-id search | `final/p11-audit-coverage` | PENDING |
 | 6 | **P11-F** | Public health 200 with verified/awaiting counts & public alerts 200 without auth | `final/p11-public-health` | PENDING |
 | 7 | **P11-G** | ML service request logging, latency, metrics counter, backend logging | `final/p11-ml-logging` | PENDING |
