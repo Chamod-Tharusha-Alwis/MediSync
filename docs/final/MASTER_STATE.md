@@ -6,12 +6,12 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `PHASE_4: Clinical safety gaps`
-- **Active Git Branch**: `final/p3-release-data` (ready to merge into `main`)
-- **Latest Commit on `main`**: `9299e75` (Phase 2 merged into `main`)
+- **Current Phase**: `PHASE_5: ML coverage improvement (time-boxed)`
+- **Active Git Branch**: `main` (Phases 0, 1, 2, 3, 4 merged)
+- **Latest Commit on `main`**: `c235aba` (Phase 4 merged into `main`)
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
-- **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites + 9 Phase 3 tests passed | Client build exit code 0 | Links 96/96 100% OK
-- **Next Action**: Merge `final/p3-release-data` into `main`, create branch `final/p4-clinical-safety`, author `PHASE_4_PLAN.md`, implement deterministic emergency red-flag advisory on doctor consultation screen, verify sanity cases SC-03, SC-05, SC-09, SC-10, update docs, and verify gates.
+- **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites (including 17 Phase 4 clinical safety tests) | Client build exit code 0 | Links 96/96 100% OK
+- **Next Action**: Create branch `final/p5-ml-coverage`, author `PHASE_5_PLAN.md`, evaluate `ml-engine/data/unmapped_diseases.v1.json`, apply safe exact mappings only without manual guesswork, verify process memory < 512 MB, re-evaluate metrics/figures if changed, and verify quality gates.
 
 ---
 
@@ -22,8 +22,8 @@
 | **P0** | Preflight, merge S10, baseline | `main` | **COMPLETE** | `16a1d36` / `3032057` | S10 merged, baseline recorded, ledger 15/15, live smoke PASS |
 | **P1** | Documentation leftover sweep | `final/p1-docs-sweep` | **COMPLETE** | `3597885` | Grep banned terms returns zero stale claims, links 96/96 OK |
 | **P2** | OTP-gated QR verification page | `final/p2-otp-verify-page` | **COMPLETE** | `9299e75` | Mobile-first verify page, OTP unlock, clinical + release data in one response |
-| **P3** | Medicine release data integrity | `final/p3-release-data` | **COMPLETE** | pending merge | Shared release helper, pharmacy history agrees with verify page, double-dispense lockout & partial transitions verified |
-| **P4** | Clinical safety gaps (emergency advisory) | `final/p4-clinical-safety` | **PENDING** | - | Rule-based red-flag advisory, sanity cases tested |
+| **P3** | Medicine release data integrity | `final/p3-release-data` | **COMPLETE** | `7d2caa5` | Shared release helper, pharmacy history agrees with verify page, double-dispense lockout & partial transitions verified |
+| **P4** | Clinical safety gaps (emergency advisory) | `final/p4-clinical-safety` | **COMPLETE** | `c235aba` | Rule-based red-flag advisory, sanity cases tested (17/17 PASS), 5 medicine safety rules verified |
 | **P5** | ML coverage improvement (time-boxed) | `final/p5-ml-coverage` | **PENDING** | - | Safe auto-mapping or documented no-change outcome |
 | **P6** | Security & operations hardening | `final/p6-security-hardening` | **PENDING** | - | SECURITY_STATUS.md complete, rate limits, headers, zero secrets |
 | **P7** | Full live-site testing (all 5 roles + verify) | `final/p7-live-testing` | **PENDING** | - | Production matrix tested, response bodies saved in evidence/ |
