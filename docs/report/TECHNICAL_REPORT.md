@@ -76,7 +76,7 @@ The primary engineering objective of the MediSync platform is to design, develop
 ## 2.3 Scope and System Boundaries
 
 ### 2.3.1 In-Scope Deliverables
-- **Core Clinical Workflows**: Patient registration and medical timeline review, physician clinical encounter capture with NIC-gated consent, digital prescription authoring, public QR capability verification, and atomic pharmacy dispensing.
+- **Core Clinical Workflows**: Patient registration and medical timeline review, physician clinical encounter capture with NIC-gated consent, digital prescription authoring, public QR capability verification, and atomic pharmacy dispensing. <!-- TODO-P2 -->
 - **Laboratory Subsystem**: Lab test ordering, PDF report uploads, automated file validation (magic byte and MIME verification), and clinician review queues.
 - **Security & Privacy Infrastructure**: Field-level AES-256-GCM encryption for patient PII and clinical notes, blind indexing for demographic search, and time-to-live (TTL) ephemeral tokens for session authentication.
 - **Epidemiological Engine**: District-level spatial tracking, cross-chapter communicable disease surveillance models, 14-day projection pipelines, and automated outbreak alert generation.
@@ -259,7 +259,7 @@ As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescr
 5. If safe, the prescription is committed to MongoDB with an auto-generated cryptographic QR token payload; a notification is dispatched to the patient.
 
 ### 4.3.2 QR Verification and Identity-Gated Dispensing
-As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`):
+As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`): <!-- TODO-P2 -->
 1. The patient presents their mobile or physical QR prescription token to a community pharmacy.
 2. The pharmacy terminal scans the token and requests prescription details.
 3. The server validates the token's signature and expiration, returning non-sensitive prescription items.
@@ -284,7 +284,7 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
 - **D02**: Deployment Infrastructure (`docs/report/diagrams/d02_deployment_infrastructure.mmd`)
 - **D03**: Consultation to Dispensing Flow (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`)
-- **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`)
+- **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) <!-- TODO-P2 -->
 - **D05**: Outbreak Detection Pipeline (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **D06**: Tiered Matcher Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
 - **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
@@ -570,7 +570,7 @@ Any unauthorized modification immediately halts the release pipeline with an exi
 
 ## 7.5 Known Security Weaknesses & Architectural Trade-offs
 Honesty and transparency are paramount in academic engineering evaluation. The following architectural weaknesses are recognized:
-1. **Low-Entropy National Identity Card (NIC) Credentials**: In Sri Lanka, citizen NICs follow predictable deterministic formats (9 digits + 'V' for pre-2016 cards, or 12 digits post-2016 encoding birth year and sequential gender offsets). An attacker possessing a victim's birthdate can brute-force candidate NICs. *Mitigation*: The NIC gate in MediSync is strictly paired with one-time dynamic QR tokens and rate-limited.
+1. **Low-Entropy National Identity Card (NIC) Credentials**: In Sri Lanka, citizen NICs follow predictable deterministic formats (9 digits + 'V' for pre-2016 cards, or 12 digits post-2016 encoding birth year and sequential gender offsets). An attacker possessing a victim's birthdate can brute-force candidate NICs. *Mitigation*: The NIC gate in MediSync is strictly paired with one-time dynamic QR tokens and rate-limited. <!-- TODO-P2 -->
 2. **Prototype Key Management**: Currently, cryptographic master keys reside in runtime environment variables (`ENCRYPTION_KEY`). In a commercial production deployment, keys must be managed via hardware security modules (HSM) or dedicated key management services (AWS KMS / HashiCorp Vault).
 3. **Free-Tier Denial-of-Service Surface**: While in-memory rate limiting throttles API endpoints, the Render Free tier provides limited network-layer DDoS mitigation compared to enterprise cloud firewalls.
 4. **Absence of Point-in-Time Database Recovery (PITR)**: MongoDB Atlas Free M0 clusters do not support continuous automated snapshot backups or PITR. Production migration requires Atlas M10+ tier provisioning.
@@ -977,7 +977,7 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 - **Diagram D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
 - **Diagram D02**: Cloud Deployment Topology (`docs/report/diagrams/d02_deployment_infrastructure.mmd`)
 - **Diagram D03**: Consultation to Dispensing Sequence (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`)
-- **Diagram D04**: QR Verification & NIC Gate Sequence (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`)
+- **Diagram D04**: QR Verification & NIC Gate Sequence (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) <!-- TODO-P2 -->
 - **Diagram D05**: Outbreak Detection Pipeline Flow (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **Diagram D06**: Dual-Tier ML Triage Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
 - **Diagram D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)

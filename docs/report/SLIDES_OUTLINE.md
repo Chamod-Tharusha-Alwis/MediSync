@@ -139,7 +139,7 @@ This outline provides the slide structure, visual layout recommendations, and de
   - Pharmacy dispensing authenticates via Patient NIC with OTP consent (`x-patient-access`).
   - Atomic database status transition to `dispensed`; duplicate dispensing atomically rejected with `ALREADY_DISPENSED`.
 - **Speaker Notes**:
-  > *"Prescriptions carry cryptographic capability QR tokens. When scanned, anyone can verify document authenticity without seeing patient PII, while full medical history download requires passing a constant-time Patient NIC gate. At the pharmacy, dispensing is authenticated via patient consent and commits atomically, rendering duplicate dispensing impossible."*
+  > *"Prescriptions carry cryptographic capability QR tokens. When scanned, anyone can verify document authenticity without seeing patient PII, while full medical history download requires passing a constant-time Patient NIC gate. At the pharmacy, dispensing is authenticated via patient consent and commits atomically, rendering duplicate dispensing impossible."* <!-- TODO-P2 -->
 
 ---
 
@@ -225,7 +225,7 @@ This outline provides the slide structure, visual layout recommendations, and de
 
 ### Slide 18: Summary of Engineering Contributions
 - **Key Points**:
-  1. Tamper-evident digital prescription pipeline with QR and NIC-gate verification.
+  1. Tamper-evident digital prescription pipeline with QR and NIC-gate verification. <!-- TODO-P2 -->
   2. Sub-millisecond deterministic medicine safety engine.
   3. Real-time syndromic surveillance with automated 3-tier outbreak gating.
   4. Ultra-lightweight ML triage operating in $< 200\text{ MB}$ memory.

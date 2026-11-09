@@ -59,7 +59,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   1. Log into the Patient Portal.
   2. Demonstrate the personal medical timeline (`/patient/dashboard/history`): show historical consultations, standardized diagnoses, and verified laboratory reports.
   3. Inspect active prescriptions: point out the consultation verification QR code rendered on the official consultation summary PDF.
-  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that accessing the full medical history PDF requires passing the **Patient NIC Gate**.
+  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that accessing the full medical history PDF requires passing the **Patient NIC Gate**. <!-- TODO-P2 -->
 - **Key Talking Point for Examiners**:
   > *"All patient demographic information and clinical visit notes are encrypted at rest using field-level AES-256-GCM. The database never stores plaintext National Identity Card numbers or unencrypted clinical histories."*
 
