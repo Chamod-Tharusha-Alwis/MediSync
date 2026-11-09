@@ -351,7 +351,7 @@ const RegisterNewTest = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB 2: Lab Work Queue (Master list of Lab Tests with split-tabs)
 // ─────────────────────────────────────────────────────────────────────────────
-const LabWorkQueue = ({ onOpenUpload }) => {
+const LabWorkQueue = ({ onOpenUpload, refreshTrigger }) => {
   const [tests, setTests] = useState([]);
   const [filterStatus, setFilterStatus] = useState('pending_accept'); // pending_accept | in_progress | completed
   const [searchNic, setSearchNic] = useState('');
@@ -371,7 +371,7 @@ const LabWorkQueue = ({ onOpenUpload }) => {
 
   useEffect(() => {
     fetchTests();
-  }, []);
+  }, [refreshTrigger]);
 
   // Filter list by selected queue state
   const filteredQueue = tests.filter(t => {
@@ -571,7 +571,7 @@ const LabAssistantUpload = () => {
   const handleUploadFile = async (file) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      toast.error('Only PDF files are accepted');
+      toast.error('Please choose a valid PDF');
       return;
     }
 
@@ -581,17 +581,29 @@ const LabAssistantUpload = () => {
     formData.append('report', file);
 
     try {
-      await api.post(`/lab/${testData.labTestId}/upload-report`, formData, {
+      const res = await api.post(`/lab/${testData.labTestId}/upload-report`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(progress);
         }
       });
-      toast.success('Report encrypted and signed successfully!');
+      if (res.data?.idempotent) {
+        toast.info(res.data?.message || 'Report already uploaded (replayed)');
+      } else {
+        toast.success('Report encrypted and signed successfully!');
+      }
       handleSearch();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to encrypt/upload report');
+      const serverMessage = err.response?.data?.message || err.response?.data?.error;
+      if (err.response?.status === 409) {
+        toast.error(serverMessage || 'A report is already attached to this test.');
+      } else if (err.response?.status === 400) {
+        toast.error(serverMessage || 'Please choose a valid PDF');
+      } else {
+        toast.error(serverMessage || 'Failed to encrypt/upload report');
+      }
+      handleSearch();
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -742,6 +754,7 @@ const LabAssistantUpload = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 const LabManagement = () => {
   const [activeTab, setActiveTab] = useState('register');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Modal upload state from work queue
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -764,7 +777,7 @@ const LabManagement = () => {
   const handleUploadModalFile = async (file) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      toast.error('Only PDF reports are supported.');
+      toast.error('Please choose a valid PDF');
       return;
     }
     setUploadingModalFile(true);
@@ -773,20 +786,35 @@ const LabManagement = () => {
     formData.append('report', file);
 
     try {
-      await api.post(`/lab/${modalTest.labTestId}/upload-report`, formData, {
+      const res = await api.post(`/lab/${modalTest.labTestId}/upload-report`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setModalProgress(progress);
         }
       });
-      toast.success('Report encrypted and uploaded successfully!');
+      if (res.data?.idempotent) {
+        toast.info(res.data?.message || 'Report already uploaded (replayed)');
+      } else {
+        toast.success('Report encrypted and uploaded successfully!');
+      }
       setShowUploadModal(false);
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
-      toast.error('Upload failed. Check file content.');
+      const serverMessage = err.response?.data?.message || err.response?.data?.error;
+      if (err.response?.status === 409) {
+        toast.error(serverMessage || 'A report is already attached to this test.');
+      } else if (err.response?.status === 400) {
+        toast.error(serverMessage || 'Please choose a valid PDF');
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
+        toast.error('Session expired or access denied. Please re-authenticate.');
+      } else {
+        toast.error(serverMessage || 'Upload failed. Check file content.');
+      }
     } finally {
       setUploadingModalFile(false);
       setModalProgress(0);
+      setRefreshTrigger(prev => prev + 1);
     }
   };
 
@@ -826,7 +854,7 @@ const LabManagement = () => {
       {/* Tab Content */}
       <div className="mt-6">
         {activeTab === 'register'   && <RegisterNewTest />}
-        {activeTab === 'work_queue' && <LabWorkQueue onOpenUpload={handleOpenUploadModal} />}
+        {activeTab === 'work_queue' && <LabWorkQueue onOpenUpload={handleOpenUploadModal} refreshTrigger={refreshTrigger} />}
         {activeTab === 'assistant'  && <LabAssistantUpload />}
       </div>
 

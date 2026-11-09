@@ -3,7 +3,7 @@ import React from 'react';
 
 const StatusBadge = ({ status = 'pending', className = '', customText }) => {
   const { t } = useTranslation();
-  const s = status.toLowerCase();
+  const s = String(status || 'pending').toLowerCase().trim().replace(/[\s-]+/g, '_');
 
   const configMap = {
     pending: {
@@ -70,6 +70,16 @@ const StatusBadge = ({ status = 'pending', className = '', customText }) => {
       text: 'Ready',
       classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.1)]',
       dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
+    },
+    cancelled: {
+      text: 'Cancelled',
+      classes: 'bg-slate-500/10 text-slate-400 border-slate-500/20 shadow-[0_0_12px_rgba(148,163,184,0.1)]',
+      dot: 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.8)]'
+    },
+    rejected: {
+      text: 'Rejected',
+      classes: 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_12px_rgba(244,63,94,0.1)]',
+      dot: 'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.8)]'
     }
   };
 

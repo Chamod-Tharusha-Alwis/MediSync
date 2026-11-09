@@ -444,12 +444,39 @@ exports.getTimeline = async (req, res) => {
         )
         .map(p => stripEncryptionMetadata(p.toObject()));
 
-      cObj.labTests = labTests
-        .filter(l => 
-          (l.consultationId && l.consultationId.toString() === c._id.toString()) ||
-          (l.consultationRef && c.consultationId && l.consultationRef === c.consultationId)
-        )
-        .map(l => stripEncryptionMetadata(l.toObject()));
+      const matchedLabDocs = labTests.filter(l => 
+        (l.consultationId && l.consultationId.toString() === c._id.toString()) ||
+        (l.consultationRef && c.consultationId && l.consultationRef === c.consultationId)
+      );
+      const unlinkedLabs = labTests.filter(l => !l.consultationId && !l.consultationRef);
+      const consultationLabNames = Array.isArray(c.labTests) ? c.labTests : [];
+      const combinedLabTests = [];
+      const usedLabDocIds = new Set();
+
+      for (const doc of matchedLabDocs) {
+        const obj = stripEncryptionMetadata(doc.toObject());
+        obj.labStatus = obj.status || 'pending';
+        combinedLabTests.push(obj);
+        usedLabDocIds.add(String(doc._id));
+      }
+
+      for (const rawName of consultationLabNames) {
+        const nameStr = typeof rawName === 'string' ? rawName.trim() : (rawName?.testName || '');
+        if (!nameStr) continue;
+        const alreadyIncluded = combinedLabTests.some(t => (t.testName || t.name) === nameStr);
+        if (alreadyIncluded) continue;
+
+        const candidate = unlinkedLabs.find(l => !usedLabDocIds.has(String(l._id)) && (l.testName === nameStr || l.testName?.toLowerCase() === nameStr.toLowerCase()));
+        if (candidate) {
+          const obj = stripEncryptionMetadata(candidate.toObject());
+          obj.labStatus = obj.status || 'pending';
+          combinedLabTests.push(obj);
+          usedLabDocIds.add(String(candidate._id));
+        } else {
+          combinedLabTests.push(typeof rawName === 'object' ? { ...rawName, labStatus: rawName.status || 'pending' } : { testName: nameStr, status: 'pending', labStatus: 'pending' });
+        }
+      }
+      cObj.labTests = combinedLabTests;
 
       const ratingObj = ratings.find(r => r.consultationId.toString() === c._id.toString());
       if (ratingObj) {

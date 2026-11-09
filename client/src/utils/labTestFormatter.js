@@ -1,5 +1,24 @@
 import { formatSriLankaDate } from './sriLankaTime';
 /**
+ * Safely derives canonical status code for a lab test across all lifecycle states.
+ * Guarantees standard snake_case status ('pending', 'approved', 'sample_collected', 'processing', 'report_ready', 'delivered').
+ * @param {string|object|null|undefined} labTest
+ * @returns {string}
+ */
+export function getDerivedLabStatus(labTest) {
+  if (!labTest) return 'pending';
+  if (typeof labTest === 'string') return labTest.toLowerCase().trim().replace(/[\s-]+/g, '_');
+  const raw = labTest.status || labTest.labStatus || labTest.data?.status || '';
+  const normalized = String(raw).toLowerCase().trim().replace(/[\s-]+/g, '_');
+  const hasReport = Boolean(labTest.reportPublicId || labTest.reportPath || labTest.reportUploadedAt || labTest.data?.reportPublicId);
+
+  if (normalized === 'delivered') return 'delivered';
+  if (hasReport || normalized === 'report_ready' || normalized === 'completed') return 'report_ready';
+  if (['processing', 'sample_collected', 'approved'].includes(normalized)) return normalized;
+  return normalized || 'pending';
+}
+
+/**
  * client/src/utils/labTestFormatter.js
  * Centralized, safe lab test extraction and formatting utility.
  * Guarantees primitive string/boolean return values; never returns raw objects as React children.

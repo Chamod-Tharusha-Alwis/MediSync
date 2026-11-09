@@ -705,13 +705,43 @@ exports.uploadReport = async (req, res) => {
   let uploadedPublicId = null, committed = false;
   try {
     const { labTestId } = req.params;
-    if (!req.file) return res.status(400).json({ message: 'No PDF file uploaded' });
+    if (!req.file) return res.status(400).json({ error: 'FILE_REQUIRED', message: 'No PDF file uploaded' });
 
     const labTest = await findLabTestByIdentifier(labTestId);
-    if (!labTest) return res.status(404).json({ message: 'Lab test not found' });
-    if (req.user?.role !== 'hospital_admin' || String(labTest.hospitalId) !== String(req.user.id)) return res.status(404).json({ message: 'Lab test not found' });
-    if (!['Approved', 'sample_collected', 'processing'].includes(labTest.status) || labTest.reportPublicId) return res.status(409).json({ message: 'Report upload requires an approved test without an existing report' });
-    if (!Buffer.isBuffer(req.file.buffer) || req.file.buffer.subarray(0, 5).toString() !== '%PDF-') return res.status(400).json({ message: 'Invalid PDF file' });
+    if (!labTest) return res.status(404).json({ error: 'LAB_TEST_NOT_FOUND', message: 'Lab test not found' });
+    if (req.user?.role !== 'hospital_admin' || String(labTest.hospitalId) !== String(req.user.id)) return res.status(404).json({ error: 'LAB_TEST_NOT_FOUND', message: 'Lab test not found' });
+    if (!Buffer.isBuffer(req.file.buffer) || req.file.buffer.subarray(0, 5).toString() !== '%PDF-') return res.status(400).json({ error: 'INVALID_PDF', message: 'Invalid PDF file' });
+
+    const fileSha256 = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+
+    // Idempotent re-upload check: if report already exists, match file SHA-256
+    if (labTest.reportPublicId || ['report_ready', 'delivered'].includes(labTest.status)) {
+      if (labTest.reportSha256 && labTest.reportSha256 === fileSha256) {
+        return res.status(200).json({
+          message: 'Report already uploaded (idempotent)',
+          labTestId: labTest.labTestId,
+          status: labTest.status,
+          idempotent: true
+        });
+      }
+      return res.status(409).json({
+        error: 'REPORT_ALREADY_EXISTS',
+        message: 'A report is already attached to this test.'
+      });
+    }
+
+    if (!['Approved', 'sample_collected', 'processing'].includes(labTest.status)) {
+      if (labTest.status === 'pending') {
+        return res.status(409).json({
+          error: 'LAB_TEST_NOT_APPROVED',
+          message: 'Lab test must be approved before report upload'
+        });
+      }
+      return res.status(409).json({
+        error: 'REPORT_ALREADY_EXISTS',
+        message: 'Report upload requires an approved test without an existing report'
+      });
+    }
     labTest.$where = { hospitalId: req.user.id, status: labTest.status, reportPublicId: null };
     const security = require('../security/securityRuntime').current();
     const envelope = require('../security/labReportEnvelope');
@@ -746,6 +776,7 @@ exports.uploadReport = async (req, res) => {
     labTest.reportPublicId     = cloudinaryResult.public_id;
     labTest.reportOriginalName = req.file.originalname;
     labTest.reportUploadedAt   = new Date();
+    labTest.reportSha256       = fileSha256;
     labTest.encryptedFileKey   = encoded.encryptedFileKey;
     labTest.fileIV             = encoded.fileIV;
     labTest.reportEnvelopeVersion = encoded.reportEnvelopeVersion;

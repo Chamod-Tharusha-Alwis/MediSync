@@ -138,6 +138,10 @@ const LabTestSchema = new Schema(
       type:    String,
       default: null,
     },
+    reportSha256: {
+      type:    String,
+      default: null,
+    },
 
     // ── Envelope encryption fields (for secure PDF storage) ──────────────────
     encryptedFileKey: {
