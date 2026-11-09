@@ -69,7 +69,7 @@ As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescr
 5. If safe, the prescription is committed to MongoDB with an auto-generated cryptographic QR token payload; a notification is dispatched to the patient.
 
 ### 4.3.2 QR Verification and Identity-Gated Dispensing
-As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`): <!-- TODO-P2 -->
+As illustrated in Diagram **D04** (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`): 
 1. The patient presents their mobile or physical QR prescription token to a community pharmacy.
 2. The pharmacy terminal scans the token and requests prescription details.
 3. The server validates the token's signature and expiration, returning non-sensitive prescription items.
@@ -94,7 +94,7 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)
 - **D02**: Deployment Infrastructure (`docs/report/diagrams/d02_deployment_infrastructure.mmd`)
 - **D03**: Consultation to Dispensing Flow (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`)
-- **D04**: QR Verification & NIC Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) <!-- TODO-P2 -->
+- **D04**: QR Verification & OTP Gate (`docs/report/diagrams/d04_qr_verification_nic_gate.mmd`) 
 - **D05**: Outbreak Detection Pipeline (`docs/report/diagrams/d05_outbreak_detection_pipeline.mmd`)
 - **D06**: Tiered Matcher Flow (`docs/report/diagrams/d06_tiered_matcher_flow.mmd`)
 - **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)

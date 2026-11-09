@@ -26,7 +26,7 @@ This checklist defines the complete set of required UI screenshots for inclusion
 | **SS-05** | `ss05_patient_dashboard.png` | Desktop (1920x1080) | `/patient/dashboard` | Patient welcome header, recent clinical encounters, emergency contacts overview. |
 | **SS-06** | `ss06_patient_medical_timeline.png` | Desktop (1920x1080) | `/patient/dashboard/history` | Chronological clinical timeline showing past visits, diagnosed conditions, and vital trends. |
 | **SS-07** | `ss07_prescription_qr_card.png` | Mobile (375x812) | `/patient/dashboard/history` | Digital prescription detail showing medications, dosage instructions, and the **cryptographic QR capability token**. |
-| **SS-08** | `ss08_public_verification_portal.png` | Desktop (1920x1080) | `/verify/:token` | Public consultation verification portal displaying verified issuance metadata, zero patient PII, and the **Patient NIC Gate** prompt. | <!-- TODO-P2 -->
+| **SS-08** | `ss08_public_verification_portal.png` | Desktop (1920x1080) | `/verify/:token` | Public consultation verification portal displaying verified issuance metadata, zero patient PII, and the **Email OTP Verification** prompt and unlocked clinical encounter details. | 
 
 ---
 

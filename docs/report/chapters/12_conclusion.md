@@ -9,7 +9,7 @@ Key engineering contributions achieved in this work include:
 3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating 7-day rolling window standardized deviation tracking against a 56-day baseline across communicable diseases, regulated by a 3-tier suppression gate ($N \ge 5$, 2 consecutive elevated days, $z > 2.0$) to eliminate noise and alert fatigue.
 4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated TF-IDF cosine similarity matcher (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
 5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,465 tests across 207 test suites with 0 failures, locked against an immutable 15-file SHA-256 release ledger.
-6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (813 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
+6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (835 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
 
 ---
 

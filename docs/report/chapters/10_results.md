@@ -72,8 +72,8 @@ Evaluating the 8 canonical disease scenarios (S1–S8, Figure **F10**) at the pr
 
 ## 10.5 Trilingual Interface Parity
 Automated dictionary parsing across `client/src/i18n/translations/` confirmed:
-- **Total Registered Keys**: **813 distinct UI string keys**.
-- **English (en) Completeness**: 813 / 813 (100.0%)
-- **Sinhala (si) Completeness**: 813 / 813 (100.0%)
-- **Tamil (ta) Completeness**: 813 / 813 (100.0%)
+- **Total Registered Keys**: **835 distinct UI string keys**.
+- **English (en) Completeness**: 835 / 835 (100.0%)
+- **Sinhala (si) Completeness**: 835 / 835 (100.0%)
+- **Tamil (ta) Completeness**: 835 / 835 (100.0%)
 - **Key Discrepancies**: 0 missing keys (Figure **F14**).

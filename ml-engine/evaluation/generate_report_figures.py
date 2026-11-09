@@ -558,7 +558,7 @@ def generate_f13():
 def generate_f14():
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     locales = ['English (en)', 'Sinhala (si)', 'Tamil (ta)']
-    keys = [813, 813, 813]
+    keys = [835, 835, 835]
     colors = ['#0284c7', '#10b981', '#f59e0b']
 
     bars = ax.bar(locales, keys, color=colors, width=0.45, edgecolor='#1e293b', lw=1)

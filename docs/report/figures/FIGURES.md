@@ -25,7 +25,7 @@
 | **F11** | `f11_surveillance_12_diseases.png` | Cross-Chapter Dynamic Surveillance Verification (12 diseases across chapters) | `server/tests/phaseD5GenericSurveillanceOffline.test.js` | 206.1 KB | Proves dynamic grouping by `(entity, diseaseId)` with zero disease whitelists. |
 | **F12** | `f12_statistical_projection_bands.png` | 14-Day Epidemiological Statistical Projection with 95% Prediction Bands | Historical episode curves | 142.3 KB | Demonstrative mathematical projection (quadratic OLS); NOT a validated clinical forecast. |
 | **F13** | `f13_verification_test_pyramid.png` | Automated Verification Pyramid (3,465 passed across 207 suites) | Master offline gate receipts | 108.2 KB | Fully offline test suite; production migrations and Atlas queries reserved for owner. |
-| **F14** | `f14_trilingual_key_parity.png` | Native Trilingual Translation Key Parity (813 keys matching across EN, SI, TA) | `client/src/i18n/translations/` | 77.6 KB | Guarantees zero missing strings or fallback glitches across all national languages. |
+| **F14** | `f14_trilingual_key_parity.png` | Native Trilingual Translation Key Parity (835 keys matching across EN, SI, TA) | `client/src/i18n/translations/` | 77.6 KB | Guarantees zero missing strings or fallback glitches across all national languages. |
 
 ---
 

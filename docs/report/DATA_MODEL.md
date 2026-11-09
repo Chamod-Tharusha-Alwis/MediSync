@@ -118,7 +118,7 @@ Cryptographic capability tokens enabling public authenticity verification via QR
 | `_id` | `ObjectId` | Primary Key | Unique capability record identifier |
 | `tokenHash` | `String` | Required, Unique, Index | SHA-256 hash of the 256-bit unguessable random capability token |
 | `consultationId` | `ObjectId` | Ref: `Consultation`, Required, Index | Bound consultation encounter reference |
-| `patientRef` | `ObjectId` | Ref: `Patient`, Required, Index | Reference to patient record for NIC gate validation | <!-- TODO-P2 -->
+| `patientRef` | `ObjectId` | Ref: `Patient`, Required, Index | Reference to patient record for OTP generation and verification unlock | 
 | `doctorRef` | `ObjectId` | Ref: `Doctor`, Optional | Attending medical officer reference |
 | `consultationRef` | `String` | Optional, Trim | Human-readable consultation reference code |
 | `expiresAt` | `Date` | Index (`expireAfterSeconds: 0`) | **TTL Index**: Automatic document deletion after 90 days |

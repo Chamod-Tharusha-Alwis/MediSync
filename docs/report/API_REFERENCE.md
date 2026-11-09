@@ -99,7 +99,11 @@
 | Method | Path | Auth / Role | Description & Gates |
 |---|---|---|---|
 | `GET` | `/api/verify/:token` | Public | **Public QR Authenticity Check**: Verifies SHA-256 capability token against `VerificationToken` model (90-day TTL). Returns hospital, doctor name, and timestamp with **zero patient PII**. |
-| `POST` | `/api/verify/:token/history-pdf` | Public / Rate-Limited | **Constant-Time NIC Gate**: Accepts patient NIC input; performs constant-time comparison against decrypted patient record. Returns full cumulative medical history PDF. Gated by `PDF_EXPORT_ENABLED`. | <!-- TODO-P2 -->
+| `GET` | `/api/verify/:token` | Public | **Public Authenticity Card**: Returns issuance metadata (hospital, doctor, date, status, zero patient PII). |
+| `POST` | `/api/verify/request-otp` | Public / Rate-Limited (10/15m) | **OTP Request**: Dispatches 6-digit dynamic OTP to patient's registered email address. |
+| `POST` | `/api/verify/unlock` | Public / Rate-Limited (15/15m) | **OTP Unlock**: Verifies 6-digit OTP code and returns unlocked clinical consultation details and medicine release summary. |
+| `POST` | `/api/verify/:token/history-pdf` | Public / Rate-Limited (5/15m) | **History PDF Download**: Returns signed cumulative medical history PDF for authorized verification session. Gated by `PDF_EXPORT_ENABLED`. |
+| `POST` | `/api/verify/:token/revoke` | Protected (Doctor/Admin) | **Revocation**: Marks token as revoked with clinical justification. | 
 | `POST` | `/api/verify/:token/revoke` | Authorized / Admin | Explicitly revoke a compromised or erroneous verification token capability. |
 
 ---

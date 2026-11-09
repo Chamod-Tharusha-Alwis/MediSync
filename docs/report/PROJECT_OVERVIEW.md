@@ -35,7 +35,7 @@ MediSync solves these issues by:
 
 ### 2.3 The Pharmacist
 - **Prescription Lookup via NIC**: Enters the patient's National Identity Card (NIC) number; patient confirms authorization via OTP consent to load pending prescriptions.
-- **Verification Capability**: Prescription summaries embed a cryptographic QR code linking to the Public Verification Portal (`/verify/:token`), allowing authenticity verification with zero patient PII, while full history PDF downloads require passing the patient NIC gate <!-- TODO-P2 -->.
+- **Verification Capability**: Prescription summaries embed a cryptographic QR code linking to the Public Verification Portal (`/verify/:token`), allowing authenticity verification with zero patient PII, while full clinical encounter details and history PDF downloads require passing the patient email OTP verification gate .
 - **Dispensing Safety**: The pharmacist reviews prescribed items, verifies them against recorded patient allergies, and records the dispensation.
 - **Anti-Fraud Protection**: The moment medication is dispensed, the prescription status updates atomically to "Dispensed". Any attempt to re-dispense the same prescription at any pharmacy is immediately blocked: *"Prescription is not eligible for dispensing." (code: ALREADY_DISPENSED)*.
 
