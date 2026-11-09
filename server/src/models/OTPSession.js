@@ -28,7 +28,7 @@ const otpSessionSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access', 'device-trust'],
+    enum: ['login', 'password-reset', 'email-verify', 'verification', '2fa-setup', 'patient-access', 'device-trust', 'qr_view'],
     required: true
   },
   // Used for patient-access OTPs to track who requested access and consent lifecycle
@@ -43,7 +43,8 @@ const otpSessionSchema = new mongoose.Schema({
     accessGrantedAt: Date,
     accessExpiresAt: Date,
     commitVersion: { type: Number, default: 0 },
-    revoked: { type: Boolean, default: false }
+    revoked: { type: Boolean, default: false },
+    tokenHash: String
   }
 }, { timestamps: true });
 

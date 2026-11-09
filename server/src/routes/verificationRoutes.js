@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 const protect = require('../middleware/verifiedAuth');
 const {
   getVerificationPublicStatus,
+  requestVerificationOtp,
+  verifyOtpAndUnlock,
   downloadHistoryPdfWithNicGate,
   revokeVerificationToken,
 } = require('../controllers/verificationController');
@@ -21,13 +23,43 @@ const historyGateLimiter = rateLimit({
   },
 });
 
-// Public authenticity verification status (no auth, no clinical data leaks)
+// Rate limit OTP requests to 10 attempts per 15 minutes per IP
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'TOO_MANY_REQUESTS',
+    message: 'Too many OTP requests from this IP. Please try again shortly.',
+  },
+});
+
+// Rate limit OTP verify submissions to 15 attempts per 15 minutes per IP
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'TOO_MANY_REQUESTS',
+    message: 'Too many verification attempts from this IP. Please try again shortly.',
+  },
+});
+
+// 1. Public authenticity verification status (no auth, no clinical data leaks)
 router.get('/:token', getVerificationPublicStatus);
 
-// Patient History Download Gate (NIC comparison required)
+// 2. Automated OTP request at scan / page-load time
+router.post('/:token/otp/request', otpRequestLimiter, requestVerificationOtp);
+
+// 3. OTP verification & clinical + release data unlock
+router.post('/:token/otp/verify', otpVerifyLimiter, verifyOtpAndUnlock);
+
+// 4. Patient History Download Gate (authorized by view session token or NIC)
 router.post('/:token/history-pdf', historyGateLimiter, downloadHistoryPdfWithNicGate);
 
-// Revocation endpoint (patient owner or clinical staff)
+// 5. Revocation endpoint (patient owner or clinical staff)
 router.post(
   '/:token/revoke',
   protect(['patient', 'doctor', 'admin', 'super_admin']),

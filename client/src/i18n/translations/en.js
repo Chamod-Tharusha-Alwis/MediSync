@@ -855,6 +855,27 @@ export const en = {
     "nicPlaceholder": "e.g. 199012345678 or 901234567V",
     "downloadBtn": "Verify Identity & Download History PDF",
     "downloading": "Verifying & Generating PDF…",
-    "disclaimer": "Automated electronic record verification confirms practitioner authorization and cryptographic token validity. It does not establish clinical outcomes."
+    "disclaimer": "Automated electronic record verification confirms practitioner authorization and cryptographic token validity. It does not establish clinical outcomes.",
+    "otpGateTitle": "Patient Identity Verification",
+    "otpSentHelp": "A 6-digit verification code has been sent to the registered contact:",
+    "enterOtpLabel": "Enter 6-Digit Code",
+    "verifyAndUnlockBtn": "Verify Code & Unlock Record",
+    "unlocking": "Verifying & Unlocking…",
+    "resendOtp": "Resend Code",
+    "resendCountdown": "Resend available in",
+    "clinicalSummaryTitle": "Clinical Encounter Summary",
+    "patientDetails": "Patient Details",
+    "vitals": "Recorded Vital Signs",
+    "symptoms": "Reported Symptoms",
+    "diagnosis": "Clinical Diagnosis",
+    "clinicalNotes": "Practitioner Notes",
+    "prescribedMedicines": "Prescribed Medicines & Release Status",
+    "statusReleased": "Released",
+    "statusPending": "Not Released",
+    "releaseTimeline": "Medicine Release Timeline",
+    "releasedBy": "Released by",
+    "downloadHistoryBtn": "Download Complete Medical History (PDF)",
+    "sessionExpiresIn": "View session expires in",
+    "lockNow": "Lock Now"
 }
 };
