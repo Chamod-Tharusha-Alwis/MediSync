@@ -14,6 +14,8 @@
 | **OA-03** | **Pre-Viva Backup** | Take a manual database dump of `medisync_prod` before the viva voce and store it securely: `mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="./backup_pre_viva"`. | Disaster Recovery | `PENDING_OWNER` |
 | **OA-04** | **Mailbox for Verify** | Designate a seeded patient account with an email address the owner controls to demonstrate live OTP delivery during the viva verification walk-through. | Live Verification Test | `PENDING_OWNER` |
 | **OA-05** | **Screenshots Capture** | Capture physical high-resolution browser screenshots (1920x1080) following [`SCREENSHOT_CHECKLIST.md`](../report/SCREENSHOT_CHECKLIST.md) for final thesis document insertion. | Thesis Document Assets | `PENDING_OWNER` |
+| **OA-06** | **Rotate Redis Credentials** | In Upstash / Redis Dashboard: Rotate Redis connection string credentials before the final viva demonstration. | Production Security Hardening | PENDING_OWNER |
+| **OA-07** | **Change Shared Demo Passwords** | Update shared prototype demonstration passwords (SEED_TEST_PASSWORD) to distinct production credentials after viva voce evaluations. | Production Security Hardening | PENDING_OWNER |
 
 ---
 
