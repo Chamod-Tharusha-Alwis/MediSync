@@ -16,6 +16,14 @@ class DispenseError extends Error {
 }
 const fail = (code, message, status) => { throw new DispenseError(code, message, status); };
 const labelled = (e, label) => e?.hasErrorLabel?.(label) || e?.errorLabels?.includes(label);
+const isTransient = (e) =>
+  labelled(e, 'TransientTransactionError') ||
+  e?.code === 112 ||
+  e?.codeName === 'WriteConflict' ||
+  /write conflict|transient|connection pool/i.test(e?.message || '');
+const isUnknownCommit = (e) =>
+  labelled(e, 'UnknownTransactionCommitResult') ||
+  /unknown transaction commit result/i.test(e?.message || '');
 const normalize = v => typeof v === 'string' ? v.trim().toLowerCase().replace(/\s+/g, ' ') : '';
 
 // Bounded retries: a commit with an unknown outcome is retried on the SAME
@@ -25,7 +33,7 @@ async function runTransaction(work, startSession = () => mongoose.startSession()
   try { session = await startSession(); } catch (_) {
     fail('TRANSACTION_UNAVAILABLE', 'Dispensing requires an available transaction.', 503);
   }
-  const deadline = Date.now() + 20000;
+  const deadline = Date.now() + 25000;
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       let uncertain = false;
@@ -33,14 +41,19 @@ async function runTransaction(work, startSession = () => mongoose.startSession()
         session.startTransaction({ readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, maxCommitTimeMS: 5000 });
         const result = await work(session);
         for (let commitAttempt = 0; commitAttempt < 3; commitAttempt++) {
-          try { await session.commitTransaction({ timeoutMS: 5000 }); return result; }
-          catch (e) {
+          try {
+            await session.commitTransaction({ timeoutMS: 5000 });
+            return result;
+          } catch (e) {
             // An unlabeled commit transport failure is uncertain as well. Never
             // rerun the clinical callback or delete external assets on that basis.
-            if (!labelled(e, 'UnknownTransactionCommitResult') && !labelled(e, 'TransientTransactionError')) uncertain = true;
-            if (labelled(e, 'UnknownTransactionCommitResult')) {
+            if (!isUnknownCommit(e) && !isTransient(e)) uncertain = true;
+            if (isUnknownCommit(e)) {
               uncertain = true;
-              if (commitAttempt < 2 && Date.now() < deadline) continue;
+              if (commitAttempt < 2 && Date.now() < deadline) {
+                if (typeof setTimeout === 'function') await new Promise(r => setTimeout(r, 100 * (commitAttempt + 1)));
+                continue;
+              }
             }
             if (uncertain) fail('TRANSACTION_OUTCOME_UNKNOWN', 'Commit outcome is unknown. Retry with the same idempotency key; do not create a new checkout.', 503);
             throw e;
@@ -48,7 +61,10 @@ async function runTransaction(work, startSession = () => mongoose.startSession()
         }
       } catch (e) {
         if (!uncertain && session.inTransaction()) await session.abortTransaction().catch(() => {});
-        if (!uncertain && labelled(e, 'TransientTransactionError') && attempt < 2 && Date.now() < deadline) continue;
+        if (!uncertain && isTransient(e) && attempt < 2 && Date.now() < deadline) {
+          if (typeof setTimeout === 'function') await new Promise(r => setTimeout(r, 150 * (attempt + 1) + Math.floor(Math.random() * 50)));
+          continue;
+        }
         if (e instanceof DispenseError || e instanceof ClinicalCommandError) throw e;
         fail('TRANSACTION_FAILED', 'Dispensing could not be completed atomically. Retry the same checkout.', 503);
       }
