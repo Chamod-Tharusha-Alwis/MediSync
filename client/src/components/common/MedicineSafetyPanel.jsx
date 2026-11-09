@@ -72,9 +72,9 @@ export default function MedicineSafetyPanel({
         </div>
         <span
           data-testid="safety-clinical-validation"
-          className="text-[11px] font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
+          className="text-xs font-medium text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
         >
-          clinicalValidation: not_established
+          Advisory reference. Clinical assessment required.
         </span>
       </div>
 

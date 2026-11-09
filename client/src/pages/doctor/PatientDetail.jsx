@@ -230,7 +230,7 @@ const DoctorPatientDetail = () => {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gradient-teal tracking-tight">{patient?.fullName}</h1>
-                    <p className="text-slate-400 font-mono text-sm mt-1">NIC: {patient?.nic}</p>
+                    <p className="text-slate-400 font-mono text-sm mt-1">ID: {patient?.nic ? (patient.nic.length > 6 ? patient.nic.slice(0, 3) + '***' + patient.nic.slice(-3) : '***') : 'N/A'}</p>
                   </div>
                 </div>
 

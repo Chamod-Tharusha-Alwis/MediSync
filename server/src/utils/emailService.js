@@ -1492,9 +1492,11 @@ exports.sendDispenseNotificationEmail = async (
           <h1 style="color: #ffffff; margin: 0; font-size: 22px;">MediSync</h1>
         </div>
         <div style="padding: 32px 28px; background-color: #ffffff;">
-          <p style="font-size: 16px; color: #333333;">Hello <strong>${patientName || 'Patient'}</strong>,</p>
+          <p style="font-size: 16px; color: #333333;">Hello <strong>${escapeHtml(patientName) || 'Patient'}</strong>,</p>
           <p style="font-size: 15px; color: #444444;">${notices[lang] || notices.en}</p>
-          <p>Medications: <strong>${medications}</strong></p>
+          <div style="margin-top: 20px; padding: 14px 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #64748b; line-height: 1.5;">
+            <strong>Confidentiality Notice:</strong> For patient safety and medical confidentiality, specific drug names, strengths, and dosages are not listed in email notifications. You can inspect your verified digital prescription and dispensation details in your authenticated patient portal.
+          </div>
         </div>
       </div>
     `,
@@ -2158,35 +2160,35 @@ exports.sendLabReportAvailableEmail = async (to, patientName, testName, portalUr
   const safePortalUrl = sanitizeActionUrl(portalUrl || 'https://medisync.local/patient/dashboard');
 
   const subjects = {
-    en: 'MediSync Clinical Records — New Diagnostic Report Available',
-    si: 'MediSync සායනික වාර්තා — නව රසායනාගාර වාර්තාවක් නිකුත් කර ඇත',
-    ta: 'MediSync மருத்துவப் பதிவுகள் — புதிய ஆய்வக அறிக்கை தயாராக உள்ளது'
+    en: 'MediSync — New Diagnostic Report Available',
+    si: 'MediSync — නව රසායනාගාර වාර්තාවක් නිකුත් කර ඇත',
+    ta: 'MediSync — புதிய ஆய்வக அறிக்கை தயாராக உள்ளது'
   };
   const titles = {
-    en: 'New Diagnostic Report Ready',
-    si: 'නව රසායනාගාර වාර්තාවක් නිකුත් කර ඇත',
-    ta: 'புதிய ஆய்வக அறிக்கை தயாராக உள்ளது'
+    en: 'Diagnostic Report Ready',
+    si: 'රසායනාගාර වාර්තාවක් නිකුත් කර ඇත',
+    ta: 'ஆய்வக அறிக்கை தயாராக உள்ளது'
   };
   const preheaders = {
-    en: `Your report for ${safeTestName} is available`,
-    si: `${safeTestName} සඳහා ඔබගේ වාර්තාව නිකුත් කර ඇත`,
-    ta: `${safeTestName} அறிக்கை தயாராக உள்ளது`
+    en: 'A diagnostic laboratory report is now available in your secure portal.',
+    si: 'නව රසායනාගාර පරීක්ෂණ වාර්තාවක් ඔබගේ ද්වාරයෙහි ඇත.',
+    ta: 'ஒரு புதிய ஆய்வக அறிக்கை உங்கள் போர்ட்டலில் கிடைக்கிறது.'
   };
   const bodies = {
     en: `
         <p>Hello <strong>${safePatientName}</strong>,</p>
-        <p>Your laboratory test results for <strong>${safeTestName}</strong> have been processed and uploaded by the hospital laboratory.</p>
-        <p>Your results are encrypted and available for download in your patient portal.</p>
+        <p>Your diagnostic laboratory test results have been processed and uploaded by the hospital laboratory.</p>
+        <p>For patient confidentiality, diagnostic test names and quantitative values are not included in email previews. Your encrypted report is ready for secure viewing in your patient portal.</p>
       `,
     si: `
         <p>ආයුබෝවන් <strong>${safePatientName}</strong>,</p>
-        <p><strong>${safeTestName}</strong> සඳහා ඔබගේ පරීක්ෂණ වාර්තා රෝහල් රසායනාගාරය විසින් සකස් කර පද්ධතියට උඩුගත කර ඇත.</p>
-        <p>ඔබගේ ප්‍රතිඵල සංකේතනය කර ඇති අතර ඔබගේ රෝගී ද්වාරයෙන් බාගත කරගත හැක.</p>
+        <p>ඔබගේ රසායනාගාර පරීක්ෂණ වාර්තා රෝහල් රසායනාගාරය විසින් සකස් කර පද්ධතියට උඩුගත කර ඇත.</p>
+        <p>රෝගී රහස්‍යභාවය සුරැකීම සඳහා පරීක්ෂණ නාමයන් සහ අගයන් විද්‍යුත් තැපෑල හරහා නොයවනු ලැබේ. ඔබගේ රෝගී ද්වාරයෙන් එය ආරක්ෂිතව බාගත කරගත හැක.</p>
       `,
     ta: `
         <p>வணக்கம் <strong>${safePatientName}</strong>,</p>
-        <p><strong>${safeTestName}</strong> க்கான உங்கள் முடிவுகள் மருத்துவமனை ஆய்வகத்தால் செயலாக்கப்பட்டு பதிவேற்றப்பட்டுள்ளன.</p>
-        <p>உங்கள் முடிவுகள் குறியாக்கம் செய்யப்பட்டுள்ளன மற்றும் உங்கள் போர்ட்டலில் பதிவிறக்கம் செய்யக் கிடைக்கின்றன.</p>
+        <p>உங்கள் ஆய்வக பரிசோதனை முடிவுகள் மருத்துவமனை ஆய்வகத்தால் பதிவேற்றப்பட்டுள்ளன.</p>
+        <p>நோயாளி ரகசியத்தன்மை கருதி, பரிசோதனை பெயர்கள் மின்னஞ்சலில் அனுப்பப்படுவதில்லை. உங்கள் போர்ட்டலில் பாதுகாப்பாக பார்க்கவும்.</p>
       `
   };
   const actionLabels = {
@@ -2202,9 +2204,9 @@ exports.sendLabReportAvailableEmail = async (to, patientName, testName, portalUr
 
   const plainPortalTarget = safePortalUrl === '#' ? '#' : safePortalUrl;
   const plainTexts = {
-    en: `Hello ${patientName},\n\nA new laboratory diagnostic report (${testName || 'Diagnostic Test'}) is available in your MediSync portal.\n\nLogin to view: ${plainPortalTarget}`,
-    si: `ආයුබෝවන් ${patientName},\n\nනව රසායනාගාර පරීක්ෂණ වාර්තාවක් (${testName || 'රසායනාගාර පරීක්ෂණය'}) ඔබගේ MediSync ද්වාරයෙහි ඇත.\n\nනැරඹීමට පිවිසෙන්න: ${plainPortalTarget}`,
-    ta: `வணக்கம் ${patientName},\n\nபுதிய ஆய்வக அறிக்கை (${testName || 'ஆய்வக பரிசோதனை'}) உங்கள் MediSync போர்ட்டலில் கிடைக்கிறது.\n\nபார்க்க உள்நுழையவும்: ${plainPortalTarget}`
+    en: `Hello ${patientName},\n\nA diagnostic laboratory report${testName ? ' for ' + testName : ''} is available in your MediSync portal.\n\nLogin to view: ${plainPortalTarget}`,
+    si: `ආයුබෝවන් ${patientName},\n\nනව රසායනාගාර පරීක්ෂණ වාර්තාවක් ඔබගේ MediSync ද්වාරයෙහි ඇත.\n\nනැරඹීමට පිවිසෙන්න: ${plainPortalTarget}`,
+    ta: `வணக்கம் ${patientName},\n\nபுதிய ஆய்வக அறிக்கை உங்கள் MediSync போர்ட்டலில் கிடைக்கிறது.\n\nபார்க்க உள்நுழையவும்: ${plainPortalTarget}`
   };
 
   return sendMail({

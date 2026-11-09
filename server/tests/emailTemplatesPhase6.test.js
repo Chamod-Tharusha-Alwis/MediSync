@@ -289,9 +289,10 @@ describe('Email Templates & Security Engine (Stage 4)', () => {
     expect(captured[3].subject).toContain('சந்திப்பு நினைவூட்டல்');
     expect(captured[3].html).toContain('11/15/2026 (Sri Lanka time, UTC+05:30)');
 
-    // Dispense (si)
+    // Dispense (si) — privacy mandate: no medication leak in email
     expect(captured[4].subject).toContain('ඔබගේ ඖෂධ නිකුත් කර ඇත');
-    expect(captured[4].html).toContain('Paracetamol 500mg');
+    expect(captured[4].html).toContain('City Pharmacy');
+    expect(captured[4].html).not.toContain('Paracetamol 500mg');
 
     // Recovery (ta)
     expect(captured[5].subject).toContain('கணக்கு மீட்டெடுப்பு');

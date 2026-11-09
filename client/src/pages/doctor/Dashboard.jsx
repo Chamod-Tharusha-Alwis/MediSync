@@ -131,7 +131,7 @@ export default function DoctorDashboard() {
               </div>
               <div>
                 <p className="text-white font-semibold text-sm">Active Patient Access Session</p>
-                <p className="text-slate-400 text-xs">Viewing Patient: <span className="text-teal-300 font-bold">{activeSession.patientName}</span> (NIC: {activeSession.nic})</p>
+                <p className="text-slate-400 text-xs">Viewing Patient: <span className="text-teal-300 font-bold">{activeSession.patientName}</span></p>
               </div>
             </div>
             <button

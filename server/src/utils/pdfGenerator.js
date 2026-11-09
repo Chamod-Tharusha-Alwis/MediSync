@@ -1,6 +1,8 @@
 const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
 const crypto = require('crypto');
 const { formatDoctorName } = require('./doctorName');
+const { formatSriLankaDate, formatSriLankaDateTime, TIME_ZONE, ZONE_LABEL } = require('./sriLankaTime');
+const { securePdfBuffer } = require('./pdfSecurity');
 
 
 function resolvePdfLang(options, fallback = 'en') {
@@ -153,8 +155,8 @@ const BG_LAV     = rgb(0.97, 0.97, 1.00);   // Lab tests box
 const RED_STAMP  = rgb(0.90, 0.10, 0.10);   // Dispensed watermark
 
 // ── Shared Helper: Draw Header Banner ──────────────────────────────────
-function drawHeader(page, { title, subtitle, doctorName, refLabel, refValue, dateString, timeString, workspaceLabel, fontRegular, fontBold, width, height }) {
-  const BANNER_H = 100;
+function drawHeader(page, { title, subtitle, doctorName, refLabel, refValue, dateString, timeString, workspaceLabel, fontRegular, fontBold, width, height, hasQr = false }) {
+  const BANNER_H = 105;
   page.drawRectangle({
     x: 0, y: height - BANNER_H,
     width: width, height: BANNER_H,
@@ -162,69 +164,70 @@ function drawHeader(page, { title, subtitle, doctorName, refLabel, refValue, dat
   });
 
   page.drawText(title, {
-    x: 40, y: height - 42,
-    size: 16, font: fontBold, color: WHITE,
+    x: 40, y: height - 38,
+    size: 15, font: fontBold, color: WHITE,
   });
 
   page.drawText(subtitle, {
-    x: 40, y: height - 62,
-    size: 10, font: fontRegular, color: SUBTLE_BG,
+    x: 40, y: height - 56,
+    size: 9.5, font: fontRegular, color: SUBTLE_BG,
   });
 
   if (doctorName) {
     const formattedDoc = formatDoctorName(doctorName);
     page.drawText(formattedDoc, {
-      x: 40, y: height - 80,
-      size: 10, font: fontBold, color: WHITE,
+      x: 40, y: height - 74,
+      size: 9.5, font: fontBold, color: WHITE,
     });
   }
 
+  const rightBlockX = hasQr ? width - 265 : width - 200;
   if (refValue) {
     page.drawText(`${refLabel || 'Ref'}: ${refValue}`, {
-      x: width - 220, y: height - 42,
-      size: 10, font: fontBold, color: WHITE,
+      x: rightBlockX, y: height - 38,
+      size: 9.5, font: fontBold, color: WHITE,
     });
   }
 
   if (dateString) {
     page.drawText(`Date: ${dateString}`, {
-      x: width - 220, y: height - 58,
-      size: 9, font: fontRegular, color: SUBTLE_BG,
+      x: rightBlockX, y: height - 54,
+      size: 8.5, font: fontRegular, color: SUBTLE_BG,
     });
   }
   if (timeString) {
     page.drawText(`Time: ${timeString}`, {
-      x: width - 220, y: height - 72,
-      size: 9, font: fontRegular, color: SUBTLE_BG,
+      x: rightBlockX, y: height - 68,
+      size: 8.5, font: fontRegular, color: SUBTLE_BG,
     });
   }
   if (workspaceLabel) {
     page.drawText(`Workspace: ${workspaceLabel}`, {
-      x: width - 220, y: height - 86,
-      size: 9, font: fontBold, color: TEAL,
+      x: rightBlockX, y: height - 82,
+      size: 8.5, font: fontBold, color: TEAL,
     });
   }
-  return height - BANNER_H - 28;
+  return height - BANNER_H - 24;
 }
 
 // ── Shared Helper: Mask Patient NIC ──────────────────────────────────
 function maskNIC(nic) {
   if (!nic || nic === 'N/A') return 'N/A';
   const str = String(nic).trim();
-  if (str.length <= 4) return '********';
-  return '********' + str.slice(-4);
+  if (str.length <= 6) return '***';
+  return str.slice(0, 3) + '***' + str.slice(-3);
 }
 
 // ── Shared Helper: Confidentiality Watermark ─────────────────────────────────────
 function drawConfidentialityWatermark(page, { width, height, fontBold }) {
   page.drawText('SENSITIVE HEALTH INFORMATION \u2014 AUTHORIZED RECIPIENTS ONLY', {
     x: 45,
-    y: height / 2 - 40,
-    size: 16,
+    y: height / 2 - 80,
+    size: 15,
     font: fontBold,
     color: rgb(0.85, 0.20, 0.20),
-    opacity: 0.12,
-    rotate: degrees(35),
+    opacity: 0.04,
+    rotate: degrees(30),
   });
 }
 
@@ -237,11 +240,10 @@ function drawPatientDetails(page, { patientName, patientNIC, age, gender, yStart
   });
   currentY -= 20;
 
-  const patientFields = [
-    [labels.patientName || 'Patient Name:', patientName || 'N/A'],
-    [labels.nic || 'NIC:', maskNIC(patientNIC)],
-    [labels.age || 'Age:', age || 'N/A'],
-  ];
+  const patientFields = [];
+  if (patientName && patientName !== 'N/A') patientFields.push([labels.patientName || 'Patient Name:', patientName]);
+  if (patientNIC && patientNIC !== 'N/A') patientFields.push([labels.nic || 'NIC:', maskNIC(patientNIC)]);
+  if (age && age !== 'N/A') patientFields.push([labels.age || 'Age:', age]);
   if (gender && gender !== 'N/A') patientFields.push([labels.gender || 'Gender:', gender]);
 
   const boxH = patientFields.length * 20 + 16;
@@ -309,7 +311,11 @@ async function applyPDFEncryption(pdfDoc, optionsOrNic, explicitOptions = {}, co
     err.code = 'SECURITY_HOLD';
     throw err;
   }
-  return await pdfDoc.save();
+  const rawBytes = await pdfDoc.save();
+  const rawPassword = typeof optionsOrNic === 'string' ? optionsOrNic : (optionsOrNic?.nic || explicitOptions?.nic || explicitOptions?.userPassword || context?.patientNic);
+  const fallbackPassword = context?.consultationRef || context?.consultRef || explicitOptions?.consultationRef;
+  const unlockForTest = explicitOptions?.unlockForTest === true || context?.unlockForTest === true;
+  return await securePdfBuffer(rawBytes, rawPassword, { fallbackPassword, unlockForTest });
 }
 
 // ── Shared Helper: Wrap Text to Cell Width ──────────────────────────────
@@ -637,7 +643,7 @@ exports.generateLockedPrescription = async (
  *   - Boxed diagnostic test summary
  *   - Footer with security notice and confidential handling statement
  */
-exports.generateLabReportPDF = async (labTest, patientName = null) => {
+exports.generateLabReportPDF = async (labTest, patientName = null, options = {}) => {
   const pdfDoc = wrapPdfDoc(await PDFDocument.create());
   const page   = pdfDoc.addPage([595, 842]);
   const { width, height } = page.getSize();
@@ -814,7 +820,7 @@ exports.generateLabReportPDF = async (labTest, patientName = null) => {
   drawFooter(page, { now, fontRegular, fontBold, width });
 
   // 8. Apply Real Encryption
-  return await applyPDFEncryption(pdfDoc, resolvedNic);
+  return await applyPDFEncryption(pdfDoc, resolvedNic, options, { testId: labTest?.testId, patientNic: resolvedNic });
 };
 
 /**
@@ -848,15 +854,17 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   // 2. Resolve Doctor Info
   const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Medical Professional';
   const doctorName = formatDoctorName(rawDoctor);
-  const slmcReg = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber || 'SLMC-REG-VERIFIED';
+  const rawSlmc = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber;
+  const slmcReg = (rawSlmc && rawSlmc !== 'SLMC-REG-VERIFIED') ? `SLMC Reg. No.: ${rawSlmc}` : 'SLMC reg. no.: not on file';
+  const docId = doctorDetails._id || doctorDetails.id || consultationData.doctorId;
+  const docIdStr = docId ? ` | ID: DOC-${String(docId).slice(-6)}` : '';
+  const specialtyStr = doctorDetails.specialization || doctorDetails.specialty || consultationData.doctorSpecialty || 'General Practice';
+  const hospitalStr = doctorDetails.hospitalName || consultationData.hospitalName || (consultationData.loginType === 'hospital' ? 'Hospital Encounter' : 'Private Practice');
 
   const now = new Date();
-  const dateStr = consultationData.createdAt
-    ? new Date(consultationData.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-    : now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  const timeStr = consultationData.createdAt
-    ? new Date(consultationData.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })
-    : now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const consultDate = consultationData.createdAt ? new Date(consultationData.createdAt) : now;
+  const dateStr = formatSriLankaDate(consultDate, 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hour12: true }).format(consultDate) + ' (Sri Lanka time)';
 
   const consultRef = consultationData.consultationId || consultationData._id
     ? String(consultationData.consultationId || consultationData._id)
@@ -879,6 +887,7 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
     fontBold,
     width,
     height,
+    hasQr: Boolean(options?.verificationUrl || consultationData?.verificationUrl),
   });
   const verificationUrl = options?.verificationUrl || consultationData?.verificationUrl;
   if (verificationUrl) {
@@ -886,8 +895,19 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
       const QRCode = require('qrcode');
       const qrPng = await QRCode.toBuffer(verificationUrl, { type: 'png', width: 120, margin: 1 });
       const qrImg = await pdfDoc.embedPng(qrPng);
-      page.drawImage(qrImg, { x: width - 85, y: height - 85, width: 55, height: 55 });
-      page.drawText('SCAN TO VERIFY', { x: width - 85, y: height - 93, size: 6, font: fontBold, color: WHITE });
+      const qrBoxX = width - 84;
+      const qrBoxY = height - 98;
+      page.drawRectangle({
+        x: qrBoxX - 3,
+        y: qrBoxY - 3,
+        width: 60,
+        height: 70,
+        color: rgb(0.06, 0.22, 0.40),
+        borderColor: TEAL,
+        borderWidth: 1,
+      });
+      page.drawImage(qrImg, { x: qrBoxX, y: qrBoxY + 11, width: 54, height: 54 });
+      page.drawText('SCAN TO VERIFY', { x: qrBoxX + 4, y: qrBoxY + 3, size: 5.5, font: fontBold, color: WHITE });
     } catch (_) {}
   }
 
@@ -1026,20 +1046,21 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
     currentY = height - 50;
   }
 
-  const sigBoxH = 50;
+  const sigBoxH = 58;
   page.drawRectangle({
     x: 40, y: currentY - sigBoxH,
     width: width - 80, height: sigBoxH,
     color: BG_GREY, borderColor: BORDER, borderWidth: 1,
   });
-  page.drawText(`Consulting Medical Professional: ${doctorName}`, { x: 52, y: currentY - 18, size: 9, font: fontBold, color: NAVY });
-  page.drawText(`SLMC Registration: ${slmcReg}`, { x: 52, y: currentY - 32, size: 8.5, font: fontRegular, color: MID });
+  page.drawText(`Consulting Medical Professional: ${doctorName}${docIdStr}`, { x: 52, y: currentY - 18, size: 9, font: fontBold, color: NAVY });
+  page.drawText(`${slmcReg} | Specialty: ${specialtyStr}`, { x: 52, y: currentY - 32, size: 8.5, font: fontRegular, color: MID });
+  page.drawText(`Facility / Practice: ${hospitalStr}`, { x: 52, y: currentY - 46, size: 8, font: fontRegular, color: MID });
 
   // 10. Draw Footer
   drawFooter(page, { now, fontRegular, fontBold, width });
 
   // 11. Apply fail-closed PDF encryption. Clinical consultation summaries MUST NOT fall back to plaintext.
-  return await applyPDFEncryption(pdfDoc, resolvedNic);
+  return await applyPDFEncryption(pdfDoc, resolvedNic, options, { consultationRef: consultRef, patientNic: resolvedNic });
 };
 
 /**
@@ -1365,7 +1386,7 @@ exports.generatePatientHistoryPDF = async (
   }
 
   drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice: 'clinicalValidation: not_established — Official Patient Record Export' });
-  return await applyPDFEncryption(pdfDoc, resolvedNic);
+  return await applyPDFEncryption(pdfDoc, resolvedNic, options, { patientNic: resolvedNic });
 };
 
 const calculatePDFDocumentChecksum = (pdfBuffer) => {

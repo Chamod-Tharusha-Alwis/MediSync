@@ -304,7 +304,7 @@ const Dispense = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center select-none">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for NIC: {loadedNic}
+              <Pill className="w-4 h-4 text-teal-400 animate-pulse-subtle" /> Active Prescriptions for {patientInfo?.fullName || 'Patient'}
             </h2>
             <span className="text-xs font-mono font-bold text-teal-400">{prescriptions.length} items across {groupedConsultations.length} order(s)</span>
           </div>
@@ -524,7 +524,7 @@ const History = () => {
               <thead className="bg-slate-900/60 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <tr>
                   <th className="px-6 py-4">{t("pharmacy.receiptNo", "Receipt Number")}</th>
-                  <th className="px-6 py-4">{t("pharmacy.patientNic", "Patient NIC")}</th>
+                  <th className="px-6 py-4">{t("pharmacy.patientName", "Patient Name")}</th>
                   <th className="px-6 py-4">{t("common.medications", "Medications")}</th>
                   <th className="px-6 py-4">{t("pharmacy.dispensedBy", "Dispensed By")}</th>
                   <th className="px-6 py-4 text-right">{t("common.timestamp", "Timestamp")}</th>
@@ -547,7 +547,7 @@ const History = () => {
                   return (
                     <tr key={record.receiptNumber || record._id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-6 py-4 font-mono font-bold text-white text-xs">{record.receiptNumber || "?"}</td>
-                      <td className="px-6 py-4 font-mono text-slate-300 text-xs">{record.patientNic || "?"}</td>
+                      <td className="px-6 py-4 font-medium text-slate-200 text-xs">{record.patientName || "Patient"}</td>
                       <td className="px-6 py-4 text-slate-300 text-xs font-medium max-w-[340px]" title={drugLabel}>
                         {allMeds.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
@@ -861,8 +861,8 @@ const ManualDispenseOTC = () => {
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">Clinical Order Summary</h4>
             <div className="space-y-2 text-xs font-semibold text-slate-300">
               <div className="flex justify-between">
-                <span>Patient NIC:</span>
-                <span className="font-mono text-slate-200">{patientNic.trim().toUpperCase() || 'Pending'}</span>
+                <span>Patient:</span>
+                <span className="font-medium text-slate-200">{patientNic && patientNic.trim() ? (patientNic.trim().startsWith('OTC_') ? 'Walk-in Patient' : 'Patient') : 'Walk-in Patient'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Medication Lines:</span>

@@ -53,7 +53,7 @@ describe('Feature C4: Doctor AI Resilience & Disclaimer Suite', () => {
         .mockResolvedValueOnce({ data: { data: [] } });
     });
 
-    test('displays clinicalValidation: not_established badge and mandatory non-diagnostic disclaimer', async () => {
+    test('displays Reference matches only badge and mandatory non-diagnostic disclaimer', async () => {
       render(<NewConsultation />);
       fireEvent.change(screen.getByLabelText('Patient NIC'), { target: { value: 'QA-SYNTHETIC' } });
       fireEvent.click(screen.getByLabelText('Request patient verification'));
@@ -65,9 +65,8 @@ describe('Feature C4: Doctor AI Resilience & Disclaimer Suite', () => {
 
       const disclaimer = screen.getByTestId('clinical-validation-disclaimer');
       expect(disclaimer).toBeInTheDocument();
-      expect(screen.getByTestId('clinical-validation-badge')).toHaveTextContent('clinicalValidation: not_established');
-      expect(disclaimer).toHaveTextContent('Reference matches require clinician assessment and are not diagnoses');
-      expect(disclaimer).toHaveTextContent('Similarity scores are not disease probabilities');
+      expect(screen.getByTestId('clinical-validation-badge')).toHaveTextContent('Reference matches only');
+      expect(disclaimer).toHaveTextContent('A clinician must assess; matches are not diagnoses');
     });
   });
 });

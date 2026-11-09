@@ -1070,13 +1070,13 @@ const NewConsultation = () => {
                           </span>
                           <span
                             data-testid="clinical-validation-badge"
-                            className="text-[11px] font-mono text-amber-300/90 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/25 font-semibold"
+                            className="text-[11px] font-semibold text-amber-300/90 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/25"
                           >
-                            clinicalValidation: not_established
+                            Reference matches only
                           </span>
                         </div>
                         <p className="leading-relaxed text-slate-300">
-                          Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.
+                          A clinician must assess; matches are not diagnoses or treatment recommendations, and scores are not disease probabilities.
                         </p>
                       </div>
 

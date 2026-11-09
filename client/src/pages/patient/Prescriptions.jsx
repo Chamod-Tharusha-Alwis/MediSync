@@ -163,18 +163,23 @@ const PrescriptionCard = ({ rx, badge, index }) => {
         {/* PDF download — shown for all statuses so patients can always retrieve their record */}
         {(rx.prescriptionId || rx.consultationRef) && (
           isPdfExportClientEnabled() ? (
-            <button
-              id={`download-pdf-${rx.prescriptionId || rx.consultationRef}`}
-              type="button"
-              disabled={downloading}
-              onClick={() => downloadPdf(rx.prescriptionId || rx.consultationRef, setDownloading, t)}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold tracking-wide border transition-all duration-300 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50"
-            >
-              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {downloading
-                ? t('patient.generatingPdf', 'Generating PDF…')
-                : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
-            </button>
+            <div className="w-full flex flex-col items-center gap-1.5">
+              <button
+                id={`download-pdf-${rx.prescriptionId || rx.consultationRef}`}
+                type="button"
+                disabled={downloading}
+                onClick={() => downloadPdf(rx.prescriptionId || rx.consultationRef, setDownloading, t)}
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold tracking-wide border transition-all duration-300 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50"
+              >
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {downloading
+                  ? t('patient.generatingPdf', 'Generating PDF…')
+                  : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
+              </button>
+              <span className="text-xs text-slate-400 flex items-center gap-1">
+                🔒 {t('patient.pdfPasswordNotice', 'Encrypted PDF: open with your NIC number.')}
+              </span>
+            </div>
           ) : (
             <button
               id={`download-pdf-${rx.prescriptionId || rx.consultationRef}`}

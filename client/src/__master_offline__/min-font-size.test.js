@@ -46,6 +46,7 @@ const APPROVED_SHORT_BADGE_SIGNATURES = [
   // MedicalTimeline.jsx status badge
   'data.status?.toUpperCase()',
   // NewConsultation.jsx clinicalValidation badge
+  'Reference matches only',
   'clinicalValidation: not_established',
   // NewConsultation.jsx ICD-10 confidence / code badge
   'diag.icd_code',

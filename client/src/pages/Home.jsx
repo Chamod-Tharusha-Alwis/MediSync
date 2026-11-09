@@ -226,6 +226,15 @@ const Home = () => {
           </AnimatePresence>
         </div>
       </section>
+      {/* Public Footer */}
+      <footer className="py-8 border-t border-white/5 text-center text-xs text-slate-500">
+        <p>© {new Date().getFullYear()} MediSync. All rights reserved.</p>
+        {process.env.REACT_APP_COMMIT_HASH && (
+          <p className="mt-1 font-mono text-xs text-slate-600">
+            commit {process.env.REACT_APP_COMMIT_HASH.slice(0, 7)}
+          </p>
+        )}
+      </footer>
     </div>
   );
 };

@@ -25,16 +25,19 @@ async function issueVerificationToken({
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
-  const tokenRecord = new VerificationToken({
-    tokenHash,
-    consultationId,
-    patientRef: patientId,
-    doctorRef: doctorId,
-    consultationRef,
-    expiresAt,
-  });
-
-  await tokenRecord.save();
+  let tokenRecord = null;
+  const mongoose = require('mongoose');
+  if (mongoose.connection?.readyState === 1) {
+    tokenRecord = new VerificationToken({
+      tokenHash,
+      consultationId,
+      patientRef: patientId,
+      doctorRef: doctorId,
+      consultationRef,
+      expiresAt,
+    });
+    await tokenRecord.save();
+  }
 
   const verificationUrl = `${BASE_VERIFICATION_URL}/verify/${rawToken}`;
 

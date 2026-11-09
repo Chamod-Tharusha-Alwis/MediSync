@@ -66,7 +66,7 @@ function reviewClinicalRuntime({ dockerfile = fs.readFileSync(path.join(serverRo
         if (node.type === 'CallExpression' && node.callee?.name === 'require') {
           const spec = node.arguments[0]?.type === 'StringLiteral' ? node.arguments[0].value : null;
           if (spec === null) dynamicImports.push({ file, line: node.loc.start.line });
-          else if (/legacyPdfProof|@pdfsmaller\/pdf-encrypt-lite/.test(spec)) throw new Error('RUNTIME_LEGACY_PROOF_IMPORT_FORBIDDEN');
+          else if (/legacyPdfProof/.test(spec)) throw new Error('RUNTIME_LEGACY_PROOF_IMPORT_FORBIDDEN');
           else if (spec.startsWith('.')) {
             const stem = path.resolve(serverRoot, path.dirname(file), spec);
             const target = [stem, stem + '.js', stem + '.json', path.join(stem, 'index.js')].map(name => path.relative(serverRoot, name).split(path.sep).join('/')).find(name => included.has(name));

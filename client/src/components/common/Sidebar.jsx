@@ -193,6 +193,11 @@ const Sidebar = ({
           <LogOut className="w-4 h-4 flex-shrink-0" />
           <span>{t('nav.logout', 'Log Out')}</span>
         </motion.button>
+        {process.env.REACT_APP_COMMIT_HASH && (
+          <div className="pt-2 text-center text-xs font-mono text-slate-500 select-none">
+            commit {process.env.REACT_APP_COMMIT_HASH.slice(0, 7)}
+          </div>
+        )}
       </div>
     </div>
   );

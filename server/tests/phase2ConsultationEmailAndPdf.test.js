@@ -195,8 +195,11 @@ describe('Phase 2 — Consultation Summary Email & Clinical PDF Export (Tasks 2.
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(sentPayloads[0].to).toBe('kasun.patient@medisync.local');
     expect(sentPayloads[0].attachments).toEqual([]);
-    expect(sentPayloads[0].html).toContain('Paracetamol');
-    expect(sentPayloads[0].text).toContain('Paracetamol');
+    expect(sentPayloads[0].subject).toBe('MediSync: your consultation summary is ready');
+    expect(sentPayloads[0].html).not.toContain('Paracetamol');
+    expect(sentPayloads[0].text).not.toContain('Paracetamol');
+    expect(sentPayloads[0].html).not.toContain('Acute Dengue Fever');
+    expect(sentPayloads[0].text).not.toContain('Acute Dengue Fever');
 
     // Zero NIC leak in subject, html, text
     expect(sentPayloads[0].subject).not.toContain(TEST_NIC);
@@ -216,7 +219,7 @@ describe('Phase 2 — Consultation Summary Email & Clinical PDF Export (Tasks 2.
     expect(mockSendMail).toHaveBeenCalledTimes(1);
   });
 
-  test('2. Attaches consultation_<id>.pdf when PDF_EXPORT_ENABLED is true and never leaks NIC in filename or body', async () => {
+  test('2. Does not attach PDF in email even when PDF_EXPORT_ENABLED is true (privacy mandate) to prevent Gmail preview leak', async () => {
     process.env.PDF_EXPORT_ENABLED = 'true';
     const sentPayloads = [];
     const mockSendMail = jest.fn(async (opts) => {
@@ -232,11 +235,11 @@ describe('Phase 2 — Consultation Summary Email & Clinical PDF Export (Tasks 2.
     });
 
     expect(res.sent).toBe(true);
-    expect(res.pdfAttached).toBe(true);
-    expect(sentPayloads[0].attachments).toHaveLength(1);
-    expect(sentPayloads[0].attachments[0].filename).toBe('consultation_CONS-2026-0091.pdf');
-    expect(sentPayloads[0].attachments[0].filename).not.toContain(TEST_NIC);
-    expect(sentPayloads[0].attachments[0].content.slice(0, 5).toString('ascii')).toBe('%PDF-');
+    expect(res.pdfAttached).toBe(false);
+    expect(sentPayloads[0].attachments).toHaveLength(0);
+    expect(sentPayloads[0].html).not.toContain('Paracetamol');
+    expect(sentPayloads[0].text).not.toContain('Paracetamol');
+    expect(sentPayloads[0].subject).toBe('MediSync: your consultation summary is ready');
   });
 
   test('3. Retries transient email failure with exponential backoff, logs code only without PII, and never blocks consultation save', async () => {

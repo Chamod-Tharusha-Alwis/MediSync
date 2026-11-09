@@ -223,7 +223,8 @@ export const si = {
     "summaryEmailRateLimited": "කරුණාකර තවත් සාරාංශ ඊමේල් පණිවිඩයක් ඉල්ලීමට පෙර මඳක් රැඳී සිටින්න.",
     "summaryEmailFailed": "මේ මොහොතේ සාරාංශ ඊමේල් පණිවිඩය යැවිය නොහැක. කරුණාකර පසුව නැවත උත්සාහ කරන්න.",
     "downloadConsultationPdf": "උපදේශන PDF බාගත කරන්න",
-    "downloadLabReportPdf": "පරීක්ෂණ වාර්තා PDF බාගත කරන්න"
+    "downloadLabReportPdf": "පරීක්ෂණ වාර්තා PDF බාගත කරන්න",
+    "pdfPasswordNotice": "සංකේතනය කළ PDF: ඔබගේ ජාතික හැඳුනුම්පත් අංකය (NIC) මඟින් විවෘත කරන්න."
   },
   "doctor": {
     "practiceInformation": "වෛද්‍ය සේවා තොරතුරු",
@@ -322,6 +323,7 @@ export const si = {
     "staffManagement": "ඖෂධවේදී කාර්ය මණ්ඩල කළමනාකරණය",
     "staffManagementSubtitle": "කාර්ය මණ්ඩල ප්‍රවේශ සහ මෙහෙයුම් වගකීම් කළමනාකරණය.",
     "patientNic": "රෝගියාගේ ජා.හැ.අංකය / හඳුනාගැනීම",
+    "patientName": "රෝගියාගේ නම",
     "searchPrescriptions": "බෙහෙත් වට්ටෝරු සොයන්න",
     "addMedication": "ඖෂධ වර්ගයක් එක් කරන්න",
     "totalAmount": "මුළු මුදල",
@@ -828,7 +830,7 @@ export const si = {
   },
   "medicineSafety": {
     "title": "ඖෂධ ආරක්ෂණ සහ නීති පරීක්ෂාව",
-    "disclaimer": "උපදේශාත්මක යොමුවක් පමණි; සායනික තක්සේරුවක් අවශ්‍ය වේ. clinicalValidation: not_established.",
+    "disclaimer": "උපදේශාත්මක යොමුවක් පමණි; සායනික තක්සේරුවක් අවශ්‍ය වේ.",
     "interactionsDetected": "ඖෂධ අන්තර්ක්‍රියා හෝ මාත්‍රා සීමා හඳුනාගන්නා ලදී",
     "noInteractions": "හඳුනාගත් ඖෂධ අන්තර්ක්‍රියා නොමැත.",
     "acknowledgeCheckbox": "මම මෙම අනතුරු ඇඟවීම් පිළිගන්නා අතර මෙම බෙහෙත් වට්ටෝරුව සායනිකව සුදුසු බව තහවුරු කරමි",

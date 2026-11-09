@@ -48,16 +48,21 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest, enabled }) => {
   };
 
   return (
-    <button
-      type="button"
-      disabled={downloading}
-      onClick={handleClick}
-      className="glass-button inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all"
-    >
-      <Download className="w-3.5 h-3.5 text-purple-400" />
-      {downloading ? t('patient.generatingPdf', 'Generating PDF…') : t('patient.downloadLabReportPdf', 'Download Lab Report PDF')}
-      {labTests.length > 1 ? ` (${labTests.length})` : ''}
-    </button>
+    <div className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        disabled={downloading}
+        onClick={handleClick}
+        className="glass-button inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all"
+      >
+        <Download className="w-3.5 h-3.5 text-purple-400" />
+        {downloading ? t('patient.generatingPdf', 'Generating PDF…') : t('patient.downloadLabReportPdf', 'Download Lab Report PDF')}
+        {labTests.length > 1 ? ` (${labTests.length})` : ''}
+      </button>
+      <span className="text-xs text-slate-400 flex items-center gap-1">
+        🔒 {t('patient.pdfPasswordNotice', 'Encrypted PDF: open with your NIC number.')}
+      </span>
+    </div>
   );
 };
 

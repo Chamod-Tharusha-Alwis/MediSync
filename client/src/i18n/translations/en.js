@@ -223,7 +223,8 @@ export const en = {
     "summaryEmailRateLimited": "Please wait before requesting another summary email.",
     "summaryEmailFailed": "Unable to send summary email right now. Please try again later.",
     "downloadConsultationPdf": "Download Consultation PDF",
-    "downloadLabReportPdf": "Download Lab Report PDF"
+    "downloadLabReportPdf": "Download Lab Report PDF",
+    "pdfPasswordNotice": "Encrypted PDF: open with your NIC number (e.g. 199512345678 or 951234567V)."
   },
   "doctor": {
     "practiceInformation": "Practice Information",
@@ -322,6 +323,7 @@ export const en = {
     "staffManagement": "Pharmacy Personnel Governance",
     "staffManagementSubtitle": "Credential management and operational assignments.",
     "patientNic": "Patient NIC / ID",
+    "patientName": "Patient Name",
     "searchPrescriptions": "Retrieve Prescriptions",
     "addMedication": "Add Pharmaceutical Item",
     "totalAmount": "Total Invoice Amount",
@@ -828,7 +830,7 @@ export const en = {
   },
   "medicineSafety": {
     "title": "Medicine Safety & Formulary Check",
-    "disclaimer": "Advisory reference only; clinical assessment required. clinicalValidation: not_established.",
+    "disclaimer": "Advisory reference only; clinical assessment required.",
     "interactionsDetected": "Interactions or Dosage Limits Detected",
     "noInteractions": "No known reference interactions detected.",
     "acknowledgeCheckbox": "I acknowledge these warnings and confirm this prescription is clinically indicated",

@@ -6,38 +6,30 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `COMPLETE`
-- **Active Git Branch**: `main` (All Phases 0 through 9 complete)
-- **Latest Commit on `main`**: `54956a0` (Merged into `main`, tagged `v1.0.0-capstone`)
+- **Current Phase**: `P11-B` (Lab Upload Idempotency & Status Propagation)
+- **Active Git Branch**: `final/p11-privacy-fixes` (ready to merge to `main`)
+- **Latest Commit on `main`**: `8f0500e` (Save Phase 10 prompt, `.gitattributes` protected `-text` locks)
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
-- **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | Links 96/96 100% OK | 20/20 Live Production Tests PASS | Zero `TODO-P2` markers | 835 keys trilingual parity
-- **Next Action**: Capstone complete. Hand off to owner for viva preparation and final thesis assembly.
+- **Quality Gate Baseline**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Email Count (Run Budget < 40)**: 0 used
+- **Next Action**: Commit `final/p11-privacy-fixes`, merge to `main`, checkout branch `final/p11-lab-upload` for Task P11-B.
 
 ---
 
-## 2. Phase-by-Phase Completion Tracker
+## 2. Phase 11 & Phase 10 Execution Sequence
 
-| Phase | Title | Branch | Status | PR / Commit | Exit Criteria Met |
-|:---:|---|---|:---:|:---:|:---:|
-| **P0** | Preflight, merge S10, baseline | `main` | **COMPLETE** | `16a1d36` / `3032057` | S10 merged, baseline recorded, ledger 15/15, live smoke PASS |
-| **P1** | Documentation leftover sweep | `final/p1-docs-sweep` | **COMPLETE** | `3597885` | Grep banned terms returns zero stale claims, links 96/96 OK |
-| **P2** | OTP-gated QR verification page | `final/p2-otp-verify-page` | **COMPLETE** | `9299e75` | Mobile-first verify page, OTP unlock, clinical + release data in one response |
-| **P3** | Medicine release data integrity | `final/p3-release-data` | **COMPLETE** | `7d2caa5` | Shared release helper, pharmacy history agrees with verify page, double-dispense lockout & partial transitions verified |
-| **P4** | Clinical safety gaps (emergency advisory) | `final/p4-clinical-safety` | **COMPLETE** | `c235aba` | Rule-based red-flag advisory, sanity cases tested (17/17 PASS), 5 medicine safety rules verified |
-| **P5** | ML coverage improvement (time-boxed) | `final/p5-ml-coverage` | **COMPLETE** | `f3a680a` | Evaluated 491 conditions, documented no-guesswork outcome, memory verified (197.37 MB, 38.55%) |
-| **P6** | Security & operations hardening | `final/p6-security-hardening` | **COMPLETE** | `f71b17f` | SECURITY_STATUS.md complete, rate limits, headers, zero secrets, zero stack traces, injection defense |
-| **P7** | Full live-site testing (all 5 roles + verify) | `final/p7-live-testing` | **COMPLETE** | `79e33b2` | 20/20 live production tests PASS, evidence in docs/final/evidence/, zero email budget exceeded |
-| **P8** | Final reconciliation | `final/p8-final-reconcile` | **COMPLETE** | `157a502` / `54956a0` | FEATURE_EXISTENCE_MATRIX updated, all TODOs resolved, links 96/96 valid, all 14 figures regenerated |
-| **P9** | Release readiness & final status | `final/p9-release-readiness` | **COMPLETE** | `v1.0.0-capstone` | Tag v1.0.0-capstone, PROGRESS.md and FINAL_STATUS.md complete (92.5% verified) |
-
----
-
-## 3. Verification Receipts & Hashes
-
-- **Backend Live Deployment**: `https://medisync-wabc.onrender.com/health` -> `200 OK`
-- **ML Engine Live Deployment**: `https://medisync-ml.onrender.com/health` -> `200 OK`
-- **Frontend Live Deployment**: `https://medisync.chamodtharusha.com.lk` -> `200 OK`
-- **Protected Ledger Status**: 15/15 valid (SHA-256 verified)
-- **Phase 1 Report**: `docs/final/PHASE_1_REPORT.md`
-- **Phase 2 Plan & Report**: `docs/final/PHASE_2_PLAN.md` & `docs/final/PHASE_2_REPORT.md`
-- **Phase 3 Report**: `docs/final/PHASE_3_REPORT.md`
+| Step | Task ID | Focus | Target Branch | Status |
+|:---:|:---:|---|---|:---:|
+| 1 | **P11-A** | Privacy fixes: no clinical email, locked PDF, layout/time, no NIC on pharmacy UI, human disclaimers | `final/p11-privacy-fixes` | **COMPLETED** |
+| 2 | **P11-B** | Lab report upload idempotency (fix 409) & state machine propagation | `final/p11-lab-upload` | **IN PROGRESS** |
+| 3 | **P11-C** | Pharmacy OTC atomic checkout retry & label fix | `final/p11-otc-atomic` | PENDING |
+| 4 | **P10-A** | Doctor override engine: warn, never block, SHA-256 findingsHash, downstream visibility, F7 integration | `final/p10-doctor-override` | PENDING |
+| 5 | **P11-E** | Audit log completeness matrix & email-to-id search | `final/p11-audit-coverage` | PENDING |
+| 6 | **P11-F** | Public health 200 with verified/awaiting counts & public alerts 200 without auth | `final/p11-public-health` | PENDING |
+| 7 | **P11-G** | ML service request logging, latency, metrics counter, backend logging | `final/p11-ml-logging` | PENDING |
+| 8 | **P11-H** | Email noise reduction, 24h trusted device throttle, single dispense email, daily cap | `final/p11-email-noise` | PENDING |
+| 9 | **P11-I** | Formulary data quality ("Penicillin" typo fix, missing field "Not provided" neutral styling) | `final/p11-data-quality` | PENDING |
+| 10 | **P10-B** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/p10-medicine-coverage` | PENDING |
+| 11 | **P10-C** | Active medication auto-supersession & non-dispensable pending lines | `final/p10-auto-supersede` | PENDING |
+| 12 | **P10-D** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/p10-icd-alignment` | PENDING |
+| 13 | **P11-Z** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/p11-final-reconcile` | PENDING |

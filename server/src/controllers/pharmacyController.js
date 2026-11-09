@@ -440,6 +440,68 @@ exports.dispense = require('./dispensingController').dispense;
 const { groupDispensingHistoryByReceipt } = require('../services/releaseSummaryService');
 exports.groupDispensingHistoryByReceipt = groupDispensingHistoryByReceipt;
 
+async function resolvePatientNames(records = []) {
+  if (!Array.isArray(records) || records.length === 0) return [];
+
+  const nicSet = new Set();
+  for (const item of records) {
+    const rec = typeof item.toObject === 'function' ? item.toObject() : item;
+    const nic = rec.patientNic || rec.prescriptionId?.patientNic;
+    if (nic && typeof nic === 'string' && !nic.startsWith('OTC_') && nic !== 'WALK_IN' && nic !== 'Walk-in') {
+      nicSet.add(nic.trim().toUpperCase());
+    }
+  }
+
+  const patientMap = new Map();
+  if (nicSet.size > 0) {
+    try {
+      const filters = Array.from(nicSet).map(n => nicFilter(n, { plainFields: ['nic'] }));
+      const patients = await Patient.find({ $or: filters });
+      for (const p of patients) {
+        if (typeof p.decryptFieldsSync === 'function') {
+          p.decryptFieldsSync();
+        }
+        if (p.nic) patientMap.set(p.nic.toUpperCase(), p.fullName);
+      }
+    } catch (err) {
+      console.warn('[resolvePatientNames] lookup warning:', err.message);
+    }
+  }
+
+  return records.map(item => {
+    const rec = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+    const rawNic = (rec.patientNic || rec.prescriptionId?.patientNic || '').trim();
+    const isOtc = rec.isOTC || rec.prescriptionId?.isOTC || rawNic.startsWith('OTC_') || rawNic === 'WALK_IN';
+
+    let resolvedName = patientMap.get(rawNic.toUpperCase());
+    if (!resolvedName) {
+      if (isOtc) {
+        resolvedName = 'Walk-in Patient';
+      } else {
+        resolvedName = rec.patientName || 'Patient';
+      }
+    }
+
+    delete rec.patientNic;
+    delete rec.nic;
+    delete rec.patientNic_bi;
+    delete rec.patientNic_hmac;
+    delete rec.nicHash;
+    if (rec.prescriptionId && typeof rec.prescriptionId === 'object') {
+      const rx = typeof rec.prescriptionId.toObject === 'function' ? rec.prescriptionId.toObject() : { ...rec.prescriptionId };
+      delete rx.patientNic;
+      delete rx.patientNic_bi;
+      delete rx.nicHash;
+      rec.prescriptionId = rx;
+    }
+
+    return {
+      ...rec,
+      patientName: resolvedName
+    };
+  });
+}
+
 exports.getDispensingHistory = async (req, res) => {
   try {
     const staff = await PharmacyStaff.findById(req.user.id);
@@ -467,11 +529,12 @@ exports.getDispensingHistory = async (req, res) => {
       h => h.prescriptionId !== null || (Array.isArray(h.items) && h.items.length > 0)
     );
     const groupedHistory = groupDispensingHistoryByReceipt(validHistory);
+    const sanitizedHistory = await resolvePatientNames(groupedHistory);
 
     const total = await Dispensing.countDocuments(query);
-    res.json({ data: groupedHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
+    res.json({ data: sanitizedHistory, pagination: { total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    console.error("[getDispensingHistory Error]:");
+    console.error("[getDispensingHistory Error]:", error);
     res.status(500).json({ error: "Failed to get history" });
   }
 };
@@ -492,7 +555,8 @@ exports.getReceipt = async (req, res) => {
       });
 
     if (!dispensing) return res.status(404).json({ error: 'Receipt not found' });
-    res.json({ data: dispensing });
+    const [sanitized] = await resolvePatientNames([dispensing]);
+    res.json({ data: sanitized });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch receipt' });
   }

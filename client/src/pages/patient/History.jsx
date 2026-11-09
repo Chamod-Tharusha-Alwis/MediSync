@@ -587,17 +587,22 @@ const HistoryCard = ({ event, onRate }) => {
                         {/* PDF E-Prescription Download */}
                         {((details.prescriptions && details.prescriptions.length > 0) || isConsultation) && (
                           pdfEnabled ? (
-                            <button
-                              type="button"
-                              disabled={pdfDownloading}
-                              onClick={handleDownloadConsultationPdf}
-                              className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              {pdfDownloading
-                                ? t('patient.generatingPdf', 'Generating PDF…')
-                                : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
-                            </button>
+                            <div className="flex flex-col items-start gap-1">
+                              <button
+                                type="button"
+                                disabled={pdfDownloading}
+                                onClick={handleDownloadConsultationPdf}
+                                className="glass-button flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                {pdfDownloading
+                                  ? t('patient.generatingPdf', 'Generating PDF…')
+                                  : t('patient.downloadConsultationPdf', 'Download Consultation PDF')}
+                              </button>
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                🔒 {t('patient.pdfPasswordNotice', 'Encrypted PDF: open with your NIC number.')}
+                              </span>
+                            </div>
                           ) : (
                             <button
                               type="button"

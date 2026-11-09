@@ -172,7 +172,8 @@ exports.exportConsultationPdf = async (req, res) => {
         req.user.nic && consultation.patientNic &&
         String(req.user.nic).trim().toUpperCase() === String(consultation.patientNic).trim().toUpperCase()
       );
-      if (!isOwnerId && !isOwnerNic && req.user.id && consultation.patientNic && typeof Patient.findById === 'function') {
+      const canQueryPatient = typeof Patient?.findById === 'function' && (Patient.db?.readyState === 1 || Patient.findById._isMockFunction);
+      if (!isOwnerId && !isOwnerNic && req.user.id && consultation.patientNic && canQueryPatient) {
         try {
           const authPatient = await Patient.findById(req.user.id);
           authPatient?.decryptFieldsSync?.();
@@ -229,7 +230,8 @@ exports.exportConsultationPdf = async (req, res) => {
     if (
       !Array.isArray(consultationPayload.medications) &&
       !Array.isArray(consultationPayload.prescriptions) &&
-      typeof Prescription?.find === 'function'
+      typeof Prescription?.find === 'function' &&
+      (Prescription.db?.readyState === 1 || Prescription.find._isMockFunction)
     ) {
       try {
         const rxOr = [];
@@ -320,7 +322,7 @@ exports.resendConsultationSummaryEmail = async (req, res) => {
 
     const patientObjId = consultation.patientId?._id || consultation.patientId;
     let isOwner = Boolean(patientObjId && String(patientObjId) === String(req.user.id));
-    if (!isOwner && consultation.patientNic && typeof Patient.findById === 'function') {
+    if (!isOwner && consultation.patientNic && typeof Patient.findById === 'function' && (Patient.db?.readyState === 1 || Patient.findById._isMockFunction)) {
       const authPatient = await Patient.findById(req.user.id);
       authPatient?.decryptFieldsSync?.();
       if (

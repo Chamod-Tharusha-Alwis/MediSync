@@ -150,7 +150,7 @@ const SupportTicketsRoster = () => {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-white font-bold text-xl">{selectedTicket.subject}</h3>
-                  <p className="text-slate-400 text-xs mt-2 font-mono">NIC: {selectedTicket.patientId?.nic || 'N/A'}</p>
+                  <p className="text-slate-400 text-xs mt-2 font-medium">Patient: {selectedTicket.patientId?.fullName || selectedTicket.patientId?.name || (selectedTicket.patientId?.nic ? selectedTicket.patientId.nic.slice(0, 3) + '***' + selectedTicket.patientId.nic.slice(-3) : 'Verified Patient')}</p>
                   <p className="text-slate-500 text-xs mt-1">Submitted on: {formatSriLankaDateTime(selectedTicket.createdAt)}</p>
                 </div>
                 

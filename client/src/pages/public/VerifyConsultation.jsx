@@ -269,12 +269,6 @@ export default function VerifyConsultation() {
             <ArrowLeft className="w-4 h-4" />
             <span>MediSync Home</span>
           </Link>
-          <span
-            data-testid="clinical-validation-badge"
-            className="text-xs font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
-          >
-            clinicalValidation: not_established
-          </span>
         </div>
 
         {/* Loading State */}
@@ -810,6 +804,7 @@ export default function VerifyConsultation() {
                       )}
                     </button>
                   </div>
+                  <p className="text-xs text-slate-400 mt-2">🔒 Encrypted PDF: open with your NIC number (e.g. 199512345678 or 951234567V).</p>
                 </div>
               </div>
             )}
