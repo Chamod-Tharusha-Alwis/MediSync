@@ -1053,15 +1053,32 @@ const NewConsultation = () => {
                         </motion.button>
                       </div>
 
-                      <div data-testid="disease-coverage-badge" className="mb-3 text-[11px] text-slate-300 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-teal-500/20 flex items-center gap-1.5 relative z-10">
+                      <div data-testid="disease-coverage-badge" className="mb-3 text-xs text-slate-300 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-teal-500/20 flex items-center gap-1.5 relative z-10">
                         <FiInfo className="text-teal-400 w-3.5 h-3.5 flex-shrink-0" />
                         <span>{t('doctor.coverageBadge', '41 reference symptom profiles curated; 71,704 ICD-10 conditions available for manual diagnosis.')}</span>
                       </div>
 
-                      <p role="note" data-testid="clinical-validation-disclaimer" className="mb-5 text-sm text-amber-200/90 relative z-10 flex flex-wrap items-center gap-2">
-                        <span data-testid="clinical-validation-badge" className="text-[11px] font-mono text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-semibold">clinicalValidation: not_established</span>
-                        <span>Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.</span>
-                      </p>
+                      <div
+                        role="note"
+                        data-testid="clinical-validation-disclaimer"
+                        className="mb-5 bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 text-xs text-amber-200/90 relative z-10 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="font-semibold text-amber-300 flex items-center gap-1.5">
+                            <FiAlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            Clinical Decision Support Advisory
+                          </span>
+                          <span
+                            data-testid="clinical-validation-badge"
+                            className="text-[11px] font-mono text-amber-300/90 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/25 font-semibold"
+                          >
+                            clinicalValidation: not_established
+                          </span>
+                        </div>
+                        <p className="leading-relaxed text-slate-300">
+                          Reference matches require clinician assessment and are not diagnoses or treatment recommendations. Similarity scores are not disease probabilities.
+                        </p>
+                      </div>
 
                       {emergencyAdvisory?.hasEmergencyRedFlag && (
                         <div
