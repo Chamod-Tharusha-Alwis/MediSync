@@ -1,6 +1,6 @@
 # MediSync Development & Verification Progress (docs/final/PROGRESS.md)
 
-Updated through **PHASE 5** (`final/p5-ml-coverage`). Updated sequentially through all phases.
+Updated through **PHASE 6** (`final/p6-security-hardening`). Updated sequentially through all phases.
 
 > **Truth Standard**: An item is only marked "Verified live" if tested on the live Render/Vercel platform this session. Items marked "Verified in tests only" are covered by automated offline regression suites (`node scripts/run_offline_tests.js`). Never claim unbuilt or unverified items.
 
@@ -22,7 +22,7 @@ Updated through **PHASE 5** (`final/p5-ml-coverage`). Updated sequentially throu
 | **10. Trilingual UI** | Complete English, Sinhala, Tamil localization for all public and clinical workflows; parity across locale dictionaries | Live landing page language switcher loads cleanly | Locale key parity verification tests (835 keys identical across en/si/ta) | 100% key parity maintained across all locales | 98% |
 | **11. QR verification + release page** | Consultation Summary PDF QR (`/verify/:token`), OTP request on scan, OTP unlock without NIC, clinical summary view, per-medicine release status | Legacy token status endpoint responds 404 for invalid token | Automated OTP verification suite (11 tests pass in `otpVerificationPortal.test.js`) | Phase 2 implementation complete; ready for live deployment verification | 90% |
 | **12. PDF export** | Cryptographically signed Consultation Summary PDF, lab report PDF, gated by `PDF_EXPORT_ENABLED` | PDF generation utility loaded in backend | PDF generator tests, layout rendering tests, hash integrity tests | Client-side printing depends on browser rendering engine | 85% |
-| **13. Security** | Field-level encryption at rest, secure HTTP headers, CORS whitelisting, rate limiting per IP/token, zero PII in audit logs, 15 protected ledger files | Live CORS headers, Cloudflare + Render TLS verified | Encryption roundtrip tests, audit log schema tests, rate limiter tests | Will formalize and harden in Phase 6 (`SECURITY_STATUS.md`) | 85% |
+| **13. Security** | Field-level encryption at rest, secure HTTP headers, CORS whitelisting, rate limiting per IP/token, zero PII in audit logs, 15 protected ledger files | Live CORS headers, Cloudflare + Render TLS verified | Encryption roundtrip tests (`qaEncryptionBootstrap.test.js` 14/14 PASS), audit log schema tests, rate limiter tests, `SECURITY_STATUS.md` | Gaps documented (Atlas M0, operator keyring, formulary review) | 95% |
 | **14. Deployment & operations** | Multi-service cloud architecture (Vercel Frontend, Render Express Backend, Render Python ML, MongoDB Atlas), automated CI workflows | All 3 services live and responding 200 OK | Offline regression runner (3,465 tests pass, 0 fail), client build passes | Render free tier cold-start (~50 s) accepted; Atlas M0 without automated PITR | 85% |
 | **15. Documentation consistency** | Comprehensive technical report, architecture specs, claims audit, slides outline, demo script, viva kit | All docs committed and tracked in git | Link integrity script (`check_report_links.py` 96/96 100% OK), figure generator (F01–F14), P1 sweep complete | Final reconciliation in Phase 8 | 95% |
 
@@ -31,6 +31,6 @@ Updated through **PHASE 5** (`final/p5-ml-coverage`). Updated sequentially throu
 ## 2. Summary Metric Calculation
 
 - **Total Areas Tracked**: 15
-- **Average Implementation & Verification Score**: **88.1%** (up from 87.9%)
+- **Average Implementation & Verification Score**: **88.8%** (up from 88.1%)
 - **Offline Quality Gate**: 3,465 passed / 0 failed (207 suites) | Client build exit 0 | Links 96/96 OK
 - **Protected Ledger**: 15 / 15 files locked
