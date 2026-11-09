@@ -1,6 +1,6 @@
 # MediSync Development & Verification Progress (docs/final/PROGRESS.md)
 
-Baseline established in **PHASE 0** (`16a1d36`). Updated sequentially through all phases.
+Updated through **PHASE 1** (`3597885`). Updated sequentially through all phases.
 
 > **Truth Standard**: An item is only marked "Verified live" if tested on the live Render/Vercel platform this session. Items marked "Verified in tests only" are covered by automated offline regression suites (`node scripts/run_offline_tests.js`). Never claim unbuilt or unverified items.
 
@@ -24,13 +24,13 @@ Baseline established in **PHASE 0** (`16a1d36`). Updated sequentially through al
 | **12. PDF export** | Cryptographically signed Consultation Summary PDF, lab report PDF, gated by `PDF_EXPORT_ENABLED` | PDF generation utility loaded in backend | PDF generator tests, layout rendering tests, hash integrity tests | Client-side printing depends on browser rendering engine | 85% |
 | **13. Security** | Field-level encryption at rest, secure HTTP headers, CORS whitelisting, rate limiting per IP/token, zero PII in audit logs, 15 protected ledger files | Live CORS headers, Cloudflare + Render TLS verified | Encryption roundtrip tests, audit log schema tests, rate limiter tests | Will formalize and harden in Phase 6 (`SECURITY_STATUS.md`) | 85% |
 | **14. Deployment & operations** | Multi-service cloud architecture (Vercel Frontend, Render Express Backend, Render Python ML, MongoDB Atlas), automated CI workflows | All 3 services live and responding 200 OK | Offline regression runner (3,465 tests pass, 0 fail), client build passes | Render free tier cold-start (~50 s) accepted; Atlas M0 without automated PITR | 85% |
-| **15. Documentation consistency** | Comprehensive technical report, architecture specs, claims audit, slides outline, demo script, viva kit | All docs committed and tracked in git | Link integrity script (`check_report_links.py` 96/96 100% OK), figure generator (F01–F14) | Leftover sweep in Phase 1; final sync in Phase 8 | 85% |
+| **15. Documentation consistency** | Comprehensive technical report, architecture specs, claims audit, slides outline, demo script, viva kit | All docs committed and tracked in git | Link integrity script (`check_report_links.py` 96/96 100% OK), figure generator (F01–F14), P1 sweep complete | Final reconciliation in Phase 8 | 95% |
 
 ---
 
 ## 2. Summary Metric Calculation
 
 - **Total Areas Tracked**: 15
-- **Baseline Average Implementation & Verification Score**: **82.3%**
+- **Average Implementation & Verification Score**: **83.0%**
 - **Offline Quality Gate**: 3,465 passed / 0 failed (207 suites)
 - **Protected Ledger**: 15 / 15 files locked
