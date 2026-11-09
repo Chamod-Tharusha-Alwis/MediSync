@@ -20,6 +20,10 @@ const dispensingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  pharmacyName: String,
+  pharmacistName: String,
+  isAlternativeDispensed: { type: Boolean, default: false },
+  alternativeDetails: { type: String, default: '' },
   items: [{
     inventoryItemId: { type: mongoose.Schema.Types.ObjectId },
     unit: String,
