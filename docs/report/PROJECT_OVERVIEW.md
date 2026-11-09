@@ -8,7 +8,7 @@ In many developing healthcare systems, hospital clinics are crowded, medical rec
 MediSync solves these issues by:
 1. Giving patients a secure, digital medical history they carry on their phones.
 2. Giving doctors a fast, automated system to capture consultations and check for medication risks.
-3. Protecting prescriptions with unique QR codes and identity verification so they can only be filled once.
+3. Protecting prescriptions with atomic status tracking so they can only be filled once, with verifiable cryptographic summaries.
 4. Monitoring disease trends across all 25 districts of Sri Lanka in real time, automatically notifying public health officials of potential outbreaks.
 5. Providing full language support in **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)** so everyone can use it comfortably.
 
@@ -18,13 +18,13 @@ MediSync solves these issues by:
 
 ### 2.1 The Patient
 - **Registration**: Signs up with their email/phone or National Identity Card (NIC) number.
-- **Appointments**: Books clinic appointments with doctors and views their estimated queue position.
+- **Profile & Preferences**: Manages their contact details and sets preferred interface language (English, Sinhala, Tamil).
 - **Health Timeline**: Reviews their past doctor visits, diagnoses, and lab test results securely in one place.
-- **Digital Prescriptions**: Receives prescriptions directly on their smartphone with a secure QR code. They can show this QR code at any pharmacy or print a PDF copy.
+- **Digital Prescriptions & Summaries**: Receives verifiable Consultation Summary PDFs directly on their smartphone. Each summary embeds a secure verification QR code linking to the public portal for instant document authenticity checks (it is not scanned at the pharmacy to dispense; pharmacy dispensing uses NIC lookup with patient consent).
 - **Privacy Control**: Chooses which doctors are permitted to see their complete medical history.
 
 ### 2.2 The Doctor
-- **Queue Management**: Sees the day's patient queue and begins consultations with one click.
+- **Patient Lookup & Consent**: Looks up patients by National Identity Card (NIC) with patient OTP consent verification.
 - **Patient History**: Accesses past visits, allergies, and existing conditions.
 - **Symptom Triage Assistant**: Types in the patient's symptoms (e.g., "high fever", "joint pain", "retro-orbital headache"). A lightweight artificial intelligence assistant instantly suggests possible conditions to consider (with a clear notice that this is a clinical decision aid, not an automated diagnosis).
 - **ICD-10 Diagnoses**: Selects standard World Health Organization disease codes from an easy search menu.
@@ -35,7 +35,7 @@ MediSync solves these issues by:
 
 ### 2.3 The Pharmacist
 - **Prescription Lookup via NIC**: Enters the patient's National Identity Card (NIC) number; patient confirms authorization via OTP consent to load pending prescriptions.
-- **Verification Capability**: Prescription summaries embed a cryptographic QR code linking to the Public Verification Portal (`/verify/:token`), allowing authenticity verification with zero patient PII, while full history PDF downloads require passing the patient NIC gate.
+- **Verification Capability**: Prescription summaries embed a cryptographic QR code linking to the Public Verification Portal (`/verify/:token`), allowing authenticity verification with zero patient PII, while full history PDF downloads require passing the patient NIC gate <!-- TODO-P2 -->.
 - **Dispensing Safety**: The pharmacist reviews prescribed items, verifies them against recorded patient allergies, and records the dispensation.
 - **Anti-Fraud Protection**: The moment medication is dispensed, the prescription status updates atomically to "Dispensed". Any attempt to re-dispense the same prescription at any pharmacy is immediately blocked: *"Prescription is not eligible for dispensing." (code: ALREADY_DISPENSED)*.
 
@@ -64,18 +64,19 @@ MediSync solves these issues by:
 
 ```
 [ Patient ] 
-     | 1. Books Appointment
+     | 1. Visits Clinic / In-Person Consultation
      v
 [ Doctor ]
-     | 2. Records Vitals & Symptoms
-     | 3. Consults ML Assistant (Gets Differential Guidance)
-     | 4. Prescribes Medication (Safety Engine Verifies Interactions)
+     | 2. Looks up Patient by NIC (Patient OTP Consent)
+     | 3. Records Vitals & Symptoms
+     | 4. Consults ML Assistant (Gets Differential Guidance)
+     | 5. Prescribes Medication (Safety Engine Verifies Interactions)
      v
 [ System Database (Encrypted) ]
      |
-     +---> 5. Prescription QR Code Issued to Patient
+     +---> 6. Consultation Summary PDF Generated (With Verification QR)
      |
-     +---> 6. Diagnostic Counts Logged for Epidemiological Surveillance
+     +---> 7. Diagnostic Counts Logged for Epidemiological Surveillance
      |          |
      |          v
      |     [ Outbreak Detection Engine ] 
@@ -83,9 +84,8 @@ MediSync solves these issues by:
      |
      v
 [ Pharmacist ]
-     | 7. Scans QR Code
-     | 8. Verifies Patient National Identity Card (NIC)
-     | 9. Dispenses Medication (Prescription Marked As Dispensed)
+     | 8. Looks up Pending Prescriptions by Patient NIC + OTP Consent
+     | 9. Reviews Allergies & Dispenses Medication (Prescription Marked As Dispensed)
 ```
 
 ---

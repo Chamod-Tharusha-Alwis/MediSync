@@ -81,7 +81,7 @@
   - Confirmed 100% byte-identical SHA-256 digests across successive runs.
   - All file sizes between 65 KB and 228 KB (well under 500 KB ceiling).
 - **Mermaid Architecture & Sequence Diagrams (docs/report/diagrams/)**:
-  - Authored 9 formal .mmd diagrams: system architecture, deployment infrastructure, consultation-prescription-dispensing, QR verification and NIC gate, outbreak detection pipeline, tiered matcher flow, authentication/OTP flow, medicine safety flow, and ER diagram.
+  - Authored 9 formal .mmd diagrams: system architecture, deployment infrastructure, consultation-prescription-dispensing, QR verification and NIC gate, outbreak detection pipeline, tiered matcher flow, authentication/OTP flow, medicine safety flow, and ER diagram. <!-- TODO-P2 -->
 - **Documentation**:
   - Created docs/report/figures/FIGURES.md detailing data source, limitations, and hash ledger for all 14 figures.
   - Created docs/report/ML_METHODOLOGY.md detailing provenance, curation, tiered matching, resource profile, and evaluation protocols.

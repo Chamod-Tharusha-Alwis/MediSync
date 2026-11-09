@@ -42,11 +42,11 @@ MediSync features an advanced epidemiological intelligence engine designed to de
 
 ### Core Capabilities & Technical Highlights:
 * **Automated Nightly Surveillance Cron Jobs (`cronJobs.js`)**: A background orchestration engine that fires every midnight (`0 0 * * *`), automatically aggregating daily disease case counts from consultation logs and diagnostic laboratory test confirmations across all healthcare facilities in Sri Lanka.
-* **Z-Score Epidemiological Surveillance**: For every disease within each district, the engine calculates a rolling historical baseline average and standard deviation over a 4-week window. It then computes the real-time statistical **Z-score** ($Z = \frac{X - \mu}{\sigma}$) to quantify exact standard deviation departures from expected seasonal norms.
-* **ICD-10 Weighted Risk Rules & Panic Caps (`app.py`)**: To prevent common endemic spikes (such as seasonal common colds or allergic rhinitis) from triggering nationwide health panics, the system implements a strict, clinical-risk-weighted threshold architecture based on WHO ICD-10 chapters:
-  * **High Danger Tier (e.g., Dengue, Cholera A00, Typhoid, Tuberculosis, AIDS)**: Highly sensitive surveillance guardrails. Requires only **>10 cases** in a district and a **>=150% spike** over baseline to trigger an immediate, unrestricted **`High`** severity alert across public health dashboards.
-  * **Medium Danger Tier (e.g., Acute Gastroenteritis, Urinary Tract Infections, Asthma)**: Balanced surveillance guardrails. Requires **>30 cases** and a **>=300% spike** over baseline to trigger an anomaly, with alert severity capped at **`Medium`**.
-  * **Low Danger Tier (e.g., Common Cold J00-J06, Allergic Rhinitis, Fungal Infections)**: Restricted surveillance guardrails. Requires a massive **>100 case volume** and an **>=800% spike** over baseline to register as an anomaly. Crucially, the system enforces a hard architectural guardrail: **Low Danger diseases are permanently capped at `Medium` risk and can never trigger a `High` severity red alert**, regardless of case volume (e.g., even a 2,500% surge in colds remains a Medium advisory).
+* **Z-Score Epidemiological Surveillance (`surveillanceService.js`)**: Evaluates a 7-day rolling window against a 56-day district historical baseline with regularized variance ($\sigma \ge 0.5$). Computes real-time standard deviation departure ($z = rac{\mu_{7} - \mu_{56}}{\sigma_{56}}$).
+* **Dual-Gate Suppression Architecture (`outbreakDetector.js`)**: To prevent false alarms from low-volume or transient spikes, an alert is only emitted if two mandatory gates are met:
+  * **Gate 1 (Volume Threshold)**: Window disease volume $N \ge 5$ cases.
+  * **Gate 2 (Persistence Threshold)**: Elevated anomaly ($z > 2.0$) sustained across at least 2 consecutive calendar days.
+  * **Severity Tiers**: Watch ($2.0 \le z < 3.0$), Alert ($3.0 \le z < 4.0$), Critical ($z \ge 4.0$).
 * **Global ICD-10 Directory Integration**: Backed by a high-performance SQLite relational database (`medisync.db`) containing **71,704 WHO ICD-10 diagnostic codes**, allowing clinicians to search and tag any known medical condition globally while maintaining sub-millisecond local Sri Lankan disease mapping.
 
 ---
@@ -68,13 +68,13 @@ The Laboratory Management module establishes a cryptographic, consent-driven dia
 
 ## 4. Smart Pharmacy Dispensing
 
-The Pharmacy Dispensing module prevents medication errors, unauthorized prescription refills, and inventory discrepancies by connecting licensed pharmacists directly to the verified E-Prescription network.
+The Pharmacy Dispensing module prevents medication errors and unauthorized prescription refills by connecting licensed pharmacists directly to the verified E-Prescription network.
 
 ### Core Capabilities & Technical Highlights:
 * **NIC Blind-Index Lookups (`versionedEncryption.js`)**: To locate a patient's pending prescriptions without exposing raw National Identity Card (NIC) numbers or storing searchable plaintext PII in MongoDB, the pharmacy portal utilizes cryptographic **Blind Indexing**. When a pharmacist inputs an NIC, the system generates a deterministic `HMAC-SHA256` hash using a secret pepper, executing an indexed database lookup against `patient.nic_blind_index` in sub-millisecond time while preserving encryption-at-rest across all demographic fields.
-* **Double-Dispense Prevention Engine**: Each prescription item maintains an atomic, stateful lifecycle (`Pending` $\rightarrow$ `Partially Dispensed` $\rightarrow$ `Fully Dispensed`). When a pharmacist fulfills a prescription, the backend (`pharmacyController.js`) executes a transactional lock, updating the fulfillment status and recording the exact dispensing timestamp and pharmacy license number. If a patient attempts to present the same prescription barcode at another facility, the system blocks the transaction and displays a double-dispensing warning.
-* **Expiry Enforcement & Batch Tracking**: Pharmacists log medication batch numbers and expiration dates during inventory onboarding. During the dispensing verification workflow, the system automatically validates batch expiration timestamps, physically blocking the dispensing of expired or near-expiry pharmaceuticals and triggering automated restocking alerts.
-* **Inventory Depletion & Drug Substitution Logging (`Dispensing.js`)**: When a prescribed brand-name drug is out of stock, licensed pharmacists can select an approved generic equivalent from the integrated pharmaceutical catalog (`Drug.js`). The system mandates that the pharmacist record a formal substitution reason, which is permanently logged in the dispensing audit trail and transmitted as an informational notification to the prescribing clinician.
+* **Double-Dispense Prevention Engine**: Each prescription item maintains an atomic, stateful lifecycle (`Pending` $\rightarrow$ `Partially Dispensed` $\rightarrow$ `Fully Dispensed`). When a pharmacist fulfills a prescription, the backend (`pharmacyController.js`) executes a transactional lock, updating the fulfillment status and recording the exact dispensing timestamp and pharmacy license number. If an attempt is made to re-dispense the same prescription at any facility, the system blocks the transaction and returns `Prescription is not eligible for dispensing.` (`ALREADY_DISPENSED`).
+* **Allergy Cross-Checking**: The dispensing workflow verifies prescribed drugs against recorded patient allergies before committing the dispense transaction.
+* **Drug Substitution Logging (`Dispensing.js`)**: When a prescribed brand-name drug is substituted, licensed pharmacists can record an approved generic equivalent from the pharmaceutical catalog (`Drug.js`). The system records `isAlternativeDispensed` and `alternativeDetails` in the dispensing audit trail (`Dispensing.js`).
 
 ---
 

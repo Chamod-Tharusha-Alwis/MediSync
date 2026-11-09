@@ -92,7 +92,7 @@ MediSync utilizes a cohesive design system centered around **Premium Slate Glass
 
 #### 3.2.3 Pharmacy Terminal (`pages/pharmacy/Dashboard.jsx`)
 - NIC lookup interface with grid layout for prescriptions.
-- Dispensation panel with substitution checkmarks, reason trackers, and inventory depletion charts.
+- Dispensation panel with substitution checkmarks, reason trackers, and atomic dispensing status.
 
 #### 3.2.4 Hospital Lab Board (`pages/hospital/Dashboard.jsx`)
 - Consent OTP trigger input, pending tests list, and technician report upload panel with file drag-and-drop slots.
