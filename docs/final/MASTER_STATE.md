@@ -6,12 +6,12 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `PHASE_2: OTP-gated QR verification page`
-- **Active Git Branch**: `main` (branching `final/p2-otp-verify-page`)
-- **Latest Commit on `main`**: `3597885` (Phase 1 merged into `main`)
+- **Current Phase**: `PHASE_3: Medicine release data integrity`
+- **Active Git Branch**: `main` (branching `final/p3-release-data`)
+- **Latest Commit on `main`**: `9299e75` (Phase 2 merged into `main`)
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
 - **Quality Gate**: 3,465 tests passed / 0 failed across 207 suites | Client build exit code 0 | Links 96/96 100% OK
-- **Next Action**: Create branch `final/p2-otp-verify-page`, write `docs/final/PHASE_2_PLAN.md`, implement backend endpoints (`/api/verify/:token/otp/request`, `/api/verify/:token/otp/verify`, `/api/verify/:token/history-pdf`), implement frontend `VerifyConsultation.jsx`, add unit/integration tests, run quality gates.
+- **Next Action**: Create branch `final/p3-release-data`, audit `dispensingService.js` and `pharmacyController.js`, ensure pharmacy history and verify portal consume identical release facts via `releaseSummaryService.js`, verify `ALREADY_DISPENSED` double-dispense lockouts and partial transitions, write `PHASE_3_REPORT.md`, verify gates, commit, push, PR, merge.
 
 ---
 
@@ -21,8 +21,8 @@
 |:---:|---|---|:---:|:---:|:---:|
 | **P0** | Preflight, merge S10, baseline | `main` | **COMPLETE** | `16a1d36` / `3032057` | S10 merged, baseline recorded, ledger 15/15, live smoke PASS |
 | **P1** | Documentation leftover sweep | `final/p1-docs-sweep` | **COMPLETE** | `3597885` | Grep banned terms returns zero stale claims, links 96/96 OK |
-| **P2** | OTP-gated QR verification page | `final/p2-otp-verify-page` | **IN_PROGRESS** | - | Mobile-first verify page, OTP unlock, clinical + release data |
-| **P3** | Medicine release data integrity | `final/p3-release-data` | **PENDING** | - | Shared release helper, pharmacy history agrees with verify page |
+| **P2** | OTP-gated QR verification page | `final/p2-otp-verify-page` | **COMPLETE** | `9299e75` | Mobile-first verify page, OTP unlock, clinical + release data in one response |
+| **P3** | Medicine release data integrity | `final/p3-release-data` | **IN_PROGRESS** | - | Shared release helper, pharmacy history agrees with verify page |
 | **P4** | Clinical safety gaps (emergency advisory) | `final/p4-clinical-safety` | **PENDING** | - | Rule-based red-flag advisory, sanity cases tested |
 | **P5** | ML coverage improvement (time-boxed) | `final/p5-ml-coverage` | **PENDING** | - | Safe auto-mapping or documented no-change outcome |
 | **P6** | Security & operations hardening | `final/p6-security-hardening` | **PENDING** | - | SECURITY_STATUS.md complete, rate limits, headers, zero secrets |
@@ -39,3 +39,4 @@
 - **Frontend Live Deployment**: `https://medisync.chamodtharusha.com.lk` -> `200 OK`
 - **Protected Ledger Status**: 15/15 valid (SHA-256 verified)
 - **Phase 1 Report**: `docs/final/PHASE_1_REPORT.md`
+- **Phase 2 Plan & Report**: `docs/final/PHASE_2_PLAN.md` & `docs/final/PHASE_2_REPORT.md`
