@@ -221,6 +221,13 @@ exports.getAllUsers = async (req, res) => {
       );
     }
 
+    const statusQuery = String(req.query.status || '').trim().toLowerCase();
+    if (statusQuery === 'active') {
+      users = users.filter(u => u.isActive !== false);
+    } else if (statusQuery === 'blocked' || statusQuery === 'inactive') {
+      users = users.filter(u => u.isActive === false);
+    }
+
     const total = users.length;
     users = users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice((page - 1) * limit, page * limit);
@@ -267,15 +274,38 @@ exports.getAuditLogs = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 25;
     const skip = (page - 1) * limit;
-    const { actorRole, actorId, startDate, endDate, search } = req.query;
+    const { actorRole, actorId, startDate, endDate, search, email, action } = req.query;
 
     let matchQuery = { actorId: { $ne: null, $exists: true } };
     if (actorRole) matchQuery.actorRole = actorRole;
     if (actorId) matchQuery.actorId = actorId;
+    if (action && action !== 'all') {
+      matchQuery.action = new RegExp(String(action).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
     if (startDate || endDate) {
       matchQuery.timestamp = {};
       if (startDate) matchQuery.timestamp.$gte = new Date(startDate);
       if (endDate) matchQuery.timestamp.$lte = new Date(endDate);
+    }
+
+    if (email) {
+      const escapedEmail = String(email).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const emailRegex = new RegExp(escapedEmail, 'i');
+      const [doctors, allPatients, pharmacies, hospitals, admins] = await Promise.all([
+        Doctor.find({ email: emailRegex }).select('_id'),
+        Patient.find({ email: emailRegex }).select('_id'),
+        PharmacyStaff.find({ email: emailRegex }).select('_id'),
+        Hospital.find({ email: emailRegex }).select('_id'),
+        Admin.find({ email: emailRegex }).select('_id')
+      ]);
+      const emailIds = [
+        ...doctors.map(d => d._id.toString()),
+        ...allPatients.map(p => p._id.toString()),
+        ...pharmacies.map(p => p._id.toString()),
+        ...hospitals.map(h => h._id.toString()),
+        ...admins.map(a => a._id.toString())
+      ];
+      matchQuery.actorId = { $in: emailIds };
     }
 
     if (search) {
@@ -298,7 +328,11 @@ exports.getAuditLogs = async (req, res) => {
         ...hospitals.map(h => h._id.toString()),
         ...admins.map(a => a._id.toString())
       ];
-      matchQuery.actorId = { $in: matchedIds };
+      if (matchQuery.actorId && Array.isArray(matchQuery.actorId.$in)) {
+        matchQuery.actorId.$in = matchQuery.actorId.$in.filter(id => matchedIds.includes(id));
+      } else {
+        matchQuery.actorId = { $in: matchedIds };
+      }
     }
 
     // Aggregation pipeline to deduplicate to ONE row per unique actor (their latest action)

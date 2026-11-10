@@ -83,5 +83,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/phase2VerificationTokenAndHistoryGate.test.js',
   '<rootDir>/tests/phaseD4NonProfiledConsultationOffline.test.js',
   '<rootDir>/tests/phaseD5GenericSurveillanceOffline.test.js',
-  '<rootDir>/tests/safetyPanelConsistency.test.js'
+  '<rootDir>/tests/safetyPanelConsistency.test.js',
+  '<rootDir>/tests/auditCoverage.test.js'
 );

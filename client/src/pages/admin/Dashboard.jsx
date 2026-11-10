@@ -321,6 +321,7 @@ const ManageUsers = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -336,6 +337,7 @@ const ManageUsers = () => {
         limit: '50',
       });
       if (roleFilter) params.set('role', roleFilter);
+      if (statusFilter) params.set('status', statusFilter);
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
       const { data } = await api.get(`/admin/users?${params.toString()}`);
       setUsers(data.data || []);
@@ -348,7 +350,7 @@ const ManageUsers = () => {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchUsers(); }, [roleFilter, page, searchQuery]);
+  useEffect(() => { fetchUsers(); }, [roleFilter, statusFilter, page, searchQuery]);
 
   const handleToggle = async (userId, role) => {
     try {
@@ -387,6 +389,15 @@ const ManageUsers = () => {
             <option value="hospital_admin">{t('roles.hospitalAdmin', 'Hospital Admin')}</option>
             <option value="pharmacy_admin">{t('roles.pharmacyAdmin', 'Pharmacy Admin')}</option>
             <option value="pharmacist">{t('roles.pharmacist', 'Pharmacist')}</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+            className="glass-input text-xs w-full sm:w-auto font-semibold"
+          >
+            <option value="">{t('common.all', 'All')}</option>
+            <option value="active">{t('common.active', 'Active')}</option>
+            <option value="blocked">{t('common.blocked', 'Blocked')}</option>
           </select>
         </div>
       </div>
