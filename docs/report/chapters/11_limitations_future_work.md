@@ -36,6 +36,15 @@ Evaluation of the 15 sanity symptom scenarios (`docs/report/ML_DESIGN_PARAMETERS
 - **SC-05** (*Resting tremor, bradykinesia, rigidity*) and **SC-10** (*Malar rash, joint stiffness*): Correctly do not trigger emergency red flags, but their lexical suggestions reflect catalog gaps (*Malaria* and *Fungal infection*, respectively).
 - Consequently, the system makes no claim of clinical diagnostic plausibility or algorithmic quality, and must strictly remain disclaimed with `clinicalValidation: not_established`.
 
+### 11.1.8 Known Security Limitations & Audit Review (CODEX 20261111 Audit)
+Independent security analysis (`docs/final/SECURITY_REVIEW_20261111.md`) identified architectural security limitations across the prototype implementation:
+1. **F04: Partial Field Encryption Coverage**: At-rest database encryption is limited to patient `['fullName', 'contactInfo', 'allergies']` and consultation `['patientNic', 'diagnosis', 'notes']`. Identifiers, email addresses, residential addresses, and dates of birth remain in plaintext. In verification flows, decryption failure is explicitly distinguished from known-clean zero allergies (`allergiesStatus: 'unavailable'` vs `'none'`). *Repair path*: Full schema envelope encryption across all PII.
+2. **F05: Legacy PDF Encryption Cipher**: Encrypted PDFs generated via `@pdfsmaller/pdf-encrypt-lite` utilize RC4-128 with identifier-derived passwords. PDF export is held under active administrative lockout (`SECURITY_HOLD`, returning HTTP 503). *Repair path*: Migrate to AES-256 PDF encryption (ISO 32000-2) with randomized per-document keys.
+3. **F08: LocalStorage Refresh Tokens**: Refresh tokens stored in browser `localStorage` are exposed if XSS occurs. *Repair path*: Migrate to HttpOnly, SameSite=Strict cookies with rotating refresh tokens.
+4. **F10: ML Engine Internal HMAC Hour-Bound Window**: Internal ML service HMAC signature is bound to a 1-hour window (`floor(time.time() / 3600)`) with no replay cache or nonce. *Repair path*: Redis-backed per-request nonce validation or 30-second timestamp freshness window.
+5. **F11: Admin Emergency Reveal Quorum**: Admin reveal of unmasked identifiers is audited but does not enforce multi-party quorum approval. *Repair path*: Multi-officer dual-authorization workflow.
+6. **F12: Field Encryption Cipher Mode Authenticity**: Storage encryption uses AES-256-CBC with SHA-256 key hashing without AEAD authentication tags. *Repair path*: Upgrade to AES-256-GCM or cloud KMS envelope encryption.
+
 ---
 
 ## 11.2 Future Research & Engineering Roadmap

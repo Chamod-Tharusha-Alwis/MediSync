@@ -10,9 +10,9 @@
 - **Active Git Branch**: `main`
 - **Release Version**: `v1.1.0-capstone`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
-- **Quality Gate Baseline**: 3,634 tests passed / 0 failed across 227 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,651 tests passed / 0 failed across 228 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Final Action**: Reconciled test totals across docs; whitelisted orphanReferenceNullSafety in clinical.offline.jest.cjs.
+- **Final Action**: Completed CODEX 20261111 security remediation (F01–F09), audit details, dependency checks, and documentation honesty updates.
 
 ---
 
@@ -32,3 +32,4 @@
 | 10 | **SEED** | Viva Voce demonstration data plan (917 docs, S-A to S-D outbreak proofs, Demo Patient `200012345678`) | `final/seed-viva-data` | **COMPLETED** |
 | 11 | **RESTORE-A** | Production seed SEED_2026_11_A protection, recovery tool, orphan auditor & read-only backup | `final/p10-restore-seed-a` | **COMPLETED** |
 | 12 | **ORPHAN-NULL-SAFETY** | Pre-existing outbreak orphan origin analysis (~6,309 consultations), application null-safety, and seeder manifest tracking | `final/p11-orphan-null-safety` | **COMPLETED** |
+| 13 | **SEC-REMED** | Security remediation from CODEX review (F01–F09), token revocation, encounter PDF view session, atomic OTP, structured audit details, documentation honesty reconciliation | `main` | **COMPLETED** |

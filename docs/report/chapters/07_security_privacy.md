@@ -11,12 +11,17 @@ MediSync implements a **defense-in-depth, zero-trust security architecture** des
 
 ## 7.2 Cryptographic Pipeline & Key Management
 
-### 7.2.1 Authenticated Field-Level Encryption (AES-256-GCM)
-In accordance with modern healthcare privacy mandates, patient personally identifiable information (PII) and confidential consultation notes are never persisted in plaintext. Implemented in `server/src/utils/versionedEncryption.js`:
-- **Cipher**: Advanced Encryption Standard in Galois/Counter Mode (AES-256-GCM), providing confidentiality and cryptographic message integrity.
-- **Payload Composition**: Each encrypted record field stores a compound string formatted as:
-  $$\text{Payload} = \text{keyVersion} : \text{IV (16 bytes base64)} : \text{AuthTag (16 bytes base64)} : \text{Ciphertext (base64)}$$
-- **Zero-Downtime Rotation**: The prefix `keyVersion` enables the application to decrypt historical records with legacy keys while encrypting subsequent writes with rotated active keys.
+### 7.2.1 Field-Level Encryption Reality & Cipher Details
+In the current implementation, sensitive clinical and demographic attributes utilize field-level encryption at rest via `mongoose-field-encryption`:
+- **Cipher**: Advanced Encryption Standard in Cipher Block Chaining mode (AES-256-CBC) parameterized by a SHA-256 key hash (derived from runtime `ENCRYPTION_KEY`). Note: It does not utilize authenticated Galois/Counter Mode (AES-256-GCM) with AEAD authentication tags.
+- **Exact Field Encryption Coverage**:
+  - `Patient` collection: Only `['fullName', 'contactInfo', 'allergies']` are encrypted at rest.
+  - `Consultation` collection: Only `['patientNic', 'diagnosis', 'notes']` are encrypted at rest.
+- **Unencrypted (Plaintext) Fields at Rest**:
+  - `Patient`: `nic`, `email`, `address`, `dateOfBirth`, `emergencyContact`, `chronicConditions`, `gender`, `bloodGroup` are stored in plaintext.
+  - `Consultation`: `symptoms`, `icdCode`, `icdDescription`, `district` are stored in plaintext.
+- **Payload Composition**: Encrypted fields are stored with the prefix `__enc_` followed by base64-encoded ciphertext blocks.
+- **Key Derivation & Rotation**: Cryptographic keys are loaded from environment variables (`ENCRYPTION_KEY`). Key rotation requires re-encrypting existing documents.
 
 ### 7.2.2 Blind Indexing for Privacy-Preserving Search
 Standard deterministic encryption permits pattern analysis, while randomized IV encryption precludes database index lookups. To enable $O(1)$ equality searching on patient identifiers without decrypting the entire database:
@@ -62,9 +67,32 @@ Any unauthorized modification immediately halts the release pipeline with an exi
 
 ---
 
-## 7.5 Known Security Weaknesses & Architectural Trade-offs
-Honesty and transparency are paramount in academic engineering evaluation. The following architectural weaknesses are recognized:
-1. **Low-Entropy National Identity Card (NIC) Credentials**: In Sri Lanka, citizen NICs follow predictable deterministic formats (9 digits + 'V' for pre-2016 cards, or 12 digits post-2016). To protect against candidate brute-force enumeration, the Public Verification Portal (`/verify/:token`) does NOT require NIC entry on mobile; instead, it enforces dynamic, single-use 6-digit OTP verification dispatched to the patient's registered email address with strict rate limiting (10 attempts / 15 min). 
-2. **Prototype Key Management**: Currently, cryptographic master keys reside in runtime environment variables (`ENCRYPTION_KEY`). In a commercial production deployment, keys must be managed via hardware security modules (HSM) or dedicated key management services (AWS KMS / HashiCorp Vault).
-3. **Free-Tier Denial-of-Service Surface**: While in-memory rate limiting throttles API endpoints, the Render Free tier provides limited network-layer DDoS mitigation compared to enterprise cloud firewalls.
-4. **Absence of Point-in-Time Database Recovery (PITR)**: MongoDB Atlas Free M0 clusters do not support continuous automated snapshot backups or PITR. Production migration requires Atlas M10+ tier provisioning.
+## 7.5 Known Security Limitations & Audit Review (CODEX 20261111 Audit)
+Honesty and transparency are paramount in academic engineering evaluation. Following the comprehensive security audit (`docs/final/SECURITY_REVIEW_20261111.md`), the following limitations and architectural trade-offs are explicitly recognized along with their defined repair paths:
+
+1. **F04: Partial Field Encryption Coverage & Allergy State Handling**
+   - *Current State*: As detailed in Section 7.2.1, only patient `fullName`, `contactInfo`, and `allergies`, and consultation `patientNic`, `diagnosis`, and `notes` are encrypted. Patient demographics (`nic`, `email`, `address`, `dateOfBirth`) and consultation metadata (`symptoms`, `icdCode`, `district`) remain plaintext in MongoDB. In verification flows, decryption failure is now strictly surfaced as `allergiesStatus: 'unavailable'` (`allergies: null`) rather than silently defaulting to an empty array.
+   - *Repair Path*: Complete database schema migration to envelope encryption using a unified cryptographic layer encrypting all sensitive PII and clinical fields.
+
+2. **F05: Legacy PDF Encryption Cipher & Active Export Lockout**
+   - *Current State*: `@pdfsmaller/pdf-encrypt-lite` uses RC4-128 (V=2, R=3, Length=128) with passwords derived from patient NIC and consultation identifiers. Because RC4 is cryptographically broken, clinical PDF export is currently held under an active administrative lockout (`SECURITY_HOLD`, `PDF_EXPORT_ENABLED !== 'true'`), returning HTTP 503 `PDF_EXPORT_UNAVAILABLE`.
+   - *Repair Path*: Migrate PDF generation to modern AES-256 PDF encryption (ISO 32000-2 / PDF 2.0) with cryptographically random per-document keys before lifting the export hold.
+
+3. **F08: Client Refresh Token Storage in LocalStorage**
+   - *Current State*: Refresh tokens are persisted in browser `localStorage` for cross-tab session maintenance, leaving tokens vulnerable to exfiltration if a cross-site scripting (XSS) vulnerability exists.
+   - *Repair Path*: Migrate refresh token exchange to `HttpOnly`, `SameSite=Strict`, `Secure` browser cookies with server-side sliding window expiration and automatic token family revocation upon reuse.
+
+4. **F10: ML Service Internal HMAC Hour-Bound Window**
+   - *Current State*: The internal API HMAC signature in `ml_auth.py` binds each timestamp to a 1-hour window (`floor(time.time() / 3600)`) without a replay cache or nonce, allowing captured requests to be replayed within the same clock hour.
+   - *Repair Path*: Implement per-request unique nonces cached in Redis with short TTL (e.g. 60 seconds) or require signed timestamps within a 30-second skew window.
+
+5. **F11: Administrative Emergency Unmasking Quorum**
+   - *Current State*: The administrative PII reveal endpoint records access in `AuditLog` but does not enforce multi-party quorum approval or cryptographic dual custody.
+   - *Repair Path*: Implement a multi-officer approval workflow requiring dual digital signatures prior to revealing decrypted identifiers.
+
+6. **F12: Field Encryption Cipher Mode Authenticity**
+   - *Current State*: The active database field encryption utilizes AES-256-CBC with SHA-256 key hashing without authenticated ciphertext tags (AEAD), lacking built-in cryptographic tampering detection at the block level.
+   - *Repair Path*: Migrate database field encryption from CBC mode to AES-256-GCM or integrate with cloud KMS envelope encryption.
+
+7. **Prototype Key Management & Cloud Free-Tier Surfaces**
+   - Master cryptographic keys reside in runtime environment variables (`ENCRYPTION_KEY`). Cloud deployment operates on Render Free and MongoDB Atlas M0 tiers, lacking hardware security module (HSM) key isolation, enterprise DDoS shielding, and automated point-in-time recovery (PITR).

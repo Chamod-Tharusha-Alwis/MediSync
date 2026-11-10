@@ -92,5 +92,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/prescriptionSupersession.test.js',
   '<rootDir>/tests/icdClassificationAlignment.test.js',
   '<rootDir>/tests/vivaSeedData.test.js',
-  '<rootDir>/tests/orphanReferenceNullSafety.test.js'
+  '<rootDir>/tests/orphanReferenceNullSafety.test.js',
+  '<rootDir>/tests/securityRemediationF01toF09.test.js'
 );

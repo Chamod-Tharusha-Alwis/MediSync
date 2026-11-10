@@ -1,9 +1,9 @@
 # MediSync Viva Voce Demonstration Seed Report
 
 **Batch Tag**: `viva-2026-11`  
-**Execution Date**: 2026-11-10  
+**Execution Date**: 2026-11-11  
 **Status**: Verified & Ready for Production Confirmation  
-**Test Suite Verification**: 31/31 PASS (`server/tests/vivaSeedData.test.js`), 3,634/3,634 overall suite PASS (`scripts/run_offline_tests.js`) across 227 suites  
+**Test Suite Verification**: 31/31 PASS (`server/tests/vivaSeedData.test.js`), 3,651/3,651 overall suite PASS (`scripts/run_offline_tests.js`) across 228 suites  
 
 ---
 
@@ -106,9 +106,16 @@ Without the `--owner-email` flag, accounts default to safe RFC 2606 `.invalid` d
 > Database parameter `--db` accepts both space-separated and equals syntax: `--db medisync_prod` and `--db=medisync_prod`.
 
 ### Step 1: Pre-Viva Backup (Mandatory OA-03)
-Before executing database modifications, capture a backup of `medisync_prod`:
+Before executing database modifications, capture a backup of `medisync_prod`. **CRITICAL**: To prevent git pollution and avoid cloud synchronization conflicts, the output directory must reside strictly outside the repository workspace and outside OneDrive:
+
+**PowerShell (Windows - Outside Repo and OneDrive)**:
 ```powershell
-mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="./backup_pre_viva"
+mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="C:\Backups\medisync_prod_backup"
+```
+
+**Bash (Linux / macOS - Outside Repo)**:
+```bash
+mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="/tmp/medisync_backup"
 ```
 
 ### Step 2: Read-Only Inspection (Audit Target Database State)

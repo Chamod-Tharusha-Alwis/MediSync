@@ -115,3 +115,15 @@ Generated: 2026-11-10T04:40:48.950Z
 | `/:token/otp/request` | `POST` | `public` | `verificationRoutes.js:54 (requestVerificationOtp)` | YES | `VERIFY_REQUEST_OTP` |
 | `/:token/otp/verify` | `POST` | `public` | `verificationRoutes.js:57 (verifyOtpAndUnlock)` | YES | `VERIFY_UNLOCKED` |
 | `/:token/history-pdf` | `POST` | `public` | `verificationRoutes.js:60 (downloadHistoryPdfWithNicGate)` | YES | `VERIFY_DOWNLOAD_HISTORY_PDF` |
+
+## 3. Structured Audit Details & PII Suppression (F06 Remediation)
+
+To satisfy security audit finding F06, `AuditLog` records persist structured operational context without leaking sensitive patient or cryptographic information:
+
+- **Schema Persistence**: `AuditLog.js` defines an optional `details: { type: mongoose.Schema.Types.Mixed, default: undefined }` field.
+- **Sanitized Ingestion**: `recordAudit` in `server/src/utils/auditLogger.js` consumes caller metadata, clones the object, and strictly strips any blacklisted or sensitive keys:
+  - `nic`, `password`, `token`, `secret`, `email`, `authorization`, `cookie`, `key`, `otp`, `allergies`, `diagnosis`, `symptoms`, `prescription`, `medications`.
+- **Allowed Context**: Non-PII operational fields (`tokenId`, `targetId`, `ip`, `outcome`, `remaining`, `status`, `reason`, `scope`, `filter`) are safely retained.
+- **Direct Controller Audit Instrumentation**: Public and unauthenticated verification endpoints (`/api/verify/:token`, `otp/request`, `otp/verify`, `revoke`) write structured metadata into `details` with actorRole `anonymous` and zero PII.
+- **Verification**: Verified via `server/tests/securityRemediationF01toF09.test.js` and `server/tests/auditCoverage.test.js`.
+

@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const {
   issueVerificationToken,
@@ -186,8 +187,11 @@ describe('Sub-Project 3 Phase 2: Verification Token & History Download Gate', ()
   });
 
   it('NIC history gate requires valid NIC with constant-time equality check', async () => {
+    const rawTokenC = 'c'.repeat(64);
+    const tokenHashC = crypto.createHash('sha256').update(rawTokenC).digest('hex');
     const fakeTokenRecord = {
       _id: new mongoose.Types.ObjectId(),
+      tokenHash: tokenHashC,
       consultationId: { _id: mockConsultationId },
       patientRef: mockPatientId,
       expiresAt: new Date(Date.now() + 86400000),
@@ -273,7 +277,21 @@ describe('Sub-Project 3 Phase 2: Verification Token & History Download Gate', ()
         },
       });
 
-      const reqCorrectNic = { params: { token: 'c'.repeat(64) }, body: { nic: '901234567v' } }; // Case-insensitive normalized
+      const validSessionJwt = jwt.sign(
+        {
+          purpose: 'qr_view_session',
+          tokenHash: tokenHashC,
+          patientId: mockPatientId,
+        },
+        process.env.JWT_SECRET || 'medisync_session_secret_local',
+        { expiresIn: '10m', algorithm: 'HS256' }
+      );
+
+      const reqCorrectNic = {
+        params: { token: rawTokenC },
+        headers: { authorization: `Bearer ${validSessionJwt}` },
+        body: { nic: '901234567v' },
+      }; // Normalized view session + encounter export
       const resCorrectNic = mockRes();
       await downloadHistoryPdfWithNicGate(reqCorrectNic, resCorrectNic);
 

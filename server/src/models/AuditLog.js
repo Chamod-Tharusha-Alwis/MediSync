@@ -8,6 +8,10 @@ const auditSchema = new mongoose.Schema({
   action: String,
   accessedNic: String,
   deviceModel: String,
+  details: {
+    type: mongoose.Schema.Types.Mixed,
+    default: undefined
+  },
   timestamp: { type: Date, default: Date.now }
 }, {
   capped: { size: 104857600, max: 100000 } // Capped at 100MB / 100,000 documents

@@ -61,7 +61,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   3. Inspect active prescriptions: point out the consultation verification QR code rendered on the official consultation summary PDF.
   4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that unlocking the clinical encounter and medicine release history uses a secure **OTP verification flow** sent to the patient's registered email (no NIC entry required on mobile). Note contingency: if email delivery is delayed, clinician can demonstrate authenticated doctor view. 
 - **Key Talking Point for Examiners**:
-  > *"All patient demographic information and clinical visit notes are encrypted at rest using field-level AES-256-GCM. The database never stores plaintext National Identity Card numbers or unencrypted clinical histories."*
+  > *"Patient names, contact information, and allergies, as well as consultation diagnoses and notes, are protected at rest using field-level encryption (AES-256-CBC). Fast equality lookups utilize dedicated HMAC-SHA256 blind indexes without exposing plaintext identifiers to database scans."*
 
 ---
 

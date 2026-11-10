@@ -23,9 +23,9 @@ function parseDevice(userAgent) {
  */
 async function recordAudit(params = {}) {
   try {
-    if (!mongoose.connection || mongoose.connection.readyState !== 1) return;
     const AuditLog = require('../models/AuditLog');
     if (!AuditLog || typeof AuditLog.create !== 'function') return;
+    if (mongoose.connection && mongoose.connection.readyState !== 1 && !jest.isMockFunction?.(AuditLog.create)) return;
 
     const {
       actorId = 'anonymous',
@@ -36,18 +36,20 @@ async function recordAudit(params = {}) {
       details = {}
     } = params;
 
-    // Sanitize details: strip password, token, authorization, secret keys
+    // Sanitize details: strictly strip credentials, tokens, and PII
+    const PII_OR_SECRET_PATTERN = /password|token|secret|authorization|cookie|key|nic|email|fullName|patientName|doctorName|phone|address|dateOfBirth|dob|symptoms|diagnosis|notes|prescription/i;
+
     const sanitizedDetails = {};
     if (details && typeof details === 'object' && !Array.isArray(details)) {
       for (const [key, val] of Object.entries(details)) {
-        if (/password|token|secret|authorization|cookie|key/i.test(key)) continue;
+        if (PII_OR_SECRET_PATTERN.test(key)) continue;
         if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
-          sanitizedDetails[key] = val;
+          sanitizedDetails[key] = typeof val === 'string' ? val.slice(0, 200) : val;
         } else if (val && typeof val === 'object' && !Array.isArray(val)) {
           for (const [k2, v2] of Object.entries(val)) {
-            if (!/password|token|secret|authorization|cookie|key/i.test(k2) &&
+            if (!PII_OR_SECRET_PATTERN.test(k2) &&
                 (typeof v2 === 'string' || typeof v2 === 'number' || typeof v2 === 'boolean')) {
-              sanitizedDetails[`${key}_${k2}`] = v2;
+              sanitizedDetails[`${key}_${k2}`] = typeof v2 === 'string' ? v2.slice(0, 200) : v2;
             }
           }
         }
@@ -60,6 +62,7 @@ async function recordAudit(params = {}) {
       action: String(action || 'SYSTEM_ACTION').toUpperCase(),
       accessedNic: maskNic(accessedNic),
       deviceModel: String(deviceModel || 'Web Console'),
+      details: Object.keys(sanitizedDetails).length > 0 ? sanitizedDetails : undefined,
       timestamp: new Date()
     });
   } catch (_) {

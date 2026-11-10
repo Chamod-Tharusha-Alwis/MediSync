@@ -1,10 +1,10 @@
 # MediSync Final Project Status & Capstone Release Assessment
 
 **Release**: `v1.1.0-capstone`  
-**Date**: 2026-11-10  
-**Overall Verified Implementation**: **87.0% Live Operational Surface / 100% Offline Suite**  
+**Date**: 2026-11-11  
+**Verification Coverage**: **20 Unauthenticated & Public Live Boundary Checks / 100% Offline Automated Regression**  
 **Protected Ledger**: **15 / 15 Files Locked** (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)  
-**Automated Verification Suite**: **3,634 Tests Passed / 0 Failed (227 Suites)**  
+**Automated Verification Suite**: **3,651 Tests Passed / 0 Failed (228 Suites)**  
 **Production Live Audit**: **20 / 20 Executed Checks PASS (0 FAIL)** on Render + Vercel (Public & Boundary Checks; 0 emails used)  
 
 ---
@@ -15,7 +15,7 @@ MediSync is a cloud-native, trilingual (English, Sinhala, Tamil) outpatient heal
 
 The system operates across three distributed cloud layers:
 1. **Frontend**: React 18 SPA hosted on Vercel Edge (`https://medisync.chamodtharusha.com.lk`).
-2. **Backend**: Express.js REST API with zero-trust AES-256-GCM field encryption, hosted on Render (`https://medisync-wabc.onrender.com`).
+2. **Backend**: Express.js REST API with field-level encryption (AES-256-CBC) and HMAC blind indexing, hosted on Render (`https://medisync-wabc.onrender.com`).
 3. **ML Microservice**: Python/Flask sparse inference engine (71,704 ICD-10 leaf concepts, 215 curated condition profiles), hosted on Render Free Tier (`https://medisync-ml.onrender.com`).
 
 ---
@@ -36,15 +36,15 @@ The system operates across three distributed cloud layers:
 | **Medicine Safety Engine** | `server/tests/ingredientResolver.test.js` | 5-point safety check: active ingredient mapping, pairwise drug-drug interactions (DDI), single-dose ceilings, daily dose ceilings, course duration limits, and patient allergy alerts. |
 | **Syndromic Outbreak Surveillance & Review** | `server/tests/outbreakDetector.test.js`, `server/tests/surveillanceReviewWorkflow.test.js` (8/8 PASS) | District-level 7-day window vs 56-day baseline; regularized z-score ($\sigma \ge 0.5$); strict detection gates ($N \ge 5$, 2 consecutive days $z > 2.0$); epidemiologist review workflow (`/api/admin/surveillance/review`); zero synthetic fallback cases. |
 | **Trilingual UI Localization** | `client/src/__master_offline__/d4-any-disease-coverage.test.jsx` | 100% key parity across `en.js`, `si.js`, and `ta.js` with exactly **839 keys** each (0 missing, 0 extra, $A \triangle B = \emptyset$). |
-| **Zero-Trust Field Encryption** | `server/tests/qaEncryptionBootstrap.test.js` (14/14 PASS) | AES-256-GCM encryption at rest for patient NICs, names, phone numbers, addresses, and clinical consultation notes. |
+| **Field-Level Encryption at Rest (Partial)** | `server/src/models/Patient.js`, `server/src/models/Consultation.js` | Legacy AES-256-CBC encryption at rest for patient `['fullName', 'contactInfo', 'allergies']` and consultation `['patientNic', 'diagnosis', 'notes']`. Patient NIC, email, address, and birth date are unencrypted at rest; search lookups use HMAC-SHA256 blind indexing. |
 | **Email Noise Reduction** | `server/tests/emailNoiseReduction.test.js` (7/7 PASS) | 24-hour trusted device login throttle; consolidated single dispensing notification; daily dispatch ceiling warning at 80% capacity. |
 | **Resource Efficiency** | `scripts/benchmark_ml_resources.py`, Figure F09 | ML resident memory RSS verified at **197.37 MB** (38.55% of 512 MB Render Free limit; 314.63 MB headroom). Mean inference latency 0.78 ms. |
 
 ### 2.1 Production Live Audit Breakdown (LT-01 through LT-20)
 
-In accordance with strict verification honesty standards, the production audit executed **20 live checks** against active cloud infrastructure (`https://medisync-wabc.onrender.com`, `https://medisync-ml.onrender.com`, `https://medisync.chamodtharusha.com.lk`):
+In accordance with strict verification honesty standards, the production audit executed **20 unauthenticated and public boundary checks** against active cloud infrastructure (`https://medisync-wabc.onrender.com`, `https://medisync-ml.onrender.com`, `https://medisync.chamodtharusha.com.lk`):
 1. **Public Infrastructure & Health**: LT-01 (API Gateway `/health`), LT-02 (ML Engine `/health`), LT-03 (Vercel Edge web shell).
-2. **Clinical Fail-Closed Boundaries**: LT-04 (`/api/public/health-stats` fail-closed 503 when cases unverified), LT-05 (`/api/alerts/active` 401 guard).
+2. **Clinical Fail-Closed Boundaries**: LT-04 (`/api/public/health-stats` 200 with verified/awaiting state), LT-05 (`/api/alerts/active` 200 public active alerts query).
 3. **Public Directories & Activity**: LT-06 (consultation activity), LT-07 (sanitized doctor directory), LT-08 (hospital directory), LT-09 (pharmacy directory).
 4. **Token Verification Barriers**: LT-10 (non-existent token 404), LT-11 (missing OTP token request 404), LT-12 (missing OTP unlock 404).
 5. **Role-Based Authorization & Input Guards**: LT-13 (maintenance endpoint lockout 401), LT-14 (malformed JSON defense 400), LT-15 (doctor route 401), LT-16 (patient route 401), LT-17 (pharmacy route 401), LT-18 (hospital route 401), LT-19 (admin route 401), LT-20 (non-existent route 404).
@@ -52,7 +52,7 @@ In accordance with strict verification honesty standards, the production audit e
 **Explicit Non-Live Disclosures (0 Live Emails Used)**:
 - **OTP Email Flow & Email Content Delivery**: Preserved live email quota (0 emails dispatched in live test run). Verified 100% offline in `server/tests/emailNoiseReduction.test.js` and `server/tests/otpVerificationPortal.test.js`.
 - **Encrypted PDF Delivery in Production**: Verified 100% offline in `server/tests/vivaSeedData.test.js` and `server/tests/pdfSecurityAndLayout.test.js`. Not dispatched to live external storage or mail in production.
-- **Surface Coverage Calculation**: 20 executed live checks / 23 candidate end-to-end paths = **87.0% live operational surface verified** (100% verified across 3,634 offline automated tests).
+- **Verification Distinction**: The 20 live checks test external boundary defenses and public read contracts over the network. Authenticated multi-role workflows, stateful database mutations, and encryption invariants are comprehensively verified across 3,651 offline automated tests.
 
 ---
 
@@ -114,6 +114,23 @@ The following operational, administrative, and clinical review tasks require own
 
 ---
 
-## 6. Final Certification
+## 6. Final Factual Summary & Security Review Status
 
-All code, configurations, test suites, figures, and technical documents in this repository have been audited and verified against ground-truth runtime behavior. The codebase is frozen, clean, and ready for capstone submission and oral defense.
+All code, configurations, test suites, figures, and technical documents in this repository have been audited and verified against ground-truth runtime behavior across 3,651 automated offline tests. 
+
+An independent read-only security audit was conducted on 2026-11-11 (`docs/final/SECURITY_REVIEW_20261111.md`). Core remediations have been implemented and verified:
+- **Token Revocation Authorization (F01)**: Only the issuing doctor, patient owner, or administrator can revoke verification tokens; 409/410 returned for already revoked/expired tokens.
+- **Encounter PDF Authorization Gate (F02)**: Direct NIC authorization parameter removed; requires a valid purpose-bound view session (`qr_view_session`); export is strictly bounded to the encounter. Full history requests return 403 `FULL_HISTORY_CONSENT_REQUIRED`.
+- **Atomic OTP Race Control (F03)**: OTP attempt counting and consumption are atomic via `findOneAndUpdate` with `used: false`, `tokenHash`, expiry, and attempt ceiling predicates; losing concurrent requests fail cleanly.
+- **Audit Details Schema & PII Sanitization (F06)**: Structured `details` field persisted with strict PII suppression stripping patient identifiers, emails, and credentials.
+- **Controller Error Sanitization (F07)**: `verificationController.js` catch blocks return generic public error messages, never leaking internal runtime error text.
+- **Allergy State Differentiation (F04 partial)**: Decryption failure is distinguished from known clean zero allergies (`allergiesStatus: 'unavailable'`, `allergies: null`).
+- **OTP Invalidation Scope (F09 partial)**: Session purge predicates are bound to specific `tokenHash` to avoid cross-token interference.
+
+Known architectural limitations remain transparently documented in `docs/report/chapters/07_security_privacy.md`, `docs/report/chapters/11_limitations_future_work.md`, and `docs/final/SECURITY_STATUS.md`:
+1. Database field encryption uses AES-256-CBC with SHA-256 key hash (not AES-256-GCM AEAD); only specific fields are encrypted (`Patient`: fullName, contactInfo, allergies; `Consultation`: patientNic, diagnosis, notes; NIC, email, address unencrypted).
+2. PDF export uses legacy RC4-128 via `@pdfsmaller/pdf-encrypt-lite` with identifier-derived password; locked under active administrative lockout (`SECURITY_HOLD`, returning HTTP 503).
+3. Client refresh tokens are stored in browser `localStorage`.
+4. ML engine internal HMAC signatures bind to a 1-hour window (`floor(time.time() / 3600)`) without per-request replay nonces.
+5. Administrative emergency unmasking lacks multi-party quorum approval.
+6. Secondary controllers returning raw `error.message` on 500 (`doctorController.js` locked under protected ledger, tracked in `OWNER_ACTIONS.md` OA-17).
