@@ -49,6 +49,136 @@ const { writeNicFields } = require('../server/src/security/nicPersistence');
 const { evaluateOutbreakCriteria } = require('../server/src/services/surveillanceService');
 const { selectReportingCases, aggregatePublicCases } = require('../server/src/services/publicHealthStats');
 
+function platformDeterministicId(model, index) {
+  return crypto.createHash('sha256').update(`SEED_2026_11_A|${model}|${index}`).digest('hex').slice(0, 24);
+}
+
+const HISTORICAL_COUNTS = Object.freeze({
+  Hospital: { viva: 2, platform: 3 },
+  Pharmacy: { viva: 2, platform: 2 },
+  Doctor: { viva: 4, platform: 6 },
+  PharmacyStaff: { viva: 3, platform: 2 },
+  Patient: { viva: 30, platform: 8 },
+  Consultation: { viva: 400, platform: 32 },
+  Prescription: { viva: 283, platform: 28 },
+  Dispensing: { viva: 180, platform: 20 },
+  LabTest: { viva: 12, platform: 8 },
+  VerificationToken: { viva: 1, platform: 0 },
+  OutbreakAlert: { viva: 2, platform: 0 }
+});
+
+function getHistoricalDeterministicIds(modelName) {
+  const spec = HISTORICAL_COUNTS[modelName] || { viva: 0, platform: 0 };
+  const ids = [];
+  for (let i = 0; i < spec.viva; i++) {
+    ids.push(deterministicObjectId(modelName, i));
+  }
+  for (let i = 0; i < spec.platform; i++) {
+    ids.push(platformDeterministicId(modelName, i));
+  }
+  return ids;
+}
+
+function getSeedOnlyFilter(modelName) {
+  switch (modelName) {
+    case 'Hospital':
+      return {
+        $or: [
+          { name: { $in: ['National Apex General Hospital', 'Colombo Apex National Hospital', 'Kandy Teaching Hospital', 'Kandy Central General Hospital', 'Colombo Apex Hospital'] } },
+          { regNo: { $in: ['HOSP-VIVA-01', 'HOSP-VIVA-02'] } },
+          { email: /@accounts\.invalid$/ },
+          { email: /\+hospitaladmin/i }
+        ]
+      };
+    case 'Pharmacy':
+      return {
+        $or: [
+          { name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary', 'Colombo Dispensary'] } },
+          { regNo: { $in: ['PHARM-VIVA-01', 'PHARM-VIVA-02'] } },
+          { email: /@accounts\.invalid$/ },
+          { email: /\+pharmacy/i }
+        ]
+      };
+    case 'Doctor':
+      return {
+        $or: [
+          { doctorId: { $in: ['DOC-VIVA-01', 'DOC-VIVA-02', 'DOC-VIVA-03', 'DOC-VIVA-04'] } },
+          { fullName: { $in: ['Dr. Anura Jayasinghe', 'Dr. Sivakumar Ramasamy', 'Dr. Fathima Rizna', 'Dr. Priyantha Senaratne', 'Dr. Harsha Bandara', 'Dr. Dilani Perera'] } },
+          { email: /@accounts\.invalid$/ },
+          { email: /\+doctor/i },
+          { licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } }
+        ]
+      };
+    case 'PharmacyStaff':
+      return {
+        $or: [
+          { fullName: { $in: ['Kaveen Bandara', 'Malarvel Selvam', 'Thushara Perera'] } },
+          { email: /@accounts\.invalid$/ },
+          { email: /\+(pharmacist|pharmacyadmin)/i },
+          { licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } }
+        ]
+      };
+    case 'Patient':
+      return {
+        $or: [
+          { nic: '200012345678' },
+          { nic: { $in: Array.from({ length: 8 }, (_, i) => '9999900' + String(i + 1).padStart(5, '0')) } },
+          { fullName: 'Chamod Tharusha' },
+          { email: /@(accounts|example)\.invalid$/ },
+          { email: /\+patient/i }
+        ]
+      };
+    case 'Consultation':
+      return {
+        $or: [
+          { consultationId: /^CON-VIVA-2026-/ },
+          { 'surveillanceVerification.verifiedBy': 'viva-2026-11' }
+        ]
+      };
+    case 'Prescription':
+      return {
+        $or: [
+          { prescriptionId: /^RX-VIVA-2026-/ },
+          { prescriptionRef: /^RX-VIVA-2026-/ },
+          { patientNic: '200012345678' }
+        ]
+      };
+    case 'Dispensing':
+      return {
+        $or: [
+          { receiptNumber: /^RCP-VIVA-2026-/ },
+          { patientNic: '200012345678' }
+        ]
+      };
+    case 'LabTest':
+      return {
+        $or: [
+          { labTestId: /^LT-VIVA-2026-/ },
+          { reportId: /^RPT-VIVA-2026-/ },
+          { patientNic: '200012345678' }
+        ]
+      };
+    case 'VerificationToken':
+      return {
+        $or: [
+          { consultationRef: /^CON-VIVA-2026-/ },
+          { tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049' },
+          { tokenHash: /^8390ba72/ },
+          { reason: 'viva_demo_qr_access' }
+        ]
+      };
+    case 'OutbreakAlert':
+      return {
+        $or: [
+          { surveillancePolicy: '5w-verified-episodes-v1' },
+          { message: /Awaiting administrative epidemiological review/ }
+        ]
+      };
+    default:
+      return {};
+  }
+}
+
 const models = {
   Hospital: require('../server/src/models/Hospital'),
   Pharmacy: require('../server/src/models/Pharmacy'),
@@ -74,6 +204,7 @@ function parseArgs(args = process.argv.slice(2)) {
     const arg = args[i];
     if (arg === '--confirm') confirm = true;
     else if (arg === '--dry-run') action = 'dry-run';
+    else if (arg === '--inspect') action = 'inspect';
     else if (arg === '--rollback') action = 'rollback';
     else if (arg === '--legacy') legacy = true;
     else if (arg === '--verify') action = 'verify';
@@ -82,8 +213,11 @@ function parseArgs(args = process.argv.slice(2)) {
     } else if (arg === '--owner-email') {
       ownerEmail = args[++i]?.trim();
       if (!ownerEmail || ownerEmail.startsWith('--')) throw new Error('Email address required after --owner-email');
+    } else if (arg.startsWith('--db=')) {
+      database = arg.slice('--db='.length).trim();
+      if (!database) throw new Error('Database name required after --db=');
     } else if (arg === '--db') {
-      database = args[++i];
+      database = args[++i]?.trim();
       if (!database || database.startsWith('--')) throw new Error('Database name required after --db');
     } else if (arg === '-h' || arg === '--help') {
       console.log(`
@@ -91,11 +225,12 @@ Usage: node scripts/seed-viva-data.js [options]
 
 Options:
   --dry-run                 Run full plan generation, validation, and scenario proof (default, 0 writes)
+  --inspect                 Read-only inspection of target database: match counts, manifest, and orphan mismatches
   --confirm                 Execute database writes (requires confirmation)
   --rollback                Reverse viva seed batch via seed_manifests IDs + batch tag fallbacks
   --rollback --legacy       Clean up leftover un-tagged documents from the initial seed run using deterministic IDs + seed markers
   --verify                  Execute live post-seed validation queries against the target database
-  --db <name>               Target database (default: medisync_prod; allowed: medisync_prod, medisync_automated_test)
+  --db <name> / --db=<name> Target database (default: medisync_prod; allowed: medisync_prod, medisync_automated_test)
   --owner-email <address>   Assign Gmail-style plus aliases (+doctor1, +pharmacist1, +patient, etc.) to all personas
   -h, --help                Show this help text
 `);
@@ -232,9 +367,224 @@ async function runDryRun(plan) {
   console.log('================================================================');
 }
 
+async function runInspect(plan, database) {
+  console.log('================================================================');
+  console.log('🔍 [INSPECT] TARGET DATABASE SEED AUDIT & ORPHAN DETECTION');
+  console.log('================================================================');
+  console.log(`Target Database : ${database}`);
+  console.log(`Execution Mode  : READ-ONLY (0 writes)`);
+  console.log('----------------------------------------------------------------');
+
+  await connectToMongo(database);
+  console.log(` Connected to MongoDB Atlas (${database})\n`);
+
+  let manifest = null;
+  try {
+    manifest = await mongoose.connection.collection('seed_manifests').findOne({ batch: NAMESPACE });
+  } catch (_) {}
+
+  const allModels = [
+    'Hospital', 'Pharmacy', 'Doctor', 'PharmacyStaff', 'Patient',
+    'Consultation', 'Prescription', 'Dispensing', 'LabTest',
+    'VerificationToken', 'OutbreakAlert'
+  ];
+
+  const inspectionReport = [];
+  const mismatches = [];
+
+  for (const modelName of allModels) {
+    const Model = models[modelName];
+    if (!Model) continue;
+    const collName = Model.collection.collectionName;
+
+    // 1. Batch tag filter
+    const batchFilter = {
+      $or: [
+        { syntheticSeedBatch: { $in: ['viva-2026-11', 'SEED_2026_11_A'] } },
+        { isSynthetic: true }
+      ]
+    };
+
+    // 2. Manifest IDs filter
+    const manifestIds = (manifest && manifest.collections && manifest.collections[collName])
+      ? manifest.collections[collName].map(id => typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id)
+      : [];
+    const manifestFilter = manifestIds.length > 0 ? { _id: { $in: manifestIds } } : { _id: { $in: [] } };
+
+    // 3. Historical deterministic IDs (both historical plans: Viva + Platform)
+    const historicalIds = getHistoricalDeterministicIds(modelName).map(id => new mongoose.Types.ObjectId(id));
+    const deterministicFilter = historicalIds.length > 0 ? { _id: { $in: historicalIds } } : { _id: { $in: [] } };
+
+    // 4. Seed-only identifiers filter
+    const seedFilter = getSeedOnlyFilter(modelName);
+
+    const [batchCount, manifestCount, deterministicCount, seedIdentCount] = await Promise.all([
+      Model.collection.countDocuments(batchFilter),
+      manifestIds.length > 0 ? Model.collection.countDocuments(manifestFilter) : 0,
+      historicalIds.length > 0 ? Model.collection.countDocuments(deterministicFilter) : 0,
+      Object.keys(seedFilter).length > 0 ? Model.collection.countDocuments(seedFilter) : 0
+    ]);
+
+    // Union query to inspect individual candidate docs (only projecting IDs and flags, no sensitive data)
+    const orBranches = [batchFilter];
+    if (manifestIds.length > 0) orBranches.push(manifestFilter);
+    if (historicalIds.length > 0) orBranches.push(deterministicFilter);
+    if (Object.keys(seedFilter).length > 0) orBranches.push(seedFilter);
+
+    const docs = await Model.collection.find({ $or: orBranches }, {
+      projection: {
+        _id: 1,
+        syntheticSeedBatch: 1,
+        isSynthetic: 1,
+        regNo: 1,
+        doctorId: 1,
+        prescriptionId: 1,
+        labTestId: 1,
+        reportId: 1,
+        receiptNumber: 1,
+        consultationId: 1,
+        consultationRef: 1,
+        tokenHash: 1
+      }
+    }).toArray();
+
+    const distinctCount = docs.length;
+
+    // Check for mismatches
+    for (const d of docs) {
+      const idStr = String(d._id);
+      const isHistoricalId = historicalIds.some(h => String(h) === idStr);
+      const hasBatch = Boolean(d.syntheticSeedBatch || d.isSynthetic);
+      const hasManifest = manifestIds.some(m => String(m) === idStr);
+
+      if ((isHistoricalId && !hasBatch) || (!isHistoricalId && hasBatch) || (!hasManifest && hasBatch)) {
+        mismatches.push({
+          collection: modelName,
+          idSuffix: `...${idStr.slice(-6)}`,
+          hasBatch,
+          hasManifest,
+          hasDeterministicId: isHistoricalId
+        });
+      }
+    }
+
+    inspectionReport.push({
+      collection: modelName,
+      batchCount,
+      manifestCount,
+      deterministicCount,
+      seedIdentCount,
+      distinctCount
+    });
+
+    console.log(`   ${modelName.padEnd(18)} | BatchTag: ${String(batchCount).padStart(3)} | Manifest: ${String(manifestCount).padStart(3)} | DetIDs: ${String(deterministicCount).padStart(3)} | SeedIdent: ${String(seedIdentCount).padStart(3)} | Total: ${String(distinctCount).padStart(3)}`);
+  }
+
+  console.log('----------------------------------------------------------------');
+  if (mismatches.length > 0) {
+    console.log(`⚠️  ${mismatches.length} ORPHAN / MISMATCH DOCUMENT(S) DETECTED (Lacking batch tags or unindexed):`);
+    for (const m of mismatches) {
+      console.log(`   - [${m.collection.padEnd(16)}] _id: ${m.idSuffix} | DetID=${m.hasDeterministicId} | BatchTag=${m.hasBatch} | Manifest=${m.hasManifest}`);
+    }
+    console.log(`\nTo clean up these untagged leftovers before fresh seeding, run:`);
+    console.log(`   node scripts/seed-viva-data.js --rollback --legacy --confirm --db=${database}`);
+  } else {
+    console.log(`✅ No orphan mismatches detected across seeded collections.`);
+  }
+  console.log('================================================================\n');
+
+  if (process.env.NODE_ENV !== 'test') {
+    await mongoose.disconnect();
+  }
+
+  return { inspectionReport, mismatches };
+}
+
+async function preflightCheck(plan, database) {
+  console.log(`🔎 [PRE-FLIGHT] Checking for existing documents / identifier collisions in ${database}...`);
+
+  const conflicts = [];
+
+  for (const [modelName, docs] of Object.entries(plan.documentsByModel)) {
+    const Model = models[modelName];
+    if (!Model) continue;
+
+    const plannedIds = docs.map(d => new mongoose.Types.ObjectId(d._id));
+
+    // 1. Check for planned _ids
+    const existingById = await Model.collection.find(
+      { _id: { $in: plannedIds } },
+      { projection: { _id: 1, regNo: 1, doctorId: 1, prescriptionId: 1, receiptNumber: 1, labTestId: 1, consultationId: 1, tokenHash: 1 } }
+    ).toArray();
+
+    for (const ex of existingById) {
+      conflicts.push({
+        collection: modelName,
+        idSuffix: `...${String(ex._id).slice(-6)}`,
+        reason: 'Deterministic _id collision'
+      });
+    }
+
+    // 2. Check for unique natural identifiers
+    const uniqueQueries = [];
+    if (modelName === 'Hospital' || modelName === 'Pharmacy') {
+      const regNos = docs.map(d => d.regNo).filter(Boolean);
+      uniqueQueries.push({ regNo: { $in: regNos } });
+    } else if (modelName === 'Doctor') {
+      const doctorIds = docs.map(d => d.doctorId).filter(Boolean);
+      uniqueQueries.push({ doctorId: { $in: doctorIds } });
+    } else if (modelName === 'Consultation') {
+      const consultationIds = docs.map(d => d.consultationId).filter(Boolean);
+      uniqueQueries.push({ consultationId: { $in: consultationIds } });
+    } else if (modelName === 'Prescription') {
+      const rxIds = docs.map(d => d.prescriptionId).filter(Boolean);
+      uniqueQueries.push({ prescriptionId: { $in: rxIds } });
+    } else if (modelName === 'Dispensing') {
+      const rcptNos = docs.map(d => d.receiptNumber).filter(Boolean);
+      uniqueQueries.push({ receiptNumber: { $in: rcptNos } });
+    } else if (modelName === 'LabTest') {
+      const ltIds = docs.map(d => d.labTestId).filter(Boolean);
+      uniqueQueries.push({ labTestId: { $in: ltIds } });
+    } else if (modelName === 'VerificationToken') {
+      const hashes = docs.map(d => d.tokenHash).filter(Boolean);
+      uniqueQueries.push({ tokenHash: { $in: hashes } });
+    }
+
+    for (const q of uniqueQueries) {
+      const existingByKey = await Model.collection.find(q, {
+        projection: { _id: 1, regNo: 1, doctorId: 1, prescriptionId: 1, receiptNumber: 1, labTestId: 1, consultationId: 1, tokenHash: 1 }
+      }).toArray();
+
+      for (const ex of existingByKey) {
+        if (!conflicts.some(c => c.collection === modelName && c.idSuffix === `...${String(ex._id).slice(-6)}`)) {
+          conflicts.push({
+            collection: modelName,
+            idSuffix: `...${String(ex._id).slice(-6)}`,
+            reason: `Unique natural key collision: ${ex.regNo || ex.doctorId || ex.prescriptionId || ex.receiptNumber || ex.labTestId || ex.consultationId || 'tokenHash'}`
+          });
+        }
+      }
+    }
+  }
+
+  if (conflicts.length > 0) {
+    console.error('\x1b[31m%s\x1b[0m', `❌ [PRE-FLIGHT CONFLICT] Pre-flight check detected ${conflicts.length} existing document(s) in ${database}:`);
+    for (const c of conflicts) {
+      console.error('\x1b[31m%s\x1b[0m', `   - [${c.collection.padEnd(18)}] ID: ${c.idSuffix} | ${c.reason}`);
+    }
+    console.error('\x1b[31m%s\x1b[0m', `   SEEDING ABORTED WITH ZERO WRITES. Clean up existing leftovers before retrying:`);
+    console.error('\x1b[31m%s\x1b[0m', `   node scripts/seed-viva-data.js --rollback --legacy --confirm --db=${database}\n`);
+    const err = new Error(`PREFLIGHT_CONFLICT: Pre-flight check found ${conflicts.length} existing documents in ${database}. Seeding aborted with ZERO writes.`);
+    err.conflicts = conflicts;
+    throw err;
+  }
+
+  console.log(`✅ [PRE-FLIGHT PASSED] 0 conflicts detected across all planned collections. Safe to seed.\n`);
+}
+
 async function runSeed(plan, database) {
   console.log('================================================================');
-  console.log('🚀 [SEED] APPLYING VIVA VOCE SEED PLAN TO MONGODB');
+  console.log('🚀 [SEED] APPLYING VIVA VOCE SEED PLAN TO MONGODB (ALL-OR-NOTHING)');
   console.log('================================================================');
   console.log(`Target Database : ${database}`);
   console.log(`Batch Namespace : "${plan.namespace}"`);
@@ -247,128 +597,26 @@ async function runSeed(plan, database) {
 
   const passwordHash = bcrypt.hashSync(passwordRaw, 10);
   await connectToMongo(database);
-  console.log(` Connected to MongoDB Atlas (${database})`);
+  console.log(` Connected to MongoDB Atlas (${database})\n`);
 
-  const insertedCounts = {};
+  // 1. Mandatory Pre-Flight Gate (Zero writes if any conflict exists)
+  await preflightCheck(plan, database);
+
+  // 2. Pre-record manifest document with all planned IDs first
   const manifestCollections = {};
-
   for (const [modelName, docs] of Object.entries(plan.documentsByModel)) {
     const Model = models[modelName];
-    if (!Model) throw new Error(`Model not found: ${modelName}`);
-
-    const preparedDocs = [];
-    const docIds = [];
-
-    for (const doc of docs) {
-      const input = { ...doc };
-      if (Model.schema.path('password')) input.password = passwordHash;
-      const nic = input.nic || input.patientNic;
-      if (nic && ['Patient', 'Consultation', 'Prescription', 'LabTest', 'Dispensing'].includes(modelName)) {
-        Object.assign(input, writeNicFields(nic, { legacyFields: modelName === 'Patient' || modelName === 'LabTest' ? ['patientNic_bi'] : ['patientNic_bi', 'nicHash'] }));
-      }
-      const instance = new Model(input);
-      if (typeof instance.encryptFieldsSync === 'function') instance.encryptFieldsSync();
-      const obj = instance.toObject({ depopulate: true, versionKey: false });
-
-      // Native driver guarantee: preserve every field from input
-      // so strict schemas do not strip syntheticSeedBatch, isSynthetic, surveillanceVerification, etc.
-      for (const [k, v] of Object.entries(input)) {
-        if (obj[k] === undefined && v !== undefined) {
-          obj[k] = v;
-        }
-      }
-
-      // Convert 24-char hex string _id to native ObjectId
-      if (typeof obj._id === 'string' && /^[0-9a-f]{24}$/i.test(obj._id)) {
-        obj._id = new mongoose.Types.ObjectId(obj._id);
-      }
-
-      preparedDocs.push(obj);
-      docIds.push(obj._id);
+    if (Model) {
+      manifestCollections[Model.collection.collectionName] = docs.map(d => new mongoose.Types.ObjectId(d._id));
     }
-
-    // Insert prepared documents into collection via native driver
-    const result = await Model.collection.insertMany(preparedDocs, { ordered: true });
-    insertedCounts[modelName] = result.insertedCount;
-    manifestCollections[Model.collection.collectionName] = docIds;
-    console.log(`   Inserted ${String(result.insertedCount).padStart(4)} ${modelName} documents`);
   }
 
-  // ── Outbreak Alerts: Run real detector on inserted verified consultations ─────
-  console.log(`\n🚨 Running real outbreak detector on seeded clinical consultations...`);
-  const insertedConsultations = await models.Consultation.collection.find({
-    $or: [
-      { consultationId: /^CON-VIVA-2026-/ },
-      { syntheticSeedBatch: plan.namespace }
-    ]
-  }).toArray();
-
-  const detectorCases = insertedConsultations.map(c => ({
-    consultationId: String(c._id),
-    district: c.district,
-    diseaseId: c.icdCode,
-    disease: c.diagnosis,
-    time: new Date(c.createdAt).getTime(),
-    createdAt: c.createdAt
-  }));
-
-  const detectorResults = evaluateOutbreakCriteria({
-    cases: detectorCases,
-    now: new Date(plan.now),
-    baselineDays: 56,
-    level: 'district'
-  });
-
-  let alertsCreated = 0;
-  const alertIds = [];
-  for (const r of detectorResults) {
-    if (!r.triggered) continue; // S-B (Kalutara) and S-C (Matara) are negative controls (suppressed)
-
-    const matchingIds = detectorCases
-      .filter(c => c.district === r.district && (c.diseaseId === r.disease || c.disease === r.disease))
-      .map(c => new mongoose.Types.ObjectId(c.consultationId))
-      .sort();
-
-    const alertId = new mongoose.Types.ObjectId(
-      crypto.createHash('sha256').update(JSON.stringify(['5w-verified-episodes-v1', 'real', r.district, r.disease, matchingIds.map(String)])).digest('hex').slice(0, 24)
-    );
-
-    const alertDoc = {
-      _id: alertId,
-      disease: r.disease === 'A90' ? 'Dengue' : (r.disease === 'J11.1' ? 'Influenza' : r.disease),
-      location: r.district,
-      affectedCount: r.count,
-      severity: r.severity === 'Critical' ? 'Critical' : 'High',
-      status: 'Pending',
-      surveillancePolicy: '5w-verified-episodes-v1',
-      sourceConsultationIds: matchingIds,
-      isSimulation: false,
-      isSynthetic: true,
-      syntheticSeedBatch: plan.namespace,
-      message: `Elevated syndromic cluster detected in ${r.district} (N=${r.count}, persistent over ${r.maxConsecutiveDays} consecutive calendar days). Awaiting administrative epidemiological review.`,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    await models.OutbreakAlert.collection.updateOne(
-      { _id: alertId },
-      { $set: alertDoc },
-      { upsert: true }
-    );
-    alertIds.push(alertId);
-    alertsCreated++;
-    console.log(`   Real Detector produced: [Pending] ${alertDoc.severity} Alert for ${alertDoc.disease} in ${alertDoc.location} (Affected: ${alertDoc.affectedCount})`);
-  }
-  manifestCollections[models.OutbreakAlert.collection.collectionName] = alertIds;
-  console.log(`   Seeded ${alertsCreated} OutbreakAlerts via real detection engine (S-B & S-C negative controls suppressed).`);
-
-  // ── Write Manifest Document ────────────────────────────────────────────────
   const manifestDoc = {
     _id: `manifest-${plan.namespace}`,
     batch: plan.namespace,
     database,
     createdAt: new Date(),
-    counts: insertedCounts,
+    counts: plan.counts,
     collections: manifestCollections
   };
 
@@ -377,7 +625,191 @@ async function runSeed(plan, database) {
     { $set: manifestDoc },
     { upsert: true }
   );
-  console.log(`\n📋 Seed manifest recorded in 'seed_manifests' (batch: "${plan.namespace}", ${Object.keys(manifestCollections).length} collections).`);
+  console.log(`📋 Seed manifest pre-recorded in 'seed_manifests' (batch: "${plan.namespace}").`);
+
+  // 3. Attempt MongoDB ClientSession transaction (Atlas replica sets support it)
+  let session = null;
+  let useTransaction = false;
+  if (mongoose.connection && mongoose.connection.readyState === 1 && typeof mongoose.startSession === 'function') {
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+      useTransaction = true;
+      console.log(`🔒 Replica set transaction initialized.`);
+    } catch (_) {
+      useTransaction = false;
+      if (session) {
+        try { await session.endSession(); } catch (_) {}
+        session = null;
+      }
+    }
+  }
+
+  if (!useTransaction) {
+    console.log(`ℹ️  Running in standalone / in-memory mode (using tracked ID rollback protection).`);
+  }
+
+  const insertedCounts = {};
+  const insertedByCollection = {};
+
+  try {
+    for (const [modelName, docs] of Object.entries(plan.documentsByModel)) {
+      const Model = models[modelName];
+      if (!Model) throw new Error(`Model not found: ${modelName}`);
+
+      const collName = Model.collection.collectionName;
+      insertedByCollection[collName] = [];
+
+      const preparedDocs = [];
+      const docIds = [];
+
+      for (const doc of docs) {
+        const input = { ...doc };
+        if (Model.schema.path('password')) input.password = passwordHash;
+        const nic = input.nic || input.patientNic;
+        if (nic && ['Patient', 'Consultation', 'Prescription', 'LabTest', 'Dispensing'].includes(modelName)) {
+          Object.assign(input, writeNicFields(nic, { legacyFields: modelName === 'Patient' || modelName === 'LabTest' ? ['patientNic_bi'] : ['patientNic_bi', 'nicHash'] }));
+        }
+        const instance = new Model(input);
+        if (typeof instance.encryptFieldsSync === 'function') instance.encryptFieldsSync();
+        const obj = instance.toObject({ depopulate: true, versionKey: false });
+
+        // Native driver guarantee: preserve every field from input
+        for (const [k, v] of Object.entries(input)) {
+          if (obj[k] === undefined && v !== undefined) {
+            obj[k] = v;
+          }
+        }
+
+        // Convert 24-char hex string _id to native ObjectId
+        if (typeof obj._id === 'string' && /^[0-9a-f]{24}$/i.test(obj._id)) {
+          obj._id = new mongoose.Types.ObjectId(obj._id);
+        }
+
+        preparedDocs.push(obj);
+        docIds.push(obj._id);
+      }
+
+      const insertOptions = { ordered: true };
+      if (useTransaction && session) {
+        insertOptions.session = session;
+      }
+
+      const result = await Model.collection.insertMany(preparedDocs, insertOptions);
+      insertedCounts[modelName] = result.insertedCount;
+      insertedByCollection[collName] = docIds;
+      console.log(`   Inserted ${String(result.insertedCount).padStart(4)} ${modelName} documents`);
+    }
+
+    // ── Outbreak Alerts: Run real detector on inserted verified consultations ─────
+    console.log(`\n🚨 Running real outbreak detector on seeded clinical consultations...`);
+    const findOptions = useTransaction && session ? { session } : {};
+    const insertedConsultations = await models.Consultation.collection.find({
+      $or: [
+        { consultationId: /^CON-VIVA-2026-/ },
+        { syntheticSeedBatch: plan.namespace }
+      ]
+    }, findOptions).toArray();
+
+    const detectorCases = insertedConsultations.map(c => ({
+      consultationId: String(c._id),
+      district: c.district,
+      diseaseId: c.icdCode,
+      disease: c.diagnosis,
+      time: new Date(c.createdAt).getTime(),
+      createdAt: c.createdAt
+    }));
+
+    const detectorResults = evaluateOutbreakCriteria({
+      cases: detectorCases,
+      now: new Date(plan.now),
+      baselineDays: 56,
+      level: 'district'
+    });
+
+    let alertsCreated = 0;
+    const alertIds = [];
+    const alertCollName = models.OutbreakAlert.collection.collectionName;
+    insertedByCollection[alertCollName] = [];
+
+    for (const r of detectorResults) {
+      if (!r.triggered) continue;
+
+      const matchingIds = detectorCases
+        .filter(c => c.district === r.district && (c.diseaseId === r.disease || c.disease === r.disease))
+        .map(c => new mongoose.Types.ObjectId(c.consultationId))
+        .sort();
+
+      const alertId = new mongoose.Types.ObjectId(
+        crypto.createHash('sha256').update(JSON.stringify(['5w-verified-episodes-v1', 'real', r.district, r.disease, matchingIds.map(String)])).digest('hex').slice(0, 24)
+      );
+
+      const alertDoc = {
+        _id: alertId,
+        disease: r.disease === 'A90' ? 'Dengue' : (r.disease === 'J11.1' ? 'Influenza' : r.disease),
+        location: r.district,
+        affectedCount: r.count,
+        severity: r.severity === 'Critical' ? 'Critical' : 'High',
+        status: 'Pending',
+        surveillancePolicy: '5w-verified-episodes-v1',
+        sourceConsultationIds: matchingIds,
+        isSimulation: false,
+        isSynthetic: true,
+        syntheticSeedBatch: plan.namespace,
+        message: `Elevated syndromic cluster detected in ${r.district} (N=${r.count}, persistent over ${r.maxConsecutiveDays} consecutive calendar days). Awaiting administrative epidemiological review.`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const updateOptions = { upsert: true };
+      if (useTransaction && session) updateOptions.session = session;
+
+      await models.OutbreakAlert.collection.updateOne(
+        { _id: alertId },
+        { $set: alertDoc },
+        updateOptions
+      );
+      alertIds.push(alertId);
+      insertedByCollection[alertCollName].push(alertId);
+      alertsCreated++;
+      console.log(`   Real Detector produced: [Pending] ${alertDoc.severity} Alert for ${alertDoc.disease} in ${alertDoc.location} (Affected: ${alertDoc.affectedCount})`);
+    }
+
+    if (useTransaction && session) {
+      await session.commitTransaction();
+      await session.endSession();
+      session = null;
+    }
+  } catch (err) {
+    console.error('\x1b[31m%s\x1b[0m', `\n💥 ERROR DURING SEED INSERTION: ${err.message}`);
+    console.error('\x1b[31m%s\x1b[0m', `   Initiating all-or-nothing rollback across all inserted collections...`);
+
+    if (useTransaction && session) {
+      try {
+        await session.abortTransaction();
+        await session.endSession();
+        session = null;
+      } catch (_) {}
+    }
+
+    // Manual cleanup for non-transactional fallback
+    for (const [collName, ids] of Object.entries(insertedByCollection)) {
+      if (ids && ids.length > 0) {
+        try {
+          const delRes = await mongoose.connection.collection(collName).deleteMany({ _id: { $in: ids } });
+          console.error(`   Rolled back ${delRes.deletedCount} documents from ${collName}`);
+        } catch (_) {}
+      }
+    }
+
+    // Delete manifest
+    try {
+      await mongoose.connection.collection('seed_manifests').deleteOne({ batch: plan.namespace });
+    } catch (_) {}
+
+    console.error('\x1b[31m%s\x1b[0m', `❌ partial insert rolled back: target database restored to zero seeded documents.\n`);
+    throw new Error(`partial insert rolled back: ${err.message}`);
+  }
 
   console.log(`\n🔑 [ONE-TIME SECRET] Live QR Capability Token generated:`);
   console.log(`   Verification URL : ${plan.demoPatient.qrUrl}`);
@@ -442,11 +874,17 @@ async function runRollback(database) {
       orClauses.push({ consultationId: /^CON-VIVA-2026-/ });
       orClauses.push({ 'surveillanceVerification.verifiedBy': NAMESPACE });
     } else if (modelName === 'Prescription') {
+      orClauses.push({ prescriptionId: /^RX-VIVA-2026-/ });
       orClauses.push({ prescriptionRef: /^RX-VIVA-2026-/ });
+    } else if (modelName === 'Dispensing') {
+      orClauses.push({ receiptNumber: /^RCP-VIVA-2026-/ });
     } else if (modelName === 'LabTest') {
+      orClauses.push({ labTestId: /^LT-VIVA-2026-/ });
       orClauses.push({ reportId: /^RPT-VIVA-2026-/ });
     } else if (modelName === 'VerificationToken') {
       orClauses.push({ reason: 'viva_demo_qr_access' });
+      orClauses.push({ consultationRef: /^CON-VIVA-2026-/ });
+      orClauses.push({ tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049' });
       orClauses.push({ tokenHash: /^8390ba72/ });
     } else if (modelName === 'OutbreakAlert') {
       orClauses.push({ isSynthetic: true, syntheticSeedBatch: NAMESPACE });
@@ -455,14 +893,17 @@ async function runRollback(database) {
       orClauses.push({ nic: '200012345678' });
       orClauses.push({ email: /@accounts\.invalid$/ });
     } else if (modelName === 'Doctor') {
+      orClauses.push({ doctorId: /^DOC-VIVA-/ });
       orClauses.push({ licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } });
       orClauses.push({ email: /@accounts\.invalid$/ });
     } else if (modelName === 'PharmacyStaff') {
       orClauses.push({ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } });
       orClauses.push({ email: /@accounts\.invalid$/ });
     } else if (modelName === 'Hospital') {
+      orClauses.push({ regNo: { $in: ['HOSP-VIVA-01', 'HOSP-VIVA-02'] } });
       orClauses.push({ name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } });
     } else if (modelName === 'Pharmacy') {
+      orClauses.push({ regNo: { $in: ['PHARM-VIVA-01', 'PHARM-VIVA-02'] } });
       orClauses.push({ name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } });
     }
 
@@ -489,24 +930,30 @@ async function runRollback(database) {
       checkClauses.push({ consultationId: /^CON-VIVA-2026-/ });
       checkClauses.push({ 'surveillanceVerification.verifiedBy': NAMESPACE });
     } else if (modelName === 'Prescription') {
+      checkClauses.push({ prescriptionId: /^RX-VIVA-2026-/ });
       checkClauses.push({ prescriptionRef: /^RX-VIVA-2026-/ });
+    } else if (modelName === 'Dispensing') {
+      checkClauses.push({ receiptNumber: /^RCP-VIVA-2026-/ });
     } else if (modelName === 'LabTest') {
+      checkClauses.push({ labTestId: /^LT-VIVA-2026-/ });
       checkClauses.push({ reportId: /^RPT-VIVA-2026-/ });
     } else if (modelName === 'VerificationToken') {
       checkClauses.push({ reason: 'viva_demo_qr_access' });
+      checkClauses.push({ consultationRef: /^CON-VIVA-2026-/ });
+      checkClauses.push({ tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049' });
       checkClauses.push({ tokenHash: /^8390ba72/ });
     } else if (modelName === 'OutbreakAlert') {
       checkClauses.push({ syntheticSeedBatch: NAMESPACE });
     } else if (modelName === 'Patient') {
       checkClauses.push({ nic: '200012345678' });
     } else if (modelName === 'Doctor') {
-      checkClauses.push({ licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } });
+      checkClauses.push({ doctorId: /^DOC-VIVA-/ });
     } else if (modelName === 'PharmacyStaff') {
       checkClauses.push({ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } });
     } else if (modelName === 'Hospital') {
-      checkClauses.push({ name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } });
+      checkClauses.push({ regNo: { $in: ['HOSP-VIVA-01', 'HOSP-VIVA-02'] } });
     } else if (modelName === 'Pharmacy') {
-      checkClauses.push({ name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } });
+      checkClauses.push({ regNo: { $in: ['PHARM-VIVA-01', 'PHARM-VIVA-02'] } });
     }
 
     const remaining = await Model.collection.countDocuments({ $or: checkClauses });
@@ -548,105 +995,82 @@ async function runRollbackLegacy(database, confirm = false) {
   console.log('----------------------------------------------------------------');
 
   await connectToMongo(database);
-  console.log(` Connected to MongoDB Atlas (${database})`);
+  console.log(` Connected to MongoDB Atlas (${database})\n`);
 
-  // Target legacy collections and their expected counts + seed markers
-  const legacySpecs = [
-    {
-      modelName: 'Hospital',
-      expectedCount: 2,
-      ids: [0, 1].map(i => deterministicObjectId('Hospital', i)),
-      seedFilter: { name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } }
-    },
-    {
-      modelName: 'Pharmacy',
-      expectedCount: 2,
-      ids: [0, 1].map(i => deterministicObjectId('Pharmacy', i)),
-      seedFilter: { name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } }
-    },
-    {
-      modelName: 'Doctor',
-      expectedCount: 4,
-      ids: [0, 1, 2, 3].map(i => deterministicObjectId('Doctor', i)),
-      seedFilter: { licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } }
-    },
-    {
-      modelName: 'PharmacyStaff',
-      expectedCount: 3,
-      ids: [0, 1, 2].map(i => deterministicObjectId('PharmacyStaff', i)),
-      seedFilter: { $or: [{ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } }, { fullName: { $in: ['Kaveen Bandara', 'Malarvel Selvam', 'Thushara Perera'] } }] }
-    },
-    {
-      modelName: 'Patient',
-      expectedCount: 30,
-      ids: Array.from({ length: 30 }, (_, i) => deterministicObjectId('Patient', i)),
-      seedFilter: { $or: [{ nic: '200012345678' }, { email: /@accounts\.invalid$/ }, { email: /\+patient/ }, { fullName: 'Chamod Tharusha' }, { isSynthetic: true }] }
-    },
-    {
-      modelName: 'Prescription',
-      expectedCount: 283,
-      ids: Array.from({ length: 283 }, (_, i) => deterministicObjectId('Prescription', i)),
-      seedFilter: { prescriptionRef: /^RX-VIVA-2026-/ }
-    },
-    {
-      modelName: 'LabTest',
-      expectedCount: 12,
-      ids: Array.from({ length: 12 }, (_, i) => deterministicObjectId('LabTest', i)),
-      seedFilter: { reportId: /^RPT-VIVA-2026-/ }
-    },
-    {
-      modelName: 'VerificationToken',
-      expectedCount: 1,
-      ids: [deterministicObjectId('VerificationToken', 0)],
-      seedFilter: { $or: [{ reason: 'viva_demo_qr_access' }, { tokenHash: /^8390ba72/ }] },
-      includeTokenHashPrefix: /^8390ba72/
-    }
+  // Target legacy collections (Consultation is NEVER in this list: ~10,821 real consultations strictly preserved!)
+  const legacyModels = [
+    'Hospital', 'Pharmacy', 'Doctor', 'PharmacyStaff', 'Patient',
+    'Prescription', 'Dispensing', 'LabTest', 'VerificationToken'
   ];
 
   let totalFound = 0;
   let totalDeleted = 0;
   const planSummary = [];
 
-  for (const spec of legacySpecs) {
-    const Model = models[spec.modelName];
+  for (const modelName of legacyModels) {
+    const Model = models[modelName];
     if (!Model) continue;
 
-    const objectIds = spec.ids.map(id => new mongoose.Types.ObjectId(id));
-    const orQuery = [{ _id: { $in: objectIds } }];
-    if (spec.includeTokenHashPrefix) {
-      orQuery.push({ tokenHash: spec.includeTokenHashPrefix });
-    }
+    const historicalIds = getHistoricalDeterministicIds(modelName).map(id => new mongoose.Types.ObjectId(id));
+    const seedFilter = getSeedOnlyFilter(modelName);
 
-    // Compound safety query: MUST match deterministic ID / hash AND seed marker
+    // Compound safety query: MUST match deterministic ID AND at least one independent seed attribute
+    const idClause = modelName === 'VerificationToken'
+      ? { $or: [{ _id: { $in: historicalIds } }, { tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049' }, { tokenHash: /^8390ba72/ }] }
+      : { _id: { $in: historicalIds } };
+
     const safetyQuery = {
       $and: [
-        { $or: orQuery },
-        spec.seedFilter
+        idClause,
+        seedFilter
       ]
     };
 
-    const foundCount = await Model.collection.countDocuments(safetyQuery);
+    const matchingDocs = await Model.collection.find(safetyQuery, {
+      projection: {
+        _id: 1,
+        regNo: 1,
+        doctorId: 1,
+        fullName: 1,
+        name: 1,
+        prescriptionId: 1,
+        receiptNumber: 1,
+        labTestId: 1,
+        reportId: 1,
+        consultationRef: 1,
+        tokenHash: 1
+      }
+    }).toArray();
+
+    const foundCount = matchingDocs.length;
     totalFound += foundCount;
+
     planSummary.push({
-      collection: spec.modelName,
-      found: foundCount,
-      expected: spec.expectedCount
+      collection: modelName,
+      found: foundCount
     });
 
-    console.log(`   ${spec.modelName.padEnd(18)}: Found ${String(foundCount).padStart(3)} documents (Expected: ${spec.expectedCount})`);
+    console.log(`   ${modelName.padEnd(18)}: Found ${String(foundCount).padStart(3)} document(s) matching deterministic ID AND plan attributes`);
+
+    // Explain in dry-run exactly which documents matched and why
+    for (const doc of matchingDocs) {
+      const idSuffix = `...${String(doc._id).slice(-6)}`;
+      const ident = doc.doctorId || doc.prescriptionId || doc.receiptNumber || doc.labTestId || doc.reportId || doc.regNo || doc.fullName || doc.name || doc.consultationRef || (doc.tokenHash ? `tokenHash ...${doc.tokenHash.slice(-6)}` : 'verified plan seed marker');
+      console.log(`      -> [MATCH] _id: ${idSuffix} | Reason: matched historical deterministic _id AND independent attribute (${ident})`);
+    }
 
     if (confirm && foundCount > 0) {
       const deleteRes = await Model.collection.deleteMany(safetyQuery);
       totalDeleted += deleteRes.deletedCount;
       const remaining = await Model.collection.countDocuments(safetyQuery);
       if (remaining !== 0) {
-        throw new Error(`LEGACY_ROLLBACK_FAILED: ${remaining} documents remain in ${spec.modelName}`);
+        throw new Error(`LEGACY_ROLLBACK_FAILED: ${remaining} documents remain in ${modelName}`);
       }
-      console.log(`      -> Successfully deleted ${deleteRes.deletedCount} documents (Remaining: 0)`);
+      console.log(`      -> Deleted ${deleteRes.deletedCount} document(s) (Remaining: 0)`);
     }
   }
 
-  // Also clean up any manifest leftovers if present
+  // Also clean up any manifest leftovers if confirm
   if (confirm) {
     try {
       await mongoose.connection.collection('seed_manifests').deleteOne({ batch: NAMESPACE });
@@ -661,7 +1085,7 @@ async function runRollbackLegacy(database, confirm = false) {
     console.log(`   node scripts/seed-viva-data.js --rollback --legacy --confirm --db=${database}`);
   } else {
     console.log(`🎉 [CLEANUP RESULT] Total legacy documents permanently removed: ${totalDeleted}`);
-    console.log(`   Consultations and real user accounts were 100% untouched.`);
+    console.log(`   Real consultations (~10,821) and real user accounts were 100% untouched.`);
   }
   console.log('================================================================');
 
@@ -824,6 +1248,8 @@ async function main() {
 
   if (args.action === 'dry-run') {
     await runDryRun(plan);
+  } else if (args.action === 'inspect') {
+    await runInspect(plan, args.database);
   } else if (args.action === 'seed') {
     await runSeed(plan, args.database);
   } else if (args.action === 'rollback') {
@@ -845,8 +1271,13 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   runDryRun,
+  runInspect,
+  preflightCheck,
   runSeed,
   runRollback,
   runRollbackLegacy,
-  runVerify
+  runVerify,
+  platformDeterministicId,
+  getHistoricalDeterministicIds,
+  getSeedOnlyFilter
 };

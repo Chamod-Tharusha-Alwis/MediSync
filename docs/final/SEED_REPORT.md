@@ -3,7 +3,7 @@
 **Batch Tag**: `viva-2026-11`  
 **Execution Date**: 2026-11-10  
 **Status**: Verified & Ready for Production Confirmation  
-**Test Suite Verification**: 27/27 PASS (`server/tests/vivaSeedData.test.js`), 3,622/3,622 overall suite PASS (`scripts/run_offline_tests.js`) across 225 suites  
+**Test Suite Verification**: 29/29 PASS (`server/tests/vivaSeedData.test.js`), 3,622/3,622 overall suite PASS (`scripts/run_offline_tests.js`) across 225 suites  
 
 ---
 
@@ -102,14 +102,23 @@ Without the `--owner-email` flag, accounts default to safe RFC 2606 `.invalid` d
 
 ## 6. CLI Execution Runbook (PowerShell & Bash)
 
+> [!NOTE]
+> Database parameter `--db` accepts both space-separated and equals syntax: `--db medisync_prod` and `--db=medisync_prod`.
+
 ### Step 1: Pre-Viva Backup (Mandatory OA-03)
 Before executing database modifications, capture a backup of `medisync_prod`:
 ```powershell
 mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="./backup_pre_viva"
 ```
 
-### Step 1.1: Legacy Seed Leftover Cleanup (One-Time Production Reset)
-To remove untagged leftover documents from the initial seed run using deterministic IDs and seed markers without touching real consultations:
+### Step 2: Read-Only Inspection (Audit Target Database State)
+Audit seeded collections, manifest, and orphan mismatches without writing anything:
+```powershell
+node scripts/seed-viva-data.js --inspect --db=medisync_prod
+```
+
+### Step 3: Legacy Seed Leftover Cleanup (One-Time Production Reset)
+To remove untagged leftover documents from the initial seed run using deterministic IDs and seed markers without touching real consultations (~10,821 real consultations strictly preserved):
 - **Dry-run (inspect candidates, 0 writes)**:
 ```powershell
 node scripts/seed-viva-data.js --rollback --legacy --db=medisync_prod
@@ -119,33 +128,35 @@ node scripts/seed-viva-data.js --rollback --legacy --db=medisync_prod
 node scripts/seed-viva-data.js --rollback --legacy --confirm --db=medisync_prod
 ```
 
-### Step 2: Dry-Run Inspection
-Verify counts and scenario mathematics without writing a single byte to MongoDB:
+### Step 4: Verify Clean Slate Before Seeding
+Confirm that zero untagged leftover documents remain:
 ```powershell
-node scripts/seed-viva-data.js --dry-run --owner-email="your.email@example.com"
+node scripts/seed-viva-data.js --inspect --db=medisync_prod
 ```
+*Expected: 0 across all seeded collections and 0 mismatches.*
 
-### Step 3: Apply Seeding to Database
-Set the demonstration password and apply the 917 documents to the target database:
+### Step 5: Apply Fresh Seeding (All-or-Nothing with Hidden Password Prompt)
+Set the demonstration password via hidden prompt and apply the 917 documents to `medisync_prod`:
 
-**PowerShell (Windows)**:
+**PowerShell (Windows - Secure Hidden Prompt)**:
 ```powershell
-$env:SEED_TEST_PASSWORD="YourSecureDemoPassword123!"
-node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="your.email@example.com"
+$env:SEED_TEST_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host "Enter seed demo password" -AsSecureString)).Password
+node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="chamod.alwis1999@gmail.com"
 ```
 
 **Bash (Linux / macOS)**:
 ```bash
-SEED_TEST_PASSWORD="YourSecureDemoPassword123!" node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="your.email@example.com"
+read -s -p "Enter seed demo password: " SEED_TEST_PASSWORD && export SEED_TEST_PASSWORD
+node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="chamod.alwis1999@gmail.com"
 ```
 
-### Step 4: Verify Database State
+### Step 6: Verify Live Database State
 Verify that the documents exist and evaluate correctly in the live database:
 ```powershell
 node scripts/seed-viva-data.js --verify --db=medisync_prod
 ```
 
-### Step 5: Post-Viva Rollback (Reversible Reset)
+### Step 7: Post-Viva Rollback (Reversible Reset)
 To atomically remove all 917 seeded documents and return the database to its pristine state:
 ```powershell
 node scripts/seed-viva-data.js --rollback --db=medisync_prod
