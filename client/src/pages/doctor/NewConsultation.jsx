@@ -25,6 +25,7 @@ import { formatDoctorName } from '../../utils/doctorName';
 import HistoryErrorBoundary from '../../components/common/HistoryErrorBoundary';
 import MedicineSafetyPanel from '../../components/common/MedicineSafetyPanel';
 import { formatLabTestName, formatLabTestStatus, getPrescriptionDrugName } from '../../utils/labTestFormatter';
+import { detectIcdVersion } from '../../utils/icdClassifier';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -1129,7 +1130,11 @@ const NewConsultation = () => {
                               initial={{ opacity: 0, x: 12 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: i * 0.05 }}
-                              onClick={() => { setSelectedDiagnosis(diag.disease); setSelectedIcd(diag.icd_code); }}
+                              onClick={() => {
+                                setSelectedDiagnosis(diag.disease);
+                                setSelectedIcd(diag.icd_code);
+                                setSelectedIcdVersion(detectIcdVersion(diag.icd_code));
+                              }}
                               className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
                                 selectedDiagnosis === diag.disease
                                   ? 'border-teal-500/60 bg-teal-500/10 shadow-[0_0_20px_rgba(20,184,166,0.12)]'
@@ -1148,7 +1153,7 @@ const NewConsultation = () => {
                                   </p>
                                   <div className="flex flex-wrap gap-2 mt-1.5 items-center">
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 font-mono">
-                                      ICD-10: {diag.icd_code}
+                                      {detectIcdVersion(diag.icd_code)}: {diag.icd_code}
                                     </span>
                                     <span className="text-[11px] text-teal-300 bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800 font-mono font-semibold">
                                       Tier {diag.tier || (diag.source === 'knowledge_base' ? 2 : 1)} match{inferenceMeta?.latencyMs ? ` · ${inferenceMeta.latencyMs}ms` : ''} · Model v2.0
@@ -1384,7 +1389,13 @@ const NewConsultation = () => {
                             </span>
                             <input
                               type="text" value={selectedIcd || ""}
-                              onChange={e => setSelectedIcd(e.target.value)}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setSelectedIcd(val);
+                                if (val && val.trim().length >= 3) {
+                                  setSelectedIcdVersion(detectIcdVersion(val));
+                                }
+                              }}
                               placeholder="Code"
                               className={`${inp} flex-1 uppercase font-mono`}
                             />

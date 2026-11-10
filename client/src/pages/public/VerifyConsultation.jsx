@@ -621,6 +621,13 @@ export default function VerifyConsultation() {
                     <div className="text-sm font-bold text-white">{clinicalData.diagnosis?.text}</div>
                     {clinicalData.diagnosis?.icdCode && (
                       <div className="text-xs text-slate-400 flex items-center gap-2 pt-0.5">
+                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase ${
+                          (clinicalData.diagnosis.icdVersion === 'ICD-11' || /^[1-9][A-Z0-9]{3}/i.test(clinicalData.diagnosis.icdCode) || /^[A-S][A-Z][0-9]{2}/i.test(clinicalData.diagnosis.icdCode))
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                        }`}>
+                          {(clinicalData.diagnosis.icdVersion === 'ICD-11' || /^[1-9][A-Z0-9]{3}/i.test(clinicalData.diagnosis.icdCode) || /^[A-S][A-Z][0-9]{2}/i.test(clinicalData.diagnosis.icdCode)) ? 'ICD-11' : 'ICD-10'}
+                        </span>
                         <span className="font-mono text-teal-300 font-semibold bg-teal-950/40 px-1.5 py-0.5 rounded border border-teal-800/40">
                           {clinicalData.diagnosis.icdCode}
                         </span>

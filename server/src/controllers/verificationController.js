@@ -441,6 +441,7 @@ exports.verifyOtpAndUnlock = async (req, res) => {
         text: consultation.diagnosis || 'Clinical Diagnosis Recorded',
         icdCode: consultation.icdCode || null,
         icdDescription: consultation.icdDescription || null,
+        icdVersion: consultation.icdVersion || null,
       },
       notes: consultation.notes || '',
       followUp: {

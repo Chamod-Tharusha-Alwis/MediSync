@@ -950,8 +950,11 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   currentY -= 20;
 
   const diagnosis = consultationData.diagnosis || 'Clinical evaluation and diagnostic assessment';
+  const isIcd11 = consultationData.icdVersion === 'ICD-11' || (/^[1-9][A-Z0-9]{3}/i.test(consultationData.icdCode || '') || /^[A-S][A-Z][0-9]{2}/i.test(consultationData.icdCode || ''));
+  const icdVersionLabel = isIcd11 ? 'ICD-11 Reference:' : 'ICD-10 Reference:';
+  const icdDefaultDesc = isIcd11 ? 'ICD-11 MMS Coded Entry' : 'ICD-10 Coded Entry';
   const icdText = consultationData.icdCode
-    ? `${consultationData.icdCode} - ${consultationData.icdDescription || 'ICD-10 Coded Entry'}`
+    ? `${consultationData.icdCode} - ${consultationData.icdDescription || icdDefaultDesc}`
     : 'Not Specified';
   const symptomsList = Array.isArray(consultationData.symptoms) && consultationData.symptoms.length > 0
     ? consultationData.symptoms.join(', ')
@@ -959,7 +962,7 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
 
   const diagFields = [
     ['Primary Diagnosis:', diagnosis],
-    ['ICD-10 Reference:', icdText],
+    [icdVersionLabel, icdText],
     ['Recorded Symptoms:', symptomsList],
   ];
 
