@@ -23,6 +23,7 @@
 | **OA-12** | **GitHub Branch Protection** | In GitHub Repo $\to$ Settings $\to$ Branches: Enable branch protection on `main`, requiring status checks to pass before merging (`build` on push/PR). | Repository Security & CI | `PENDING_OWNER` |
 | **OA-13** | **Vercel Frontend Redeployment** | If the commit served by Vercel differs from latest `main`, trigger manual redeployment in Vercel Dashboard $\to$ Deployments $\to$ Deploy from `main`. | Production Frontend Sync | `PENDING_OWNER` |
 | **OA-14** | **Synthetic Patient NIC for Screenshots** | For all final thesis and viva screenshots, use synthetic demonstration patient NICs (e.g. `199012345678`, `200012345678`) rather than real personal identity card numbers to preserve privacy in published documents. | Documentation Privacy | `PENDING_OWNER` |
+| **OA-15** | **Apply Viva Seed Data** | Set `SEED_TEST_PASSWORD` and execute `node scripts/seed-viva-data.js --confirm --db=medisync_prod` to populate 917 demonstration records (S-A Gampaha Dengue outbreak, S-D Kandy Influenza outbreak, Demo Patient Chamod Tharusha `200012345678`). Verify via `node scripts/seed-viva-data.js --verify`. Reversible via `--rollback`. | Viva Readiness (`docs/final/SEED_REPORT.md`) | `PENDING_OWNER` |
 
 ---
 

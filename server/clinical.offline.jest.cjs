@@ -90,5 +90,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/dataQualityFormulary.test.js',
   '<rootDir>/tests/medicineCoverageAndPrefixSearch.test.js',
   '<rootDir>/tests/prescriptionSupersession.test.js',
-  '<rootDir>/tests/icdClassificationAlignment.test.js'
+  '<rootDir>/tests/icdClassificationAlignment.test.js',
+  '<rootDir>/tests/vivaSeedData.test.js'
 );

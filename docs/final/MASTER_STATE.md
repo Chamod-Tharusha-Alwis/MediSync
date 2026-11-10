@@ -10,13 +10,13 @@
 - **Active Git Branch**: `final/rem-r8-final-reconcile` (merging to `main`)
 - **Release Version**: `v1.1.0-capstone`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
-- **Quality Gate Baseline**: 3,595 tests passed / 0 failed across 224 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,605 tests passed / 0 failed across 225 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Final Action**: Commit R8, merge to `main`, push to `origin/main`, tag `v1.1.0-capstone`.
+- **Final Action**: Commit SEED, merge to `main`, push to `origin/main`, tag `v1.1.0-capstone`.
 
 ---
 
-## 2. Remediation Sequence (R0 - R8)
+## 2. Remediation Sequence (R0 - R8) & Viva Seeding
 
 | Step | Task ID | Focus | Target Branch | Status |
 |:---:|:---:|---|---|:---:|
@@ -29,3 +29,4 @@
 | 7 | **R6** | Auto-expiry / supersession of repeated medication & non-dispensable pending lines | `final/rem-r6-auto-supersede` | **COMPLETED** |
 | 8 | **R7** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/rem-r7-icd-alignment` | **COMPLETED** |
 | 9 | **R8** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/rem-r8-final-reconcile` | **COMPLETED** |
+| 10 | **SEED** | Viva Voce demonstration data plan (917 docs, S-A to S-D outbreak proofs, Demo Patient `200012345678`) | `final/seed-viva-data` | **COMPLETED** |
