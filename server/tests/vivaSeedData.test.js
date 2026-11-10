@@ -550,6 +550,9 @@ describe('Viva Voce Demonstration Seed Plan', () => {
           } else if (val && typeof val === 'object' && val.$in) {
             const allowed = val.$in.map(String);
             if (!allowed.includes(String(docVal))) return false;
+          } else if (val && typeof val === 'object' && val.$nin) {
+            const forbidden = val.$nin.map(String);
+            if (forbidden.includes(String(docVal))) return false;
           } else {
             if (String(docVal) !== String(val)) return false;
           }
@@ -875,6 +878,138 @@ describe('Viva Voce Demonstration Seed Plan', () => {
       } finally {
         inMem.restore();
         delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
+
+    test('viva rollback and legacy rollback strictly protect SEED_2026_11_A and never match or delete them', async () => {
+      const inMem = setupInMemoryStore();
+      const crypto = require('crypto');
+
+      try {
+        // Populate SEED_2026_11_A compact documents
+        const platformDocId = crypto.createHash('sha256').update('SEED_2026_11_A|Doctor|0').digest('hex').slice(0, 24);
+        const platformHospId = crypto.createHash('sha256').update('SEED_2026_11_A|Hospital|0').digest('hex').slice(0, 24);
+        const platformPatientId = crypto.createHash('sha256').update('SEED_2026_11_A|Patient|0').digest('hex').slice(0, 24);
+
+        inMem.getColl('doctors').push({
+          _id: new mongoose.Types.ObjectId(platformDocId),
+          doctorId: 'SEED_2026_11_A-DOCTOR-00001',
+          name: 'SEED Doctor 00001',
+          email: 'seed_2026_11_a-doctor-00001@accounts.invalid',
+          syntheticSeedBatch: 'SEED_2026_11_A',
+          isSynthetic: true
+        });
+
+        inMem.getColl('hospitals').push({
+          _id: new mongoose.Types.ObjectId(platformHospId),
+          regNo: 'SEED_2026_11_A-HOSPITAL-00001',
+          name: 'SEED Hospital 00001',
+          email: 'seed_2026_11_a-hospital-00001@accounts.invalid',
+          syntheticSeedBatch: 'SEED_2026_11_A',
+          isSynthetic: true
+        });
+
+        inMem.getColl('patients').push({
+          _id: new mongoose.Types.ObjectId(platformPatientId),
+          nic: '999990000001',
+          email: 'seed_2026_11_a-patient-00001@accounts.invalid',
+          syntheticSeedBatch: 'SEED_2026_11_A',
+          isSynthetic: true
+        });
+
+        // Demo outbreak alert
+        inMem.getColl('outbreakalerts').push({
+          _id: new mongoose.Types.ObjectId(),
+          disease: 'Dengue',
+          syntheticSeedBatch: 'DEMO_OUTBREAK_2026_V1',
+          isSynthetic: true
+        });
+
+        // 1. Run legacy dry-run: MUST find 0 documents
+        const dryRes = await runRollbackLegacy('medisync_automated_test', false);
+        expect(dryRes.totalFound).toBe(0);
+
+        // 2. Run legacy confirm: MUST delete 0 documents
+        const legacyRes = await runRollbackLegacy('medisync_automated_test', true);
+        expect(legacyRes.totalDeleted).toBe(0);
+        expect(inMem.getColl('doctors').length).toBe(1);
+        expect(inMem.getColl('hospitals').length).toBe(1);
+        expect(inMem.getColl('patients').length).toBe(1);
+
+        // 3. Run normal rollback: MUST delete 0 protected documents
+        await runRollback('medisync_automated_test');
+        expect(inMem.getColl('doctors').length).toBe(1);
+        expect(inMem.getColl('hospitals').length).toBe(1);
+        expect(inMem.getColl('patients').length).toBe(1);
+        expect(inMem.getColl('outbreakalerts').length).toBe(1);
+      } finally {
+        inMem.restore();
+      }
+    });
+
+    test('auditOrphans and restoreProtectedSeed properly identify and restore missing SEED_2026_11_A entities', async () => {
+      const inMem = setupInMemoryStore();
+      const { auditOrphans } = require('../../scripts/audit_orphans_readonly.js');
+      const { restoreProtectedSeed } = require('../../scripts/restore_protected_seed.js');
+
+      try {
+        // Create an in-memory db wrapper matching the mock interface
+        const mockDb = {
+          collection(name) {
+            const coll = inMem.getColl(name);
+            return {
+              async findOne(q) {
+                return coll.find(d => String(d._id) === String(q._id)) || null;
+              },
+              async insertOne(doc) {
+                coll.push(doc);
+                return { insertedId: doc._id };
+              },
+              find(filter = {}, options = {}) {
+                return {
+                  toArray: async () => coll.filter(d => {
+                    if (!filter || Object.keys(filter).length === 0) return true;
+                    if (filter._id && filter._id.$in) {
+                      const allowed = filter._id.$in.map(String);
+                      return allowed.includes(String(d._id));
+                    }
+                    return true;
+                  })
+                };
+              },
+              countDocuments: async () => coll.length
+            };
+          }
+        };
+
+        // Initially no primary records, but consultations pointing to them
+        inMem.getColl('consultations').push({
+          _id: new mongoose.Types.ObjectId(),
+          doctorId: 'e73b93cdd8887b1bcfef73cc', // SEED Doctor 00001
+          hospitalId: 'bafb9d88a55d53f25bd5efb6', // SEED Hospital 00001
+          patientId: 'c05a402dfb36ca2ad6b5de25' // SEED Patient 00001
+        });
+
+        // 1. Audit reports orphans
+        const auditBefore = await auditOrphans(mockDb, 'medisync_automated_test');
+        expect(auditBefore.isClean).toBe(false);
+        expect(auditBefore.totalOrphans).toBe(3);
+
+        // 2. Dry run restore: finds 21 missing, restores 0
+        const dryRes = await restoreProtectedSeed({ database: 'medisync_automated_test', confirm: false, customDb: mockDb });
+        expect(dryRes.missingCount).toBe(21);
+        expect(dryRes.restoredCount).toBe(0);
+
+        // 3. Confirm restore: restores all 21 records
+        const confirmRes = await restoreProtectedSeed({ database: 'medisync_automated_test', confirm: true, customDb: mockDb });
+        expect(confirmRes.restoredCount).toBe(21);
+
+        // 4. Post-restore audit reports 0 orphans
+        const auditAfter = await auditOrphans(mockDb, 'medisync_automated_test');
+        expect(auditAfter.isClean).toBe(true);
+        expect(auditAfter.totalOrphans).toBe(0);
+      } finally {
+        inMem.restore();
       }
     });
   });

@@ -49,32 +49,31 @@ const { writeNicFields } = require('../server/src/security/nicPersistence');
 const { evaluateOutbreakCriteria } = require('../server/src/services/surveillanceService');
 const { selectReportingCases, aggregatePublicCases } = require('../server/src/services/publicHealthStats');
 
-function platformDeterministicId(model, index) {
-  return crypto.createHash('sha256').update(`SEED_2026_11_A|${model}|${index}`).digest('hex').slice(0, 24);
-}
+const PROTECTED_BATCH_NAMESPACES = Object.freeze([
+  'SEED_2026_11_A',
+  'DEMO_OUTBREAK_2026_V1',
+  'SEED_2026_11_B'
+]);
 
 const HISTORICAL_COUNTS = Object.freeze({
-  Hospital: { viva: 2, platform: 3 },
-  Pharmacy: { viva: 2, platform: 2 },
-  Doctor: { viva: 4, platform: 6 },
-  PharmacyStaff: { viva: 3, platform: 2 },
-  Patient: { viva: 30, platform: 8 },
-  Consultation: { viva: 400, platform: 32 },
-  Prescription: { viva: 283, platform: 28 },
-  Dispensing: { viva: 180, platform: 20 },
-  LabTest: { viva: 12, platform: 8 },
-  VerificationToken: { viva: 1, platform: 0 },
-  OutbreakAlert: { viva: 2, platform: 0 }
+  Hospital: 2,
+  Pharmacy: 2,
+  Doctor: 4,
+  PharmacyStaff: 3,
+  Patient: 30,
+  Consultation: 400,
+  Prescription: 283,
+  Dispensing: 180,
+  LabTest: 12,
+  VerificationToken: 1,
+  OutbreakAlert: 2
 });
 
 function getHistoricalDeterministicIds(modelName) {
-  const spec = HISTORICAL_COUNTS[modelName] || { viva: 0, platform: 0 };
+  const count = HISTORICAL_COUNTS[modelName] || 0;
   const ids = [];
-  for (let i = 0; i < spec.viva; i++) {
+  for (let i = 0; i < count; i++) {
     ids.push(deterministicObjectId(modelName, i));
-  }
-  for (let i = 0; i < spec.platform; i++) {
-    ids.push(platformDeterministicId(modelName, i));
   }
   return ids;
 }
@@ -86,7 +85,7 @@ function getSeedOnlyFilter(modelName) {
         $or: [
           { name: { $in: ['National Apex General Hospital', 'Colombo Apex National Hospital', 'Kandy Teaching Hospital', 'Kandy Central General Hospital', 'Colombo Apex Hospital'] } },
           { regNo: { $in: ['HOSP-VIVA-01', 'HOSP-VIVA-02'] } },
-          { email: /@accounts\.invalid$/ },
+          { email: /viva.*@accounts\.invalid$/ },
           { email: /\+hospitaladmin/i }
         ]
       };
@@ -95,7 +94,7 @@ function getSeedOnlyFilter(modelName) {
         $or: [
           { name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary', 'Colombo Dispensary'] } },
           { regNo: { $in: ['PHARM-VIVA-01', 'PHARM-VIVA-02'] } },
-          { email: /@accounts\.invalid$/ },
+          { email: /viva.*@accounts\.invalid$/ },
           { email: /\+pharmacy/i }
         ]
       };
@@ -104,7 +103,7 @@ function getSeedOnlyFilter(modelName) {
         $or: [
           { doctorId: { $in: ['DOC-VIVA-01', 'DOC-VIVA-02', 'DOC-VIVA-03', 'DOC-VIVA-04'] } },
           { fullName: { $in: ['Dr. Anura Jayasinghe', 'Dr. Sivakumar Ramasamy', 'Dr. Fathima Rizna', 'Dr. Priyantha Senaratne', 'Dr. Harsha Bandara', 'Dr. Dilani Perera'] } },
-          { email: /@accounts\.invalid$/ },
+          { email: /viva.*@accounts\.invalid$/ },
           { email: /\+doctor/i },
           { licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } }
         ]
@@ -113,7 +112,7 @@ function getSeedOnlyFilter(modelName) {
       return {
         $or: [
           { fullName: { $in: ['Kaveen Bandara', 'Malarvel Selvam', 'Thushara Perera'] } },
-          { email: /@accounts\.invalid$/ },
+          { email: /viva.*@accounts\.invalid$/ },
           { email: /\+(pharmacist|pharmacyadmin)/i },
           { licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } }
         ]
@@ -122,9 +121,8 @@ function getSeedOnlyFilter(modelName) {
       return {
         $or: [
           { nic: '200012345678' },
-          { nic: { $in: Array.from({ length: 8 }, (_, i) => '9999900' + String(i + 1).padStart(5, '0')) } },
           { fullName: 'Chamod Tharusha' },
-          { email: /@(accounts|example)\.invalid$/ },
+          { email: /viva.*@(accounts|example)\.invalid$/ },
           { email: /\+patient/i }
         ]
       };
@@ -397,11 +395,11 @@ async function runInspect(plan, database) {
     if (!Model) continue;
     const collName = Model.collection.collectionName;
 
-    // 1. Batch tag filter
+    // 1. Batch tag filter (strictly viva batch, excluding protected batches)
     const batchFilter = {
-      $or: [
-        { syntheticSeedBatch: { $in: ['viva-2026-11', 'SEED_2026_11_A'] } },
-        { isSynthetic: true }
+      $and: [
+        { syntheticSeedBatch: NAMESPACE },
+        { syntheticSeedBatch: { $nin: PROTECTED_BATCH_NAMESPACES } }
       ]
     };
 
@@ -888,26 +886,40 @@ async function runRollback(database) {
       orClauses.push({ tokenHash: /^8390ba72/ });
     } else if (modelName === 'OutbreakAlert') {
       orClauses.push({ isSynthetic: true, syntheticSeedBatch: NAMESPACE });
-      orClauses.push({ surveillancePolicy: '5w-verified-episodes-v1', isSynthetic: true });
+      orClauses.push({ surveillancePolicy: '5w-verified-episodes-v1', isSynthetic: true, datasetBatch: NAMESPACE });
     } else if (modelName === 'Patient') {
       orClauses.push({ nic: '200012345678' });
-      orClauses.push({ email: /@accounts\.invalid$/ });
+      orClauses.push({ email: /viva.*@accounts\.invalid$/ });
+      orClauses.push({ email: /\+patient/i });
     } else if (modelName === 'Doctor') {
       orClauses.push({ doctorId: /^DOC-VIVA-/ });
       orClauses.push({ licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } });
-      orClauses.push({ email: /@accounts\.invalid$/ });
+      orClauses.push({ email: /viva.*@accounts\.invalid$/ });
+      orClauses.push({ email: /\+doctor/i });
     } else if (modelName === 'PharmacyStaff') {
       orClauses.push({ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } });
-      orClauses.push({ email: /@accounts\.invalid$/ });
+      orClauses.push({ email: /viva.*@accounts\.invalid$/ });
+      orClauses.push({ email: /\+(pharmacist|pharmacyadmin)/i });
     } else if (modelName === 'Hospital') {
       orClauses.push({ regNo: { $in: ['HOSP-VIVA-01', 'HOSP-VIVA-02'] } });
       orClauses.push({ name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } });
+      orClauses.push({ email: /viva.*@accounts\.invalid$/ });
+      orClauses.push({ email: /\+hospitaladmin/i });
     } else if (modelName === 'Pharmacy') {
       orClauses.push({ regNo: { $in: ['PHARM-VIVA-01', 'PHARM-VIVA-02'] } });
       orClauses.push({ name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } });
+      orClauses.push({ email: /viva.*@accounts\.invalid$/ });
+      orClauses.push({ email: /\+pharmacy/i });
     }
 
-    const deleteRes = await Model.collection.deleteMany({ $or: orClauses });
+    const deleteFilter = {
+      $and: [
+        { $or: orClauses },
+        { syntheticSeedBatch: { $nin: PROTECTED_BATCH_NAMESPACES } }
+      ]
+    };
+
+    const deleteRes = await Model.collection.deleteMany(deleteFilter);
     deletedCounts[modelName] = deleteRes.deletedCount;
     console.log(`   Removed ${String(deleteRes.deletedCount).padStart(4)} ${modelName} documents`);
   }
@@ -1014,21 +1026,24 @@ async function runRollbackLegacy(database, confirm = false) {
     const historicalIds = getHistoricalDeterministicIds(modelName).map(id => new mongoose.Types.ObjectId(id));
     const seedFilter = getSeedOnlyFilter(modelName);
 
-    // Compound safety query: MUST match deterministic ID AND at least one independent seed attribute
     const idClause = modelName === 'VerificationToken'
       ? { $or: [{ _id: { $in: historicalIds } }, { tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049' }, { tokenHash: /^8390ba72/ }] }
       : { _id: { $in: historicalIds } };
 
+    // Compound safety query: MUST match deterministic ID AND at least one independent seed attribute, and NEVER touch protected batches
     const safetyQuery = {
       $and: [
         idClause,
-        seedFilter
+        seedFilter,
+        { syntheticSeedBatch: { $nin: PROTECTED_BATCH_NAMESPACES } }
       ]
     };
 
     const matchingDocs = await Model.collection.find(safetyQuery, {
       projection: {
         _id: 1,
+        syntheticSeedBatch: 1,
+        isSynthetic: 1,
         regNo: 1,
         doctorId: 1,
         fullName: 1,
@@ -1042,6 +1057,13 @@ async function runRollbackLegacy(database, confirm = false) {
       }
     }).toArray();
 
+    // Safety guard: guarantee zero intersection with protected seed namespaces
+    for (const doc of matchingDocs) {
+      if (PROTECTED_BATCH_NAMESPACES.includes(doc.syntheticSeedBatch)) {
+        throw new Error(`SECURITY_REJECTED: Document ${doc._id} in ${modelName} belongs to protected batch "${doc.syntheticSeedBatch}". Legacy rollback aborted.`);
+      }
+    }
+
     const foundCount = matchingDocs.length;
     totalFound += foundCount;
 
@@ -1052,11 +1074,12 @@ async function runRollbackLegacy(database, confirm = false) {
 
     console.log(`   ${modelName.padEnd(18)}: Found ${String(foundCount).padStart(3)} document(s) matching deterministic ID AND plan attributes`);
 
-    // Explain in dry-run exactly which documents matched and why
+    // Explain in dry-run exactly which documents matched, their batch tag, and why
     for (const doc of matchingDocs) {
       const idSuffix = `...${String(doc._id).slice(-6)}`;
+      const batchTag = doc.syntheticSeedBatch || 'untagged';
       const ident = doc.doctorId || doc.prescriptionId || doc.receiptNumber || doc.labTestId || doc.reportId || doc.regNo || doc.fullName || doc.name || doc.consultationRef || (doc.tokenHash ? `tokenHash ...${doc.tokenHash.slice(-6)}` : 'verified plan seed marker');
-      console.log(`      -> [MATCH] _id: ${idSuffix} | Reason: matched historical deterministic _id AND independent attribute (${ident})`);
+      console.log(`      -> [MATCH] _id: ${idSuffix} | Batch: ${batchTag} | Reason: matched historical viva deterministic _id AND independent attribute (${ident})`);
     }
 
     if (confirm && foundCount > 0) {
@@ -1277,7 +1300,7 @@ module.exports = {
   runRollback,
   runRollbackLegacy,
   runVerify,
-  platformDeterministicId,
+  PROTECTED_BATCH_NAMESPACES,
   getHistoricalDeterministicIds,
   getSeedOnlyFilter
 };
