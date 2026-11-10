@@ -89,5 +89,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/emailNoiseReduction.test.js',
   '<rootDir>/tests/dataQualityFormulary.test.js',
   '<rootDir>/tests/medicineCoverageAndPrefixSearch.test.js',
-  '<rootDir>/tests/prescriptionSupersession.test.js'
+  '<rootDir>/tests/prescriptionSupersession.test.js',
+  '<rootDir>/tests/icdClassificationAlignment.test.js'
 );

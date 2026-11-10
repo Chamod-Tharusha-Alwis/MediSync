@@ -7,6 +7,7 @@ const { currentMedicationNames, assertMedicationResult } = require('./currentMed
 const { ClinicalCommandError } = require('./clinicalErrors');
 const { computeClinicalFindings, validateSafetyAcknowledgment } = require('../utils/clinicalSafetyValidator');
 const { isSameMedicine, getPrescriptionActiveState, getCanonicalIngredientSet } = require('../utils/prescriptionLifecycle');
+const { detectIcdVersion } = require('../utils/icdClassifier');
 
 async function executeClinicalWrite(req, { standalone = false, command = require('./clinicalCommandService').productionCommandService(),
   models = { Consultation: require('../models/Consultation'), Prescription: require('../models/Prescription'), LabTest: require('../models/LabTest'), Patient: require('../models/Patient') },
@@ -19,9 +20,12 @@ async function executeClinicalWrite(req, { standalone = false, command = require
   const names = medicines.map(canonicalMedicationName), timings = validateMedicines(medicines);
   const labs = standalone ? [] : [...new Set([...(body.labTests || []), ...(body.orderedTests || [])].map(test => typeof test === 'string' ? test.trim() : String(test?.testName || '').trim()))];
   if (labs.length > 50 || labs.some(name => !name || name.length > 160)) throw new ClinicalCommandError('CLINICAL_REQUEST_INVALID', 400);
+  const resolvedIcdVersion = body.icdCode
+    ? (detectIcdVersion(body.icdCode) === 'ICD-11' ? 'ICD-11' : (body.icdVersion || 'ICD-10'))
+    : (body.icdVersion || '');
   const request = { patientNic: nic, prescriptions: medicines, labTests: labs,
     symptoms: body.symptoms || [], diagnosis: body.diagnosis || '', notes: body.notes || body.clinicalNotes || '',
-    icdCode: body.icdCode || '', icdDescription: body.icdDescription || '', icdVersion: body.icdVersion || '',
+    icdCode: body.icdCode || '', icdDescription: body.icdDescription || '', icdVersion: resolvedIcdVersion,
     isFollowUpRequired: body.isFollowUpRequired === true, followUpDate: body.followUpDate || '', followUpNotes: body.followUpNotes || '',
     loginType: body.loginType || 'personal', sessionHospitalId: body.sessionHospitalId || body.hospitalId || null };
 
