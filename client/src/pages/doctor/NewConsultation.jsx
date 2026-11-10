@@ -820,7 +820,7 @@ const NewConsultation = () => {
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">{t("doctor.basicInfo", "Basic Info")}</p>
                             <p className="text-lg font-bold text-white">{patientData.fullName}</p>
                             <p className="text-sm text-slate-400">
-                              Age: {patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : (patientData.age || '—')} yrs | Blood: <span className="text-red-400 font-semibold">{patientData.bloodGroup || 'Unknown'}</span>
+                              Age: {patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : (patientData.age || 'Not provided')} yrs | Blood: {patientData.bloodGroup ? <span className="text-slate-200 font-semibold">{patientData.bloodGroup}</span> : <span className="text-slate-400 font-normal">Not provided</span>}
                             </p>
                           </div>
                           

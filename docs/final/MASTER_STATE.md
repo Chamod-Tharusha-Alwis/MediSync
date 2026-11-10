@@ -6,13 +6,13 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `R4` (Formulary Data Quality & UI Neutral Fields)
-- **Active Git Branch**: `final/rem-r4-data-quality` (to branch from `main` after R3 merge)
-- **Latest Commit on `main`**: Target merge of `final/rem-r3-email-noise`
+- **Current Phase**: `R5` (Medicine Catalog Coverage Audit & Prefix Matching)
+- **Active Git Branch**: `final/rem-r5-medicine-coverage` (to branch from `main` after R4 merge)
+- **Latest Commit on `main`**: Target merge of `final/rem-r4-data-quality`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
-- **Quality Gate Baseline**: 3,565 tests passed / 0 failed across 220 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,570 tests passed / 0 failed across 221 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Next Action**: Commit R3, merge to `main`, push to `origin/main`, branch `final/rem-r4-data-quality`.
+- **Next Action**: Commit R4, merge to `main`, push to `origin/main`, branch `final/rem-r5-medicine-coverage`.
 
 ---
 
@@ -24,8 +24,8 @@
 | 2 | **R1** | Audit log completeness & search by email (100% mutating routes covered) | `final/rem-r1-audit-coverage` | **COMPLETED** |
 | 3 | **R2** | ML service logging & proof of use (latency, tier, request tracking, zero PII) | `final/rem-r2-ml-logging` | **COMPLETED** |
 | 4 | **R3** | Email noise reduction (24h trusted device throttle, single dispense email, daily cap) | `final/rem-r3-email-noise` | **COMPLETED** |
-| 5 | **R4** | Formulary data quality ("Penicillin" typo fix, missing optional fields "Not provided") | `final/rem-r4-data-quality` | **IN PROGRESS** |
-| 6 | **R5** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/rem-r5-medicine-coverage` | PENDING |
+| 5 | **R4** | Formulary data quality ("Penicillin" typo fix, missing optional fields "Not provided") | `final/rem-r4-data-quality` | **COMPLETED** |
+| 6 | **R5** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/rem-r5-medicine-coverage` | **IN PROGRESS** |
 | 7 | **R6** | Auto-expiry / supersession of repeated medication & non-dispensable pending lines | `final/rem-r6-auto-supersede` | PENDING |
 | 8 | **R7** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/rem-r7-icd-alignment` | PENDING |
 | 9 | **R8** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/rem-r8-final-reconcile` | PENDING |

@@ -18818,17 +18818,17 @@
     "diseaseIndication": "Arthritis (135)"
   },
   {
-    "name": "Penicitin Capsule 10'S",
-    "genericName": "Generic Name  Penicillamine 250 mg",
-    "brand": "Penicitin 250mg Capsule 10'S",
-    "category": "analgesic",
+    "name": "Penicillin Capsule 10'S",
+    "genericName": "Generic Name  Penicillin 250 mg",
+    "brand": "Penicillin 250mg Capsule 10'S",
+    "category": "antibiotic",
     "commonDosages": [
       "250mg"
     ],
     "interactions": [],
     "sideEffects": [],
     "icdCodes": [],
-    "diseaseIndication": "Arthritis (135)"
+    "diseaseIndication": "Bacterial Infection"
   },
   {
     "name": "REDIMARD Tablet 10's",

@@ -293,9 +293,13 @@ const PatientProfile = () => {
             <h2 className="text-2xl font-bold text-white">{patient.fullName}</h2>
             <p className="text-slate-400 text-sm mt-0.5">NIC: {patient.nic}</p>
             <div className="flex flex-wrap gap-2 mt-3">
-              {patient.bloodGroup && (
+              {patient.bloodGroup ? (
                 <span className="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-semibold">
                   <Heart className="w-3 h-3 inline mr-1" />{patient.bloodGroup}
+                </span>
+              ) : (
+                <span className="text-xs px-3 py-1.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-full font-normal">
+                  <Heart className="w-3 h-3 inline mr-1 text-slate-500" />Blood: Not provided
                 </span>
               )}
               {patient.gender && (

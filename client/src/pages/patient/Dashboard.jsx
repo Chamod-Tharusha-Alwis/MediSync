@@ -135,14 +135,14 @@ export const Overview = ({ data }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-slate-400 text-xs uppercase">{t('patient.bloodGroup', 'Blood Group')}</p>
-                <p className="text-white font-medium">{patient.bloodGroup || 'Not set'}</p>
+                <p className="text-white font-medium">{patient.bloodGroup || 'Not provided'}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-xs uppercase">Age</p>
                 <p className="text-white font-medium">
                   {patient.dateOfBirth
                     ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()
-                    : 'N/A'}
+                    : (patient.age || 'Not provided')}
                 </p>
               </div>
               <div>

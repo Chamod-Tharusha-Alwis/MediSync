@@ -286,15 +286,19 @@ const Dispense = () => {
             </div>
             <div>
               <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.contactInfo", "Contact No")}</p>
-              <p className="text-slate-200 text-sm truncate">{patientInfo.contactInfo || 'N/A'}</p>
+              <p className="text-slate-200 text-sm truncate">{patientInfo.contactInfo || 'Not provided'}</p>
             </div>
             <div>
               <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.bloodGroup", "Blood Group")}</p>
-              <p className="text-red-400 text-sm">{patientInfo.bloodGroup || 'N/A'}</p>
+              {patientInfo.bloodGroup ? (
+                <p className="text-slate-200 text-sm">{patientInfo.bloodGroup}</p>
+              ) : (
+                <p className="text-slate-400 text-sm font-normal">Not provided</p>
+              )}
             </div>
             <div>
               <p className="text-slate-500 uppercase tracking-wider mb-1">{t("patient.dob", "Date of Birth")}</p>
-              <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? formatCalendarDate(patientInfo.dateOfBirth) : 'N/A'}</p>
+              <p className="text-slate-300 text-sm">{patientInfo.dateOfBirth ? formatCalendarDate(patientInfo.dateOfBirth) : 'Not provided'}</p>
             </div>
           </div>
         </div>

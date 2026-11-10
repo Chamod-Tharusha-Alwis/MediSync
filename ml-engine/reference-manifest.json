@@ -5,8 +5,8 @@
   "entries": [
     {
       "file": "drugs_clean.json",
-      "bytes": 999032,
-      "sha256": "16fd96a1b297e60bf8824626af04a0a4f2655123aefd3e1bce190e2804c965a5"
+      "bytes": 999036,
+      "sha256": "cb186f64deac071aa83b170b980a7518b681d86c955fbd02e62e496aeb74c2a0"
     },
     {
       "file": "interactions_clean.json",

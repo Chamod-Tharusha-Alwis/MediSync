@@ -85,7 +85,10 @@ const REVIEWED_SYNONYMS = Object.freeze({
   'vitamin b6 (pyridoxine)': 'pyridoxine',
   'pyridoxine': 'pyridoxine',
   'vitamin c': 'ascorbic acid',
-  'ascorbic acid': 'ascorbic acid'
+  'ascorbic acid': 'ascorbic acid',
+  'penicillin': 'benzylpenicillin',
+  'penicillin g': 'benzylpenicillin',
+  'penicillin v': 'phenoxymethylpenicillin'
 });
 
 const FORMULATION_PATTERNS = [

@@ -230,18 +230,26 @@ const DoctorPatientDetail = () => {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gradient-teal tracking-tight">{patient?.fullName}</h1>
-                    <p className="text-slate-400 font-mono text-sm mt-1">ID: {patient?.nic ? (patient.nic.length > 6 ? patient.nic.slice(0, 3) + '***' + patient.nic.slice(-3) : '***') : 'N/A'}</p>
+                    <p className="text-slate-400 font-mono text-sm mt-1">ID: {patient?.nic ? (patient.nic.length > 6 ? patient.nic.slice(0, 3) + '***' + patient.nic.slice(-3) : '***') : 'Not provided'}</p>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-6 md:gap-8 text-sm relative z-10">
                   <div>
                     <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Age / Gender</p>
-                    <p className="font-semibold text-slate-200">{patient?.age || 'N/A'} / {patient?.gender || 'N/A'}</p>
+                    <p className="font-semibold text-slate-200">{patient?.age || (patient?.dateOfBirth ? (new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()) : 'Not provided')} / {patient?.gender || 'Not provided'}</p>
                   </div>
                   <div>
                     <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Blood</p>
-                    <p className="font-semibold text-red-400">{patient?.bloodGroup || 'N/A'}</p>
+                    {patient?.bloodGroup ? (
+                      <p className="font-semibold text-slate-200">{patient.bloodGroup}</p>
+                    ) : (
+                      <p className="font-normal text-slate-400">Not provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Contact</p>
+                    <p className="font-semibold text-slate-300">{patient?.contactInfo || patient?.contactNumber || 'Not provided'}</p>
                   </div>
                   <div>
                     <p className="text-slate-500 font-bold uppercase tracking-wider text-[11px] mb-1">Allergies</p>
