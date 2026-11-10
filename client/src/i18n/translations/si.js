@@ -875,6 +875,8 @@ export const si = {
     "prescribedMedicines": "නියම කළ ඖෂධ සහ නිකුත් කිරීමේ තත්ත්වය",
     "statusReleased": "නිකුත් කරන ලදී",
     "statusPending": "නිකුත් කර නොමැත",
+    "statusSuperseded": "නව ඖෂධ නියමයකින් ප්‍රතිස්ථාපනය විය",
+    "statusExpired": "ඖෂධ පාඨමාලාව අවසන් විය",
     "releaseTimeline": "ඖෂධ නිකුත් කිරීමේ කාලරාමුව",
     "releasedBy": "නිකුත් කළේ",
     "downloadHistoryBtn": "සම්පූර්ණ වෛද්‍ය ඉතිහාසය බාගන්න (PDF)",

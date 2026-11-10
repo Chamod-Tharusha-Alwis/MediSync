@@ -6,13 +6,13 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `R6` (Auto-Expiry & Medication Supersession)
-- **Active Git Branch**: `final/rem-r6-auto-supersede` (to branch from `main` after R5 merge)
-- **Latest Commit on `main`**: Target merge of `final/rem-r5-medicine-coverage`
+- **Current Phase**: `R7` (ICD Classification Alignment)
+- **Active Git Branch**: `final/rem-r7-icd-alignment` (to branch from `main` after R6 merge)
+- **Latest Commit on `main`**: Target merge of `final/rem-r6-auto-supersede`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
-- **Quality Gate Baseline**: 3,575 tests passed / 0 failed across 222 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,588 tests passed / 0 failed across 223 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Next Action**: Commit R5, merge to `main`, push to `origin/main`, branch `final/rem-r6-auto-supersede`.
+- **Next Action**: Commit R6, merge to `main`, push to `origin/main`, branch `final/rem-r7-icd-alignment`.
 
 ---
 
@@ -26,6 +26,6 @@
 | 4 | **R3** | Email noise reduction (24h trusted device throttle, single dispense email, daily cap) | `final/rem-r3-email-noise` | **COMPLETED** |
 | 5 | **R4** | Formulary data quality ("Penicillin" typo fix, missing optional fields "Not provided") | `final/rem-r4-data-quality` | **COMPLETED** |
 | 6 | **R5** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/rem-r5-medicine-coverage` | **COMPLETED** |
-| 7 | **R6** | Auto-expiry / supersession of repeated medication & non-dispensable pending lines | `final/rem-r6-auto-supersede` | **IN PROGRESS** |
+| 7 | **R6** | Auto-expiry / supersession of repeated medication & non-dispensable pending lines | `final/rem-r6-auto-supersede` | **COMPLETED** |
 | 8 | **R7** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/rem-r7-icd-alignment` | PENDING |
 | 9 | **R8** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/rem-r8-final-reconcile` | PENDING |

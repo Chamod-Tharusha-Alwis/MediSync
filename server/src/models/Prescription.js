@@ -59,6 +59,12 @@ const prescriptionSchema = new mongoose.Schema({
     }],
     findingTypes: [String]
   },
+  // Supersession tracking (Task R6: Auto-expiry / supersession of repeated medication)
+  supersededBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Prescription', default: null },
+  supersededByConsultationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Consultation', default: null },
+  supersededAt: { type: Date, default: null },
+  supersededReason: { type: String, default: null },
+  resolvedIngredients: [{ type: String }],
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 

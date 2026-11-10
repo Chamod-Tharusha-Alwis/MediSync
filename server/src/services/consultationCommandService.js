@@ -6,6 +6,7 @@ const { validateMedicines } = require('../utils/prescriptionDuration');
 const { currentMedicationNames, assertMedicationResult } = require('./currentMedicationSafety');
 const { ClinicalCommandError } = require('./clinicalErrors');
 const { computeClinicalFindings, validateSafetyAcknowledgment } = require('../utils/clinicalSafetyValidator');
+const { isSameMedicine, getPrescriptionActiveState, getCanonicalIngredientSet } = require('../utils/prescriptionLifecycle');
 
 async function executeClinicalWrite(req, { standalone = false, command = require('./clinicalCommandService').productionCommandService(),
   models = { Consultation: require('../models/Consultation'), Prescription: require('../models/Prescription'), LabTest: require('../models/LabTest'), Patient: require('../models/Patient') },
@@ -102,12 +103,30 @@ async function executeClinicalWrite(req, { standalone = false, command = require
         events.push({ action: 'CONSULTATION_CREATED', resourceType: 'Consultation', resourceId: String(consultation._id) });
       }
 
+      const now = new Date();
+      let activeCandidates = [];
+      try {
+        const candidateQuery = models.Prescription.find({
+          patientId: patient._id,
+          status: { $in: ['pending', 'issued', 'dispensed', 'partially_dispensed'] },
+          supersededBy: null
+        });
+        activeCandidates = session && typeof candidateQuery.session === 'function'
+          ? await candidateQuery.session(session)
+          : await candidateQuery;
+        for (const c of activeCandidates || []) {
+          c.decryptFieldsSync?.();
+        }
+      } catch (_) {}
+
       for (const [index, medicine] of medicines.entries()) {
+        const canonicalIngredients = getCanonicalIngredientSet(names[index] || medicine);
         const rxData = {
           patientId: patient._id, doctorId: req.user.id, patientNic: nic, ...writeNicFields(nic),
           consultationId: consultation?._id, consultationRef: consultation?.consultationId, hospitalId: request.sessionHospitalId,
           drugName: names[index], dosage: medicine.dosage || '', frequency: medicine.frequency || '', instructions: medicine.instructions || '',
-          ...timings[index], status: 'pending'
+          ...timings[index], status: 'pending',
+          resolvedIngredients: canonicalIngredients
         };
         if (safetyOverride) {
           rxData.safetyOverride = safetyOverride;
@@ -116,6 +135,27 @@ async function executeClinicalWrite(req, { standalone = false, command = require
         await rx.save({ session });
         prescriptionIds.push(String(rx._id));
         events.push({ action: 'PRESCRIPTION_ISSUED', resourceType: 'Prescription', resourceId: String(rx._id) });
+
+        for (const candidate of activeCandidates || []) {
+          if (String(candidate._id) === String(rx._id) || candidate.supersededBy) continue;
+          if (isSameMedicine(candidate, names[index] || medicine) && getPrescriptionActiveState(candidate, now) === 'active') {
+            candidate.supersededBy = rx._id;
+            candidate.supersededByConsultationId = consultation?._id || null;
+            candidate.supersededAt = now;
+            candidate.supersededReason = 'newer_prescription_same_medicine';
+            await candidate.save({ session });
+            events.push({
+              action: 'PRESCRIPTION_SUPERSEDED',
+              resourceType: 'Prescription',
+              resourceId: String(candidate._id),
+              details: {
+                supersededBy: String(rx._id),
+                consultationId: consultation?._id ? String(consultation._id) : null,
+                reason: 'newer_prescription_same_medicine'
+              }
+            });
+          }
+        }
       }
 
       if (safetyOverride) {

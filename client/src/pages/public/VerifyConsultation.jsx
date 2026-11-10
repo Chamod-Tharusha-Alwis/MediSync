@@ -748,6 +748,16 @@ export default function VerifyConsultation() {
                                   </div>
                                 )}
                               </div>
+                            ) : item.status === 'superseded' || item.isSuperseded ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-semibold">
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                <span>{t('verification.statusSuperseded', 'Replaced by newer prescription')}</span>
+                              </span>
+                            ) : item.status === 'expired' || item.isExpired ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{t('verification.statusExpired', 'Course ended')}</span>
+                              </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-xs font-semibold">
                                 <Clock className="w-3.5 h-3.5" />
