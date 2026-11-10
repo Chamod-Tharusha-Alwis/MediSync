@@ -44,7 +44,7 @@ To guarantee that core security policies, authentication mechanisms, and critica
 Every offline gate execution independently recalculates SHA-256 hashes across all 15 locked files:
 1. `server/src/middleware/auth.js` (`92e99e0...`)
 2. `server/src/controllers/doctorController.js` (`9191291...`)
-3. `ml-engine/app.py` (`0500ddf...`)
+3. `ml-engine/app.py` (`3b51e3f...` — updated under controlled ledger update in `docs/final/LEDGER_CHANGELOG.md` for structured logging, telemetry, and `/metrics`; historical CRLF preserved)
 4. `ml-engine/evaluate_symptom_model.py` (`6999cf2...`)
 5. `client/src/components/SymptomTagInput.jsx` (`1a9fce8...`)
 6. `server/tests/ir04BackendIntegration.test.js` (`e40d7c7...`)

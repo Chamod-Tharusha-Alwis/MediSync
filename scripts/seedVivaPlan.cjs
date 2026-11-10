@@ -212,9 +212,19 @@ function getColomboMidnight(date = new Date()) {
   return Date.UTC(localTime.getUTCFullYear(), localTime.getUTCMonth(), localTime.getUTCDate()) - COLOMBO_OFFSET_MS;
 }
 
-function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
+function formatOwnerAlias(baseEmail, tag) {
+  if (!baseEmail || typeof baseEmail !== 'string' || !baseEmail.includes('@')) return null;
+  const parts = baseEmail.trim().split('@');
+  if (parts.length !== 2) return null;
+  const user = parts[0].split('+')[0];
+  const domain = parts[1];
+  return `${user}+${tag}@${domain}`.toLowerCase();
+}
+
+function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null, ownerEmail = null } = {}) {
   const current = new Date(now);
   const todayMidnight = getColomboMidnight(current);
+  const baseOwner = ownerEmail || ownerMailbox || null;
 
   const records = [];
   const byModel = {
@@ -251,7 +261,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
     district: 'Colombo',
     address: 'Regent Street, Colombo 08',
     regNo: 'HOSP-VIVA-01',
-    email: 'colombo.apex.hospital@accounts.invalid',
+    email: formatOwnerAlias(baseOwner, 'hospitaladmin1') || 'colombo.apex.hospital@accounts.invalid',
     emergencyHotline: '011-2691111',
     contactPhone: '011-2693510',
     isActive: true,
@@ -268,7 +278,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
     district: 'Kandy',
     address: 'Hospital Road, Kandy',
     regNo: 'HOSP-VIVA-02',
-    email: 'kandy.teaching.hospital@accounts.invalid',
+    email: formatOwnerAlias(baseOwner, 'hospitaladmin2') || 'kandy.teaching.hospital@accounts.invalid',
     emergencyHotline: '081-2222261',
     contactPhone: '081-2233337',
     isActive: true,
@@ -285,7 +295,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
     address: '142 Galle Road, Colombo 03',
     regNo: 'PHARM-VIVA-01',
     phone: '011-2574890',
-    email: 'colombo.dispensary@accounts.invalid',
+    email: formatOwnerAlias(baseOwner, 'pharmacy1') || 'colombo.dispensary@accounts.invalid',
     isActive: true,
     isSynthetic: true,
     syntheticSeedBatch: NAMESPACE,
@@ -300,7 +310,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
     address: '45 Colombo Road, Gampaha',
     regNo: 'PHARM-VIVA-02',
     phone: '033-2223456',
-    email: 'gampaha.city.pharmacy@accounts.invalid',
+    email: formatOwnerAlias(baseOwner, 'pharmacy2') || 'gampaha.city.pharmacy@accounts.invalid',
     isActive: true,
     isSynthetic: true,
     syntheticSeedBatch: NAMESPACE,
@@ -320,7 +330,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
   const doctors = doctorsData.map((d, i) => add('Doctor', {
     doctorId: `DOC-VIVA-${String(i + 1).padStart(2, '0')}`,
     fullName: d.name,
-    email: `dr.${d.name.toLowerCase().replace(/[^a-z]/g, '.')}${i + 1}@accounts.invalid`,
+    email: formatOwnerAlias(baseOwner, `doctor${i + 1}`) || `dr.${d.name.toLowerCase().replace(/[^a-z]/g, '.')}${i + 1}@accounts.invalid`,
     specialization: d.spec,
     licenseNo: d.lic,
     hospitals: d.hosp ? [d.hosp] : [],
@@ -343,7 +353,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
   const pharmacyStaff = pharmacyStaffData.map((s, i) => add('PharmacyStaff', {
     fullName: s.name,
     pharmacyId: s.pharmId,
-    email: `${s.name.toLowerCase().replace(/[^a-z]/g, '.')}${i + 1}@accounts.invalid`,
+    email: formatOwnerAlias(baseOwner, s.role === 'pharmacy_admin' ? 'pharmacyadmin' : `pharmacist${i + 1}`) || `${s.name.toLowerCase().replace(/[^a-z]/g, '.')}${i + 1}@accounts.invalid`,
     role: s.role,
     isActive: true,
     isVerified: true,
@@ -359,7 +369,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
 
   // ── 3. PATIENTS (30 total: 1 Demo Patient + 29 Synthetic) ───────────────────
   // Demo Patient (OA-14 standard synthetic NIC: 200012345678)
-  const demoPatientEmail = ownerMailbox || 'chamod.demo.patient@accounts.invalid';
+  const demoPatientEmail = formatOwnerAlias(baseOwner, 'patient') || ownerMailbox || 'chamod.demo.patient@accounts.invalid';
   const demoPatient = add('Patient', {
     nic: '200012345678',
     fullName: 'Chamod Tharusha',
@@ -458,7 +468,7 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
       district: districtObj.canonical,
       contactInfo: `+9477${String(1000000 + patientIndex * 71).slice(0, 7)}`,
       address: `No ${patientIndex * 7}, Temple Road, ${districtObj.canonical}`,
-      email: `${s.name.toLowerCase().replace(/[^a-z]/g, '.')}${patientIndex}@example.invalid`,
+      email: formatOwnerAlias(baseOwner, `patient${patientIndex + 1}`) || `${s.name.toLowerCase().replace(/[^a-z]/g, '.')}${patientIndex}@example.invalid`,
       bloodGroup: bloodGroups[idx % bloodGroups.length],
       allergies: allergyPresets[idx % allergyPresets.length],
       chronicConditions: chronicPresets[idx % chronicPresets.length],
@@ -928,11 +938,41 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
     };
 
     if (labStatus === 'report_ready') {
+      const samplePdf = Buffer.from(
+        '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n' +
+        '3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n' +
+        '0000000000 65535 f \n0000000009 00000 n \n0000000056 00000 n \n0000000111 00000 n \n' +
+        'trailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF\n',
+        'utf8'
+      );
+      const pdfSha256 = crypto.createHash('sha256').update(samplePdf).digest('hex');
+      const docId = deterministicObjectId('LabTest', l);
+
+      const keyToUse = global.ENCRYPTION_KEYS?.[global.ACTIVE_KEY_VERSION] || global.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY || '01234567890123456789012345678901';
+      let encoded = null;
+      try {
+        const security = require('../server/src/security/securityRuntime').current();
+        const envelope = require('../server/src/security/labReportEnvelope');
+        encoded = security.fieldMode === 'gcm'
+          ? envelope.encryptReport(samplePdf, { _id: docId }, security.fieldConfiguration())
+          : envelope.encryptLegacyReport(samplePdf, keyToUse);
+      } catch (_) {
+        const envelope = require('../server/src/security/labReportEnvelope');
+        encoded = envelope.encryptLegacyReport(samplePdf, keyToUse);
+      }
+
       labDoc.reportId = `RPT-VIVA-2026-${String(l + 1).padStart(4, '0')}`;
       labDoc.reportPath = `https://res.cloudinary.com/medisync/raw/upload/viva/reports/${labId}.pdf`;
+      labDoc.reportPublicId = `medisync/lab-reports/${docId}/sample`;
       labDoc.reportOriginalName = `${labTestNames[l].replace(/[^a-zA-Z0-9]/g, '_')}_Result.pdf`;
       labDoc.reportUploadedAt = new Date(+testDate + 14400000);
-      labDoc.reportSha256 = crypto.createHash('sha256').update(`${NAMESPACE}:${labId}:report`).digest('hex');
+      labDoc.reportSha256 = pdfSha256;
+      labDoc.reportEnvelopeVersion = encoded.reportEnvelopeVersion || 1;
+      labDoc.fileIV = encoded.fileIV;
+      labDoc.encryptedFileKey = encoded.encryptedFileKey;
+      labDoc.encryptedBlob = encoded.blob.toString('base64');
+      labDoc.fileKeyVersion = 1;
+      labDoc.keyVersion = 1;
     }
 
     add('LabTest', labDoc, l);
@@ -971,6 +1011,8 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null } = {}) {
       name: demoPatient.document.fullName,
       email: demoPatient.document.email,
       rawToken: rawDemoToken,
+      tokenHash,
+      expiresAt: verificationToken.document.expiresAt,
       qrUrl: `https://medisync.chamodtharusha.com.lk/verify/${rawDemoToken}`
     },
     scenarios: {

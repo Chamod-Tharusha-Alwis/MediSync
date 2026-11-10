@@ -16,6 +16,14 @@ function decryptStoredReport(blob, record, masterSecret, fieldConfiguration) {
   } catch (_) { throw new Error('LAB_REPORT_AUTHENTICATION_FAILED'); }
 }
 async function downloadStoredReport(record, { sign, download, masterSecret, fieldConfiguration } = {}) {
+  if (record?.encryptedBlob) {
+    const rawBlob = Buffer.isBuffer(record.encryptedBlob)
+      ? record.encryptedBlob
+      : Buffer.from(record.encryptedBlob, 'base64');
+    const version = record.fileKeyVersion ?? record.keyVersion ?? 1;
+    const resolvedSecret = masterSecret ?? global.ENCRYPTION_KEYS?.[String(version)] ?? global.ENCRYPTION_KEY ?? process.env.ENCRYPTION_KEY;
+    return decryptStoredReport(rawBlob, record, resolvedSecret, fieldConfiguration);
+  }
   if (typeof record?.reportPublicId !== 'string' || !record.reportPublicId || !record.encryptedFileKey || !record.fileIV) throw new Error('LAB_REPORT_LEGACY_REVIEW_REQUIRED');
   const signer = sign || require('../utils/cloudinary').generateSignedUrl;
   const transport = download || require('axios').get;

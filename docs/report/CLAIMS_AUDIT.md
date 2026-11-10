@@ -16,7 +16,7 @@
 | **Clinical Synonyms Source** | "32 clinical synonyms sourced from UMLS Metathesaurus" | `ml-engine/data_pipeline/build_icd10_synonyms.py`, `icd10_synonyms.v1.json` | `python ml-engine/data_pipeline/build_icd10_synonyms.py` | UMLS distribution requires NLM licensing. All 32 terms were verified against the **CMS/CDC ICD-10-CM 2024 Alphabetic Index** (public domain US Government work, 17 U.S.C. § 105). | **CORRECTED**: Updated `build_icd10_synonyms.py` and `icd10_synonyms.v1.json` to cite public domain CMS index headings. UMLS CUIs retained as non-proprietary cross-identifiers. Created `SYNONYMS_LICENSING_AUDIT.md`. |
 | **Total Test Counts** | "3,450 / 3,454 / 3,465 passed tests" | `README.md`, `ARCHITECTURE.md`, `PROGRESS.md`, `PHASE_STATUS.md` | `node scripts/run_offline_tests.js` | Exact count: **3,465 passed, 0 failed, 0 skipped across 207 suites** (Backend: 2,635; Client: 666; Email/PDF: 31; ML scoring: 40; ML Flask: 31; Root: 55; ML contract: 7). | **SYNCHRONIZED**: Synced exact count (3,465 / 207 suites) across `README.md`, `ARCHITECTURE.md`, `PROGRESS.md`, and `PHASE_STATUS.md`. |
 | **Trilingual Key Parity** | "100% key parity across EN, SI, TA dictionaries" | `client/src/i18n/translations/` | `npm --prefix client test src/__master_offline__/translations.test.js` | Verified: exactly **835 keys** in `en.js`, `si.js`, and `ta.js` (0 missing, 0 extra). | **VERIFIED TRUE**: Test passed; parity confirmed. |
-| **Protected File Ledger** | "15 protected files pinned via SHA-256" | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` | Verified: exactly 15 files tracked; all 15 SHA-256 hashes match working tree (`protectedAccountedFor: 15`). | **VERIFIED TRUE**: Latest `ml-engine/app.py` SHA-256 (`0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37`) validated. |
+| **Protected File Ledger** | "15 protected files pinned via SHA-256" | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` | Verified: exactly 15 files tracked; all 15 SHA-256 hashes match working tree (`protectedAccountedFor: 15`). | **VERIFIED TRUE**: Latest `ml-engine/app.py` SHA-256 (`3b51e3fde149146d85ca2f15668ddb35963ebc8d700f89720c068536b5bb25de`) validated under controlled update in `docs/final/LEDGER_CHANGELOG.md`. |
 | **Live URLs & Endpoints** | "Client, Backend API, ML Engine live deployment URLs" | `README.md`, `ARCHITECTURE.md` | `curl.exe -i -m 60 https://medisync-ml.onrender.com/health` | Backend and ML engine URLs respond HTTP 200 OK with valid health payloads. Render Free sleep behavior produces cold start (~50 s). | **VERIFIED TRUE**: Documented cold start behavior; UptimeRobot 5 min keepalive recommended. |
 
 ---
@@ -31,7 +31,7 @@
    - Added explicit coverage tier descriptions (41 Tier 1, 174 Tier 2 KB, 71,704 ICD concepts).
 3. **`docs/new/sub3/PHASE_STATUS.md`**:
    - Synced test suite counts (3,465 across 207 suites).
-   - Reconciled `ml-engine/app.py` SHA-256 hash to `0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37`.
+   - Reconciled `ml-engine/app.py` SHA-256 hash to `3b51e3fde149146d85ca2f15668ddb35963ebc8d700f89720c068536b5bb25de` (Task R2 controlled ledger update in `docs/final/LEDGER_CHANGELOG.md`).
    - Updated Item 5G to note `citationStatus: "unverified_owner_must_check"`.
 4. **`docs/new/sub4/FINAL_REPORT.md` & `FINAL_ACCEPTANCE_MATRIX.md`**:
    - Corrected 0.22 MB memory claim to distinguish process RSS (196.8 MB) from traced heap delta (0.22 MB).

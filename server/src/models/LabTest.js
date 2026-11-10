@@ -154,6 +154,10 @@ const LabTestSchema = new Schema(
       type:    String,
       default: null,          // 12-byte GCM IV stored as hex
     },
+    encryptedBlob: {
+      type:    String,
+      default: null,          // Base64-encoded encrypted report payload for offline/embedded reports
+    },
     keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
   },
   {

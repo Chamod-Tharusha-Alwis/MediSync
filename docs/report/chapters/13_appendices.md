@@ -46,7 +46,7 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 |---|---|---|:---:|
 | 1 | `server/src/middleware/auth.js` | `92e99e0afded8de06b4d74abebe851b02c4f0c303a191530f39bee72f1256a88` | LOCKED |
 | 2 | `server/src/controllers/doctorController.js` | `919129116095dc8301866fc0ea3d804e8bde645ec1de210deb2f1b2350d081c2` | LOCKED |
-| 3 | `ml-engine/app.py` | `0500ddf7db3bb3bb5af945a44adacf5b1a920facdf37d32d665cca40caab1a37` | LOCKED |
+| 3 | `ml-engine/app.py` | `3b51e3fde149146d85ca2f15668ddb35963ebc8d700f89720c068536b5bb25de` | LOCKED (Controlled update in LEDGER_CHANGELOG.md) |
 | 4 | `ml-engine/evaluate_symptom_model.py` | `6999cf2984b341b7dfbf32939d8fc39d7d0743899d8321e7b73d9fa704e2d96d` | LOCKED |
 | 5 | `client/src/components/SymptomTagInput.jsx` | `1a9fce8726f9cc8adfa501a2d3bf9664bfa6160c5dc78650d3f4b35ac2bbdc5d` | LOCKED |
 | 6 | `server/tests/ir04BackendIntegration.test.js` | `e40d7c7bf993d3cd8ecc7bea7365740d7d824501c6f460b38e2962245a8ab9ae` | LOCKED |

@@ -67,6 +67,7 @@ function parseArgs(args = process.argv.slice(2)) {
   let action = 'dry-run';
   let database = 'medisync_prod';
   let confirm = false;
+  let ownerEmail = null;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -74,7 +75,12 @@ function parseArgs(args = process.argv.slice(2)) {
     else if (arg === '--dry-run') action = 'dry-run';
     else if (arg === '--rollback') action = 'rollback';
     else if (arg === '--verify') action = 'verify';
-    else if (arg === '--db') {
+    else if (arg.startsWith('--owner-email=')) {
+      ownerEmail = arg.slice('--owner-email='.length).trim();
+    } else if (arg === '--owner-email') {
+      ownerEmail = args[++i]?.trim();
+      if (!ownerEmail || ownerEmail.startsWith('--')) throw new Error('Email address required after --owner-email');
+    } else if (arg === '--db') {
       database = args[++i];
       if (!database || database.startsWith('--')) throw new Error('Database name required after --db');
     } else if (arg === '-h' || arg === '--help') {
@@ -82,12 +88,13 @@ function parseArgs(args = process.argv.slice(2)) {
 Usage: node scripts/seed-viva-data.js [options]
 
 Options:
-  --dry-run      Run full plan generation, validation, and scenario proof (default, 0 writes)
-  --confirm      Execute database writes (requires confirmation)
-  --rollback     Reverse viva seed batch, deleting only documents with batch tag "viva-2026-11"
-  --verify       Execute live post-seed validation queries against the target database
-  --db <name>    Target database (default: medisync_prod; allowed: medisync_prod, medisync_automated_test)
-  -h, --help     Show this help text
+  --dry-run                 Run full plan generation, validation, and scenario proof (default, 0 writes)
+  --confirm                 Execute database writes (requires confirmation)
+  --rollback                Reverse viva seed batch, deleting only documents with batch tag "viva-2026-11"
+  --verify                  Execute live post-seed validation queries against the target database
+  --db <name>               Target database (default: medisync_prod; allowed: medisync_prod, medisync_automated_test)
+  --owner-email <address>   Assign Gmail-style plus aliases (+doctor1, +pharmacist1, +patient, etc.) to all personas
+  -h, --help                Show this help text
 `);
       process.exit(0);
     } else {
@@ -96,7 +103,7 @@ Options:
   }
 
   if (confirm && action === 'dry-run') action = 'seed';
-  return { action, database, confirm };
+  return { action, database, confirm, ownerEmail };
 }
 
 function loadEncryptionKeys() {
@@ -186,11 +193,17 @@ async function runDryRun(plan) {
   console.log(`   Districts Reporting   : ${agg.byDistrict.length}`);
   console.log(`   Top 3 Diseases (30d)  : ${agg.byDisease.slice(0, 3).map(d => `${d.disease} (${d.totalCases})`).join(', ')}`);
 
-  console.log('\n👤 4. DEMO PATIENT PROFILE & QR CAPABILITY:');
-  console.log(`   Name                  : ${plan.demoPatient.name}`);
-  console.log(`   Synthetic NIC (OA-14) : ${plan.demoPatient.nic}`);
-  console.log(`   Email                 : ${plan.demoPatient.email}`);
+  console.log('\n👤 4. SEEDED PERSONAS & DEMO CREDENTIALS:');
+  console.log(`   Demo Patient (OA-14)  : ${plan.demoPatient.name} | NIC: ${plan.demoPatient.nic} | Email: ${plan.demoPatient.email}`);
+  const docs = plan.documentsByModel.Doctor;
+  const staff = plan.documentsByModel.PharmacyStaff;
+  const hosps = plan.documentsByModel.Hospital;
+  console.log(`   Doctor 1              : ${docs[0]?.fullName} (SLMC: ${docs[0]?.licenseNo}) | Email: ${docs[0]?.email}`);
+  console.log(`   Pharmacist 1          : ${staff[0]?.fullName} | Email: ${staff[0]?.email}`);
+  console.log(`   Pharmacy Admin        : ${staff[2]?.fullName} | Email: ${staff[2]?.email}`);
+  console.log(`   Hospital Admin        : ${hosps[0]?.name} | Email: ${hosps[0]?.email}`);
   console.log(`   QR Capability URL     : ${plan.demoPatient.qrUrl}`);
+  console.log(`   Note: All persona passwords derived from SEED_TEST_PASSWORD. Direct password login works without OTP; OTP is sent for verification and lab report download.`);
 
   console.log('\n🛡️ 5. REVERSIBILITY & ROLLBACK DRY-RUN:');
   console.log(`   Batch Tag Identifier : syntheticSeedBatch: "${plan.namespace}"`);
@@ -199,7 +212,10 @@ async function runDryRun(plan) {
   console.log(`   Existing Real Data   : Protected (0 modifications, zero cross-batch cascade)`);
   console.log('================================================================');
   console.log('✅ Dry-run successful. To apply this plan, run:');
-  console.log('   node scripts/seed-viva-data.js --confirm');
+  console.log('   # PowerShell:');
+  console.log('   $env:SEED_TEST_PASSWORD="YourPassword"; node scripts/seed-viva-data.js --confirm');
+  console.log('   # Bash:');
+  console.log('   SEED_TEST_PASSWORD="YourPassword" node scripts/seed-viva-data.js --confirm');
   console.log('================================================================');
 }
 
@@ -365,7 +381,10 @@ async function runVerify(plan, database) {
 async function main() {
   const args = parseArgs();
   loadEncryptionKeys();
-  const plan = buildVivaSeedPlan({ now: new Date(), ownerMailbox: process.env.VIVA_DEMO_EMAIL || null });
+  const plan = buildVivaSeedPlan({
+    now: new Date(),
+    ownerEmail: args.ownerEmail || process.env.VIVA_DEMO_EMAIL || null
+  });
 
   if (args.action === 'dry-run') {
     await runDryRun(plan);

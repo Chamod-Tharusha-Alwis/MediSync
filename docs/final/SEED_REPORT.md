@@ -32,7 +32,7 @@ The MediSync Viva Voce Demonstration seed dataset was created pursuant to `docs/
 | `consultations` | `Consultation` | 400 | Encounter history over past 70 days using catalog ICD codes; 385 verified, 15 pending review |
 | `prescriptions` | `Prescription` | 283 | Prescription lifecycles (dispensed, partially_dispensed, pending, cancelled) |
 | `dispensings` | `Dispensing` | 180 | Pharmacist fulfillment receipts with receipt numbers |
-| `labtests` | `LabTest` | 12 | 8 `report_ready` with sample encrypted PDF hashes, 4 `sample_collected` |
+| `labtests` | `LabTest` | 12 | 12 total: 3 `report_ready` with real encrypted PDF payloads, 3 `sample_collected`, 1 `processing`, 2 `Approved`, 3 `pending` |
 | `verificationtokens` | `VerificationToken` | 1 | Live QR capability token linked to Demo Patient consultation history |
 | **TOTAL** | **10 Collections** | **917** | **Zero schema violations, full encryption compliance** |
 
@@ -73,56 +73,69 @@ Evaluation of `aggregatePublicCases` over the seeded consultation set:
 ## 5. Viva Demonstration Personas & Credentials
 
 > [!NOTE]
-> Passwords for all demonstration accounts are initialized to the secret provided in `SEED_TEST_PASSWORD` (or `TEMP_ACCOUNT_PASSWORD`). Passwords are not stored in plaintext anywhere in source code or documentation.
+> Passwords for all demonstration accounts are initialized to the secret provided in `SEED_TEST_PASSWORD` (or `TEMP_ACCOUNT_PASSWORD`). Passwords are not stored in plaintext anywhere in source code or documentation. All seeded personas have `twoFactorEnabled: false` so evaluators can log in directly with password.
 
-| Role | Name | Username / Email | Identifier / SLMC | Key Demonstration Flow |
-|---|---|---|---|---|
-| **Doctor** | Dr. Anura Jayasinghe | `dr.anura.jayasinghe.1@accounts.invalid` | SLMC 48123 | Doctor Portal: New Consultation, Symptom Matching, Safety Engine Warning Override |
-| **Pharmacist** | Kaveen Bandara | `kaveen.bandara.1@accounts.invalid` | SPMC 9841 | Pharmacy Portal: Dispense Screen, Prescriber Safety Override Badge, Duplicate Dispense Block |
-| **Lab Tech** | Samantha Wickramasinghe | `samantha.lab@accounts.invalid` | LAB-9012 | Lab Portal: Specimen collection, Report upload & Encrypted verification |
-| **Hospital Admin** | Apex Hospital Admin | `colombo.apex.hospital@accounts.invalid` | HOSP-001 | Hospital Management, Doctor roster, Facility capacity |
-| **Pharmacy Admin** | Asiri Care Admin | `thushara.perera.3@accounts.invalid` | PHARM-001 | Pharmacy Management, Dispenser staff audit |
-| **Demo Patient** | Chamod Tharusha | `chamod.demo.patient@accounts.invalid` | **200012345678** | Patient Portal: Medical History, Prescriptions, QR Verification token |
+### Dynamic Gmail-Style Plus Aliasing (`--owner-email=<address>`)
+When the `--owner-email=<address>` option is supplied (e.g. `--owner-email=chamod@gmail.com`), every seeded account is assigned an encrypted plus-aliased address matching the role. This allows the evaluator to receive live verification OTPs directly to a real mailbox:
+
+| Role | Synthetic Default (`.invalid`) | Plus Alias (`--owner-email=user@example.com`) |
+|---|---|---|
+| **Demo Patient** | `chamod.demo.patient@accounts.invalid` | `user+patient@example.com` |
+| **Doctor (Lead)** | `dr.anura.jayasinghe.1@accounts.invalid` | `user+doctor1@example.com` |
+| **Doctor (Internal)** | `dr.malik.perera.2@accounts.invalid` | `user+doctor2@example.com` |
+| **Pharmacist (Lead)** | `kaveen.bandara.1@accounts.invalid` | `user+pharmacist1@example.com` |
+| **Pharmacy Admin** | `thushara.perera.3@accounts.invalid` | `user+pharmacyadmin@example.com` |
+| **Hospital Admin** | `colombo.apex.hospital@accounts.invalid` | `user+hospitaladmin1@example.com` |
+
+Without the `--owner-email` flag, accounts default to safe RFC 2606 `.invalid` domains.
 
 ### Primary Demonstration Patient (OA-14 Compliant)
 - **Name**: Chamod Tharusha
 - **Synthetic NIC**: `200012345678` (Use this NIC for all viva walk-throughs and screenshots)
 - **Consultation Records**: 3 historical consultations (Cardiology, General Medicine, Respiratory)
 - **Prescription States**: 1 `dispensed`, 1 `partially_dispensed`, 1 `pending`, 1 `cancelled` (with `supersededBy`)
-- **Lab Test Records**: 1 `report_ready` (Lipid Profile with encrypted PDF metadata), 1 `sample_collected` (Complete Blood Count)
-- **Verification Token**: Active 24-hour capability token with SHA-256 hash `8390ba7221eb2f542e9013fcb866b7c7e3a1930809177f84aed264cc887ed1c4`
-- **QR Verification URL**: `https://medisync.chamodtharusha.com.lk/verify/8390ba7221eb2f542e9013fcb866b7c7e3a1930809177f84aed264cc887ed1c4`
+- **Lab Test Records**: 1 `report_ready` (Complete Blood Count with decryptable encrypted PDF payload), 1 `sample_collected` (Dengue NS1)
+- **Verification Token**: 90-day capability token (`tokenHash = SHA-256(raw_token)`).
+- **QR Verification URL**: Generated at runtime and printed to stdout upon execution: `https://medisync.chamodtharusha.com.lk/verify/<RAW_TOKEN>`. In accordance with security protocols, the raw secret token is never committed to repository documentation.
 
 ---
 
-## 6. CLI Execution Runbook
+## 6. CLI Execution Runbook (PowerShell & Bash)
 
 ### Step 1: Pre-Viva Backup (Mandatory OA-03)
 Before executing database modifications, capture a backup of `medisync_prod`:
-```bash
+```powershell
 mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="./backup_pre_viva"
 ```
 
 ### Step 2: Dry-Run Inspection
 Verify counts and scenario mathematics without writing a single byte to MongoDB:
-```bash
-node scripts/seed-viva-data.js --dry-run
+```powershell
+node scripts/seed-viva-data.js --dry-run --owner-email="your.email@example.com"
 ```
 
 ### Step 3: Apply Seeding to Database
 Set the demonstration password and apply the 917 documents to the target database:
+
+**PowerShell (Windows)**:
+```powershell
+$env:SEED_TEST_PASSWORD="YourSecureDemoPassword123!"
+node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="your.email@example.com"
+```
+
+**Bash (Linux / macOS)**:
 ```bash
-SEED_TEST_PASSWORD="YourSecureDemoPassword123!" node scripts/seed-viva-data.js --confirm --db=medisync_prod
+SEED_TEST_PASSWORD="YourSecureDemoPassword123!" node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="your.email@example.com"
 ```
 
 ### Step 4: Verify Database State
 Verify that the documents exist and evaluate correctly in the live database:
-```bash
+```powershell
 node scripts/seed-viva-data.js --verify --db=medisync_prod
 ```
 
 ### Step 5: Post-Viva Rollback (Reversible Reset)
 To atomically remove all 917 seeded documents and return the database to its pristine state:
-```bash
+```powershell
 node scripts/seed-viva-data.js --rollback --db=medisync_prod
 ```

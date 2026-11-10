@@ -2,10 +2,10 @@
 
 **Release**: `v1.1.0-capstone`  
 **Date**: 2026-11-10  
-**Overall Verified Implementation**: **96.5%**  
+**Overall Verified Implementation**: **87.0% Live Operational Surface / 100% Offline Suite**  
 **Protected Ledger**: **15 / 15 Files Locked** (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)  
-**Automated Verification Suite**: **3,595 Tests Passed / 0 Failed (224 Suites)**  
-**Production Live Audit**: **20 / 20 PASS (0 FAIL)** on Render + Vercel  
+**Automated Verification Suite**: **3,608 Tests Passed / 0 Failed (225 Suites)**  
+**Production Live Audit**: **20 / 20 Executed Checks PASS (0 FAIL)** on Render + Vercel (Public & Boundary Checks; 0 emails used)  
 
 ---
 
@@ -24,7 +24,7 @@ The system operates across three distributed cloud layers:
 
 | Capability | Verification Evidence | Operational Reality |
 |---|---|---|
-| **5 Role-Based Portals** | `server/tests/ir04-isolated-five-role-e2e.spec.js`, Live Audit LT-13 through LT-17 | Doctor, Pharmacist, Lab Technician, MoH Public Health Officer, and Patient portals operational with strict HTTP 401/403 authorization barriers. |
+| **5 Role-Based Portals** | `server/tests/ir04-isolated-five-role-e2e.spec.js`, Live Audit LT-15 through LT-19 | The 5 core system roles (`patient`, `doctor`, `pharmacy`, `hospital`, `admin`) are operational with strict HTTP 401/403 authorization barriers. |
 | **Doctor Safety Override Engine** | `server/tests/doctorSafetyOverride.test.js` (10/10 PASS), `server/tests/clinicalSafetyConsistency.test.js` (4/4 PASS) | Non-blocking clinical safety engine: warns doctor of DDIs, dosage ceilings, and allergies; enables issuance after mandatory acknowledgment and clinician responsibility justification for severe/critical findings. |
 | **Prescription Lifecycle & Auto-Supersession** | `server/tests/prescriptionSupersession.test.js` (13/13 PASS) | Atomic supersession of active matching prescriptions on new issuance; dynamic active state calculation (`active`, `expired`, `superseded`, `cancelled`); non-dispensable queue hygiene. |
 | **Medicine Catalog Coverage & Prefix Autocomplete** | `server/tests/medicineSearchPrefix.test.js` (6/6 PASS), `scripts/audit_medicine_coverage.js` | 3,000 catalog entries audited (75.0% canonical ingredient resolution); prefix matching (`citalopr` -> `citalopram`); unverified safety limits flagged with `owner_review_required`. |
@@ -39,6 +39,20 @@ The system operates across three distributed cloud layers:
 | **Zero-Trust Field Encryption** | `server/tests/qaEncryptionBootstrap.test.js` (14/14 PASS) | AES-256-GCM encryption at rest for patient NICs, names, phone numbers, addresses, and clinical consultation notes. |
 | **Email Noise Reduction** | `server/tests/emailNoiseReduction.test.js` (7/7 PASS) | 24-hour trusted device login throttle; consolidated single dispensing notification; daily dispatch ceiling warning at 80% capacity. |
 | **Resource Efficiency** | `scripts/benchmark_ml_resources.py`, Figure F09 | ML resident memory RSS verified at **197.37 MB** (38.55% of 512 MB Render Free limit; 314.63 MB headroom). Mean inference latency 0.78 ms. |
+
+### 2.1 Production Live Audit Breakdown (LT-01 through LT-20)
+
+In accordance with strict verification honesty standards, the production audit executed **20 live checks** against active cloud infrastructure (`https://medisync-wabc.onrender.com`, `https://medisync-ml.onrender.com`, `https://medisync.chamodtharusha.com.lk`):
+1. **Public Infrastructure & Health**: LT-01 (API Gateway `/health`), LT-02 (ML Engine `/health`), LT-03 (Vercel Edge web shell).
+2. **Clinical Fail-Closed Boundaries**: LT-04 (`/api/public/health-stats` fail-closed 503 when cases unverified), LT-05 (`/api/alerts/active` 401 guard).
+3. **Public Directories & Activity**: LT-06 (consultation activity), LT-07 (sanitized doctor directory), LT-08 (hospital directory), LT-09 (pharmacy directory).
+4. **Token Verification Barriers**: LT-10 (non-existent token 404), LT-11 (missing OTP token request 404), LT-12 (missing OTP unlock 404).
+5. **Role-Based Authorization & Input Guards**: LT-13 (maintenance endpoint lockout 401), LT-14 (malformed JSON defense 400), LT-15 (doctor route 401), LT-16 (patient route 401), LT-17 (pharmacy route 401), LT-18 (hospital route 401), LT-19 (admin route 401), LT-20 (non-existent route 404).
+
+**Explicit Non-Live Disclosures (0 Live Emails Used)**:
+- **OTP Email Flow & Email Content Delivery**: Preserved live email quota (0 emails dispatched in live test run). Verified 100% offline in `server/tests/emailNoiseReduction.test.js` and `server/tests/otpVerificationPortal.test.js`.
+- **Encrypted PDF Delivery in Production**: Verified 100% offline in `server/tests/vivaSeedData.test.js` and `server/tests/pdfSecurityAndLayout.test.js`. Not dispatched to live external storage or mail in production.
+- **Surface Coverage Calculation**: 20 executed live checks / 23 candidate end-to-end paths = **87.0% live operational surface verified** (100% verified across 3,608 offline automated tests).
 
 ---
 
