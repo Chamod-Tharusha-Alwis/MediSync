@@ -207,16 +207,29 @@ exports.loginPharmacy = async (req, res) => {
 
     let isTrusted = false;
     let isNewDevice = false;
+    let shouldSendAlert = false;
+    const now = new Date();
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
     if (fingerprint) {
       if (existingDevice) {
         isTrusted = !existingDevice.isRevoked && (existingDevice.isTrusted === true);
-        existingDevice.lastSeenAt = new Date();
+        existingDevice.lastSeenAt = now;
         existingDevice.deviceModel = parsedModel;
+        if (!isTrusted && !existingDevice.isRevoked) {
+          if (!existingDevice.lastAlertSentAt || (now.getTime() - new Date(existingDevice.lastAlertSentAt).getTime() >= TWENTY_FOUR_HOURS_MS)) {
+            shouldSendAlert = true;
+            existingDevice.lastAlertSentAt = now;
+          } else {
+            shouldSendAlert = false;
+          }
+        }
         await existingDevice.save();
       } else {
         // Security invariant: newly seen devices always start as UNTRUSTED (false)
         isNewDevice = true;
         isTrusted = false;
+        shouldSendAlert = true;
         try {
           await TrustedDevice.create({
             userId: staff._id,
@@ -227,7 +240,8 @@ exports.loginPharmacy = async (req, res) => {
             deviceInfo: ua,
             isTrusted: false,
             trustedAt: null,
-            lastSeenAt: new Date(),
+            lastSeenAt: now,
+            lastAlertSentAt: now,
             isRevoked: false
           });
         } catch (e) {}
@@ -263,7 +277,7 @@ exports.loginPharmacy = async (req, res) => {
     await staff.save();
 
     // ── Send Login Notification Email ─────────────────────────────────────────
-    if (process.env.SKIP_LOGIN_NOTIFICATION !== 'true') {
+    if (process.env.SKIP_LOGIN_NOTIFICATION !== 'true' && (isTrusted || shouldSendAlert)) {
       try {
         const axios = require('axios');
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;

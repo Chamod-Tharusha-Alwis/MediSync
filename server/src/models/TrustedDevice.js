@@ -8,6 +8,8 @@ const trustedDeviceSchema = new mongoose.Schema({
   deviceInfo: { type: String },
   trustedAt: { type: Date },
   lastSeenAt: { type: Date, default: Date.now },
+  lastAlertSentAt: { type: Date },
+  lastOtpAt: { type: Date },
   isTrusted: { type: Boolean, default: false },
   isRevoked: { type: Boolean, default: false },
   clinicalUseVersion: { type: Number, default: 0 },

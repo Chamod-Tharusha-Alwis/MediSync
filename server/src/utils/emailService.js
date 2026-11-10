@@ -692,6 +692,7 @@ async function sendViaBrevoHttps(options, primaryErrorCode) {
     console.log(
       `[EMAIL SERVICE] Provider Accepted via Brevo HTTPS Fallback | PrimaryError: ${primaryErrorCode} | DeliveryQueued: false | DeliveryConfirmed: false | DailyCount: ${updatedDailyCount}/${brevoCfg.dailyLimit} | Subject: "${sanitizeSubjectForLog(options.subject)}" | MessageID: ${messageId}`
     );
+    await recordEmailDispatchCount().catch(() => {});
 
     return {
       success: true,
@@ -786,6 +787,24 @@ async function sendViaBrevoHttps(options, primaryErrorCode) {
     };
   }
 }
+
+async function recordEmailDispatchCount() {
+  const cap = parseInt(process.env.DAILY_EMAIL_CAP || process.env.EMAIL_DAILY_CAP, 10) || 100;
+  let count = 1;
+  try {
+    count = await incrementDailyEmailCount('total_dispatched');
+  } catch (_) {
+    // fallback if counter store is offline
+  }
+  console.log(`[EMAIL DISPATCH] Daily email count: ${count}/${cap}`);
+  if (count >= Math.floor(cap * 0.8)) {
+    console.warn(`[EMAIL DISPATCH WARNING] Approaching provider cap: ${count}/${cap} (${Math.round((count / cap) * 100)}%) emails sent today`);
+  }
+  return { count, cap };
+}
+
+exports.recordEmailDispatchCount = recordEmailDispatchCount;
+exports.getDailyDispatchedEmailCount = () => getDailyEmailCount('total_dispatched');
 
 /**
  * sendMail — Core email dispatch function with Resend HTTPS Primary + Brevo HTTPS Backup (Port 443)
@@ -897,6 +916,7 @@ const sendMail = async (options = {}) => {
     if (global.__MEDISYNC_CAPTURED_TEST_EMAILS.length > 200) {
       global.__MEDISYNC_CAPTURED_TEST_EMAILS.shift();
     }
+    await recordEmailDispatchCount().catch(() => {});
     return {
       success: true,
       providerAccepted: true,
@@ -1002,6 +1022,7 @@ const sendMail = async (options = {}) => {
     console.log(
       `[EMAIL SERVICE] Provider Accepted via Resend Primary | DeliveryQueued: false | DeliveryConfirmed: false | Subject: "${sanitizeSubjectForLog(options.subject)}" | MessageID: ${messageId}`
     );
+    await recordEmailDispatchCount().catch(() => {});
 
     // Rule 3: Resend accepted -> return immediately, never duplicate via Brevo
     return {

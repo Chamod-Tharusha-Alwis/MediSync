@@ -30,6 +30,14 @@ const TrustedDevice = require('../models/TrustedDevice');
 const AuditLog = require('../models/AuditLog');
 const axios = require('axios');
 
+const getDeviceTrustCookieSecret = () => process.env.JWT_SECRET || process.env.ENCRYPTION_KEY || 'medisync_device_trust_secret';
+
+const computeDeviceTrustHash = (userId, identifier) => {
+  return crypto.createHmac('sha256', getDeviceTrustCookieSecret())
+    .update(`${String(userId)}:${String(identifier || '')}`)
+    .digest('hex');
+};
+
 // Helper: createSession
 const createSession = async (userId, userModel, token, req, opts = {}) => {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -42,31 +50,49 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
   const clientHw = req.headers['x-hardware-model'] || req.headers['sec-ch-ua-model'] || req.body?.clientDeviceModel;
   const parsedModel = parseDeviceModel(ua, clientHw);
 
+  // Check if device is trusted via httpOnly device-trust cookie
+  const expectedTrustCookie = computeDeviceTrustHash(userId, fingerprint || ua);
+  const hasValidTrustCookie = Boolean(req.cookies?.medisync_device_trust && req.cookies.medisync_device_trust === expectedTrustCookie);
+
   // Check and register/update device in TrustedDevice collection
   let isTrusted = false;
   let isNewDevice = false;
   let isRevokedDevice = false;
   let wasTrusted = false;
+  let shouldSendAlert = false;
+
+  const now = new Date();
+  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
   if (fingerprint) {
     const existing = await TrustedDevice.findOne({ userId, deviceFingerprint: fingerprint });
 
     if (existing) {
       isRevokedDevice = Boolean(existing.isRevoked);
-      wasTrusted = !existing.isRevoked && (existing.isTrusted === true);
+      wasTrusted = !existing.isRevoked && (existing.isTrusted === true || hasValidTrustCookie);
       // A revoked device can NEVER be silently re-trusted during session creation
-      isTrusted = isRevokedDevice ? false : (opts.explicitTrust === true ? true : wasTrusted);
-      existing.lastSeenAt = new Date();
+      isTrusted = isRevokedDevice ? false : (opts.explicitTrust === true || opts.fromOTP === true || hasValidTrustCookie ? true : wasTrusted);
+      existing.lastSeenAt = now;
       existing.deviceModel = parsedModel;
-      if (!isRevokedDevice && opts.explicitTrust === true) {
+      if (!isRevokedDevice && (opts.explicitTrust === true || opts.fromOTP === true || hasValidTrustCookie)) {
         existing.isTrusted = true;
-        existing.trustedAt = existing.trustedAt || new Date();
+        existing.trustedAt = existing.trustedAt || now;
+      }
+      // Throttle new device alert: only send if never sent or sent > 24 hours ago
+      if (!isTrusted && !isRevokedDevice) {
+        if (!existing.lastAlertSentAt || (now.getTime() - new Date(existing.lastAlertSentAt).getTime() >= TWENTY_FOUR_HOURS_MS)) {
+          shouldSendAlert = true;
+          existing.lastAlertSentAt = now;
+        } else {
+          shouldSendAlert = false;
+        }
       }
       await existing.save();
     } else {
       // Security invariant: newly seen devices always start as UNTRUSTED (false) unless explicitly trusted via verified step-up
       isNewDevice = true;
-      isTrusted = opts.explicitTrust === true;
+      isTrusted = !isRevokedDevice && (opts.explicitTrust === true || opts.fromOTP === true || hasValidTrustCookie);
+      shouldSendAlert = !isTrusted;
       try {
         await TrustedDevice.create({
           userId,
@@ -76,8 +102,9 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
           deviceLabel: parsedModel,
           deviceInfo: ua,
           isTrusted: isTrusted,
-          trustedAt: isTrusted ? new Date() : null,
-          lastSeenAt: new Date(),
+          trustedAt: isTrusted ? now : null,
+          lastSeenAt: now,
+          lastAlertSentAt: shouldSendAlert ? now : null,
           isRevoked: false
         });
       } catch (e) {
@@ -115,7 +142,7 @@ const createSession = async (userId, userModel, token, req, opts = {}) => {
     });
   }
 
-  return { isTrusted: finalIsTrusted, parsedModel, isNewDevice, isRevokedDevice, wasTrusted };
+  return { isTrusted: finalIsTrusted, parsedModel, isNewDevice, isRevokedDevice, wasTrusted, shouldSendAlert, expectedTrustCookie };
 };
 
 // Helper: invalidateAllSessions
@@ -499,9 +526,13 @@ exports.login = async (req, res) => {
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
         const networkInfo = await resolveLocation(ip);
         const isTrusted = sessionResult.isTrusted;
-        console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch initiated');
-        const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted, require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user));
-        console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch completed');
+        if (isTrusted || sessionResult.shouldSendAlert !== false) {
+          console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch initiated');
+          const resNotification = await emailService.sendLoginNotificationEmail(emailToSend, name, idField, actualRole, deviceModel, networkInfo, 'Individual Login', null, isTrusted, require('../services/recipientLanguageService').languageOptionsForRecord(modelName, user));
+          console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch completed');
+        } else {
+          console.debug('[AUTH LOGIN NOTIFICATION] Untrusted device login notification throttled (within 24h)');
+        }
       } catch(e) {
         console.debug('[AUTH LOGIN NOTIFICATION] Login notification dispatch encountered an error');
       }
@@ -509,6 +540,14 @@ exports.login = async (req, res) => {
 
 
     failureStep = 'response';
+    if (sessionResult.isTrusted && sessionResult.expectedTrustCookie) {
+      res.cookie('medisync_device_trust', sessionResult.expectedTrustCookie, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      });
+    }
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
@@ -733,6 +772,14 @@ exports.verifyLoginOTP = async (req, res) => {
     }
 
 
+    if (sessionResult.isTrusted && sessionResult.expectedTrustCookie) {
+      res.cookie('medisync_device_trust', sessionResult.expectedTrustCookie, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      });
+    }
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
