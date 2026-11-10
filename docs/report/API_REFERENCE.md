@@ -76,7 +76,7 @@
 | `GET` | `/api/pharmacy/district-demand` | Pharmacy Staff | Retrieve epidemiological district disease burdens and top dispensed pharmaceuticals. |
 | `GET` | `/api/pharmacy/analytics/dispensing` | Pharmacy Staff | Dispensing volume trends over the preceding 30-day window. |
 | `GET` | `/api/pharmacy/staff` | Pharmacy Admin | Manage pharmacy staff accounts (pharmacists, assistants). |
-| `POST` | `/api/prescriptions/check-safety` | Doctor / Pharmacist | Evaluate dosage ceilings and duration limits against `medicine_safety_limits.json`. |
+| `POST` | `/api/prescriptions/check-safety` | Doctor / Pharmacist | Evaluate dosage ceilings, duration limits, allergies, DDIs, and active prescription supersession notices; returns severity-tiered warnings (`info`, `moderate`, `severe`, `critical`) and required clinician acknowledgment payload. |
 | `GET` | `/api/prescriptions/download/:refId` | Patient | Download digital prescription slip. Gated by `PDF_EXPORT_ENABLED`. |
 | `GET` | `/api/prescriptions/consultations/:id/export-pdf` | Patient / Doctor | **Download Consultation Summary PDF**: Generates WinAnsi-safe document buffer with embedded QR code. Gated by `PDF_EXPORT_ENABLED`. |
 
@@ -114,7 +114,7 @@
 |---|---|---|---|
 | `GET` | `/api/drugs/search` | Doctor / Pharmacy | Search drug formulary by brand name or generic active ingredient. |
 | `GET` | `/api/drugs/symptoms` | Doctor | Return list of ML-canonical symptom tokens indexed for auto-complete. |
-| `GET` | `/api/drugs/icd/search` | Doctor | **US ICD-10-CM Search**: Search the 71,704 validated leaf concepts catalog by code or description. |
+| `GET` | `/api/drugs/icd/search` | Doctor | **ICD Search**: Search the 71,704 validated concepts catalog by code or description. Supports `version` query parameter (`all`, `icd10`, `icd11`) with dynamic ICD-11 syntax detection (`6A70`). |
 | `GET` | `/api/drugs/icd/status` | Doctor / Admin | Check catalog version, leaf concept count, and readiness status. |
 | `POST` | `/api/drugs/interactions` | Doctor / Pharmacy | Evaluate pairwise drug interactions across candidate prescriptions against `interactions_clean.json`. |
 | `POST` | `/api/drugs/recommendations` | Doctor | Retrieve evidence-based pharmaceutical recommendations for confirmed diagnoses. |
@@ -130,7 +130,9 @@
 | `GET` | `/api/admin/system-health` | Super Admin | Database, Redis cache, and ML service connectivity telemetry. |
 | `GET` | `/api/admin/users` | Super Admin | List all registered platform accounts with status and roles. |
 | `PUT` | `/api/admin/users/toggle-status` | Super Admin | Suspend or activate user account standing. |
-| `GET` | `/api/admin/audit-logs` | Super Admin | Paginated immutable audit trail; filters by actor, action type, and date range. |
+| `GET` | `/api/admin/audit-logs` | Super Admin | Paginated immutable audit trail; filters by actor, action type, date range, and actor or target email address. |
+| `GET` | `/api/admin/surveillance/review` | Super Admin | List syndromic consultations awaiting epidemiological review with district, disease, and date range filters. |
+| `PUT` | `/api/admin/surveillance/review` | Super Admin | Verify or reject individual or bulk consultations for syndromic surveillance inclusion. |
 | `POST` | `/api/admin/outbreak/trigger` | Super Admin | Manually trigger full epidemiological scan across all 25 districts. |
 | `PUT` | `/api/admin/outbreak/:id/approve` | Super Admin | Confirm a pending outbreak alert. Promotes to active public broadcast. |
 | `PUT` | `/api/admin/outbreak/:id/resolve` | Super Admin | Resolve confirmed outbreak alert. Requires mandatory justification note ($\ge 5$ chars). |

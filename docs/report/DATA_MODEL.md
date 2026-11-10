@@ -90,6 +90,12 @@ Represents medication orders issued during a consultation or over-the-counter di
 | `durationDays` | `Number` | Optional | Course duration evaluated against formulary limits |
 | `instructions` | `String` | Optional | Patient directions (with WinAnsi fallback safety) |
 | `status` | `String` | Enum: `pending`, `dispensed`, `cancelled` | Fulfillment status |
+| `supersededBy` | `ObjectId` | Ref: `Prescription`, Optional | Reference to replacing prescription if superseded |
+| `supersededByConsultationId` | `ObjectId` | Ref: `Consultation`, Optional | Parent consultation encounter of superseding prescription |
+| `supersededAt` | `Date` | Optional | Timestamp when prescription was superseded |
+| `supersededReason` | `String` | Optional | Clinical justification recorded for supersession |
+| `resolvedIngredients` | `[String]` | Optional, Array | Normalized canonical active ingredient identifiers |
+| `safetyOverride` | `Object` | Optional | Prescriber safety acknowledgment (`acknowledged`, `reason`, `findingsHash`) |
 | `isOTC` | `Boolean` | Default: `false` | Over-the-counter pharmacy direct dispensing flag |
 | `isAlternativeDispensed` | `Boolean` | Default: `false` | Formulary brand substitution flag |
 | `alternativeDetails` | `String` | Optional | Pharmacist clinical justification note |
