@@ -130,8 +130,8 @@ const Dispense = () => {
         groups.set(key, {
           key,
           consultationRef: rx.consultationRef || (typeof rx.consultationId === 'string' ? rx.consultationId : rx.consultationId?._id) || 'Direct Order',
-          doctorName: rx.doctorId?.fullName || rx.doctorName || 'Authorized Medical Officer',
-          hospitalName: rx.hospitalId?.name || rx.hospitalName || rx.clinicName || 'Clinical Health Facility',
+          doctorName: rx.doctorId?.fullName || rx.doctorName || 'Unavailable',
+          hospitalName: rx.hospitalId?.name || rx.hospitalName || rx.clinicName || 'Unavailable',
           createdAt: rx.createdAt || rx.date,
           prescriptions: []
         });
@@ -327,7 +327,7 @@ const Dispense = () => {
                     </span>
                   </div>
                   <p className="text-sm text-slate-300 font-semibold">
-                    Referred by <span className="text-white font-bold">{formatDoctorName(group.doctorName, 'Practitioner')}</span> &bull; <span className="text-slate-400">{group.hospitalName}</span>
+                    Referred by <span className="text-white font-bold">{formatDoctorName(group.doctorName, 'Unavailable')}</span> &bull; <span className="text-slate-400">{group.hospitalName}</span>
                   </p>
                 </div>
                 <button

@@ -32,6 +32,7 @@ try {
 
 function parseCliArgs(args = process.argv.slice(2)) {
   let database = 'medisync_prod';
+  let originAnalysis = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -39,12 +40,15 @@ function parseCliArgs(args = process.argv.slice(2)) {
       database = arg.slice('--db='.length).trim();
     } else if (arg === '--db') {
       database = args[++i]?.trim();
+    } else if (arg === '--origin-analysis') {
+      originAnalysis = true;
     } else if (arg === '-h' || arg === '--help') {
       console.log(`
 Usage: node scripts/audit_orphans_readonly.js [options]
 
 Options:
   --db <name>           Database name [default: medisync_prod]
+  --origin-analysis     Perform root cause grouping and origin breakdown of orphan consultations
   -h, --help            Show this help text
 `);
       process.exit(0);
@@ -53,7 +57,7 @@ Options:
     }
   }
 
-  return { database };
+  return { database, originAnalysis };
 }
 
 async function connectReadOnly(database) {
@@ -279,11 +283,183 @@ async function auditOrphans(customDb = null, database = 'medisync_prod') {
   };
 }
 
+async function analyzeOrphanOrigin(customDb = null, database = 'medisync_prod') {
+  const db = customDb || await connectReadOnly(database);
+
+  console.log('================================================================');
+  console.log('🔬 [READ-ONLY ORPHAN CONSULTATION ORIGIN ANALYSIS]');
+  console.log('================================================================');
+  console.log(`Database        : ${database}`);
+  console.log(`Execution Mode  : READ-ONLY (0 writes)`);
+  console.log('----------------------------------------------------------------');
+
+  const hospitalIds = await fetchIdSet(db, 'hospitals');
+  const doctorIds = await fetchIdSet(db, 'doctors');
+  const patientIds = await fetchIdSet(db, 'patients');
+
+  const consultations = await db.collection('consultations').find({}, {
+    projection: {
+      _id: 1,
+      patientId: 1,
+      doctorId: 1,
+      hospitalId: 1,
+      syntheticSeedBatch: 1,
+      demoBatchId: 1,
+      isSynthetic: 1,
+      isSimulatedDemo: 1,
+      createdAt: 1,
+      district: 1,
+      icdCode: 1,
+      surveillanceVerification: 1
+    }
+  }).toArray();
+
+  const orphanConsultations = [];
+  for (const c of consultations) {
+    const pMissing = c.patientId && !patientIds.has(String(c.patientId));
+    const dMissing = c.doctorId && !doctorIds.has(String(c.doctorId));
+    const hMissing = c.hospitalId && !hospitalIds.has(String(c.hospitalId));
+    if (pMissing || dMissing || hMissing) {
+      orphanConsultations.push({
+        _id: c._id,
+        patientMissing: Boolean(pMissing),
+        doctorMissing: Boolean(dMissing),
+        hospitalMissing: Boolean(hMissing),
+        syntheticSeedBatch: c.syntheticSeedBatch || '[none]',
+        demoBatchId: c.demoBatchId || '[none]',
+        isSynthetic: Boolean(c.isSynthetic),
+        isSimulatedDemo: Boolean(c.isSimulatedDemo),
+        createdAt: c.createdAt ? new Date(c.createdAt) : null,
+        district: c.district || '[none]',
+        icdCode: c.icdCode || '[none]',
+        verificationStatus: c.surveillanceVerification?.status || '[none]'
+      });
+    }
+  }
+
+  console.log(`Identified Orphan Consultations: ${orphanConsultations.length}`);
+  if (orphanConsultations.length === 0) {
+    console.log('✅ No orphan consultations detected.');
+    console.log('================================================================\n');
+    return { orphanConsultationsCount: 0, groups: {}, generatorIdentification: null };
+  }
+
+  // 1. Group by syntheticSeedBatch
+  const bySyntheticSeedBatch = {};
+  // 2. Group by demoBatchId
+  const byDemoBatchId = {};
+  // 3. Group by isSynthetic
+  const byIsSynthetic = { true: 0, false: 0 };
+  // 4. Date Range
+  let minDate = null;
+  let maxDate = null;
+  // 5. Group by district
+  const byDistrict = {};
+  // 6. Group by ICD code
+  const byIcdCode = {};
+  // 7. Group by surveillanceVerification status
+  const byVerificationStatus = {};
+
+  for (const oc of orphanConsultations) {
+    bySyntheticSeedBatch[oc.syntheticSeedBatch] = (bySyntheticSeedBatch[oc.syntheticSeedBatch] || 0) + 1;
+    byDemoBatchId[oc.demoBatchId] = (byDemoBatchId[oc.demoBatchId] || 0) + 1;
+    byIsSynthetic[String(oc.isSynthetic)]++;
+    byDistrict[oc.district] = (byDistrict[oc.district] || 0) + 1;
+    byIcdCode[oc.icdCode] = (byIcdCode[oc.icdCode] || 0) + 1;
+    byVerificationStatus[oc.verificationStatus] = (byVerificationStatus[oc.verificationStatus] || 0) + 1;
+
+    if (oc.createdAt && !isNaN(oc.createdAt.getTime())) {
+      if (!minDate || oc.createdAt < minDate) minDate = oc.createdAt;
+      if (!maxDate || oc.createdAt > maxDate) maxDate = oc.createdAt;
+    }
+  }
+
+  console.log('\n1. Grouping by syntheticSeedBatch:');
+  for (const [k, v] of Object.entries(bySyntheticSeedBatch)) {
+    console.log(`   - "${k}": ${v} document(s)`);
+  }
+
+  console.log('\n2. Grouping by demoBatchId:');
+  for (const [k, v] of Object.entries(byDemoBatchId)) {
+    console.log(`   - "${k}": ${v} document(s)`);
+  }
+
+  console.log('\n3. Grouping by isSynthetic:');
+  for (const [k, v] of Object.entries(byIsSynthetic)) {
+    console.log(`   - ${k}: ${v} document(s)`);
+  }
+
+  console.log('\n4. CreatedAt Date Range:');
+  console.log(`   - Earliest : ${minDate ? minDate.toISOString() : 'N/A'}`);
+  console.log(`   - Latest   : ${maxDate ? maxDate.toISOString() : 'N/A'}`);
+
+  console.log('\n5. Grouping by District (Top 10):');
+  const sortedDistricts = Object.entries(byDistrict).sort((a, b) => b[1] - a[1]);
+  for (const [dist, count] of sortedDistricts.slice(0, 10)) {
+    console.log(`   - ${dist.padEnd(16)}: ${count} document(s)`);
+  }
+  if (sortedDistricts.length > 10) {
+    console.log(`   ... and ${sortedDistricts.length - 10} more districts.`);
+  }
+
+  console.log('\n6. Grouping by ICD Code:');
+  const sortedIcd = Object.entries(byIcdCode).sort((a, b) => b[1] - a[1]);
+  for (const [icd, count] of sortedIcd) {
+    console.log(`   - ${icd.padEnd(10)}: ${count} document(s)`);
+  }
+
+  console.log('\n7. Grouping by Surveillance Verification Status:');
+  for (const [st, count] of Object.entries(byVerificationStatus)) {
+    console.log(`   - ${st.padEnd(12)}: ${count} document(s)`);
+  }
+
+  // Generator script identification
+  let generatorScript = 'Unknown';
+  let generatorInsertsParents = false;
+  if (byDemoBatchId['DEMO_OUTBREAK_2026_V1'] > 0) {
+    generatorScript = 'scripts/seed-demo-outbreak.js';
+    generatorInsertsParents = false; // By design: it seeds clinical episodes only, never parent Patient/Doctor/Hospital
+  }
+
+  console.log('\n----------------------------------------------------------------');
+  console.log('📌 GENERATOR SCRIPT IDENTIFICATION:');
+  console.log(`   Generator Script   : ${generatorScript}`);
+  console.log(`   Batch Identifier   : ${Object.keys(byDemoBatchId).join(', ')}`);
+  console.log(`   Inserts Parents    : ${generatorInsertsParents ? 'YES' : 'NO (By design: seeds simulated clinical episodes only)'}`);
+  console.log(`   Consecutive IDs    : Patient, Doctor, Hospital IDs are generated in tight loops via new ObjectId()`);
+  console.log('----------------------------------------------------------------');
+
+  console.log('Sample Orphan Consultation ID Suffixes (30 max):');
+  const sampleSuffixes = orphanConsultations.slice(0, 30).map(c => idSuffix(c._id));
+  console.log(`   ${sampleSuffixes.join(', ')}`);
+  console.log('================================================================\n');
+
+  return {
+    orphanConsultationsCount: orphanConsultations.length,
+    groups: {
+      bySyntheticSeedBatch,
+      byDemoBatchId,
+      byIsSynthetic,
+      dateRange: { minDate, maxDate },
+      byDistrict,
+      byIcdCode,
+      byVerificationStatus
+    },
+    generatorIdentification: {
+      script: generatorScript,
+      insertsParents: generatorInsertsParents
+    }
+  };
+}
+
 async function main() {
   const args = parseCliArgs();
   try {
-    const result = await auditOrphans(null, args.database);
-    if (!result.isClean) {
+    const auditRes = await auditOrphans(null, args.database);
+    if (args.originAnalysis || !auditRes.isClean) {
+      await analyzeOrphanOrigin(null, args.database);
+    }
+    if (!auditRes.isClean) {
       process.exitCode = 2; // Informative non-zero exit when orphans exist
     }
   } catch (err) {
@@ -302,5 +478,6 @@ if (require.main === module) {
 
 module.exports = {
   auditOrphans,
+  analyzeOrphanOrigin,
   parseCliArgs
 };

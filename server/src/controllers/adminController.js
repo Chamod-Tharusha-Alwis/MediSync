@@ -408,7 +408,7 @@ exports.getAuditLogs = async (req, res) => {
         _id: log._id,
         actorId: log.actorId,
         actorRole: user ? user.role : log.actorRole,
-        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'MediSync System Admin' : 'Unknown User'),
+        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'MediSync System Admin' : 'Unavailable'),
         actorNic: user ? user.nic : '—',
         action: log.action,
         timestamp: log.timestamp,
@@ -599,7 +599,7 @@ exports.getUserAuditProfile = async (req, res) => {
 
     res.json({
       data: {
-        user: user ? { ...user, isOnline } : { _id: userId, fullName: 'Unknown User', role: 'unknown', isOnline },
+        user: user ? { ...user, isOnline } : { _id: userId, fullName: 'Unavailable', role: 'unknown', isOnline },
         auditLogs,
         devices,
         sessions

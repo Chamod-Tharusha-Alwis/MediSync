@@ -49,7 +49,7 @@ exports.getDashboardStats = async (req, res) => {
             $ifNull: [
               { $arrayElemAt: ['$doctorDoc.fullName', 0] },
               { $arrayElemAt: ['$userDoc.fullName', 0] },
-              'Dr. Practitioner'
+              'Unavailable'
             ]
           }
       }}

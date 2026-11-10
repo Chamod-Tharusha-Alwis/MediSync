@@ -278,7 +278,7 @@ export const Overview = ({ data }) => {
                       <p className="text-white font-bold text-lg">
                         {group.diagnosis || (group.consultationRef ? `Consultation ${group.consultationRef}` : 'Consultation Prescription')}
                       </p>
-                      <p className="text-slate-400 text-sm">{formatDoctorName(group.doctorId?.fullName || group.doctorName, 'Doctor')}</p>
+                      <p className="text-slate-400 text-sm">{formatDoctorName(group.doctorId?.fullName || group.doctorName, 'Unavailable')}</p>
                     </div>
                     <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded uppercase">
                       Awaiting dispensing
@@ -352,7 +352,7 @@ export const Overview = ({ data }) => {
                     {formatSriLankaDate(c.createdAt, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                   <p className="text-white font-medium text-lg">{c.diagnosis || 'General Checkup'}</p>
-                  <p className="text-slate-400 text-sm mt-1">{formatDoctorName(c.doctorId?.fullName, 'Unknown')}</p>
+                  <p className="text-slate-400 text-sm mt-1">{formatDoctorName(c.doctorId?.fullName, 'Unavailable')}</p>
                   {c.symptoms?.length > 0 && (
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {c.symptoms.slice(0, 3).map((sym, i) => (

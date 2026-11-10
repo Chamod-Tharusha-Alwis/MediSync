@@ -857,8 +857,8 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
   // 1. Resolve Patient Info
-  const resolvedName = patientDetails.fullName || patientDetails.name || consultationData.patientName || 'Patient';
-  const resolvedNic = patientDetails.nic || consultationData.patientNic || 'N/A';
+  const resolvedName = patientDetails.fullName || patientDetails.name || consultationData.patientName || 'Unavailable';
+  const resolvedNic = patientDetails.nic || consultationData.patientNic || 'Unavailable';
   let resolvedAge = 'N/A';
   if (patientDetails.dateOfBirth || consultationData.patientDOB) {
     const dob = new Date(patientDetails.dateOfBirth || consultationData.patientDOB);
@@ -871,14 +871,14 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   const resolvedGender = patientDetails.gender || consultationData.patientGender || 'N/A';
 
   // 2. Resolve Doctor Info
-  const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Medical Professional';
-  const doctorName = formatDoctorName(rawDoctor);
+  const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Unavailable';
+  const doctorName = formatDoctorName(rawDoctor, 'Unavailable');
   const rawSlmc = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber;
   const slmcReg = (rawSlmc && rawSlmc !== 'SLMC-REG-VERIFIED') ? `SLMC Reg. No.: ${rawSlmc}` : 'SLMC reg. no.: not on file';
   const docId = doctorDetails._id || doctorDetails.id || consultationData.doctorId;
   const docIdStr = docId ? ` | ID: DOC-${String(docId).slice(-6)}` : '';
   const specialtyStr = doctorDetails.specialization || doctorDetails.specialty || consultationData.doctorSpecialty || 'General Practice';
-  const hospitalStr = doctorDetails.hospitalName || consultationData.hospitalName || (consultationData.loginType === 'hospital' ? 'Hospital Encounter' : 'Private Practice');
+  const hospitalStr = doctorDetails.hospitalName || consultationData.hospitalName || (consultationData.loginType === 'hospital' ? 'Hospital Encounter' : (consultationData.hospitalId ? 'Unavailable' : 'Private Practice'));
 
   const now = new Date();
   const consultDate = consultationData.createdAt ? new Date(consultationData.createdAt) : now;
@@ -1381,7 +1381,7 @@ exports.generatePatientHistoryPDF = async (
 
       const cDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB') : 'Unknown Date';
       const cRef = c.consultationId || c._id ? String(c.consultationId || c._id) : 'CON-RECORD';
-      const docName = formatDoctorName(c.doctorId?.fullName || c.doctorName || 'Medical Officer');
+      const docName = formatDoctorName(c.doctorId?.fullName || c.doctorName, 'Unavailable');
       const diag = c.diagnosis || 'Clinical Consultation';
 
       page.drawRectangle({

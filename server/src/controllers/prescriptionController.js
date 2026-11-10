@@ -218,13 +218,13 @@ exports.exportConsultationPdf = async (req, res) => {
 
     const patientDetails = consultation.patientId && typeof consultation.patientId === 'object'
       ? consultation.patientId
-      : { nic: consultation.patientNic };
+      : { nic: consultation.patientNic || 'Unavailable', fullName: 'Unavailable' };
     if (typeof patientDetails.decryptFieldsSync === 'function') {
       try { patientDetails.decryptFieldsSync(); } catch (_) {}
     }
     const doctorDetails = consultation.doctorId && typeof consultation.doctorId === 'object'
       ? consultation.doctorId
-      : {};
+      : { fullName: 'Unavailable' };
 
     let consultationPayload = consultation.toObject ? consultation.toObject() : { ...consultation };
     if (

@@ -161,3 +161,47 @@ To atomically remove all 917 seeded documents and return the database to its pri
 ```powershell
 node scripts/seed-viva-data.js --rollback --db=medisync_prod
 ```
+
+---
+
+## Incident Report: SEED_2026_11_A Restoration & Pre-Existing Outbreak Seed Orphan Analysis
+
+### 1. Incident Overview (SEED_2026_11_A Cleanup Deletion)
+During legacy cleanup execution on `medisync_prod`, an overly broad deterministic ID matching pattern in an early version of the legacy rollback utility matched and removed 21 documents belonging to `SEED_2026_11_A` (the protected production seed):
+- **Hospitals**: 3 documents (`SEED_2026_11_A-HOSPITAL-00001` to `00003`)
+- **Pharmacies**: 2 documents (`SEED_2026_11_A-PHARMACY-00001` to `00002`)
+- **Doctors**: 6 documents (`SEED_2026_11_A-DOCTOR-00001` to `00006`)
+- **Pharmacy Staff**: 2 documents (`SEED Pharmacy Staff 00001` & `00002`)
+- **Patients**: 8 documents (`SEED_2026_11_A-PATIENT-00001` to `00008`)
+
+### 2. Immediate Remediation & Restoration
+- Developed `scripts/restore_protected_seed.js` using deterministic `insert-only-missing` mode (never overwrites or mutates any existing record, never sends emails, and adheres to standard versioned AES-256-GCM encryption and blind indexes).
+- Executed restoration on `medisync_prod`: All 21 missing records were cleanly restored to their exact deterministic `_id` values.
+- Verified outcome:
+  - Orphan references across `prescriptions`, `dispensings`, `labtests`, and `verificationtokens` reduced to **0**.
+  - Public directories (`/api/public/doctors`, `/api/public/hospitals`, `/api/public/pharmacies`) fully restored.
+  - Added strict guard `PROTECTED_BATCH_NAMESPACES = ['SEED_2026_11_A', 'DEMO_OUTBREAK_2026_V1', 'SEED_2026_11_B']` to all viva rollback and cleanup scripts.
+
+### 3. Read-Only Origin Analysis of Pre-Existing Orphan Consultations
+A comprehensive read-only cross-reference audit identified **18,927 orphan references** strictly confined to the `consultations` collection (~6,309 consultation documents). An origin analysis using `node scripts/audit_orphans_readonly.js --origin-analysis --db=medisync_prod` established:
+- **Batch Tag**: `demoBatchId: "DEMO_OUTBREAK_2026_V1"`
+- **Flags**: `isSynthetic: true`, `isSimulatedDemo: true`, `isDemoData: true`, `isSimulation: true`
+- **Creation Range**: 90-day simulation window across all 25 Sri Lankan administrative districts.
+- **Generator Script**: `scripts/seed-demo-outbreak.js`
+- **Root Cause**: `scripts/seed-demo-outbreak.js` was specifically authored to populate epidemiological outbreak surveillance datasets and ML Engine SQLite tables. By design, it generates synthetic consultation episodes in a tight loop with consecutive ObjectIds (`patientId`, `doctorId`, `hospitalId`, `_id`), and **never inserts parent Patient, Doctor, or Hospital records**.
+
+### 4. Application-Wide Null-Safety Hardening
+To ensure total platform resilience when encountering orphan references, null-safety guards were implemented across all portals:
+- **Admin Analytics Dashboard** (`/api/admin/analytics/dashboard`): Missing/orphan doctor records display `"Unavailable"` instead of placeholder names.
+- **Admin Audit Logs & Profiles** (`/api/admin/audit-logs`, `/api/admin/users/:userId/audit-profile`): Missing actor records display `"Unavailable"` without logging raw PII.
+- **Surveillance Review Queue** (`/api/admin/surveillance/pending`): Safely lists and reviews consultations with unpopulated parent references.
+- **Public Health Statistics & Outbreak Map** (`selectReportingCases`, `aggregatePublicCases`): Null-safe identity resolution prevents HTTP 503 fail-closed exceptions when aggregating clinical episodes.
+- **Patient, Doctor, and Pharmacy Timelines & Consultation Groups**: Unresolved parent actor references render neutral `"Unavailable"` instead of blank or broken UI elements.
+- **PDF Export Engines** (`generateConsultationSummaryPDF`, `generatePatientHistoryPDF`): Gracefully format unresolved patient, doctor, and facility references as `"Unavailable"`.
+- **Automated Verification**: Verified via dedicated unit test suite `server/tests/orphanReferenceNullSafety.test.js`.
+
+### 5. Seeder Hygiene & Manifest Tracking
+- In `scripts/seed-viva-data.js`, all inserted documents plus the 2 detector-generated `OutbreakAlert` records (`S-A` Gampaha Dengue and `S-D` Kandy Influenza) are tracked in `seed_manifests` (batch: `"viva-2026-11"`).
+- `--inspect` now validates manifest coverage: documents covered by the active seed manifest are recognized as integral and are never flagged as orphans.
+- `--rollback` deletes documents by manifest IDs, eliminating untracked leftovers.
+

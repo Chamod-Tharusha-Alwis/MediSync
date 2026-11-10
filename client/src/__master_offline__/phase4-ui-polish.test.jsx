@@ -79,6 +79,7 @@ describe('Phase 4 — UI & Text Polish Offline Acceptance Suite', () => {
       expect(formatDoctorName('General Hospital Colombo')).toBe('General Hospital Colombo');
       expect(formatDoctorName('System Administrator')).toBe('System Administrator');
       expect(formatDoctorName('MediSync Support')).toBe('MediSync Support');
+      expect(formatDoctorName('Unavailable')).toBe('Unavailable');
     });
 
     test('handles empty and fallback values cleanly', () => {

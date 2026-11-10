@@ -335,24 +335,20 @@ const HistoryCard = ({ event, onRate }) => {
 
               {/* Doctor / pharmacist / hospital */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
-                {details.doctorId?.fullName && (
-                  <span className="flex items-center gap-1 text-xs text-slate-400">
-                    <User className="w-3 h-3" />
-                    {formatDoctorName(details.doctorId.fullName)}
-                  </span>
-                )}
+                <span className="flex items-center gap-1 text-xs text-slate-400">
+                  <User className="w-3 h-3" />
+                  {formatDoctorName(details.doctorId?.fullName, 'Unavailable')}
+                </span>
                 {isOTC && details.dispensedByPharmacist && (
                   <span className="flex items-center gap-1 text-xs text-teal-400">
                     <ShoppingBag className="w-3 h-3" />
                     Dispensed by {details.dispensedByPharmacist}
                   </span>
                 )}
-                {(details.hospitalId?.name || details.sessionHospitalId?.name) && (
-                  <span className="flex items-center gap-1 text-xs text-slate-500">
-                    <Building2 className="w-3 h-3" />
-                    {details.hospitalId?.name || details.sessionHospitalId?.name}
-                  </span>
-                )}
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                  <Building2 className="w-3 h-3" />
+                  {details.hospitalId?.name || details.sessionHospitalId?.name || 'Unavailable'}
+                </span>
               </div>
 
               {/* Lab Test Tags (always visible) */}
