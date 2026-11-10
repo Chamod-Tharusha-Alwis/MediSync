@@ -43,6 +43,30 @@
       "citationUrl": "https://www.who.int/publications/i/item/9789241547659",
       "citationStatus": "unverified_owner_must_check",
       "status": "unverified_owner_must_check"
+    },
+    {
+      "drug": "Citalopram",
+      "canonicalIngredient": "citalopram",
+      "synonyms": ["Celexa", "Cipramil"],
+      "atc": "N06AB04",
+      "commonStrengths": ["10mg", "20mg", "40mg"],
+      "forms": ["Tablet", "Oral Solution"],
+      "source": "Pending National Formulary Verification (owner review required)",
+      "retrievedAt": "2026-11-10T00:00:00.000Z",
+      "citationStatus": "unverified_owner_must_check",
+      "status": "unverified_owner_must_check"
+    },
+    {
+      "drug": "Penicillin",
+      "canonicalIngredient": "benzylpenicillin",
+      "synonyms": ["Penicillin G", "Benzylpenicillin", "Penicillin V", "Phenoxymethylpenicillin"],
+      "atc": "J01CE01",
+      "commonStrengths": ["250mg", "500mg"],
+      "forms": ["Capsule", "Tablet", "Injection"],
+      "source": "Pending National Formulary Verification (owner review required)",
+      "retrievedAt": "2026-11-10T00:00:00.000Z",
+      "citationStatus": "unverified_owner_must_check",
+      "status": "unverified_owner_must_check"
     }
   ]
 }

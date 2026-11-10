@@ -19,6 +19,7 @@
 | **OA-08** | **UptimeRobot Timeouts (60s)** | Set UptimeRobot monitoring timeouts to 60s for backend (`medisync-wabc.onrender.com/health`) and ML engine (`medisync-ml-engine.onrender.com/health`) to accommodate ~50s Render cold starts. | Observability & Uptime | `PENDING_OWNER` |
 | **OA-09** | **Pre-Viva Warm-up Routine** | Execute warm-up curls 3 minutes before the viva demonstration: `curl -s https://medisync-wabc.onrender.com/health` and `curl -s https://medisync-ml-engine.onrender.com/health`. | Demonstration Readiness | `PENDING_OWNER` |
 | **OA-10** | **Render ML Engine Log Inspection** | In Render Dashboard $\to$ `medisync-ml-engine` $\to$ Logs: filter by `[ML]` to inspect request telemetry lines (`request_id`, latency, symptoms_count, tier, top_confidence) and `[ML-STARTUP]` for concept counts. | Observability & Telemetry | `PENDING_OWNER` |
+| **OA-11** | **Formulary Benchmark Review** | Have formulary committee/pharmacist review the Top 300 benchmark gaps cataloged in `docs/final/data/medicine_coverage_gaps.json` and supply verified dose ceilings / BNF citations for missing high-frequency generics. | Medicine Coverage Audit | `PENDING_OWNER` |
 
 ---
 

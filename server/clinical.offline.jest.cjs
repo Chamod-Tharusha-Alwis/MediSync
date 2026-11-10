@@ -87,5 +87,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/auditCoverage.test.js',
   '<rootDir>/tests/mlTelemetryLogging.test.js',
   '<rootDir>/tests/emailNoiseReduction.test.js',
-  '<rootDir>/tests/dataQualityFormulary.test.js'
+  '<rootDir>/tests/dataQualityFormulary.test.js',
+  '<rootDir>/tests/medicineCoverageAndPrefixSearch.test.js'
 );

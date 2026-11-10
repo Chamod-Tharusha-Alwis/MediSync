@@ -1,0 +1,724 @@
+{
+  "auditTimestamp": "2026-11-10T06:15:21.221Z",
+  "benchmarkName": "Internal Top 300 Common Generics Benchmark (from MediSync Catalog)",
+  "benchmarkTotal": 300,
+  "benchmarkResolved": 225,
+  "benchmarkGapsCount": 75,
+  "benchmarkPercentResolved": 75,
+  "catalogTotalBrands": 4615,
+  "catalogTotalItems": 3000,
+  "catalogResolvedCleanly": 2070,
+  "catalogUnresolvedOrPartial": 930,
+  "catalogPercentResolved": 69,
+  "uniqueResolvedCanonicalIngredients": 193,
+  "uniqueUnresolvedRawIngredients": 261,
+  "interactionCatalogIngredientsCount": 1701,
+  "safetyLimitsCatalogCount": 5,
+  "benchmarkGaps": [
+    {
+      "generic": "Bilastine 20 mg+Montelukast 10 mg",
+      "frequencyInCatalog": 47,
+      "unresolvedIngredients": [
+        "bilastine"
+      ],
+      "partiallyResolved": [
+        "montelukast"
+      ]
+    },
+    {
+      "generic": "Bilastine 20 mg",
+      "frequencyInCatalog": 44,
+      "unresolvedIngredients": [
+        "bilastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Acebrophylline 100 mg+N-Acetylcysteine 600 mg",
+      "frequencyInCatalog": 25,
+      "unresolvedIngredients": [
+        "acebrophylline",
+        "n-acetylcysteine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Acebrophylline 100 mg",
+      "frequencyInCatalog": 24,
+      "unresolvedIngredients": [
+        "acebrophylline"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ambroxol 30 mg+Guaiphenesin 50 mg+Levosalbutamol 1 mg",
+      "frequencyInCatalog": 24,
+      "unresolvedIngredients": [
+        "guaiphenesin"
+      ],
+      "partiallyResolved": [
+        "ambroxol",
+        "levosalbutamol"
+      ]
+    },
+    {
+      "generic": "Citicoline 500 mg",
+      "frequencyInCatalog": 20,
+      "unresolvedIngredients": [
+        "citicoline"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Clindamycin 1 %+Niacinamide 4 %",
+      "frequencyInCatalog": 18,
+      "unresolvedIngredients": [
+        "niacinamide"
+      ],
+      "partiallyResolved": [
+        "clindamycin"
+      ]
+    },
+    {
+      "generic": "Acebrophylline 200 mg",
+      "frequencyInCatalog": 18,
+      "unresolvedIngredients": [
+        "acebrophylline"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Fluticasone 250 mcg+Formoterol 6 mcg",
+      "frequencyInCatalog": 18,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Diacerein 50 mg+Glucosamine 750 mg+Methyl Sulfonyl Methane 250 mg",
+      "frequencyInCatalog": 16,
+      "unresolvedIngredients": [
+        "methyl sulfonyl methane"
+      ],
+      "partiallyResolved": [
+        "diacerein",
+        "glucosamine"
+      ]
+    },
+    {
+      "generic": "Device",
+      "frequencyInCatalog": 15,
+      "unresolvedIngredients": [
+        "device"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Bilastine 40 mg",
+      "frequencyInCatalog": 12,
+      "unresolvedIngredients": [
+        "bilastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Acebrophylline 200 mg+Montelukast 10 mg",
+      "frequencyInCatalog": 12,
+      "unresolvedIngredients": [
+        "acebrophylline"
+      ],
+      "partiallyResolved": [
+        "montelukast"
+      ]
+    },
+    {
+      "generic": "Device for Respiratory Disease",
+      "frequencyInCatalog": 12,
+      "unresolvedIngredients": [
+        "device for respiratory disease"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Bilastine 10 mg+Montelukast 4 mg",
+      "frequencyInCatalog": 10,
+      "unresolvedIngredients": [
+        "bilastine"
+      ],
+      "partiallyResolved": [
+        "montelukast"
+      ]
+    },
+    {
+      "generic": "Citicoline 500 mg+Piracetam 800 mg",
+      "frequencyInCatalog": 8,
+      "unresolvedIngredients": [
+        "citicoline"
+      ],
+      "partiallyResolved": [
+        "piracetam"
+      ]
+    },
+    {
+      "generic": "Fluticasone 100 mcg+Vilanterol 25 mcg",
+      "frequencyInCatalog": 8,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "vilanterol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 250 mcg+Salmeterol 25 mcg",
+      "frequencyInCatalog": 8,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Hydroquinone 2 %+Mometasone 0.1 %+Tretinoin 0.025 %",
+      "frequencyInCatalog": 7,
+      "unresolvedIngredients": [
+        "hydroquinone"
+      ],
+      "partiallyResolved": [
+        "mometasone",
+        "tretinoin"
+      ]
+    },
+    {
+      "generic": "Choline Salicylate 8.7 %+Lignocaine 2 %",
+      "frequencyInCatalog": 7,
+      "unresolvedIngredients": [
+        "choline salicylate"
+      ],
+      "partiallyResolved": [
+        "lidocaine"
+      ]
+    },
+    {
+      "generic": "Acebrophylline 200 mg+Fexofenadine 120 mg+Montelukast 10 mg",
+      "frequencyInCatalog": 7,
+      "unresolvedIngredients": [
+        "acebrophylline"
+      ],
+      "partiallyResolved": [
+        "fexofenadine",
+        "montelukast"
+      ]
+    },
+    {
+      "generic": "Fluticasone 250 mcg+Salmeterol 50 mcg",
+      "frequencyInCatalog": 7,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Bilastine 2.5 mg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "bilastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ebastine 10 mg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "ebastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Cyproheptadine 2 mg+Tricholine 275 mg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "tricholine"
+      ],
+      "partiallyResolved": [
+        "cyproheptadine"
+      ]
+    },
+    {
+      "generic": "Fluticasone 500 mcg+Salmeterol 50 mcg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Ambroxol 15 mg+Guaiphenesin 50 mg+Levosalbutamol 0.5 mg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "guaiphenesin"
+      ],
+      "partiallyResolved": [
+        "ambroxol",
+        "levosalbutamol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 200 mcg+Vilanterol 25 mcg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "vilanterol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 125 mcg+Salmeterol 25 mcg",
+      "frequencyInCatalog": 6,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Cyproheptadine 1.5 mg+Tricholine 55 mg",
+      "frequencyInCatalog": 5,
+      "unresolvedIngredients": [
+        "tricholine"
+      ],
+      "partiallyResolved": [
+        "cyproheptadine"
+      ]
+    },
+    {
+      "generic": "Ferric Carboxymaltose 50 mg",
+      "frequencyInCatalog": 5,
+      "unresolvedIngredients": [
+        "ferric carboxymaltose"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Iguratimod 25 mg",
+      "frequencyInCatalog": 5,
+      "unresolvedIngredients": [
+        "iguratimod"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Fluticasone 125 mcg+Formoterol 6 mcg",
+      "frequencyInCatalog": 5,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 100 mcg+Salmeterol 50 mcg",
+      "frequencyInCatalog": 5,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Fluocinolone 0.01 %+Hydroquinone 2 %+Tretinoin 0.025 %",
+      "frequencyInCatalog": 4,
+      "unresolvedIngredients": [
+        "fluocinolone",
+        "hydroquinone"
+      ],
+      "partiallyResolved": [
+        "tretinoin"
+      ]
+    },
+    {
+      "generic": "Ebastine 10 mg+Montelukast 10 mg",
+      "frequencyInCatalog": 4,
+      "unresolvedIngredients": [
+        "ebastine"
+      ],
+      "partiallyResolved": [
+        "montelukast"
+      ]
+    },
+    {
+      "generic": "Cyproheptadine 2 mg+Sorbitol 2 gm+Tricholine 275 mg",
+      "frequencyInCatalog": 4,
+      "unresolvedIngredients": [
+        "sorbitol",
+        "tricholine"
+      ],
+      "partiallyResolved": [
+        "cyproheptadine"
+      ]
+    },
+    {
+      "generic": "Fluticasone 100 mcg+Formoterol 6 mcg",
+      "frequencyInCatalog": 4,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Pidotimod 400 mg",
+      "frequencyInCatalog": 4,
+      "unresolvedIngredients": [
+        "pidotimod"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Acamprosate 333 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "acamprosate"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Azelastine 140 mcg+Fluticasone 27.5 mcg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "azelastine"
+      ]
+    },
+    {
+      "generic": "Bepotastine 10 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "bepotastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Dexchlorpheniramine 2 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "dexchlorpheniramine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Diacerein 50 mg+Glucosamine 446 mg+Methyl Sulfonyl Methane 250 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "methyl sulfonyl methane"
+      ],
+      "partiallyResolved": [
+        "diacerein",
+        "glucosamine"
+      ]
+    },
+    {
+      "generic": "Beclomethasone 100 mcg+Levosalbutamol 100 mcg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "beclomethasone"
+      ],
+      "partiallyResolved": [
+        "levosalbutamol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 250 mcg+Formoterol 12 mcg+Glycopyrronium 12.5 mcg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "formoterol",
+        "glycopyrronium"
+      ]
+    },
+    {
+      "generic": "Acebrophylline 50 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "acebrophylline"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ambroxol 7.5 mg+Guaiphenesin 12.5 mg+Levosalbutamol 0.25 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "guaiphenesin"
+      ],
+      "partiallyResolved": [
+        "ambroxol",
+        "levosalbutamol"
+      ]
+    },
+    {
+      "generic": "Bromhexine 4 mg+Guaiphenesin 50 mg+Terbutaline 1.25 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "bromhexine",
+        "guaiphenesin"
+      ],
+      "partiallyResolved": [
+        "terbutaline"
+      ]
+    },
+    {
+      "generic": "Etofylline 77 mg+Theophylline 23 mg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "etofylline"
+      ],
+      "partiallyResolved": [
+        "theophylline"
+      ]
+    },
+    {
+      "generic": "Fluticasone 50 mcg+Salmeterol 25 mcg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "salmeterol"
+      ]
+    },
+    {
+      "generic": "Fluticasone 500 mcg+Formoterol 12 mcg",
+      "frequencyInCatalog": 3,
+      "unresolvedIngredients": [
+        "fluticasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Cerebroprotein Hydrolysate 60 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "cerebroprotein hydrolysate"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Clindamycin 1 %+Niacinamide4 %",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "niacinamide4 %"
+      ],
+      "partiallyResolved": [
+        "clindamycin"
+      ]
+    },
+    {
+      "generic": "Glycolic Acid 12 %",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "glycolic acid"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Glycolic Acid 6 %",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "glycolic acid"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ebastine 20 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "ebastine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ornidazole 500 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "ornidazole"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Secnidazole 1000 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "secnidazole"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Ferrous Ascorbate 100 mg+Folic Acid 1.5 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "ferrous ascorbate"
+      ],
+      "partiallyResolved": [
+        "folic acid"
+      ]
+    },
+    {
+      "generic": "Desidustat 100 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "desidustat"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Diastase 50 mg+Pepsin 10 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "diastase",
+        "pepsin"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Hyaluronic Acid 20 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "hyaluronic acid"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Etodolac 400 mg+Thiocolchicoside 4 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "thiocolchicoside"
+      ],
+      "partiallyResolved": [
+        "etodolac"
+      ]
+    },
+    {
+      "generic": "Univestin 250 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "univestin"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Oxaceprol 200 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "oxaceprol"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Beclomethasone 50 mcg+Levosalbutamol 50 mcg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "beclomethasone"
+      ],
+      "partiallyResolved": [
+        "levosalbutamol"
+      ]
+    },
+    {
+      "generic": "Acebrophylline 100 mg+Acetyl Cysteine 600 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "acebrophylline",
+        "acetyl cysteine"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Formoterol 4.8 mcg+Glycopyrrolate 9 mcg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "glycopyrrolate"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Beclomethasone 200 mcg  Also Known As: Beclometasone",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "beclomethasone"
+      ],
+      "partiallyResolved": []
+    },
+    {
+      "generic": "Budesonide 400 mcg+Formoterol 12 mcg+Glycopyrrolate 25 mcg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "glycopyrrolate"
+      ],
+      "partiallyResolved": [
+        "budesonide",
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Etofylline 115 mg+Theophylline 35 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "etofylline"
+      ],
+      "partiallyResolved": [
+        "theophylline"
+      ]
+    },
+    {
+      "generic": "Etofylline 231 mg+Theophylline 69 mg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "etofylline"
+      ],
+      "partiallyResolved": [
+        "theophylline"
+      ]
+    },
+    {
+      "generic": "Beclomethasone 200 mcg+Formoterol 6 mcg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "beclomethasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    },
+    {
+      "generic": "Beclomethasone 400 mcg+Formoterol 6 mcg",
+      "frequencyInCatalog": 2,
+      "unresolvedIngredients": [
+        "beclomethasone"
+      ],
+      "partiallyResolved": [
+        "formoterol"
+      ]
+    }
+  ]
+}

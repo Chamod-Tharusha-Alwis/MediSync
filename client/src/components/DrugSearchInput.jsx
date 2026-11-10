@@ -20,7 +20,9 @@ const FALLBACK_DRUGS = [
   { _id: 'd11', name: 'Aspirin', genericName: 'Acetylsalicylic acid', brand: 'Disprin', category: 'analgesic', commonDosages: ['75mg', '300mg'], si: 'ඇස්පිරින්', ta: 'ஆஸ்பிரින්' },
   { _id: 'd12', name: 'Ciprofloxacin', genericName: 'Ciprofloxacin', brand: 'Cipro', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'සිප්රොෆ්ලොක්සැසින්', ta: 'சிப்ரோப்ளோக்சசின்' },
   { _id: 'd13', name: 'Azithromycin', genericName: 'Azithromycin', brand: 'Zithromax', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'ඇසිට්රොමයිසින්', ta: 'அசித்ரோமைசின்' },
-  { _id: 'd14', name: 'Cetirizine', genericName: 'Cetirizine', brand: 'Zyrtec', category: 'antihistamine', commonDosages: ['10mg'], si: 'සෙටිරිසින්', ta: 'செடிரிசைன்' }
+  { _id: 'd14', name: 'Cetirizine', genericName: 'Cetirizine', brand: 'Zyrtec', category: 'antihistamine', commonDosages: ['10mg'], si: 'සෙටිරිසින්', ta: 'செடிரிசைன்' },
+  { _id: 'd15', name: 'Citalopram', genericName: 'Citalopram', brand: 'Celexa', category: 'antidepressant', commonDosages: ['10mg', '20mg', '40mg'], si: 'සිටලොප්‍රම්', ta: 'சிட்டலோபிராம்' },
+  { _id: 'd16', name: 'Penicillin', genericName: 'Benzylpenicillin', brand: 'Penicillin Capsule 10\'S', category: 'antibiotic', commonDosages: ['250mg', '500mg'], si: 'පෙනිසිලින්', ta: 'பென்சிலின்' }
 ];
 
 // Trilingual / phonetic transliteration dictionary for essential medications

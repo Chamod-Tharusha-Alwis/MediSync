@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Drug = require('../models/Drug');
 const { icd10, symptoms } = require('../utils/loadDatasets');
 const { escapeRegex, analyzeMedicationSafety, isPrescribableDrug } = require('../utils/ingredientResolver');
@@ -71,7 +72,9 @@ const COMMON_DRUGS = [
   { name: 'Betamethasone Dipropionate Ointment', genericName: 'Betamethasone dipropionate', category: 'Topical Corticosteroid', commonDosages: ['0.05%'] },
   { name: 'Coal Tar Ointment', genericName: 'Coal tar', category: 'Keratolytic', commonDosages: ['5%'] },
   { name: 'Mupirocin Ointment', genericName: 'Mupirocin', category: 'Topical Antibiotic', commonDosages: ['2%'] },
-  { name: 'Flucloxacillin', genericName: 'Flucloxacillin', category: 'Penicillin Antibiotic', commonDosages: ['500mg'] }
+  { name: 'Flucloxacillin', genericName: 'Flucloxacillin', category: 'Penicillin Antibiotic', commonDosages: ['500mg'] },
+  { name: 'Citalopram', genericName: 'Citalopram', brand: 'Celexa', category: 'Antidepressant', commonDosages: ['10mg', '20mg', '40mg'] },
+  { name: 'Penicillin', genericName: 'Benzylpenicillin', brand: 'Penicillin Capsule 10\'S', category: 'Penicillin Antibiotic', commonDosages: ['250mg', '500mg'] }
 ];
 
 exports.COMMON_DRUGS = COMMON_DRUGS;
@@ -89,7 +92,7 @@ exports.searchDrugs = async (req, res) => {
     }).limit(25).select('_id name genericName brand category commonDosages');
 
     const filterFn = typeof isPrescribableDrug === 'function' ? isPrescribableDrug : () => true;
-    drugs = drugs.filter(filterFn).slice(0, 10);
+    drugs = (drugs || []).filter(filterFn).slice(0, 10);
 
     return res.json({ data: drugs });
   } catch (error) {

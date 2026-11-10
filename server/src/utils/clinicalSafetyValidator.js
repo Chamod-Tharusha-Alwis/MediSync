@@ -223,13 +223,13 @@ function computeClinicalFindings({
       );
     });
 
-    if (!limitHit) {
+    if (!limitHit || (!limitHit.maxDailyDoseMg && !limitHit.maxCourseDurationDays)) {
       rawFindings.push({
         type: 'unconfigured_limit',
         severity: 'info',
         items: [medName],
-        summary: `Safety limits not configured for ${medName} (pending national formulary data). Clinical assessment required.`,
-        source: 'medicine_safety_limits.json',
+        summary: `No dose ceiling on file for this ingredient (${medName}). Clinical assessment required.`,
+        source: limitHit?.source || 'medicine_safety_limits.json',
       });
       continue;
     }
