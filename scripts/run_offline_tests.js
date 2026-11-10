@@ -84,7 +84,7 @@ async function main() {
     return new Promise(resolve => {
       const child = cp.spawn(executable, args, { cwd: root, env: environment, windowsHide: true, shell: false, stdio: ['ignore', log, log] });
       let error, timedOut = false;
-      const timer = setTimeout(() => { timedOut = true; child.kill(); }, 180000);
+      const timer = setTimeout(() => { timedOut = true; child.kill(); }, 300000);
       child.once('error', failure => { error = failure.code; });
       child.once('close', (code, signal) => {
         clearTimeout(timer); fs.closeSync(log);

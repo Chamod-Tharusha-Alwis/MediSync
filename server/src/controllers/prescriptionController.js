@@ -383,6 +383,7 @@ exports.checkMedicineSafety = async (req, res) => {
     const { medications, patientId, activePrescriptions, acknowledgment } = req.body || {};
 
     let patientAllergies = [];
+    let resolvedActiveRx = Array.isArray(activePrescriptions) ? [...activePrescriptions] : [];
     if (patientId && mongoose.isObjectIdOrHexString(patientId)) {
       try {
         const Patient = require('../models/Patient');
@@ -392,12 +393,35 @@ exports.checkMedicineSafety = async (req, res) => {
           patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
         }
       } catch (_) {}
+
+      if (resolvedActiveRx.length === 0) {
+        try {
+          const Prescription = require('../models/Prescription');
+          const now = new Date();
+          const activeDocs = await Prescription.find({
+            patientId,
+            status: { $in: ['pending', 'issued', 'dispensed'] },
+            $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }]
+          }).select('drugName medications consultationRef prescriptionId durationDays dosage frequency createdAt').lean();
+
+          for (const doc of activeDocs || []) {
+            const ref = doc.consultationRef || doc.prescriptionId || 'CON-RECORD';
+            if (Array.isArray(doc.medications) && doc.medications.length) {
+              for (const m of doc.medications) {
+                resolvedActiveRx.push({ drugName: m.name || m.drugName, reference: ref, consultationRef: ref, dosage: m.dosage, frequency: m.frequency });
+              }
+            } else if (doc.drugName) {
+              resolvedActiveRx.push({ drugName: doc.drugName, reference: ref, consultationRef: ref, dosage: doc.dosage, frequency: doc.frequency });
+            }
+          }
+        } catch (_) {}
+      }
     }
 
     const computed = computeClinicalFindings({
       medications,
       patientAllergies,
-      activePrescriptions: Array.isArray(activePrescriptions) ? activePrescriptions : [],
+      activePrescriptions: resolvedActiveRx,
     });
 
     const result = await evaluateMedicineSafety({

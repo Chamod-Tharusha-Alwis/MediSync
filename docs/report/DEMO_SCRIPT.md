@@ -111,21 +111,24 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 - **Role**: Regional Epidemiologist / Public Health Inspector.
 - **URL**: `/public-health` (Public View) and `/admin/dashboard/outbreak` (Administrative Monitor).
 - **Actions**:
-  1. Navigate to the Epidemiological Surveillance interface (/public-health).
+  1. Navigate to the Epidemiological Surveillance interface (`/public-health`).
   2. **Demonstrate Resilient Public Baseline**:
-     - When consultations are newly recorded without clinical verification, /public-health shows a clean neutral state (0 confirmed cases, clean map, zero false alarms) rather than an error banner.
-     - Public alert telemetry (GET /api/alerts/active) loads freely without authentication.
-  3. **Clinical Provenance Review**:
-     - In the administrative surveillance console (/admin/dashboard/outbreak / GET /api/admin/surveillance/pending), show consultations pending review.
-     - Review and approve the clinical episode (PUT /api/admin/surveillance/:id/review with status: verified).
-  4. Inspect the updated Sri Lanka 25-district map color-coded by active verified disease incidence.
-  3. Inspect a highlighted district (e.g., *Gampaha*).
-  4. Show an active **Outbreak Alert**: Dengue Fever ($z\text{-score} = +3.82$).
-  5. Demonstrate the **Dual Noise Suppression Gates** (`server/src/services/surveillanceService.js:136-140`):
-     - **Gate 1 (Volume Floor)**: Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
-     - **Baseline**: Evaluates 7-day window against a 56-day district historical baseline with regularized variance ($\sigma \ge 0.5$).
-     - **Gate 2 (Persistence Gate)**: Incidence must exceed threshold ($z > 2.0$) for **2 consecutive calendar days** before promoting to an Outbreak Alert.
-     - Explain why single-day reporting spikes or small isolated clusters do not trigger false alerts.
+     - When consultations are newly recorded without clinical verification, `/public-health` shows a clean neutral state (0 confirmed cases, clean map, zero false alarms) with unverified clinical encounters clearly designated as *awaiting review*.
+     - Public alert telemetry (`GET /api/alerts/active`) loads freely without authentication.
+  3. **Exact Verification Click-Through Workflow**:
+     - Log into the administrative console and navigate to `/admin/dashboard/outbreak`.
+     - In the **Epidemiological Clinical Review** section (`GET /api/admin/surveillance/pending`), filter pending consultations by District (e.g., *Gampaha*).
+     - Inspect the unverified clinical episode, verify diagnostic criteria against case definitions, and click **Verify Case** (or select multiple cases and click **Bulk Verify Selected**).
+     - Endpoint `PUT /api/admin/surveillance/:id/review` records the clinical verification audit event (`SURVEILLANCE_REVIEW_VERIFY`) and updates `surveillanceVerification.status = 'verified'` atomically.
+  4. **Map Updates Immediately**:
+     - Switch back to `/public-health`. Notice the verified cases count increments and the district heatmap updates to reflect verified incidence.
+  5. **Outbreak Detection & Telemetry**:
+     - When verified cases meet outbreak criteria, show an active **Outbreak Alert**: Dengue Fever ($z\text{-score} = +3.82$).
+     - Demonstrate the **Dual Noise Suppression Gates** (`server/src/services/surveillanceService.js:136-140`):
+       - **Gate 1 (Volume Floor)**: Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
+       - **Baseline**: Evaluates 7-day window against a 56-day district historical baseline with regularized variance ($\sigma \ge 0.5$).
+       - **Gate 2 (Persistence Gate)**: Incidence must exceed threshold ($z > 2.0$) for **2 consecutive calendar days** before promoting to an Outbreak Alert.
+       - Explain why single-day reporting spikes or small isolated clusters do not trigger false alerts.
   6. Show the **14-Day Statistical Projection** curve with explicit labeling: *"Descriptive projection; not a validated clinical forecast"*.
 - **Key Talking Point for Examiners**:
   > *"Traditional paper epidemiological notification (Form H-544) takes weeks to reach the central Epidemiology Unit [OWNER: cite notification delay study]. MediSync aggregates syndromic data in real time as consultations occur, giving public health inspectors instant early-warning capability."*

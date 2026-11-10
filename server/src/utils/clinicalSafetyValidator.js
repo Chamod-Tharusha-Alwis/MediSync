@@ -126,14 +126,22 @@ function computeClinicalFindings({
             ? safetyResult.warnings
             : [{ drug1: allMedsForAnalysis[0], drug2: allMedsForAnalysis[1] || allMedsForAnalysis[0], description: 'Potential drug interaction detected.' }];
           for (const w of warnings) {
+            const isDrug1Active = (activePrescriptions || []).find(rx => (rx.drugName || rx.name || '').toLowerCase() === (w.drug1 || '').toLowerCase());
+            const isDrug2Active = (activePrescriptions || []).find(rx => (rx.drugName || rx.name || '').toLowerCase() === (w.drug2 || '').toLowerCase());
+            let summary = w.description || w.message || `Potential interaction between ${w.drug1} and ${w.drug2}.`;
+            if (isDrug1Active && !isDrug2Active) {
+              const ref = isDrug1Active.reference || isDrug1Active.consultationRef || 'active';
+              summary = `${w.drug2} (this prescription) vs ${w.drug1} (active, ${ref}): ${summary}`;
+            } else if (isDrug2Active && !isDrug1Active) {
+              const ref = isDrug2Active.reference || isDrug2Active.consultationRef || 'active';
+              summary = `${w.drug1} (this prescription) vs ${w.drug2} (active, ${ref}): ${summary}`;
+            }
+
             rawFindings.push({
               type: 'drug_interaction',
               severity: w.severity === 'high' ? 'severe' : w.severity || 'severe',
               items: [w.drug1, w.drug2].filter(Boolean),
-              summary:
-                w.description ||
-                w.message ||
-                `Potential interaction between ${w.drug1} and ${w.drug2}.`,
+              summary,
               source: 'interactions_clean.json',
             });
           }

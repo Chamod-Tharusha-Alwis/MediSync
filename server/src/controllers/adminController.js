@@ -1207,6 +1207,8 @@ exports.getPendingSurveillanceConsultations = async (req, res) => {
   try {
     const Consultation = require('../models/Consultation');
     const { SYNTHETIC_FLAGS, SYNTHETIC_MARKERS } = require('../services/publicHealthStats');
+    const { district, disease, startDate, endDate, limit = 50, page = 1 } = req.query || {};
+
     const query = {
       $or: [
         { surveillanceVerification: { $exists: false } },
@@ -1215,10 +1217,37 @@ exports.getPendingSurveillanceConsultations = async (req, res) => {
     };
     for (const field of SYNTHETIC_FLAGS) query[field] = { $in: [false, null] };
     for (const field of SYNTHETIC_MARKERS) query[field] = { $exists: false };
-    const consultations = await Consultation.find(query)
+
+    if (district && district !== 'all') {
+      query.district = String(district).trim();
+    }
+    if (disease && disease !== 'all') {
+      query.$and = query.$and || [];
+      query.$and.push({
+        $or: [
+          { diagnosis: { $regex: String(disease).trim(), $options: 'i' } },
+          { icdCode: { $regex: String(disease).trim(), $options: 'i' } },
+          { icdDescription: { $regex: String(disease).trim(), $options: 'i' } }
+        ]
+      });
+    }
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 50), 100);
+
+    let queryChain = Consultation.find(query)
       .select('_id district diagnosis icdCode icdVersion createdAt surveillanceVerification')
-      .sort({ createdAt: -1 })
-      .limit(50);
+      .sort({ createdAt: -1 });
+
+    if (queryChain && typeof queryChain.limit === 'function') {
+      queryChain = queryChain.limit(safeLimit);
+    }
+
+    const consultations = await queryChain;
     return res.json({ data: consultations });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch pending surveillance consultations' });
@@ -1228,11 +1257,63 @@ exports.getPendingSurveillanceConsultations = async (req, res) => {
 exports.reviewSurveillanceConsultation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, diagnosisStatus, caseDefinitionReference } = req.body || {};
+    const { status, diagnosisStatus, caseDefinitionReference, ids } = req.body || {};
     if (!['verified', 'rejected'].includes(status)) {
       return res.status(400).json({ error: 'Status must be verified or rejected' });
     }
     const Consultation = require('../models/Consultation');
+
+    // Handle bulk review if id === 'bulk' or ids array is passed
+    if (id === 'bulk' || (Array.isArray(ids) && ids.length > 0)) {
+      const targetIds = Array.isArray(ids) ? ids : [];
+      if (targetIds.length === 0 || targetIds.length > 100) {
+        return res.status(400).json({ error: 'Provide between 1 and 100 consultation IDs' });
+      }
+      const validIds = targetIds.filter(i => typeof i === 'string' && /^[a-f0-9]{24}$/i.test(i));
+      if (validIds.length === 0) return res.status(400).json({ error: 'No valid consultation IDs provided' });
+
+      const consultations = await Consultation.find({ _id: { $in: validIds } });
+      const now = new Date();
+      const updatedIds = [];
+
+      for (const c of consultations) {
+        const episodeId = c.surveillanceVerification?.episodeId || `EP-${c.district || 'SL'}-${c.createdAt ? c.createdAt.toISOString().slice(0, 10) : now.toISOString().slice(0, 10)}-${String(c._id).slice(-4)}`;
+        c.surveillanceVerification = {
+          status,
+          diagnosisStatus: status === 'verified' ? (diagnosisStatus || 'confirmed') : 'rejected',
+          source: 'clinical_review',
+          verifiedBy: req.user?.id || 'admin',
+          verifiedAt: now,
+          episodeId,
+          caseDefinitionReference: caseDefinitionReference || 'SL-EPID-CASE-DEF-V1'
+        };
+        await c.save();
+        updatedIds.push(String(c._id));
+      }
+
+      try {
+        if (mongoose.connection?.readyState === 1 && AuditLog) {
+          await AuditLog.create({
+            actorId: String(req.user?.id || 'admin'),
+            actorRole: req.user?.role || 'admin',
+            action: status === 'verified' ? 'SURVEILLANCE_REVIEW_VERIFY' : 'SURVEILLANCE_REVIEW_REJECT',
+            accessedNic: 'N/A',
+            deviceModel: 'Web Console',
+            details: {
+              bulkCount: updatedIds.length,
+              status,
+              diagnosisStatus: status === 'verified' ? (diagnosisStatus || 'confirmed') : 'rejected'
+            }
+          });
+        }
+      } catch (_) {}
+
+      return res.json({
+        message: `Successfully updated ${updatedIds.length} consultation(s) to ${status}`,
+        updatedCount: updatedIds.length
+      });
+    }
+
     const consultation = await Consultation.findById(id);
     if (!consultation) return res.status(404).json({ error: 'Consultation not found' });
 
@@ -1249,6 +1330,26 @@ exports.reviewSurveillanceConsultation = async (req, res) => {
 
     consultation.surveillanceVerification = update;
     await consultation.save();
+
+    // Audit log (zero PII, ids and status only)
+    try {
+      if (mongoose.connection?.readyState === 1 && AuditLog) {
+        await AuditLog.create({
+          actorId: String(req.user?.id || 'admin'),
+          actorRole: req.user?.role || 'admin',
+          action: status === 'verified' ? 'SURVEILLANCE_REVIEW_VERIFY' : 'SURVEILLANCE_REVIEW_REJECT',
+          accessedNic: 'N/A',
+          deviceModel: 'Web Console',
+          details: {
+            consultationId: String(consultation._id),
+            district: consultation.district,
+            status,
+            diagnosisStatus: update.diagnosisStatus
+          }
+        });
+      }
+    } catch (_) {}
+
     return res.json({ message: `Consultation surveillance status updated to ${status}`, data: consultation.surveillanceVerification });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to review surveillance consultation' });

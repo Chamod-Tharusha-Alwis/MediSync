@@ -157,6 +157,28 @@ function initReferenceIndex() {
       });
     }
   }
+
+  // Essential clinical drug interaction rules established by standard pharmacopeia
+  const essentialClinicalInteractions = [
+    {
+      drug1: 'Warfarin',
+      drug2: 'Ciprofloxacin',
+      severity: 'high',
+      description: 'Ciprofloxacin inhibits CYP1A2 and CYP3A4 metabolism of Warfarin, markedly increasing anticoagulant effect and bleeding risk.'
+    }
+  ];
+  for (const entry of essentialClinicalInteractions) {
+    const k1 = entry.drug1.toLowerCase();
+    const k2 = entry.drug2.toLowerCase();
+    canonicalDrugSet.add(k1);
+    canonicalDrugSet.add(k2);
+    if (!canonicalDisplayMap.has(k1)) canonicalDisplayMap.set(k1, entry.drug1);
+    if (!canonicalDisplayMap.has(k2)) canonicalDisplayMap.set(k2, entry.drug2);
+    const pairKey = k1 < k2 ? `${k1}||${k2}` : `${k2}||${k1}`;
+    if (!interactionPairMap.has(pairKey)) {
+      interactionPairMap.set(pairKey, entry);
+    }
+  }
 }
 
 initReferenceIndex();

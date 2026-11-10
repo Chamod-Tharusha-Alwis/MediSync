@@ -393,6 +393,25 @@ exports.verifyOtpAndUnlock = async (req, res) => {
     // Compute medicine release summary
     const release = await computeReleaseSummary(consultation._id);
 
+    // Extract safety override findings if any
+    let safetyOverride = null;
+    try {
+      const rxQuery = Prescription.find({ consultationId: consultation._id });
+      let rxRows = [];
+      if (typeof rxQuery?.select === 'function') {
+        const sel = rxQuery.select('safetyOverride');
+        rxRows = typeof sel?.lean === 'function' ? await sel.lean() : await sel;
+      } else if (typeof rxQuery?.then === 'function') {
+        rxRows = await rxQuery;
+      }
+      const findingTypes = [...new Set((rxRows || [])
+        .flatMap(r => r?.safetyOverride?.findingTypes || (r?.safetyOverride?.findings || []).map(f => f?.type) || [])
+        .filter(Boolean))];
+      if (findingTypes.length > 0) {
+        safetyOverride = { acknowledged: true, findingTypes };
+      }
+    } catch (_) {}
+
     // Assemble clinical encounter data matching Consultation Summary PDF
     const clinical = {
       consultation: {
@@ -436,16 +455,7 @@ exports.verifyOtpAndUnlock = async (req, res) => {
         instructions: it.instructions,
         released: it.released,
       })),
-      safetyOverride: (await Prescription.find({ consultationId: consultation._id }).select('safetyOverride').lean())
-        .flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
-        .filter(Boolean).length > 0
-        ? {
-            acknowledged: true,
-            findingTypes: [...new Set((await Prescription.find({ consultationId: consultation._id }).select('safetyOverride').lean())
-              .flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
-              .filter(Boolean))]
-          }
-        : null,
+      safetyOverride,
       labResults: Array.isArray(consultation.labTests) ? consultation.labTests : [],
     };
 
@@ -505,8 +515,8 @@ exports.verifyOtpAndUnlock = async (req, res) => {
  */
 exports.downloadHistoryPdfWithNicGate = async (req, res) => {
   try {
-    const rawToken = req.params.token;
-    const authHeader = req.headers['authorization'];
+    const rawToken = req.params?.token;
+    const authHeader = req.headers?.['authorization'] || req.headers?.['Authorization'];
     const sessionTokenFromBody = req.body?.sessionToken;
     const sessionToken = authHeader?.startsWith('Bearer ')
       ? authHeader.slice(7)

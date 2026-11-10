@@ -69,5 +69,19 @@ module.exports.testMatch.push(
   '<rootDir>/tests/phase3GroupingAndDispensingSeeder.test.js',
   '<rootDir>/tests/phase4AdminOutbreakMlAndSessions.test.js',
   '<rootDir>/tests/phase5PopulationIncidence.test.js',
-  '<rootDir>/tests/phaseD2DiseaseSymptomKbOffline.test.js'
+  '<rootDir>/tests/phaseD2DiseaseSymptomKbOffline.test.js',
+  '<rootDir>/tests/doctorSafetyOverride.test.js',
+  '<rootDir>/tests/labReportUploadStatus.test.js',
+  '<rootDir>/tests/otcAtomicRetry.test.js',
+  '<rootDir>/tests/pdfSecurityAndLayout.test.js',
+  '<rootDir>/tests/pharmacyNicPrivacy.test.js',
+  '<rootDir>/tests/publicHealthUnreviewed.test.js',
+  '<rootDir>/tests/otpVerificationPortal.test.js',
+  '<rootDir>/tests/clinicalSafetyPhase4.test.js',
+  '<rootDir>/tests/dispensingIntegrityPhase3.test.js',
+  '<rootDir>/tests/phase1MedicineSafetyRules.test.js',
+  '<rootDir>/tests/phase2VerificationTokenAndHistoryGate.test.js',
+  '<rootDir>/tests/phaseD4NonProfiledConsultationOffline.test.js',
+  '<rootDir>/tests/phaseD5GenericSurveillanceOffline.test.js',
+  '<rootDir>/tests/safetyPanelConsistency.test.js'
 );
