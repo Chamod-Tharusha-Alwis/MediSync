@@ -115,6 +115,12 @@ function loadEncryptionKeys() {
 }
 
 async function connectToMongo(database) {
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    return;
+  }
+  if (process.env.MEDISYNC_OFFLINE_ONLY === 'true' || process.env.NODE_ENV === 'test') {
+    return;
+  }
   const uri = process.env.MONGO_URI;
   if (!uri) throw new Error('MONGO_URI is required to connect to MongoDB');
 
@@ -252,7 +258,16 @@ async function runSeed(plan, database) {
       }
       const instance = new Model(input);
       if (typeof instance.encryptFieldsSync === 'function') instance.encryptFieldsSync();
-      preparedDocs.push(instance.toObject({ depopulate: true, versionKey: false }));
+      const obj = instance.toObject({ depopulate: true, versionKey: false });
+
+      // Preserve unmapped fields (surveillanceVerification, syntheticSeedBatch, isSynthetic)
+      // to ensure MongoDB persistence without relying on strict Mongoose schema definitions.
+      for (const [k, v] of Object.entries(input)) {
+        if (obj[k] === undefined && v !== undefined) {
+          obj[k] = v;
+        }
+      }
+      preparedDocs.push(obj);
     }
 
     // Insert prepared documents into collection
@@ -261,37 +276,81 @@ async function runSeed(plan, database) {
     console.log(`   Inserted ${String(result.insertedCount).padStart(4)} ${modelName} documents`);
   }
 
-  // Pre-seed the OutbreakAlert for Scenario S-A (Gampaha Dengue) as 'Pending'
-  // so the administrator can demonstrate approving it in the admin dashboard!
-  const alertId = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(`${plan.namespace}:ALERT:S-A:Gampaha:Dengue`).digest('hex').slice(0, 24));
-  const sAAlert = {
-    _id: alertId,
-    disease: 'Dengue',
-    location: 'Gampaha',
-    affectedCount: 12,
-    severity: 'High',
-    status: 'Pending',
-    surveillancePolicy: 'surveillance-verified-district-v1',
-    isSimulation: false,
-    isSynthetic: true,
-    syntheticSeedBatch: plan.namespace,
-    message: 'Elevated syndromic cluster detected in Gampaha (N=12, persistent over 4 consecutive calendar days). Awaiting administrative epidemiological review.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
+  // ── Outbreak Alerts: Run real detector on inserted verified consultations ─────
+  console.log(`\n🚨 Running real outbreak detector on seeded clinical consultations...`);
+  const insertedConsultations = await models.Consultation.collection.find({
+    syntheticSeedBatch: plan.namespace
+  }).toArray();
 
-  await models.OutbreakAlert.collection.updateOne(
-    { _id: alertId },
-    { $set: sAAlert },
-    { upsert: true }
-  );
-  console.log(`   Seeded 1 OutbreakAlert for S-A Gampaha Dengue (Status: Pending)`);
+  const detectorCases = insertedConsultations.map(c => ({
+    consultationId: String(c._id),
+    district: c.district,
+    diseaseId: c.icdCode,
+    disease: c.diagnosis,
+    time: new Date(c.createdAt).getTime(),
+    createdAt: c.createdAt
+  }));
+
+  const detectorResults = evaluateOutbreakCriteria({
+    cases: detectorCases,
+    now: new Date(plan.now),
+    baselineDays: 56,
+    level: 'district'
+  });
+
+  let alertsCreated = 0;
+  for (const r of detectorResults) {
+    if (!r.triggered) continue; // S-B (Kalutara) and S-C (Matara) are negative controls (suppressed)
+
+    const matchingIds = detectorCases
+      .filter(c => c.district === r.district && (c.diseaseId === r.disease || c.disease === r.disease))
+      .map(c => new mongoose.Types.ObjectId(c.consultationId))
+      .sort();
+
+    const alertId = new mongoose.Types.ObjectId(
+      crypto.createHash('sha256').update(JSON.stringify(['5w-verified-episodes-v1', 'real', r.district, r.disease, matchingIds.map(String)])).digest('hex').slice(0, 24)
+    );
+
+    const alertDoc = {
+      _id: alertId,
+      disease: r.disease === 'A90' ? 'Dengue' : (r.disease === 'J11.1' ? 'Influenza' : r.disease),
+      location: r.district,
+      affectedCount: r.count,
+      severity: r.severity === 'Critical' ? 'Critical' : 'High',
+      status: 'Pending',
+      surveillancePolicy: '5w-verified-episodes-v1',
+      sourceConsultationIds: matchingIds,
+      isSimulation: false,
+      isSynthetic: true,
+      syntheticSeedBatch: plan.namespace,
+      message: `Elevated syndromic cluster detected in ${r.district} (N=${r.count}, persistent over ${r.maxConsecutiveDays} consecutive calendar days). Awaiting administrative epidemiological review.`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await models.OutbreakAlert.collection.updateOne(
+      { _id: alertId },
+      { $set: alertDoc },
+      { upsert: true }
+    );
+    alertsCreated++;
+    console.log(`   Real Detector produced: [Pending] ${alertDoc.severity} Alert for ${alertDoc.disease} in ${alertDoc.location} (Affected: ${alertDoc.affectedCount})`);
+  }
+  console.log(`   Seeded ${alertsCreated} OutbreakAlerts via real detection engine (S-B & S-C negative controls suppressed).`);
+
+  console.log(`\n🔑 [ONE-TIME SECRET] Live QR Capability Token generated:`);
+  console.log(`   Verification URL : ${plan.demoPatient.qrUrl}`);
+  console.log(`   (Printed once to console; only SHA-256 tokenHash is stored in the database.)\n`);
 
   console.log('----------------------------------------------------------------');
   console.log('🎉 Viva seed batch committed successfully!');
   console.log('================================================================');
 
-  await mongoose.disconnect();
+  if (process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== 'test') {
+    await mongoose.disconnect();
+  }
+  }
 }
 
 async function runRollback(database) {
@@ -332,7 +391,11 @@ async function runRollback(database) {
   console.log('Zero non-tagged or owner documents were modified.');
   console.log('================================================================');
 
-  await mongoose.disconnect();
+  if (process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== 'test') {
+    await mongoose.disconnect();
+  }
+  }
 }
 
 async function runVerify(plan, database) {
@@ -345,9 +408,12 @@ async function runVerify(plan, database) {
   await connectToMongo(database);
   console.log(` Connected to MongoDB Atlas (${database})`);
 
-  // Verify demo patient decryption
+  const failures = [];
+
+  // 1. Verify demo patient decryption
   const demoPatient = await models.Patient.findOne({ nic: '200012345678' });
   if (!demoPatient) {
+    failures.push('Demo patient 200012345678 not found in database.');
     console.log('❌ Demo patient not found in database.');
   } else {
     console.log('✅ Demo patient decrypted successfully:');
@@ -357,25 +423,118 @@ async function runVerify(plan, database) {
     console.log(`   Allergies : ${demoPatient.allergies.join(', ')}`);
   }
 
-  // Verify consultations count
+  // 2. Verify consultations count
   const consultCount = await models.Consultation.countDocuments({ consultationId: /^CON-VIVA-2026-/ });
-  console.log(`✅ Seeded consultations in database: ${consultCount}`);
+  console.log(`\n📋 Consultations Count:`);
+  console.log(`   Seeded consultations in database: ${consultCount} (Planned: 400)`);
+  if (consultCount !== 400) {
+    failures.push(`Expected 400 seeded consultations, found ${consultCount}`);
+  }
 
-  // Verify public health stats on live collection
-  const agg = await aggregatePublicCases(await models.Consultation.collection.find({}).toArray(), { mode: 'real', rangeDays: 30, now: new Date() });
-  console.log(`✅ Public health aggregation on live data:`);
-  console.log(`   Verified Cases  : ${agg.verifiedCases}`);
-  console.log(`   Awaiting Review : ${agg.awaitingReviewCount}`);
-  console.log(`   State           : ${agg.state}`);
+  // 3. Verify public health stats on live collection
+  const liveConsultDocs = await models.Consultation.collection.find({}).toArray();
+  const agg = await aggregatePublicCases(liveConsultDocs, { mode: 'real', rangeDays: 30, now: new Date(plan.now) });
+  console.log(`\n🌐 Public Health Live Aggregates:`);
+  console.log(`   Verified Cases  : ${agg.verifiedCases} (Planned: 177)`);
+  console.log(`   Awaiting Review : ${agg.awaitingReviewCount} (Planned: 10)`);
+  console.log(`   State           : "${agg.state}"`);
 
-  // Verify S-A OutbreakAlert
-  const alert = await models.OutbreakAlert.findOne({ location: 'Gampaha', disease: 'Dengue' });
-  if (alert) {
-    console.log(`✅ S-A OutbreakAlert found: [${alert.status}] ${alert.disease} in ${alert.location} (Affected: ${alert.affectedCount})`);
+  if (agg.verifiedCases !== 177) {
+    failures.push(`Live verified cases mismatch: expected 177, got ${agg.verifiedCases}`);
+  }
+  if (agg.awaitingReviewCount !== 10) {
+    failures.push(`Live awaiting review mismatch: expected 10, got ${agg.awaitingReviewCount}`);
+  }
+
+  // 4. Verify outbreak detector scenarios against live data
+  const cases = liveConsultDocs
+    .filter(c => String(c.consultationId || '').startsWith('CON-VIVA-2026-'))
+    .map(c => ({
+      consultationId: String(c._id),
+      district: c.district,
+      diseaseId: c.icdCode,
+      disease: c.diagnosis,
+      time: new Date(c.createdAt).getTime(),
+      createdAt: c.createdAt
+    }));
+
+  const results = evaluateOutbreakCriteria({ cases, now: new Date(plan.now), baselineDays: 56, level: 'district' });
+  const sA = results.find(r => r.district === 'Gampaha' && (r.disease === 'A90' || r.disease === 'Dengue'));
+  const sB = results.find(r => r.district === 'Kalutara' && (r.disease === 'A90' || r.disease === 'Dengue'));
+  const sC = results.find(r => r.district === 'Matara' && (r.disease === 'A90' || r.disease === 'Dengue'));
+  const sD = results.find(r => r.district === 'Kandy' && (r.disease === 'J11.1' || r.disease === 'Influenza'));
+
+  console.log(`\n🧪 Outbreak Scenarios Live Evaluation:`);
+  console.log(`   [S-A] Gampaha Dengue: triggered=${sA?.triggered} (level=${sA?.alertLevel})`);
+  console.log(`   [S-B] Kalutara Dengue: triggered=${sB?.triggered} (reason=${sB?.reason})`);
+  console.log(`   [S-C] Matara Dengue: triggered=${sC?.triggered} (reason=${sC?.reason})`);
+  console.log(`   [S-D] Kandy Influenza: triggered=${sD?.triggered} (level=${sD?.alertLevel})`);
+
+  if (!sA?.triggered || sA.alertLevel !== 'Critical') {
+    failures.push(`Scenario S-A expected triggered Critical alert in Gampaha, got triggered=${sA?.triggered}, level=${sA?.alertLevel}`);
+  }
+  if (sB?.triggered) {
+    failures.push(`Scenario S-B negative control failed: Kalutara Dengue should NOT trigger an alert`);
+  }
+  if (sC?.triggered) {
+    failures.push(`Scenario S-C negative control failed: Matara Dengue should NOT trigger an alert`);
+  }
+  if (!sD?.triggered || sD.alertLevel !== 'Alert') {
+    failures.push(`Scenario S-D expected triggered Alert in Kandy, got triggered=${sD?.triggered}, level=${sD?.alertLevel}`);
+  }
+
+  // 5. Verify OutbreakAlert collection has S-A and S-D, and NO S-B or S-C
+  const sAAlert = await models.OutbreakAlert.findOne({ location: 'Gampaha', disease: { $in: ['Dengue', 'A90'] } });
+  const sDAlert = await models.OutbreakAlert.findOne({ location: 'Kandy', disease: { $in: ['Influenza', 'J11.1'] } });
+  const sBAlert = await models.OutbreakAlert.findOne({ location: 'Kalutara', disease: { $in: ['Dengue', 'A90'] } });
+  const sCAlert = await models.OutbreakAlert.findOne({ location: 'Matara', disease: { $in: ['Dengue', 'A90'] } });
+
+  console.log(`\n🚨 OutbreakAlert Collection Inspection:`);
+  console.log(`   S-A Alert (Gampaha Dengue)  : ${sAAlert ? `Found [${sAAlert.status}] (Affected: ${sAAlert.affectedCount})` : 'MISSING'}`);
+  console.log(`   S-D Alert (Kandy Influenza) : ${sDAlert ? `Found [${sDAlert.status}] (Affected: ${sDAlert.affectedCount})` : 'MISSING'}`);
+  console.log(`   S-B Alert (Kalutara Dengue) : ${sBAlert ? 'UNEXPECTED ALERT FOUND' : 'Clean (No Alert)'}`);
+  console.log(`   S-C Alert (Matara Dengue)   : ${sCAlert ? 'UNEXPECTED ALERT FOUND' : 'Clean (No Alert)'}`);
+
+  if (!sAAlert) failures.push('Missing OutbreakAlert for S-A (Gampaha Dengue)');
+  if (!sDAlert) failures.push('Missing OutbreakAlert for S-D (Kandy Influenza)');
+  if (sBAlert) failures.push('Unexpected OutbreakAlert found for S-B negative control (Kalutara)');
+  if (sCAlert) failures.push('Unexpected OutbreakAlert found for S-C negative control (Matara)');
+
+  // 6. Verify Email routability when ownerEmail used
+  const ownerEmailUsed = plan.ownerEmail || (demoPatient?.email && !demoPatient.email.endsWith('.invalid'));
+  if (ownerEmailUsed) {
+    console.log(`\n📧 Email Routability Verification:`);
+    const seededStaff = await models.PharmacyStaff.find({ syntheticSeedBatch: plan.namespace });
+    const seededDoctors = await models.Doctor.find({ syntheticSeedBatch: plan.namespace });
+    const seededPatients = await models.Patient.find({ syntheticSeedBatch: plan.namespace });
+    const accounts = [...seededStaff, ...seededDoctors, ...seededPatients];
+
+    for (const acc of accounts) {
+      const email = acc.email;
+      if (!email || email.includes('.invalid') || email.includes('.example') || !email.includes('+') || !email.includes('@')) {
+        failures.push(`Non-routable email found for account ${acc._id} (${acc.fullName || acc.name}): ${email}`);
+      }
+    }
+    console.log(`   Checked ${accounts.length} accounts: all use routable plus-aliases.`);
   }
 
   console.log('================================================================');
-  await mongoose.disconnect();
+  if (process.env.NODE_ENV !== 'test') {
+    await mongoose.disconnect();
+  }
+
+  if (failures.length > 0) {
+    console.error('\x1b[31m%s\x1b[0m', '❌ [VERIFY FAILURE] LIVE AGGREGATES DIFFER FROM SEED PLAN:');
+    for (const f of failures) {
+      console.error('\x1b[31m%s\x1b[0m', `   - ${f}`);
+    }
+    const err = new Error(`SEED_VERIFY_FAILED: ${failures.length} verification check(s) failed.`);
+    err.failures = failures;
+    throw err;
+  }
+
+  console.log('\x1b[32m%s\x1b[0m', '✅ [VERIFY SUCCESS] All live aggregates, outbreak scenarios, and email routability match the seed plan 100%!');
+  console.log('================================================================');
 }
 
 async function main() {

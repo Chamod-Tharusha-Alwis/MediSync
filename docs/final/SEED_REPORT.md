@@ -3,7 +3,7 @@
 **Batch Tag**: `viva-2026-11`  
 **Execution Date**: 2026-11-10  
 **Status**: Verified & Ready for Production Confirmation  
-**Test Suite Verification**: 10/10 PASS (`server/tests/vivaSeedData.test.js`), 3,605/3,605 overall suite PASS (`scripts/run_offline_tests.js`)  
+**Test Suite Verification**: 22/22 PASS (`server/tests/vivaSeedData.test.js`), 3,617/3,617 overall suite PASS (`scripts/run_offline_tests.js`) across 225 suites  
 
 ---
 
@@ -26,7 +26,7 @@ The MediSync Viva Voce Demonstration seed dataset was created pursuant to `docs/
 |---|---|:---:|---|
 | `hospitals` | `Hospital` | 2 | Colombo Apex National Hospital (Tertiary + Lab), Kandy Central General Hospital |
 | `pharmacies` | `Pharmacy` | 2 | Asiri Central Care Pharmacy (Colombo), Kandy City Dispensary |
-| `doctors` | `Doctor` | 4 | Real SLMC formats (SLMC 48123, 51204, 39811, 44092); 4 distinct clinical specialties |
+| `doctors` | `Doctor` | 4 | Real SLMC formats (SLMC-24819, SLMC-31204, SLMC-42918, SLMC-51029); 4 distinct clinical specialties |
 | `pharmacystaffs` | `PharmacyStaff` | 3 | Licensed dispensing pharmacists (SPMC-reg) |
 | `patients` | `Patient` | 30 | Distributed across all 25 administrative districts; 1 primary demo patient |
 | `consultations` | `Consultation` | 400 | Encounter history over past 70 days using catalog ICD codes; 385 verified, 15 pending review |
@@ -78,14 +78,14 @@ Evaluation of `aggregatePublicCases` over the seeded consultation set:
 ### Dynamic Gmail-Style Plus Aliasing (`--owner-email=<address>`)
 When the `--owner-email=<address>` option is supplied (e.g. `--owner-email=chamod@gmail.com`), every seeded account is assigned an encrypted plus-aliased address matching the role. This allows the evaluator to receive live verification OTPs directly to a real mailbox:
 
-| Role | Synthetic Default (`.invalid`) | Plus Alias (`--owner-email=user@example.com`) |
-|---|---|---|
-| **Demo Patient** | `chamod.demo.patient@accounts.invalid` | `user+patient@example.com` |
-| **Doctor (Lead)** | `dr.anura.jayasinghe.1@accounts.invalid` | `user+doctor1@example.com` |
-| **Doctor (Internal)** | `dr.malik.perera.2@accounts.invalid` | `user+doctor2@example.com` |
-| **Pharmacist (Lead)** | `kaveen.bandara.1@accounts.invalid` | `user+pharmacist1@example.com` |
-| **Pharmacy Admin** | `thushara.perera.3@accounts.invalid` | `user+pharmacyadmin@example.com` |
-| **Hospital Admin** | `colombo.apex.hospital@accounts.invalid` | `user+hospitaladmin1@example.com` |
+| Role | Synthetic Default (`.invalid`) | Plus Alias (`--owner-email=user@example.com`) | Identifier / SLMC | Key Demonstration Flow |
+|---|---|---|---|---|
+| **Demo Patient** | `chamod.demo.patient@accounts.invalid` | `user+patient@example.com` | NIC: 200012345678 | Patient Portal: Medical History, Prescriptions, QR Verification token |
+| **Doctor (Lead)** | `dr.anura.jayasinghe.1@accounts.invalid` | `user+doctor1@example.com` | SLMC-24819 | Doctor Portal: New Consultation, Symptom Matching, Safety Engine Warning Override |
+| **Doctor (Internal)** | `dr.sivakumar.ramasamy.2@accounts.invalid` | `user+doctor2@example.com` | SLMC-31204 | Doctor Portal: Multi-specialty Consultation History |
+| **Pharmacist (Lead)** | `kaveen.bandara.1@accounts.invalid` | `user+pharmacist1@example.com` | SPMC 9841 | Pharmacy Portal: Dispense Screen, Prescriber Safety Override Badge, Duplicate Dispense Block |
+| **Pharmacy Admin** | `thushara.perera.3@accounts.invalid` | `user+pharmacyadmin@example.com` | PHARM-001 | Pharmacy Management, Dispenser staff audit |
+| **Hospital Admin** | `colombo.apex.hospital@accounts.invalid` | `user+hospitaladmin1@example.com` | HOSP-001 | Hospital Management, Doctor roster, Facility capacity |
 
 Without the `--owner-email` flag, accounts default to safe RFC 2606 `.invalid` domains.
 

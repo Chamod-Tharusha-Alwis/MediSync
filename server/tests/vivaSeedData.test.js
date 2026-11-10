@@ -229,6 +229,15 @@ describe('Viva Voce Demonstration Seed Plan', () => {
         VerificationToken.findOne = originalFindOne;
       }
     });
+
+    test('two consecutive seed plans generate distinct random tokens and tokenHashes', () => {
+      const planA = buildVivaSeedPlan({ now: new Date() });
+      const planB = buildVivaSeedPlan({ now: new Date() });
+      expect(planA.demoPatient.rawToken).not.toBe(planB.demoPatient.rawToken);
+      expect(planA.demoPatient.tokenHash).not.toBe(planB.demoPatient.tokenHash);
+      expect(planA.demoPatient.rawToken).toMatch(/^[0-9a-f]{64}$/);
+      expect(planB.demoPatient.rawToken).toMatch(/^[0-9a-f]{64}$/);
+    });
   });
 
   describe('Task 1: Gmail-style Plus Aliasing (--owner-email) & Account Login', () => {
@@ -278,6 +287,26 @@ describe('Viva Voce Demonstration Seed Plan', () => {
       }
       for (const h of plan.documentsByModel.Hospital) {
         expect(h.twoFactorEnabled).toBeFalsy();
+      }
+    });
+
+    test('when ownerEmail is provided, all seeded patient, doctor, and pharmacy staff emails are routable', () => {
+      const aliasPlan = buildVivaSeedPlan({
+        now: new Date('2026-11-10T12:00:00.000Z'),
+        ownerEmail: 'chamod.tester@gmail.com'
+      });
+      const allAccounts = [
+        ...aliasPlan.documentsByModel.Patient,
+        ...aliasPlan.documentsByModel.Doctor,
+        ...aliasPlan.documentsByModel.PharmacyStaff
+      ];
+      expect(allAccounts.length).toBeGreaterThan(0);
+      for (const acc of allAccounts) {
+        expect(acc.email).toBeDefined();
+        expect(acc.email).not.toContain('.invalid');
+        expect(acc.email).not.toContain('.example');
+        expect(acc.email).toContain('+');
+        expect(acc.email).toContain('@gmail.com');
       }
     });
   });
@@ -336,6 +365,144 @@ describe('Viva Voce Demonstration Seed Plan', () => {
         if (c.surveillanceVerification.status === 'verified') {
           expect(c.surveillanceVerification.verifiedBy).toBe('viva-2026-11');
         }
+      }
+    });
+  });
+
+  describe('Seed Problem Fixes & Live Aggregation Verification', () => {
+    test('consultation preparation preserves surveillanceVerification without schema mutation', () => {
+      const Consultation = require('../src/models/Consultation');
+      const sample = plan.documentsByModel.Consultation[0];
+      const input = { ...sample };
+      const instance = new Consultation(input);
+      const obj = instance.toObject({ depopulate: true, versionKey: false });
+
+      // In unmodified strict Consultation schema, unmapped surveillanceVerification is stripped by toObject
+      expect(obj.surveillanceVerification).toBeUndefined();
+
+      // Applying seed-viva-data.js preservation:
+      for (const [k, v] of Object.entries(input)) {
+        if (obj[k] === undefined && v !== undefined) {
+          obj[k] = v;
+        }
+      }
+
+      // After preservation, surveillanceVerification is intact for BSON collection.insertMany
+      expect(obj.surveillanceVerification).toBeDefined();
+      expect(obj.surveillanceVerification.status).toBe(sample.surveillanceVerification.status);
+      expect(obj.surveillanceVerification.verifiedBy).toBe('viva-2026-11');
+    });
+
+    test('prepared consultations reproduce planned live public health aggregates (177 verified, 10 awaiting review)', async () => {
+      const Consultation = require('../src/models/Consultation');
+      const preparedConsultations = plan.documentsByModel.Consultation.map(doc => {
+        const input = { ...doc };
+        const instance = new Consultation(input);
+        const obj = instance.toObject({ depopulate: true, versionKey: false });
+        for (const [k, v] of Object.entries(input)) {
+          if (obj[k] === undefined && v !== undefined) obj[k] = v;
+        }
+        return obj;
+      });
+
+      const agg = await aggregatePublicCases(preparedConsultations, {
+        mode: 'real',
+        rangeDays: 30,
+        now: new Date('2026-11-10T12:00:00.000Z')
+      });
+
+      expect(agg.verifiedCases).toBe(177);
+      expect(agg.awaitingReviewCount).toBe(10);
+      expect(agg.state).toBe('ok');
+    });
+
+    test('real detector execution on seeded consultations triggers S-A and S-D, and suppresses S-B and S-C', () => {
+      const detectorCases = plan.documentsByModel.Consultation.map(c => ({
+        consultationId: String(c._id),
+        district: c.district,
+        diseaseId: c.icdCode,
+        disease: c.diagnosis,
+        time: new Date(c.createdAt).getTime(),
+        createdAt: c.createdAt
+      }));
+
+      const results = evaluateOutbreakCriteria({
+        cases: detectorCases,
+        now: new Date('2026-11-10T12:00:00.000Z'),
+        baselineDays: 56,
+        level: 'district'
+      });
+
+      const sA = results.find(r => r.district === 'Gampaha' && (r.disease === 'A90' || r.disease === 'Dengue'));
+      const sB = results.find(r => r.district === 'Kalutara' && (r.disease === 'A90' || r.disease === 'Dengue'));
+      const sC = results.find(r => r.district === 'Matara' && (r.disease === 'A90' || r.disease === 'Dengue'));
+      const sD = results.find(r => r.district === 'Kandy' && (r.disease === 'J11.1' || r.disease === 'Influenza'));
+
+      expect(sA.triggered).toBe(true);
+      expect(sA.alertLevel).toBe('Critical');
+      expect(sD.triggered).toBe(true);
+      expect(sD.alertLevel).toBe('Alert');
+
+      // Negative controls suppressed
+      expect(sB.triggered).toBe(false);
+      expect(sC.triggered).toBe(false);
+    });
+
+    test('runVerify throws SEED_VERIFY_FAILED when live aggregates differ from plan', async () => {
+      const { runVerify } = require('../../scripts/seed-viva-data.js');
+      const Patient = require('../src/models/Patient');
+      const Consultation = require('../src/models/Consultation');
+      const OutbreakAlert = require('../src/models/OutbreakAlert');
+
+      // Mock models to simulate mismatched live database state (e.g., 0 verified cases as occurred in real seed)
+      const origPatientFindOne = Patient.findOne;
+      const origConsultCount = Consultation.countDocuments;
+      const origConsultFind = Consultation.collection.find;
+      const origAlertFindOne = OutbreakAlert.findOne;
+
+      try {
+        Patient.findOne = jest.fn().mockResolvedValue({
+          fullName: 'Saman Perera',
+          nic: '200012345678',
+          contactInfo: '+94771234567',
+          allergies: ['Penicillin']
+        });
+        Consultation.countDocuments = jest.fn().mockResolvedValue(400);
+
+        // Mismatched collection: all pending consultations (verifiedCases = 0, awaiting = 199)
+        const unverifiedConsultations = plan.documentsByModel.Consultation.map(c => ({
+          ...c,
+          surveillanceVerification: {
+            status: 'pending',
+            diagnosisStatus: 'suspected',
+            source: 'clinical_review'
+          }
+        }));
+        Consultation.collection.find = jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue(unverifiedConsultations)
+        });
+        OutbreakAlert.findOne = jest.fn().mockImplementation(query => {
+          if (query.location === 'Gampaha' || query.location === 'Kandy') {
+            return Promise.resolve({ status: 'Pending', affectedCount: 12 });
+          }
+          return Promise.resolve(null);
+        });
+
+        let error;
+        try {
+          await runVerify(plan, 'medisync_automated_test');
+        } catch (err) {
+          error = err;
+        }
+
+        expect(error).toBeDefined();
+        expect(error.message).toMatch(/SEED_VERIFY_FAILED/);
+        expect(error.failures.some(f => f.includes('Live verified cases mismatch'))).toBe(true);
+      } finally {
+        Patient.findOne = origPatientFindOne;
+        Consultation.countDocuments = origConsultCount;
+        Consultation.collection.find = origConsultFind;
+        OutbreakAlert.findOne = origAlertFindOne;
       }
     });
   });

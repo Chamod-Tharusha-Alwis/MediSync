@@ -1321,7 +1321,16 @@ exports.reviewSurveillanceConsultation = async (req, res) => {
           episodeId,
           caseDefinitionReference: caseDefinitionReference || 'SL-EPID-CASE-DEF-V1'
         };
+        if (typeof c.set === 'function') {
+          c.set('surveillanceVerification', c.surveillanceVerification, { strict: false });
+        }
         await c.save();
+        if (mongoose.connection?.readyState === 1 && Consultation.collection?.updateOne) {
+          await Consultation.collection.updateOne(
+            { _id: c._id },
+            { $set: { surveillanceVerification: c.surveillanceVerification } }
+          ).catch(() => {});
+        }
         updatedIds.push(String(c._id));
       }
 
@@ -1363,7 +1372,16 @@ exports.reviewSurveillanceConsultation = async (req, res) => {
     };
 
     consultation.surveillanceVerification = update;
+    if (typeof consultation.set === 'function') {
+      consultation.set('surveillanceVerification', update, { strict: false });
+    }
     await consultation.save();
+    if (mongoose.connection?.readyState === 1 && Consultation.collection?.updateOne) {
+      await Consultation.collection.updateOne(
+        { _id: consultation._id },
+        { $set: { surveillanceVerification: update } }
+      ).catch(() => {});
+    }
 
     // Audit log (zero PII, ids and status only)
     try {

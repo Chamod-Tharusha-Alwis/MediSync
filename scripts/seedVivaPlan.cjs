@@ -221,7 +221,7 @@ function formatOwnerAlias(baseEmail, tag) {
   return `${user}+${tag}@${domain}`.toLowerCase();
 }
 
-function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null, ownerEmail = null } = {}) {
+function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null, ownerEmail = null, rawToken = null } = {}) {
   const current = new Date(now);
   const todayMidnight = getColomboMidnight(current);
   const baseOwner = ownerEmail || ownerMailbox || null;
@@ -979,7 +979,10 @@ function buildVivaSeedPlan({ now = new Date(), ownerMailbox = null, ownerEmail =
   }
 
   // ── 7. VERIFICATION TOKEN (For Demo Patient CON-3 live QR demo) ──────────────
-  const rawDemoToken = crypto.createHash('sha256').update(`${NAMESPACE}:DEMO_QR_CAPABILITY_TOKEN`).digest('hex');
+  // Fresh CSPRNG 32-byte hex token on every run (never committed to repository).
+  const rawDemoToken = (rawToken && typeof rawToken === 'string')
+    ? rawToken
+    : crypto.randomBytes(32).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(rawDemoToken).digest('hex');
 
   const verificationToken = add('VerificationToken', {
