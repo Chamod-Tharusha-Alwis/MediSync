@@ -21,6 +21,57 @@ if (mode === 'backend') {
   jest = require('../server/node_modules/jest');
 }
 config.cacheDirectory = path.join(out, mode + '-cache');
-jest.runCLI({ config: JSON.stringify(config), runInBand: true, watch: false, watchman: false, cache: false, json: true, logHeapUsage: true, outputFile: path.join(out, mode + '-results.json') }, [config.rootDir])
-  .then(({ results }) => { process.exitCode = results.success ? 0 : 1; })
-  .catch(error => { console.error(error.stack); process.exitCode = 1; });
+
+function mergeResults(r1, r2) {
+  if (!r1) return r2;
+  return {
+    numFailedTestSuites: r1.numFailedTestSuites + r2.numFailedTestSuites,
+    numFailedTests: r1.numFailedTests + r2.numFailedTests,
+    numPassedTestSuites: r1.numPassedTestSuites + r2.numPassedTestSuites,
+    numPassedTests: r1.numPassedTests + r2.numPassedTests,
+    numPendingTestSuites: r1.numPendingTestSuites + r2.numPendingTestSuites,
+    numPendingTests: r1.numPendingTests + r2.numPendingTests,
+    numRuntimeErrorTestSuites: (r1.numRuntimeErrorTestSuites || 0) + (r2.numRuntimeErrorTestSuites || 0),
+    numTodoTests: (r1.numTodoTests || 0) + (r2.numTodoTests || 0),
+    numTotalTestSuites: r1.numTotalTestSuites + r2.numTotalTestSuites,
+    numTotalTests: r1.numTotalTests + r2.numTotalTests,
+    openHandles: [...(r1.openHandles || []), ...(r2.openHandles || [])],
+    snapshot: r1.snapshot || r2.snapshot,
+    startTime: Math.min(r1.startTime || Date.now(), r2.startTime || Date.now()),
+    success: Boolean(r1.success && r2.success && (r1.numFailedTestSuites + r2.numFailedTestSuites === 0)),
+    testResults: [...(r1.testResults || []), ...(r2.testResults || [])],
+    wasInterrupted: Boolean(r1.wasInterrupted || r2.wasInterrupted),
+  };
+}
+
+async function runJest() {
+  const outputFile = path.join(out, mode + '-results.json');
+  if (mode === 'backend' && Array.isArray(config.testMatch) && config.testMatch.length > 25) {
+    const allSuites = config.testMatch;
+    const batchSize = 25;
+    let aggregated = null;
+    for (let i = 0; i < allSuites.length; i += batchSize) {
+      const chunk = allSuites.slice(i, i + batchSize);
+      const batchConfig = { ...config, testMatch: chunk };
+      const { results } = await jest.runCLI(
+        { config: JSON.stringify(batchConfig), runInBand: true, watch: false, watchman: false, cache: false, json: true, logHeapUsage: true },
+        [config.rootDir]
+      );
+      aggregated = mergeResults(aggregated, results);
+      if (typeof global.gc === 'function') {
+        try { global.gc(); } catch (_) {}
+      }
+    }
+    const fs = require('fs');
+    fs.writeFileSync(outputFile, JSON.stringify(aggregated, null, 2) + '\n');
+    process.exitCode = aggregated && aggregated.success ? 0 : 1;
+  } else {
+    const { results } = await jest.runCLI(
+      { config: JSON.stringify(config), runInBand: true, watch: false, watchman: false, cache: false, json: true, logHeapUsage: true, outputFile },
+      [config.rootDir]
+    );
+    process.exitCode = results && results.success ? 0 : 1;
+  }
+}
+
+runJest().catch(error => { console.error(error.stack); process.exitCode = 1; });
