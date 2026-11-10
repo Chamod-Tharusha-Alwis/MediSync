@@ -7,12 +7,12 @@
 ## 1. Executive Status Overview
 
 - **Current Phase**: `COMPLETE` (All Remediation Tasks R0–R8, Seed Protection/Recovery, and Orphan Null-Safety Hardening Completed)
-- **Active Git Branch**: `final/p11-orphan-null-safety` (merging to `main`)
+- **Active Git Branch**: `main`
 - **Release Version**: `v1.1.0-capstone`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
-- **Quality Gate Baseline**: 3,626 tests passed / 0 failed across 226 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,634 tests passed / 0 failed across 227 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Final Action**: Commit `final/p11-orphan-null-safety`, merge to `main`, push to `origin/main`.
+- **Final Action**: Reconciled test totals across docs; whitelisted orphanReferenceNullSafety in clinical.offline.jest.cjs.
 
 ---
 
