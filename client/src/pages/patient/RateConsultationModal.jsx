@@ -234,7 +234,7 @@ const RateConsultationModal = ({ show, onClose, consultation, onRated }) => {
           {hasDoctor && renderRatingSection(
             'Doctor', 
             'Doctor', 
-            formatDoctorName(doctor.fullName, 'Consulting Doctor'), 
+            formatDoctorName(doctor.fullName, 'Unavailable'), 
             doctor.specialization || 'Medical Specialist', 
             User, 
             'text-blue-400', 

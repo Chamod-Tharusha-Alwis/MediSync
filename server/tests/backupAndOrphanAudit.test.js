@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { validateOutDir, backupDatabase, verifyBackup } = require('../../scripts/backup_db_readonly.js');
-const { auditOrphans } = require('../../scripts/audit_orphans_readonly.js');
+const { auditOrphans, analyzeOrphanOrigin } = require('../../scripts/audit_orphans_readonly.js');
 const { restoreProtectedSeed } = require('../../scripts/restore_protected_seed.js');
 
 describe('Database Maintenance & Safe Recovery Tools', () => {
@@ -102,6 +102,60 @@ describe('Database Maintenance & Safe Recovery Tools', () => {
       expect(audit.countsByCollection.doctors).toBe(1); // 1 broken hospital ref in doctors
       expect(audit.countsByCollection.consultations).toBe(4); // 1 in con_1, 3 in con_2 (doctor, hospital, patient)
       expect(audit.countsByCollection.prescriptions).toBe(2); // patientId + dispensedBy
+    });
+
+    test('analyzeOrphanOrigin accurately aggregates metadata and identifies generator script', async () => {
+      const mockOutbreakDb = {
+        collection: (name) => {
+          const table = {
+            hospitals: [],
+            doctors: [],
+            patients: [],
+            consultations: [
+              {
+                _id: 'con_sim_1',
+                patientId: 'missing_p1',
+                doctorId: 'missing_d1',
+                hospitalId: 'missing_h1',
+                demoBatchId: 'DEMO_OUTBREAK_2026_V1',
+                isSynthetic: true,
+                isSimulatedDemo: true,
+                district: 'Colombo',
+                icdCode: 'A90',
+                createdAt: new Date('2026-09-01T10:00:00Z'),
+                surveillanceVerification: { status: 'verified' }
+              },
+              {
+                _id: 'con_sim_2',
+                patientId: 'missing_p2',
+                doctorId: 'missing_d2',
+                hospitalId: 'missing_h2',
+                demoBatchId: 'DEMO_OUTBREAK_2026_V1',
+                isSynthetic: true,
+                isSimulatedDemo: true,
+                district: 'Gampaha',
+                icdCode: 'A90',
+                createdAt: new Date('2026-09-05T12:00:00Z'),
+                surveillanceVerification: { status: 'verified' }
+              }
+            ]
+          };
+          return {
+            find: () => ({ toArray: async () => table[name] || [] })
+          };
+        }
+      };
+
+      const analysis = await analyzeOrphanOrigin(mockOutbreakDb, 'medisync_test');
+      expect(analysis.orphanConsultationsCount).toBe(2);
+      expect(analysis.groups.byDemoBatchId['DEMO_OUTBREAK_2026_V1']).toBe(2);
+      expect(analysis.groups.byIsSynthetic.true).toBe(2);
+      expect(analysis.groups.byDistrict.Colombo).toBe(1);
+      expect(analysis.groups.byDistrict.Gampaha).toBe(1);
+      expect(analysis.groups.byIcdCode.A90).toBe(2);
+      expect(analysis.groups.byVerificationStatus.verified).toBe(2);
+      expect(analysis.generatorIdentification.script).toBe('scripts/seed-demo-outbreak.js');
+      expect(analysis.generatorIdentification.insertsParents).toBe(false);
     });
   });
 

@@ -3,7 +3,7 @@
  * Server-side doctor name normalization utility for PDFs, emails, and controllers.
  */
 
-const INSTITUTIONAL_REGEX = /\b(laboratory|hospital|administrator|medisync)\b/i;
+const INSTITUTIONAL_REGEX = /\b(laboratory|hospital|administrator|medisync|unavailable)\b/i;
 
 function stripDoctorPrefix(name) {
   if (!name || typeof name !== 'string') return '';

@@ -125,7 +125,7 @@ exports.getVerificationPublicStatus = async (req, res) => {
       authentic: true,
       consultationRef: consultation?.consultationId || token.consultationRef || 'CON-RECORD',
       consultationDate: consultation?.createdAt || token.createdAt,
-      doctorName: formatDoctorName(doctor?.fullName || 'Consulting Physician'),
+      doctorName: formatDoctorName(doctor?.fullName, 'Unavailable'),
       hospital: consultation?.sessionHospitalId || 'Verified MediSync Healthcare Network',
       district: consultation?.district || 'National',
       maskedContact,
@@ -417,12 +417,12 @@ exports.verifyOtpAndUnlock = async (req, res) => {
       consultation: {
         reference: consultation.consultationId || token.consultationRef || 'CON-RECORD',
         date: consultation.createdAt,
-        hospital: consultation.sessionHospitalId || 'Verified MediSync Healthcare Network',
-        doctor: formatDoctorName(token.doctorRef?.fullName || 'Consulting Physician'),
+        hospital: consultation.sessionHospitalId || (consultation.hospitalId ? 'Unavailable' : 'Verified MediSync Healthcare Network'),
+        doctor: formatDoctorName(token.doctorRef?.fullName, 'Unavailable'),
         district: consultation.district || 'National',
       },
       patient: {
-        name: patient.fullName || 'Patient',
+        name: patient?.fullName || 'Unavailable',
         ageOrDob: patient.dateOfBirth
           ? patient.dateOfBirth.toISOString().split('T')[0]
           : 'Not recorded',

@@ -6,13 +6,13 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `COMPLETE` (All Remediation Tasks R0–R8 and Production Seed Protection/Recovery Completed)
-- **Active Git Branch**: `final/p10-restore-seed-a` (merging to `main`)
+- **Current Phase**: `COMPLETE` (All Remediation Tasks R0–R8, Seed Protection/Recovery, and Orphan Null-Safety Hardening Completed)
+- **Active Git Branch**: `final/p11-orphan-null-safety` (merging to `main`)
 - **Release Version**: `v1.1.0-capstone`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)
 - **Quality Gate Baseline**: 3,626 tests passed / 0 failed across 226 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Final Action**: Commit `final/p10-restore-seed-a`, merge to `main`, push to `origin/main`.
+- **Final Action**: Commit `final/p11-orphan-null-safety`, merge to `main`, push to `origin/main`.
 
 ---
 
@@ -31,3 +31,4 @@
 | 9 | **R8** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/rem-r8-final-reconcile` | **COMPLETED** |
 | 10 | **SEED** | Viva Voce demonstration data plan (917 docs, S-A to S-D outbreak proofs, Demo Patient `200012345678`) | `final/seed-viva-data` | **COMPLETED** |
 | 11 | **RESTORE-A** | Production seed SEED_2026_11_A protection, recovery tool, orphan auditor & read-only backup | `final/p10-restore-seed-a` | **COMPLETED** |
+| 12 | **ORPHAN-NULL-SAFETY** | Pre-existing outbreak orphan origin analysis (~6,309 consultations), application null-safety, and seeder manifest tracking | `final/p11-orphan-null-safety` | **COMPLETED** |

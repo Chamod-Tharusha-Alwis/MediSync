@@ -448,19 +448,23 @@ async function runInspect(plan, database) {
 
     const distinctCount = docs.length;
 
-    // Check for mismatches
+    // Check for mismatches: manifest-covered documents are cleanly tracked and never orphans
     for (const d of docs) {
       const idStr = String(d._id);
       const isHistoricalId = historicalIds.some(h => String(h) === idStr);
       const hasBatch = Boolean(d.syntheticSeedBatch || d.isSynthetic);
       const hasManifest = manifestIds.some(m => String(m) === idStr);
 
-      if ((isHistoricalId && !hasBatch) || (!isHistoricalId && hasBatch) || (!hasManifest && hasBatch)) {
+      if (hasManifest) {
+        continue;
+      }
+
+      if (isHistoricalId || hasBatch) {
         mismatches.push({
           collection: modelName,
           idSuffix: `...${idStr.slice(-6)}`,
           hasBatch,
-          hasManifest,
+          hasManifest: false,
           hasDeterministicId: isHistoricalId
         });
       }
@@ -771,6 +775,16 @@ async function runSeed(plan, database) {
       insertedByCollection[alertCollName].push(alertId);
       alertsCreated++;
       console.log(`   Real Detector produced: [Pending] ${alertDoc.severity} Alert for ${alertDoc.disease} in ${alertDoc.location} (Affected: ${alertDoc.affectedCount})`);
+    }
+
+    // Add generated OutbreakAlert IDs to seed_manifests so rollback by manifest removes them
+    if (alertIds.length > 0) {
+      manifestCollections[alertCollName] = alertIds;
+      await mongoose.connection.collection('seed_manifests').updateOne(
+        { batch: plan.namespace },
+        { $set: { [`collections.${alertCollName}`]: alertIds } }
+      );
+      console.log(`📋 Updated 'seed_manifests' with ${alertIds.length} generated ${alertCollName} ID(s).`);
     }
 
     if (useTransaction && session) {

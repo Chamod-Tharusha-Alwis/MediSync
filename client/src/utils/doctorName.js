@@ -4,7 +4,7 @@
  * Guarantees zero duplicate "Dr. Dr." prefixes without modifying database models.
  */
 
-const INSTITUTIONAL_REGEX = /\b(laboratory|hospital|administrator|medisync)\b/i;
+const INSTITUTIONAL_REGEX = /\b(laboratory|hospital|administrator|medisync|unavailable)\b/i;
 
 /**
  * Strips any leading "Dr.", "Dr ", "Doctor ", "Dr. Dr.", etc. (case-insensitively).
