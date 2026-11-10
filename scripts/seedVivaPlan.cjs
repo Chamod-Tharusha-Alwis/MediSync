@@ -1031,5 +1031,6 @@ module.exports = {
   NAMESPACE,
   DISTRICTS,
   CONDITIONS,
-  buildVivaSeedPlan
+  buildVivaSeedPlan,
+  deterministicObjectId
 };

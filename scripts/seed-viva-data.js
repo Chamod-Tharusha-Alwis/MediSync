@@ -44,7 +44,7 @@ try {
   bcrypt = require('bcryptjs');
 }
 
-const { NAMESPACE, buildVivaSeedPlan } = require('./seedVivaPlan.cjs');
+const { NAMESPACE, buildVivaSeedPlan, deterministicObjectId } = require('./seedVivaPlan.cjs');
 const { writeNicFields } = require('../server/src/security/nicPersistence');
 const { evaluateOutbreakCriteria } = require('../server/src/services/surveillanceService');
 const { selectReportingCases, aggregatePublicCases } = require('../server/src/services/publicHealthStats');
@@ -68,12 +68,14 @@ function parseArgs(args = process.argv.slice(2)) {
   let database = 'medisync_prod';
   let confirm = false;
   let ownerEmail = null;
+  let legacy = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--confirm') confirm = true;
     else if (arg === '--dry-run') action = 'dry-run';
     else if (arg === '--rollback') action = 'rollback';
+    else if (arg === '--legacy') legacy = true;
     else if (arg === '--verify') action = 'verify';
     else if (arg.startsWith('--owner-email=')) {
       ownerEmail = arg.slice('--owner-email='.length).trim();
@@ -90,7 +92,8 @@ Usage: node scripts/seed-viva-data.js [options]
 Options:
   --dry-run                 Run full plan generation, validation, and scenario proof (default, 0 writes)
   --confirm                 Execute database writes (requires confirmation)
-  --rollback                Reverse viva seed batch, deleting only documents with batch tag "viva-2026-11"
+  --rollback                Reverse viva seed batch via seed_manifests IDs + batch tag fallbacks
+  --rollback --legacy       Clean up leftover un-tagged documents from the initial seed run using deterministic IDs + seed markers
   --verify                  Execute live post-seed validation queries against the target database
   --db <name>               Target database (default: medisync_prod; allowed: medisync_prod, medisync_automated_test)
   --owner-email <address>   Assign Gmail-style plus aliases (+doctor1, +pharmacist1, +patient, etc.) to all personas
@@ -102,8 +105,12 @@ Options:
     }
   }
 
-  if (confirm && action === 'dry-run') action = 'seed';
-  return { action, database, confirm, ownerEmail };
+  if (action === 'rollback' && legacy) {
+    action = 'rollback-legacy';
+  } else if (confirm && action === 'dry-run') {
+    action = 'seed';
+  }
+  return { action, database, confirm, ownerEmail, legacy };
 }
 
 function loadEncryptionKeys() {
@@ -243,12 +250,15 @@ async function runSeed(plan, database) {
   console.log(` Connected to MongoDB Atlas (${database})`);
 
   const insertedCounts = {};
+  const manifestCollections = {};
 
   for (const [modelName, docs] of Object.entries(plan.documentsByModel)) {
     const Model = models[modelName];
     if (!Model) throw new Error(`Model not found: ${modelName}`);
 
     const preparedDocs = [];
+    const docIds = [];
+
     for (const doc of docs) {
       const input = { ...doc };
       if (Model.schema.path('password')) input.password = passwordHash;
@@ -260,26 +270,37 @@ async function runSeed(plan, database) {
       if (typeof instance.encryptFieldsSync === 'function') instance.encryptFieldsSync();
       const obj = instance.toObject({ depopulate: true, versionKey: false });
 
-      // Preserve unmapped fields (surveillanceVerification, syntheticSeedBatch, isSynthetic)
-      // to ensure MongoDB persistence without relying on strict Mongoose schema definitions.
+      // Native driver guarantee: preserve every field from input
+      // so strict schemas do not strip syntheticSeedBatch, isSynthetic, surveillanceVerification, etc.
       for (const [k, v] of Object.entries(input)) {
         if (obj[k] === undefined && v !== undefined) {
           obj[k] = v;
         }
       }
+
+      // Convert 24-char hex string _id to native ObjectId
+      if (typeof obj._id === 'string' && /^[0-9a-f]{24}$/i.test(obj._id)) {
+        obj._id = new mongoose.Types.ObjectId(obj._id);
+      }
+
       preparedDocs.push(obj);
+      docIds.push(obj._id);
     }
 
-    // Insert prepared documents into collection
+    // Insert prepared documents into collection via native driver
     const result = await Model.collection.insertMany(preparedDocs, { ordered: true });
     insertedCounts[modelName] = result.insertedCount;
+    manifestCollections[Model.collection.collectionName] = docIds;
     console.log(`   Inserted ${String(result.insertedCount).padStart(4)} ${modelName} documents`);
   }
 
   // ── Outbreak Alerts: Run real detector on inserted verified consultations ─────
   console.log(`\n🚨 Running real outbreak detector on seeded clinical consultations...`);
   const insertedConsultations = await models.Consultation.collection.find({
-    syntheticSeedBatch: plan.namespace
+    $or: [
+      { consultationId: /^CON-VIVA-2026-/ },
+      { syntheticSeedBatch: plan.namespace }
+    ]
   }).toArray();
 
   const detectorCases = insertedConsultations.map(c => ({
@@ -299,6 +320,7 @@ async function runSeed(plan, database) {
   });
 
   let alertsCreated = 0;
+  const alertIds = [];
   for (const r of detectorResults) {
     if (!r.triggered) continue; // S-B (Kalutara) and S-C (Matara) are negative controls (suppressed)
 
@@ -333,10 +355,29 @@ async function runSeed(plan, database) {
       { $set: alertDoc },
       { upsert: true }
     );
+    alertIds.push(alertId);
     alertsCreated++;
     console.log(`   Real Detector produced: [Pending] ${alertDoc.severity} Alert for ${alertDoc.disease} in ${alertDoc.location} (Affected: ${alertDoc.affectedCount})`);
   }
+  manifestCollections[models.OutbreakAlert.collection.collectionName] = alertIds;
   console.log(`   Seeded ${alertsCreated} OutbreakAlerts via real detection engine (S-B & S-C negative controls suppressed).`);
+
+  // ── Write Manifest Document ────────────────────────────────────────────────
+  const manifestDoc = {
+    _id: `manifest-${plan.namespace}`,
+    batch: plan.namespace,
+    database,
+    createdAt: new Date(),
+    counts: insertedCounts,
+    collections: manifestCollections
+  };
+
+  await mongoose.connection.collection('seed_manifests').updateOne(
+    { batch: plan.namespace },
+    { $set: manifestDoc },
+    { upsert: true }
+  );
+  console.log(`\n📋 Seed manifest recorded in 'seed_manifests' (batch: "${plan.namespace}", ${Object.keys(manifestCollections).length} collections).`);
 
   console.log(`\n🔑 [ONE-TIME SECRET] Live QR Capability Token generated:`);
   console.log(`   Verification URL : ${plan.demoPatient.qrUrl}`);
@@ -347,9 +388,7 @@ async function runSeed(plan, database) {
   console.log('================================================================');
 
   if (process.env.NODE_ENV !== 'test') {
-    if (process.env.NODE_ENV !== 'test') {
     await mongoose.disconnect();
-  }
   }
 }
 
@@ -364,26 +403,118 @@ async function runRollback(database) {
   await connectToMongo(database);
   console.log(` Connected to MongoDB Atlas (${database})`);
 
-  const deletedCounts = {};
-
-  // 1. Delete standard tagged collections
-  const taggedModels = ['Hospital', 'Pharmacy', 'Doctor', 'PharmacyStaff', 'Patient', 'Prescription', 'Dispensing', 'LabTest', 'VerificationToken', 'OutbreakAlert'];
-  for (const modelName of taggedModels) {
-    const Model = models[modelName];
-    const res = await Model.collection.deleteMany({ syntheticSeedBatch: NAMESPACE });
-    deletedCounts[modelName] = res.deletedCount;
-    console.log(`   Removed ${String(res.deletedCount).padStart(4)} ${modelName} documents`);
+  // 1. Read manifest document from seed_manifests if present
+  let manifest = null;
+  try {
+    manifest = await mongoose.connection.collection('seed_manifests').findOne({ batch: NAMESPACE });
+    if (manifest) {
+      console.log(`   Found seed_manifests document with ${Object.keys(manifest.collections || {}).length} tracked collection(s).`);
+    }
+  } catch (err) {
+    console.log(`   Note: seed_manifests lookup: ${err.message}`);
   }
 
-  // 2. Delete consultations by consultationId prefix or verifiedBy tag
-  const consultRes = await models.Consultation.collection.deleteMany({
-    $or: [
-      { consultationId: /^CON-VIVA-2026-/ },
-      { 'surveillanceVerification.verifiedBy': NAMESPACE }
-    ]
-  });
-  deletedCounts.Consultation = consultRes.deletedCount;
-  console.log(`   Removed ${String(consultRes.deletedCount).padStart(4)} Consultation documents`);
+  const deletedCounts = {};
+
+  const allModels = [
+    'Hospital', 'Pharmacy', 'Doctor', 'PharmacyStaff', 'Patient',
+    'Consultation', 'Prescription', 'Dispensing', 'LabTest',
+    'VerificationToken', 'OutbreakAlert'
+  ];
+
+  for (const modelName of allModels) {
+    const Model = models[modelName];
+    if (!Model) continue;
+    const collName = Model.collection.collectionName;
+
+    // Collect IDs from manifest for this collection
+    const manifestIds = (manifest && manifest.collections && manifest.collections[collName])
+      ? manifest.collections[collName].map(id => typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id)
+      : [];
+
+    const orClauses = [];
+    if (manifestIds.length > 0) {
+      orClauses.push({ _id: { $in: manifestIds } });
+    }
+    orClauses.push({ syntheticSeedBatch: NAMESPACE });
+
+    if (modelName === 'Consultation') {
+      orClauses.push({ consultationId: /^CON-VIVA-2026-/ });
+      orClauses.push({ 'surveillanceVerification.verifiedBy': NAMESPACE });
+    } else if (modelName === 'Prescription') {
+      orClauses.push({ prescriptionRef: /^RX-VIVA-2026-/ });
+    } else if (modelName === 'LabTest') {
+      orClauses.push({ reportId: /^RPT-VIVA-2026-/ });
+    } else if (modelName === 'VerificationToken') {
+      orClauses.push({ reason: 'viva_demo_qr_access' });
+      orClauses.push({ tokenHash: /^8390ba72/ });
+    } else if (modelName === 'OutbreakAlert') {
+      orClauses.push({ isSynthetic: true, syntheticSeedBatch: NAMESPACE });
+      orClauses.push({ surveillancePolicy: '5w-verified-episodes-v1', isSynthetic: true });
+    } else if (modelName === 'Patient') {
+      orClauses.push({ nic: '200012345678' });
+      orClauses.push({ email: /@accounts\.invalid$/ });
+    } else if (modelName === 'Doctor') {
+      orClauses.push({ licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } });
+      orClauses.push({ email: /@accounts\.invalid$/ });
+    } else if (modelName === 'PharmacyStaff') {
+      orClauses.push({ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } });
+      orClauses.push({ email: /@accounts\.invalid$/ });
+    } else if (modelName === 'Hospital') {
+      orClauses.push({ name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } });
+    } else if (modelName === 'Pharmacy') {
+      orClauses.push({ name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } });
+    }
+
+    const deleteRes = await Model.collection.deleteMany({ $or: orClauses });
+    deletedCounts[modelName] = deleteRes.deletedCount;
+    console.log(`   Removed ${String(deleteRes.deletedCount).padStart(4)} ${modelName} documents`);
+  }
+
+  // 2. Remove manifest record
+  try {
+    await mongoose.connection.collection('seed_manifests').deleteOne({ batch: NAMESPACE });
+  } catch (_) {}
+
+  // 3. Post-rollback verification: confirm 0 remaining documents across all collections
+  console.log('\n🔍 Verifying post-rollback collection cleanliness:');
+  const remainingErrors = [];
+
+  for (const modelName of allModels) {
+    const Model = models[modelName];
+    if (!Model) continue;
+
+    const checkClauses = [{ syntheticSeedBatch: NAMESPACE }];
+    if (modelName === 'Consultation') {
+      checkClauses.push({ consultationId: /^CON-VIVA-2026-/ });
+      checkClauses.push({ 'surveillanceVerification.verifiedBy': NAMESPACE });
+    } else if (modelName === 'Prescription') {
+      checkClauses.push({ prescriptionRef: /^RX-VIVA-2026-/ });
+    } else if (modelName === 'LabTest') {
+      checkClauses.push({ reportId: /^RPT-VIVA-2026-/ });
+    } else if (modelName === 'VerificationToken') {
+      checkClauses.push({ reason: 'viva_demo_qr_access' });
+      checkClauses.push({ tokenHash: /^8390ba72/ });
+    } else if (modelName === 'OutbreakAlert') {
+      checkClauses.push({ syntheticSeedBatch: NAMESPACE });
+    } else if (modelName === 'Patient') {
+      checkClauses.push({ nic: '200012345678' });
+    } else if (modelName === 'Doctor') {
+      checkClauses.push({ licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } });
+    } else if (modelName === 'PharmacyStaff') {
+      checkClauses.push({ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } });
+    } else if (modelName === 'Hospital') {
+      checkClauses.push({ name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } });
+    } else if (modelName === 'Pharmacy') {
+      checkClauses.push({ name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } });
+    }
+
+    const remaining = await Model.collection.countDocuments({ $or: checkClauses });
+    console.log(`   Remaining after rollback: ${remaining} for ${modelName}`);
+    if (remaining > 0) {
+      remainingErrors.push(`${modelName}: ${remaining} documents still present after rollback`);
+    }
+  }
 
   console.log('----------------------------------------------------------------');
   const totalDeleted = Object.values(deletedCounts).reduce((a, b) => a + b, 0);
@@ -392,10 +523,153 @@ async function runRollback(database) {
   console.log('================================================================');
 
   if (process.env.NODE_ENV !== 'test') {
-    if (process.env.NODE_ENV !== 'test') {
     await mongoose.disconnect();
   }
+
+  if (remainingErrors.length > 0) {
+    console.error('\x1b[31m%s\x1b[0m', '❌ [ROLLBACK FAILED] Documents from viva seed batch remain in database:');
+    for (const e of remainingErrors) {
+      console.error('\x1b[31m%s\x1b[0m', `   - ${e}`);
+    }
+    const err = new Error(`ROLLBACK_VERIFICATION_FAILED: ${remainingErrors.length} collection(s) still have seeded documents.`);
+    err.remainingErrors = remainingErrors;
+    throw err;
   }
+
+  console.log('\x1b[32m%s\x1b[0m', '✅ [ROLLBACK SUCCESS] All seeded documents deleted and verified 0 remaining across all collections.');
+}
+
+async function runRollbackLegacy(database, confirm = false) {
+  console.log('================================================================');
+  console.log('🧹 [LEGACY ROLLBACK] CLEANING UP UNTAGGED LEFTOVER SEED DOCUMENTS');
+  console.log('================================================================');
+  console.log(`Target Database : ${database}`);
+  console.log(`Execution Mode  : ${confirm ? 'EXECUTE (CONFIRMED WRITES)' : 'DRY-RUN (0 WRITES)'}`);
+  console.log('----------------------------------------------------------------');
+
+  await connectToMongo(database);
+  console.log(` Connected to MongoDB Atlas (${database})`);
+
+  // Target legacy collections and their expected counts + seed markers
+  const legacySpecs = [
+    {
+      modelName: 'Hospital',
+      expectedCount: 2,
+      ids: [0, 1].map(i => deterministicObjectId('Hospital', i)),
+      seedFilter: { name: { $in: ['National Apex General Hospital', 'Kandy Teaching Hospital', 'Colombo Apex National Hospital', 'Kandy Central General Hospital'] } }
+    },
+    {
+      modelName: 'Pharmacy',
+      expectedCount: 2,
+      ids: [0, 1].map(i => deterministicObjectId('Pharmacy', i)),
+      seedFilter: { name: { $in: ['Colombo Central Community Dispensary', 'Gampaha City Healthcare Pharmacy', 'Asiri Central Care Pharmacy', 'Kandy City Dispensary'] } }
+    },
+    {
+      modelName: 'Doctor',
+      expectedCount: 4,
+      ids: [0, 1, 2, 3].map(i => deterministicObjectId('Doctor', i)),
+      seedFilter: { licenseNo: { $in: ['SLMC-24819', 'SLMC-31204', 'SLMC-42918', 'SLMC-51029'] } }
+    },
+    {
+      modelName: 'PharmacyStaff',
+      expectedCount: 3,
+      ids: [0, 1, 2].map(i => deterministicObjectId('PharmacyStaff', i)),
+      seedFilter: { $or: [{ licenseNo: { $in: ['SPMC-7102', 'SPMC-8831', 'SPMC-9402'] } }, { fullName: { $in: ['Kaveen Bandara', 'Malarvel Selvam', 'Thushara Perera'] } }] }
+    },
+    {
+      modelName: 'Patient',
+      expectedCount: 30,
+      ids: Array.from({ length: 30 }, (_, i) => deterministicObjectId('Patient', i)),
+      seedFilter: { $or: [{ nic: '200012345678' }, { email: /@accounts\.invalid$/ }, { email: /\+patient/ }, { fullName: 'Chamod Tharusha' }, { isSynthetic: true }] }
+    },
+    {
+      modelName: 'Prescription',
+      expectedCount: 283,
+      ids: Array.from({ length: 283 }, (_, i) => deterministicObjectId('Prescription', i)),
+      seedFilter: { prescriptionRef: /^RX-VIVA-2026-/ }
+    },
+    {
+      modelName: 'LabTest',
+      expectedCount: 12,
+      ids: Array.from({ length: 12 }, (_, i) => deterministicObjectId('LabTest', i)),
+      seedFilter: { reportId: /^RPT-VIVA-2026-/ }
+    },
+    {
+      modelName: 'VerificationToken',
+      expectedCount: 1,
+      ids: [deterministicObjectId('VerificationToken', 0)],
+      seedFilter: { $or: [{ reason: 'viva_demo_qr_access' }, { tokenHash: /^8390ba72/ }] },
+      includeTokenHashPrefix: /^8390ba72/
+    }
+  ];
+
+  let totalFound = 0;
+  let totalDeleted = 0;
+  const planSummary = [];
+
+  for (const spec of legacySpecs) {
+    const Model = models[spec.modelName];
+    if (!Model) continue;
+
+    const objectIds = spec.ids.map(id => new mongoose.Types.ObjectId(id));
+    const orQuery = [{ _id: { $in: objectIds } }];
+    if (spec.includeTokenHashPrefix) {
+      orQuery.push({ tokenHash: spec.includeTokenHashPrefix });
+    }
+
+    // Compound safety query: MUST match deterministic ID / hash AND seed marker
+    const safetyQuery = {
+      $and: [
+        { $or: orQuery },
+        spec.seedFilter
+      ]
+    };
+
+    const foundCount = await Model.collection.countDocuments(safetyQuery);
+    totalFound += foundCount;
+    planSummary.push({
+      collection: spec.modelName,
+      found: foundCount,
+      expected: spec.expectedCount
+    });
+
+    console.log(`   ${spec.modelName.padEnd(18)}: Found ${String(foundCount).padStart(3)} documents (Expected: ${spec.expectedCount})`);
+
+    if (confirm && foundCount > 0) {
+      const deleteRes = await Model.collection.deleteMany(safetyQuery);
+      totalDeleted += deleteRes.deletedCount;
+      const remaining = await Model.collection.countDocuments(safetyQuery);
+      if (remaining !== 0) {
+        throw new Error(`LEGACY_ROLLBACK_FAILED: ${remaining} documents remain in ${spec.modelName}`);
+      }
+      console.log(`      -> Successfully deleted ${deleteRes.deletedCount} documents (Remaining: 0)`);
+    }
+  }
+
+  // Also clean up any manifest leftovers if present
+  if (confirm) {
+    try {
+      await mongoose.connection.collection('seed_manifests').deleteOne({ batch: NAMESPACE });
+    } catch (_) {}
+  }
+
+  console.log('----------------------------------------------------------------');
+  if (!confirm) {
+    console.log(`🔎 [DRY-RUN RESULT] Total legacy leftover documents identified: ${totalFound}`);
+    console.log(`   Zero documents were modified or deleted.`);
+    console.log(`\nTo execute deletion of these legacy leftovers, run with --confirm:`);
+    console.log(`   node scripts/seed-viva-data.js --rollback --legacy --confirm --db=${database}`);
+  } else {
+    console.log(`🎉 [CLEANUP RESULT] Total legacy documents permanently removed: ${totalDeleted}`);
+    console.log(`   Consultations and real user accounts were 100% untouched.`);
+  }
+  console.log('================================================================');
+
+  if (process.env.NODE_ENV !== 'test') {
+    await mongoose.disconnect();
+  }
+
+  return { totalFound, totalDeleted, planSummary };
 }
 
 async function runVerify(plan, database) {
@@ -424,17 +698,22 @@ async function runVerify(plan, database) {
   }
 
   // 2. Verify consultations count
-  const consultCount = await models.Consultation.countDocuments({ consultationId: /^CON-VIVA-2026-/ });
+  const liveConsultDocs = await models.Consultation.collection.find({}).toArray();
+  const seededConsultDocs = liveConsultDocs.filter(c => String(c.consultationId || '').startsWith('CON-VIVA-2026-'));
+  const realConsultDocs = liveConsultDocs.filter(c => !String(c.consultationId || '').startsWith('CON-VIVA-2026-'));
+
   console.log(`\n📋 Consultations Count:`);
-  console.log(`   Seeded consultations in database: ${consultCount} (Planned: 400)`);
-  if (consultCount !== 400) {
-    failures.push(`Expected 400 seeded consultations, found ${consultCount}`);
+  console.log(`   Seeded consultations in database: ${seededConsultDocs.length} (Planned: 400)`);
+  if (realConsultDocs.length > 0) {
+    console.log(`   Real production consultations   : ${realConsultDocs.length} (Excluded from viva assertions)`);
+  }
+  if (seededConsultDocs.length !== 400) {
+    failures.push(`Expected 400 seeded consultations, found ${seededConsultDocs.length}`);
   }
 
-  // 3. Verify public health stats on live collection
-  const liveConsultDocs = await models.Consultation.collection.find({}).toArray();
-  const agg = await aggregatePublicCases(liveConsultDocs, { mode: 'real', rangeDays: 30, now: new Date(plan.now) });
-  console.log(`\n🌐 Public Health Live Aggregates:`);
+  // 3. Verify public health stats on seeded cohort
+  const agg = await aggregatePublicCases(seededConsultDocs, { mode: 'real', rangeDays: 30, now: new Date(plan.now) });
+  console.log(`\n🌐 Public Health Live Aggregates (Seeded Cohort):`);
   console.log(`   Verified Cases  : ${agg.verifiedCases} (Planned: 177)`);
   console.log(`   Awaiting Review : ${agg.awaitingReviewCount} (Planned: 10)`);
   console.log(`   State           : "${agg.state}"`);
@@ -446,17 +725,15 @@ async function runVerify(plan, database) {
     failures.push(`Live awaiting review mismatch: expected 10, got ${agg.awaitingReviewCount}`);
   }
 
-  // 4. Verify outbreak detector scenarios against live data
-  const cases = liveConsultDocs
-    .filter(c => String(c.consultationId || '').startsWith('CON-VIVA-2026-'))
-    .map(c => ({
-      consultationId: String(c._id),
-      district: c.district,
-      diseaseId: c.icdCode,
-      disease: c.diagnosis,
-      time: new Date(c.createdAt).getTime(),
-      createdAt: c.createdAt
-    }));
+  // 4. Verify outbreak detector scenarios against seeded data
+  const cases = seededConsultDocs.map(c => ({
+    consultationId: String(c._id),
+    district: c.district,
+    diseaseId: c.icdCode,
+    disease: c.diagnosis,
+    time: new Date(c.createdAt).getTime(),
+    createdAt: c.createdAt
+  }));
 
   const results = evaluateOutbreakCriteria({ cases, now: new Date(plan.now), baselineDays: 56, level: 'district' });
   const sA = results.find(r => r.district === 'Gampaha' && (r.disease === 'A90' || r.disease === 'Dengue'));
@@ -551,6 +828,8 @@ async function main() {
     await runSeed(plan, args.database);
   } else if (args.action === 'rollback') {
     await runRollback(args.database);
+  } else if (args.action === 'rollback-legacy') {
+    await runRollbackLegacy(args.database, args.confirm);
   } else if (args.action === 'verify') {
     await runVerify(plan, args.database);
   }
@@ -568,5 +847,6 @@ module.exports = {
   runDryRun,
   runSeed,
   runRollback,
+  runRollbackLegacy,
   runVerify
 };

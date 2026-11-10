@@ -506,4 +506,368 @@ describe('Viva Voce Demonstration Seed Plan', () => {
       }
     });
   });
+
+  describe('Manifest-backed Seed & Robust Rollback with Real Strict Schemas', () => {
+    const { runSeed, runRollback, runRollbackLegacy, runVerify } = require('../../scripts/seed-viva-data.js');
+    const { deterministicObjectId } = require('../../scripts/seedVivaPlan.cjs');
+    const mongoose = require('mongoose');
+
+    const modelMap = {
+      Hospital: require('../src/models/Hospital'),
+      Pharmacy: require('../src/models/Pharmacy'),
+      Doctor: require('../src/models/Doctor'),
+      PharmacyStaff: require('../src/models/PharmacyStaff'),
+      Patient: require('../src/models/Patient'),
+      Consultation: require('../src/models/Consultation'),
+      Prescription: require('../src/models/Prescription'),
+      Dispensing: require('../src/models/Dispensing'),
+      LabTest: require('../src/models/LabTest'),
+      VerificationToken: require('../src/models/VerificationToken'),
+      OutbreakAlert: require('../src/models/OutbreakAlert')
+    };
+
+    function setupInMemoryStore() {
+      const store = {};
+      const getColl = name => {
+        if (!store[name]) store[name] = [];
+        return store[name];
+      };
+
+      function matchesFilter(doc, filter) {
+        if (!filter || Object.keys(filter).length === 0) return true;
+        for (const [key, val] of Object.entries(filter)) {
+          if (key === '$or') {
+            if (!val.some(sub => matchesFilter(doc, sub))) return false;
+            continue;
+          }
+          if (key === '$and') {
+            if (!val.every(sub => matchesFilter(doc, sub))) return false;
+            continue;
+          }
+          const docVal = doc[key];
+          if (val instanceof RegExp) {
+            if (!val.test(String(docVal || ''))) return false;
+          } else if (val && typeof val === 'object' && val.$in) {
+            const allowed = val.$in.map(String);
+            if (!allowed.includes(String(docVal))) return false;
+          } else {
+            if (String(docVal) !== String(val)) return false;
+          }
+        }
+        return true;
+      }
+
+      function cloneDoc(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        if (obj instanceof Date) return new Date(obj.getTime());
+        if (obj instanceof mongoose.Types.ObjectId || obj._bsontype === 'ObjectID' || (typeof obj.toHexString === 'function')) {
+          return new mongoose.Types.ObjectId(obj.toString());
+        }
+        if (Array.isArray(obj)) return obj.map(cloneDoc);
+        const copy = {};
+        for (const [k, v] of Object.entries(obj)) {
+          copy[k] = cloneDoc(v);
+        }
+        return copy;
+      }
+
+      const createAdapter = name => ({
+        collectionName: name,
+        async insertMany(docs) {
+          const coll = getColl(name);
+          for (const d of docs) {
+            const idStr = String(d._id);
+            if (coll.some(existing => String(existing._id) === idStr)) {
+              const err = new Error(`E11000 duplicate key error collection: ${name} index: _id_ dup key: { _id: "${idStr}" }`);
+              err.code = 11000;
+              throw err;
+            }
+            coll.push(cloneDoc(d));
+          }
+          return { insertedCount: docs.length };
+        },
+        async updateOne(filter, update, options = {}) {
+          const coll = getColl(name);
+          const idx = coll.findIndex(d => matchesFilter(d, filter));
+          const setDoc = update.$set || update;
+          if (idx >= 0) {
+            coll[idx] = { ...coll[idx], ...cloneDoc(setDoc) };
+          } else if (options.upsert) {
+            coll.push({ ...cloneDoc(filter), ...cloneDoc(setDoc) });
+          }
+          return { acknowledged: true };
+        },
+        async deleteOne(filter) {
+          const coll = getColl(name);
+          const idx = coll.findIndex(d => matchesFilter(d, filter));
+          if (idx >= 0) {
+            coll.splice(idx, 1);
+            return { deletedCount: 1 };
+          }
+          return { deletedCount: 0 };
+        },
+        async deleteMany(filter) {
+          const coll = getColl(name);
+          const before = coll.length;
+          store[name] = coll.filter(d => !matchesFilter(d, filter));
+          return { deletedCount: before - store[name].length };
+        },
+        async countDocuments(filter = {}) {
+          const coll = getColl(name);
+          return coll.filter(d => matchesFilter(d, filter)).length;
+        },
+        find(filter = {}) {
+          const coll = getColl(name);
+          const results = coll.filter(d => matchesFilter(d, filter));
+          return {
+            toArray: async () => results.map(cloneDoc)
+          };
+        },
+        async findOne(filter = {}) {
+          const coll = getColl(name);
+          const res = coll.find(d => matchesFilter(d, filter));
+          return res ? cloneDoc(res) : null;
+        }
+      });
+
+      const origCollections = {};
+      const origFindOnes = {};
+      const origCountDocs = {};
+      const origFinds = {};
+      const origConnCollection = mongoose.connection.collection;
+
+      for (const [modelName, Model] of Object.entries(modelMap)) {
+        const collName = Model.collection.collectionName;
+        origCollections[modelName] = Model.collection;
+        origFindOnes[modelName] = Model.findOne;
+        origCountDocs[modelName] = Model.countDocuments;
+        origFinds[modelName] = Model.find;
+
+        const adapter = createAdapter(collName);
+        Model.collection = adapter;
+        Model.findOne = filter => adapter.findOne(filter);
+        Model.countDocuments = filter => adapter.countDocuments(filter);
+        Model.find = filter => Promise.resolve(adapter.find(filter).toArray());
+      }
+
+      mongoose.connection.collection = name => createAdapter(name);
+
+      const restore = () => {
+        for (const [modelName, Model] of Object.entries(modelMap)) {
+          Model.collection = origCollections[modelName];
+          Model.findOne = origFindOnes[modelName];
+          Model.countDocuments = origCountDocs[modelName];
+          Model.find = origFinds[modelName];
+        }
+        mongoose.connection.collection = origConnCollection;
+      };
+
+      return { store, getColl, createAdapter, restore };
+    }
+
+    test('seed followed by rollback leaves zero documents in every collection, and manifest is cleaned up', async () => {
+      const inMem = setupInMemoryStore();
+      process.env.SEED_TEST_PASSWORD = 'TestPassword123!';
+
+      try {
+        // 1. Run seed into in-memory store
+        await runSeed(plan, 'medisync_automated_test');
+
+        // Check documents inserted into collections
+        expect(inMem.getColl('hospitals').length).toBe(2);
+        expect(inMem.getColl('pharmacies').length).toBe(2);
+        expect(inMem.getColl('doctors').length).toBe(4);
+        expect(inMem.getColl('pharmacystaffs').length).toBe(3);
+        expect(inMem.getColl('patients').length).toBe(30);
+        expect(inMem.getColl('consultations').length).toBe(400);
+        expect(inMem.getColl('prescriptions').length).toBe(283);
+        expect(inMem.getColl('dispensings').length).toBe(180);
+        expect(inMem.getColl('labtests').length).toBe(12);
+        expect(inMem.getColl('verificationtokens').length).toBe(1);
+        expect(inMem.getColl('outbreakalerts').length).toBeGreaterThanOrEqual(2);
+
+        // Check manifest was recorded in seed_manifests collection
+        const manifestColl = inMem.getColl('seed_manifests');
+        expect(manifestColl.length).toBe(1);
+        expect(manifestColl[0].batch).toBe('viva-2026-11');
+        expect(manifestColl[0].collections.hospitals.length).toBe(2);
+
+        // 2. Run rollback
+        await runRollback('medisync_automated_test');
+
+        // Verify EVERY collection has 0 remaining documents
+        const allCollNames = [
+          'hospitals', 'pharmacies', 'doctors', 'pharmacystaffs', 'patients',
+          'consultations', 'prescriptions', 'dispensings', 'labtests',
+          'verificationtokens', 'outbreakalerts'
+        ];
+        for (const name of allCollNames) {
+          expect(inMem.getColl(name).length).toBe(0);
+        }
+
+        // Verify manifest was also deleted
+        expect(inMem.getColl('seed_manifests').length).toBe(0);
+      } finally {
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
+
+    test('seed twice in a row without error (seed -> rollback -> seed -> verify)', async () => {
+      const inMem = setupInMemoryStore();
+      process.env.SEED_TEST_PASSWORD = 'TestPassword123!';
+
+      try {
+        // First seed
+        await runSeed(plan, 'medisync_automated_test');
+
+        // Rollback
+        await runRollback('medisync_automated_test');
+
+        // Second seed (must NOT throw E11000 duplicate key error)
+        await runSeed(plan, 'medisync_automated_test');
+
+        // Verify all 400 consultations, 177 verified, 10 awaiting review pass cleanly
+        await expect(runVerify(plan, 'medisync_automated_test')).resolves.not.toThrow();
+      } finally {
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
+
+    test('rollback removes the QR token record from database', async () => {
+      const inMem = setupInMemoryStore();
+      process.env.SEED_TEST_PASSWORD = 'TestPassword123!';
+
+      try {
+        await runSeed(plan, 'medisync_automated_test');
+        expect(inMem.getColl('verificationtokens').length).toBe(1);
+
+        await runRollback('medisync_automated_test');
+        expect(inMem.getColl('verificationtokens').length).toBe(0);
+      } finally {
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
+
+    test('legacy rollback (--rollback --legacy) removes untagged initial seed leftovers without touching consultations', async () => {
+      const inMem = setupInMemoryStore();
+
+      try {
+        // Populate store with untagged legacy leftovers (documents having deterministic IDs, but NO syntheticSeedBatch)
+        inMem.getColl('hospitals').push(
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Hospital', 0)), name: 'National Apex General Hospital' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Hospital', 1)), name: 'Kandy Teaching Hospital' }
+        );
+        inMem.getColl('pharmacies').push(
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Pharmacy', 0)), name: 'Colombo Central Community Dispensary' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Pharmacy', 1)), name: 'Gampaha City Healthcare Pharmacy' }
+        );
+        inMem.getColl('doctors').push(
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 0)), licenseNo: 'SLMC-24819' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 1)), licenseNo: 'SLMC-31204' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 2)), licenseNo: 'SLMC-42918' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 3)), licenseNo: 'SLMC-51029' }
+        );
+        inMem.getColl('pharmacystaffs').push(
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 0)), fullName: 'Kaveen Bandara' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 1)), fullName: 'Malarvel Selvam' },
+          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 2)), fullName: 'Thushara Perera' }
+        );
+        for (let i = 0; i < 30; i++) {
+          inMem.getColl('patients').push({
+            _id: new mongoose.Types.ObjectId(deterministicObjectId('Patient', i)),
+            nic: i === 0 ? '200012345678' : `NIC-${i}`,
+            email: i === 0 ? 'chamod.demo.patient@accounts.invalid' : `patient${i}@accounts.invalid`
+          });
+        }
+        for (let i = 0; i < 283; i++) {
+          inMem.getColl('prescriptions').push({
+            _id: new mongoose.Types.ObjectId(deterministicObjectId('Prescription', i)),
+            prescriptionRef: `RX-VIVA-2026-${String(i + 1).padStart(4, '0')}`
+          });
+        }
+        for (let i = 0; i < 12; i++) {
+          inMem.getColl('labtests').push({
+            _id: new mongoose.Types.ObjectId(deterministicObjectId('LabTest', i)),
+            reportId: `RPT-VIVA-2026-${String(i + 1).padStart(4, '0')}`
+          });
+        }
+        // Legacy token with hash starting with 8390ba72
+        inMem.getColl('verificationtokens').push({
+          _id: new mongoose.Types.ObjectId(deterministicObjectId('VerificationToken', 0)),
+          reason: 'viva_demo_qr_access',
+          tokenHash: '8390ba7221eb2f542e9013fcb866b7c7e3a1930809177f84aed264cc887ed1c4'
+        });
+
+        // Add 12 real production consultations that must NEVER be touched
+        for (let i = 1; i <= 12; i++) {
+          inMem.getColl('consultations').push({
+            _id: new mongoose.Types.ObjectId(),
+            consultationId: `CON-PROD-REAL-${String(i).padStart(4, '0')}`,
+            diagnosis: 'Routine Medical Review',
+            district: 'Colombo',
+            createdAt: new Date(),
+            surveillanceVerification: { status: 'pending', diagnosisStatus: 'suspected' }
+          });
+        }
+
+        // 1. Dry run
+        const dryRunResult = await runRollbackLegacy('medisync_automated_test', false);
+        expect(dryRunResult.totalFound).toBe(337);
+        expect(dryRunResult.totalDeleted).toBe(0);
+        expect(inMem.getColl('consultations').length).toBe(12);
+
+        // 2. Confirmed cleanup
+        const cleanupResult = await runRollbackLegacy('medisync_automated_test', true);
+        expect(cleanupResult.totalDeleted).toBe(337);
+
+        // Verify legacy collections are 0
+        expect(inMem.getColl('hospitals').length).toBe(0);
+        expect(inMem.getColl('pharmacies').length).toBe(0);
+        expect(inMem.getColl('doctors').length).toBe(0);
+        expect(inMem.getColl('pharmacystaffs').length).toBe(0);
+        expect(inMem.getColl('patients').length).toBe(0);
+        expect(inMem.getColl('prescriptions').length).toBe(0);
+        expect(inMem.getColl('labtests').length).toBe(0);
+        expect(inMem.getColl('verificationtokens').length).toBe(0);
+
+        // Real consultations are 100% preserved
+        expect(inMem.getColl('consultations').length).toBe(12);
+      } finally {
+        inMem.restore();
+      }
+    });
+
+    test('no document from the batch has the exposed password hash after cleanup', async () => {
+      const inMem = setupInMemoryStore();
+      const testPass = 'SecretExposedHash123!';
+      process.env.SEED_TEST_PASSWORD = testPass;
+
+      try {
+        await runSeed(plan, 'medisync_automated_test');
+
+        // Find documents in user collections
+        const userCollections = ['doctors', 'pharmacystaffs', 'patients'];
+        let usersWithPassword = 0;
+        for (const collName of userCollections) {
+          usersWithPassword += inMem.getColl(collName).filter(d => d.password).length;
+        }
+        expect(usersWithPassword).toBeGreaterThan(0);
+
+        // Rollback
+        await runRollback('medisync_automated_test');
+
+        // Check that after cleanup, 0 documents have passwords or exist in seeded collections
+        for (const collName of userCollections) {
+          const count = inMem.getColl(collName).length;
+          expect(count).toBe(0);
+        }
+      } finally {
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
+  });
 });

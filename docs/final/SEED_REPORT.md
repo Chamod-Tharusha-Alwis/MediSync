@@ -3,7 +3,7 @@
 **Batch Tag**: `viva-2026-11`  
 **Execution Date**: 2026-11-10  
 **Status**: Verified & Ready for Production Confirmation  
-**Test Suite Verification**: 22/22 PASS (`server/tests/vivaSeedData.test.js`), 3,617/3,617 overall suite PASS (`scripts/run_offline_tests.js`) across 225 suites  
+**Test Suite Verification**: 27/27 PASS (`server/tests/vivaSeedData.test.js`), 3,622/3,622 overall suite PASS (`scripts/run_offline_tests.js`) across 225 suites  
 
 ---
 
@@ -106,6 +106,17 @@ Without the `--owner-email` flag, accounts default to safe RFC 2606 `.invalid` d
 Before executing database modifications, capture a backup of `medisync_prod`:
 ```powershell
 mongodump --uri="<MONGODB_URI>" --db="medisync_prod" --out="./backup_pre_viva"
+```
+
+### Step 1.1: Legacy Seed Leftover Cleanup (One-Time Production Reset)
+To remove untagged leftover documents from the initial seed run using deterministic IDs and seed markers without touching real consultations:
+- **Dry-run (inspect candidates, 0 writes)**:
+```powershell
+node scripts/seed-viva-data.js --rollback --legacy --db=medisync_prod
+```
+- **Execute cleanup (confirmed permanent removal)**:
+```powershell
+node scripts/seed-viva-data.js --rollback --legacy --confirm --db=medisync_prod
 ```
 
 ### Step 2: Dry-Run Inspection
