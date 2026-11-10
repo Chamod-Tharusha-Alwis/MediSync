@@ -14,4 +14,4 @@ RUN python reference_catalog.py --verify
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 5001
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --threads 4 --timeout 120 app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --threads 4 --timeout 120 --access-logfile - app:app"]

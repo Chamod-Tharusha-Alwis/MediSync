@@ -10,9 +10,10 @@ function inferencePredictions(payload) {
         (row.recommendedSpecialist !== undefined && typeof row.recommendedSpecialist !== 'string') ||
         (row.urgent !== undefined && typeof row.urgent !== 'boolean') ||
         (row.source !== undefined && typeof row.source !== 'string') ||
-        (row.clinicalValidation !== undefined && typeof row.clinicalValidation !== 'string')) throw new Error('Invalid inference response');
+        (row.clinicalValidation !== undefined && typeof row.clinicalValidation !== 'string') ||
+        (row.tier !== undefined && typeof row.tier !== 'number')) throw new Error('Invalid inference response');
     // Return established fields used by the clinician's suggestion display.
-    return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent','source','clinicalValidation'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
+    return Object.fromEntries(['disease','confidence','icd_code','recommendedSpecialist','urgent','source','clinicalValidation','tier'].filter(key => row[key] !== undefined).map(key => [key,row[key]]));
   });
 }
 

@@ -189,6 +189,7 @@ const NewConsultation = () => {
   const [diagnosesOptions,   setDiagnosesOptions]  = useState([]);
   const [emergencyAdvisory,  setEmergencyAdvisory] = useState(null);
   const [inferenceStatus, setInferenceStatus] = useState('idle');
+  const [inferenceMeta, setInferenceMeta] = useState(null);
   const inferenceRequest = useRef(0), inferenceBusy = useRef(false), inferenceMounted = useRef(true), inferenceRetryTimer = useRef(null);
   useEffect(() => {
     const infMntRef = inferenceMounted;
@@ -238,7 +239,7 @@ const NewConsultation = () => {
     draftEpoch.current++;
     if (!pendingClinicalAttempt().blocked && !submissionBusy.current && !submissionUncertain.current) consultationIdempotencyKey.current = generateConsultIdempotencyKey();
     if (inferenceRetryTimer.current) clearTimeout(inferenceRetryTimer.current);
-    inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle');
+    inferenceRequest.current++; inferenceBusy.current = false; setInferenceStatus('idle'); setInferenceMeta(null);
     setShowOtpModal(false); setStep(1); setLoading(false);
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setEmergencyAdvisory(null); setSelectedDiagnosis('');
     setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
@@ -426,7 +427,7 @@ const NewConsultation = () => {
     const epoch = draftEpoch.current, requestId = ++inferenceRequest.current;
     const current = () => inferenceMounted.current && epoch === draftEpoch.current && requestId === inferenceRequest.current;
     inferenceBusy.current = true;
-    setLoading(true); setDiagnosesOptions([]); setEmergencyAdvisory(null); setInferenceStatus('loading');
+    setLoading(true); setDiagnosesOptions([]); setEmergencyAdvisory(null); setInferenceStatus('loading'); setInferenceMeta(null);
     const RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 50 : 2500;
     try {
       let res;
@@ -450,9 +451,19 @@ const NewConsultation = () => {
       setDiagnosesOptions(predictions);
       setEmergencyAdvisory(res.data?.emergencyAdvisory || null);
       setInferenceStatus(predictions.length ? 'available' : 'empty');
+      setInferenceMeta({
+        source: res.data?.source || 'ml-engine',
+        latencyMs: res.data?.latencyMs || null,
+        tier: res.data?.tier || null,
+      });
     } catch (err) {
       if (!current()) return;
       setDiagnosesOptions([]); setInferenceStatus('unavailable');
+      setInferenceMeta({
+        source: 'fallback',
+        latencyMs: null,
+        tier: null,
+      });
       if (err?.response?.data?.emergencyAdvisory) {
         setEmergencyAdvisory(err.response.data.emergencyAdvisory);
       }
@@ -1139,6 +1150,9 @@ const NewConsultation = () => {
                                     <span className="text-[11px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800 font-mono">
                                       ICD-10: {diag.icd_code}
                                     </span>
+                                    <span className="text-[11px] text-teal-300 bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800 font-mono font-semibold">
+                                      Tier {diag.tier || (diag.source === 'knowledge_base' ? 2 : 1)} match{inferenceMeta?.latencyMs ? ` · ${inferenceMeta.latencyMs}ms` : ''} · Model v2.0
+                                    </span>
                                     {diag.source === 'knowledge_base' && (
                                       <span className="text-[11px] text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800 font-mono font-semibold">
                                         KB Reference
@@ -1185,6 +1199,11 @@ const NewConsultation = () => {
                                     ? 'Requesting AI suggestions…'
                                     : 'Click "Analyze Symptoms" to request suggestions. Scores are not calibrated disease probabilities.'}
                           </p>
+                          {inferenceStatus === 'unavailable' && (
+                            <span className="inline-block mt-2 text-xs text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded">
+                              ML service unavailable; reference catalog fallback
+                            </span>
+                          )}
                           {inferenceStatus === 'unavailable' && (
                             <button
                               type="button"

@@ -40,6 +40,7 @@ function sanitizeErrorMessage(error, isColdStart = false) {
  * - Sanitized responses (zero internal secrets or IP exposure)
  */
 async function predictDiseaseResilient(symptoms, options = {}) {
+  const startTime = Date.now();
   const emergencyAdvisory = evaluateEmergencyRedFlags(symptoms);
   const timeoutMs = options.timeoutMs || parseInt(process.env.ML_ENGINE_TIMEOUT_MS || process.env.ML_TIMEOUT_MS, 10) || DEFAULT_TIMEOUT_MS;
   const retryDelayMs = options.retryDelayMs !== undefined ? options.retryDelayMs : (parseInt(process.env.ML_RETRY_DELAY_MS, 10) || DEFAULT_RETRY_DELAY_MS);
@@ -61,6 +62,9 @@ async function predictDiseaseResilient(symptoms, options = {}) {
   try {
     const mlRes = await makeAttempt();
     const predictions = inferencePredictions(mlRes.data);
+    const latencyMs = Date.now() - startTime;
+    const tier = mlRes.data?.tier || (predictions[0]?.source === 'knowledge_base' ? 2 : 1);
+    console.log(`[ML] predict_disease status=200 latency_ms=${latencyMs} tier=${tier} source=ml-engine`);
     return {
       success: true,
       statusCode: 200,
@@ -68,6 +72,9 @@ async function predictDiseaseResilient(symptoms, options = {}) {
         availability: 'available',
         predictions,
         emergencyAdvisory,
+        source: 'ml-engine',
+        tier,
+        latencyMs,
       },
     };
   } catch (err) {
@@ -83,24 +90,36 @@ async function predictDiseaseResilient(symptoms, options = {}) {
     try {
       const mlRes = await makeAttempt();
       const predictions = inferencePredictions(mlRes.data);
+      const latencyMs = Date.now() - startTime;
+      const tier = mlRes.data?.tier || (predictions[0]?.source === 'knowledge_base' ? 2 : 1);
+      console.log(`[ML] predict_disease status=200 latency_ms=${latencyMs} tier=${tier} source=ml-engine`);
       return {
         success: true,
         statusCode: 200,
         data: {
           availability: 'available',
           predictions,
+          emergencyAdvisory,
+          source: 'ml-engine',
+          tier,
+          latencyMs,
         },
       };
     } catch (secondError) {
       const isWakingUp = isRetryableError(secondError);
+      const latencyMs = Date.now() - startTime;
+      const statusCode = 503;
+      console.log(`[ML] predict_disease status=${statusCode} latency_ms=${latencyMs} tier=none source=fallback`);
       return {
         success: false,
-        statusCode: 503,
+        statusCode,
         data: {
           availability: isWakingUp ? 'waking_up' : 'unavailable',
           predictions: [],
           emergencyAdvisory,
+          source: 'fallback',
           error: sanitizeErrorMessage(secondError, isWakingUp),
+          latencyMs,
         },
       };
     }
@@ -108,14 +127,19 @@ async function predictDiseaseResilient(symptoms, options = {}) {
 
   // Non-retryable error (e.g. 400 Bad Request, 401/403 Auth failure)
   const isWakingUp = isRetryableError(firstError);
+  const latencyMs = Date.now() - startTime;
+  const statusCode = firstError.response?.status && firstError.response.status < 500 ? firstError.response.status : 503;
+  console.log(`[ML] predict_disease status=${statusCode} latency_ms=${latencyMs} tier=none source=fallback`);
   return {
     success: false,
-    statusCode: firstError.response?.status && firstError.response.status < 500 ? firstError.response.status : 503,
+    statusCode,
     data: {
       availability: isWakingUp ? 'waking_up' : 'unavailable',
       predictions: [],
       emergencyAdvisory,
+      source: 'fallback',
       error: sanitizeErrorMessage(firstError, isWakingUp),
+      latencyMs,
     },
   };
 }

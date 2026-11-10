@@ -41,6 +41,68 @@ CORS(app, supports_credentials=True, origins=(
     [os.environ.get('CLIENT_URL', 'http://localhost:3000'), 'http://127.0.0.1:3000']
 ))
 
+import sys
+import time
+import uuid
+
+_ml_metrics = {
+    'requests_total': 0,
+    'predictions_total': 0,
+    'tier1_total': 0,
+    'tier2_total': 0,
+    'errors_total': 0,
+}
+
+@app.before_request
+def _ml_before_request():
+    request._start_time = time.time()
+    req_headers = getattr(request, 'headers', {})
+    request._req_id = (req_headers.get('x-request-id') if hasattr(req_headers, 'get') else None) or str(uuid.uuid4())[:8]
+
+@app.after_request
+def _ml_after_request(response):
+    try:
+        latency_ms = round((time.time() - getattr(request, '_start_time', time.time())) * 1000, 2)
+        req_id = getattr(request, '_req_id', '-')
+        tier = getattr(request, '_ml_tier', '-')
+        top_conf = getattr(request, '_ml_top_conf', '-')
+        sym_count = getattr(request, '_ml_symptoms_count', '-')
+        _ml_metrics['requests_total'] += 1
+        if response.status_code >= 400:
+            _ml_metrics['errors_total'] += 1
+        log_line = f"[ML] request_id={req_id} method={request.method} path={request.path} status={response.status_code} latency_ms={latency_ms} symptoms_count={sym_count} tier={tier} top_confidence={top_conf}"
+        print(log_line, file=sys.stdout, flush=True)
+    except Exception as _e:
+        print(f"[ML-ERROR] logging failed: {_e}", file=sys.stderr, flush=True)
+    return response
+
+@app.route('/metrics', methods=['GET'])
+def ml_metrics_endpoint():
+    req_headers = getattr(request, 'headers', {})
+    accept = req_headers.get('Accept', '') if hasattr(req_headers, 'get') else ''
+    req_args = getattr(request, 'args', {})
+    fmt = req_args.get('format', '') if hasattr(req_args, 'get') else ''
+    if accept == 'application/json' or fmt == 'json':
+        return jsonify(_ml_metrics)
+    lines = [
+        "# HELP medisync_ml_requests_total Total number of ML requests",
+        "# TYPE medisync_ml_requests_total counter",
+        f"medisync_ml_requests_total {_ml_metrics['requests_total']}",
+        "# HELP medisync_ml_predictions_total Total disease predictions executed",
+        "# TYPE medisync_ml_predictions_total counter",
+        f"medisync_ml_predictions_total {_ml_metrics['predictions_total']}",
+        "# HELP medisync_ml_tier1_total Total Tier 1 curated predictions",
+        "# TYPE medisync_ml_tier1_total counter",
+        f"medisync_ml_tier1_total {_ml_metrics['tier1_total']}",
+        "# HELP medisync_ml_tier2_total Total Tier 2 KB predictions",
+        "# TYPE medisync_ml_tier2_total counter",
+        f"medisync_ml_tier2_total {_ml_metrics['tier2_total']}",
+        "# HELP medisync_ml_errors_total Total error responses",
+        "# TYPE medisync_ml_errors_total counter",
+        f"medisync_ml_errors_total {_ml_metrics['errors_total']}",
+    ]
+    return "\n".join(lines) + "\n", 200, {'Content-Type': 'text/plain; version=0.0.4; charset=utf-8'}
+
 # Load data into memory
 data_dir = os.path.join(os.path.dirname(__file__), 'data')
 symptom_data = []
@@ -363,6 +425,23 @@ try:
 except Exception as e:
     print("Warning: Could not load disease_symptom_kb.v1.json:", e)
 
+# Structured startup log (zero PII, flushed to stdout)
+try:
+    _rss_mb = 0.0
+    try:
+        import resource
+        _rss_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
+    except Exception:
+        try:
+            import psutil
+            _rss_mb = round(psutil.Process().memory_info().rss / (1024 * 1024), 1)
+        except Exception:
+            pass
+    _kb_count = len(kb_disease_data) if 'kb_disease_data' in globals() else 0
+    print(f"[ML-STARTUP] model=tiered_matcher_v2 kb_version=v1 concepts=71704 curated={len(symptom_data)} kb_empirical={_kb_count} rss_mb={_rss_mb} status=ready", file=sys.stdout, flush=True)
+except Exception as _e:
+    print(f"[ML-STARTUP-ERROR] {_e}", file=sys.stderr, flush=True)
+
 # Specialist Mapping based on ICD-10 chapters and clinical specialties
 def get_specialist_for_disease(disease_name, icd_code):
     disease_name_lower = disease_name.lower()
@@ -473,6 +552,7 @@ def predict_disease():
     else:
         return jsonify({'predictions': [], 'clinicalValidation': 'not_established'})
         
+    setattr(request, '_ml_symptoms_count', len(input_symptoms_list))
     if not input_symptoms_str:
         return jsonify({'predictions': [], 'clinicalValidation': 'not_established'})
 
@@ -630,7 +710,17 @@ def predict_disease():
         predictions.sort(key=lambda x: x['score'], reverse=True)
         predictions = predictions[:5]
         
-    return jsonify({'predictions': predictions, 'clinicalValidation': 'not_established'})
+    tier_used = 1 if (predictions and predictions[0].get('source') == 'curated') else (2 if (predictions and predictions[0].get('source') == 'knowledge_base') else 1)
+    top_confidence = predictions[0]['confidence'] if predictions else 0.0
+    setattr(request, '_ml_tier', tier_used)
+    setattr(request, '_ml_top_conf', top_confidence)
+    if '_ml_metrics' in globals():
+        _ml_metrics['predictions_total'] += 1
+        if tier_used == 1:
+            _ml_metrics['tier1_total'] += 1
+        elif tier_used == 2:
+            _ml_metrics['tier2_total'] += 1
+    return jsonify({'predictions': predictions, 'clinicalValidation': 'not_established', 'tier': tier_used, 'source': 'ml-engine'})
 
 
 @app.route('/ingest', methods=['POST'])

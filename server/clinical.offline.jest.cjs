@@ -84,5 +84,6 @@ module.exports.testMatch.push(
   '<rootDir>/tests/phaseD4NonProfiledConsultationOffline.test.js',
   '<rootDir>/tests/phaseD5GenericSurveillanceOffline.test.js',
   '<rootDir>/tests/safetyPanelConsistency.test.js',
-  '<rootDir>/tests/auditCoverage.test.js'
+  '<rootDir>/tests/auditCoverage.test.js',
+  '<rootDir>/tests/mlTelemetryLogging.test.js'
 );

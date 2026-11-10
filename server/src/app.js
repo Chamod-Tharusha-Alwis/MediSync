@@ -363,6 +363,12 @@ async function startServer() {
     stopping: () => lifecycle?.stopping === true
   }));
 
+  // Platform metrics endpoint for monitoring and telemetry
+  app.get(['/metrics', '/api/metrics'], (req, res) => {
+    res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.status(200).send('# HELP medisync_backend_up Status of backend service\n# TYPE medisync_backend_up gauge\nmedisync_backend_up 1\n');
+  });
+
   // 404 handler
   app.use((req, res) => {
     res.status(404).json({ error: 'Endpoint not found' });

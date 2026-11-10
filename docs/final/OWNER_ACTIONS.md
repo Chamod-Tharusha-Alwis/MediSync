@@ -16,6 +16,9 @@
 | **OA-05** | **Screenshots Capture** | Capture physical high-resolution browser screenshots (1920x1080) following [`SCREENSHOT_CHECKLIST.md`](../report/SCREENSHOT_CHECKLIST.md) for final thesis document insertion. | Thesis Document Assets | `PENDING_OWNER` |
 | **OA-06** | **Rotate Redis Credentials** | In Upstash / Redis Dashboard: Rotate Redis connection string credentials before the final viva demonstration. | Production Security Hardening | PENDING_OWNER |
 | **OA-07** | **Change Shared Demo Passwords** | Update shared prototype demonstration passwords (SEED_TEST_PASSWORD) to distinct production credentials after viva voce evaluations. | Production Security Hardening | PENDING_OWNER |
+| **OA-08** | **UptimeRobot Timeouts (60s)** | Set UptimeRobot monitoring timeouts to 60s for backend (`medisync-wabc.onrender.com/health`) and ML engine (`medisync-ml-engine.onrender.com/health`) to accommodate ~50s Render cold starts. | Observability & Uptime | `PENDING_OWNER` |
+| **OA-09** | **Pre-Viva Warm-up Routine** | Execute warm-up curls 3 minutes before the viva demonstration: `curl -s https://medisync-wabc.onrender.com/health` and `curl -s https://medisync-ml-engine.onrender.com/health`. | Demonstration Readiness | `PENDING_OWNER` |
+| **OA-10** | **Render ML Engine Log Inspection** | In Render Dashboard $\to$ `medisync-ml-engine` $\to$ Logs: filter by `[ML]` to inspect request telemetry lines (`request_id`, latency, symptoms_count, tier, top_confidence) and `[ML-STARTUP]` for concept counts. | Observability & Telemetry | `PENDING_OWNER` |
 
 ---
 
