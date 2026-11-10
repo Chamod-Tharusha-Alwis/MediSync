@@ -875,6 +875,8 @@ export const en = {
     "prescribedMedicines": "Prescribed Medicines & Release Status",
     "statusReleased": "Released",
     "statusPending": "Not Released",
+    "statusSuperseded": "Replaced by newer prescription",
+    "statusExpired": "Course ended",
     "releaseTimeline": "Medicine Release Timeline",
     "releasedBy": "Released by",
     "downloadHistoryBtn": "Download Complete Medical History (PDF)",

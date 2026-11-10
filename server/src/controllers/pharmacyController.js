@@ -427,14 +427,17 @@ exports.toggleStaffStatus = async (req, res) => {
 exports.getPendingPrescriptions = async (req, res) => {
   try {
     const { nic } = req.params;
+    const { getPrescriptionActiveState } = require('../utils/prescriptionLifecycle');
     // Use SHA-256 blind index so we never query the encrypted field
     const targetHash = crypto.createHash('sha256').update(nic.trim().toUpperCase()).digest('hex');
-    const prescriptions = await Prescription.find({ 
+    const rawPrescriptions = await Prescription.find({ 
       ...nicFilter(nic.trim().toUpperCase(), { legacyFields: ['nicHash', 'patientNic_bi'] }),
       status: { $in: ['pending', 'issued'] },
       isOTC: { $ne: true },           // Only doctor-issued prescriptions
+      supersededBy: null,
       expiresAt: { $gt: new Date() }
     }).populate('doctorId', 'fullName').populate('hospitalId', 'name');
+    const prescriptions = (rawPrescriptions || []).filter(rx => getPrescriptionActiveState(rx) === 'active');
     // Fetch the patient profile to display on frontend (do NOT use .lean() or restrict .select() so decryption works)
     const patientUser = await Patient.findOne(nicFilter(nic.trim().toUpperCase(), { plainFields: ['nic'] }));
     if (patientUser && typeof patientUser.decryptFieldsSync === 'function') {

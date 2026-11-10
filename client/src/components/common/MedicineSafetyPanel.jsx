@@ -185,6 +185,20 @@ export default function MedicineSafetyPanel({
           ))}
         </div>
       )}
+
+      {Array.isArray(safetyData?.supersededNotices) && safetyData.supersededNotices.length > 0 && (
+        <div data-testid="supersession-notices" className="space-y-1.5 pt-2 border-t border-slate-800">
+          {safetyData.supersededNotices.map((sn, idx) => (
+            <div
+              key={idx}
+              className="p-2.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-200 text-xs flex items-center gap-2"
+            >
+              <FiInfo className="w-4 h-4 text-sky-400 shrink-0" />
+              <span>{sn.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

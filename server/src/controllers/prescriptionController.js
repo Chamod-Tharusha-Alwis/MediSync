@@ -408,10 +408,10 @@ exports.checkMedicineSafety = async (req, res) => {
             const ref = doc.consultationRef || doc.prescriptionId || 'CON-RECORD';
             if (Array.isArray(doc.medications) && doc.medications.length) {
               for (const m of doc.medications) {
-                resolvedActiveRx.push({ drugName: m.name || m.drugName, reference: ref, consultationRef: ref, dosage: m.dosage, frequency: m.frequency });
+                resolvedActiveRx.push({ drugName: m.name || m.drugName, reference: ref, consultationRef: ref, dosage: m.dosage, frequency: m.frequency, rawDoc: doc });
               }
             } else if (doc.drugName) {
-              resolvedActiveRx.push({ drugName: doc.drugName, reference: ref, consultationRef: ref, dosage: doc.dosage, frequency: doc.frequency });
+              resolvedActiveRx.push({ drugName: doc.drugName, reference: ref, consultationRef: ref, dosage: doc.dosage, frequency: doc.frequency, rawDoc: doc });
             }
           }
         } catch (_) {}
@@ -458,6 +458,35 @@ exports.checkMedicineSafety = async (req, res) => {
     }
     result.hasWarnings = result.warnings.length > 0;
     result.hasActionableWarnings = computed.requiresAcknowledgment;
+
+    const { isSameMedicine, getDaysRemaining } = require('../utils/prescriptionLifecycle');
+    const supersededNotices = [];
+    if (Array.isArray(medications) && Array.isArray(resolvedActiveRx)) {
+      for (const newMed of medications) {
+        const medName = typeof newMed === 'string' ? newMed : (newMed?.name || newMed?.drugName || '');
+        if (!medName) continue;
+        for (const active of resolvedActiveRx) {
+          const activeName = active.drugName || active.name || '';
+          if (!activeName) continue;
+          if (isSameMedicine(medName, activeName)) {
+            const rawDoc = active.rawDoc || active;
+            const ref = active.consultationRef || active.reference || rawDoc.consultationRef || rawDoc.prescriptionId || 'previous consultation';
+            const startDate = rawDoc.dispensedAt || rawDoc.issuedAt || rawDoc.createdAt || new Date();
+            const startStr = new Date(startDate).toISOString().slice(0, 10);
+            const daysLeft = getDaysRemaining(rawDoc, new Date());
+            supersededNotices.push({
+              drugName: medName,
+              activeDrugName: activeName,
+              consultationRef: ref,
+              startDate: startStr,
+              daysLeft,
+              message: `${medName} is currently active from ${ref} (started ${startStr}, ${daysLeft} days left). Saving will replace it.`
+            });
+          }
+        }
+      }
+    }
+    result.supersededNotices = supersededNotices;
 
     return res.status(200).json(result);
   } catch (err) {

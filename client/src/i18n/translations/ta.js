@@ -875,6 +875,8 @@ export const ta = {
     "prescribedMedicines": "பரிந்துரைக்கப்பட்ட மருந்துகள் மற்றும் வழங்கல் நிலை",
     "statusReleased": "வழங்கப்பட்டது",
     "statusPending": "வழங்கப்படவில்லை",
+    "statusSuperseded": "புதிய மருந்து பரிந்துரையால் மாற்றப்பட்டது",
+    "statusExpired": "மருந்து காலம் முடிந்தது",
     "releaseTimeline": "மருந்து வழங்கல் காலவரிசை",
     "releasedBy": "வழங்கியவர்",
     "downloadHistoryBtn": "முழு மருத்துவ வரலாற்றைப் பதிவிறக்கவும் (PDF)",

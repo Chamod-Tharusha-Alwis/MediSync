@@ -129,6 +129,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     }
     if (rx) {
       if (String(rx.patientNic).trim().toUpperCase() !== nic) fail('PATIENT_MISMATCH', 'Prescription does not belong to this patient.', 403);
+      if (rx.supersededBy || rx.supersededAt) fail('SUPERSEDED', 'Prescription has been superseded by a newer consultation and cannot be dispensed.', 400);
       if (!['pending','issued','partially_dispensed'].includes(rx.status)) fail('ALREADY_DISPENSED', 'Prescription is not eligible for dispensing.');
       if (!rx.expiresAt || rx.expiresAt <= new Date()) fail('PRESCRIPTION_EXPIRED', 'A valid prescription expiry is required.');
       if (!body.isAlternativeDispensed) {

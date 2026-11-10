@@ -4,6 +4,7 @@ const Prescription = require('../models/Prescription');
 const Dispensing = require('../models/Dispensing');
 const Pharmacy = require('../models/Pharmacy');
 const PharmacyStaff = require('../models/PharmacyStaff');
+const { getPrescriptionActiveState } = require('../utils/prescriptionLifecycle');
 
 /**
  * Standard group helper for dispensing receipts.
@@ -204,13 +205,29 @@ async function computeReleaseSummary(consultationId, options = {}) {
       rx.dispensedByPharmacist ||
       (isReleased || isPartial ? 'Licensed Pharmacist' : 'Not recorded');
 
-    const itemReleaseStatus = isReleased
-      ? 'released'
-      : isPartial
-      ? 'partially_released'
-      : rx.status === 'cancelled'
-      ? 'cancelled'
-      : 'not_released';
+    const activeState = getPrescriptionActiveState(rx);
+    let itemReleaseStatus;
+    let statusLabel;
+
+    if (isReleased) {
+      itemReleaseStatus = 'released';
+      statusLabel = activeState === 'expired' ? 'Course ended' : (activeState === 'superseded' ? 'Replaced by newer prescription' : 'Released');
+    } else if (isPartial) {
+      itemReleaseStatus = 'partially_released';
+      statusLabel = 'Partially Released';
+    } else if (rx.status === 'cancelled') {
+      itemReleaseStatus = 'cancelled';
+      statusLabel = 'Cancelled';
+    } else if (activeState === 'superseded') {
+      itemReleaseStatus = 'superseded';
+      statusLabel = 'Replaced by newer prescription';
+    } else if (activeState === 'expired') {
+      itemReleaseStatus = 'expired';
+      statusLabel = 'Course ended';
+    } else {
+      itemReleaseStatus = 'not_released';
+      statusLabel = 'Not Released';
+    }
 
     // Handle single drug or multiple drugs in prescription
     if (Array.isArray(rx.medications) && rx.medications.length > 0) {
@@ -224,6 +241,10 @@ async function computeReleaseSummary(consultationId, options = {}) {
           instructions: rx.instructions || '',
           released: isReleased,
           status: itemReleaseStatus,
+          statusLabel: statusLabel,
+          activeState: activeState,
+          isSuperseded: activeState === 'superseded',
+          isExpired: activeState === 'expired',
           releasedAt: linkedDispensing?.dispensedAt || rx.dispensedAt || null,
           pharmacy: {
             name: pharmacyName,
@@ -246,6 +267,10 @@ async function computeReleaseSummary(consultationId, options = {}) {
         instructions: rx.instructions || '',
         released: isReleased,
         status: itemReleaseStatus,
+        statusLabel: statusLabel,
+        activeState: activeState,
+        isSuperseded: activeState === 'superseded',
+        isExpired: activeState === 'expired',
         releasedAt: linkedDispensing?.dispensedAt || rx.dispensedAt || null,
         pharmacy: {
           name: pharmacyName,
