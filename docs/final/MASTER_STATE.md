@@ -6,30 +6,26 @@
 
 ## 1. Executive Status Overview
 
-- **Current Phase**: `P11-E` (Audit Log Completeness Matrix & Email-to-Id Search)
-- **Active Git Branch**: `final/p10-doctor-override`
-- **Latest Commit on `main`**: `7a04969` (P11-F Public Health & Alerts 200)
+- **Current Phase**: `R2` (ML Service Logging and Proof of Use)
+- **Active Git Branch**: `final/rem-r2-ml-logging` (to be branched from updated `main`)
+- **Latest Commit on `main`**: Target merge of `final/rem-r1-audit-coverage`
 - **15-File Protected Ledger**: `15 / 15` LOCKED (`docs/release/PROTECTED_HASHES.json`)
-- **Quality Gate Baseline**: 3,462 tests passed / 0 failed across 207 suites | Client build exit code 0 | 15/15 protected files byte-exact
+- **Quality Gate Baseline**: 3,556 tests passed / 0 failed across 218 suites | Client build exit code 0 | 15/15 protected files byte-exact
 - **Email Count (Run Budget < 40)**: 0 used
-- **Next Action**: Commit `final/p10-doctor-override`, merge to `main`, push to `origin/main`. Then checkout branch `final/p11-audit-coverage` for Task P11-E.
+- **Next Action**: Branch `final/rem-r2-ml-logging` from `main`, implement structured request logging in `ml-engine/app.py` and `mlPredictionService.js`, add proof-of-use UI metadata and tests.
 
 ---
 
-## 2. Phase 11 & Phase 10 Execution Sequence
+## 2. Remediation Sequence (R0 - R8)
 
 | Step | Task ID | Focus | Target Branch | Status |
 |:---:|:---:|---|---|:---:|
-| 1 | **P11-A** | Privacy fixes: no clinical email, locked PDF, layout/time, no NIC on pharmacy UI, human disclaimers | `final/p11-privacy-fixes` | **COMPLETED** |
-| 2 | **P11-B** | Lab report upload idempotency (fix 409) & state machine propagation | `final/p11-lab-upload` | **COMPLETED** |
-| 3 | **P11-C** | Pharmacy OTC atomic checkout retry & label fix | `final/p11-otc-atomic` | **COMPLETED** |
-| 4 | **P11-F** | Public health 200 with verified/awaiting counts & public alerts 200 without auth | `final/p11-public-health` | **COMPLETED** |
-| 5 | **P10-A** | Doctor override engine: warn, never block, SHA-256 findingsHash, downstream visibility, F7 integration | `final/p10-doctor-override` | **COMPLETED** |
-| 6 | **P11-E** | Audit log completeness matrix & email-to-id search | `final/p11-audit-coverage` | PENDING |
-| 7 | **P11-G** | ML service request logging, latency, metrics counter, backend logging | `final/p11-ml-logging` | PENDING |
-| 8 | **P11-H** | Email noise reduction, 24h trusted device throttle, single dispense email, daily cap | `final/p11-email-noise` | PENDING |
-| 9 | **P11-I** | Formulary data quality ("Penicillin" typo fix, missing field "Not provided" neutral styling) | `final/p11-data-quality` | PENDING |
-| 10 | **P10-B** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/p10-medicine-coverage` | PENDING |
-| 11 | **P10-C** | Active medication auto-supersession & non-dispensable pending lines | `final/p10-auto-supersede` | PENDING |
-| 12 | **P10-D** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/p10-icd-alignment` | PENDING |
-| 13 | **P11-Z** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/p11-final-reconcile` | PENDING |
+| 1 | **R0** | Integrity audit: runner whitelist (13 suites), public health 200, live spot-checks, safety consistency | `final/rem-r0-integrity` | **COMPLETED** |
+| 2 | **R1** | Audit log completeness & search by email (100% mutating routes covered) | `final/rem-r1-audit-coverage` | **COMPLETED** |
+| 3 | **R2** | ML service logging & proof of use (latency, tier, request tracking, zero PII) | `final/rem-r2-ml-logging` | **IN PROGRESS** |
+| 4 | **R3** | Email noise reduction (24h trusted device throttle, single dispense email, daily cap) | `final/rem-r3-email-noise` | PENDING |
+| 5 | **R4** | Formulary data quality ("Penicillin" typo fix, missing optional fields "Not provided") | `final/rem-r4-data-quality` | PENDING |
+| 6 | **R5** | Medicine catalog coverage audit script, typed prefix matching (`citalopr` -> `citalopram`) | `final/rem-r5-medicine-coverage` | PENDING |
+| 7 | **R6** | Auto-expiry / supersession of repeated medication & non-dispensable pending lines | `final/rem-r6-auto-supersede` | PENDING |
+| 8 | **R7** | ICD classification alignment: true ICD-11 badge (`6A70`), eliminate ICD-10 mislabel | `final/rem-r7-icd-alignment` | PENDING |
+| 9 | **R8** | Final reconciliation: 20-point live test, matrices, docs, test counts, tag `v1.1.0-capstone` | `final/rem-r8-final-reconcile` | PENDING |

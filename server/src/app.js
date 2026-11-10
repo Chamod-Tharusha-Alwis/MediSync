@@ -323,6 +323,7 @@ async function startServer() {
       });
     });
   } else {
+    app.use('/api', require('./routes/auditMiddleware'));
     app.use('/api/auth',     authLimiter, require('./routes/authRoutes'));
     app.use('/api/public',               require('./routes/publicRoutes'));
     app.use('/api/doctor',               require('./routes/doctorRoutes'));
