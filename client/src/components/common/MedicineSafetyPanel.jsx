@@ -130,34 +130,37 @@ export default function MedicineSafetyPanel({
                     onAcknowledgmentChange({
                       ...acknowledgment,
                       acknowledged: e.target.checked,
+                      findingsHash: safetyData?.findingsHash || null,
                     })
                   }
                   className="mt-0.5 rounded border-slate-700 bg-slate-950 text-teal-500 focus:ring-teal-400"
                 />
-                <span>{t('medicineSafety.acknowledgeCheckbox')}</span>
+                <span>{t('medicineSafety.acknowledgeCheckbox', 'I have reviewed these warnings and accept clinical responsibility.')}</span>
               </label>
 
-              {acknowledgment?.acknowledged && (
+              {acknowledgment?.acknowledged && (safetyData?.requiresReason ?? true) && (
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-slate-400">
-                    {t('medicineSafety.justificationReason')}
+                    {t('medicineSafety.justificationReason', 'Clinical Justification Reason')}
                   </label>
                   <textarea
                     data-testid="safety-ack-reason"
                     rows={2}
+                    maxLength={250}
                     value={acknowledgment?.reason || ''}
                     onChange={(e) =>
                       onAcknowledgmentChange({
                         ...acknowledgment,
                         reason: e.target.value,
+                        findingsHash: safetyData?.findingsHash || null,
                       })
                     }
-                    placeholder={t('medicineSafety.reasonPlaceholder')}
+                    placeholder={t('medicineSafety.reasonPlaceholder', 'Enter clinical justification (min 5 chars)...')}
                     className="w-full text-xs rounded-lg border border-slate-700 bg-slate-950/80 p-2 text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
                   />
                   {(!acknowledgment?.reason || acknowledgment.reason.trim().length < 5) && (
                     <p className="text-xs text-amber-400">
-                      Reason must be at least 5 characters to proceed.
+                      Reason must be at least 5 characters to proceed (max 250).
                     </p>
                   )}
                 </div>

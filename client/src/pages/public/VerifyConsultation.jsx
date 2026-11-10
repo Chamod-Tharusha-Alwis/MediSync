@@ -681,6 +681,19 @@ export default function VerifyConsultation() {
                     )}
                   </div>
 
+                  {/* Prescriber Safety Override Callout */}
+                  {clinicalData.safetyOverride?.acknowledged && Array.isArray(clinicalData.safetyOverride.findingTypes) && clinicalData.safetyOverride.findingTypes.length > 0 && (
+                    <div data-testid="verify-safety-override-card" className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-amber-300 block">Safety warnings acknowledged by prescriber</span>
+                        <span className="text-slate-300 text-xs">
+                          Prescribing clinician reviewed formulary advisories: {clinicalData.safetyOverride.findingTypes.join(', ')}.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Medicine List */}
                   {Array.isArray(releaseData?.items) && releaseData.items.length > 0 ? (
                     <div className="space-y-3">

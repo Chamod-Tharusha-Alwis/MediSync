@@ -624,6 +624,25 @@ exports.generateLockedPrescription = async (
     });
   }
 
+  // 5b. Prescriber Safety Override Notice (Task P10-A)
+  const overrideTypes = [...new Set(rxList.flatMap(rx => rx.safetyOverride?.findingTypes || (rx.safetyOverride?.findings || []).map(f => f.type) || []))].filter(Boolean);
+  if (overrideTypes.length > 0) {
+    if (currentY - 24 < 80) {
+      drawFooter(page, { now: new Date(), fontRegular, fontBold, width, scriptNotice: labels.footerScriptNotice });
+      page = pdfDoc.addPage([595, 842]);
+      drawConfidentialityWatermark(page, { width, height, fontBold });
+      currentY = height - 50;
+    }
+    page.drawText(`Doctor acknowledged safety warnings: ${overrideTypes.join(', ')}`, {
+      x: 40,
+      y: Math.max(currentY, 65),
+      size: 8.5,
+      font: fontOblique,
+      color: RED_STAMP,
+    });
+    currentY -= 16;
+  }
+
   // 6. Draw Footer
   drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice: labels.footerScriptNotice });
 
@@ -1055,6 +1074,20 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   page.drawText(`Consulting Medical Professional: ${doctorName}${docIdStr}`, { x: 52, y: currentY - 18, size: 9, font: fontBold, color: NAVY });
   page.drawText(`${slmcReg} | Specialty: ${specialtyStr}`, { x: 52, y: currentY - 32, size: 8.5, font: fontRegular, color: MID });
   page.drawText(`Facility / Practice: ${hospitalStr}`, { x: 52, y: currentY - 46, size: 8, font: fontRegular, color: MID });
+
+  const consultOverrideTypes = [...new Set([
+    ...(consultationData.safetyOverride?.findingTypes || []),
+    ...(consultationData.prescriptions || []).flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
+  ])].filter(Boolean);
+  if (consultOverrideTypes.length > 0) {
+    page.drawText(`Doctor acknowledged safety warnings: ${consultOverrideTypes.join(', ')}`, {
+      x: 40,
+      y: Math.max(currentY - sigBoxH - 14, 55),
+      size: 8.5,
+      font: fontOblique,
+      color: RED_STAMP,
+    });
+  }
 
   // 10. Draw Footer
   drawFooter(page, { now, fontRegular, fontBold, width });

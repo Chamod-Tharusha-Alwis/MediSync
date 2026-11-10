@@ -377,8 +377,29 @@ exports.resendConsultationSummaryEmail = async (req, res) => {
 
 exports.checkMedicineSafety = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
+    const { computeClinicalFindings } = require('../utils/clinicalSafetyValidator');
     const { medications, patientId, activePrescriptions, acknowledgment } = req.body || {};
+
+    let patientAllergies = [];
+    if (patientId && mongoose.isObjectIdOrHexString(patientId)) {
+      try {
+        const Patient = require('../models/Patient');
+        const patient = await Patient.findById(patientId);
+        if (patient) {
+          patient.decryptFieldsSync?.();
+          patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
+        }
+      } catch (_) {}
+    }
+
+    const computed = computeClinicalFindings({
+      medications,
+      patientAllergies,
+      activePrescriptions: Array.isArray(activePrescriptions) ? activePrescriptions : [],
+    });
+
     const result = await evaluateMedicineSafety({
       medications,
       patientId,
@@ -387,6 +408,33 @@ exports.checkMedicineSafety = async (req, res) => {
       actorId: req.user?._id || req.user?.id || 'system',
       actorRole: req.user?.role || 'doctor',
     });
+
+    result.findings = computed.findings;
+    result.findingsHash = computed.findingsHash;
+    result.requiresAcknowledgment = computed.requiresAcknowledgment;
+    result.requiresReason = computed.requiresReason;
+    result.maxSeverity = computed.maxSeverity;
+
+    // Merge computed findings into warnings for UI panels while avoiding duplicates
+    const existingSummaries = new Set((result.warnings || []).map(w => w.message || w.summary || ''));
+    for (const f of computed.findings) {
+      if (!existingSummaries.has(f.summary)) {
+        result.warnings.push({
+          type: f.type,
+          severity: f.severity === 'severe' ? 'high' : f.severity,
+          drug1: f.items[0],
+          drug2: f.items[1],
+          items: f.items,
+          message: f.summary,
+          summary: f.summary,
+          source: f.source,
+        });
+        existingSummaries.add(f.summary);
+      }
+    }
+    result.hasWarnings = result.warnings.length > 0;
+    result.hasActionableWarnings = computed.requiresAcknowledgment;
+
     return res.status(200).json(result);
   } catch (err) {
     return res.status(500).json({ error: 'SAFETY_CHECK_FAILED', message: err.message });

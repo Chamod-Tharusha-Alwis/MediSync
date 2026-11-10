@@ -142,10 +142,21 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     if (String(patient._id) !== consent.patientId) fail('FORBIDDEN', 'Consent is bound to a different patient.', 403);
     if (patient.__enc_allergies) fail('PATIENT_RECORD_UNAVAILABLE', 'Patient allergy data could not be read safely.', 503);
     const dispensingMeds = [...(await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: rx?._id })), ...items.map(item => item.name)];
-    assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
+    let pharmacistOverride = null;
+    const safetyAck = body.safetyAcknowledgment || body.allergyOverride || null;
+    const isPharmAck = Boolean(safetyAck && safetyAck.acknowledged === true && typeof safetyAck.reason === 'string' && safetyAck.reason.trim().length >= 5);
+    try {
+      assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
+    } catch (mErr) {
+      if (!isPharmAck) throw mErr;
+      pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: safetyAck.reason.trim(), type: 'medication_conflict' };
+    }
     const updates = new Map();
     for (const item of items) {
-      if (checkAllergyConflict(item.name, patient?.allergies).hasConflict) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
+      if (checkAllergyConflict(item.name, patient?.allergies).hasConflict) {
+        if (!isPharmAck) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
+        pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: safetyAck.reason.trim(), type: 'allergy_conflict', conflictingItem: item.name };
+      }
       const key = item.inventoryItemId ? String(item.inventoryItemId) : normalize(item.name);
       const previous = updates.get(key);
       const qty = (previous?.qty || 0) + item.qty;
@@ -180,12 +191,14 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
       await rx.save({session});
     }
-    const receipt = new Dispensing({ _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:rx._id,
+    const receiptData = { _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:rx._id,
       pharmacyId:pharmacy._id,pharmacyName:pharmacy.name,staffId:staff._id,pharmacistName:staff.fullName,patientNic:nic,notes:body.notes,
       idempotencyKey:key,requestHash:hash,
       isAlternativeDispensed:Boolean(body.isAlternativeDispensed),alternativeDetails:body.alternativeDetails || '',
       audit:{actorId:String(staff._id),actorRole:user.role||'pharmacist',action:otc?'OTC_PRESCRIPTION_DISPENSED':'PRESCRIPTION_DISPENSED',timestamp:new Date()},
-      items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:i.status || (isPartial ? 'partial' : 'dispensed')})) });
+      items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:i.status || (isPartial ? 'partial' : 'dispensed')})) };
+    if (pharmacistOverride) receiptData.pharmacistOverride = pharmacistOverride;
+    const receipt = new Dispensing(receiptData);
     await claimPharmacyAuthorization({ user, nic, authorization, session });
     await receipt.save({session});
     return {receipt:receipt.toObject(),replay:false};

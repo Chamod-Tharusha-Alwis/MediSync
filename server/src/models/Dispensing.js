@@ -50,6 +50,15 @@ const dispensingSchema = new mongoose.Schema({
   },
   idempotencyKey: String,
   requestHash: String,
+  pharmacistOverride: {
+    acknowledged: { type: Boolean, default: false },
+    acknowledgedAt: Date,
+    staffId: String,
+    pharmacistName: String,
+    reason: String,
+    type: { type: String },
+    conflictingItem: String
+  },
   // Durable audit evidence commits with the inventory and prescription updates.
   audit: { actorId: String, actorRole: String, action: String, timestamp: Date, projectedAt: Date },
   dispensedAt: {

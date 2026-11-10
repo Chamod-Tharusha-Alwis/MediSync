@@ -357,7 +357,13 @@ const Dispense = () => {
                       return (
                         <tr key={rx._id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-5 py-3.5 font-bold text-white text-sm">
-                            {drugName}
+                            <div>{drugName}</div>
+                            {rx.safetyOverride?.acknowledged && (
+                              <div data-testid="prescriber-override-badge" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] uppercase tracking-wider font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span>Prescriber acknowledged safety warnings ({(rx.safetyOverride.findingTypes || []).join(', ') || 'advisory'})</span>
+                              </div>
+                            )}
                           </td>
                           <td className="px-5 py-3.5 font-mono text-teal-400 font-semibold">
                             #{rxDisplayId}
@@ -404,6 +410,18 @@ const Dispense = () => {
               <span className="text-[11px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
               <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
             </div>
+
+            {selectedRx.safetyOverride?.acknowledged && (
+              <div data-testid="dispense-prescriber-override" className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 flex items-start gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-amber-300 block">Prescriber Safety Override</span>
+                  <span className="text-xs text-slate-300">
+                    Clinician acknowledged: {(selectedRx.safetyOverride.findingTypes || []).join(', ')}.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {dispenseItems.map((item, index) => (
               <div key={index} className="space-y-2">

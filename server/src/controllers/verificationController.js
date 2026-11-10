@@ -436,6 +436,16 @@ exports.verifyOtpAndUnlock = async (req, res) => {
         instructions: it.instructions,
         released: it.released,
       })),
+      safetyOverride: (await Prescription.find({ consultationId: consultation._id }).select('safetyOverride').lean())
+        .flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
+        .filter(Boolean).length > 0
+        ? {
+            acknowledged: true,
+            findingTypes: [...new Set((await Prescription.find({ consultationId: consultation._id }).select('safetyOverride').lean())
+              .flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
+              .filter(Boolean))]
+          }
+        : null,
       labResults: Array.isArray(consultation.labTests) ? consultation.labTests : [],
     };
 

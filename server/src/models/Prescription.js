@@ -44,6 +44,21 @@ const prescriptionSchema = new mongoose.Schema({
   // Alternative medication tracking
   isAlternativeDispensed: { type: Boolean, default: false },
   alternativeDetails:     { type: String, default: '' },
+  // Safety override tracking (Task P10-A: Warn, never block)
+  safetyOverride: {
+    acknowledged: { type: Boolean, default: false },
+    acknowledgedAt: Date,
+    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
+    reason: { type: String, default: '' },
+    findings: [{
+      type: { type: String },
+      severity: { type: String },
+      items: [String],
+      summary: String,
+      source: String
+    }],
+    findingTypes: [String]
+  },
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 

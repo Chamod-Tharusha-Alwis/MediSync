@@ -49,7 +49,12 @@ function createClinicalWriteAuthorization({ verify = (req, nic, hash) => require
           result &&
           result.hasInteraction === false &&
           (!result.duplicateIngredients || result.duplicateIngredients.length === 0);
-        if (!result || (result.verificationIncomplete !== false && !isSingleResolvedSafe) || result.hasInteraction !== false || (result.duplicateIngredients && result.duplicateIngredients.length > 0)) return res.status(409).json({ error: 'MEDICATION_REVIEW_REQUIRED' });
+        const hasConflict = !result || (result.verificationIncomplete !== false && !isSingleResolvedSafe) || result.hasInteraction !== false || (result.duplicateIngredients && result.duplicateIngredients.length > 0);
+        if (hasConflict) {
+          const ack = req.body?.safetyAcknowledgment;
+          const isAck = Boolean(ack && ack.acknowledged === true);
+          if (!isAck) return res.status(409).json({ error: 'MEDICATION_REVIEW_REQUIRED' });
+        }
       }
       req.clinicalAuthorization = { patientId: String(decision.patientId), consentSessionId: decision.consentSessionId };
       return next();
