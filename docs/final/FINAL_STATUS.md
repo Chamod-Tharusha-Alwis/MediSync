@@ -1,10 +1,10 @@
 # MediSync Final Project Status & Capstone Release Assessment
 
-**Release**: `v1.0.0-capstone`  
-**Date**: 2026-11-09  
-**Overall Verified Implementation**: **92.5%**  
-**Protected Ledger**: **15 / 15 Files Locked** (`docs/release/PROTECTED_HASHES.json`)  
-**Automated Verification Suite**: **3,465 Tests Passed / 0 Failed (207 Suites)**  
+**Release**: `v1.1.0-capstone`  
+**Date**: 2026-11-10  
+**Overall Verified Implementation**: **96.5%**  
+**Protected Ledger**: **15 / 15 Files Locked** (`docs/release/PROTECTED_HASHES.json`, controlled update to `ml-engine/app.py` in `docs/final/LEDGER_CHANGELOG.md`)  
+**Automated Verification Suite**: **3,595 Tests Passed / 0 Failed (224 Suites)**  
 **Production Live Audit**: **20 / 20 PASS (0 FAIL)** on Render + Vercel  
 
 ---
@@ -25,13 +25,19 @@ The system operates across three distributed cloud layers:
 | Capability | Verification Evidence | Operational Reality |
 |---|---|---|
 | **5 Role-Based Portals** | `server/tests/ir04-isolated-five-role-e2e.spec.js`, Live Audit LT-13 through LT-17 | Doctor, Pharmacist, Lab Technician, MoH Public Health Officer, and Patient portals operational with strict HTTP 401/403 authorization barriers. |
+| **Doctor Safety Override Engine** | `server/tests/doctorSafetyOverride.test.js` (10/10 PASS), `server/tests/clinicalSafetyConsistency.test.js` (4/4 PASS) | Non-blocking clinical safety engine: warns doctor of DDIs, dosage ceilings, and allergies; enables issuance after mandatory acknowledgment and clinician responsibility justification for severe/critical findings. |
+| **Prescription Lifecycle & Auto-Supersession** | `server/tests/prescriptionSupersession.test.js` (13/13 PASS) | Atomic supersession of active matching prescriptions on new issuance; dynamic active state calculation (`active`, `expired`, `superseded`, `cancelled`); non-dispensable queue hygiene. |
+| **Medicine Catalog Coverage & Prefix Autocomplete** | `server/tests/medicineSearchPrefix.test.js` (6/6 PASS), `scripts/audit_medicine_coverage.js` | 3,000 catalog entries audited (75.0% canonical ingredient resolution); prefix matching (`citalopr` -> `citalopram`); unverified safety limits flagged with `owner_review_required`. |
+| **ICD Classification Alignment** | `server/tests/icdClassificationAlignment.test.js` (7/7 PASS) | Dynamic differentiation of WHO ICD-11 MMS codes (`6A70`) and US ICD-10-CM codes; purple `ICD-11` badging across doctor suggestions, consultation summaries, and verify portal. |
+| **Audit Log Completeness & Search** | `server/tests/auditLogCompleteness.test.js` (7/7 PASS), `server/tests/auditCoverageCompleteness.test.js` (5/5 PASS) | 100% mutating route coverage (45/45 routes emit structured audit events); administrative audit search by actor or target email address. |
 | **Mobile-First QR Verification** | `server/tests/otpVerificationPortal.test.js` (11/11 PASS), Live Audit LT-18, LT-19, LT-20 | Consultation verification QR links to `/verify/:token`. Displays public authenticity card; dynamic 6-digit email OTP unlocks full clinical encounter and medicine release history without requiring NIC entry on mobile devices. |
 | **Medicine Release Integrity** | `server/tests/dispensingIntegrityPhase3.test.js` (10/10 PASS) | Single shared release summary helper (`releaseSummaryService.js`); atomic progression (`dispensed`, `partially_dispensed`); double-dispensing lockout (`ALREADY_DISPENSED`, HTTP 409). |
 | **Emergency Red-Flag Screening** | `server/tests/clinicalSafetyPhase4.test.js` (17/17 PASS) | Heuristic rule-based emergency triage (`emergencyRedFlags.json`); flags 6 critical syndromes (meningism, cardiorespiratory distress, acute coronary, altered mental status, anaphylaxis, severe hemorrhage) as non-blocking advisories. |
 | **Medicine Safety Engine** | `server/tests/ingredientResolver.test.js` | 5-point safety check: active ingredient mapping, pairwise drug-drug interactions (DDI), single-dose ceilings, daily dose ceilings, course duration limits, and patient allergy alerts. |
-| **Syndromic Outbreak Surveillance** | `server/tests/outbreakDetector.test.js` | District-level 7-day window vs 56-day baseline; regularized z-score ($\sigma \ge 0.5$); strict detection gates ($N \ge 5$, 2 consecutive days $z > 2.0$); fail-closed 503 if data is unverified. |
-| **Trilingual UI Localization** | `client/src/__master_offline__/d4-any-disease-coverage.test.jsx` | 100% key parity across `en.js`, `si.js`, and `ta.js` with exactly **835 keys** each (0 missing, 0 extra, $A \triangle B = \emptyset$). |
+| **Syndromic Outbreak Surveillance & Review** | `server/tests/outbreakDetector.test.js`, `server/tests/surveillanceReviewWorkflow.test.js` (8/8 PASS) | District-level 7-day window vs 56-day baseline; regularized z-score ($\sigma \ge 0.5$); strict detection gates ($N \ge 5$, 2 consecutive days $z > 2.0$); epidemiologist review workflow (`/api/admin/surveillance/review`); zero synthetic fallback cases. |
+| **Trilingual UI Localization** | `client/src/__master_offline__/d4-any-disease-coverage.test.jsx` | 100% key parity across `en.js`, `si.js`, and `ta.js` with exactly **839 keys** each (0 missing, 0 extra, $A \triangle B = \emptyset$). |
 | **Zero-Trust Field Encryption** | `server/tests/qaEncryptionBootstrap.test.js` (14/14 PASS) | AES-256-GCM encryption at rest for patient NICs, names, phone numbers, addresses, and clinical consultation notes. |
+| **Email Noise Reduction** | `server/tests/emailNoiseReduction.test.js` (7/7 PASS) | 24-hour trusted device login throttle; consolidated single dispensing notification; daily dispatch ceiling warning at 80% capacity. |
 | **Resource Efficiency** | `scripts/benchmark_ml_resources.py`, Figure F09 | ML resident memory RSS verified at **197.37 MB** (38.55% of 512 MB Render Free limit; 314.63 MB headroom). Mean inference latency 0.78 ms. |
 
 ---
@@ -66,7 +72,12 @@ The following operational, administrative, and clinical review tasks require own
 | **OA-05** | **Thesis Screenshots** | Capture 1920x1080 screenshots per [`SCREENSHOT_CHECKLIST.md`](../report/SCREENSHOT_CHECKLIST.md). | Final Thesis PDF Assembly |
 | **OA-06** | **Rotate Redis Credentials** | Rotate Upstash/Redis token prior to viva presentation. | Upstash Console |
 | **OA-07** | **Rotate Demo Passwords** | Update prototype demonstration passwords (`SEED_TEST_PASSWORD`) to distinct credentials. | Post-Viva Security |
+| **OA-12** | **GitHub Branch Protection** | Enable branch protection on `main` requiring both CI workflows. | GitHub Repository Settings |
+| **OA-13** | **Vercel Edge Redeploy** | Trigger production redeploy from `main` if the served commit differs. | Vercel Project Dashboard |
+| **OA-14** | **Synthetic Patient NIC** | Ensure all thesis figures and viva slides display synthetic NIC `200012345678`. | Thesis Asset Verification |
 | **CR-01–03** | **Clinical Review** | Have a medical practitioner review Ibuprofen 800 mg ceiling, Paracetamol 7-day course, and 6 emergency rules. | `docs/final/OWNER_ACTIONS.md` |
+| **CR-04** | **Severity Mapping Review** | Clinician review of drug-drug interaction and dosage severity mapping (info/moderate/severe/critical). | `docs/final/OWNER_ACTIONS.md` |
+| **CR-05** | **Formulary Addition Sign-Off** | Clinical sign-off for any future formulary additions. | `docs/final/OWNER_ACTIONS.md` |
 | **CIT-01–04** | **Citations** | Insert official MoH Annual Health Bulletin, Census 2024, and OPD workload citations. | Thesis References Section |
 
 ---

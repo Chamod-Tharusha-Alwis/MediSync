@@ -38,7 +38,7 @@ This checklist defines the complete set of required UI screenshots for inclusion
 | **SS-10** | `ss10_consultation_vitals_symptoms.png`| Desktop (1920x1080) | `/doctor/consultation/new` | Patient NIC authentication, vitals entry inputs, and interactive symptom tag chips (`high_fever`, `joint_pain`). |
 | **SS-11** | `ss11_ml_differential_guidance.png`| Desktop (1920x1080) | `/doctor/consultation/new` | **ML suggestion card** showing *Dengue Fever* with the amber disclaimer banner: `clinicalValidation: not_established`. |
 | **SS-12** | `ss12_icd10_catalog_search.png`| Desktop (1920x1080) | `/doctor/consultation/new` | US ICD-10-CM search dropdown filtering 71,704 validated leaf concepts (e.g., `A90 Dengue fever`). |
-| **SS-13** | `ss13_medicine_safety_blocking_alert.png`| Desktop (1920x1080) | `/doctor/consultation/new` | **Red blocking alert modal**: Pairwise drug-drug interaction warning (e.g., *Warfarin + Ciprofloxacin*). |
+| **SS-13** | `ss13_medicine_safety_acknowledgment.png`| Desktop (1920x1080) | `/doctor/consultation/new` | **Medicine safety warning & prescriber acknowledgment card**: Pairwise drug-drug interaction warning with clinical responsibility confirmation. |
 | **SS-14** | `ss14_prescription_authored.png`| Desktop (1920x1080) | `/doctor/consultation/new` | Finalized prescription summary, dosage regimen, duration in days, digital sign-off button. |
 
 ---

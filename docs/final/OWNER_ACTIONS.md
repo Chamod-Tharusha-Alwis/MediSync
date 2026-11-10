@@ -20,6 +20,9 @@
 | **OA-09** | **Pre-Viva Warm-up Routine** | Execute warm-up curls 3 minutes before the viva demonstration: `curl -s https://medisync-wabc.onrender.com/health` and `curl -s https://medisync-ml-engine.onrender.com/health`. | Demonstration Readiness | `PENDING_OWNER` |
 | **OA-10** | **Render ML Engine Log Inspection** | In Render Dashboard $\to$ `medisync-ml-engine` $\to$ Logs: filter by `[ML]` to inspect request telemetry lines (`request_id`, latency, symptoms_count, tier, top_confidence) and `[ML-STARTUP]` for concept counts. | Observability & Telemetry | `PENDING_OWNER` |
 | **OA-11** | **Formulary Benchmark Review** | Have formulary committee/pharmacist review the Top 300 benchmark gaps cataloged in `docs/final/data/medicine_coverage_gaps.json` and supply verified dose ceilings / BNF citations for missing high-frequency generics. | Medicine Coverage Audit | `PENDING_OWNER` |
+| **OA-12** | **GitHub Branch Protection** | In GitHub Repo $\to$ Settings $\to$ Branches: Enable branch protection on `main`, requiring status checks to pass before merging (`build` on push/PR). | Repository Security & CI | `PENDING_OWNER` |
+| **OA-13** | **Vercel Frontend Redeployment** | If the commit served by Vercel differs from latest `main`, trigger manual redeployment in Vercel Dashboard $\to$ Deployments $\to$ Deploy from `main`. | Production Frontend Sync | `PENDING_OWNER` |
+| **OA-14** | **Synthetic Patient NIC for Screenshots** | For all final thesis and viva screenshots, use synthetic demonstration patient NICs (e.g. `199012345678`, `200012345678`) rather than real personal identity card numbers to preserve privacy in published documents. | Documentation Privacy | `PENDING_OWNER` |
 
 ---
 
@@ -30,6 +33,8 @@
 | **CR-01** | **Ibuprofen 800 mg** | Single-dose 800 mg ceiling carries elevated gastric mucosal erosion risk in primary care outpatient clinics. Recommend evaluating reduction to 400 mg or 600 mg. | [`MEDICINE_LIMITS_VERIFICATION.md`](../report/MEDICINE_LIMITS_VERIFICATION.md) | `PENDING_CLINICIAN` |
 | **CR-02** | **Paracetamol 7 Days** | Continuous 7-day maximum daily dosing (4 g/day) risks cumulative hepatotoxicity. Recommend capping uncomplicated antipyretic outpatient courses at 3–5 days. | [`MEDICINE_LIMITS_VERIFICATION.md`](../report/MEDICINE_LIMITS_VERIFICATION.md) | `PENDING_CLINICIAN` |
 | **CR-03** | **Emergency Red Flags** | Review the deterministic rule-based emergency advisory criteria (e.g. sudden severe headache with meningism, chest pain with radiation) added in Phase 4. | `docs/final/PHASE_4_PLAN.md` | `PENDING_CLINICIAN` |
+| **CR-04** | **Safety Severity Mapping & Acknowledgment Wording** | Review finding severity tiers (`critical`, `severe`, `moderate`, `info`) and acknowledgment confirmation text ("I have reviewed these warnings and accept clinical responsibility") before clinical deployment. | `server/src/utils/clinicalSafetyValidator.js` | `PENDING_CLINICIAN` |
+| **CR-05** | **Formulary Additions Sign-off** | Pharmacist / clinician sign-off on unverified dosage limits for newly added generics (`Citalopram`, `Penicillin`) prior to live prescription dispensing in production. | `server/src/data/medicine_safety_limits.json` | `PENDING_CLINICIAN` |
 
 ---
 

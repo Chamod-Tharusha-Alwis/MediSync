@@ -177,10 +177,10 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Visuals**: Figure **F14** (Trilingual Parity Chart) and screenshots **SS-01**, **SS-02**, **SS-03**.
 - **Key Points**:
   - Complete language parity across English, Sinhala (සිංහල), and Tamil (தமிழ்).
-  - 835 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
+  - 839 distinct UI keys tested; zero missing string discrepancies ($A \triangle B = \emptyset$).
   - Dynamic client-side language switching without page refresh.
 - **Speaker Notes**:
-  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 835 interface keys, verified by automated tests."*
+  > *"Healthcare accessibility requires native language support. MediSync provides 100% string parity across English, Sinhala, and Tamil across all 839 interface keys, verified by automated tests."*
 
 ---
 

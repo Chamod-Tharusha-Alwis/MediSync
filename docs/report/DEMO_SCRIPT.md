@@ -78,11 +78,14 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
      - Point out the differential suggestion: *Dengue Fever* (Tier 1 TF-IDF symptom matcher high-confidence match).
      - Point out the amber disclaimer banner: `clinicalValidation: not_established` (*"AI Clinical Decision Aid — For guidance only, not a validated diagnosis"*).
   5. **Select Standardized Diagnosis**: Search and select `Dengue fever, unspecified [A90]` from the **US ICD-10-CM catalog (71,704 searchable leaf codes)**.
-  6. **Demonstrate Deterministic Medicine Safety Engine**:
+  6. **Demonstrate Deterministic Medicine Safety Engine & Doctor Responsibility Override**:
      - Prescribe *Warfarin 5 mg daily*.
-     - Attempt to add *Ciprofloxacin 500 mg BD*.
-     - Point out the instant blocking safety alert: **CRITICAL DRUG-DRUG INTERACTION: Warfarin + Ciprofloxacin (Severe bleeding risk)**.
-     - Remove Ciprofloxacin and enter a safe regimen (*Paracetamol 500 mg QDS*).
+     - Add *Ciprofloxacin 500 mg BD*.
+     - Point out the instant safety warning card: **CRITICAL DRUG-DRUG INTERACTION: Warfarin + Ciprofloxacin (Severe bleeding risk)**.
+     - Demonstrate the doctor responsibility override workflow: the engine warns and never blocks clinical discretion.
+     - Check "I have reviewed these warnings and accept clinical responsibility" and enter the clinical justification reason (e.g. "Monitored closely with daily INR check").
+     - Notice that the prescriber safety override badge propagates downstream to the pharmacy console and public verification view.
+     - Alternatively demonstrate replacement with a safe regimen (*Paracetamol 500 mg QDS*).
   7. Finalize consultation. The prescription is generated and cryptographically signed.
 - **Key Talking Point for Examiners**:
   > *"The ML engine operates within a 196 MB memory footprint on a free-tier container, delivering sub-millisecond inference. Notice that the safety engine runs deterministically on the backend server—guaranteeing zero latency during drug-drug interaction and dosage ceiling evaluation."*
