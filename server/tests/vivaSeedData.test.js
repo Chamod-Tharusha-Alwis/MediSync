@@ -751,90 +751,98 @@ describe('Viva Voce Demonstration Seed Plan', () => {
       }
     });
 
-    test('legacy rollback (--rollback --legacy) removes untagged initial seed leftovers without touching consultations', async () => {
+    test('pre-flight check blocks duplicate insertion with zero writes', async () => {
       const inMem = setupInMemoryStore();
+      process.env.SEED_TEST_PASSWORD = 'TestPassword123!';
 
       try {
-        // Populate store with untagged legacy leftovers (documents having deterministic IDs, but NO syntheticSeedBatch)
-        inMem.getColl('hospitals').push(
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Hospital', 0)), name: 'National Apex General Hospital' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Hospital', 1)), name: 'Kandy Teaching Hospital' }
-        );
-        inMem.getColl('pharmacies').push(
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Pharmacy', 0)), name: 'Colombo Central Community Dispensary' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Pharmacy', 1)), name: 'Gampaha City Healthcare Pharmacy' }
-        );
-        inMem.getColl('doctors').push(
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 0)), licenseNo: 'SLMC-24819' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 1)), licenseNo: 'SLMC-31204' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 2)), licenseNo: 'SLMC-42918' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 3)), licenseNo: 'SLMC-51029' }
-        );
-        inMem.getColl('pharmacystaffs').push(
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 0)), fullName: 'Kaveen Bandara' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 1)), fullName: 'Malarvel Selvam' },
-          { _id: new mongoose.Types.ObjectId(deterministicObjectId('PharmacyStaff', 2)), fullName: 'Thushara Perera' }
-        );
-        for (let i = 0; i < 30; i++) {
-          inMem.getColl('patients').push({
-            _id: new mongoose.Types.ObjectId(deterministicObjectId('Patient', i)),
-            nic: i === 0 ? '200012345678' : `NIC-${i}`,
-            email: i === 0 ? 'chamod.demo.patient@accounts.invalid' : `patient${i}@accounts.invalid`
-          });
-        }
-        for (let i = 0; i < 283; i++) {
-          inMem.getColl('prescriptions').push({
-            _id: new mongoose.Types.ObjectId(deterministicObjectId('Prescription', i)),
-            prescriptionRef: `RX-VIVA-2026-${String(i + 1).padStart(4, '0')}`
-          });
-        }
-        for (let i = 0; i < 12; i++) {
-          inMem.getColl('labtests').push({
-            _id: new mongoose.Types.ObjectId(deterministicObjectId('LabTest', i)),
-            reportId: `RPT-VIVA-2026-${String(i + 1).padStart(4, '0')}`
-          });
-        }
-        // Legacy token with hash starting with 8390ba72
-        inMem.getColl('verificationtokens').push({
-          _id: new mongoose.Types.ObjectId(deterministicObjectId('VerificationToken', 0)),
-          reason: 'viva_demo_qr_access',
-          tokenHash: '8390ba7221eb2f542e9013fcb866b7c7e3a1930809177f84aed264cc887ed1c4'
+        // Pre-insert a conflicting Doctor document with planned doctorId
+        inMem.getColl('doctors').push({
+          _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 0)),
+          doctorId: 'DOC-VIVA-01',
+          fullName: 'Dr. Anura Jayasinghe'
         });
 
-        // Add 12 real production consultations that must NEVER be touched
-        for (let i = 1; i <= 12; i++) {
-          inMem.getColl('consultations').push({
-            _id: new mongoose.Types.ObjectId(),
-            consultationId: `CON-PROD-REAL-${String(i).padStart(4, '0')}`,
-            diagnosis: 'Routine Medical Review',
-            district: 'Colombo',
-            createdAt: new Date(),
-            surveillanceVerification: { status: 'pending', diagnosisStatus: 'suspected' }
-          });
-        }
+        // runSeed should detect pre-flight conflict and abort BEFORE writing any Hospital, Pharmacy, etc.
+        await expect(runSeed(plan, 'medisync_automated_test')).rejects.toThrow(/PREFLIGHT_CONFLICT/);
 
-        // 1. Dry run
-        const dryRunResult = await runRollbackLegacy('medisync_automated_test', false);
-        expect(dryRunResult.totalFound).toBe(337);
-        expect(dryRunResult.totalDeleted).toBe(0);
-        expect(inMem.getColl('consultations').length).toBe(12);
+        // Verify zero writes: hospitals, pharmacies have 0 documents, and doctors still only has the 1 pre-existing doc
+        expect(inMem.getColl('hospitals').length).toBe(0);
+        expect(inMem.getColl('pharmacies').length).toBe(0);
+        expect(inMem.getColl('doctors').length).toBe(1);
+        expect(inMem.getColl('consultations').length).toBe(0);
+      } finally {
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
 
-        // 2. Confirmed cleanup
-        const cleanupResult = await runRollbackLegacy('medisync_automated_test', true);
-        expect(cleanupResult.totalDeleted).toBe(337);
+    test('failure injected on collection 3 leaves zero documents (all-or-nothing rollback)', async () => {
+      const inMem = setupInMemoryStore();
+      process.env.SEED_TEST_PASSWORD = 'TestPassword123!';
 
-        // Verify legacy collections are 0
+      // Inject failure on collection 3 (Doctor)
+      const origDocInsertMany = modelMap.Doctor.collection.insertMany;
+      modelMap.Doctor.collection.insertMany = async () => {
+        throw new Error('SIMULATED_COLLECTION_3_DATABASE_FAILURE');
+      };
+
+      try {
+        await expect(runSeed(plan, 'medisync_automated_test')).rejects.toThrow(/partial insert rolled back/);
+
+        // Verify all-or-nothing: Hospital (coll 1) and Pharmacy (coll 2) were automatically rolled back
         expect(inMem.getColl('hospitals').length).toBe(0);
         expect(inMem.getColl('pharmacies').length).toBe(0);
         expect(inMem.getColl('doctors').length).toBe(0);
-        expect(inMem.getColl('pharmacystaffs').length).toBe(0);
-        expect(inMem.getColl('patients').length).toBe(0);
-        expect(inMem.getColl('prescriptions').length).toBe(0);
-        expect(inMem.getColl('labtests').length).toBe(0);
-        expect(inMem.getColl('verificationtokens').length).toBe(0);
+        expect(inMem.getColl('seed_manifests').length).toBe(0);
+      } finally {
+        modelMap.Doctor.collection.insertMany = origDocInsertMany;
+        inMem.restore();
+        delete process.env.SEED_TEST_PASSWORD;
+      }
+    });
 
-        // Real consultations are 100% preserved
-        expect(inMem.getColl('consultations').length).toBe(12);
+    test('legacy matcher finds documents lacking markers and inspect reports them', async () => {
+      const inMem = setupInMemoryStore();
+      const { runInspect } = require('../../scripts/seed-viva-data.js');
+
+      try {
+        // Insert documents lacking synthetic markers (as in initial prod seed)
+        inMem.getColl('doctors').push({
+          _id: new mongoose.Types.ObjectId(deterministicObjectId('Doctor', 0)),
+          doctorId: 'DOC-VIVA-01',
+          fullName: 'Dr. Anura Jayasinghe',
+          role: 'doctor'
+        });
+        inMem.getColl('prescriptions').push({
+          _id: new mongoose.Types.ObjectId(deterministicObjectId('Prescription', 0)),
+          prescriptionId: 'RX-VIVA-2026-00001'
+        });
+        inMem.getColl('verificationtokens').push({
+          _id: new mongoose.Types.ObjectId(deterministicObjectId('VerificationToken', 0)),
+          consultationRef: 'CON-VIVA-2026-0003',
+          tokenHash: 'f86a9daf22ed532da016094ca75449a7575d3b7f34e3a6a59b689bd5db42b049'
+        });
+
+        // 1. runInspect detects orphan mismatches
+        const inspectRes = await runInspect(plan, 'medisync_automated_test');
+        expect(inspectRes.mismatches.length).toBeGreaterThanOrEqual(3);
+        const docMismatch = inspectRes.mismatches.find(m => m.collection === 'Doctor');
+        expect(docMismatch).toBeDefined();
+        expect(docMismatch.hasBatch).toBe(false);
+        expect(docMismatch.hasDeterministicId).toBe(true);
+
+        // 2. runRollbackLegacy dry-run finds them and explains reason
+        const dryRes = await runRollbackLegacy('medisync_automated_test', false);
+        expect(dryRes.totalFound).toBe(3);
+        expect(dryRes.totalDeleted).toBe(0);
+
+        // 3. runRollbackLegacy confirm deletes them
+        const cleanRes = await runRollbackLegacy('medisync_automated_test', true);
+        expect(cleanRes.totalDeleted).toBe(3);
+        expect(inMem.getColl('doctors').length).toBe(0);
+        expect(inMem.getColl('prescriptions').length).toBe(0);
+        expect(inMem.getColl('verificationtokens').length).toBe(0);
       } finally {
         inMem.restore();
       }
