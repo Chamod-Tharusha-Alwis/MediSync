@@ -28,6 +28,7 @@ jobs:
         env:
           MEDISYNC_OFFLINE_CI: 'true'
           MEDISYNC_OFFLINE_PROFILE: security
+          NODE_OPTIONS: '--max-old-space-size=6144 --expose-gc'
         run: node scripts/run_offline_tests.js
       - name: Declare remaining evidence boundaries
         run: echo 'NOT RUN - private local preservation baseline, Atlas, clinical E2E and providers. Client/ML checks belong to the separate full offline job.'

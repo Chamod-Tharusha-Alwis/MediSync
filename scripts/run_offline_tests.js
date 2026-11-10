@@ -62,8 +62,14 @@ function snapshot() {
 }
 function cleanEnvironment() {
   const env = {};
-  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER', 'MEDISYNC_TEST_TMP']) if (process.env[key]) env[key] = process.env[key];
+  for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER', 'MEDISYNC_TEST_TMP', 'NODE_OPTIONS']) if (process.env[key]) env[key] = process.env[key];
   if (!env.MEDISYNC_TEST_TMP) env.MEDISYNC_TEST_TMP = testTmpBase(process.env);
+  if (!env.NODE_OPTIONS) {
+    env.NODE_OPTIONS = '--max-old-space-size=6144 --expose-gc';
+  } else {
+    if (!env.NODE_OPTIONS.includes('--max-old-space-size')) env.NODE_OPTIONS += ' --max-old-space-size=6144';
+    if (!env.NODE_OPTIONS.includes('--expose-gc')) env.NODE_OPTIONS += ' --expose-gc';
+  }
   return { ...env, NODE_ENV: 'test', BABEL_ENV: 'test', CI: 'true', TZ: 'UTC', MEDISYNC_OFFLINE_ONLY: 'true', ENCRYPTION_KEY: 'synthetic-offline-key-never-for-real-data', REACT_APP_MEDISYNC_QA: 'true', REACT_APP_API_URL: '/api', REACT_APP_SERVER_URL: 'http://127.0.0.1:5100' };
 }
 async function main() {

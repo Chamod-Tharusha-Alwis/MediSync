@@ -21,6 +21,6 @@ if (mode === 'backend') {
   jest = require('../server/node_modules/jest');
 }
 config.cacheDirectory = path.join(out, mode + '-cache');
-jest.runCLI({ config: JSON.stringify(config), runInBand: true, watch: false, watchman: false, cache: false, json: true, outputFile: path.join(out, mode + '-results.json') }, [config.rootDir])
+jest.runCLI({ config: JSON.stringify(config), runInBand: true, watch: false, watchman: false, cache: false, json: true, logHeapUsage: true, outputFile: path.join(out, mode + '-results.json') }, [config.rootDir])
   .then(({ results }) => { process.exitCode = results.success ? 0 : 1; })
   .catch(error => { console.error(error.stack); process.exitCode = 1; });

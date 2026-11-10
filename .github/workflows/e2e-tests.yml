@@ -33,6 +33,7 @@ jobs:
       - name: Run actual offline profiles and authorized hash chain
         env:
           MEDISYNC_OFFLINE_CI: 'true'
+          NODE_OPTIONS: '--max-old-space-size=6144 --expose-gc'
         run: node scripts/run_offline_tests.js
       - name: Diagnostic failure log output
         if: failure()
