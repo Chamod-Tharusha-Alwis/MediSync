@@ -180,6 +180,7 @@ export default function PublicHealth() {
   const [surveillanceRange, setSurveillanceRange] = useState(30);
   const [surveillanceDistrict, setSurveillanceDistrict] = useState('all');
   const [activeAlerts, setActiveAlerts] = useState([]);
+  const [alertsAvailable, setAlertsAvailable] = useState(false);
   const [surveillanceScope, setSurveillanceScope] = useState('district'); // 'district' | 'province' | 'island-wide'
 
   /* ── Tab 2: Load Consultation Activity Data ── */
@@ -219,13 +220,15 @@ export default function PublicHealth() {
     let active = true;
     setSurveillanceLoading(true);
     setSurveillanceError(null);
+    setActiveAlerts([]);
+    setAlertsAvailable(false);
 
     Promise.allSettled([
       api.get('/public/health-stats', {
         params: { rangeDays: surveillanceRange, district: surveillanceDistrict },
         signal: controller.signal
       }),
-      api.get('/alerts/active', { signal: controller.signal }).catch(() => ({ data: { data: [] } }))
+      api.get('/public/outbreak-alerts', { signal: controller.signal })
     ]).then(([statsRes, alertsRes]) => {
       if (!active) return;
       if (statsRes.status === 'fulfilled' && statsRes.value.data?.data) {
@@ -235,6 +238,7 @@ export default function PublicHealth() {
       }
       if (alertsRes.status === 'fulfilled' && Array.isArray(alertsRes.value?.data?.data)) {
         setActiveAlerts(alertsRes.value.data.data);
+        setAlertsAvailable(true);
       }
     }).finally(() => {
       if (active) setSurveillanceLoading(false);
@@ -292,36 +296,12 @@ export default function PublicHealth() {
 
   const hasSufficientForecast = Array.isArray(surveillanceData?.forecast) && surveillanceData.forecast.length > 0;
 
-  // Active Alerts filtered for selected district
-  const filteredAlerts = useMemo(() => {
-    if (!activeAlerts || activeAlerts.length === 0) {
-      // If unauthenticated or no explicit alert documents, derive notices from byDistrict
-      if (surveillanceData?.byDistrict && surveillanceData.byDistrict.length > 0) {
-        return surveillanceData.byDistrict
-          .filter(d => surveillanceDistrict === 'all' || d.district === surveillanceDistrict)
-          .map((d, i) => ({
-            _id: `notice-${i}`,
-            disease: d.topDisease || 'Clinical condition',
-            location: d.district,
-            severity: d.totalCases >= 20 ? 'Critical' : d.totalCases >= 10 ? 'High' : 'Moderate',
-            affectedCount: d.totalCases,
-            message: `Public advisory: ${d.totalCases} confirmed cases of ${d.topDisease || 'infection'} reported in ${d.district}. Take precautionary measures.`
-          }));
-      }
-      return [];
-    }
-    return activeAlerts.filter(a => surveillanceDistrict === 'all' || a.location === surveillanceDistrict || a.district === surveillanceDistrict);
-  }, [activeAlerts, surveillanceData, surveillanceDistrict]);
+  const filteredAlerts = useMemo(() => activeAlerts.filter(alert =>
+    surveillanceDistrict === 'all' || (alert.location || alert.district) === surveillanceDistrict
+  ), [activeAlerts, surveillanceDistrict]);
 
-  const districtsUnderAdvisoryCount = useMemo(() => {
-    const alertDistricts = new Set(activeAlerts.map(a => a.location || a.district).filter(Boolean));
-    if (surveillanceData?.byDistrict) {
-      surveillanceData.byDistrict.forEach(d => alertDistricts.add(d.district));
-    }
-    return alertDistricts.size;
-  }, [activeAlerts, surveillanceData]);
+  const districtsUnderAdvisoryCount = new Set(filteredAlerts.map(alert => alert.location || alert.district).filter(Boolean)).size;
 
-  // Provincial aggregates for official 9 provinces
   const provinceAggregates = useMemo(() => {
     if (!surveillanceData?.byDistrict) return [];
     const map = {};
@@ -393,15 +373,15 @@ export default function PublicHealth() {
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
-                  National Public Health Observatory
+                  {t('liveQa.observatory')}
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white" data-testid="public-activity-heading">
-                {activeTab === 'surveillance' ? 'Epidemiological Surveillance v2' : t('activity.title', 'Recorded consultation visits')}
+                {activeTab === 'surveillance' ? t('liveQa.surveillance') : t('activity.title', 'Recorded consultation visits')}
               </h1>
               <p className="mt-1 text-sm text-slate-400">
                 {activeTab === 'surveillance'
-                  ? 'Real-time Sri Lanka district risk modeling, early outbreak aberration detection, and 14-day projections.'
+                  ? t('liveQa.surveillanceDescription')
                   : t('activity.visitCaption', 'One visit is one saved consultation record, not a unique patient or a confirmed case.')}
               </p>
             </div>
@@ -417,7 +397,7 @@ export default function PublicHealth() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Activity className="w-4 h-4" /> Outbreak & Surveillance
+                <Activity className="w-4 h-4" /> {t('liveQa.surveillanceTab')}
               </button>
               <button
                 type="button"
@@ -545,7 +525,7 @@ export default function PublicHealth() {
                         <ShieldAlert className="w-5 h-5 text-red-400" />
                       </div>
                       <p className="mt-3 text-3xl font-black text-red-400 font-mono">
-                        {surveillanceLoading ? '…' : filteredAlerts.length}
+                        {surveillanceLoading ? '…' : alertsAvailable ? filteredAlerts.length : unavailable}
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         Statistically significant 2-day persistent clusters
@@ -558,7 +538,7 @@ export default function PublicHealth() {
                         <AlertTriangle className="w-5 h-5 text-amber-400" />
                       </div>
                       <p className="mt-3 text-3xl font-black text-amber-400 font-mono">
-                        {surveillanceLoading ? '…' : districtsUnderAdvisoryCount}
+                        {surveillanceLoading ? '…' : alertsAvailable ? districtsUnderAdvisoryCount : unavailable}
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         Districts with elevated disease vectors (N ≥ 5)
@@ -793,7 +773,7 @@ export default function PublicHealth() {
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-400" /> Active Epidemiological Advisories
                 </h3>
-                {filteredAlerts.length > 0 ? (
+                {!alertsAvailable ? <p role="status">{unavailable}</p> : filteredAlerts.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredAlerts.map(alert => (
                       <div

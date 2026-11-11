@@ -147,6 +147,7 @@ const ROUTE_AUDIT_MAP = [
   { routeFile: 'pharmacyRoutes.js', method: 'DELETE', path: '/seed-restock', action: 'DENIED_DATASET_MAINTENANCE' },
 
   // ── prescriptionRoutes.js ──
+  { routeFile: 'prescriptionRoutes.js', method: 'POST', path: '/consultation-safety', action: 'CHECK_MEDICINE_SAFETY' },
   { routeFile: 'prescriptionRoutes.js', method: 'POST', path: '/check-safety', action: 'CHECK_MEDICINE_SAFETY' },
   { routeFile: 'prescriptionRoutes.js', method: 'POST', path: '/issue', action: 'ISSUE_PRESCRIPTION' },
   { routeFile: 'prescriptionRoutes.js', method: 'PUT', path: '/dispense/:id', action: 'DISPENSE_PRESCRIPTION' },

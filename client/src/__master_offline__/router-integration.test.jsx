@@ -125,7 +125,7 @@ const timelineWithStandaloneRx = [
     date: '2026-10-19T14:00:00Z',
     data: {
       doctorName: 'Dr. Fernando',
-      diagnosis: 'Refill Prescription',
+      diagnosis: 'Atorvastatin 20mg',
       isOTC: false,
       medications: [{ name: 'Atorvastatin 20mg' }]
     }
@@ -159,8 +159,8 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
     fireEvent.click(rxBtn);
 
     // Should transition to History and display both consultation-nested & standalone non-OTC prescriptions
-    expect(await screen.findByText('Type 2 Diabetes')).toBeInTheDocument();
-    expect(screen.getByText('Refill Prescription')).toBeInTheDocument();
+    expect(await screen.findByText('Metformin 500mg')).toBeInTheDocument();
+    expect(screen.getByText('Atorvastatin 20mg')).toBeInTheDocument();
     expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
     expect(screen.queryByText('Direct Pharmacy Dispensation')).not.toBeInTheDocument();
   });
@@ -178,8 +178,9 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
     await waitFor(() => {
       expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
     });
-    expect(screen.getByText('Type 2 Diabetes')).toBeInTheDocument();
-    expect(screen.getByText('Refill Prescription')).toBeInTheDocument();
+    expect(screen.getByText('Metformin 500mg')).toBeInTheDocument();
+    expect(screen.queryByText('Type 2 Diabetes')).not.toBeInTheDocument();
+    expect(screen.getByText('Atorvastatin 20mg')).toBeInTheDocument();
 
     // Re-navigate while mounted back to filter 'all'
     fireEvent.click(screen.getByRole('button', { name: 'Nav All' }));
@@ -210,7 +211,7 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
 
     // Step 1: Click My Prescriptions -> enters history stack
     fireEvent.click(screen.getByRole('button', { name: /My Prescriptions/i }));
-    expect(await screen.findByText('Type 2 Diabetes')).toBeInTheDocument();
+    expect(await screen.findByText('Metformin 500mg')).toBeInTheDocument();
     expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
 
     // Step 2: Navigate Back -> returns to dashboard overview
@@ -219,7 +220,7 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
 
     // Step 3: Navigate Forward -> returns to prescription-filtered History
     fireEvent.click(screen.getByRole('button', { name: 'Nav Forward' }));
-    expect(await screen.findByText('Type 2 Diabetes')).toBeInTheDocument();
+    expect(await screen.findByText('Metformin 500mg')).toBeInTheDocument();
     expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
   });
 
@@ -245,8 +246,9 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
 
     // Prescription tab displays consultation-nested Rx AND standalone doctor Rx
     fireEvent.click(screen.getByRole('button', { name: 'prescription' }));
-    expect(screen.getByText('Type 2 Diabetes')).toBeInTheDocument();
-    expect(screen.getByText('Refill Prescription')).toBeInTheDocument();
+    expect(screen.getByText('Metformin 500mg')).toBeInTheDocument();
+    expect(screen.queryByText('Type 2 Diabetes')).not.toBeInTheDocument();
+    expect(screen.getByText('Atorvastatin 20mg')).toBeInTheDocument();
     expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
     expect(screen.queryByText('Direct Pharmacy Dispensation')).not.toBeInTheDocument();
   });
@@ -262,7 +264,7 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
 
     expect(screen.getByText('Direct Pharmacy Dispensation')).toBeInTheDocument();
     expect(screen.queryByText('Type 2 Diabetes')).not.toBeInTheDocument();
-    expect(screen.queryByText('Refill Prescription')).not.toBeInTheDocument();
+    expect(screen.queryByText('Atorvastatin 20mg')).not.toBeInTheDocument();
     expect(screen.queryByText('General Checkup')).not.toBeInTheDocument();
   });
 
@@ -278,7 +280,7 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
 
     expect(screen.getByText('Type 2 Diabetes')).toBeInTheDocument();
     expect(screen.getByText('General Checkup')).toBeInTheDocument();
-    expect(screen.queryByText('Refill Prescription')).not.toBeInTheDocument();
+    expect(screen.queryByText('Atorvastatin 20mg')).not.toBeInTheDocument();
     expect(screen.queryByText('Direct Pharmacy Dispensation')).not.toBeInTheDocument();
 
     // User manually clicks All Events tab
@@ -286,7 +288,7 @@ describe('Genuine React Router Integration: MemoryRouter & History State', () =>
     fireEvent.click(allTab);
 
     expect(screen.getByText('Type 2 Diabetes')).toBeInTheDocument();
-    expect(screen.getByText('Refill Prescription')).toBeInTheDocument();
+    expect(screen.getByText('Atorvastatin 20mg')).toBeInTheDocument();
     expect(screen.getByText('General Checkup')).toBeInTheDocument();
     expect(screen.getByText('Direct Pharmacy Dispensation')).toBeInTheDocument();
   });

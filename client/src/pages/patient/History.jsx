@@ -283,7 +283,9 @@ const HistoryCard = ({ event, onRate }) => {
   // Primary title
   const cardTitle = isOTC
     ? 'Direct Pharmacy Dispensation'
-    : (details.diagnosis || 'Medical Consultation');
+    : rawType === 'lab' ? formatLabTestName(labTests[0])
+      : rawType === 'prescription' ? (details.drugName || details.medications?.[0]?.name || t('liveQa.prescription'))
+      : (details.diagnosis || 'Medical Consultation');
 
   return (
     <motion.div variants={cardVariants} className="relative pl-14">
@@ -731,7 +733,7 @@ const SummaryChip = ({ icon: Icon, label, count, color }) => (
 );
 
 /* ─── Main Page ───────────────────────────────────────────────────────────── */
-  const VALID_FILTERS = ['all', 'consultation', 'prescription', 'otc', 'dispensing'];
+  const VALID_FILTERS = ['all', 'consultation', 'prescription', 'lab', 'otc', 'dispensing'];
   const getSafeFilter = (val) => (VALID_FILTERS.includes(val) ? val : 'all');
 
 const PatientHistory = () => {
@@ -779,18 +781,26 @@ const PatientHistory = () => {
       item.data?._id === consultationId ? { ...item, data: { ...item.data, reviews: [...(item.data.reviews || []), ...newReviews] } } : item
     ));
 
-  /* Filtered feed — OTC filter maps to prescription events, prescription filter maps to consultations with nested prescriptions or standalone non-OTC prescriptions */
   const activeFilter = getSafeFilter(filter);
   const filtered = activeFilter === 'all'
     ? timeline
-    : activeFilter === 'otc'
-      ? timeline.filter(e => e.type === 'prescription' && e.data?.isOTC)
-      : activeFilter === 'prescription'
-        ? timeline.filter(e =>
-            (e.type === 'consultation' && Array.isArray(e.data?.prescriptions) && e.data.prescriptions.length > 0) ||
-            (e.type === 'prescription' && !e.data?.isOTC)
-          )
-        : timeline.filter(e => e.type === activeFilter);
+    : timeline.flatMap(event => {
+        if (activeFilter === 'otc') return event.type === 'prescription' && event.data?.isOTC ? [event] : [];
+        if (activeFilter === 'prescription' && event.type === 'prescription') return event.data?.isOTC ? [] : [event];
+        if (event.type !== 'consultation' || !['lab', 'prescription'].includes(activeFilter)) {
+          return event.type === activeFilter ? [event] : [];
+        }
+        const isLab = activeFilter === 'lab';
+        const records = isLab ? event.data?.labTests : event.data?.prescriptions;
+        if (!Array.isArray(records)) return [];
+        return records.filter(Boolean).map((record, index) => ({
+          type: activeFilter,
+          date: record.createdAt || record.issuedAt || event.date,
+          data: isLab
+            ? { _id: record._id || `${event.data._id}-lab-${index}`, labTests: [record] }
+            : { _id: record._id || `${event.data._id}-rx-${index}`, prescriptions: [record], drugName: record.drugName || record.medicineName || record.name },
+        }));
+      });
 
   /* ── Guards ── */
   if (!nic) return (
@@ -843,7 +853,7 @@ const PatientHistory = () => {
       {/* ── Page header ── */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 tracking-tight">
-          Medical History
+          {t('liveQa.history')}
         </h1>
         <p className="text-slate-400 mt-1 text-sm">{t("patient.medicalHistorySubtitle", "Your complete chronological health and prescription record.")}</p>
       </div>
@@ -866,7 +876,7 @@ const PatientHistory = () => {
       {/* ── Filter tabs ── */}
       {timeline.length > 0 && (
         <div className="flex gap-2 mb-8 flex-wrap">
-          {['all', 'consultation', 'prescription', 'otc', 'dispensing'].map(f => (
+          {['all', 'consultation', 'prescription', 'lab', 'otc', 'dispensing'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -876,7 +886,7 @@ const PatientHistory = () => {
                   : 'text-slate-500 border-slate-800/60 hover:text-slate-300 hover:border-slate-700'
               }`}
             >
-              {f === 'all' ? 'All Events' : f === 'otc' ? 'OTC Dispensed' : f.replace('_', ' ')}
+              {t(`liveQa.${f}`, f === 'all' ? 'All Events' : f === 'otc' ? 'OTC Dispensed' : f)}
             </button>
           ))}
         </div>

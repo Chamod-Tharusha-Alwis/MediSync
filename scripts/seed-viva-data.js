@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const verifyCountsOnly = require.main === module && process.argv.slice(2).includes('--verify');
+
 /**
  * scripts/seed-viva-data.js
  *
@@ -23,12 +25,12 @@ const dotenv = require('dotenv');
 
 // Load environment from server/.env if present
 const envPath = path.resolve(__dirname, '../server/.env');
-if (fs.existsSync(envPath)) {
+if (!verifyCountsOnly && fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
 // Ensure notification transport is silenced
-process.env.EMAIL_PROVIDER = 'none';
+if (!verifyCountsOnly) process.env.EMAIL_PROVIDER = 'none';
 
 let mongoose;
 try {
@@ -177,7 +179,7 @@ function getSeedOnlyFilter(modelName) {
   }
 }
 
-const models = {
+const models = verifyCountsOnly ? {} : {
   Hospital: require('../server/src/models/Hospital'),
   Pharmacy: require('../server/src/models/Pharmacy'),
   Doctor: require('../server/src/models/Doctor'),
@@ -1276,6 +1278,13 @@ async function runVerify(plan, database) {
 }
 
 async function main() {
+  if (verifyCountsOnly) {
+    if (process.argv.slice(2).length !== 1) throw Object.assign(new Error('VIVA_VERIFY_ARGUMENTS_INVALID'), { safeCode: 'VIVA_VERIFY_ARGUMENTS_INVALID' });
+    const { withOwnedBatch, countOwnedManifest } = require('./vivaOwnerMaintenance.cjs');
+    const collections = await withOwnedBatch(false, countOwnedManifest);
+    console.log(JSON.stringify({ result: 'VIVA_VERIFY_COUNTS', collections }));
+    return;
+  }
   const args = parseArgs();
   loadEncryptionKeys();
   const plan = buildVivaSeedPlan({
@@ -1300,7 +1309,8 @@ async function main() {
 
 if (require.main === module) {
   main().catch(err => {
-    console.error('FATAL ERROR:', err);
+    if (verifyCountsOnly) console.error(err.safeCode || 'VIVA_VERIFY_FAILED');
+    else console.error('FATAL ERROR:', err);
     process.exit(1);
   });
 }

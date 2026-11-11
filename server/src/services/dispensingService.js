@@ -66,6 +66,8 @@ async function runTransaction(work, startSession = () => mongoose.startSession()
           continue;
         }
         if (e instanceof DispenseError || e instanceof ClinicalCommandError) throw e;
+        if (e.message === 'MEDICATION_RECONCILIATION_REQUIRED') fail(e.message, 'Active medications could not be reconciled. Review the patient record.', 409);
+        if (e.message === 'MEDICATION_REVIEW_REQUIRED') fail(e.message, 'Medication safety review is required before dispensing.', 409);
         fail('TRANSACTION_FAILED', 'Dispensing could not be completed atomically. Retry the same checkout.', 503);
       }
     }
@@ -172,15 +174,17 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
           pharmacyName:pharmacy.name,isAlternativeDispensed:!!body.isAlternativeDispensed,alternativeDetails:body.alternativeDetails || ''}}, {session});
       if (claimed.modifiedCount !== 1) fail('ALREADY_DISPENSED', 'Prescription is no longer eligible.');
     }
-    if (Array.isArray(pharmacy.inventory) && pharmacy.inventory.length > 0) {
-      for (const item of items) {
-        const inv = pharmacy.inventory.find(i => item.inventoryItemId ? String(i._id) === item.inventoryItemId : normalize(i.drugName) === normalize(item.name));
-        if (inv) {
-          await Pharmacy.updateOne({ _id:pharmacy._id, isActive:true,
-            inventory:{$elemMatch:{_id:inv._id,drugName:inv.drugName,stock:{$gte:item.qty}}} },
-          {$inc:{'inventory.$.stock':-item.qty}}, {session}).catch(() => {});
-        }
-      }
+    const inventory = Array.isArray(pharmacy.inventory) ? pharmacy.inventory : [];
+    for (const item of items) {
+      if (!item.inventoryItemId && inventory.length === 0) continue;
+      const matches = inventory.filter(row => normalize(row.drugName) === normalize(item.name) &&
+        (!item.inventoryItemId || String(row._id) === item.inventoryItemId));
+      if (matches.length !== 1) fail('STOCK_ITEM_REQUIRED', 'Select a matching pharmacy stock item.', 409);
+      const stock = matches[0];
+      const decremented = await Pharmacy.updateOne({ _id: pharmacy._id, isActive: true,
+        inventory: { $elemMatch: { _id: stock._id, drugName: stock.drugName, stock: { $gte: item.qty } } } },
+      { $inc: { 'inventory.$.stock': -item.qty } }, { session });
+      if (decremented.modifiedCount !== 1) fail('INSUFFICIENT_STOCK', 'Insufficient stock for this quantity.', 409);
     }
     if (otc) {
       rx = new Prescription({ _id:otcPrescriptionId, prescriptionId:`OTC-${receiptId}`, patientNic:nic,

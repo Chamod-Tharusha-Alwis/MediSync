@@ -95,3 +95,5 @@ module.exports.testMatch.push(
   '<rootDir>/tests/orphanReferenceNullSafety.test.js',
   '<rootDir>/tests/securityRemediationF01toF09.test.js'
 );
+
+module.exports.testMatch.push('<rootDir>/tests/liveQaRepairs.test.js');

@@ -37,11 +37,11 @@ async function executeClinicalWrite(req, { standalone = false, command = require
       if (!patient || normalizeNic(patient.nic) !== nic) throw new ClinicalCommandError('CLINICAL_PATIENT_DENIED', 403);
       patient.decryptFieldsSync?.();
 
-      const existingMedList = names.length ? await existingMedicines(patient._id, { session, PrescriptionModel: models.Prescription }) : [];
+      const existingMedList = names.length ? await existingMedicines(patient._id, { session, PrescriptionModel: models.Prescription, includeReferences: true }) : [];
       const computed = computeClinicalFindings({
         medications: medicines,
         patientAllergies: patient.allergies || [],
-        activePrescriptions: existingMedList.map(n => ({ drugName: n })),
+        activePrescriptions: existingMedList.map(entry => typeof entry === 'string' ? { drugName: entry } : entry),
         analyze,
         allergyCheck,
       });
@@ -85,7 +85,7 @@ async function executeClinicalWrite(req, { standalone = false, command = require
           }
         }
         if (names.length) {
-          const allMeds = [...existingMedList, ...names];
+          const allMeds = [...existingMedList.map(entry => typeof entry === 'string' ? entry : entry.drugName), ...names];
           try {
             assertMedicationResult(await analyze(allMeds), allMeds.length);
           } catch (mErr) {

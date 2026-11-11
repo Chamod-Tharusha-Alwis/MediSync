@@ -39,11 +39,10 @@ Evaluation of the 15 sanity symptom scenarios (`docs/report/ML_DESIGN_PARAMETERS
 ### 11.1.8 Known Security Limitations & Audit Review (CODEX 20261111 Audit)
 Independent security analysis (`docs/final/SECURITY_REVIEW_20261111.md`) identified architectural security limitations across the prototype implementation:
 1. **F04: Partial Field Encryption Coverage**: At-rest database encryption is limited to patient `['fullName', 'contactInfo', 'allergies']` and consultation `['patientNic', 'diagnosis', 'notes']`. Identifiers, email addresses, residential addresses, and dates of birth remain in plaintext. In verification flows, decryption failure is explicitly distinguished from known-clean zero allergies (`allergiesStatus: 'unavailable'` vs `'none'`). *Repair path*: Full schema envelope encryption across all PII.
-2. **F05: Legacy PDF Encryption Cipher**: Encrypted PDFs generated via `@pdfsmaller/pdf-encrypt-lite` utilize RC4-128 with identifier-derived passwords. PDF export is held under active administrative lockout (`SECURITY_HOLD`, returning HTTP 503). *Repair path*: Migrate to AES-256 PDF encryption (ISO 32000-2) with randomized per-document keys.
+2. **F05: Legacy PDF Encryption Cipher**: Encrypted PDFs generated via `@pdfsmaller/pdf-encrypt-lite` utilize RC4-128 with identifier-derived passwords. The operator reported server export enabled on 11 November 2026. The hold returns HTTP 503 when the flag is unset or false. *Repair path*: Migrate to AES-256 PDF encryption (ISO 32000-2) with randomized per-document keys.
 3. **F08: LocalStorage Refresh Tokens**: Refresh tokens stored in browser `localStorage` are exposed if XSS occurs. *Repair path*: Migrate to HttpOnly, SameSite=Strict cookies with rotating refresh tokens.
-4. **F10: ML Engine Internal HMAC Hour-Bound Window**: Internal ML service HMAC signature is bound to a 1-hour window (`floor(time.time() / 3600)`) with no replay cache or nonce. *Repair path*: Redis-backed per-request nonce validation or 30-second timestamp freshness window.
-5. **F11: Admin Emergency Reveal Quorum**: Admin reveal of unmasked identifiers is audited but does not enforce multi-party quorum approval. *Repair path*: Multi-officer dual-authorization workflow.
-6. **F12: Field Encryption Cipher Mode Authenticity**: Storage encryption uses AES-256-CBC with SHA-256 key hashing without AEAD authentication tags. *Repair path*: Upgrade to AES-256-GCM or cloud KMS envelope encryption.
+4. **Additional observation: ML Engine Internal HMAC Hour-Bound Window**: `ml-engine/app.py` accepts credentials for the current and previous UTC hour without binding the signature to a request. *Repair path*: Redis-backed per-request nonce validation or 30-second timestamp freshness window.
+6. **F12: sensitive patient fields remain outside field encryption**: Storage encryption uses AES-256-CBC with SHA-256 key hashing without AEAD authentication tags. *Repair path*: Upgrade to AES-256-GCM or cloud KMS envelope encryption.
 
 ---
 
@@ -60,3 +59,5 @@ Develop localized clinical NLP models capable of parsing unstructured, trilingua
 
 ### 11.2.4 Formal Clinical Observational Trials
 Subject the diagnostic decision support assistant and medicine safety engine to formal multi-center prospective observational trials across Sri Lankan provincial general hospitals to establish real-world sensitivity, specificity, and clinician acceptance metrics under ethical committee oversight.
+
+The remaining Codex review findings include F10 “production storage verification may execute DDL during startup” and F11 “production cluster selection is broad, not an exact existing-cluster pin.” QR history export requires an OTP-issued view session and is scoped to the linked encounter. The patient consultation PDF button also checks the frontend build flag `REACT_APP_PDF_EXPORT_ENABLED`.

@@ -51,3 +51,10 @@
 | **CIT-04** | `[OWNER: Census 2024 citations]` | Chapter 11 (2024 national census district populations) | Department of Census and Statistics Sri Lanka (Census 2024 preliminary report) | `PENDING_OWNER` |
 
 - [ ] **Emergency Red-Flag Rule Review**: Have a licensed medical officer review `server/src/data/emergencyRedFlags.json` (6 conservative heuristic rules: acute meningism, acute cardiorespiratory distress, acute coronary symptoms, altered mental status, suspected anaphylaxis, severe active hemorrhage) to validate trigger keywords and advisory language before clinical deployment.
+
+### 11 November live QA follow-up
+
+- **Account boundary.** Use an isolated QA environment with the batch fixtures. Production authentication explicitly rejects synthetic markers. The incident account and session responsible for the screenshot still need owner-side reconciliation.
+- **PDF frontend.** The current consultation PDF control checks `REACT_APP_PDF_EXPORT_ENABLED` at build time. Vercel must rebuild for a flag change to take effect. Review the RC4 and password limitation before enabling the client control.
+- **Data procedures.** Review the stock and verification-link steps in [the owner runbook](LIVE_QA_OWNER_RUNBOOK.md). Apply only a dry-run plan that matches the reviewed batch.
+- **Language review.** Review the new Sinhala and Tamil translations on narrow screens and confirm regional clinical terms.

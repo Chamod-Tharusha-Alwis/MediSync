@@ -34,7 +34,7 @@
 | `GET` | `/api/doctor/stats` | Doctor | Retrieve summary stats: today's consultations, total encounters, facility status. |
 | `GET` | `/api/doctor/profile` | Doctor | Retrieve doctor medical registration number (SLMC), specialization, and affiliations. |
 | `PUT` | `/api/doctor/profile` | Doctor | Update professional profile and contact details. |
-| `POST` | `/api/doctor/consultation` | Doctor | **Create Clinical Consultation**: Persists encounter, validates duration limits, evaluates drug interactions, encrypts clinical notes via AES-256-GCM. |
+| `POST` | `/api/doctor/consultation` | Doctor | **Create Clinical Consultation**: Persists encounter, validates duration limits, evaluates drug interactions, encrypts covered clinical notes through the legacy CBC field plugin. |
 | `GET` | `/api/doctor/consultations` | Doctor | List historical consultations authored by authenticated clinician. |
 | `GET` | `/api/doctor/consultation-command/:key` | Doctor | Retrieve status of idempotent clinical command execution. |
 | `PUT` | `/api/doctor/consultation/:id/followup` | Doctor | Update follow-up review schedule and clinical follow-up notes. |
@@ -148,3 +148,8 @@
 | `GET` | `/health` | Public | Returns service status (`ready`), reference dataset count (7 files), and ICD-10 concept count (71,704). |
 | `GET` | `/metrics` | Public | Returns uptime, total processed inference queries, and memory RSS telemetry. |
 | `POST` | `/evaluate` | Internal / Admin | Batch evaluation runner for synthetic test suites and consistency scoring. |
+
+### Pharmacy stock and outbreak publication
+
+- `GET /api/pharmacy/inventory` uses the authenticated staff member's pharmacy membership and returns available embedded stock. A stock-backed checkout checks and decrements the matching item in the dispensing transaction.
+- `GET /api/public/outbreak-alerts` returns allowlisted fields from approved, active, real OutbreakAlert records. District case counts never create advisory entries. `GET /api/admin/outbreak/alerts` exposes current real pending and active records under verified admin authorization. Simulation remains separate.

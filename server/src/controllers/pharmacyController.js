@@ -958,3 +958,18 @@ exports.getRestockAnalytics = async (req, res) => {
    OTC Direct Dispensing — Pharmacist dispenses without a doctor prescription
    ───────────────────────────────────────────────────────────────────────────── */
 exports.dispenseOTC = require('./dispensingController').dispenseOTC;
+
+exports.getInventory = async (req, res) => {
+  try {
+    const staff = await PharmacyStaff.findById(req.user.id).select('pharmacyId').lean();
+    if (!staff?.pharmacyId) return res.status(403).json({ error: 'PHARMACY_MEMBERSHIP_REQUIRED' });
+    const pharmacy = await Pharmacy.findOne({ _id: staff.pharmacyId, isActive: true })
+      .select('inventory').lean();
+    if (!pharmacy) return res.status(403).json({ error: 'PHARMACY_MEMBERSHIP_REQUIRED' });
+    const data = (pharmacy.inventory || []).filter(item => item.stock > 0)
+      .map(({ _id, drugName, stock, unit }) => ({ _id, drugName, stock, unit }));
+    return res.json({ data });
+  } catch (_) {
+    return res.status(503).json({ error: 'PHARMACY_STOCK_UNAVAILABLE' });
+  }
+};

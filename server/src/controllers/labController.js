@@ -1467,7 +1467,23 @@ exports.exportLabReportPdf = async (req, res) => {
       return res.status(503).json({ message: 'Clinical PDF export is temporarily unavailable', code: 'PDF_EXPORT_UNAVAILABLE' });
     }
 
-    const pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest);
+    let pdfBuffer;
+    if (req.query?.source === 'stored') {
+      if (!['hospital_admin', 'labTechnician'].includes(req.user.role)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      if (!['report_ready', 'delivered'].includes(labTest.status)) {
+        return res.status(409).json({ code: 'LAB_REPORT_NOT_READY' });
+      }
+      try {
+        pdfBuffer = await require('../services/labReportStorage').downloadStoredReport(labTest);
+        if (!Buffer.isBuffer(pdfBuffer) || pdfBuffer.subarray(0, 5).toString() !== '%PDF-') throw new Error();
+      } catch (_) {
+        return res.status(503).json({ code: 'LAB_REPORT_UNAVAILABLE' });
+      }
+    } else {
+      pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest);
+    }
 
     const date = new Date().toISOString().slice(0, 10);
     const maskedRef = String(labTest.reportId || labTest.labTestId || labTest._id)

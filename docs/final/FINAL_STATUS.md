@@ -62,8 +62,8 @@ To maintain absolute academic and clinical honesty, the following features are e
 
 1. **No Appointment Scheduling or OPD Queue Management**:
    - Outpatient consultations are initiated on-demand by entering the patient's National Identity Card (NIC) with OTP consent. There is no appointment calendar, queue ticket generator, or token display system.
-2. **No Pharmacy Inventory or Stock Management**:
-   - Pharmacy dispensing verifies prescription legitimacy, checks drug interactions, records fulfillment, and locks against duplicate checkout. Endpoints for wholesale drug inventory replenishment or stock counting are omitted.
+2. **Embedded Pharmacy Stock**:
+   - The application stores stock in `Pharmacy.inventory`. This candidate exposes a staff-scoped read endpoint and requires a successful conditional decrement for stock-backed checkouts.
 3. **No Organ-Specific or Age-Adjusted Dosing Engines**:
    - The medicine safety engine checks dosages against absolute outpatient BNF thresholds. It does **not** evaluate renal creatinine clearance, hepatic Child-Pugh scores, pediatric weight-based (mg/kg) dosing, or geriatric Beers criteria.
 4. **No Validated Clinical Diagnostic Claims**:
@@ -116,7 +116,7 @@ The following operational, administrative, and clinical review tasks require own
 
 ## 6. Final Factual Summary & Security Review Status
 
-All code, configurations, test suites, figures, and technical documents in this repository have been audited and verified against ground-truth runtime behavior across 3,651 automated offline tests. 
+The live QA repair candidate has been audited and verified across 3,670 automated offline tests (0 failed, 0 skipped across 228 test suites), client production build exit code 0, and 15/15 protected ledger files byte-exact. Source inspection and offline tests for the repair candidate are recorded in [the repair report](LIVE_QA_FIX_REPORT.md).
 
 An independent read-only security audit was conducted on 2026-11-11 (`docs/final/SECURITY_REVIEW_20261111.md`). Core remediations have been implemented and verified:
 - **Token Revocation Authorization (F01)**: Only the issuing doctor, patient owner, or administrator can revoke verification tokens; 409/410 returned for already revoked/expired tokens.
@@ -129,8 +129,7 @@ An independent read-only security audit was conducted on 2026-11-11 (`docs/final
 
 Known architectural limitations remain transparently documented in `docs/report/chapters/07_security_privacy.md`, `docs/report/chapters/11_limitations_future_work.md`, and `docs/final/SECURITY_STATUS.md`:
 1. Database field encryption uses AES-256-CBC with SHA-256 key hash (not AES-256-GCM AEAD); only specific fields are encrypted (`Patient`: fullName, contactInfo, allergies; `Consultation`: patientNic, diagnosis, notes; NIC, email, address unencrypted).
-2. PDF export uses legacy RC4-128 via `@pdfsmaller/pdf-encrypt-lite` with identifier-derived password; locked under active administrative lockout (`SECURITY_HOLD`, returning HTTP 503).
+2. PDF export uses legacy RC4-128 via `@pdfsmaller/pdf-encrypt-lite` with identifier-derived password; the operator reported `PDF_EXPORT_ENABLED=true` on 11 November 2026. The hold returns 503 when the flag is unset or false. QR exports require a view session scoped to the encounter. The patient consultation button checks `REACT_APP_PDF_EXPORT_ENABLED`.
 3. Client refresh tokens are stored in browser `localStorage`.
 4. ML engine internal HMAC signatures bind to a 1-hour window (`floor(time.time() / 3600)`) without per-request replay nonces.
-5. Administrative emergency unmasking lacks multi-party quorum approval.
 6. Secondary controllers returning raw `error.message` on 500 (`doctorController.js` locked under protected ledger, tracked in `OWNER_ACTIONS.md` OA-17).

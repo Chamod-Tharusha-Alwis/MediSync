@@ -29,6 +29,7 @@ const pharmacyAuth = protect(['pharmacist', 'pharmacy_admin', 'assistant']);
 const dispensingAuth = protect(['pharmacist', 'pharmacy_admin']);
 
 // Profile
+router.get('/inventory', pharmacyAuth, pharmacyController.getInventory);
 router.get('/staff/me', pharmacyAuth, pharmacyController.getMe);
 
 // Staff management (all roles can list; only admin can add/toggle)

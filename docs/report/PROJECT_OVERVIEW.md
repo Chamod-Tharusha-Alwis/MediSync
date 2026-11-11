@@ -68,7 +68,7 @@ MediSync solves these issues by:
      v
 [ Doctor ]
      | 2. Looks up Patient by NIC (Patient OTP Consent)
-     | 3. Records Vitals & Symptoms
+     | 3. Records Symptoms
      | 4. Consults ML Assistant (Gets Differential Guidance)
      | 5. Prescribes Medication (Safety Engine Verifies Interactions)
      v

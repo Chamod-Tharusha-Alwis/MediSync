@@ -179,7 +179,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-REL-02 (Cold-Start Tolerance)**: Client applications shall gracefully handle cloud microservice wake-up cycles of up to 60 seconds with descriptive visual loading indicators.
 
 ### 3.3.4 Localization and Usability (NFR-USE)
-- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (835 keys verified).
+- **NFR-USE-01 (Trilingual Coverage)**: The three locale dictionaries contain 876 keys each. The source audit found 99.32% of Sinhala and Tamil values differ from English. Coverage of every visible string remains under review.
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
@@ -252,7 +252,7 @@ The architecture comprises three primary tiers:
 
 ### 4.3.1 Consultation and Digital Prescription Sequence
 As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`):
-1. The physician enters patient vitals, subjective complaints, and symptom tags.
+1. The physician enters subjective complaints and symptom tags.
 2. The UI queries the ML engine via the Express gateway; differential predictions are returned with `clinicalValidation: not_established`.
 3. The physician selects a standardized diagnosis from the 71,704 ICD-10 catalog concepts and inputs proposed medications.
 4. The backend medicine safety engine cross-references the regimen against the drug interaction matrix and dosage limit tables.
@@ -925,7 +925,7 @@ Every quantitative and technical assertion in this technical report traces direc
 | **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
 | **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
 | **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |
-| **Trilingual Key Parity** | 835 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
+| **Trilingual Key Parity** | 876 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
 | **Production Backend URL** | `https://medisync-wabc.onrender.com` | `README.md:7`, `ARCHITECTURE.md:8` | Verified repository deployment configuration |
 | **Demo Outbreak Batch** | `DEMO_OUTBREAK_2026_V1` | `scripts/remove_demo_batch.js:14` | Default batch flag in `--help` |
 | **Protected Production Seed** | `SEED_2026_11_A` | `scripts/remove_demo_batch.js:15` | Explicitly protected constant in script |
@@ -971,7 +971,7 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 - **Figure F11**: Cross-Chapter 12-Disease Surveillance Verification (`docs/report/figures/f11_surveillance_12_diseases.png`)
 - **Figure F12**: 14-Day Statistical Projection Trajectories (`docs/report/figures/f12_statistical_projection_bands.png`)
 - **Figure F13**: Automated Verification Test Pyramid (`docs/report/figures/f13_verification_test_pyramid.png`)
-- **Figure F14**: Trilingual Interface Key Parity (835 keys in EN/SI/TA) (`docs/report/figures/f14_trilingual_key_parity.png`)
+- **Figure F14**: Trilingual interface key parity (historical capture) (`docs/report/figures/f14_trilingual_key_parity.png`)
 
 ### Architectural Diagrams (Authored in Mermaid format)
 - **Diagram D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)

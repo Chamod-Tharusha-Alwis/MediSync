@@ -62,7 +62,7 @@ The architecture comprises three primary tiers:
 
 ### 4.3.1 Consultation and Digital Prescription Sequence
 As illustrated in Diagram **D03** (`docs/report/diagrams/d03_consultation_prescription_dispensing.mmd`):
-1. The physician enters patient vitals, subjective complaints, and symptom tags.
+1. The physician enters subjective complaints and symptom tags.
 2. The UI queries the ML engine via the Express gateway; differential predictions are returned with `clinicalValidation: not_established`.
 3. The physician selects a standardized diagnosis from the 71,704 ICD-10 catalog concepts and inputs proposed medications.
 4. The backend medicine safety engine cross-references the regimen against the drug interaction matrix and dosage limit tables.

@@ -21,6 +21,7 @@ router.get('/audit-logs/profile/:userId', protect(['admin', 'super_admin']), adm
 router.get('/users/:userId/audit-profile', protect(['admin', 'super_admin']), adminController.getUserAuditProfile);
 
 // ─── ML Engine ───────────────────────────────────────────────────────────────
+router.get('/outbreak/alerts', protect(['admin', 'super_admin']), require('../controllers/alertController').getActiveAlerts);
 router.post('/outbreak/trigger', protect(['admin', 'super_admin', 'health_officer']), adminController.triggerMLDetection);
 router.put('/outbreak/:id/approve', protect(['admin', 'super_admin', 'health_officer']), adminController.approveAlert);
 router.put('/outbreak/:id/resolve', protect(['admin', 'super_admin', 'health_officer']), adminController.resolveAlert);

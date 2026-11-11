@@ -20,7 +20,7 @@ In the current implementation, sensitive clinical and demographic attributes uti
 - **Unencrypted (Plaintext) Fields at Rest**:
   - `Patient`: `nic`, `email`, `address`, `dateOfBirth`, `emergencyContact`, `chronicConditions`, `gender`, `bloodGroup` are stored in plaintext.
   - `Consultation`: `symptoms`, `icdCode`, `icdDescription`, `district` are stored in plaintext.
-- **Payload Composition**: Encrypted fields are stored with the prefix `__enc_` followed by base64-encoded ciphertext blocks.
+- **Payload Composition**: Legacy ciphertext is hex `iv:ciphertext`. The `__enc_<field>` flag marks encryption and non-string values use the `__enc_<field>_d` sidecar. See `server/src/utils/versionedEncryption.js`.
 - **Key Derivation & Rotation**: Cryptographic keys are loaded from environment variables (`ENCRYPTION_KEY`). Key rotation requires re-encrypting existing documents.
 
 ### 7.2.2 Blind Indexing for Privacy-Preserving Search
@@ -38,7 +38,7 @@ To prevent token accumulation and credential replay attacks, MediSync leverages 
 |---|---|---|---|
 | `OTPSession` | Two-factor SMS/Email OTPs | 300 seconds (5 min) | Document automatically dropped |
 | `RecoveryToken` | Account password recovery | 900 seconds (15 min) | Document automatically dropped |
-| `VerificationToken` | Email/phone verification | 90 days | Document dropped upon expiry |
+| `VerificationToken` | QR consultation capability token | 90 days | Document dropped upon expiry |
 | `ClinicalCommand` | Staged high-risk operations | 86,400 seconds (24h) | Staged command purged |
 
 ---
@@ -75,24 +75,23 @@ Honesty and transparency are paramount in academic engineering evaluation. Follo
    - *Repair Path*: Complete database schema migration to envelope encryption using a unified cryptographic layer encrypting all sensitive PII and clinical fields.
 
 2. **F05: Legacy PDF Encryption Cipher & Active Export Lockout**
-   - *Current State*: `@pdfsmaller/pdf-encrypt-lite` uses RC4-128 (V=2, R=3, Length=128) with passwords derived from patient NIC and consultation identifiers. Because RC4 is cryptographically broken, clinical PDF export is currently held under an active administrative lockout (`SECURITY_HOLD`, `PDF_EXPORT_ENABLED !== 'true'`), returning HTTP 503 `PDF_EXPORT_UNAVAILABLE`.
+   - *Current State*: `@pdfsmaller/pdf-encrypt-lite` uses RC4-128 (V=2, R=3, Length=128) with passwords derived from patient NIC and consultation identifiers. Because RC4 is cryptographically broken, the export flag remains an operational risk. The operator reported it enabled on 11 November 2026. The hold returns 503 when the flag is unset or false.
    - *Repair Path*: Migrate PDF generation to modern AES-256 PDF encryption (ISO 32000-2 / PDF 2.0) with cryptographically random per-document keys before lifting the export hold.
 
 3. **F08: Client Refresh Token Storage in LocalStorage**
    - *Current State*: Refresh tokens are persisted in browser `localStorage` for cross-tab session maintenance, leaving tokens vulnerable to exfiltration if a cross-site scripting (XSS) vulnerability exists.
    - *Repair Path*: Migrate refresh token exchange to `HttpOnly`, `SameSite=Strict`, `Secure` browser cookies with server-side sliding window expiration and automatic token family revocation upon reuse.
 
-4. **F10: ML Service Internal HMAC Hour-Bound Window**
-   - *Current State*: The internal API HMAC signature in `ml_auth.py` binds each timestamp to a 1-hour window (`floor(time.time() / 3600)`) without a replay cache or nonce, allowing captured requests to be replayed within the same clock hour.
+4. **Additional observation: ML Service Internal HMAC Hour-Bound Window**
+   - *Current State*: `ml-engine/app.py` accepts credentials for the current and previous UTC hour. The signature does not bind the request method, route or body.
    - *Repair Path*: Implement per-request unique nonces cached in Redis with short TTL (e.g. 60 seconds) or require signed timestamps within a 30-second skew window.
 
-5. **F11: Administrative Emergency Unmasking Quorum**
-   - *Current State*: The administrative PII reveal endpoint records access in `AuditLog` but does not enforce multi-party quorum approval or cryptographic dual custody.
-   - *Repair Path*: Implement a multi-officer approval workflow requiring dual digital signatures prior to revealing decrypted identifiers.
 
-6. **F12: Field Encryption Cipher Mode Authenticity**
+6. **F12: sensitive patient fields remain outside field encryption**
    - *Current State*: The active database field encryption utilizes AES-256-CBC with SHA-256 key hashing without authenticated ciphertext tags (AEAD), lacking built-in cryptographic tampering detection at the block level.
    - *Repair Path*: Migrate database field encryption from CBC mode to AES-256-GCM or integrate with cloud KMS envelope encryption.
 
 7. **Prototype Key Management & Cloud Free-Tier Surfaces**
    - Master cryptographic keys reside in runtime environment variables (`ENCRYPTION_KEY`). Cloud deployment operates on Render Free and MongoDB Atlas M0 tiers, lacking hardware security module (HSM) key isolation, enterprise DDoS shielding, and automated point-in-time recovery (PITR).
+
+The remaining Codex review findings include F10 “production storage verification may execute DDL during startup” and F11 “production cluster selection is broad, not an exact existing-cluster pin.” QR history export requires an OTP-issued view session and is scoped to the linked encounter. The patient consultation PDF button also checks the frontend build flag `REACT_APP_PDF_EXPORT_ENABLED`.

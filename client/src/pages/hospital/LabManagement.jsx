@@ -1,4 +1,5 @@
 import { formatSriLankaDate } from '../../utils/sriLankaTime';
+import { downloadClinicalPdf } from '../../utils/pdfDownload';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { toast } from 'react-toastify';
@@ -352,6 +353,7 @@ const RegisterNewTest = () => {
 // TAB 2: Lab Work Queue (Master list of Lab Tests with split-tabs)
 // ─────────────────────────────────────────────────────────────────────────────
 const LabWorkQueue = ({ onOpenUpload, refreshTrigger }) => {
+  const { t: translate } = useTranslation();
   const [tests, setTests] = useState([]);
   const [filterStatus, setFilterStatus] = useState('pending_accept'); // pending_accept | in_progress | completed
   const [searchNic, setSearchNic] = useState('');
@@ -510,6 +512,18 @@ const LabWorkQueue = ({ onOpenUpload, refreshTrigger }) => {
                   </button>
                 )}
                 {['report_ready', 'delivered'].includes(t.status) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const result = await downloadClinicalPdf(`/lab/reports/${encodeURIComponent(t.labTestId)}/export-pdf?source=stored`);
+                      if (!result.ok) toast.error(translate('liveQa.reportUnavailable', 'Lab report is unavailable.'));
+                    }}
+                    className="w-full text-center py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold"
+                  >
+                    {translate('liveQa.downloadReport', 'Download lab report')}
+                  </button>
+                )}
+                {t.status === 'delivered' && (
                   <div className="flex items-center gap-1 text-xs text-emerald-400 font-bold justify-center select-none bg-emerald-500/5 py-1.5 rounded-lg border border-emerald-500/10">
                     <CheckCircle className="w-3.5 h-3.5" /> Result Sealed & Released
                   </div>

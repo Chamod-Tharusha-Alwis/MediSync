@@ -121,7 +121,8 @@ describe('MediSync Phase 3 Acceptance: Navigation, History Filtering & Clinical 
     api.get.mockResolvedValueOnce({ data: { data: sampleTimeline } });
     renderWithProviders(<PatientHistory />);
 
-    expect(await screen.findByText('Acute Bronchitis')).toBeInTheDocument();
+    expect(await screen.findByText('Amoxicillin 500mg')).toBeInTheDocument();
+    expect(screen.queryByText('Acute Bronchitis')).not.toBeInTheDocument();
     expect(screen.queryByText('Routine Checkup')).not.toBeInTheDocument();
     expect(screen.queryByText('Lipid Profile')).not.toBeInTheDocument();
   });
@@ -159,7 +160,8 @@ describe('MediSync Phase 3 Acceptance: Navigation, History Filtering & Clinical 
     const rxTab = screen.getByRole('button', { name: /^prescription$/i });
     fireEvent.click(rxTab);
 
-    expect(screen.getByText('Acute Bronchitis')).toBeInTheDocument();
+    expect(screen.getByText('Amoxicillin 500mg')).toBeInTheDocument();
+    expect(screen.queryByText('Acute Bronchitis')).not.toBeInTheDocument();
     expect(screen.queryByText('Routine Checkup')).not.toBeInTheDocument();
     expect(screen.queryByText('Lipid Profile')).not.toBeInTheDocument();
 

@@ -6,6 +6,9 @@ import api from '../../api/axiosInstance';
 export default function MedicineSafetyPanel({
   medications = [],
   patientId = null,
+  consultationNic,
+  patientNic,
+  consentToken,
   acknowledgment = { acknowledged: false, reason: '' },
   onAcknowledgmentChange,
   readOnly = false,
@@ -24,11 +27,12 @@ export default function MedicineSafetyPanel({
     const checkSafety = async () => {
       setLoading(true);
       try {
-        const res = await api.post('/prescriptions/check-safety', {
-          medications,
-          patientId,
-          acknowledgment,
-        });
+        const res = consultationNic
+          ? await api.post('/prescriptions/consultation-safety', {
+              medications, patientNic: consultationNic,
+            }, { headers: { 'x-patient-access': consentToken } })
+          : await api.post('/prescriptions/check-safety', { medications, patientId, patientNic, acknowledgment },
+              { headers: { 'x-patient-access': consentToken } });
         if (active) setSafetyData(res.data);
       } catch (err) {
         if (active) {
@@ -49,7 +53,7 @@ export default function MedicineSafetyPanel({
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [medications, patientId]);
+  }, [medications, patientId, patientNic, consultationNic, consentToken]);
 
   if (!medications || medications.length === 0) return null;
 
@@ -87,10 +91,12 @@ export default function MedicineSafetyPanel({
         <span>Checks performed: DDI, duplicate ingredient, allergy, dose ceiling, duration limit</span>
       </div>
 
-      {loading ? (
+      {loading || !safetyData ? (
         <div className="py-2 text-xs text-slate-400 flex items-center gap-2 animate-pulse">
           <span>Checking drug interactions and formulary limits…</span>
         </div>
+      ) : safetyData?.error ? (
+        <p role="status" className="text-xs text-amber-300">{t('liveQa.unavailable', 'Unavailable')}</p>
       ) : actionableWarnings.length > 0 ? (
         <div className="space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">

@@ -21,7 +21,7 @@ exports.getActiveAlerts = async (req, res) => {
     if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
-    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : service.realAlertFilter()),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
+    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
     res.json({ data: alerts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
@@ -35,6 +35,24 @@ exports.getDiseaseTrends = async (req, res) => {
     for(const c of cases)if(!req.query.district || c.district===req.query.district)counts.set(c.diseaseId,(counts.get(c.diseaseId)||0)+1);
     res.json({data:[...counts].map(([_id,count])=>({_id,count})).sort((a,b)=>b.count-a.count).slice(0,10)});
   } catch (_) { res.status(503).json({error:'Trends unavailable.'}); }
+};
+
+exports.getPublicApprovedAlerts = async (_req, res) => {
+  try {
+    const { POLICY, realAlertFilter } = require('../services/surveillanceService');
+    const { diseaseLabel } = require('../services/publicHealthStats');
+    const alerts = await OutbreakAlert.find({
+      ...realAlertFilter(), surveillancePolicy: POLICY, status: 'Active',
+      approvedBy: { $type: 'objectId' },
+      approvedAt: { $type: 'date', $lte: new Date() },
+      syntheticSeedBatch: { $exists: false },
+    }).select('_id disease location severity affectedCount').sort({ createdAt: -1 }).lean();
+    return res.json({ data: alerts.map(({ _id, disease, location, severity, affectedCount }) => ({
+      _id, disease: diseaseLabel(disease), location, severity, affectedCount,
+    })) });
+  } catch (_) {
+    return res.status(503).json({ error: 'PUBLIC_ALERTS_UNAVAILABLE' });
+  }
 };
 
 exports.getLatestBroadcast = async (req, res) => {

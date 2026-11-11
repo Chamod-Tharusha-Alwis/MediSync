@@ -32,7 +32,7 @@ Every quantitative and technical assertion in this technical report traces direc
 | **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
 | **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
 | **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |
-| **Trilingual Key Parity** | 835 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
+| **Trilingual Key Parity** | 876 keys exact match (EN, SI, TA) | `client/src/i18n/translations/*.js` | Automated key counting script |
 | **Production Backend URL** | `https://medisync-wabc.onrender.com` | `README.md:7`, `ARCHITECTURE.md:8` | Verified repository deployment configuration |
 | **Demo Outbreak Batch** | `DEMO_OUTBREAK_2026_V1` | `scripts/remove_demo_batch.js:14` | Default batch flag in `--help` |
 | **Protected Production Seed** | `SEED_2026_11_A` | `scripts/remove_demo_batch.js:15` | Explicitly protected constant in script |
@@ -78,7 +78,7 @@ The table below quotes the exact SHA-256 digests validated during the Sub-Projec
 - **Figure F11**: Cross-Chapter 12-Disease Surveillance Verification (`docs/report/figures/f11_surveillance_12_diseases.png`)
 - **Figure F12**: 14-Day Statistical Projection Trajectories (`docs/report/figures/f12_statistical_projection_bands.png`)
 - **Figure F13**: Automated Verification Test Pyramid (`docs/report/figures/f13_verification_test_pyramid.png`)
-- **Figure F14**: Trilingual Interface Key Parity (835 keys in EN/SI/TA) (`docs/report/figures/f14_trilingual_key_parity.png`)
+- **Figure F14**: Trilingual interface key parity (historical capture) (`docs/report/figures/f14_trilingual_key_parity.png`)
 
 ### Architectural Diagrams (Authored in Mermaid format)
 - **Diagram D01**: System Architecture (`docs/report/diagrams/d01_system_architecture.mmd`)

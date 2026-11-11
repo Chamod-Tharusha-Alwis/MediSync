@@ -375,6 +375,52 @@ exports.resendConsultationSummaryEmail = async (req, res) => {
   }
 };
 
+exports.previewConsultationSafety = async (req, res) => {
+  const { medications } = req.body || {};
+  if (!Array.isArray(medications) || medications.length > 50) {
+    return res.status(400).json({ error: 'CLINICAL_REQUEST_INVALID' });
+  }
+
+  let consent;
+  try {
+    consent = await require('../services/patientConsentService').verifyPatientConsent({
+      actor: req.user,
+      nic: req.body.patientNic,
+      token: req.headers['x-patient-access'] || req.headers['x-patient-access-token'],
+    });
+  } catch (_) {
+    return res.status(403).json({ error: 'Patient consent required' });
+  }
+
+  try {
+    const patient = await require('../models/Patient').findById(consent.patientId);
+    if (!patient) return res.status(404).json({ error: 'Patient not found' });
+    patient.decryptFieldsSync?.();
+    if (patient.__enc_allergies) return res.status(503).json({ error: 'PATIENT_RECORD_UNAVAILABLE' });
+    const { currentMedicationNames } = require('../services/currentMedicationSafety');
+    const activePrescriptions = await currentMedicationNames(consent.patientId, { includeReferences: true });
+    const { analyzeMedicationSafety } = require('../utils/ingredientResolver');
+    const { COMMON_DRUGS } = require('./drugController');
+    const result = require('../utils/clinicalSafetyValidator').computeClinicalFindings({
+      medications,
+      patientAllergies: patient.allergies || [],
+      activePrescriptions,
+      analyze: names => analyzeMedicationSafety(names, [], COMMON_DRUGS),
+    });
+    return res.json({
+      ...result,
+      hasWarnings: result.findings.length > 0,
+      warnings: result.findings.map(finding => ({
+        ...finding,
+        severity: ['critical', 'severe'].includes(finding.severity) ? 'high' : finding.severity,
+        message: finding.summary,
+      })),
+    });
+  } catch (_) {
+    return res.status(503).json({ error: 'SAFETY_CHECK_UNAVAILABLE' });
+  }
+};
+
 exports.checkMedicineSafety = async (req, res) => {
   try {
     const mongoose = require('mongoose');

@@ -28,7 +28,7 @@ describe('Outbreak Monitor Alert Action Buttons Lifecycle (Task B)', () => {
       if (path === '/admin/ml-status') {
         return Promise.resolve({ data: { available: true, dataPoints: 100, dataPointUnit: 'reference disease profiles' } });
       }
-      if (path === '/alerts/active') {
+      if (path === '/admin/outbreak/alerts') {
         return Promise.resolve({ data: { data: alertsList } });
       }
       return Promise.reject(new Error('not handled'));

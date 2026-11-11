@@ -20,7 +20,7 @@
    - Severity: High
    - Advisory: Regular Expression Denial of Service (ReDoS) / Command Injection on Windows
    - Path: `nodemon > chokidar > fsevents > node-pre-gyp > rimraf > glob > minimatch` / direct dependencies
-   - Impact: Build/dev tooling only; not exposed in production runtime endpoints.
+   - Author assessment: Build/dev tooling only; not exposed in production runtime endpoints.
 
 2. **`cookie` (<0.7.0)**
    - Severity: Low
@@ -31,13 +31,13 @@
    - Severity: High
    - Advisory: Regular Expression Denial of Service (ReDoS) in route parameter parser
    - Path: `express > path-to-regexp`
-   - Impact: Mitigated by strict route definitions, rate limiting, and input validation.
+   - Author assessment: Express is a production runtime dependency. Reachability and patched versions require individual verification.
 
 4. **`braces` / `micromatch`**
    - Severity: Moderate
    - Advisory: ReDoS in pattern matching
    - Path: `nodemon > chokidar > anymatch > micromatch > braces`
-   - Impact: Development watcher only.
+   - Author assessment: Development watcher only.
 
 ---
 
@@ -54,11 +54,11 @@
 1. **`react-scripts` / `webpack-dev-server` / `nth-check` / `postcss` / `loader-utils`**
    - Severity: High / Moderate
    - Advisory: Development server prototype pollution, CSS parsing ReDoS, webpack dev middleware issues.
-   - Impact: Legacy `react-scripts 5.0.1` transitive build graph. Production build produces static HTML/JS bundles that do not include webpack-dev-server.
+   - Author assessment: Legacy `react-scripts 5.0.1` transitive build graph. Production build produces static HTML/JS bundles that do not include webpack-dev-server.
 
 2. **`axios` (0.27.2)**
    - Severity: Moderate / High (SSRF / CSRF handling in certain node configurations)
-   - Impact: Running in browser client environment; browser enforces SOP/CORS.
+   - Author assessment: Running in browser client environment; browser enforces SOP/CORS.
 
 ---
 
@@ -68,7 +68,7 @@
 - **Runtime Environment**: Python 3.12 / 3.13 venv with pinned packages in `ml-engine/requirements.txt`.
 - **Findings**:
   - Key libraries (`flask`, `joblib`, `numpy`, `scikit-learn`, `cryptography`) are pinned.
-  - As noted in security finding F10, HMAC tokens in `ml_auth.py` are bounded to a 1-hour window using `floor(time.time() / 3600)`, rather than per-request nonces.
+  - Additional observation from the Codex review. `ml-engine/app.py` accepts the current and previous UTC hour for internal HMAC authentication. F10 concerns startup DDL.
 
 ---
 

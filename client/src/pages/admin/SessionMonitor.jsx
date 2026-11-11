@@ -218,7 +218,7 @@ const SessionMonitor = () => {
             }`}
           >
             <Activity className="w-4 h-4" /> 
-            Online Now 
+            {t('liveQa.recentSessions')}
             <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-xs font-mono">
               {sessions.length}
             </span>
@@ -475,7 +475,7 @@ const SessionMonitor = () => {
                                 <User className="w-3 h-3 text-slate-400" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-white font-bold text-xs">{log.actorName || log.actorId || 'System'}</span>
+                                <span className="text-white font-bold text-xs">{log.actorName || t('liveQa.unavailable', 'Unavailable')}</span>
                                 {log.actorNic && (
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="text-xs text-slate-500 font-mono">{displayNic}</span>

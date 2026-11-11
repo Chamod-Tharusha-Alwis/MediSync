@@ -338,8 +338,11 @@ exports.updateMyDeviceLabel = async (req, res) => {
 exports.getActiveSessions = async (req, res) => {
   try {
     const { role, search } = req.query || {};
-    const sessions = await SessionToken.find({ isValid: true })
-      .sort({ lastUsed: -1 })
+    const now = new Date();
+    const sessions = await SessionToken.find({
+      isValid: true, logoutAt: null, lastUsed: { $gte: new Date(+now - 15 * 60 * 1000), $lte: now },
+      $or: [{ expiredAt: null }, { expiredAt: { $gt: now } }],
+    }).sort({ lastUsed: -1 })
       .limit(200)
       .lean();
 

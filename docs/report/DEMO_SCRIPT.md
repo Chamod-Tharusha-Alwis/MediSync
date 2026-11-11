@@ -22,7 +22,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 >    ```bash
 >    node scripts/run_offline_tests.js
 >    ```
->    Explain to examiners: *"All 3,465 automated test assertions execute deterministically offline in-memory, proving complete end-to-end multi-role transaction integrity without external cloud dependence."*
+> Show the 3,667-pass offline receipt in the live QA repair report. Use the operator live QA separately to describe the five-role experience.
 
 ---
 
@@ -45,10 +45,10 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 - **Actions**:
   1. Open the MediSync landing page.
   2. Point out the language selector in the navigation bar. Toggle between **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)**.
-  3. Show that 100% of the UI labels, navigation buttons, and public health advisories immediately re-render in the selected language without page reload (verified across 835 dictionary keys).
+  3. Switch English, Sinhala and Tamil. Inspect the translated headings and note any remaining English strings.
   4. Highlight the public health advisory card (e.g., Monsoon Season Dengue Prevention).
 - **Key Talking Point for Examiners**:
-  > *"Healthcare delivery in Sri Lanka is multilingual. MediSync enforces strict 100% key parity across English, Sinhala, and Tamil across 835 interface terms to ensure universal accessibility across rural and urban clinics."*
+  > The candidate has 876 keys per locale. The source comparison finds 870 of 876 values differ from English in Sinhala and Tamil (99.32% each). This is a dictionary comparison. Native-language wording and page coverage require review.
 
 ---
 
@@ -71,12 +71,12 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 - **Actions**:
   1. Open the Doctor Dashboard. Click **Start New Consultation**.
   2. Look up the patient by entering their National Identity Card (NIC) number; authenticate patient consent via secure OTP verification.
-  3. Enter clinical vitals: Blood Pressure: 120/80 mmHg, Pulse: 78 bpm, Temperature: 102.4 °F.
+  3. Record the encounter using the fields visible in the consultation form.
   4. **Demonstrate Machine Learning Triage Assistant**:
      - In the symptom input field, add: `high_fever`, `retro_orbital_pain`, `joint_pain`, `rash`.
      - Click **Analyze Symptoms**.
      - Point out the differential suggestion: *Dengue Fever* (Tier 1 TF-IDF symptom matcher high-confidence match).
-     - Point out the amber disclaimer banner: `clinicalValidation: not_established` (*"AI Clinical Decision Aid — For guidance only, not a validated diagnosis"*).
+     - Point out the “Reference matches only” wording and explain the result is a reference aid for clinicians.
   5. **Select Standardized Diagnosis**: Search and select `Dengue fever, unspecified [A90]` from the **US ICD-10-CM catalog (71,704 searchable leaf codes)**.
   6. **Demonstrate Deterministic Medicine Safety Engine & Doctor Responsibility Override**:
      - Prescribe *Warfarin 5 mg daily*.
@@ -86,7 +86,7 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
      - Check "I have reviewed these warnings and accept clinical responsibility" and enter the clinical justification reason (e.g. "Monitored closely with daily INR check").
      - Notice that the prescriber safety override badge propagates downstream to the pharmacy console and public verification view.
      - Alternatively demonstrate replacement with a safe regimen (*Paracetamol 500 mg QDS*).
-  7. Finalize consultation. The prescription is generated and cryptographically signed.
+  7. Finalize the consultation and open the generated prescription.
 - **Key Talking Point for Examiners**:
   > *"The ML engine operates within a 196 MB memory footprint on a free-tier container, delivering sub-millisecond inference. Notice that the safety engine runs deterministically on the backend server—guaranteeing zero latency during drug-drug interaction and dosage ceiling evaluation."*
 
@@ -118,17 +118,24 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   2. **Demonstrate Resilient Public Baseline**:
      - When consultations are newly recorded without clinical verification, `/public-health` shows a clean neutral state (0 confirmed cases, clean map, zero false alarms) with unverified clinical encounters clearly designated as *awaiting review*.
      - Public alert telemetry (`GET /api/alerts/active`) loads freely without authentication.
-  3. **Exact Verification Click-Through Workflow**:
-     - Log into the administrative console and navigate to `/admin/dashboard/outbreak`.
-     - In the **Epidemiological Clinical Review** section (`GET /api/admin/surveillance/pending`), filter pending consultations by District (e.g., *Gampaha*).
-     - Inspect the unverified clinical episode, verify diagnostic criteria against case definitions, and click **Verify Case** (or select multiple cases and click **Bulk Verify Selected**).
-     - Endpoint `PUT /api/admin/surveillance/:id/review` records the clinical verification audit event (`SURVEILLANCE_REVIEW_VERIFY`) and updates `surveillanceVerification.status = 'verified'` atomically.
-  4. **Map Updates Immediately**:
-     - Switch back to `/public-health`. Notice the verified cases count increments and the district heatmap updates to reflect verified incidence.
+  3. **Exact Verification & Outbreak Detection Click-Through Workflow**:
+     - Log into the administrative console using your authorized non-seeded System Administrator account.
+     - Navigate to /admin/dashboard/outbreak (Outbreak Monitor).
+     - **Trigger Manual Outbreak Detection Scan**: Click the **Run Statistical Detection Scan** button (dispatches POST /api/admin/outbreak/trigger).
+     - The statistical engine evaluates verified consultations against the 56-day district baseline and 7-day window:
+       - **Gampaha Dengue**: Triggers Pending Alert ( \ge 5$, 4 consecutive days  > 2.0$, Critical Severity).
+       - **Kandy Influenza**: Triggers Pending Alert ( \ge 5$, 4 consecutive days  > 2.0$, High Severity).
+       - **Kalutara Negative Control**: Evaluates 6 cases on Day -2, but 0 on others; Gate 2 suppresses the single-day spike (PERSISTENCE_CRITERIA_NOT_MET, No Alert).
+       - **Matara Negative Control**: Evaluates 4 cases; Gate 1 suppresses clusters under 5 cases (CASE_FLOOR_NOT_MET, No Alert).
+     - **Admin Review & Approval**: In the Pending Alerts queue, inspect the detected signals and click **Approve** on each alert (PUT /api/admin/outbreak/:id/approve).
+     - Status updates to Active with pprovedBy set to the administrator's ID.
+  4. **Public Observatory Updates**:
+     - Navigate to /public-health.
+     - The **Active Disease Advisories** section immediately displays the 2 approved outbreak alerts (Dengue in Gampaha and Influenza in Kandy).
+     - Negative controls (Kalutara and Matara) produce zero public advisories.
   5. **Outbreak Detection & Telemetry**:
-     - When verified cases meet outbreak criteria, show an active **Outbreak Alert**: Dengue Fever ($z\text{-score} = +3.82$).
-     - Demonstrate the **Dual Noise Suppression Gates** (`server/src/services/surveillanceService.js:136-140`):
-       - **Gate 1 (Volume Floor)**: Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
+     - Demonstrate the **Dual Noise Suppression Gates** (server/src/services/surveillanceService.js:143-230):
+       - **Gate 1 (Volume Floor)**: Absolute 7-day case volume must reach at least 5 cases ( \ge 5$).
        - **Baseline**: Evaluates 7-day window against a 56-day district historical baseline with regularized variance ($\sigma \ge 0.5$).
        - **Gate 2 (Persistence Gate)**: Incidence must exceed threshold ($z > 2.0$) for **2 consecutive calendar days** before promoting to an Outbreak Alert.
        - Explain why single-day reporting spikes or small isolated clusters do not trigger false alerts.
@@ -148,3 +155,9 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
      - Explain how SHA-256 baseline hashing guarantees that no critical authorization, clinical calculation, or encryption file can be tampered with.
 - **Concluding Statement**:
   > *"MediSync combines healthcare accessibility with cryptographic rigor, proving that robust, privacy-preserving digital health is achievable within resource-constrained cloud environments."*
+
+### Owner rehearsal after the repair candidate
+
+Use the owner-controlled role aliases for patient, doctor, pharmacist, pharmacy administrator and hospital administrator. Keep mailbox and credential details in the private operator session. The synthetic account markers currently prevent ordinary production login. Rehearse those fixtures in an isolated, authorized QA environment.
+
+Stock-backed dispensing depends on a matching embedded stock item in the current pharmacy. See the [owner procedure](../final/LIVE_QA_OWNER_RUNBOOK.md) for the scoped stock dry-run and QR minting. QR links are bearer capabilities. Keep the single printed link private.

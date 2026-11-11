@@ -271,8 +271,8 @@ exports.toggleUserStatus = async (req, res) => {
 // ─── EXISTING: getAuditLogs ──────────────────────────────────────────────────
 exports.getAuditLogs = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 25;
+    const page = Math.max(1, Math.min(10000, parseInt(req.query.page, 10) || 1));
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 25));
     const skip = (page - 1) * limit;
     const { actorRole, actorId, startDate, endDate, search, email, action } = req.query;
 
@@ -335,10 +335,8 @@ exports.getAuditLogs = async (req, res) => {
       }
     }
 
-    // Aggregation pipeline to deduplicate to ONE row per unique actor (their latest action)
     const countPipeline = [
       { $match: matchQuery },
-      { $group: { _id: '$actorId' } },
       { $count: 'total' }
     ];
     const countResult = await AuditLog.aggregate(countPipeline);
@@ -346,21 +344,14 @@ exports.getAuditLogs = async (req, res) => {
 
     const pipeline = [
       { $match: matchQuery },
-      { $sort: { timestamp: -1 } },
-      {
-        $group: {
-          _id: '$actorId',
-          latestLog: { $first: '$$ROOT' }
-        }
-      },
-      { $replaceRoot: { newRoot: '$latestLog' } },
-      { $sort: { timestamp: -1 } },
+      { $sort: { timestamp: -1, _id: -1 } },
       { $skip: skip },
       { $limit: limit }
     ];
 
     const logs = await AuditLog.aggregate(pipeline);
-    const uniqueActorIds = logs.map(log => log.actorId).filter(Boolean);
+    const uniqueActorIds = [...new Set(logs.map(log => String(log.actorId || ''))
+      .filter(id => /^[a-f0-9]{24}$/i.test(id)))];
 
     const [docs, pats, pharms, hosps, admins, activeSessions, endedSessions] = await Promise.all([
       Doctor.find({ _id: { $in: uniqueActorIds } }),
@@ -408,8 +399,8 @@ exports.getAuditLogs = async (req, res) => {
         _id: log._id,
         actorId: log.actorId,
         actorRole: user ? user.role : log.actorRole,
-        actorName: user ? user.fullName : (log.actorRole === 'admin' ? 'MediSync System Admin' : 'Unavailable'),
-        actorNic: user ? user.nic : '—',
+        actorName: user?.fullName ? String(user.fullName).slice(0, 1) + '***' : (actorIdStr === 'anonymous' ? 'Anonymous' : 'Unavailable'),
+        actorNic: user ? require('../utils/loginAlertIdentifier').maskLoginAlertIdentifier(user.nic) : '—',
         action: log.action,
         timestamp: log.timestamp,
         deviceModel: log.deviceModel || '—',
@@ -1256,12 +1247,12 @@ exports.getPendingSurveillanceConsultations = async (req, res) => {
       query.district = String(district).trim();
     }
     if (disease && disease !== 'all') {
+      const term = RegExp.escape(String(disease).trim().slice(0, 80));
       query.$and = query.$and || [];
       query.$and.push({
         $or: [
-          { diagnosis: { $regex: String(disease).trim(), $options: 'i' } },
-          { icdCode: { $regex: String(disease).trim(), $options: 'i' } },
-          { icdDescription: { $regex: String(disease).trim(), $options: 'i' } }
+          { icdCode: { $regex: term, $options: 'i' } },
+          { icdDescription: { $regex: term, $options: 'i' } }
         ]
       });
     }
@@ -1274,7 +1265,7 @@ exports.getPendingSurveillanceConsultations = async (req, res) => {
     const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 50), 100);
 
     let queryChain = Consultation.find(query)
-      .select('_id district diagnosis icdCode icdVersion createdAt surveillanceVerification')
+      .select('_id district icdDescription icdCode icdVersion createdAt surveillanceVerification')
       .sort({ createdAt: -1 });
 
     if (queryChain && typeof queryChain.limit === 'function') {

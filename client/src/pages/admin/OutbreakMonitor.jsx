@@ -1,3 +1,4 @@
+import SurveillanceReviewQueue from './SurveillanceReviewQueue';
 import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
@@ -210,6 +211,7 @@ const AdminDistrictMap = ({ alerts = [], selectedDistrict, onSelectDistrict }) =
 
 const OutbreakMonitor = () => {
   const { t } = useTranslation();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [modelStatus, setModelStatus] = useState(null);
   const [alerts,      setAlerts]      = useState([]);
   const [mlResult,    setMlResult]    = useState(null);
@@ -232,7 +234,7 @@ const OutbreakMonitor = () => {
     const fetchStatusAndAlerts = async () => {
       const [s, a] = await Promise.allSettled([
         api.get('/admin/ml-status'),
-        api.get('/alerts/active'),
+        api.get('/admin/outbreak/alerts'),
       ]);
       if (!mounted) return;
       const status = s.status === 'fulfilled' ? s.value?.data : null;
@@ -297,7 +299,7 @@ const OutbreakMonitor = () => {
       } else {
         toast.success(`Analysis complete — ${result.consultations_analysed || result.data_points || 0} records scanned. System normal.`);
       }
-      const ar = await api.get('/alerts/active');
+      const ar = await api.get('/admin/outbreak/alerts');
       setAlerts(ar.data.data || []);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Detection failed');
@@ -353,7 +355,7 @@ const OutbreakMonitor = () => {
     </div>
   );
 
-  const activeCount = alerts.filter(a => a.status === 'Active').length;
+  const activeCount = alerts.filter(a => a.status === 'Active' && a.approvedBy && a.approvedAt).length;
   const displayedAlerts = selectedDistrict
     ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
     : alerts;
@@ -372,6 +374,10 @@ const OutbreakMonitor = () => {
 
   return (
     <PageTransition className="space-y-6">
+      <button type="button" className="glass-button" aria-expanded={reviewOpen} onClick={() => setReviewOpen(value => !value)}>
+        {t('liveQa.reviewTitle')}
+      </button>
+      {reviewOpen && <SurveillanceReviewQueue />}
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>

@@ -93,6 +93,14 @@ exports.searchDrugs = async (req, res) => {
 
     const filterFn = typeof isPrescribableDrug === 'function' ? isPrescribableDrug : () => true;
     drugs = (drugs || []).filter(filterFn).slice(0, 10);
+    const term = q.trim().toLowerCase();
+    if (drugs.length === 0 && term === 'warfarin') {
+      const reference = COMMON_DRUGS.find(item =>
+        item.name.toLowerCase() === term || item.genericName?.toLowerCase() === term);
+      if (reference && filterFn(reference)) {
+        drugs = [{ ...reference, referenceOnly: true, limitsStatus: 'unverified_owner_must_check' }];
+      }
+    }
 
     return res.json({ data: drugs });
   } catch (error) {

@@ -128,18 +128,18 @@ const Home = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-white/5 mb-8 select-none">
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">Sri Lanka's Next-Gen Digital Healthcare</span>
+              <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">{t('liveQa.heroBadge')}</span>
             </div>
             
             <h1 className="text-5xl md:text-8xl font-black tracking-tight mb-8 leading-[1.1]">
-              Synchronizing Care.<br />
+              {t('liveQa.heroTitle')}<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-teal-400">
-                Saving Lives.
+                {t('liveQa.heroAccent')}
               </span>
             </h1>
 
             <p className="text-lg md:text-xl font-medium max-w-3xl mx-auto mb-10 text-slate-400 leading-relaxed">
-              MediSync connects public healthcare channels, doctors, labs, and pharmacies into one secure, unified medical telemetry network.
+              {t('liveQa.heroDescription')}
             </p>
 
             <div className="flex flex-wrap justify-center gap-4">
@@ -153,7 +153,7 @@ const Home = () => {
                 onClick={() => navigate('/register?role=patient')}
                 className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/5 rounded-full font-bold text-sm transition-all hover:scale-[1.03]"
               >
-                Register as Patient
+                {t('liveQa.registerPatient')}
               </button>
             </div>
           </motion.div>
@@ -164,9 +164,9 @@ const Home = () => {
       <section className="py-16 px-6 max-w-7xl mx-auto w-full z-20">
         <div className="glass-card rounded-[2.5rem] border border-white/5 p-8 md:p-14 space-y-12">
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Interactive Workflows</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">{t('liveQa.workflows')}</h2>
             <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Choose your role to sign in to MediSync. Access is governed by account permissions and patient consent.
+              {t('liveQa.workflowHint')}
             </p>
           </div>
 

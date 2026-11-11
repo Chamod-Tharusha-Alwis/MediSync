@@ -38,7 +38,7 @@ jobs:
       - name: Diagnostic failure log output
         if: failure()
         run: |
-          for f in scratch/clinical-offline-*/*-console.txt; do
+          for f in /tmp/medisync-test-tmp/clinical-offline-*/*-console.txt scratch/clinical-offline-*/*-console.txt; do
             if [ -f "$f" ]; then
               echo "=== $f ==="
               tail -n 120 "$f"
@@ -46,7 +46,7 @@ jobs:
               echo "::error title=$f::$content"
             fi
           done
-          for s in scratch/clinical-offline-*/summary.json; do
+          for s in /tmp/medisync-test-tmp/clinical-offline-*/summary.json scratch/clinical-offline-*/summary.json; do
             if [ -f "$s" ]; then
               content=$(cat "$s" | tr '\r\n' '  ')
               echo "::error title=summary::$content"

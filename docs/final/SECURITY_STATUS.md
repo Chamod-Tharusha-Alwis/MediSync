@@ -1,9 +1,7 @@
 # MediSync Production Security Posture & Hardening Audit (SECURITY_STATUS.md)
 
-**Phase**: Phase 6 — Security and Operations Hardening  
-**Date**: 2026-11-09  
 **Branch**: `final/p6-security-hardening`  
-**Status**: AUDITED & VERIFIED  
+**Status**: Source review and offline verification, 11 November 2026
 
 ---
 
@@ -29,6 +27,7 @@ MediSync processes sensitive electronic health records (EHR), clinical consultat
 | **10. Zero PII Audit Trails & Structured Details** | **IMPLEMENTED** | `server/src/models/AuditLog.js`<br>`server/src/utils/auditLogger.js` | Audit records log opaque `actorId`, `actorRole`, `action`, timestamp, and optional sanitized `details`. Strictly excludes patient names, medical histories, diagnosis text, and plain NICs. Sensitive keys stripped by `recordAudit`. |
 | **11. JWT Token Refresh Rotation** | **IMPLEMENTED** | `server/src/controllers/authController.js:1840` | Refresh tokens use single-use cryptographic rotation. Detection of a reused refresh token triggers automatic invalidation of the entire token family. |
 | **12. Protected File Ledger Integrity** | **IMPLEMENTED** | `docs/release/PROTECTED_HASHES.json`<br>`scripts/run_offline_tests.js` | 15 critical safety and regulatory files are cryptographically locked via SHA-256 hashes, verified at every test run. |
+| **13. Synthetic Account Login Rejection** | **ENFORCED BY DESIGN** | `server/src/security/accountState.js`<br>`server/src/controllers/authController.js` | Production authentication strictly rejects accounts flagged with `isSynthetic: true` or `syntheticSeedBatch`. Seeded persona accounts cannot log in to production by design. Demonstrations use the owner's existing non-seeded role accounts for all roles, while seeded data is used for public health analytics and OTP-gated demo patient access. |
 
 ---
 
@@ -50,12 +49,13 @@ In accordance with academic integrity and ethical engineering standards, the fol
    - *Mitigation*: Clearly disclaimed with informational-only advisory banner; doctor autonomy preserved.
 5. **CODEX 20261111 Independent Security Audit Findings**:
    - **F04 (Partial Field Encryption)**: Patient `nic`, `email`, `address`, `dateOfBirth` and Consultation `symptoms`, `icdCode`, `district` remain unencrypted in MongoDB. Handled in verification flows by explicitly setting `allergiesStatus: 'unavailable'` when decryption fails. Complete fix requires envelope encryption across all PII.
-   - **F05 (Legacy RC4-128 PDF Encryption)**: `@pdfsmaller/pdf-encrypt-lite` uses RC4-128 with identifier-derived password. Currently held under active administrative lockout (`SECURITY_HOLD`, HTTP 503 `PDF_EXPORT_UNAVAILABLE`).
+   - **F05 (Legacy RC4-128 PDF Encryption)**: `@pdfsmaller/pdf-encrypt-lite` uses RC4-128 with identifier-derived password. The operator reported `PDF_EXPORT_ENABLED=true` on 11 November 2026. The server returns the hold response when that flag is unset or false. QR history export requires a valid view session for the linked encounter. The patient consultation button also checks the Vercel build flag `REACT_APP_PDF_EXPORT_ENABLED`.
    - **F07 (Controller Internal Error Leakage)**: `verificationController.js` has been remediated to return fixed generic strings. Other controllers returning raw `error.message` on 500 (`drugController.js`, `prescriptionController.js`, `alertController.js`, `adminController.js`, and protected `doctorController.js`) require remediation under controlled updates (cataloged in `OWNER_ACTIONS.md` OA-17).
    - **F08 (LocalStorage Refresh Tokens)**: Refresh tokens stored in browser `localStorage` are exposed if XSS occurs. Future remediation will migrate to HttpOnly SameSite=Strict cookies.
-   - **F10 (ML Engine Internal HMAC Hour-Bound Window)**: `ml_auth.py` binds internal signatures to a 1-hour window (`floor(time.time() / 3600)`) with no replay cache or nonce.
-   - **F11 (Admin Emergency Reveal Quorum)**: Emergency identifier reveal is audited but lacks dual-officer quorum authorization.
-   - **F12 (Storage Cipher Authenticity)**: Active field encryption uses AES-256-CBC with SHA-256 key hash, not AES-256-GCM AEAD.
+   - **F10 (production storage verification may execute DDL during startup)**. The startup verifier can create missing storage when explicitly configured. See `server/src/security/productionStorageAdmission.js`.
+   - **F12 (sensitive patient fields remain outside field encryption)**. Patient NIC, email and other fields are outside the legacy CBC plugin.
+   - **F11 (production cluster selection is broad, not an exact existing-cluster pin)**. See `server/src/security/productionAtlasPolicy.js`.
+   - **Additional observation**. ML internal credentials are accepted for the current and previous UTC hour in `ml-engine/app.py`.
 
 ---
 

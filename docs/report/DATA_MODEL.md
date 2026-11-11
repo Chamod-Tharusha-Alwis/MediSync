@@ -8,14 +8,14 @@
 
 ## 1. Cryptographic Security & Field-Level Encryption
 
-To guarantee patient confidentiality in compliance with healthcare data protection principles, MediSync enforces **authenticated field-level AES-256-GCM encryption** prior to database persistence:
+The current clinical models use legacy **AES-256-CBC field encryption** on selected fields.
 
 1. **Envelope Architecture**:
-   - Sensitive text fields are transformed into a ciphertext format: `v{version}:{iv_hex}:{auth_tag_hex}:{ciphertext_hex}`.
+   - Sensitive text fields are transformed into a ciphertext format: `iv_hex:ciphertext_hex` with a separate `keyVersion` and marker fields.
    - Encrypted with active operator keys managed by `server/src/security/operatorKeyPolicy.js`.
    - Each encrypted document retains a `keyVersion` attribute supporting seamless key rotation.
 2. **Blind Indexing for Queries**:
-   - Direct searches on encrypted columns (e.g. National Identity Card - NIC) utilize deterministic blind indices (`patientNic_bi` / `nicHash`) derived via HMAC-SHA256, enabling fast index lookups without decrypting the dataset or exposing plaintexts.
+   - Direct searches on encrypted columns (e.g. National Identity Card - NIC) utilize deterministic blind indices (`patientNic_bi` / `nicHash`) derived via SHA-256 in legacy mode, enabling fast index lookups without decrypting the dataset or exposing plaintexts.
 3. **Foreign Key Integrity**:
    - Queries and relational links utilize unencrypted MongoDB `ObjectId` references (`patientId`, `doctorId`, `hospitalId`) rather than plaintext identity attributes.
 
@@ -31,15 +31,15 @@ Represents registered patient records across public and clinical portals.
 | `_id` | `ObjectId` | Primary Key | Unique MongoDB document identifier |
 | `nic` | `String` | Required, Unique, Index | Patient National Identity Card number (unencrypted lookup key) |
 | `patientNic_bi` | `String` | Index | Blind index hash for secure identity matching |
-| `fullName` | `String` | Required | **AES-256-GCM Encrypted** patient legal name |
+| `fullName` | `String` | Required | **Legacy AES-CBC encrypted** patient legal name |
 | `email` | `String` | Required, Unique | Patient email for notification dispatch and password recovery |
-| `contactInfo` | `String` | Optional | **AES-256-GCM Encrypted** primary phone contact |
+| `contactInfo` | `String` | Optional | **Legacy AES-CBC encrypted** primary phone contact |
 | `address` | `String` | Default: `""` | Residential address string |
 | `district` | `String` | Index | Administrative district (1 of 25 Sri Lankan districts) |
 | `dateOfBirth` | `Date` | Optional | Date of birth |
 | `gender` | `String` | Enum: `Male`, `Female`, `Other` | Demographic gender |
 | `bloodGroup` | `String` | Optional | ABO/Rh blood classification (e.g. `O+`, `B+`) |
-| `allergies` | `[String]` | Array | **AES-256-GCM Encrypted** known drug and food allergen list |
+| `allergies` | `[String]` | Array | **Legacy AES-CBC encrypted** known drug and food allergen list |
 | `chronicConditions` | `[String]` | Array | Known pre-existing diagnoses (e.g. `Hypertension`, `Asthma`) |
 | `preferredLanguage`| `String` | Enum: `en`, `si`, `ta` | Trilingual interface preference |
 | `password` | `String` | Required | bcrypt salted hash |
@@ -56,16 +56,16 @@ Represents an encounter between an attending clinician and a patient.
 | `_id` | `ObjectId` | Primary Key | Unique consultation identifier |
 | `consultationId` | `String` | Unique, Index | Human-readable transaction identifier (`CON-YYYYMMDD-XXXXXX`) |
 | `patientId` | `ObjectId` | Ref: `Patient`, Index | Unencrypted relational link to Patient |
-| `patientNic` | `String` | Required | **AES-256-GCM Encrypted** patient NIC |
+| `patientNic` | `String` | Required | **Legacy AES-CBC encrypted** patient NIC |
 | `patientNic_bi` | `String` | Index | Blind index hash for patient NIC |
 | `doctorId` | `ObjectId` | Ref: `Doctor`, Required, Index | Relational link to attending clinician |
 | `hospitalId` | `ObjectId` | Ref: `Hospital`, Optional | Facility where encounter transpired |
-| `diagnosis` | `String` | Required | **AES-256-GCM Encrypted** diagnosis text |
+| `diagnosis` | `String` | Required | **Legacy AES-CBC encrypted** diagnosis text |
 | `icdCode` | `String` | Index | Standardized ICD-10 or ICD-11 diagnostic concept code |
 | `icdDescription` | `String` | Optional | Clinical concept title from catalog |
 | `icdVersion` | `String` | Default: `'ICD-10'` | Classification taxonomy version |
 | `symptoms` | `[String]` | Array | Clinical symptom tokens tagged during consultation |
-| `notes` | `String` | Optional | **AES-256-GCM Encrypted** clinical examination observations |
+| `notes` | `String` | Optional | **Legacy AES-CBC encrypted** clinical examination observations |
 | `district` | `String` | Index | District location for epidemiological surveillance |
 | `isFollowUpRequired`| `Boolean` | Default: `false` | Follow-up tracking flag |
 | `followUpDate` | `Date` | Optional | Scheduled follow-up visit date |

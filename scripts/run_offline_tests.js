@@ -60,6 +60,27 @@ function snapshot() {
     .filter(file => isSnapshotFile(file) && fs.existsSync(path.join(root, file))).sort();
   return { at: new Date().toISOString(), branch: git(['branch', '--show-current']).trim(), head: git(['rev-parse', 'HEAD']).trim(), index: git(['diff', '--cached', '--name-only']), files: names.map(file => ({ file, sha256: sha(path.join(root, file)) })), pins: rows };
 }
+function mergeResults(r1, r2) {
+  if (!r1) return r2;
+  return {
+    numFailedTestSuites: r1.numFailedTestSuites + r2.numFailedTestSuites,
+    numFailedTests: r1.numFailedTests + r2.numFailedTests,
+    numPassedTestSuites: r1.numPassedTestSuites + r2.numPassedTestSuites,
+    numPassedTests: r1.numPassedTests + r2.numPassedTests,
+    numPendingTestSuites: r1.numPendingTestSuites + r2.numPendingTestSuites,
+    numPendingTests: r1.numPendingTests + r2.numPendingTests,
+    numRuntimeErrorTestSuites: (r1.numRuntimeErrorTestSuites || 0) + (r2.numRuntimeErrorTestSuites || 0),
+    numTodoTests: (r1.numTodoTests || 0) + (r2.numTodoTests || 0),
+    numTotalTestSuites: r1.numTotalTestSuites + r2.numTotalTestSuites,
+    numTotalTests: r1.numTotalTests + r2.numTotalTests,
+    openHandles: [...(r1.openHandles || []), ...(r2.openHandles || [])],
+    snapshot: r1.snapshot || r2.snapshot,
+    startTime: Math.min(r1.startTime || Date.now(), r2.startTime || Date.now()),
+    success: Boolean(r1.success && r2.success && (r1.numFailedTestSuites + r2.numFailedTestSuites === 0)),
+    testResults: [...(r1.testResults || []), ...(r2.testResults || [])],
+    wasInterrupted: Boolean(r1.wasInterrupted || r2.wasInterrupted),
+  };
+}
 function cleanEnvironment() {
   const env = {};
   for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'PATH', 'PATHEXT', 'HOME', 'USER', 'MEDISYNC_TEST_TMP', 'NODE_OPTIONS']) if (process.env[key]) env[key] = process.env[key];
@@ -90,7 +111,9 @@ async function main() {
     return new Promise(resolve => {
       const child = cp.spawn(executable, args, { cwd: root, env: environment, windowsHide: true, shell: false, stdio: ['ignore', log, log] });
       let error, timedOut = false;
-      const timer = setTimeout(() => { timedOut = true; child.kill(); }, 300000);
+      // The serial backend batches can exceed five minutes on Windows.
+      const timeoutMs = mode === 'backend' ? 600000 : 300000;
+      const timer = setTimeout(() => { timedOut = true; child.kill(); }, timeoutMs);
       child.once('error', failure => { error = failure.code; });
       child.once('close', (code, signal) => {
         clearTimeout(timer); fs.closeSync(log);
@@ -99,11 +122,77 @@ async function main() {
       });
     });
   }
+  async function runBackendBatches(executable, args, environment = env) {
+    const backendConfig = require('../server/clinical.offline.jest.cjs');
+    let suites = Array.isArray(backendConfig.testMatch) ? [...backendConfig.testMatch] : [];
+    if (environment.MEDISYNC_OFFLINE_CI === 'true') {
+      suites = suites.filter(s => !s.includes('closureQaPreservationBaseline.local.test.js'));
+    }
+    const batchSize = 15;
+    const totalBatches = Math.max(1, Math.ceil(suites.length / batchSize));
+    const consolePath = path.join(out, 'backend-console.txt');
+    fs.writeFileSync(consolePath, '');
+
+    let aggregated = null;
+    let finalCode = 0;
+    let finalSignal = null;
+    let finalError = undefined;
+    let timedOutOverall = false;
+
+    for (let b = 0; b < totalBatches; b++) {
+      const batchEnv = {
+        ...environment,
+        MEDISYNC_BACKEND_BATCH: String(b),
+        MEDISYNC_BACKEND_BATCH_SIZE: String(batchSize)
+      };
+      const logAppend = fs.openSync(consolePath, 'a');
+      const batchResult = await new Promise(resolve => {
+        const child = cp.spawn(executable, args, { cwd: root, env: batchEnv, windowsHide: true, shell: false, stdio: ['ignore', logAppend, logAppend] });
+        let error, timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; child.kill(); }, 180000);
+        child.once('error', failure => { error = failure.code; });
+        child.once('close', (code, signal) => {
+          clearTimeout(timer);
+          try { fs.closeSync(logAppend); } catch (_) {}
+          resolve({ code, signal, error, timedOut });
+        });
+      });
+
+      if (batchResult.timedOut) timedOutOverall = true;
+      if (batchResult.error) finalError = batchResult.error;
+      if (batchResult.code !== 0) {
+        finalCode = batchResult.code || 1;
+        finalSignal = batchResult.signal;
+      }
+
+      const batchResultsFile = path.join(out, `backend-results-${b}.json`);
+      if (fs.existsSync(batchResultsFile)) {
+        try {
+          const bRes = JSON.parse(fs.readFileSync(batchResultsFile, 'utf8'));
+          aggregated = mergeResults(aggregated, bRes);
+        } catch (_) {}
+      }
+
+      if (finalCode !== 0 || timedOutOverall) break;
+    }
+
+    if (aggregated) {
+      fs.writeFileSync(path.join(out, 'backend-results.json'), JSON.stringify(aggregated, null, 2) + '\n');
+    }
+    const result = { mode: 'backend', code: finalCode, signal: finalSignal, error: finalError, timedOut: timedOutOverall };
+    save('backend-exit.json', result);
+    console.log(JSON.stringify(result));
+    return result;
+  }
   const child = path.join(root, 'scripts/clinicalOfflineChild.cjs');
   const py = path.join(root, 'ml-engine/.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   const mlEnv = { ...env, PYTHONDONTWRITEBYTECODE: '1', MEDISYNC_ML_QA: 'true', MEDISYNC_OFFLINE_EVIDENCE: out, MEDISYNC_ML_DB_PATH: path.join(out, 'owned_ml_test.db'), INTERNAL_API_KEY: crypto.randomBytes(32).toString('hex'), MPLBACKEND: 'Agg', OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', MKL_NUM_THREADS: '1' };
   const exits = await Promise.all([
-    ...(securityOnly ? ['backend','email-pdf'] : ['backend', 'client', 'email-pdf']).map(mode => run(mode, process.execPath, [child, mode], { ...env, MEDISYNC_COMBINED_MODE: mode, MEDISYNC_COMBINED_EVIDENCE: out })),
+    ...(securityOnly ? ['backend','email-pdf'] : ['backend', 'client', 'email-pdf']).map(mode =>
+      mode === 'backend'
+        ? runBackendBatches(process.execPath, [child, mode], { ...env, MEDISYNC_COMBINED_MODE: mode, MEDISYNC_COMBINED_EVIDENCE: out })
+        : run(mode, process.execPath, [child, mode], { ...env, MEDISYNC_COMBINED_MODE: mode, MEDISYNC_COMBINED_EVIDENCE: out })
+    ),
     ...(!securityOnly ? [run('ml-scoring', py, [path.join(root, 'ml-engine/b13_r2_scoring_checks.py'), path.join(out, 'ml-scoring-results.json')], mlEnv),
     run('ml-flask', py, [path.join(root, 'ml-engine/scripts/clinical_offline_tests.py')], mlEnv)] : []),
     run('root', process.execPath, ['--test', '--test-reporter=tap', path.join(root, 'scripts/realLocalStack.test.cjs')])

@@ -33,7 +33,9 @@ function compareLocales(locales){
   for(const lang of ['en','si','ta']){
     const {values,duplicates}=locales[lang],keys=Object.keys(values).sort();
     languages[lang]={keyCount:keys.length,missing:baseline.filter(k=>!Object.hasOwn(values,k)),extra:keys.filter(k=>!Object.hasOwn(en,k)),empty:keys.filter(k=>!values[k].trim()),duplicates,
-      equalToEnglishCount:lang==='en'?null:keys.filter(k=>hasLetters(values[k])&&values[k]===en[k]).length};
+      equalToEnglishCount:lang==='en'?null:keys.filter(k=>hasLetters(values[k])&&values[k]===en[k]).length,
+      equalToEnglishKeys: lang === 'en' ? [] : keys.filter(key => hasLetters(values[key]) && values[key] === en[key] && !/^(?:MediSync|ICD(?:-?[0-9]+)?|OTP|PDF|API|UTC)$/i.test(values[key].trim())),
+    };
   }
   return {languages,keyParityPassed:Object.values(languages).every(l=>!l.missing.length&&!l.extra.length&&!l.empty.length&&!l.duplicates.length)};
 }

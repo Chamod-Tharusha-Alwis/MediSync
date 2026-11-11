@@ -69,7 +69,7 @@ const handler = otc => async (req, res) => {
         Patient.findOne(nicFilter(receipt.patientNic, { plainFields: ['nic'] })).then(patient => {
           if (patient?.email && (!receipt.patientId || String(receipt.patientId) === String(patient._id))) {
             if (!shouldSendDispenseEmail(patient._id)) {
-              console.log(`[DISPENSE EMAIL] Throttled duplicate dispense email for patient ${patient._id} within 120s window`);
+              console.log('[DISPENSE EMAIL] Throttled duplicate dispense email.');
               return;
             }
             return require('../services/recipientLanguageService').email({ model: 'Patient', accountId: String(patient._id) }, ({ to, lang }) => emailService.sendDispenseNotificationEmail(to,patient.fullName,'MediSync Pharmacy',

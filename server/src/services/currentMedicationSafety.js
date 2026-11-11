@@ -2,7 +2,7 @@
 const { canonicalMedicationName } = require('../utils/medicationName');
 const { getPrescriptionActiveState } = require('../utils/prescriptionLifecycle');
 
-async function currentMedicationNames(patientId, { session = null, PrescriptionModel = require('../models/Prescription'), now = new Date(), excludeId = null } = {}) {
+async function currentMedicationNames(patientId, { session = null, PrescriptionModel = require('../models/Prescription'), now = new Date(), excludeId = null, includeReferences = false } = {}) {
   if (!/^[a-f0-9]{24}$/i.test(String(patientId))) throw new Error('MEDICATION_PATIENT_ID_REQUIRED');
   let query = PrescriptionModel.find({ patientId, status: { $in: ['pending', 'issued', 'dispensed'] },
     supersededBy: null,
@@ -15,8 +15,11 @@ async function currentMedicationNames(patientId, { session = null, PrescriptionM
     row.decryptFieldsSync?.();
     if (!row.expiresAt || !Number.isFinite(new Date(row.expiresAt).getTime()) || row.__enc_drugName) throw new Error('MEDICATION_RECONCILIATION_REQUIRED');
     if (getPrescriptionActiveState(row, now) !== 'active') continue;
-    if (Array.isArray(row.medications) && row.medications.length) for (const med of row.medications) names.push(canonicalMedicationName(med));
-    else names.push(canonicalMedicationName(row));
+    const medications = Array.isArray(row.medications) && row.medications.length ? row.medications : [row];
+    for (const medication of medications) {
+      const drugName = canonicalMedicationName(medication);
+      names.push(includeReferences ? { drugName, reference: row.consultationRef || row.prescriptionId } : drugName);
+    }
   }
   return names;
 }

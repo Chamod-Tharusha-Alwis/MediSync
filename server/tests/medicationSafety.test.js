@@ -206,13 +206,11 @@ describe('Phase 3.5 — Deterministic Medication Interaction & Ingredient Safety
     expect(res.statusMessage).toBe('No interaction found in the available reference dataset.');
     expect(res.statusMessage.toLowerCase()).not.toContain('safe');
 
-    // Verify NewConsultation.jsx and DrugSearchInput.jsx source contract
-    const newConsultationSrc = fs.readFileSync(
-      path.join(__dirname, '../../client/src/pages/doctor/NewConsultation.jsx'),
-      'utf-8'
-    );
-    expect(newConsultationSrc).toContain('No interaction found in the available reference dataset.');
-    expect(newConsultationSrc).toContain('Automated Interaction Checking Incomplete');
-    expect(newConsultationSrc).toContain('Medication Interaction / Duplicate Active Ingredient Alert');
+    const panel = fs.readFileSync(path.join(__dirname, '../../client/src/components/common/MedicineSafetyPanel.jsx'), 'utf-8');
+    expect(panel).toContain("t('medicineSafety.noInteractions')");
+    expect(panel).toContain('safetyData?.error');
+    expect(panel).toContain('actionableWarnings.map');
+
+
   });
 });

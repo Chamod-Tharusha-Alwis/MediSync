@@ -196,6 +196,38 @@ describe('Task P11-C: Pharmacy OTC Atomic Failures & Retry', () => {
       });
     });
 
+    test.each([['ok', 1, null], ['insufficient', 0, 'INSUFFICIENT_STOCK'], ['missing', 1, 'STOCK_ITEM_REQUIRED']])(
+      'OTC stock-backed checkout reports %s and rolls back on rejected stock', async (mode, modifiedCount, code) => {
+        const itemId = new mongoose.Types.ObjectId();
+        const inventory = mode === 'missing' ? [] : [{ _id: itemId, drugName: 'Paracetamol 500mg', stock: 1 }];
+        Pharmacy.findById.mockReturnValue({ session: async () => ({ ...mockPharmacy, inventory }) });
+        claimPharmacyAuthorization.mockResolvedValue({ patientId: String(patientId) });
+        jest.spyOn(Dispensing, 'findById').mockReturnValue({ session: () => ({ lean: async () => null }) });
+        jest.spyOn(Patient, 'findOne').mockReturnValue({ session: async () => ({ _id: patientId, nic: patientNic, allergies: [] }) });
+        const stockWrite = jest.spyOn(Pharmacy, 'updateOne').mockResolvedValue({ modifiedCount });
+        const rxSave = jest.spyOn(Prescription.prototype, 'save').mockResolvedValue();
+        const receiptSave = jest.spyOn(Dispensing.prototype, 'save').mockResolvedValue();
+        const run = dispense({
+          user: authorizedUser, otc: true, skipAuditProjection: true,
+          body: { patientNic, idempotencyKey, medications: [{ name: 'Paracetamol 500mg', quantity: 1, inventoryItemId: String(itemId) }] },
+        });
+        if (code) {
+          await expect(run).rejects.toMatchObject({ code, status: 409 });
+          expect(rxSave).not.toHaveBeenCalled();
+          expect(receiptSave).not.toHaveBeenCalled();
+          expect(mockSession.abortTransaction).toHaveBeenCalledTimes(1);
+        } else {
+          await expect(run).resolves.toMatchObject({ replay: false });
+          expect(mockSession.commitTransaction).toHaveBeenCalledTimes(1);
+          expect(receiptSave).toHaveBeenCalledTimes(1);
+        }
+        if (mode === 'missing') expect(stockWrite).not.toHaveBeenCalled();
+        else expect(stockWrite).toHaveBeenCalledWith(expect.objectContaining({
+          _id: pharmacyId, inventory: { $elemMatch: { _id: itemId, drugName: 'Paracetamol 500mg', stock: { $gte: 1 } } },
+        }), { $inc: { 'inventory.$.stock': -1 } }, { session: mockSession });
+      },
+    );
+
     test('dispensing an already-dispensed prescription fails with 400 ALREADY_DISPENSED', async () => {
       const rxId = new mongoose.Types.ObjectId();
       const items = [{ name: 'Amoxicillin 500mg', qty: 20, unit: 'capsules' }];

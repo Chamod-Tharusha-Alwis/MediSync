@@ -75,7 +75,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-REL-02 (Cold-Start Tolerance)**: Client applications shall gracefully handle cloud microservice wake-up cycles of up to 60 seconds with descriptive visual loading indicators.
 
 ### 3.3.4 Localization and Usability (NFR-USE)
-- **NFR-USE-01 (Trilingual Coverage)**: 100% of user-facing UI labels, clinical instructions, and public health advisories shall maintain exact key parity across English, Sinhala, and Tamil (835 keys verified).
+- **NFR-USE-01 (Trilingual Coverage)**: The three locale dictionaries contain 876 keys each. The source audit found 99.32% of Sinhala and Tamil values differ from English. Coverage of every visible string remains under review.
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)

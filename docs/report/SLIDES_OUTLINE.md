@@ -35,7 +35,7 @@ This outline provides the slide structure, visual layout recommendations, and de
   2. Zero-latency in-memory medication safety engine (drug interactions and dosage ceilings).
   3. Real-time spatio-temporal disease tracking across Sri Lanka's 25 administrative districts.
   4. Ultra-lightweight ML symptom decision support operating under a 200 MB memory footprint.
-  5. 100% trilingual interface parity across English, Sinhala, and Tamil.
+  5. 876 dictionary keys per locale with exact key parity. Sinhala and Tamil each have 870 values that differ from English (99.32%).
 - **Speaker Notes**:
   > *"MediSync was engineered to solve these exact challenges through four integrated pillars: zero-trust clinical records, tamper-proof prescription fulfillment, automated outbreak detection across all 25 districts, and lightweight AI triage optimized for zero-cost cloud infrastructure."*
 
@@ -67,14 +67,13 @@ This outline provides the slide structure, visual layout recommendations, and de
 ---
 
 ### Slide 6: Clinical Workflow: Consultation & Standardized Diagnosis
-- **Visuals**: Screenshots **SS-09** and **SS-10** showing patient NIC lookup, vitals entry, and ICD-10 selection.
+- **Visuals**: Screenshots **SS-09** and **SS-10** showing patient lookup, symptom entry, and ICD-10 selection.
 - **Key Points**:
   - Secure patient record access gated by National Identity Card (NIC) with OTP consent.
-  - Vitals capture: Blood pressure, pulse, temperature, oxygen saturation.
   - US ICD-10-CM clinical catalog integration (71,704 searchable leaf concepts).
   - Multi-document transactional atomicity.
 - **Speaker Notes**:
-  > *"The consultation workflow is tailored for high-speed clinical encounters. Doctors look up the patient by NIC, record vitals, and link standardized ICD-10 disease codes from the 71,704 searchable leaf concepts with minimal clicks."*
+  > *"The consultation workflow is tailored for high-speed clinical encounters. Doctors look up the patient with consent, record symptoms, and link standardized ICD-10 disease codes from the 71,704 searchable leaf concepts with minimal clicks."*
 
 ---
 
@@ -229,7 +228,7 @@ This outline provides the slide structure, visual layout recommendations, and de
   2. Sub-millisecond deterministic medicine safety engine.
   3. Real-time syndromic surveillance with automated 3-tier outbreak gating.
   4. Ultra-lightweight ML triage operating in $< 200\text{ MB}$ memory.
-  5. 100% trilingual interface parity (EN/SI/TA).
+  5. Dictionary key parity across EN, SI and TA. Source review found 99.32% of values differ from English in SI and TA.
   6. 3,465 automated test verifications and 15-file cryptographic release lock.
 - **Speaker Notes**:
   > *"In summary, MediSync demonstrates that rigorous, privacy-preserving digital healthcare and early disease detection can be achieved on modern cloud platforms within developing nation resource limits."*

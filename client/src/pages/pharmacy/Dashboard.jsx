@@ -145,10 +145,13 @@ const Dispense = () => {
     const generation = searchGeneration.current;
     let stock = [];
     try {
-      const res = await api.get('/pharmacy/inventory').catch(() => null);
+      const res = await api.get('/pharmacy/inventory');
       if (generation !== searchGeneration.current) return;
       stock = res?.data?.data || [];
-    } catch (_) {}
+    } catch (_) {
+      if (generation === searchGeneration.current) toast.error(t('liveQa.stockUnavailable', 'Pharmacy stock is unavailable.'));
+      return;
+    }
     if (generation !== searchGeneration.current) return;
     setInventory(stock);
     const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
@@ -357,6 +360,7 @@ const Dispense = () => {
                     {group.prescriptions.map((rx) => {
                       const mainDrug = rx.medications && rx.medications.length > 0 ? rx.medications[0] : null;
                       const drugName = mainDrug?.name || rx.drugName || 'Medication';
+                      const durationDays = mainDrug?.durationDays ?? rx.durationDays;
                       const rxDisplayId = rx.prescriptionId?.split('-')[1] || rx.prescriptionId || rx._id;
                       return (
                         <tr key={rx._id} className="hover:bg-white/[0.02] transition-colors">
@@ -376,10 +380,10 @@ const Dispense = () => {
                             {mainDrug?.dosage || rx.dosage || '—'}
                           </td>
                           <td className="px-5 py-3.5 text-slate-300 font-medium">
-                            {mainDrug?.frequency || '—'}
+                            {mainDrug?.frequency || rx.frequency || '—'}
                           </td>
                           <td className="px-5 py-3.5 text-slate-300 font-medium">
-                            {mainDrug?.durationDays ? `${mainDrug.durationDays} Days` : '—'}
+                            {durationDays ? `${durationDays} ${t('activity.days', 'days')}` : '—'}
                           </td>
                           <td className="px-5 py-3.5 text-right">
                             <button
@@ -472,6 +476,8 @@ const Dispense = () => {
             <MedicineSafetyPanel
               medications={dispenseItems.map(i => ({ name: i.drugName || i.prescribed, dosage: i.dosage, durationDays: i.quantity }))}
               patientId={selectedRx?.patientId}
+              patientNic={loadedNic}
+              consentToken={getPatientToken?.(loadedNic)}
               acknowledgment={safetyAck}
               onAcknowledgmentChange={setSafetyAck}
             />

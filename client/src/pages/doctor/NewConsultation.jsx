@@ -217,7 +217,6 @@ const NewConsultation = () => {
   const icdListRef = useRef(null);
 
   const [prescriptions,      setPrescriptions]     = useState([]);
-  const [interactionAnalysis, setInteractionAnalysis] = useState(null);
   const [labTests,           setLabTests]          = useState([]);
   const [labTestInput,       setLabTestInput]      = useState('');
 
@@ -245,7 +244,7 @@ const NewConsultation = () => {
     setSymptoms([]); setClinicalNotes(''); setDiagnosesOptions([]); setEmergencyAdvisory(null); setSelectedDiagnosis('');
     setSelectedIcd(''); setManualDiagnosis(''); setIcdSearchQuery(''); setIcdSuggestions([]);
     setIsIcdOpen(false); setIcdActiveIndex(-1);
-    setPrescriptions([]); setInteractionAnalysis(null); setLabTests([]); setLabTestInput('');
+    setPrescriptions([]); setLabTests([]); setLabTestInput('');
     setLabSuggestions([]); setIsLabOpen(false); setLabActiveIndex(-1); setFollowUpDate('');
   };
   const consent = usePatientConsent(axios, patientNic, clearClinicalDraft);
@@ -276,37 +275,6 @@ const NewConsultation = () => {
     labTests,
     followUpDate,
   ]);
-
-  // Re-evaluate medication interactions & ingredient resolution whenever prescriptions change
-  useEffect(() => {
-    const drugNames = prescriptions.map(p => p.name).filter(Boolean);
-    if (drugNames.length === 0) {
-      setInteractionAnalysis(null);
-      return;
-    }
-    let cancelled = false;
-    const runInteractionCheck = async () => {
-      try {
-        const res = await axios.post('/drugs/interactions', { drugs: drugNames });
-        if (!cancelled) {
-          setInteractionAnalysis(res.data?.data || null);
-        }
-      } catch {
-        if (!cancelled) {
-          setInteractionAnalysis({
-            hasInteraction: false,
-            verificationIncomplete: true,
-            statusMessage: 'Automated interaction checking is incomplete due to a service error. Do not assume this combination is safe.',
-            warnings: [],
-            unresolvedDrugs: [],
-            unresolvedIngredients: ['<service_unavailable>']
-          });
-        }
-      }
-    };
-    runInteractionCheck();
-    return () => { cancelled = true; };
-  }, [prescriptions]);
 
   // Click-outside listener for ICD Autocomplete
   useEffect(() => {
@@ -1102,7 +1070,7 @@ const NewConsultation = () => {
                             <span>{t('doctor.emergencyAdvisoryTitle', 'Possible emergency presentation: urgent clinical assessment recommended')}</span>
                           </div>
                           <p className="mt-1.5 text-rose-200/90 leading-relaxed font-medium">
-                            {emergencyAdvisory.advisory}
+                            {emergencyAdvisory.advisory !== t('doctor.emergencyAdvisoryTitle', 'Possible emergency presentation: urgent clinical assessment recommended') ? emergencyAdvisory.advisory : null}
                           </p>
                           {Array.isArray(emergencyAdvisory.flaggedRules) && emergencyAdvisory.flaggedRules.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1467,94 +1435,11 @@ const NewConsultation = () => {
                       />
                     </div>
 
-                    {/* ── Medication Safety & Reference Verification Status ── */}
-                    {prescriptions.length > 0 && interactionAnalysis && (
-                      <div className="space-y-3" data-testid="medication-safety-panel">
-                        {/* 1. Detected Drug-Drug Interactions or Duplicate Active Ingredients */}
-                        {interactionAnalysis.hasInteraction && Array.isArray(interactionAnalysis.warnings) && interactionAnalysis.warnings.length > 0 && (
-                          <div
-                            data-testid="medication-interaction-alert"
-                            className="p-4 rounded-2xl bg-red-950/45 border border-red-500/40 text-red-100 space-y-2.5"
-                          >
-                            <div className="flex items-center gap-2 font-bold text-red-300 text-sm">
-                              <FiAlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                              <span>Medication Interaction / Duplicate Active Ingredient Alert ({interactionAnalysis.warnings.length})</span>
-                            </div>
-                            <ul className="space-y-2 text-xs text-red-100/95">
-                              {interactionAnalysis.warnings.map((w, idx) => (
-                                <li key={idx} className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/25 flex flex-col gap-1">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500/25 text-red-200 border border-red-400/30">
-                                      {w.type === 'duplicate_ingredient'
-                                        ? 'Duplicate Active Ingredient'
-                                        : `${(w.severity || 'moderate').toUpperCase()} Interaction`}
-                                    </span>
-                                    <span className="font-semibold text-white">
-                                      {w.drug1} [{w.drug1Strength || 'Unspecified'}, {w.drug1Formulation || 'Unspecified'}]
-                                      {' + '}
-                                      {w.drug2} [{w.drug2Strength || 'Unspecified'}, {w.drug2Formulation || 'Unspecified'}]
-                                    </span>
-                                  </div>
-                                  <p className="text-red-200/90 leading-relaxed">{w.message || w.description}</p>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* 2. Incomplete Automated Verification Warning (Unresolved Ingredients) */}
-                        {interactionAnalysis.verificationIncomplete && Array.isArray(interactionAnalysis.unresolvedIngredients) && interactionAnalysis.unresolvedIngredients.length > 0 && (
-                          <div
-                            data-testid="medication-verification-incomplete-alert"
-                            className="p-4 rounded-2xl bg-amber-950/45 border border-amber-500/40 text-amber-100 space-y-2"
-                          >
-                            <div className="flex items-center gap-2 font-bold text-amber-300 text-sm">
-                              <FiAlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                              <span>Automated Interaction Checking Incomplete</span>
-                            </div>
-                            <p className="text-xs text-amber-200/95 leading-relaxed">
-                              {interactionAnalysis.statusMessage}
-                            </p>
-                            {Array.isArray(interactionAnalysis.unresolvedDrugs) && interactionAnalysis.unresolvedDrugs.length > 0 && (
-                              <ul className="text-xs text-amber-200/85 list-disc list-inside space-y-1">
-                                {interactionAnalysis.unresolvedDrugs.map((ud, idx) => (
-                                  <li key={idx}>
-                                    <span className="font-semibold text-amber-100">{ud.drug}</span>
-                                    {' '}
-                                    [{ud.strength || 'Unspecified'}, {ud.formulation || 'Unspecified'}] — unresolved ingredient(s):{' '}
-                                    <span className="font-mono text-amber-300">{(ud.unresolvedIngredients || []).join(', ')}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-
-                        {/* 3. Neutral Reference Dataset Notice (Never displays a green 'Safe' badge) */}
-                        {!interactionAnalysis.hasInteraction && !interactionAnalysis.verificationIncomplete && prescriptions.length >= 2 && (
-                          <div
-                            data-testid="medication-neutral-reference-notice"
-                            className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/60 text-slate-300 flex items-start gap-2.5 text-xs"
-                          >
-                            <FiInfo className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-semibold text-slate-200">
-                                {interactionAnalysis.statusMessage || 'No interaction found in the available reference dataset.'}
-                              </p>
-                              <p className="text-slate-400 mt-0.5">
-                                Automated lookup checked resolved active ingredients against the reference dataset only. Absence of a reference match does not guarantee clinical safety.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* ── Medicine Safety Panel (Sub-Project 3) ──────────── */}
                     {prescriptions.length > 0 && (
                       <MedicineSafetyPanel
                         medications={prescriptions}
-                        patientId={patientData?._id}
+                        consultationNic={patientNic}
+                        consentToken={patientAccessToken}
                         acknowledgment={safetyAck}
                         onAcknowledgmentChange={setSafetyAck}
                       />
