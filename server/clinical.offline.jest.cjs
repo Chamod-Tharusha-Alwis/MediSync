@@ -96,7 +96,8 @@ module.exports.testMatch.push(
   '<rootDir>/tests/securityRemediationF01toF09.test.js',
   '<rootDir>/tests/outbreakApprovalDelivery.test.js',
   '<rootDir>/tests/postRehearsalFixes.test.js',
-  '<rootDir>/tests/dispenseInventoryFree.test.js'
+  '<rootDir>/tests/dispenseInventoryFree.test.js',
+  '<rootDir>/tests/medicineSafetyPanelLeak.test.js'
 );
 
 module.exports.testMatch.push('<rootDir>/tests/liveQaRepairs.test.js');

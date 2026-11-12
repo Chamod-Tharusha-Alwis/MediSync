@@ -161,15 +161,22 @@ function computeClinicalFindings({
           }
         }
 
-        if (Array.isArray(safetyResult.unresolvedDrugs)) {
-          for (const u of safetyResult.unresolvedDrugs) {
+        if (Array.isArray(safetyResult.unresolvedDrugs) && safetyResult.unresolvedDrugs.length > 0) {
+          const names = safetyResult.unresolvedDrugs
+            .map(u => u.drug || u.brand)
+            .filter(Boolean);
+          const uniqueNames = [...new Set(names)];
+          if (uniqueNames.length > 0) {
+            const count = uniqueNames.length;
+            const preview = uniqueNames.slice(0, 3).join(', ');
+            const suffix = count > 3 ? `, and ${count - 3} more` : '';
             rawFindings.push({
               type: 'incomplete_verification',
               severity: 'info',
-              items: [u.drug || u.brand].filter(Boolean),
-              summary:
-                u.message ||
-                `Automated interaction checking incomplete for "${u.drug}". Clinical judgment required.`,
+              items: uniqueNames,
+              summary: count === 1
+                ? `Automated interaction checking incomplete for "${uniqueNames[0]}". Clinical judgment required.`
+                : `Interaction checking incomplete for ${count} co-prescribed medicines: ${preview}${suffix}. Clinical judgment required.`,
               source: 'ingredient_resolver',
             });
           }

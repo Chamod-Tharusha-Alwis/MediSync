@@ -421,12 +421,52 @@ exports.previewConsultationSafety = async (req, res) => {
   }
 };
 
+function sanitizeDrugName(name) {
+  if (typeof name !== 'string') return 'unrecognised medicine';
+  const trimmed = name.trim();
+  if (!trimmed || /^(?:gcm1\.|enc:|[0-9a-f]{32}:[0-9a-f]+)/i.test(trimmed)) {
+    return 'unrecognised medicine';
+  }
+  return trimmed;
+}
+
+function sanitizePayloadDeep(value) {
+  if (typeof value === 'string') {
+    if (/^(?:gcm1\.|enc:|[0-9a-f]{32}:[0-9a-f]+)/i.test(value.trim())) {
+      return 'unrecognised medicine';
+    }
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizePayloadDeep);
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = sanitizePayloadDeep(v);
+    }
+    return out;
+  }
+  return value;
+}
+
 exports.checkMedicineSafety = async (req, res) => {
   try {
     const mongoose = require('mongoose');
     const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
     const { computeClinicalFindings } = require('../utils/clinicalSafetyValidator');
-    const { medications, patientId, activePrescriptions, acknowledgment } = req.body || {};
+    const { medications: rawMeds, patientId, activePrescriptions, acknowledgment } = req.body || {};
+
+    const medications = Array.isArray(rawMeds)
+      ? rawMeds.map(m => {
+          if (typeof m === 'string') return sanitizeDrugName(m);
+          if (m && typeof m === 'object') {
+            const name = sanitizeDrugName(m.name || m.drugName || '');
+            return { ...m, name, drugName: name };
+          }
+          return m;
+        })
+      : [];
 
     let patientAllergies = [];
     let resolvedActiveRx = Array.isArray(activePrescriptions) ? [...activePrescriptions] : [];
@@ -444,25 +484,26 @@ exports.checkMedicineSafety = async (req, res) => {
         try {
           const Prescription = require('../models/Prescription');
           const now = new Date();
-          const selectResult = Prescription.find({
+          // Active prescriptions only: pending or issued (not yet dispensed, not expired, not superseded).
+          // Historical dispensed prescriptions are excluded: a finished course from months ago is not a concurrent active drug.
+          const activeDocs = await Prescription.find({
             patientId,
-            status: { $in: ['pending', 'issued', 'dispensed'] },
+            status: { $in: ['pending', 'issued'] },
+            supersededBy: null,
             $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }]
-          }).select('drugName medications consultationRef prescriptionId durationDays dosage frequency createdAt');
-
-          const activeDocs = typeof selectResult?.lean === 'function'
-            ? await selectResult.lean()
-            : await selectResult;
+          });
 
           for (const doc of activeDocs || []) {
             doc.decryptFieldsSync?.();
             const ref = doc.consultationRef || doc.prescriptionId || 'CON-RECORD';
             if (Array.isArray(doc.medications) && doc.medications.length) {
               for (const m of doc.medications) {
-                resolvedActiveRx.push({ drugName: m.name || m.drugName, reference: ref, consultationRef: ref, dosage: m.dosage, frequency: m.frequency, rawDoc: doc });
+                const drugName = sanitizeDrugName(m.name || m.drugName);
+                resolvedActiveRx.push({ drugName, reference: ref, consultationRef: ref, dosage: m.dosage, frequency: m.frequency, rawDoc: doc });
               }
             } else if (doc.drugName) {
-              resolvedActiveRx.push({ drugName: doc.drugName, reference: ref, consultationRef: ref, dosage: doc.dosage, frequency: doc.frequency, rawDoc: doc });
+              const drugName = sanitizeDrugName(doc.drugName);
+              resolvedActiveRx.push({ drugName, reference: ref, consultationRef: ref, dosage: doc.dosage, frequency: doc.frequency, rawDoc: doc });
             }
           }
         } catch (_) {}
@@ -539,7 +580,8 @@ exports.checkMedicineSafety = async (req, res) => {
     }
     result.supersededNotices = supersededNotices;
 
-    return res.status(200).json(result);
+    const sanitizedResponse = sanitizePayloadDeep(result);
+    return res.status(200).json(sanitizedResponse);
   } catch (err) {
     return res.status(500).json({ error: 'SAFETY_CHECK_FAILED', message: err.message });
   }

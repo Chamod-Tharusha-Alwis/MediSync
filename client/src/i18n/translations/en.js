@@ -836,6 +836,7 @@ export const en = {
     "disclaimer": "Advisory reference only; clinical assessment required.",
     "interactionsDetected": "Interactions or Dosage Limits Detected",
     "noInteractions": "No known reference interactions detected.",
+    "checkIncomplete": "Check incomplete, clinical assessment required.",
     "acknowledgeCheckbox": "I acknowledge these warnings and confirm this prescription is clinically indicated",
     "justificationReason": "Clinical reason / justification (minimum 5 characters)",
     "reasonPlaceholder": "Document clinical justification (e.g., patient closely monitored for pain)",
