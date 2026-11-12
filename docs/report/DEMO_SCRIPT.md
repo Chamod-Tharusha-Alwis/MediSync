@@ -179,4 +179,4 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
 
 Use the owner-controlled role aliases for patient, doctor, pharmacist, pharmacy administrator and hospital administrator. Keep mailbox and credential details in the private operator session. The synthetic account markers currently prevent ordinary production login. Rehearse those fixtures in an isolated, authorized QA environment.
 
-Stock-backed dispensing depends on a matching embedded stock item in the current pharmacy. See the [owner procedure](../final/LIVE_QA_OWNER_RUNBOOK.md) for the scoped stock dry-run and QR minting. QR links are bearer capabilities. Keep the single printed link private.
+MediSync does not manage pharmacy stock/inventory; pharmacists verify and dispense directly against verified prescriptions. QR links are bearer capabilities. Keep the single printed link private.

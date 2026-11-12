@@ -63,21 +63,18 @@ Fill in your authorized live credentials before starting the demonstration:
    - Zero patient history or past encounter data is included in the export.
    - Encrypted with the patient's NIC password. Filename: `MediSync-Consultation-<REF>.pdf`.
 
-### Phase 3: Pharmacy Stock-Backed Dispensing & Duplicate Block
+### Phase 3: Streamlined Pharmacy Dispensing & Duplicate Block
 1. Navigate to `/login` and sign in with `<OWNER_PHARMACIST_EMAIL>`.
-2. Open the Pharmacy Dispense interface (`/pharmacy/dispense`).
+2. Open the Pharmacy Dispense interface (`/pharmacy/dashboard/dispense`).
 3. View the pending prescription issued in Phase 1.
-4. **Stock Selector**:
-   - The stock selector populates available units from the logged-in pharmacy's own inventory (`GET /api/pharmacy/inventory`).
-   - If stock was seeded via `node scripts/seed_viva_pharmacy_stock.js --pharmacy-email=<OWNER_PHARMACIST_EMAIL> --confirm`, items show 100 units in stock.
-   - If pharmacy stock is untracked (empty), the interface permits dispensing without blocking clinical delivery.
+4. **Prescription Verification & Safety Review**:
+   - Dispense modal displays medication name, dosage, frequency, duration, editable quantity dispensed, and interaction summary (decrypted server-side; no `enc:` or ciphertext leak).
+   - If warnings exist, check **"I have reviewed the safety information"** (prescriber override respected). If check is incomplete, neutral warning displays (no green checkmark).
+   - MediSync operates inventory-free; no stock dropdown or decrement blocking clinical dispensing.
 5. Click **Confirm Dispense**:
-   - Dispensing transaction completes atomically.
-   - Inventory decrements conditionally.
-   - Patient receives a single debounced dispense notification email.
-6. **Verify Duplicate Dispense Prevention**:
-   - Immediately attempt to dispense the same prescription again.
-   - System blocks checkout with verified error: `Prescription is not eligible for dispensing (code: ALREADY_DISPENSED)`.
+   - Prescription status transitions to `dispensed` atomically.
+   - Single debounced patient notification dispatches.
+6. **Duplicate Lock Verification**: Click **Confirm Dispense** again immediately on the same item. Verify rejection with `ALREADY_DISPENSED` ('Prescription is not eligible for dispensing.').
 
 ### Phase 4: Administrative Outbreak Detection & Public Observatory
 1. Sign out and sign in with `<OWNER_ADMIN_EMAIL>`.

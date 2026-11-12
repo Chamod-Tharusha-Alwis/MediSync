@@ -136,6 +136,7 @@
 | `GET` | `/api/admin/surveillance/review` | Super Admin | List syndromic consultations awaiting epidemiological review with district, disease, and date range filters. |
 | `PUT` | `/api/admin/surveillance/review` | Super Admin | Verify or reject individual or bulk consultations for syndromic surveillance inclusion. |
 | `POST` | `/api/admin/outbreak/trigger` | Super Admin | Manually trigger full epidemiological scan across all 25 districts. |
+| `GET` | `/api/admin/outbreak/growth` | Super Admin | 72-hour epidemiological growth telemetry (cases last 72h vs prior 72h, absolute change, percent change with "new" for 0 previous cases, 7-day daily trend, DCS incidence) for all districts and island total. Supports `?window=72h`. |
 | `GET` | `/api/admin/outbreak/:id/recipients-preview` | Super Admin | Preview eligible recipient counts by notification scope (`none`, `district`, `national`) before approval. |
 | `PUT` | `/api/admin/outbreak/:id/approve` | Super Admin | Confirm a pending outbreak alert with scoped notifications (`none`, `district`, `national` with confirmation disease). Promotes to active public broadcast. |
 | `PUT` | `/api/admin/outbreak/:id/resolve` | Super Admin | Resolve confirmed outbreak alert. Requires mandatory justification note ($\ge 5$ chars). |
@@ -154,5 +155,5 @@
 
 ### Pharmacy stock and outbreak publication
 
-- `GET /api/pharmacy/inventory` uses the authenticated staff member's pharmacy membership and returns available embedded stock. A stock-backed checkout checks and decrements the matching item in the dispensing transaction.
+- `GET /api/pharmacy/inventory` is **DECOMMISSIONED** (returns 410 Gone with `INVENTORY_MANAGEMENT_DECOMMISSIONED`). MediSync does not do inventory/stock management; pharmacists verify and dispense directly against verified prescriptions.
 - `GET /api/public/outbreak-alerts` returns allowlisted fields from approved, active, real OutbreakAlert records. District case counts never create advisory entries. `GET /api/admin/outbreak/alerts` exposes current real pending and active records under verified admin authorization. Simulation remains separate.
