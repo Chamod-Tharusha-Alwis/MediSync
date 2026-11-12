@@ -5,7 +5,7 @@ import { useTranslation } from '../../i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
-  TrendingUp, MapPin, ShieldAlert, Radio, X
+  TrendingUp, MapPin, ShieldAlert, Radio, X, Users
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import api from '../../api/axiosInstance';
@@ -224,7 +224,36 @@ const OutbreakMonitor = () => {
   const lastScanAtRef = React.useRef(0);
   
   // New workflow state
-  const [approveModal, setApproveModal] = useState({ isOpen: false, alertId: null, scope: 'none' });
+  const [approveModal, setApproveModal] = useState({
+    isOpen: false,
+    alertId: null,
+    scope: 'none',
+    confirmDisease: '',
+    previewLoading: false,
+    previewCount: null,
+    previewDistrict: null,
+    deliveryEnabled: true,
+  });
+
+  const fetchRecipientPreview = async (alertId, scope) => {
+    if (!alertId || scope === 'none') {
+      setApproveModal(prev => ({ ...prev, previewCount: null, previewLoading: false }));
+      return;
+    }
+    setApproveModal(prev => ({ ...prev, previewLoading: true }));
+    try {
+      const res = await api.get(`/admin/outbreak/${alertId}/recipients-preview?scope=${scope}`);
+      setApproveModal(prev => ({
+        ...prev,
+        previewLoading: false,
+        previewCount: res.data.recipientCount,
+        previewDistrict: res.data.district,
+        deliveryEnabled: res.data.deliveryEnabled !== false,
+      }));
+    } catch (_) {
+      setApproveModal(prev => ({ ...prev, previewLoading: false, previewCount: null }));
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -321,15 +350,28 @@ const OutbreakMonitor = () => {
 
   const handleApproveAlert = async () => {
     try {
-      const res = await api.put(`/admin/outbreak/${approveModal.alertId}/approve`, { emailScope: approveModal.scope });
+      const payload = {
+        emailScope: approveModal.scope,
+        confirmationDisease: approveModal.confirmDisease,
+      };
+      const res = await api.put(`/admin/outbreak/${approveModal.alertId}/approve`, payload);
       toast.success(res.data.message || 'Alert approved');
       setAlerts(prev => prev.map(a => a._id === approveModal.alertId
         ? { ...a, status: 'Active', emailScope: approveModal.scope }
         : a
       ));
-      setApproveModal({ isOpen: false, alertId: null, scope: 'none' });
+      setApproveModal({
+        isOpen: false,
+        alertId: null,
+        scope: 'none',
+        confirmDisease: '',
+        previewLoading: false,
+        previewCount: null,
+        previewDistrict: null,
+        deliveryEnabled: true,
+      });
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Approval failed');
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Approval failed');
     }
   };
 
@@ -582,6 +624,42 @@ const OutbreakMonitor = () => {
             </div>
           </div>
         )}
+
+        {/* Suppressed Signals Panel */}
+        {mlResult?.suppressed && mlResult.suppressed.length > 0 && (
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <div className="flex justify-between items-center select-none">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-slate-500" /> Suppressed Signals (Governance Floor &amp; Persistence Gates)
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Districts evaluated by surveillance criteria where alerts were suppressed to prevent false alarms.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-500">{mlResult.suppressed.length} suppressed</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {mlResult.suppressed.map((sig, idx) => (
+                <div key={`suppressed-${sig.district}-${sig.disease}-${idx}`} className="p-3 bg-slate-950/40 rounded-xl border border-white/5 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-bold text-slate-300">{sig.disease}</span>
+                    <span className="px-2 py-0.5 rounded text-[11px] uppercase tracking-wide font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                      {sig.reason === 'CASE_FLOOR_NOT_MET' ? 'Floor (<5 cases)' : sig.reason === 'PERSISTENCE_CRITERIA_NOT_MET' ? 'Persistence (<2 days)' : sig.reason}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-500" /> {formatDistrictName(sig.district)}
+                    </span>
+                    <span>{sig.count} cases</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Surveillance Geographic Level Selector */}
@@ -675,7 +753,7 @@ const OutbreakMonitor = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                        {inc.display}
+                        {inc.hasPopulation ? inc.display : <span title="Census 2024 population table download pending manual entry">N/A (Census pending)</span>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${sev.text} ${sev.bg} ${sev.border}`}>
@@ -686,7 +764,19 @@ const OutbreakMonitor = () => {
                         {alert.status === 'Pending' ? (
                           <div className="flex gap-2">
                             <button
-                              onClick={() => setApproveModal({ isOpen: true, alertId: alert._id, scope: 'none' })}
+                              onClick={() => {
+                                setApproveModal({
+                                  isOpen: true,
+                                  alertId: alert._id,
+                                  scope: 'district',
+                                  confirmDisease: '',
+                                  previewLoading: false,
+                                  previewCount: null,
+                                  previewDistrict: null,
+                                  deliveryEnabled: true,
+                                });
+                                fetchRecipientPreview(alert._id, 'district');
+                              }}
                               className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg border border-amber-500/25 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)]"
                             >
                               Approve
@@ -794,7 +884,11 @@ const OutbreakMonitor = () => {
                       name="emailScope"
                       value={opt.id}
                       checked={approveModal.scope === opt.id}
-                      onChange={(e) => setApproveModal(prev => ({ ...prev, scope: e.target.value }))}
+                      onChange={(e) => {
+                        const newScope = e.target.value;
+                        setApproveModal(prev => ({ ...prev, scope: newScope }));
+                        fetchRecipientPreview(approveModal.alertId, newScope);
+                      }}
                       className="w-4 h-4 accent-amber-500"
                     />
                     <div>
@@ -804,6 +898,43 @@ const OutbreakMonitor = () => {
                   </div>
                 </label>
               ))}
+
+              {approveModal.scope !== 'none' && (
+                <div className="p-3 bg-slate-950/70 border border-amber-500/30 rounded-xl space-y-1 text-xs">
+                  <div className="text-amber-400 font-semibold flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" /> Recipient Preview
+                  </div>
+                  {approveModal.previewLoading ? (
+                    <div className="text-slate-400 flex items-center gap-1.5 py-1">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Calculating recipient count...
+                    </div>
+                  ) : approveModal.previewCount !== null ? (
+                    <div className="text-slate-200">
+                      This will email <strong className="text-white font-mono">{approveModal.previewCount}</strong> opted-in {approveModal.scope === 'district' ? `users in ${approveModal.previewDistrict || 'the affected district'}` : 'users nationwide'}.
+                      {!approveModal.deliveryEnabled && (
+                        <p className="text-amber-300 mt-1 font-medium">Note: Email delivery is disabled by policy. Approval will succeed as dashboard-only.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-slate-400">Recipient preview unavailable.</div>
+                  )}
+                </div>
+              )}
+
+              {approveModal.scope === 'national' && (
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-xs font-bold text-red-400 uppercase tracking-wider block">
+                    Type disease name to confirm nationwide broadcast
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dengue or Influenza"
+                    value={approveModal.confirmDisease}
+                    onChange={(e) => setApproveModal(prev => ({ ...prev, confirmDisease: e.target.value }))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-red-500/40 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-400"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3">
@@ -815,7 +946,8 @@ const OutbreakMonitor = () => {
               </button>
               <button
                 onClick={handleApproveAlert}
-                className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+                disabled={approveModal.scope === 'national' && !approveModal.confirmDisease.trim()}
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Approval
               </button>

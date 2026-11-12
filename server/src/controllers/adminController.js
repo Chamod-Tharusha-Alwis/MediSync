@@ -912,6 +912,30 @@ exports.getBroadcasts = async (req, res) => {
   res.json({messages:[],total:0,page:1,pages:0,message:'Legacy broadcast delivery is gated pending provenance review.'});
 };
 
+// ─── OUTBREAK RECIPIENT PREVIEW ──────────────────────────────────────────────
+exports.previewOutbreakRecipients = async (req, res) => {
+  try {
+    const OutbreakAlert = require('../models/OutbreakAlert');
+    const alert = await OutbreakAlert.findById(req.params.id);
+    if (!alert) return res.status(404).json({ error: 'Alert not found' });
+    const scope = String(req.query?.scope || 'district').toLowerCase();
+    const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
+    const { resolveOutbreakRecipients } = require('../services/outbreakNotificationDelivery');
+    const info = await resolveOutbreakRecipients(alert, scope, maxCap);
+    res.json({
+      scope,
+      district: info.district,
+      recipientCount: info.recipients.length,
+      totalEligible: info.totalFound,
+      capped: info.capped,
+      maxCap: info.maxCap,
+      deliveryEnabled: process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false'
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to preview recipients.' });
+  }
+};
+
 // ─── NEW: APPROVE ALERT ───────────────────────────────────────────────────────
 exports.approveAlert = async (req, res) => {
   try {
@@ -922,13 +946,75 @@ exports.approveAlert = async (req, res) => {
     if (alert.surveillancePolicy !== service.POLICY) return res.status(409).json({error:'Legacy alert requires provenance review.'});
     if (service.synthetic(alert) && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     if (!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role)) return res.status(403).json({error:'Administrator review required.'});
-    if (req.body?.emailScope && req.body.emailScope !== 'none') return res.status(409).json({error:'External outbreak delivery is disabled pending clinical governance approval.'});
-    const updated = await OutbreakAlert.findOneAndUpdate({_id:alert._id,status:'Pending'},{$set:{status:'Active',approvedBy:req.user.id,approvedAt:new Date(),emailScope:'none'}},{new:true});
+
+    const emailScope = req.body?.emailScope || 'none';
+    if (!['none', 'district', 'national'].includes(emailScope)) {
+      return res.status(400).json({ error: 'Invalid email scope.' });
+    }
+
+    // Nationwide explicit confirmation check: require typing the disease name
+    if (emailScope === 'national') {
+      const confirmDisease = String(req.body?.confirmationDisease || req.body?.confirmDisease || '').trim().toLowerCase();
+      const expectedDisease = String(alert.disease || '').trim().toLowerCase();
+      if (!confirmDisease || confirmDisease !== expectedDisease) {
+        return res.status(400).json({
+          error: 'NATIONWIDE_CONFIRMATION_REQUIRED',
+          message: `Nationwide broadcast requires typing the disease name ("${alert.disease}") to confirm.`
+        });
+      }
+    }
+
+    // Kill switch: env var OUTBREAK_EMAIL_DELIVERY_ENABLED, defaults to true
+    const isDeliveryEnabled = process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false';
+    const isEmailRequested = emailScope !== 'none' && !service.synthetic(alert);
+    const effectiveScope = (!isDeliveryEnabled && isEmailRequested) ? 'none' : emailScope;
+
+    const updated = await OutbreakAlert.findOneAndUpdate(
+      {_id:alert._id,status:'Pending'},
+      {$set:{status:'Active',approvedBy:req.user.id,approvedAt:new Date(),emailScope:effectiveScope}},
+      {new:true}
+    );
     if (!updated) return res.status(409).json({error:'Only pending alerts can be approved.'});
+
     try {
       const { notifyOutbreakAlert } = require('../services/notificationService');
       await notifyOutbreakAlert(updated, { io: req.app?.get('io') });
     } catch (_) {}
+
+    const emailDelivery = {
+      attempted: false,
+      skipped: false,
+      reason: null,
+      recipientCount: 0,
+      sentCount: 0,
+      failedCount: 0
+    };
+
+    if (isEmailRequested) {
+      if (!isDeliveryEnabled) {
+        emailDelivery.skipped = true;
+        emailDelivery.reason = 'OUTBREAK_EMAIL_DELIVERY_DISABLED';
+      } else {
+        emailDelivery.attempted = true;
+        try {
+          const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
+          const { resolveOutbreakRecipients, sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
+          const audience = await resolveOutbreakRecipients(alert, emailScope, maxCap);
+          emailDelivery.recipientCount = audience.recipients.length;
+
+          if (audience.recipients.length > 0) {
+            const deliveryResult = await sendOutbreakAdvisoryEmail(audience.recipients, updated);
+            emailDelivery.sentCount = deliveryResult.sentCount || 0;
+            emailDelivery.failedCount = deliveryResult.failedCount || 0;
+          }
+        } catch (mailErr) {
+          console.error('[Outbreak Delivery] Error dispatching emails (non-fatal):', mailErr.message);
+          emailDelivery.failedCount = emailDelivery.recipientCount;
+          emailDelivery.error = mailErr.message;
+        }
+      }
+    }
+
     try {
       const AuditLog = require('../models/AuditLog');
       await AuditLog.create({
@@ -936,11 +1022,35 @@ exports.approveAlert = async (req, res) => {
         actorRole: req.user?.role || 'admin',
         action: 'ALERT_APPROVED',
         accessedNic: String(updated._id),
-        deviceModel: 'status:Pending->Active',
+        deviceModel: `status:Pending->Active|scope:${emailScope}`,
+        details: {
+          alertId: String(updated._id),
+          disease: updated.disease,
+          district: updated.location || updated.district,
+          emailScope,
+          effectiveScope,
+          recipientCount: emailDelivery.recipientCount,
+          sentCount: emailDelivery.sentCount,
+          failedCount: emailDelivery.failedCount,
+          emailSkipped: emailDelivery.skipped,
+          deliveryEnabled: isDeliveryEnabled
+        },
         timestamp: new Date()
       });
     } catch (_) {}
-    res.json({message:'Review recorded. In-app notifications dispatched to clinicians and hospitals.',data:updated});
+
+    let message = 'Review recorded. In-app notifications dispatched to clinicians and hospitals.';
+    if (emailDelivery.skipped) {
+      message += ' External email delivery is disabled; alert activated as dashboard-only.';
+    } else if (emailDelivery.attempted) {
+      message += ` Dispatched ${emailDelivery.sentCount} email advisories (${emailDelivery.failedCount} failed).`;
+    }
+
+    res.json({
+      message,
+      data: updated,
+      emailDelivery
+    });
   } catch (_) { res.status(503).json({error:'Unable to record alert review.'}); }
 };
 
