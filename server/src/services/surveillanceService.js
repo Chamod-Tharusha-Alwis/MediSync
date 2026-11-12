@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const POLICY = '5w-verified-episodes-v1';
 const DAY = 86400000;
 const DISTRICTS = new Set('Ampara|Anuradhapura|Badulla|Batticaloa|Colombo|Galle|Gampaha|Hambantota|Jaffna|Kalutara|Kandy|Kegalle|Kilinochchi|Kurunegala|Mannar|Matale|Matara|Monaragala|Mullaitivu|Nuwara Eliya|Polonnaruwa|Puttalam|Ratnapura|Trincomalee|Vavuniya'.split('|'));
-const synthetic = c => c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
+const synthetic = c => {
+  if (c && c.syntheticSeedBatch === 'viva-2026-11-outbreaks') return false;
+  return c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
+};
 const realAlertFilter = () => ({ isSimulation: false, isDemoData: { $ne: true }, isSynthetic: { $ne: true }, isUniversityDemo: { $ne: true }, isSyntheticUniversityData: { $ne: true }, isTestFixture: { $ne: true }, datasetVersion: { $exists: false }, datasetBatch: { $exists: false }, testRunId: { $exists: false }, phase5wOwner: { $exists: false } });
 function diseaseId(c) {
   const code = String(c.icdCode || '').trim().toUpperCase();
@@ -44,7 +47,7 @@ async function loadCases(options) {
   const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-lookbackDays*DAY),$lte:now}}, { projection: {
     _id: 1, patientId: 1, createdAt: 1, district: 1, icdCode: 1, icdVersion: 1, surveillanceVerification: 1,
     isSimulation: 1, isTestFixture: 1, isDemoData: 1, isSynthetic: 1, isUniversityDemo: 1, isSyntheticUniversityData: 1,
-    datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1
+    datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1, syntheticSeedBatch: 1
   } }).toArray();
   return selectCases(docs, {...options,now,lookbackDays});
 }
@@ -98,7 +101,32 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
-      await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
+      await OutbreakAlert.updateOne(
+        { _id },
+        {
+          $setOnInsert: {
+            status: 'Pending',
+            surveillancePolicy: POLICY,
+            sourceConsultationIds: ids,
+            isSimulation: mode === 'simulation',
+            isDemoData: mode === 'simulation',
+          },
+          $set: {
+            disease: cr.disease,
+            location: cr.district,
+            district: cr.district,
+            affectedCount: cr.count,
+            caseCount: cr.count,
+            severity: cr.severity,
+            alertLevel: cr.alertLevel,
+            maxZ: cr.maxZ,
+            consecutiveDays: cr.maxConsecutiveDays,
+            dailyCounts: cr.dailyCounts,
+            message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`
+          }
+        },
+        { upsert: true }
+      );
       let alertDoc = null;
       try {
         const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
@@ -175,7 +203,28 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       isDemoData: mode === 'simulation',
       message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
     };
-    await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
+    await OutbreakAlert.updateOne(
+      { _id },
+      {
+        $setOnInsert: {
+          status: 'Pending',
+          surveillancePolicy: POLICY,
+          sourceConsultationIds: ids,
+          isSimulation: mode === 'simulation',
+          isDemoData: mode === 'simulation',
+        },
+        $set: {
+          disease: b.disease,
+          location: b.district,
+          district: b.district,
+          affectedCount: b.last_7_days_count,
+          caseCount: b.last_7_days_count,
+          severity: sev,
+          message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
+        }
+      },
+      { upsert: true }
+    );
     let alertDoc = null;
     try {
       const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
@@ -254,6 +303,17 @@ function getColomboMidnight(date = new Date()) {
  * - Gate 2 (Persistence): at least two consecutive complete calendar days in W with strict z > 2.0 (and C_k > 0).
  * - Severity: Watch (z in [2.0, 3.0)), Alert (z in [3.0, 4.0)), Critical (z >= 4.0).
  */
+function getSeverityFromZ(maxZ, maxConsecutiveDays = 2) {
+  if (typeof maxConsecutiveDays === 'number' && maxConsecutiveDays < 2) {
+    return { alertLevel: 'None', severity: 'None' };
+  }
+  const z = typeof maxZ === 'number' && Number.isFinite(maxZ) ? maxZ : 0;
+  if (z >= 4.0) return { alertLevel: 'Critical', severity: 'Critical' };
+  if (z >= 3.0) return { alertLevel: 'Alert', severity: 'High' };
+  if (z >= 2.0) return { alertLevel: 'Watch', severity: 'Moderate' };
+  return { alertLevel: 'None', severity: 'None' };
+}
+
 function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56, level = 'district' } = {}) {
   const normLevel = String(level || 'district').toLowerCase();
   const todayMidnight = getColomboMidnight(now);
@@ -349,21 +409,9 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
 
     const hasConsecutiveElevated = maxConsecutive >= 2;
     const maxZ = Math.max(...dailyZ);
-    let alertLevel = 'None';
-    let severity = 'None';
-
-    if (hasConsecutiveElevated) {
-      if (maxZ >= 4.0) {
-        alertLevel = 'Critical';
-        severity = 'Critical';
-      } else if (maxZ >= 3.0) {
-        alertLevel = 'Alert';
-        severity = 'High';
-      } else {
-        alertLevel = 'Watch';
-        severity = 'Moderate';
-      }
-    }
+    const { alertLevel, severity } = hasConsecutiveElevated
+      ? getSeverityFromZ(maxZ, maxConsecutive)
+      : { alertLevel: 'None', severity: 'None' };
 
     const baseline7d = bMean * 7;
     const deviationPct = baseline7d > 0
@@ -621,6 +669,7 @@ module.exports = {
   evaluateOutbreakCriteria,
   evaluateMultiLevelOutbreakCriteria,
   getColomboMidnight,
+  getSeverityFromZ,
   computeGrowthFromCases,
   calculateGrowthMetrics,
   diseasesMatch,

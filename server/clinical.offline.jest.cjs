@@ -103,5 +103,6 @@ module.exports.testMatch.push(
 module.exports.testMatch.push(
   '<rootDir>/tests/liveQaRepairs.test.js',
   '<rootDir>/tests/clientBuildCachePolicy.test.js',
-  '<rootDir>/tests/outbreakReadTimeMetrics.test.js'
+  '<rootDir>/tests/outbreakReadTimeMetrics.test.js',
+  '<rootDir>/tests/vivaOutbreakPlanVerification.test.js'
 );
