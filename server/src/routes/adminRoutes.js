@@ -2,10 +2,20 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const protect = require('../middleware/verifiedAuth');
+const rateLimit = require('express-rate-limit');
+
+const diseaseAnalyticsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: { error: 'Too many analytics requests, please try again shortly.' },
+  validate: { trustProxy: false }
+});
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 const analyticsController = require('../controllers/analyticsController');
 router.get('/analytics/dashboard', protect(['admin', 'super_admin']), analyticsController.getDashboardStats);
+router.get('/analytics/diseases/search', protect(['admin', 'super_admin', 'health_officer']), diseaseAnalyticsLimiter, analyticsController.searchDiseases);
+router.get('/analytics/diseases/:code', protect(['admin', 'super_admin', 'health_officer']), diseaseAnalyticsLimiter, analyticsController.getDiseaseAnalytics);
 
 // ─── Core stats & users ──────────────────────────────────────────────────────
 router.get('/stats', protect(['admin', 'super_admin']), adminController.getSystemStats);

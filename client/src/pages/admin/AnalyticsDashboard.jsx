@@ -5,6 +5,7 @@ import { Activity, Pill, Users, TrendingUp, AlertTriangle, RefreshCw } from 'luc
 import api from '../../api/axiosInstance';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDoctorName } from '../../utils/doctorName';
+import DiseaseAnalyticsSection from '../../components/admin/DiseaseAnalyticsSection';
 
 const INITIAL_ANALYTICS = Object.freeze({
   registrationGrowth: [],
@@ -160,15 +161,18 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col">
+      {/* Disease Analytics Section (ICD Search, Time Range, Incidence & Breakdown) */}
+      <DiseaseAnalyticsSection />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-8">
+        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col" style={{ minHeight: 320, minWidth: 0 }}>
           <h3 className="text-lg font-semibold text-white mb-4">{t("adminManagement.patientFlow", "Patient Registration Growth")}</h3>
           {data.registrationGrowth.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
               No registration growth data recorded in the last 7 days
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
               <AreaChart data={data.registrationGrowth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="_id" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -180,14 +184,14 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col">
+        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col" style={{ minHeight: 320, minWidth: 0 }}>
           <h3 className="text-lg font-semibold text-white mb-4">Top Doctors by Consultations</h3>
           {data.topDoctors.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
               No doctor consultation metrics recorded
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
               <BarChart data={data.topDoctors} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
                 <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -201,14 +205,14 @@ const AnalyticsDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col">
+        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col" style={{ minHeight: 320, minWidth: 0 }}>
           <h3 className="text-lg font-semibold text-white mb-4">Prescription Dispensing Ratio</h3>
           {!hasDispensingData ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
               No prescriptions recorded for dispensing analysis
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
               <PieChart>
                 <Pie
                   data={pieData}
@@ -230,14 +234,14 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col">
+        <div className="glass-panel p-6 rounded-xl border border-white/5 h-80 flex flex-col" style={{ minHeight: 320, minWidth: 0 }}>
           <h3 className="text-lg font-semibold text-white mb-4">Most Prescribed Medications</h3>
           {data.topDrugs.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
               No prescription drug activity recorded
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
               <BarChart data={data.topDrugs}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
