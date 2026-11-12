@@ -132,31 +132,122 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
   addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 1, count: 2, scenario: 'Matara-Dengue-Window' });
 
   // Deterministic parent documents to guarantee zero orphan references
+  const DUMMY_SYNTHETIC_PASSWORD_HASH = '$2a$10$wT1rK0c1234567890abcdef.dummyHashForSyntheticDocOnly';
+
   const parentDoctors = [
-    { _id: deterministicObjectId(BATCH_TAG, 'Doctor', 1), doctorId: `${BATCH_TAG}-DOC-01`, fullName: 'Dr. Nirmal Senanayake', email: 'dr.nirmal.outbreaks@medisync.local', slmcNumber: 'SLMC-98101', district: 'Gampaha' },
-    { _id: deterministicObjectId(BATCH_TAG, 'Doctor', 2), doctorId: `${BATCH_TAG}-DOC-02`, fullName: 'Dr. Anoma Wijesinghe', email: 'dr.anoma.outbreaks@medisync.local', slmcNumber: 'SLMC-98102', district: 'Kandy' },
-    { _id: deterministicObjectId(BATCH_TAG, 'Doctor', 3), doctorId: `${BATCH_TAG}-DOC-03`, fullName: 'Dr. Chandana Jayasuriya', email: 'dr.chandana.outbreaks@medisync.local', slmcNumber: 'SLMC-98103', district: 'Galle' },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 1),
+      doctorId: `${BATCH_TAG}-DOC-01`,
+      fullName: 'Dr. Nirmal Senanayake',
+      email: 'dr.nirmal.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98101',
+      licenseNo: 'SLMC-98101',
+      specialization: 'General Medicine',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Gampaha',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 2),
+      doctorId: `${BATCH_TAG}-DOC-02`,
+      fullName: 'Dr. Anoma Wijesinghe',
+      email: 'dr.anoma.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98102',
+      licenseNo: 'SLMC-98102',
+      specialization: 'Pulmonology',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Kandy',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 3),
+      doctorId: `${BATCH_TAG}-DOC-03`,
+      fullName: 'Dr. Chandana Jayasuriya',
+      email: 'dr.chandana.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98103',
+      licenseNo: 'SLMC-98103',
+      specialization: 'Infectious Diseases',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Galle',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
   ];
 
   const parentPatients = Array.from({ length: 12 }, (_, i) => {
     const pIdx = i + 1;
-    const nic = `1990${String(pIdx).padStart(8, '0')}`;
+    const nic = `9990${String(pIdx).padStart(8, '0')}`;
     return {
       _id: deterministicObjectId(BATCH_TAG, 'Patient', pIdx),
       nic,
       fullName: `Surveillance Case Subject ${pIdx}`,
-      email: `case.subject.${pIdx}@qa.medisync.local`,
+      email: `viva.outbreak.patient.${pIdx}@qa.medisync.local`,
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
       district: ['Gampaha', 'Kandy', 'Galle', 'Ratnapura', 'Kalutara', 'Matara'][i % 6],
       isActive: true,
       isSynthetic: true,
       syntheticSeedBatch: BATCH_TAG,
+      ...writeNicFields(nic),
     };
   });
 
   const parentHospitals = [
-    { _id: deterministicObjectId(BATCH_TAG, 'Hospital', 1), name: 'District General Hospital Gampaha', district: 'Gampaha', email: 'info@gampaha.hospital.local' },
-    { _id: deterministicObjectId(BATCH_TAG, 'Hospital', 2), name: 'Kandy Teaching Hospital', district: 'Kandy', email: 'info@kandy.hospital.local' },
-    { _id: deterministicObjectId(BATCH_TAG, 'Hospital', 3), name: 'Karapitiya Teaching Hospital Galle', district: 'Galle', email: 'info@karapitiya.hospital.local' },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 1),
+      regNo: 'VIVA-OUTBREAK-HOSP-01',
+      name: 'District General Hospital Gampaha',
+      type: 'government',
+      district: 'Gampaha',
+      address: 'Hospital Road, Gampaha',
+      email: 'viva.outbreak.hosp.01@qa.medisync.local',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      emergencyHotline: '033-2222261',
+      contactPhone: '033-2222262',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 2),
+      regNo: 'VIVA-OUTBREAK-HOSP-02',
+      name: 'Kandy Teaching Hospital',
+      type: 'government',
+      district: 'Kandy',
+      address: 'Hospital Road, Kandy',
+      email: 'viva.outbreak.hosp.02@qa.medisync.local',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      emergencyHotline: '081-2222261',
+      contactPhone: '081-2222262',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 3),
+      regNo: 'VIVA-OUTBREAK-HOSP-03',
+      name: 'Karapitiya Teaching Hospital Galle',
+      type: 'government',
+      district: 'Galle',
+      address: 'Karapitiya, Galle',
+      email: 'viva.outbreak.hosp.03@qa.medisync.local',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      emergencyHotline: '091-2222261',
+      contactPhone: '091-2222262',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
   ];
 
   // Map planned episodes to full Consultation documents
@@ -210,6 +301,186 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
     parentHospitals,
     totalConsultations: consultations.length,
   };
+}
+
+async function preflightCollisionCheck(db, plan) {
+  const collisions = [];
+
+  // 1. Check Hospitals for collisions on regNo or email
+  const hospRegNos = plan.parentHospitals.map(h => h.regNo);
+  const hospEmails = plan.parentHospitals.map(h => h.email);
+  const existingHospitals = await db.collection('hospitals').find({
+    $or: [
+      { regNo: { $in: hospRegNos } },
+      { email: { $in: hospEmails } },
+    ]
+  }).toArray();
+
+  for (const doc of existingHospitals) {
+    const isOurBatch = doc.syntheticSeedBatch === BATCH_TAG && doc.isSynthetic === true;
+    if (!isOurBatch) {
+      collisions.push({
+        collection: 'hospitals',
+        field: hospRegNos.includes(doc.regNo) ? 'regNo' : 'email',
+        value: hospRegNos.includes(doc.regNo) ? doc.regNo : doc.email,
+        existingId: String(doc._id),
+        existingSeedBatch: doc.syntheticSeedBatch || 'none',
+        reason: 'Collides with pre-existing non-batch hospital',
+      });
+    }
+  }
+
+  // 2. Check Doctors for collisions on doctorId or email
+  const docIds = plan.parentDoctors.map(d => d.doctorId);
+  const docEmails = plan.parentDoctors.map(d => d.email);
+  const existingDoctors = await db.collection('doctors').find({
+    $or: [
+      { doctorId: { $in: docIds } },
+      { email: { $in: docEmails } },
+    ]
+  }).toArray();
+
+  for (const doc of existingDoctors) {
+    const isOurBatch = doc.syntheticSeedBatch === BATCH_TAG && doc.isSynthetic === true;
+    if (!isOurBatch) {
+      collisions.push({
+        collection: 'doctors',
+        field: docIds.includes(doc.doctorId) ? 'doctorId' : 'email',
+        value: docIds.includes(doc.doctorId) ? doc.doctorId : doc.email,
+        existingId: String(doc._id),
+        existingSeedBatch: doc.syntheticSeedBatch || 'none',
+        reason: 'Collides with pre-existing non-batch doctor',
+      });
+    }
+  }
+
+  // 3. Check Patients for collisions on nic or email
+  const patNics = plan.parentPatients.map(p => p.nic);
+  const patEmails = plan.parentPatients.map(p => p.email);
+  const existingPatients = await db.collection('patients').find({
+    $or: [
+      { nic: { $in: patNics } },
+      { email: { $in: patEmails } },
+    ]
+  }).toArray();
+
+  for (const doc of existingPatients) {
+    const isOurBatch = doc.syntheticSeedBatch === BATCH_TAG && doc.isSynthetic === true;
+    if (!isOurBatch) {
+      collisions.push({
+        collection: 'patients',
+        field: patNics.includes(doc.nic) ? 'nic' : 'email',
+        value: patNics.includes(doc.nic) ? doc.nic : doc.email,
+        existingId: String(doc._id),
+        existingSeedBatch: doc.syntheticSeedBatch || 'none',
+        reason: 'Collides with pre-existing non-batch patient',
+      });
+    }
+  }
+
+  // 4. Check Consultations for collisions on consultationId
+  const conIds = plan.consultations.map(c => c.consultationId);
+  const existingConsultations = await db.collection('consultations').find({
+    consultationId: { $in: conIds }
+  }).toArray();
+
+  for (const doc of existingConsultations) {
+    const isOurBatch = doc.syntheticSeedBatch === BATCH_TAG && doc.isSynthetic === true;
+    if (!isOurBatch) {
+      collisions.push({
+        collection: 'consultations',
+        field: 'consultationId',
+        value: doc.consultationId,
+        existingId: String(doc._id),
+        existingSeedBatch: doc.syntheticSeedBatch || 'none',
+        reason: 'Collides with pre-existing non-batch consultation',
+      });
+    }
+  }
+
+  return collisions;
+}
+
+async function seedOutbreakDocuments(db, plan) {
+  // Pre-flight collision check
+  const collisions = await preflightCollisionCheck(db, plan);
+  if (collisions.length > 0) {
+    console.error(`\n❌ PRE-FLIGHT COLLISION CHECK FAILED (${collisions.length} collision(s) detected):`);
+    for (const c of collisions) {
+      console.error(`   - [${c.collection}] ${c.field}="${c.value}" collides with existing _id=${c.existingId} (batch: ${c.existingSeedBatch})`);
+    }
+    const err = new Error(`PRE_FLIGHT_COLLISION_DETECTED: ${collisions.length} collision(s) in parent or target collections`);
+    err.collisions = collisions;
+    throw err;
+  }
+
+  const report = {
+    hospitals: { planned: plan.parentHospitals.length, inserted: 0, existing: 0, regNos: [] },
+    doctors: { planned: plan.parentDoctors.length, inserted: 0, existing: 0, doctorIds: [] },
+    patients: { planned: plan.parentPatients.length, inserted: 0, existing: 0, nics: [] },
+    consultations: { planned: plan.consultations.length, inserted: 0, existing: 0 },
+  };
+
+  // 1. Insert parent hospitals: keyed on synthetic regNo (idempotent, insert-only)
+  for (const hosp of plan.parentHospitals) {
+    report.hospitals.regNos.push(hosp.regNo);
+    const res = await db.collection('hospitals').updateOne(
+      { regNo: hosp.regNo },
+      { $setOnInsert: { ...hosp, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { upsert: true }
+    );
+    if (res.upsertedCount > 0) {
+      report.hospitals.inserted++;
+    } else {
+      report.hospitals.existing++;
+    }
+  }
+
+  // 2. Insert parent doctors: keyed on synthetic doctorId (idempotent, insert-only)
+  for (const doc of plan.parentDoctors) {
+    report.doctors.doctorIds.push(doc.doctorId);
+    const res = await db.collection('doctors').updateOne(
+      { doctorId: doc.doctorId },
+      { $setOnInsert: { ...doc, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { upsert: true }
+    );
+    if (res.upsertedCount > 0) {
+      report.doctors.inserted++;
+    } else {
+      report.doctors.existing++;
+    }
+  }
+
+  // 3. Insert parent patients: keyed on synthetic nic (idempotent, insert-only)
+  for (const pat of plan.parentPatients) {
+    report.patients.nics.push(pat.nic);
+    const res = await db.collection('patients').updateOne(
+      { nic: pat.nic },
+      { $setOnInsert: { ...pat, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { upsert: true }
+    );
+    if (res.upsertedCount > 0) {
+      report.patients.inserted++;
+    } else {
+      report.patients.existing++;
+    }
+  }
+
+  // 4. Insert consultations: keyed on synthetic consultationId (idempotent, insert-only)
+  for (const c of plan.consultations) {
+    const res = await db.collection('consultations').updateOne(
+      { consultationId: c.consultationId },
+      { $setOnInsert: { ...c, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { upsert: true }
+    );
+    if (res.upsertedCount > 0) {
+      report.consultations.inserted++;
+    } else {
+      report.consultations.existing++;
+    }
+  }
+
+  return report;
 }
 
 async function runSeeder() {
@@ -280,30 +551,14 @@ async function runSeeder() {
   const db = mongoose.connection.db;
 
   try {
-    // 1. Insert parent documents (insert-only)
-    console.log(`Writing parent documents...`);
-    for (const doc of plan.parentDoctors) {
-      await db.collection('doctors').updateOne({ _id: doc._id }, { $setOnInsert: { ...doc, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } }, { upsert: true });
-    }
-    for (const pat of plan.parentPatients) {
-      await db.collection('patients').updateOne({ _id: pat._id }, { $setOnInsert: pat }, { upsert: true });
-    }
-    for (const hosp of plan.parentHospitals) {
-      await db.collection('hospitals').updateOne({ _id: hosp._id }, { $setOnInsert: { ...hosp, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } }, { upsert: true });
-    }
+    console.log(`Executing pre-flight collision check and insert-only seeding...`);
+    const report = await seedOutbreakDocuments(db, plan);
 
-    // 2. Insert consultations (insert-only)
-    console.log(`Writing ${plan.consultations.length} consultations...`);
-    let inserted = 0;
-    for (const c of plan.consultations) {
-      const res = await db.collection('consultations').updateOne(
-        { _id: c._id },
-        { $setOnInsert: c },
-        { upsert: true }
-      );
-      if (res.upsertedCount > 0) inserted++;
-    }
-    console.log(`✔ Successfully inserted ${inserted} new consultations (${plan.consultations.length - inserted} already existed).`);
+    console.log(`\n=== Seed Execution Complete ===`);
+    console.log(`Hospitals:     ${report.hospitals.inserted} inserted, ${report.hospitals.existing} already existed (regNos: ${report.hospitals.regNos.join(', ')})`);
+    console.log(`Doctors:       ${report.doctors.inserted} inserted, ${report.doctors.existing} already existed (doctorIds: ${report.doctors.doctorIds.join(', ')})`);
+    console.log(`Patients:      ${report.patients.inserted} inserted, ${report.patients.existing} already existed (${report.patients.nics.length} NICs)`);
+    console.log(`Consultations: ${report.consultations.inserted} inserted, ${report.consultations.existing} already existed (planned: ${report.consultations.planned})`);
   } finally {
     await mongoose.disconnect();
     console.log(`Disconnected from database.`);
@@ -312,7 +567,7 @@ async function runSeeder() {
 
 if (require.main === module) {
   runSeeder().catch(err => {
-    console.error('Seeder failed:', err);
+    console.error('\nSeeder failed:', err);
     process.exit(1);
   });
 }
@@ -320,4 +575,6 @@ if (require.main === module) {
 module.exports = {
   buildOutbreakSeedPlan,
   BATCH_TAG,
+  preflightCollisionCheck,
+  seedOutbreakDocuments,
 };
