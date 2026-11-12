@@ -45,14 +45,23 @@ Fill in your authorized live credentials before starting the demonstration:
    - Consultation summary email is dispatched to the patient.
    - **Zero PII in Email**: The notification email contains strictly the capability verification link (`/verify/<TOKEN>`); no diagnostic text, medicines, or patient identifiers are included in the email body.
 
-### Phase 2: Patient Capability Verification & OTP Unlock
+### Phase 2: Patient Capability Verification, Consultation PDF & Lab Reports
 1. Open the verification URL received in the summary email: `https://medisync.chamodtharusha.com.lk/verify/<TOKEN>`.
 2. **Observe Public Gate**: The unauthenticated portal displays institutional authenticity (Hospital Name, Doctor Name, Issuance Date) with **zero clinical data and zero patient PII**.
 3. Click **Unlock Full Clinical Summary**:
    - A 6-digit single-use OTP is sent to the patient's registered email.
    - Enter the OTP in the verification modal.
-   - Portal unlocks the encounter details and medications.
-   - Attempting to unlock with invalid OTPs locks the session after 5 attempts.
+   - Portal unlocks the encounter details, prescribed medications, and release timeline.
+   - Entering 5 incorrect OTPs triggers lockout (`OTP_LOCKED`, HTTP 429), locking the UI and input.
+4. **Inspect Laboratory Tests**:
+   - View ordered diagnostic tests linked specifically to this consultation.
+   - Tests show ordered date and real-time status (`Ordered`, `Sample Collected`, `In Progress`, `Completed`).
+   - For `Completed` tests, click **Download Report** to retrieve the verified laboratory PDF.
+5. **Download Consultation Report (PDF)**:
+   - Click **Download Consultation Report (PDF)** to export the encounter record.
+   - The PDF contains strictly this single encounter: vitals, diagnosis, symptoms, prescribed medicines with release status, prescriber safety acknowledgments, and laboratory tests section.
+   - Zero patient history or past encounter data is included in the export.
+   - Encrypted with the patient's NIC password. Filename: `MediSync-Consultation-<REF>.pdf`.
 
 ### Phase 3: Pharmacy Stock-Backed Dispensing & Duplicate Block
 1. Navigate to `/login` and sign in with `<OWNER_PHARMACIST_EMAIL>`.
@@ -73,17 +82,24 @@ Fill in your authorized live credentials before starting the demonstration:
 ### Phase 4: Administrative Outbreak Detection & Public Observatory
 1. Sign out and sign in with `<OWNER_ADMIN_EMAIL>`.
 2. Navigate to `/admin/dashboard/outbreak` (Outbreak Monitor).
-3. Click **Run Statistical Detection Scan** (`POST /api/admin/outbreak/trigger`):
+3. Click **Force System Scan** (`POST /api/admin/outbreak/trigger`):
    - Statistical surveillance evaluates 56-day district baseline and 7-day active window across verified consultations.
    - **Gampaha Dengue**: Triggers Pending Alert ($N=12 \ge 5$, 4 consecutive days $z > 2.0$, Critical Severity).
    - **Kandy Influenza**: Triggers Pending Alert ($N=8 \ge 5$, 4 consecutive days $z > 2.0$, High Severity).
-   - **Kalutara**: Suppressed by Gate 2 Persistence (`PERSISTENCE_CRITERIA_NOT_MET`, single-day spike of 6 cases).
-   - **Matara**: Suppressed by Gate 1 Floor (`CASE_FLOOR_NOT_MET`, cluster of 4 cases < 5).
-4. In the **Pending Outbreak Alerts** queue, review both detected signals and click **Approve** on each alert (`PUT /api/admin/outbreak/:id/approve`).
+   - **Galle Leptospirosis**: Triggers Pending Alert ($N=9 \ge 5$, Critical Severity).
+   - **Ratnapura Typhoid**: Triggers Pending Alert ($N=7 \ge 5$, Critical Severity).
+   - **Suppressed Signals Panel**: Inspect the governance gates proving suppression:
+     - **Kalutara**: Suppressed by Gate 2 Persistence (`PERSISTENCE_CRITERIA_NOT_MET`, single-day spike of 6 cases).
+     - **Matara**: Suppressed by Gate 1 Floor (`CASE_FLOOR_NOT_MET`, cluster of 4 cases < 5).
+4. In the **Outbreak Surveillance Logs** table, review the detected signals and click **Approve** on an alert (`PUT /api/admin/outbreak/:id/approve`):
+   - Modal allows selecting notification scope:
+     - **No Emails (Dashboard Only)**: Activates alert on dashboard and public observatory without dispatching emails.
+     - **District Only**: Displays real-time recipient count preview box and dispatches advisories to district opted-in users.
+     - **Nationwide**: Requires typing the disease name to confirm before activating nationwide broadcast.
    - Alerts transition from `Pending` to `Active` with `approvedBy` set to the administrator's ID.
 5. Navigate to the Public Health Observatory (`/public-health`):
-   - The **Active Disease Advisories** section immediately displays the 2 approved alerts (Dengue in Gampaha and Influenza in Kandy).
-   - Zero advisories appear for Kalutara or Matara.
+   - The **Active Disease Advisories** section immediately displays the approved alerts.
+   - Zero advisories appear for suppressed districts (Kalutara or Matara).
 
 ---
 

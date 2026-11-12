@@ -59,7 +59,15 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   1. Log into the Patient Portal.
   2. Demonstrate the personal medical timeline (`/patient/dashboard/history`): show historical consultations, standardized diagnoses, and verified laboratory reports.
   3. Inspect active prescriptions: point out the consultation verification QR code rendered on the official consultation summary PDF.
-  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that unlocking the clinical encounter and medicine release history uses a secure **OTP verification flow** sent to the patient's registered email (no NIC entry required on mobile). Note contingency: if email delivery is delayed, clinician can demonstrate authenticated doctor view. 
+  4. Demonstrate the Public Verification Portal: open `/verify/:token` to show public authenticity confirmation (hospital name, doctor, timestamp, zero patient PII). Demonstrate that unlocking the clinical encounter uses a secure **OTP verification flow** sent to the patient's registered email (no NIC entry required on mobile).
+  5. **Demonstrate Single-Encounter Scope & Lab Tests on Verification Portal**:
+     - Once unlocked, show the clinical encounter details, vital signs, and prescribed medications.
+     - Inspect the **Laboratory Tests** section: show ordered tests (e.g., Full Blood Count, Dengue NS1 Antigen) with status badges and one-click PDF download for completed reports (`GET /api/verify/:token/lab-tests/:id/download`).
+     - Click **Download Consultation Report (PDF)**: demonstrate that the generated PDF (`MediSync-Consultation-${ref}.pdf`) is strictly limited to this single consultation encounter, with zero historical or unrelated clinical records exposed.
+  6. **Demonstrate 5-Wrong-OTP Lockout Protection**:
+     - On a test verification session, demonstrate entering 5 consecutive incorrect OTP codes.
+     - The backend atomically consumes attempts and locks the session (`OTP_LOCKED`, HTTP 429).
+     - The verification UI immediately locks inputs, displays a security alert, and prevents further brute-force attempts. 
 - **Key Talking Point for Examiners**:
   > *"Patient names, contact information, and allergies, as well as consultation diagnoses and notes, are protected at rest using field-level encryption (AES-256-CBC). Fast equality lookups utilize dedicated HMAC-SHA256 blind indexes without exposing plaintext identifiers to database scans."*
 
@@ -100,8 +108,11 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   2. Enter the patient's National Identity Card (NIC) number.
   3. Patient consent verification gate opens (`x-patient-access` header).
   4. Pending e-prescriptions for this patient are loaded from `/api/pharmacy/prescriptions/pending/:nic`.
-  5. Select the prescription order and click **Dispense Medication**. The system validates medication integrity and checks for active allergy conflicts against recorded patient profiles.
-  6. Click **Confirm Dispense**: the prescription transitions atomically to `dispensed` and a dispensing receipt is generated.
+  5. Select the prescription order and click **Dispense Medication**. The system validates medication integrity, runs drug-drug interaction safety checks across all co-prescriptions in the encounter (e.g. Warfarin + Ciprofloxacin), and checks for active allergy conflicts against recorded patient profiles.
+  6. **Inventory Allocation & Dispense Confirmation**:
+     - Select a tracked batch from inventory or select **Untracked / External Stock (Dispense directly)** if working with external stock.
+     - Review any active drug interactions; if flagged, verify pharmacist clinical acknowledgement.
+     - Click **Confirm Dispense**: the prescription transitions atomically to `dispensed` and a dispensing receipt is generated.
   7. **Demonstrate Anti-Duplicate Fraud Prevention**:
      - Immediately attempt to re-dispense the same prescription.
      - The system atomically blocks the action with a verified error: **"Prescription is not eligible for dispensing." (code: ALREADY_DISPENSED)**.
@@ -127,8 +138,16 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
        - **Kandy Influenza**: Triggers Pending Alert ( \ge 5$, 4 consecutive days  > 2.0$, High Severity).
        - **Kalutara Negative Control**: Evaluates 6 cases on Day -2, but 0 on others; Gate 2 suppresses the single-day spike (PERSISTENCE_CRITERIA_NOT_MET, No Alert).
        - **Matara Negative Control**: Evaluates 4 cases; Gate 1 suppresses clusters under 5 cases (CASE_FLOOR_NOT_MET, No Alert).
-     - **Admin Review & Approval**: In the Pending Alerts queue, inspect the detected signals and click **Approve** on each alert (PUT /api/admin/outbreak/:id/approve).
-     - Status updates to Active with pprovedBy set to the administrator's ID.
+     - **Admin Review & Approval Workflow**:
+       - In the Pending Alerts queue, inspect the detected signals and click **Approve** on an alert.
+       - The **Outbreak Approval & Broadcast Modal** opens:
+         - Inspect the **Recipients Preview** breakdown (GET /api/admin/outbreak/:id/recipients-preview), displaying estimated recipient counts categorized by role (Doctors, Pharmacists, Patients, Admins).
+         - Select delivery scope: **No Email Broadcast (Silent Status Update)**, **Affected District Only**, or **Nationwide Broadcast**.
+         - If selecting **Nationwide Broadcast**, enter the disease name confirmation in the verification field.
+         - Click **Confirm Approval**: the alert transitions to Active with pprovedBy set to the administrator. If email delivery is disabled (OUTBREAK_EMAIL_DELIVERY_ENABLED=false), the alert approves cleanly without failure.
+     - **Inspect Suppressed Signals**:
+       - Scroll to the **Suppressed Signals (Dual-Gate Diagnostics)** panel below the alerts table.
+       - Demonstrate how noise suppression filters out sub-threshold signals with diagnostic reason codes: PERSISTENCE_CRITERIA_NOT_MET (Kalutara 1-day spike) and CASE_FLOOR_NOT_MET (Matara cluster < 5 cases).
   4. **Public Observatory Updates**:
      - Navigate to /public-health.
      - The **Active Disease Advisories** section immediately displays the 2 approved outbreak alerts (Dengue in Gampaha and Influenza in Kandy).
