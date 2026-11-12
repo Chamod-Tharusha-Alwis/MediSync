@@ -7,7 +7,6 @@ import {
   Activity, Zap, AlertTriangle, Loader2,
   TrendingUp, MapPin, ShieldAlert, Radio, X, Users
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
@@ -427,24 +426,6 @@ const OutbreakMonitor = () => {
     ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
     : alerts;
 
-  // Prepare chart data from ML results
-  const chartData = mlResult?.results?.map(item => {
-    const rawZ = typeof item.zScore === 'number' && Number.isFinite(item.zScore)
-      ? item.zScore
-      : (typeof item.z_score === 'number' && Number.isFinite(item.z_score)
-        ? item.z_score
-        : (typeof item.maxZ === 'number' && Number.isFinite(item.maxZ)
-          ? item.maxZ
-          : (item.baseline ? ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1)) : 0)));
-    const zScore = Number.isFinite(rawZ) ? rawZ : 0;
-    return {
-      name: `${item.disease} (${formatDistrictName(item.district)})`,
-      zScore: parseFloat(zScore.toFixed(2)),
-      latest: item.latest_actual,
-      baseline: item.baseline
-    };
-  }) || [];
-
   function deriveAlert72h(alert, gData) {
     if (alert?.metrics72h) return alert.metrics72h;
     const dist = (alert?.district || alert?.location || '').trim();
@@ -619,36 +600,12 @@ const OutbreakMonitor = () => {
           </div>
         )}
 
-        {/* Recharts Z-Score Bar Chart Output with Dotted Warning Threshold Line */}
-        {mlResult && !detecting && chartData.length > 0 && (
+        {/* Detected Signals Cards */}
+        {mlResult && !detecting && mlResult.results?.length > 0 && (
           <div className="pt-6 border-t border-white/5 space-y-4">
             <div className="flex justify-between items-center select-none">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Computed Z-Scores by Disease Vector</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Detected Signals ({mlResult.results.length})</h4>
               <span className="text-xs font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
-            </div>
-
-            <div className="h-64 w-full bg-slate-950/40 rounded-xl border border-white/5 p-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}
-                    itemStyle={{ color: '#ef4444', fontSize: 12 }}
-                  />
-                  <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning Limit (Z = 2.0)', fill: '#ef4444', fontSize: 12, position: 'top' }} />
-                  <Bar dataKey="zScore" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <rect
-                        key={`bar-${index}`}
-                        fill={entry.zScore >= 2.0 ? 'rgba(239, 68, 68, 0.75)' : 'rgba(59, 130, 246, 0.6)'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
             </div>
 
             {/* Results Summary Cards */}
