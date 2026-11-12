@@ -40,16 +40,18 @@ async function loadCases(options) {
   // into aggregation. This metadata cannot be supplied by public consultation APIs.
   const Consultation = require('../models/Consultation');
   const now = options?.now || new Date();
-  const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-30*DAY),$lte:now}}, { projection: {
+  const lookbackDays = Number(options?.lookbackDays) > 0 ? Number(options.lookbackDays) : 30;
+  const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-lookbackDays*DAY),$lte:now}}, { projection: {
     _id: 1, patientId: 1, createdAt: 1, district: 1, icdCode: 1, icdVersion: 1, surveillanceVerification: 1,
     isSimulation: 1, isTestFixture: 1, isDemoData: 1, isSynthetic: 1, isUniversityDemo: 1, isSyntheticUniversityData: 1,
     datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1
   } }).toArray();
-  return selectCases(docs, {...options,now});
+  return selectCases(docs, {...options,now,lookbackDays});
 }
 async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   if (!['real','simulation'].includes(mode)) throw new Error('Invalid surveillance mode');
-  const selection = await loadCases({mode,now});
+  const selection = await loadCases({mode,now,lookbackDays:63});
+  const criteriaResults = evaluateOutbreakCriteria({ cases: selection.cases, now, baselineDays: 56, level: 'district' });
   const buckets = new Map();
   for (const c of selection.cases) {
     const key = `${c.district}|${c.diseaseId}`;
@@ -58,32 +60,130 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     if(c.time>=+now-7*DAY)b.last_7_days_count++;else b.previous_baseline_avg++;
   }
   const payload=[...buckets.values()].map(({sourceConsultationIds,...b})=>({...b,previous_baseline_avg:b.previous_baseline_avg*7/23}));
-  const summary={results:[],consultations_analysed:selection.cases.length,data_points:selection.cases.length,mode,source:mode,policy:POLICY,excluded:selection.excluded,
+  const summary={results:[],suppressed:[],consultations_analysed:selection.cases.length,data_points:selection.cases.length,mode,source:mode,policy:POLICY,excluded:selection.excluded,
     message:'Verified episode counts only. Model signals require administrator review; external delivery is disabled.'};
   if(!payload.length)return summary;
-  const {data}=await require('axios').post(`${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`,payload,
-    {timeout:process.env.ML_OUTBREAK_TIMEOUT_MS ? Number(process.env.ML_OUTBREAK_TIMEOUT_MS) : 60000,headers:{'x-internal-key':require('../utils/internalAuth').generateToken()}});
+
+  let mlResults = [];
+  try {
+    const {data}=await require('axios').post(`${process.env.ML_ENGINE_URL || 'http://127.0.0.1:5001'}/api/admin/outbreak/trigger`,payload,
+      {timeout:process.env.ML_OUTBREAK_TIMEOUT_MS ? Number(process.env.ML_OUTBREAK_TIMEOUT_MS) : 60000,headers:{'x-internal-key':require('../utils/internalAuth').generateToken()}});
+    mlResults = data?.results || [];
+  } catch (_) {}
+
   const OutbreakAlert=require('../models/OutbreakAlert');
-  for(const r of data.results || []) {
-    const b=buckets.get(`${r.district}|${r.disease}`);
-    if(!b || r.anomaly !== true)continue;
-    const ids=[...b.sourceConsultationIds].sort();
-    const _id=new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,b.district,b.disease,ids])).digest('hex').slice(0,24));
-    const alertData = {disease:b.disease,location:b.district,affectedCount:b.last_7_days_count,
-      severity:({low:'Low',medium:'Moderate',high:'High'})[String(r.severity).toLowerCase()] || 'Moderate',status:'Pending',
-      surveillancePolicy:POLICY,sourceConsultationIds:ids,isSimulation:mode==='simulation',isDemoData:mode==='simulation',
-      message:`${mode==='simulation'?'[SIMULATION] ':''}Unreviewed statistical signal. Not a confirmed outbreak.`};
+  const alertMap = new Map();
+
+  // 1. Process statistical criteria signals (Stage D outbreak detector: Gate 1 floor + Gate 2 persistence)
+  for (const cr of criteriaResults || []) {
+    const b = buckets.get(`${cr.district}|${cr.disease}`);
+    if (cr.triggered) {
+      const ids = b ? [...b.sourceConsultationIds].sort() : [];
+      const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,cr.district,cr.disease,ids])).digest('hex').slice(0,24));
+      const alertData = {
+        disease: cr.disease,
+        location: cr.district,
+        district: cr.district,
+        affectedCount: cr.count,
+        caseCount: cr.count,
+        severity: cr.severity,
+        status: 'Pending',
+        surveillancePolicy: POLICY,
+        sourceConsultationIds: ids,
+        isSimulation: mode === 'simulation',
+        isDemoData: mode === 'simulation',
+        message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`,
+        maxZ: cr.maxZ,
+        consecutiveDays: cr.maxConsecutiveDays,
+        dailyCounts: cr.dailyCounts
+      };
+      await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
+      let alertDoc = null;
+      try {
+        const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
+        alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
+      } catch (_) {}
+      const item = {
+        alertId: String(_id),
+        district: cr.district,
+        disease: cr.disease,
+        anomaly: true,
+        severity: cr.severity,
+        risk_level: cr.severity,
+        danger_level: cr.severity,
+        latest_actual: cr.count,
+        spike_percentage: Math.round((cr.maxZ || 1) * 100),
+        status: alertDoc ? alertDoc.status : 'Pending',
+        isSimulation: mode === 'simulation',
+        sourceConsultationIds: ids,
+        maxZ: cr.maxZ,
+        consecutiveDays: cr.maxConsecutiveDays,
+        dailyCounts: cr.dailyCounts
+      };
+      alertMap.set(`${cr.district}|${cr.disease}`, item);
+      summary.results.push(item);
+
+      try {
+        const { notifyOutbreakAlert } = require('./notificationService');
+        await notifyOutbreakAlert({ _id, ...alertData }, { io });
+      } catch (_) {}
+    } else {
+      summary.suppressed.push({
+        district: cr.district,
+        disease: cr.disease,
+        count: cr.count,
+        reason: cr.reason, // 'CASE_FLOOR_NOT_MET' or 'PERSISTENCE_CRITERIA_NOT_MET'
+        maxZ: cr.maxZ,
+        maxConsecutiveDays: cr.maxConsecutiveDays,
+        dailyCounts: cr.dailyCounts
+      });
+    }
+  }
+
+  // 2. Incorporate any anomalies returned by ML engine not already captured
+  for (const r of mlResults) {
+    const key = `${r.district}|${r.disease}`;
+    const b = buckets.get(key);
+    if (!b || r.anomaly !== true || alertMap.has(key)) continue;
+    const ids = [...b.sourceConsultationIds].sort();
+    const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,b.district,b.disease,ids])).digest('hex').slice(0,24));
+    const sev = ({low:'Low',medium:'Moderate',high:'High',critical:'Critical'})[String(r.severity || r.risk_level).toLowerCase()] || 'Moderate';
+    const alertData = {
+      disease: b.disease,
+      location: b.district,
+      district: b.district,
+      affectedCount: b.last_7_days_count,
+      caseCount: b.last_7_days_count,
+      severity: sev,
+      status: 'Pending',
+      surveillancePolicy: POLICY,
+      sourceConsultationIds: ids,
+      isSimulation: mode === 'simulation',
+      isDemoData: mode === 'simulation',
+      message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
+    };
     await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
-    summary.results.push({...r,alertId:String(_id),status:'Pending',isSimulation:mode==='simulation'});
+    let alertDoc = null;
+    try {
+      const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
+      alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
+    } catch (_) {}
+    const item = {
+      ...r,
+      alertId: String(_id),
+      status: alertDoc ? alertDoc.status : 'Pending',
+      severity: sev,
+      isSimulation: mode === 'simulation'
+    };
+    alertMap.set(key, item);
+    summary.results.push(item);
 
     try {
       const { notifyOutbreakAlert } = require('./notificationService');
       await notifyOutbreakAlert({ _id, ...alertData }, { io });
-    } catch (notifErr) {
-      console.error('[Surveillance] Notification trigger error (non-fatal):', notifErr.message);
-    }
+    } catch (_) {}
   }
-  // In-app notifications dispatched for doctor, hospital, and admin review; external email delivery remains gated.
+
   return summary;
 }
 const COLOMBO_OFFSET_MS = 330 * 60000; // Asia/Colombo +05:30
