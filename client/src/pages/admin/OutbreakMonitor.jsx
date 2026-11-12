@@ -314,8 +314,9 @@ const OutbreakMonitor = () => {
       if (result.results && Array.isArray(result.results)) {
         const getTierRank = (r) => {
           const s = (r.severity || r.risk_level || '').toLowerCase();
-          if (s === 'critical' || s === 'high' || (r.anomaly && r.spike_percentage >= 100)) return 3;
-          if (s === 'warning' || s === 'medium' || s === 'moderate' || (r.anomaly && r.spike_percentage >= 40)) return 2;
+          if (s === 'critical') return 4;
+          if (s === 'high') return 3;
+          if (s === 'warning' || s === 'medium' || s === 'moderate') return 2;
           if (r.latest_actual > 0) return 1;
           return 0;
         };
@@ -421,8 +422,14 @@ const OutbreakMonitor = () => {
 
   // Prepare chart data from ML results
   const chartData = mlResult?.results?.map(item => {
-    // Calculate mathematically correct Z-score if not present
-    const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
+    const rawZ = typeof item.zScore === 'number' && Number.isFinite(item.zScore)
+      ? item.zScore
+      : (typeof item.z_score === 'number' && Number.isFinite(item.z_score)
+        ? item.z_score
+        : (typeof item.maxZ === 'number' && Number.isFinite(item.maxZ)
+          ? item.maxZ
+          : (item.baseline ? ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1)) : 0)));
+    const zScore = Number.isFinite(rawZ) ? rawZ : 0;
     return {
       name: `${item.disease} (${formatDistrictName(item.district)})`,
       zScore: parseFloat(zScore.toFixed(2)),
@@ -578,31 +585,47 @@ const OutbreakMonitor = () => {
             {/* Results Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               {mlResult.results.map((item, idx) => {
-                const zScore = item.z_score || item.zScore || ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1));
-                const isAnomaly = item.anomaly;
-                const spikePct = item.baseline ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : 0;
+                const rawZ = typeof item.zScore === 'number' && Number.isFinite(item.zScore)
+                  ? item.zScore
+                  : (typeof item.z_score === 'number' && Number.isFinite(item.z_score)
+                    ? item.z_score
+                    : (typeof item.maxZ === 'number' && Number.isFinite(item.maxZ)
+                      ? item.maxZ
+                      : (item.baseline ? ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1)) : null)));
+                const zDisplay = rawZ !== null && Number.isFinite(rawZ) ? rawZ.toFixed(2) : 'N/A';
+
+                const rawDev = typeof item.deviationPct === 'number' && Number.isFinite(item.deviationPct)
+                  ? item.deviationPct
+                  : (typeof item.spike_percentage === 'number' && Number.isFinite(item.spike_percentage)
+                    ? item.spike_percentage
+                    : (item.baseline && item.baseline > 0 ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : null));
+                const formattedDev = rawDev !== null && Number.isFinite(rawDev) ? `${rawDev > 0 ? '+' : ''}${Math.round(rawDev)}%` : 'N/A';
                 
                 // Determine normalized tier label
                 const s = (item.severity || item.risk_level || '').toLowerCase();
                 let tierLabel = 'NORMAL';
                 let badgeStyle = 'bg-slate-800 border border-slate-700 text-slate-400';
                 let cardStyle = 'bg-slate-950/20 border-white/5';
-                let devColor = spikePct < 0 ? 'text-slate-500' : 'text-emerald-400';
+                let devColor = (rawDev !== null && rawDev < 0) ? 'text-slate-500' : 'text-emerald-400';
 
-                if (s === 'critical' || s === 'high' || (isAnomaly && spikePct >= 100)) {
+                if (s === 'critical') {
                   tierLabel = 'CRITICAL';
                   badgeStyle = 'bg-red-500/15 border border-red-500/30 text-red-400 font-black tracking-wider';
                   cardStyle = 'bg-red-500/[0.04] border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.12)]';
                   devColor = 'text-red-400 font-bold';
-                } else if (s === 'warning' || s === 'medium' || s === 'moderate' || (isAnomaly && spikePct >= 40)) {
+                } else if (s === 'high') {
+                  tierLabel = 'HIGH';
+                  badgeStyle = 'bg-orange-500/15 border border-orange-500/30 text-orange-400 font-black tracking-wider';
+                  cardStyle = 'bg-orange-500/[0.04] border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.12)]';
+                  devColor = 'text-orange-400 font-bold';
+                } else if (s === 'warning' || s === 'medium' || s === 'moderate') {
                   tierLabel = 'WARNING';
                   badgeStyle = 'bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black tracking-wider';
                   cardStyle = 'bg-amber-500/[0.03] border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.10)]';
                   devColor = 'text-amber-400 font-bold';
                 }
 
-                const isCritOrWarn = tierLabel === 'CRITICAL' || tierLabel === 'WARNING';
-                const formattedDev = `${spikePct > 0 ? '+' : ''}${Math.round(spikePct)}%`;
+                const zColor = tierLabel === 'CRITICAL' ? 'text-red-400' : (tierLabel === 'HIGH' ? 'text-orange-400' : (tierLabel === 'WARNING' ? 'text-amber-400' : 'text-slate-300'));
 
                 return (
                   <div
@@ -624,8 +647,8 @@ const OutbreakMonitor = () => {
                     <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-end select-none">
                       <div>
                         <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
-                        <span className={`text-sm font-mono font-bold ${isCritOrWarn ? (tierLabel === 'CRITICAL' ? 'text-red-400' : 'text-amber-400') : 'text-slate-300'}`}>
-                          {zScore.toFixed(2)}
+                        <span className={`text-sm font-mono font-bold ${zColor}`}>
+                          {zDisplay}
                         </span>
                       </div>
                       <div className="text-right">

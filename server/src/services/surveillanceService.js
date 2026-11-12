@@ -103,6 +103,11 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
         alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
       } catch (_) {}
+      const baseline7d = cr.baseline7d ?? (cr.baseline ? cr.baseline * 7 : 0);
+      const devPct = typeof cr.deviationPct === 'number' && Number.isFinite(cr.deviationPct)
+        ? cr.deviationPct
+        : (baseline7d > 0 ? Math.round(((cr.count - baseline7d) / baseline7d) * 100) : (cr.count > 0 ? 100 : 0));
+
       const item = {
         alertId: String(_id),
         district: cr.district,
@@ -112,11 +117,17 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         risk_level: cr.severity,
         danger_level: cr.severity,
         latest_actual: cr.count,
-        spike_percentage: Math.round((cr.maxZ || 1) * 100),
+        count: cr.count,
+        baseline: cr.baseline ?? (cr.baselineDailyMean ?? 0),
+        baseline7d,
+        zScore: cr.maxZ,
+        z_score: cr.maxZ,
+        maxZ: cr.maxZ,
+        deviationPct: devPct,
+        spike_percentage: devPct,
         status: alertDoc ? alertDoc.status : 'Pending',
         isSimulation: mode === 'simulation',
         sourceConsultationIds: ids,
-        maxZ: cr.maxZ,
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
@@ -351,6 +362,11 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
       }
     }
 
+    const baseline7d = bMean * 7;
+    const deviationPct = baseline7d > 0
+      ? ((N - baseline7d) / baseline7d) * 100
+      : (N > 0 ? 100 : 0);
+
     results.push({
       district: g.district,
       entityName: g.entityName,
@@ -358,9 +374,14 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
       disease: g.disease,
       triggered: hasConsecutiveElevated,
       count: N,
+      baseline: Number(bMean.toFixed(2)),
+      baselineDailyMean: Number(bMean.toFixed(2)),
+      baseline7d: Number(baseline7d.toFixed(2)),
+      deviationPct: Number(deviationPct.toFixed(1)),
       dailyCounts,
       dailyZ: dailyZ.map(z => Number(z.toFixed(2))),
       maxZ: Number(maxZ.toFixed(2)),
+      zScore: Number(maxZ.toFixed(2)),
       maxConsecutiveDays: maxConsecutive,
       alertLevel,
       severity,
