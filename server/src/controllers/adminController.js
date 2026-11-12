@@ -10,7 +10,7 @@ const SessionToken = require('../models/SessionToken');
 const BanRecord = require('../models/BanRecord');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-const { v4: uuid } = require('uuid');
+const uuid = () => crypto.randomUUID();
 const { hashPassword, validatePasswordStrength } = require('../utils/passwordUtils');
 const emailService = require('../utils/emailService');
 const { generateToken } = require('../utils/internalAuth');
@@ -609,6 +609,24 @@ exports.triggerMLDetection = async (req, res) => {
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
     res.json(await service.runAnalysis({mode, io: req.app?.get('io')}));
   } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
+};
+
+// ─── Outbreak 72h Growth Telemetry ───────────────────────────────────────────
+exports.getOutbreakGrowth = async (req, res) => {
+  try {
+    const service = require('../services/surveillanceService');
+    const rawWindow = String(req.query?.window || '72h').toLowerCase();
+    const match = rawWindow.match(/^(\d+)h?$/);
+    const windowHours = match ? Math.max(1, Math.min(168, Number(match[1]))) : 72;
+    const mode = (req.query?.mode === 'simulation') ? 'simulation' : 'real';
+    if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) {
+      return res.status(403).json({ error: 'A synthetic reviewer account is required for simulation.' });
+    }
+    const data = await service.calculateGrowthMetrics({ windowHours, mode });
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to compute outbreak growth metrics' });
+  }
 };
 
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────

@@ -22,6 +22,7 @@ router.get('/users/:userId/audit-profile', protect(['admin', 'super_admin']), ad
 
 // ─── ML Engine ───────────────────────────────────────────────────────────────
 router.get('/outbreak/alerts', protect(['admin', 'super_admin']), require('../controllers/alertController').getActiveAlerts);
+router.get('/outbreak/growth', protect(['admin', 'super_admin', 'health_officer']), adminController.getOutbreakGrowth);
 router.get('/outbreak/:id/recipients-preview', protect(['admin', 'super_admin', 'health_officer']), adminController.previewOutbreakRecipients);
 router.post('/outbreak/trigger', protect(['admin', 'super_admin', 'health_officer']), adminController.triggerMLDetection);
 router.put('/outbreak/:id/approve', protect(['admin', 'super_admin', 'health_officer']), adminController.approveAlert);
