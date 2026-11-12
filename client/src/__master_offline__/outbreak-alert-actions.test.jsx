@@ -1,8 +1,18 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { toast } from 'react-toastify';
 import OutbreakMonitor from '../pages/admin/OutbreakMonitor';
 import api from '../api/axiosInstance';
 import { LanguageProvider } from '../i18n/LanguageContext';
+
+jest.mock('react-toastify', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
 
 jest.mock('../api/axiosInstance', () => ({
   __esModule: true,
@@ -30,6 +40,9 @@ describe('Outbreak Monitor Alert Action Buttons Lifecycle (Task B)', () => {
       }
       if (path === '/admin/outbreak/alerts') {
         return Promise.resolve({ data: { data: alertsList } });
+      }
+      if (path.includes('recipients-preview')) {
+        return Promise.resolve({ data: { recipientCount: 42, district: 'Gampaha', deliveryEnabled: true } });
       }
       return Promise.reject(new Error('not handled'));
     });
@@ -131,5 +144,83 @@ describe('Outbreak Monitor Alert Action Buttons Lifecycle (Task B)', () => {
     expect(screen.getByText('Symptom reference profiles')).toBeInTheDocument();
     expect(screen.getByText('100')).toBeInTheDocument();
     expect(screen.getByText(/Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually/)).toBeInTheDocument();
+  });
+
+  test('approve modal enforces disease confirmation on nationwide scope and enables button on match', async () => {
+    const { fireEvent, act } = require('@testing-library/react');
+    const alerts = [{
+      _id: 'alert-pending-dengue',
+      disease: 'Dengue',
+      location: 'Gampaha',
+      severity: 'Critical',
+      status: 'Pending',
+      feedbackStatus: 'unverified',
+      createdAt: new Date().toISOString()
+    }];
+    await mountWithAlerts(alerts);
+
+    // Open modal
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    });
+    expect(screen.getByText('Approve Outbreak Alert')).toBeInTheDocument();
+
+    // Default scope is district: button enabled immediately
+    expect(screen.getByRole('button', { name: 'Confirm Approval' })).not.toBeDisabled();
+
+    // Switch to Nationwide
+    const radio = screen.getByRole('radio', { name: /Nationwide/i });
+    await act(async () => {
+      fireEvent.click(radio);
+    });
+    expect(screen.getByRole('button', { name: 'Confirm Approval' })).toBeDisabled();
+
+    // Placeholder and label match disease
+    const input = screen.getByPlaceholderText('Type Dengue to confirm');
+    expect(input).toBeInTheDocument();
+
+    // Wrong text keeps button disabled
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Type Dengue to confirm'), { target: { value: 'WrongDisease' } });
+    });
+    expect(screen.getByRole('button', { name: 'Confirm Approval' })).toBeDisabled();
+
+    // Case-insensitive match enables button
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Type Dengue to confirm'), { target: { value: 'dengue' } });
+    });
+    expect(screen.getByRole('button', { name: 'Confirm Approval' })).not.toBeDisabled();
+  });
+
+  test('maps backend error codes to human-readable messages without raw code leaks', async () => {
+    const { fireEvent, act } = require('@testing-library/react');
+    const alerts = [{
+      _id: 'alert-pending-dengue',
+      disease: 'Dengue',
+      location: 'Gampaha',
+      severity: 'Critical',
+      status: 'Pending',
+      feedbackStatus: 'unverified',
+      createdAt: new Date().toISOString()
+    }];
+    await mountWithAlerts(alerts);
+
+    // Open modal
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    });
+
+    api.put.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: { error: 'NATIONWIDE_CONFIRMATION_REQUIRED' }
+      }
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm Approval' }));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Nationwide broadcast requires typing the exact disease name (Dengue) to confirm.');
   });
 });

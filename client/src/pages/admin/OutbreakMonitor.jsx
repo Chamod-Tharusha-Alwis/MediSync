@@ -229,6 +229,8 @@ const OutbreakMonitor = () => {
     alertId: null,
     scope: 'none',
     confirmDisease: '',
+    targetDisease: '',
+    targetDistrict: '',
     previewLoading: false,
     previewCount: null,
     previewDistrict: null,
@@ -365,13 +367,28 @@ const OutbreakMonitor = () => {
         alertId: null,
         scope: 'none',
         confirmDisease: '',
+        targetDisease: '',
+        targetDistrict: '',
         previewLoading: false,
         previewCount: null,
         previewDistrict: null,
         deliveryEnabled: true,
       });
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.error || 'Approval failed');
+      const data = err.response?.data;
+      const code = data?.error || data?.code;
+      const friendlyErrors = {
+        NATIONWIDE_CONFIRMATION_REQUIRED: `Nationwide broadcast requires typing the exact disease name (${approveModal.targetDisease || 'the disease name'}) to confirm.`,
+        ALERT_ALREADY_APPROVED: 'This outbreak alert has already been approved and activated.',
+        ALERT_NOT_FOUND: 'The selected outbreak alert could not be found.',
+        ONLY_PENDING_CAN_BE_APPROVED: 'Only pending outbreak alerts can be approved.',
+        LEGACY_PROVENANCE_REQUIRED: 'Legacy alert requires provenance review before approval.',
+        SYNTHETIC_REVIEWER_REQUIRED: 'Synthetic or simulated alerts require authorized reviewer permissions.',
+        ADMIN_REVIEW_REQUIRED: 'Administrator review permissions are required to approve alerts.',
+        INVALID_EMAIL_SCOPE: 'Invalid notification scope selected.',
+      };
+      const message = friendlyErrors[code] || (data?.message && !/^[A-Z0-9_]+$/.test(data.message) ? data.message : 'Approval failed. Please check alert criteria.');
+      toast.error(message);
     }
   };
 
@@ -770,6 +787,8 @@ const OutbreakMonitor = () => {
                                   alertId: alert._id,
                                   scope: 'district',
                                   confirmDisease: '',
+                                  targetDisease: alert.disease || '',
+                                  targetDistrict: alert.district || alert.location || '',
                                   previewLoading: false,
                                   previewCount: null,
                                   previewDistrict: null,
@@ -877,9 +896,10 @@ const OutbreakMonitor = () => {
                 { id: 'district', label: 'District Only', desc: 'Email patients and staff in the affected district.' },
                 { id: 'national', label: 'Nationwide', desc: 'Email all users across the country.' }
               ].map(opt => (
-                <label key={opt.id} className={`block p-3 rounded-xl border cursor-pointer transition-all ${approveModal.scope === opt.id ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-950/50 border-white/5 hover:border-white/20'}`}>
+                <label htmlFor={`scope-${opt.id}`} key={opt.id} className={`block p-3 rounded-xl border cursor-pointer transition-all ${approveModal.scope === opt.id ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-950/50 border-white/5 hover:border-white/20'}`}>
                   <div className="flex items-center gap-3">
                     <input
+                      id={`scope-${opt.id}`}
                       type="radio"
                       name="emailScope"
                       value={opt.id}
@@ -899,40 +919,72 @@ const OutbreakMonitor = () => {
                 </label>
               ))}
 
-              {approveModal.scope !== 'none' && (
-                <div className="p-3 bg-slate-950/70 border border-amber-500/30 rounded-xl space-y-1 text-xs">
+              {approveModal.scope === 'none' && (
+                <div className="p-3 bg-slate-950/70 border border-white/10 rounded-xl space-y-1 text-xs">
+                  <p className="text-slate-300">Alert will be published to the public observatory. No emails will be sent.</p>
+                </div>
+              )}
+
+              {approveModal.scope === 'district' && (
+                <div className="p-3 bg-slate-950/70 border border-amber-500/30 rounded-xl space-y-1.5 text-xs">
                   <div className="text-amber-400 font-semibold flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" /> Recipient Preview
+                    <Users className="w-3.5 h-3.5" /> District Broadcast Scope
                   </div>
+                  <p className="text-slate-300">Alert will be sent to registered doctors and hospital administrators in <strong>{formatDistrictName(approveModal.targetDistrict || approveModal.previewDistrict || 'the affected district')}</strong>.</p>
                   {approveModal.previewLoading ? (
-                    <div className="text-slate-400 flex items-center gap-1.5 py-1">
+                    <div className="text-slate-400 flex items-center gap-1.5 py-0.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Calculating recipient count...
                     </div>
                   ) : approveModal.previewCount !== null ? (
                     <div className="text-slate-200">
-                      This will email <strong className="text-white font-mono">{approveModal.previewCount}</strong> opted-in {approveModal.scope === 'district' ? `users in ${approveModal.previewDistrict || 'the affected district'}` : 'users nationwide'}.
-                      {!approveModal.deliveryEnabled && (
-                        <p className="text-amber-300 mt-1 font-medium">Note: Email delivery is disabled by policy. Approval will succeed as dashboard-only.</p>
-                      )}
+                      Estimated recipients: <strong className="text-white font-mono">{approveModal.previewCount}</strong> healthcare professionals.
                     </div>
-                  ) : (
-                    <div className="text-slate-400">Recipient preview unavailable.</div>
+                  ) : null}
+                  {!approveModal.deliveryEnabled && (
+                    <p className="text-amber-300 mt-1 font-medium bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg">
+                      Email delivery is disabled in this environment. The alert will be published to the public dashboard only.
+                    </p>
                   )}
                 </div>
               )}
 
               {approveModal.scope === 'national' && (
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-xs font-bold text-red-400 uppercase tracking-wider block">
-                    Type disease name to confirm nationwide broadcast
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dengue or Influenza"
-                    value={approveModal.confirmDisease}
-                    onChange={(e) => setApproveModal(prev => ({ ...prev, confirmDisease: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-950 border border-red-500/40 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-400"
-                  />
+                <div className="space-y-3">
+                  <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-xl space-y-1.5 text-xs">
+                    <div className="text-red-400 font-semibold flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5" /> Nationwide Critical Broadcast
+                    </div>
+                    <p className="text-red-300 font-semibold">
+                      CRITICAL: Alert will be broadcast island-wide to all verified doctors, pharmacies, and hospital administrators across Sri Lanka.
+                    </p>
+                    {approveModal.previewLoading ? (
+                      <div className="text-slate-400 flex items-center gap-1.5 py-0.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Calculating recipient count...
+                      </div>
+                    ) : approveModal.previewCount !== null ? (
+                      <div className="text-slate-200">
+                        Estimated recipients: <strong className="text-white font-mono">{approveModal.previewCount}</strong> healthcare professionals island-wide.
+                      </div>
+                    ) : null}
+                    {!approveModal.deliveryEnabled && (
+                      <p className="text-amber-300 mt-1 font-medium bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg">
+                        Email delivery is disabled in this environment. The alert will be published to the public dashboard only.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-bold text-red-400 uppercase tracking-wider block">
+                      Type the disease name ({approveModal.targetDisease || 'the disease name'}) to confirm
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`Type ${approveModal.targetDisease || 'disease name'} to confirm`}
+                      value={approveModal.confirmDisease}
+                      onChange={(e) => setApproveModal(prev => ({ ...prev, confirmDisease: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-950 border border-red-500/40 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-400"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -946,7 +998,11 @@ const OutbreakMonitor = () => {
               </button>
               <button
                 onClick={handleApproveAlert}
-                disabled={approveModal.scope === 'national' && !approveModal.confirmDisease.trim()}
+                disabled={
+                  approveModal.scope === 'national' &&
+                  (!approveModal.targetDisease ||
+                    approveModal.confirmDisease.trim().toLowerCase() !== approveModal.targetDisease.trim().toLowerCase())
+                }
                 className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Approval
