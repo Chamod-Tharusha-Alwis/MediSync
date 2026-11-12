@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, AlertCircle, X } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import { getLocalizedMessage } from '../../utils/localizedMessage';
 
 
 /**
@@ -15,7 +16,7 @@ const ActiveOutbreakBanner = () => {
   const [broadcast, setBroadcast] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [loading,   setLoading]   = useState(true);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     const fetchBroadcast = async () => {
@@ -91,7 +92,7 @@ const ActiveOutbreakBanner = () => {
               <span className={`font-black uppercase tracking-wider text-xs ${palette.title}`}>
                 {broadcast.title}:{' '}
               </span>
-              <span className={`font-medium ${palette.body}`}>{broadcast.message}</span>
+              <span className={`font-medium ${palette.body}`}>{getLocalizedMessage(broadcast.message, language)}</span>
               {(broadcast.isSimulation || broadcast.isDemoData || broadcast.isSimulatedDemo) && broadcast.syntheticLabel && (
                 <span className="ml-2 px-1.5 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
                   {broadcast.syntheticLabel}

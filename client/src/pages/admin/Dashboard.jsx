@@ -18,6 +18,7 @@ import PageTransition from '../../components/common/PageTransition';
 import GeographicMap from '../../components/common/GeographicMap';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { formatDistrictName } from '../../utils/districtAdjacency';
+import { getLocalizedMessage, formatFriendlyDisease } from '../../utils/localizedMessage';
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
@@ -865,17 +866,61 @@ const AdminDashboard = () => {
         // Silent fallback: degrade without console error spam
       });
 
+      const seenAlertIds = new Set();
+      let alertBatch = [];
+      let alertBatchTimer = null;
+
       socket.on('outbreak_alert', (data) => {
         if (!active) return;
-        toast.error(
-          <div>
-            <p className="font-bold text-sm">🚨 Outbreak Alert</p>
-            <p className="text-xs mt-1">{data?.message || 'An outbreak anomaly has been detected.'}</p>
-            {data?.district && <p className="text-xs mt-0.5">District: {formatDistrictName(data.district)}</p>}
-          </div>,
-          { autoClose: 10000, position: 'top-right' }
-        );
+        const alertId = data?.alertId || data?._id;
+        if (alertId && seenAlertIds.has(String(alertId))) return;
+        if (alertId) seenAlertIds.add(String(alertId));
+
         setActiveAlerts(prev => [data, ...prev]);
+
+        alertBatch.push(data);
+        if (alertBatchTimer) clearTimeout(alertBatchTimer);
+
+        alertBatchTimer = setTimeout(() => {
+          if (!active || alertBatch.length === 0) return;
+          const currentLang = localStorage.getItem('medisync_language') || 'en';
+
+          if (alertBatch.length > 1) {
+            const count = alertBatch.length;
+            toast.error(
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span>{count} new outbreak alerts</span>
+                <a href="/admin/dashboard/outbreak" className="font-bold underline text-amber-300 hover:text-white shrink-0">
+                  View
+                </a>
+              </div>,
+              { autoClose: 8000, position: 'top-right' }
+            );
+          } else {
+            const single = alertBatch[0];
+            const friendly = formatFriendlyDisease(single?.disease);
+            const loc = single?.location || single?.district ? formatDistrictName(single.location || single.district) : 'Nationwide';
+            const sev = single?.severity ? `${single.severity}.` : '';
+            const msg = single?.message
+              ? getLocalizedMessage(single.message, currentLang)
+              : `${friendly} rising in ${loc}. ${sev}`;
+
+            toast.error(
+              <div className="text-xs space-y-1 max-w-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-rose-200 line-clamp-2">
+                    {msg.split('\n')[0]}
+                  </p>
+                  <a href="/admin/dashboard/outbreak" className="font-bold underline text-amber-300 hover:text-white shrink-0 ml-2">
+                    View
+                  </a>
+                </div>
+              </div>,
+              { autoClose: 8000, position: 'top-right' }
+            );
+          }
+          alertBatch = [];
+        }, 150);
       });
 
       socket.on('broadcast_message', (data) => {
