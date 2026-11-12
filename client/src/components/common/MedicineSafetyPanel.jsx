@@ -65,6 +65,12 @@ export default function MedicineSafetyPanel({
     (w) => w.severity === 'high' || w.severity === 'moderate'
   );
   const infoNotices = (safetyData?.warnings || []).filter((w) => w.severity === 'info');
+  const isIncomplete = Boolean(
+    safetyData?.verificationIncomplete ||
+    (safetyData?.warnings || []).some(
+      (w) => w.type === 'incomplete_verification' || w.verificationIncomplete || (w.severity === 'info' && /incomplete/i.test(w.message || w.summary || ''))
+    )
+  );
 
   return (
     <div
@@ -177,6 +183,11 @@ export default function MedicineSafetyPanel({
               )}
             </div>
           )}
+        </div>
+      ) : isIncomplete ? (
+        <div data-testid="safety-status-incomplete" className="flex items-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg">
+          <FiInfo className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span>{t('medicineSafety.checkIncomplete', 'Check incomplete, clinical assessment required.')}</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 text-xs text-teal-300 py-1">

@@ -15,8 +15,19 @@ export function getProvincePopulation(provinceName) {
   let sum = 0;
   for (const d of districts) {
     const p = getDistrictPopulation(d);
-    if (p === null) return null; // If any district has pending population, province is pending
+    if (p === null) return null;
     sum += p;
+  }
+  return sum > 0 ? sum : null;
+}
+
+export function getIslandPopulation() {
+  if (typeof districtPopulationData.islandTotal === 'number' && districtPopulationData.islandTotal > 0) {
+    return districtPopulationData.islandTotal;
+  }
+  let sum = 0;
+  for (const pop of Object.values(DISTRICT_POPULATION_2024)) {
+    if (typeof pop === 'number') sum += pop;
   }
   return sum > 0 ? sum : null;
 }
@@ -26,15 +37,17 @@ export function calculateIncidencePer100k(cases, districtName) {
   if (typeof cases !== 'number' || population === null) {
     return {
       incidence: null,
-      display: 'population data pending',
-      hasPopulation: false
+      display: 'N/A',
+      hasPopulation: false,
+      population: null
     };
   }
   const rate = Number(((cases / population) * 100000).toFixed(2));
   return {
     incidence: rate,
     display: `${rate} / 100k`,
-    hasPopulation: true
+    hasPopulation: true,
+    population
   };
 }
 
@@ -43,14 +56,35 @@ export function calculateProvinceIncidencePer100k(cases, provinceName) {
   if (typeof cases !== 'number' || population === null) {
     return {
       incidence: null,
-      display: 'population data pending',
-      hasPopulation: false
+      display: 'N/A',
+      hasPopulation: false,
+      population: null
     };
   }
   const rate = Number(((cases / population) * 100000).toFixed(2));
   return {
     incidence: rate,
     display: `${rate} / 100k`,
-    hasPopulation: true
+    hasPopulation: true,
+    population
+  };
+}
+
+export function calculateIslandIncidencePer100k(cases) {
+  const population = getIslandPopulation();
+  if (typeof cases !== 'number' || population === null) {
+    return {
+      incidence: null,
+      display: 'N/A',
+      hasPopulation: false,
+      population: null
+    };
+  }
+  const rate = Number(((cases / population) * 100000).toFixed(2));
+  return {
+    incidence: rate,
+    display: `${rate} / 100k`,
+    hasPopulation: true,
+    population
   };
 }

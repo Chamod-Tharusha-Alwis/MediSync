@@ -121,7 +121,7 @@ test('prescription dispensing carries the patient-bound provider grant into its 
   render(<PharmacyDashboard />); query('QA-ONE', false); fireEvent.click(await screen.findByText('Grant synthetic consent'));
   await screen.findByText('Patient QA-ONE'); fireEvent.click(screen.getByRole('button', { name: 'Dispense Medication' }));
   fireEvent.change(await screen.findByLabelText('Quantity in inventory units'), { target: { value: '1' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Dispense Now' }));
+  fireEvent.click(screen.getByRole('button', { name: /Confirm Dispense|Dispense Now/i }));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
   expect(api.post.mock.calls[0][0]).toBe('/pharmacy/dispense');
   expect(api.post.mock.calls[0][1].patientNic).toBe('QA-ONE');

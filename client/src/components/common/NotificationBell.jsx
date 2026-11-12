@@ -1,5 +1,6 @@
 import { useTranslation } from '../../i18n/LanguageContext';
 import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
+import { getLocalizedMessage } from '../../utils/localizedMessage';
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { Bell, Check, CheckCircle, Info, AlertTriangle, Pill, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -161,7 +162,7 @@ const NotificationBellView = ({ placement = 'header', align }) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const handleNotificationClick = (notif) => {
     if (!notif.read) markAsRead(notif._id);
@@ -253,7 +254,7 @@ const NotificationBellView = ({ placement = 'header', align }) => {
                       </div>
                       <div className="flex-1">
                         <p className={`text-sm ${!n.read ? 'text-slate-200 font-semibold' : 'text-slate-400'}`}>
-                          {n.message}
+                          {getLocalizedMessage(n.message, language)}
                         </p>
                         <p className="text-xs text-slate-500 mt-1 break-words">
                           {timeAgo(n.createdAt)}

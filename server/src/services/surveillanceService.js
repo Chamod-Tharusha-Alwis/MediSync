@@ -103,6 +103,11 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
         alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
       } catch (_) {}
+      const baseline7d = cr.baseline7d ?? (cr.baseline ? cr.baseline * 7 : 0);
+      const devPct = typeof cr.deviationPct === 'number' && Number.isFinite(cr.deviationPct)
+        ? cr.deviationPct
+        : (baseline7d > 0 ? Math.round(((cr.count - baseline7d) / baseline7d) * 100) : (cr.count > 0 ? 100 : 0));
+
       const item = {
         alertId: String(_id),
         district: cr.district,
@@ -112,11 +117,17 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         risk_level: cr.severity,
         danger_level: cr.severity,
         latest_actual: cr.count,
-        spike_percentage: Math.round((cr.maxZ || 1) * 100),
+        count: cr.count,
+        baseline: cr.baseline ?? (cr.baselineDailyMean ?? 0),
+        baseline7d,
+        zScore: cr.maxZ,
+        z_score: cr.maxZ,
+        maxZ: cr.maxZ,
+        deviationPct: devPct,
+        spike_percentage: devPct,
         status: alertDoc ? alertDoc.status : 'Pending',
         isSimulation: mode === 'simulation',
         sourceConsultationIds: ids,
-        maxZ: cr.maxZ,
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
@@ -351,6 +362,11 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
       }
     }
 
+    const baseline7d = bMean * 7;
+    const deviationPct = baseline7d > 0
+      ? ((N - baseline7d) / baseline7d) * 100
+      : (N > 0 ? 100 : 0);
+
     results.push({
       district: g.district,
       entityName: g.entityName,
@@ -358,9 +374,14 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
       disease: g.disease,
       triggered: hasConsecutiveElevated,
       count: N,
+      baseline: Number(bMean.toFixed(2)),
+      baselineDailyMean: Number(bMean.toFixed(2)),
+      baseline7d: Number(baseline7d.toFixed(2)),
+      deviationPct: Number(deviationPct.toFixed(1)),
       dailyCounts,
       dailyZ: dailyZ.map(z => Number(z.toFixed(2))),
       maxZ: Number(maxZ.toFixed(2)),
+      zScore: Number(maxZ.toFixed(2)),
       maxConsecutiveDays: maxConsecutive,
       alertLevel,
       severity,
@@ -397,6 +418,113 @@ async function canReviewSimulation(user) {
   return Boolean(user && (synthetic(user) || allowedRoles.includes(user.role)));
 }
 
+function computeGrowthFromCases({ cases = [], windowHours = 72, now = new Date() } = {}) {
+  const windowMs = windowHours * 60 * 60 * 1000;
+  const nowMs = +now;
+  const currentStart = nowMs - windowMs;
+  const prevStart = currentStart - windowMs;
+  const sevenDaysStart = nowMs - 7 * DAY;
+
+  const { getDistrictPopulation, getIslandPopulation } = require('./incidenceService');
+
+  const districtMap = new Map();
+  const islandMap = new Map();
+
+  for (const c of cases) {
+    const t = typeof c.time === 'number' ? c.time : new Date(c.createdAt).getTime();
+    if (t < prevStart || t > nowMs) continue;
+
+    const dis = c.disease || c.diseaseId || 'Unknown';
+    const dist = c.district || 'Unknown';
+
+    const distKey = `${dis}|${dist}`;
+    if (!districtMap.has(distKey)) {
+      districtMap.set(distKey, {
+        disease: dis,
+        district: dist,
+        currentCases: 0,
+        previousCases: 0,
+        dailyCounts: Array(7).fill(0)
+      });
+    }
+    const dBucket = districtMap.get(distKey);
+    if (t >= currentStart) dBucket.currentCases++;
+    else if (t >= prevStart) dBucket.previousCases++;
+
+    if (t >= sevenDaysStart) {
+      const dayIdx = Math.min(6, Math.max(0, Math.floor((t - sevenDaysStart) / DAY)));
+      dBucket.dailyCounts[dayIdx]++;
+    }
+
+    if (!islandMap.has(dis)) {
+      islandMap.set(dis, {
+        disease: dis,
+        district: 'Sri Lanka (Island-wide)',
+        currentCases: 0,
+        previousCases: 0,
+        dailyCounts: Array(7).fill(0)
+      });
+    }
+    const iBucket = islandMap.get(dis);
+    if (t >= currentStart) iBucket.currentCases++;
+    else if (t >= prevStart) iBucket.previousCases++;
+
+    if (t >= sevenDaysStart) {
+      const dayIdx = Math.min(6, Math.max(0, Math.floor((t - sevenDaysStart) / DAY)));
+      iBucket.dailyCounts[dayIdx]++;
+    }
+  }
+
+  const formatRow = (row, isIsland = false) => {
+    const absChange = row.currentCases - row.previousCases;
+    let pctChange;
+    if (row.previousCases === 0) {
+      pctChange = row.currentCases > 0 ? 'new' : 0;
+    } else {
+      pctChange = Number((((row.currentCases - row.previousCases) / row.previousCases) * 100).toFixed(1));
+    }
+    const pop = isIsland ? getIslandPopulation() : getDistrictPopulation(row.district);
+    const incidence = (pop && pop > 0)
+      ? Number(((row.currentCases / pop) * 100000).toFixed(2))
+      : null;
+
+    return {
+      disease: row.disease,
+      district: row.district,
+      currentCases: row.currentCases,
+      previousCases: row.previousCases,
+      absoluteChange: absChange,
+      percentChange: pctChange,
+      dailyCounts: row.dailyCounts,
+      population: pop,
+      incidencePer100k: incidence,
+      hasPopulation: Boolean(pop && pop > 0)
+    };
+  };
+
+  const districtResults = [...districtMap.values()]
+    .map(r => formatRow(r, false))
+    .sort((a, b) => b.absoluteChange - a.absoluteChange || b.currentCases - a.currentCases);
+
+  const islandResults = [...islandMap.values()]
+    .map(r => formatRow(r, true))
+    .sort((a, b) => b.absoluteChange - a.absoluteChange || b.currentCases - a.currentCases);
+
+  return {
+    window: `${windowHours}h`,
+    windowHours,
+    asOf: now instanceof Date ? now.toISOString() : new Date(now).toISOString(),
+    districts: districtResults,
+    island: islandResults
+  };
+}
+
+async function calculateGrowthMetrics({ windowHours = 72, mode = 'real', now = new Date() } = {}) {
+  const lookbackDays = Math.max(7, Math.ceil((windowHours * 2) / 24));
+  const selection = await loadCases({ mode, now, lookbackDays });
+  return computeGrowthFromCases({ cases: selection.cases, windowHours, now });
+}
+
 module.exports = {
   POLICY,
   synthetic,
@@ -409,6 +537,8 @@ module.exports = {
   evaluateOutbreakCriteria,
   evaluateMultiLevelOutbreakCriteria,
   getColomboMidnight,
+  computeGrowthFromCases,
+  calculateGrowthMetrics,
   DISTRICT_TO_PROVINCE,
   OFFICIAL_PROVINCES,
   PROVINCE_TO_DISTRICTS
