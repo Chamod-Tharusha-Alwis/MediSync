@@ -202,7 +202,7 @@ test('drug search uses the existing Warfarin reference when the database has no 
 test('outbreak detector on seeded verified consultations triggers Gampaha Dengue and Kandy Influenza, suppresses Kalutara and Matara, and admin approval surfaces alerts publicly', async () => {
   const { evaluateOutbreakCriteria } = require('../src/services/surveillanceService');
   const now = new Date('2026-11-10T00:00:00.000Z');
-  const seededConsultations = plan.Consultation.map(c => ({
+  const seededConsultations = buildVivaSeedPlan({ now }).documentsByModel.Consultation.map(c => ({
     ...c,
     diseaseId: c.icdCode?.replace('.', '') || 'UNKNOWN',
     time: new Date(c.createdAt).getTime()

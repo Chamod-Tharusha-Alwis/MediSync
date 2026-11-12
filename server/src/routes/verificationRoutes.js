@@ -8,6 +8,9 @@ const {
   requestVerificationOtp,
   verifyOtpAndUnlock,
   downloadHistoryPdfWithNicGate,
+  downloadConsultationPdfWithSessionGate,
+  getLabTestsForVerification,
+  downloadLabReportForVerification,
   revokeVerificationToken,
 } = require('../controllers/verificationController');
 
@@ -56,10 +59,15 @@ router.post('/:token/otp/request', otpRequestLimiter, requestVerificationOtp);
 // 3. OTP verification & clinical + release data unlock
 router.post('/:token/otp/verify', otpVerifyLimiter, verifyOtpAndUnlock);
 
-// 4. Patient History Download Gate (authorized by view session token or NIC)
+// 4. Consultation Report Download Gate (authorized by view session token)
+router.post('/:token/consultation-pdf', historyGateLimiter, downloadConsultationPdfWithSessionGate);
 router.post('/:token/history-pdf', historyGateLimiter, downloadHistoryPdfWithNicGate);
 
-// 5. Revocation endpoint (patient owner or clinical staff)
+// 5. Laboratory Tests list & download for verified encounter (Fix 4)
+router.get('/:token/lab-tests', getLabTestsForVerification);
+router.get('/:token/lab-tests/:labTestId/download', historyGateLimiter, downloadLabReportForVerification);
+
+// 6. Revocation endpoint (patient owner or clinical staff)
 router.post(
   '/:token/revoke',
   protect(['patient', 'doctor', 'admin', 'super_admin']),

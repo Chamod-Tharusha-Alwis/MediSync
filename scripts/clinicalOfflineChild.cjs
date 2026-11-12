@@ -7,10 +7,16 @@ require('./agent_b_combined_boundary.cjs');
 let config, jest;
 if (mode === 'backend') {
   config = require('../server/clinical.offline.jest.cjs'); jest = require('../server/node_modules/jest');
-  if (process.env.MEDISYNC_OFFLINE_CI === 'true') config = {...config,testPathIgnorePatterns:[...(config.testPathIgnorePatterns||[]),'closureQaPreservationBaseline.local.test.js']};
+  if (process.env.MEDISYNC_OFFLINE_CI === 'true' && Array.isArray(config.testMatch)) {
+    config = {
+      ...config,
+      testMatch: config.testMatch.filter(s => !s.includes('closureQaPreservationBaseline.local.test.js')),
+      testPathIgnorePatterns: [...(config.testPathIgnorePatterns || []), 'closureQaPreservationBaseline.local.test.js'],
+    };
+  }
   if (process.env.MEDISYNC_BACKEND_BATCH !== undefined && Array.isArray(config.testMatch)) {
     const batchIdx = parseInt(process.env.MEDISYNC_BACKEND_BATCH, 10);
-    const batchSize = parseInt(process.env.MEDISYNC_BACKEND_BATCH_SIZE || '25', 10);
+    const batchSize = parseInt(process.env.MEDISYNC_BACKEND_BATCH_SIZE || '15', 10);
     const start = batchIdx * batchSize;
     const end = Math.min(start + batchSize, config.testMatch.length);
     config = { ...config, testMatch: config.testMatch.slice(start, end) };

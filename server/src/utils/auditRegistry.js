@@ -168,7 +168,9 @@ const ROUTE_AUDIT_MAP = [
   // ── verificationRoutes.js ──
   { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/otp/request', action: 'VERIFY_REQUEST_OTP' },
   { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/otp/verify', action: 'VERIFY_UNLOCKED' },
-  { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/history-pdf', action: 'VERIFY_DOWNLOAD_HISTORY_PDF' }
+  { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/history-pdf', action: 'VERIFY_DOWNLOAD_HISTORY_PDF' },
+  { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/consultation-pdf', action: 'VERIFY_DOWNLOAD_CONSULTATION_PDF' },
+  { routeFile: 'verificationRoutes.js', method: 'POST', path: '/:token/revoke', action: 'VERIFY_TOKEN_REVOKED' }
 ];
 
 function routeMatches(pattern, actualPath) {

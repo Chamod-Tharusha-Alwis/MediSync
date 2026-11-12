@@ -102,7 +102,9 @@
 | `GET` | `/api/verify/:token` | Public | **Public Authenticity Card**: Returns issuance metadata (hospital, doctor, date, status, zero patient PII). |
 | `POST` | `/api/verify/request-otp` | Public / Rate-Limited (10/15m) | **OTP Request**: Dispatches 6-digit dynamic OTP to patient's registered email address. |
 | `POST` | `/api/verify/unlock` | Public / Rate-Limited (15/15m) | **OTP Unlock**: Verifies 6-digit OTP code and returns unlocked clinical consultation details and medicine release summary. |
-| `POST` | `/api/verify/:token/history-pdf` | Public / Rate-Limited (5/15m) | **History PDF Download**: Returns signed cumulative medical history PDF for authorized verification session. Gated by `PDF_EXPORT_ENABLED`. |
+| `POST` | `/api/verify/:token/consultation-pdf` | Public / Rate-Limited (5/15m) | **Consultation Report PDF Download**: Returns encrypted, single-encounter consultation report PDF for active verification session (`/history-pdf` supported as alias). Scoped strictly to the token encounter; zero patient history. |
+| `GET` | `/api/verify/:token/lab-tests` | Public / Session-Gated | **Encounter Lab Tests**: Returns ordered diagnostic laboratory tests linked strictly to this consultation encounter. |
+| `GET` | `/api/verify/:token/lab-tests/:labTestId/download` | Public / Session-Gated | **Lab Report Download**: Serves verified diagnostic lab report PDF for completed tests belonging to this encounter. |
 | `POST` | `/api/verify/:token/revoke` | Protected (Doctor/Admin) | **Revocation**: Marks token as revoked with clinical justification. | 
 | `POST` | `/api/verify/:token/revoke` | Authorized / Admin | Explicitly revoke a compromised or erroneous verification token capability. |
 
@@ -134,7 +136,8 @@
 | `GET` | `/api/admin/surveillance/review` | Super Admin | List syndromic consultations awaiting epidemiological review with district, disease, and date range filters. |
 | `PUT` | `/api/admin/surveillance/review` | Super Admin | Verify or reject individual or bulk consultations for syndromic surveillance inclusion. |
 | `POST` | `/api/admin/outbreak/trigger` | Super Admin | Manually trigger full epidemiological scan across all 25 districts. |
-| `PUT` | `/api/admin/outbreak/:id/approve` | Super Admin | Confirm a pending outbreak alert. Promotes to active public broadcast. |
+| `GET` | `/api/admin/outbreak/:id/recipients-preview` | Super Admin | Preview eligible recipient counts by notification scope (`none`, `district`, `national`) before approval. |
+| `PUT` | `/api/admin/outbreak/:id/approve` | Super Admin | Confirm a pending outbreak alert with scoped notifications (`none`, `district`, `national` with confirmation disease). Promotes to active public broadcast. |
 | `PUT` | `/api/admin/outbreak/:id/resolve` | Super Admin | Resolve confirmed outbreak alert. Requires mandatory justification note ($\ge 5$ chars). |
 | `GET` | `/api/admin/ml-status` | Super Admin | Inspect ML engine deployment status, cold start health, and catalog concept count. |
 

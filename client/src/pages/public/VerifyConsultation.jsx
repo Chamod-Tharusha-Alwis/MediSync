@@ -50,6 +50,9 @@ export default function VerifyConsultation() {
   const [releaseData, setReleaseData] = useState(null);
   const [sessionSecondsLeft, setSessionSecondsLeft] = useState(0);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [labTests, setLabTests] = useState([]);
+  const [loadingLabTests, setLoadingLabTests] = useState(false);
+  const [downloadingLabId, setDownloadingLabId] = useState(null);
 
   const otpInputRef = useRef(null);
   const initialOtpSentRef = useRef(false);
@@ -163,6 +166,22 @@ export default function VerifyConsultation() {
     }
   };
 
+  // Fetch lab tests for this consultation
+  const fetchLabTests = async (sessToken) => {
+    if (!sessToken) return;
+    setLoadingLabTests(true);
+    try {
+      const res = await api.get(`/verify/${token}/lab-tests`, {
+        headers: { Authorization: `Bearer ${sessToken}` },
+      });
+      setLabTests(res.data.labTests || []);
+    } catch (_) {
+      setLabTests([]);
+    } finally {
+      setLoadingLabTests(false);
+    }
+  };
+
   // Submit OTP & Unlock Clinical + Release Data
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
@@ -180,14 +199,16 @@ export default function VerifyConsultation() {
         setReleaseData(res.data.release);
         setSessionSecondsLeft(res.data.expiresInSeconds || 600);
         setOtp('');
+        fetchLabTests(res.data.sessionToken);
         toast.success('Identity verified. Clinical records unlocked.');
       }
     } catch (err) {
       const status = err.response?.status;
       const data = err.response?.data;
 
-      if (status === 429 || data?.error === 'OTP_LOCKED') {
+      if (status === 429 || data?.error === 'OTP_LOCKED' || data?.attemptsRemaining === 0) {
         setIsLocked(true);
+        setAttemptsRemaining(0);
         toast.error('Maximum verification attempts exceeded. Code has been locked.');
       } else if (data?.attemptsRemaining !== undefined) {
         setAttemptsRemaining(data.attemptsRemaining);
@@ -202,14 +223,14 @@ export default function VerifyConsultation() {
     }
   };
 
-  // Download Medical History PDF using in-memory session token
-  const handleDownloadHistory = async () => {
+  // Download Consultation Report PDF using in-memory session token (Fix 3)
+  const handleDownloadConsultationReport = async () => {
     if (!sessionToken) return;
     setDownloadingPdf(true);
 
     try {
       const response = await api.post(
-        `/verify/${token}/history-pdf`,
+        `/verify/${token}/consultation-pdf`,
         { sessionToken },
         {
           headers: { Authorization: `Bearer ${sessionToken}` },
@@ -221,22 +242,54 @@ export default function VerifyConsultation() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `MediSync-Clinical-History-${record.consultationRef || 'Record'}.pdf`);
+      link.setAttribute('download', `MediSync-Consultation-${record.consultationRef || 'Record'}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success('Medical history PDF downloaded successfully.');
+      toast.success('Consultation report PDF downloaded successfully.');
     } catch (err) {
       const status = err.response?.status;
       if (status === 503) {
         toast.error('PDF export temporarily unavailable.');
       } else {
-        toast.error('Failed to download medical history PDF.');
+        toast.error('Failed to download consultation report PDF.');
       }
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  // Download Laboratory Diagnostic Report PDF (Fix 4)
+  const handleDownloadLabReport = async (labTest) => {
+    if (!sessionToken || !labTest?._id) return;
+    setDownloadingLabId(labTest._id);
+
+    try {
+      const response = await api.get(
+        `/verify/${token}/lab-tests/${labTest._id}/download`,
+        {
+          headers: { Authorization: `Bearer ${sessionToken}` },
+          responseType: 'blob',
+        }
+      );
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `MediSync-LabReport-${labTest.labTestId || labTest._id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Laboratory report downloaded successfully.');
+    } catch (_) {
+      toast.error('Failed to download laboratory report.');
+    } finally {
+      setDownloadingLabId(null);
     }
   };
 
@@ -806,18 +859,92 @@ export default function VerifyConsultation() {
                   )}
                 </div>
 
-                {/* 4. Authorized History PDF Download */}
+                {/* 4. Laboratory Tests Section (Fix 4) */}
+                <div className="glass-card rounded-2xl p-6 border border-slate-800 bg-slate-900/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-teal-400" /> Laboratory Tests
+                    </h3>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {loadingLabTests ? 'Loading…' : `${labTests.length} ordered`}
+                    </span>
+                  </div>
+
+                  {loadingLabTests ? (
+                    <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
+                      <span>Loading laboratory investigations…</span>
+                    </div>
+                  ) : labTests.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-white/5 bg-slate-950/40 text-xs text-slate-400 text-center">
+                      No laboratory tests ordered for this consultation.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {labTests.map(test => {
+                        const isReady = ['completed', 'report_ready', 'delivered'].includes(String(test.status || '').toLowerCase()) || test.hasReport;
+                        return (
+                          <div key={test._id} className="p-4 rounded-xl border border-white/5 bg-slate-950/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-white">{test.testName}</span>
+                                {test.category && (
+                                  <span className="text-[11px] uppercase tracking-wide font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                                    {test.category}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-400 flex items-center gap-3">
+                                <span>Status: <strong className="text-slate-300">{test.status}</strong></span>
+                                {test.orderedDate && (
+                                  <span className="font-mono text-slate-500">
+                                    {formatSriLankaDateTime(test.orderedDate)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isReady ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadLabReport(test)}
+                                disabled={downloadingLabId === test._id}
+                                className="py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                              >
+                                {downloadingLabId === test._id ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Downloading…</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download Report</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-slate-500 italic">Processing</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Authorized Consultation Report PDF Download (Fix 3) */}
                 <div className="glass-card rounded-2xl p-6 border border-slate-800 bg-slate-900/60 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-bold text-white">Download Clinical History</h3>
+                      <h3 className="text-sm font-bold text-white">Download Consultation Report (PDF)</h3>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        Download the comprehensive patient consultation history PDF, authorized by your active verification session.
+                        Download the verified single-encounter consultation report PDF, authorized by your active verification session.
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={handleDownloadHistory}
+                      onClick={handleDownloadConsultationReport}
                       disabled={downloadingPdf}
                       className="min-h-[44px] shrink-0 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-teal-900/20"
                     >
@@ -829,7 +956,7 @@ export default function VerifyConsultation() {
                       ) : (
                         <>
                           <Download className="w-4 h-4" />
-                          <span>Download History PDF</span>
+                          <span>Download Consultation Report</span>
                         </>
                       )}
                     </button>

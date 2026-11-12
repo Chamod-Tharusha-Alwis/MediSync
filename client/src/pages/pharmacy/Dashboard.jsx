@@ -53,6 +53,7 @@ const Dispense = () => {
   const [dispenseItems, setDispenseItems] = useState([]);
   const [checkoutKey, setCheckoutKey] = useState('');
   const [safetyAck, setSafetyAck] = useState({ acknowledged: false, reason: '' });
+  const [safetyPanelMeds, setSafetyPanelMeds] = useState([]);
   const { setPatientSession, getPatientToken } = usePatientAccess();
   const [showConsentModal, setShowConsentModal] = useState(false);
 
@@ -166,6 +167,21 @@ const Dispense = () => {
         unit: matches[0]?.unit || 'units'
       };
     }));
+
+    // Resolve co-prescribed medications from the same consultation/encounter so DDI warnings trigger in the safety panel
+    const coRxs = Array.isArray(prescriptions)
+      ? prescriptions.filter(p => (rx.consultationId && p.consultationId === rx.consultationId) || (rx.consultationRef && p.consultationRef === rx.consultationRef))
+      : [rx];
+    const coMeds = (coRxs.length > 0 ? coRxs : [rx]).flatMap(p => p.medications?.length ? p.medications : [{ name: p.drugName, dosage: p.dosage, durationDays: p.durationDays }]);
+    const uniqueMedsMap = new Map();
+    for (const m of coMeds) {
+      const key = (m.name || m.drugName || '').trim().toLowerCase();
+      if (key && !uniqueMedsMap.has(key)) {
+        uniqueMedsMap.set(key, { name: m.name || m.drugName, dosage: m.dosage, durationDays: m.durationDays });
+      }
+    }
+    setSafetyPanelMeds(Array.from(uniqueMedsMap.values()));
+
     setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
     setIsAlt(false);
     setSafetyAck({ acknowledged: false, reason: '' });
@@ -436,7 +452,7 @@ const Dispense = () => {
                 <label className={labelClass} htmlFor={`stock-${index}`}>Inventory for {item.prescribed}</label>
                 <select id={`stock-${index}`} className="glass-input w-full" value={item.inventoryItemId}
                   disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, inventoryItemId:e.target.value} : m))}>
-                  <option value="">{t("pharmacy.selectMedicine", "Select medicine")}</option>
+                  <option value="">{inventory.length === 0 ? "Untracked / External Stock (Dispense directly)" : t("pharmacy.selectMedicine", "Select medicine")}</option>
                   {inventory.filter(i => isAlt || i.drugName.trim().toLowerCase() === item.prescribed.trim().toLowerCase()).map(i => <option key={i._id} value={i._id}>{i.drugName} — {i.stock} {i.unit}</option>)}
                 </select>
                 <label className={labelClass} htmlFor={`qty-${index}`}>{t("pharmacy.quantity", "Quantity in inventory units")}</label>
@@ -474,7 +490,7 @@ const Dispense = () => {
             )}
 
             <MedicineSafetyPanel
-              medications={dispenseItems.map(i => ({ name: i.drugName || i.prescribed, dosage: i.dosage, durationDays: i.quantity }))}
+              medications={safetyPanelMeds.length > 0 ? safetyPanelMeds : dispenseItems.map(i => ({ name: i.drugName || i.prescribed, dosage: i.dosage, durationDays: i.quantity }))}
               patientId={selectedRx?.patientId}
               patientNic={loadedNic}
               consentToken={getPatientToken?.(loadedNic)}
