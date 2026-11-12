@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Extracts a single language message from a trilingual string.
  * MediSync format:

@@ -486,11 +486,31 @@ exports.checkMedicineSafety = async (req, res) => {
           const now = new Date();
           // Active prescriptions only: pending or issued (not yet dispensed, not expired, not superseded).
           // Historical dispensed prescriptions are excluded: a finished course from months ago is not a concurrent active drug.
-          const activeDocs = await Prescription.find({
+          const query = Prescription.find({
             patientId,
             status: { $in: ['pending', 'issued'] },
             supersededBy: null,
             $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }]
+          });
+          const selectResult = typeof query?.select === 'function'
+            ? query.select('drugName medications consultationRef prescriptionId durationDays dosage frequency createdAt')
+            : query;
+          const rawDocs = typeof selectResult?.lean === 'function'
+            ? await selectResult.lean()
+            : await selectResult;
+
+          const activeDocs = (Array.isArray(rawDocs) ? rawDocs : []).map(d => {
+            if (d && typeof d.decryptFieldsSync !== 'function' && typeof Prescription.hydrate === 'function') {
+              try {
+                const hyd = Prescription.hydrate(d);
+                hyd.decryptFieldsSync?.();
+                return hyd;
+              } catch (_) {
+                return d;
+              }
+            }
+            d?.decryptFieldsSync?.();
+            return d;
           });
 
           for (const doc of activeDocs || []) {
