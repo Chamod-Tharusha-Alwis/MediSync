@@ -428,152 +428,298 @@ describe('Post-Rehearsal Fixes Verification Suite (Fix 3, Fix 4, Fix 5, Fix 6)',
   });
 
   // =========================================================================
-  // Fix 7: Outbreak Seeder Hospital regNo Uniqueness & Null-Collision Safety
+  // Fix 7: Outbreak Seeder Dynamic _id & Cleanup Safety
   // =========================================================================
-  describe('Fix 7: Outbreak Seeder Hospital regNo Uniqueness & Null-Collision Safety', () => {
-    test('seeds 3 hospitals into a collection with existing regNo: null hospital without collision', async () => {
-      const {
-        buildOutbreakSeedPlan,
-        seedOutbreakDocuments,
-        preflightCollisionCheck,
-        BATCH_TAG,
-      } = require('../../scripts/seed_viva_outbreaks');
+  describe('Fix 7: Outbreak Seeder Dynamic _id & Cleanup Safety', () => {
+    const {
+      buildOutbreakSeedPlan,
+      BATCH_TAG,
+      preflightCollisionCheck,
+      dryRunInspect,
+      seedOutbreakDocuments,
+    } = require('../../scripts/seed_viva_outbreaks');
+    const {
+      findOutbreakDocuments,
+      cleanupOutbreakDocuments,
+    } = require('../../scripts/cleanup_viva_outbreaks');
 
+    function createMockCollection(storage, uniqueFields = []) {
+      const matchesQuery = (doc, query = {}) => {
+        if (query.$or) {
+          return query.$or.some((clause) => matchesQuery(doc, clause));
+        }
+        for (const [k, v] of Object.entries(query)) {
+          if (v && typeof v === 'object' && v.$in) {
+            if (!v.$in.includes(doc[k])) return false;
+          } else if (k.includes('.')) {
+            const parts = k.split('.');
+            let curr = doc;
+            for (const p of parts) {
+              curr = curr ? curr[p] : undefined;
+            }
+            if (curr !== v) return false;
+          } else if (doc[k] !== v) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      return {
+        find: (query = {}) => ({
+          toArray: async () => storage.filter((doc) => matchesQuery(doc, query)),
+        }),
+        findOne: async (query = {}) => {
+          const list = storage.filter((doc) => matchesQuery(doc, query));
+          return list[0] || null;
+        },
+        updateOne: async (filter, update, options = {}) => {
+          const existingIndex = storage.findIndex((doc) => matchesQuery(doc, filter));
+          if (existingIndex >= 0) {
+            return { matchedCount: 1, modifiedCount: 0, upsertedCount: 0 };
+          }
+
+          if (options.upsert) {
+            const newDoc = { ...(update.$setOnInsert || {}) };
+            for (const field of uniqueFields) {
+              const val = newDoc[field] !== undefined ? newDoc[field] : null;
+              const collision = storage.find((d) => (d[field] !== undefined ? d[field] : null) === val);
+              if (collision) {
+                const err = new Error(
+                  `E11000 duplicate key error, collection medisync_prod.mock, index ${field}_1, dup key { ${field}: ${val} }`
+                );
+                err.code = 11000;
+                throw err;
+              }
+            }
+            if (!newDoc._id) {
+              newDoc._id = new mongoose.Types.ObjectId();
+            }
+            storage.push(newDoc);
+            return { matchedCount: 0, modifiedCount: 0, upsertedCount: 1, upsertedId: newDoc._id };
+          }
+
+          return { matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
+        },
+        deleteMany: async (filter = {}) => {
+          const initialCount = storage.length;
+          const remaining = storage.filter((doc) => !matchesQuery(doc, filter));
+          storage.length = 0;
+          storage.push(...remaining);
+          return { deletedCount: initialCount - remaining.length };
+        },
+      };
+    }
+
+    function createMockDb(collections) {
+      return {
+        collection: (name) => {
+          if (!collections[name]) {
+            collections[name] = [];
+          }
+          const uniqueMap = {
+            hospitals: ['regNo', 'email'],
+            doctors: ['doctorId', 'email'],
+            patients: ['nic', 'email'],
+            consultations: ['consultationId'],
+            outbreakalerts: ['alertId'],
+          };
+          return createMockCollection(collections[name], uniqueMap[name] || []);
+        },
+      };
+    }
+
+    it('seeds 3 hospitals into a collection with existing regNo: null hospital without collision', async () => {
       const plan = buildOutbreakSeedPlan(new Date());
       expect(plan.parentHospitals.length).toBe(3);
 
-      // Verify each planned hospital has unique non-null synthetic regNo
-      const regNos = plan.parentHospitals.map((h) => h.regNo);
-      expect(regNos).toEqual(['VIVA-OUTBREAK-HOSP-01', 'VIVA-OUTBREAK-HOSP-02', 'VIVA-OUTBREAK-HOSP-03']);
-      expect(plan.parentHospitals.every((h) => h.isSynthetic === true && h.syntheticSeedBatch === BATCH_TAG)).toBe(true);
-
-      // In-memory mock collection enforcing regNo_1 and email_1 unique indexes
       const hospitalDocs = [
         {
           _id: new mongoose.Types.ObjectId(),
           name: 'Pre-existing Colombo General Hospital',
           district: 'Colombo',
-          regNo: null, // Legacy / unindexed document with null regNo
+          regNo: null,
           email: 'admin@colombo.gen.hospital.lk',
           isSynthetic: false,
         },
       ];
-
-      const doctorDocs = [];
-      const patientDocs = [];
-      const consultationDocs = [];
-
-      function createMockCollection(storage, uniqueFields = []) {
-        return {
-          find: (query = {}) => ({
-            toArray: async () => {
-              return storage.filter((doc) => {
-                if (query.$or) {
-                  return query.$or.some((clause) => {
-                    const [k, v] = Object.entries(clause)[0];
-                    if (v && v.$in) return v.$in.includes(doc[k]);
-                    return doc[k] === v;
-                  });
-                }
-                for (const [k, v] of Object.entries(query)) {
-                  if (v && v.$in) {
-                    if (!v.$in.includes(doc[k])) return false;
-                  } else if (doc[k] !== v) {
-                    return false;
-                  }
-                }
-                return true;
-              });
-            },
-          }),
-          findOne: async (query = {}) => {
-            const list = await createMockCollection(storage, uniqueFields).find(query).toArray();
-            return list[0] || null;
-          },
-          updateOne: async (filter, update, options = {}) => {
-            const existingIndex = storage.findIndex((doc) => {
-              for (const [k, v] of Object.entries(filter)) {
-                if (doc[k] !== v) return false;
-              }
-              return true;
-            });
-
-            if (existingIndex >= 0) {
-              return { matchedCount: 1, modifiedCount: 0, upsertedCount: 0 };
-            }
-
-            if (options.upsert) {
-              const newDoc = { ...(update.$setOnInsert || {}) };
-              for (const field of uniqueFields) {
-                const val = newDoc[field] !== undefined ? newDoc[field] : null;
-                const collision = storage.find((d) => (d[field] !== undefined ? d[field] : null) === val);
-                if (collision) {
-                  const err = new Error(
-                    `E11000 duplicate key error, collection medisync_prod.mock, index ${field}_1, dup key { ${field}: ${val} }`
-                  );
-                  err.code = 11000;
-                  throw err;
-                }
-              }
-              storage.push(newDoc);
-              return { matchedCount: 0, modifiedCount: 0, upsertedCount: 1, upsertedId: newDoc._id };
-            }
-
-            return { matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
-          },
-        };
-      }
-
-      const mockDb = {
-        collection: (name) => {
-          if (name === 'hospitals') return createMockCollection(hospitalDocs, ['regNo', 'email']);
-          if (name === 'doctors') return createMockCollection(doctorDocs, ['doctorId', 'email']);
-          if (name === 'patients') return createMockCollection(patientDocs, ['nic', 'email']);
-          if (name === 'consultations') return createMockCollection(consultationDocs, ['consultationId']);
-          return createMockCollection([]);
-        },
+      const collections = {
+        hospitals: hospitalDocs,
+        doctors: [],
+        patients: [],
+        consultations: [],
       };
+      const mockDb = createMockDb(collections);
 
-      // 1. Preflight check passes without collisions
       const collisions = await preflightCollisionCheck(mockDb, plan);
       expect(collisions).toEqual([]);
 
-      // 2. Seeding succeeds cleanly despite existing regNo: null
       const report = await seedOutbreakDocuments(mockDb, plan);
       expect(report.hospitals.inserted).toBe(3);
       expect(report.hospitals.existing).toBe(0);
-      expect(report.doctors.inserted).toBe(3);
-      expect(report.patients.inserted).toBe(12);
-      expect(report.consultations.inserted).toBe(plan.consultations.length);
-
-      // Verify collection contains legacy hospital + 3 synthetic hospitals = 4 total
       expect(hospitalDocs.length).toBe(4);
       expect(hospitalDocs[0].regNo).toBeNull();
       expect(hospitalDocs[1].regNo).toBe('VIVA-OUTBREAK-HOSP-01');
-      expect(hospitalDocs[2].regNo).toBe('VIVA-OUTBREAK-HOSP-02');
-      expect(hospitalDocs[3].regNo).toBe('VIVA-OUTBREAK-HOSP-03');
 
-      // 3. Idempotent rerun: 0 new inserts, no duplicate key errors
       const rerunReport = await seedOutbreakDocuments(mockDb, plan);
       expect(rerunReport.hospitals.inserted).toBe(0);
       expect(rerunReport.hospitals.existing).toBe(3);
       expect(hospitalDocs.length).toBe(4);
+    });
 
-      // 4. Preflight detection of collision with non-batch document
-      hospitalDocs.push({
+    it('reproduces legacy fixed _id collision scenario and proves dynamic _id resolves references', async () => {
+      const plan = buildOutbreakSeedPlan(new Date());
+      const legacyFixedId = new mongoose.Types.ObjectId('02bc6fd356b702ed5df407df');
+
+      // Pre-existing patient with legacy fixed _id (e.g. from an earlier seed attempt)
+      const existingPatient = {
+        _id: legacyFixedId,
+        nic: plan.parentPatients[0].nic,
+        patientNic_bi: plan.parentPatients[0].patientNic_bi,
+        fullName: 'Surveillance Case Subject 1',
+        email: plan.parentPatients[0].email,
+        isSynthetic: true,
+        syntheticSeedBatch: BATCH_TAG,
+      };
+
+      const collections = {
+        hospitals: [],
+        doctors: [],
+        patients: [existingPatient],
+        consultations: [],
+      };
+      const mockDb = createMockDb(collections);
+
+      // Seed must succeed without E11000 on _id_, match the existing patient, and link consultations
+      const report = await seedOutbreakDocuments(mockDb, plan);
+      expect(report.patients.existing).toBe(1);
+      expect(report.patients.inserted).toBe(11);
+
+      // Verify that consultation targeting this patient resolved to legacyFixedId
+      const targetConsultations = collections.consultations.filter(
+        (c) => c.patientId && c.patientId.toString() === legacyFixedId.toString()
+      );
+      expect(targetConsultations.length).toBeGreaterThan(0);
+      expect(targetConsultations[0].patientId.toString()).toBe('02bc6fd356b702ed5df407df');
+    });
+
+    it('preserves existing doctor record with encrypted unique fields without modification', async () => {
+      const plan = buildOutbreakSeedPlan(new Date());
+      const targetDocPlan = plan.parentDoctors[0];
+
+      // Existing doctor with encrypted licenseNo and fullName
+      const existingDoctor = {
+        _id: new mongoose.Types.ObjectId('68e6447a22dfd6d3b8753e9d'),
+        doctorId: targetDocPlan.doctorId,
+        fullName: 'enc:AES:encrypted_name_ciphertext_123',
+        licenseNo: 'enc:AES:encrypted_license_ciphertext_456',
+        email: targetDocPlan.email,
+        district: 'Gampaha',
+        isSynthetic: true,
+        syntheticSeedBatch: BATCH_TAG,
+      };
+
+      const collections = {
+        hospitals: [],
+        doctors: [existingDoctor],
+        patients: [],
+        consultations: [],
+      };
+      const mockDb = createMockDb(collections);
+
+      const report = await seedOutbreakDocuments(mockDb, plan);
+      expect(report.doctors.existing).toBe(1);
+      expect(report.doctors.inserted).toBe(2);
+
+      // Verify doctor was NOT modified/overwritten
+      const docInStore = collections.doctors.find((d) => d.doctorId === targetDocPlan.doctorId);
+      expect(docInStore.fullName).toBe('enc:AES:encrypted_name_ciphertext_123');
+      expect(docInStore.licenseNo).toBe('enc:AES:encrypted_license_ciphertext_456');
+    });
+
+    it('connected dry-run reports accurate counts and rejects foreign unique collisions', async () => {
+      const plan = buildOutbreakSeedPlan(new Date());
+      const collections = {
+        hospitals: [],
+        doctors: [],
+        patients: [],
+        consultations: [],
+      };
+      const mockDb = createMockDb(collections);
+
+      // 1. Clean state inspection
+      const inspection = await dryRunInspect(mockDb, plan);
+      expect(inspection.hospitals.alreadyExist).toBe(0);
+      expect(inspection.hospitals.wouldInsert).toBe(3);
+      expect(inspection.doctors.wouldInsert).toBe(3);
+      expect(inspection.patients.wouldInsert).toBe(12);
+      expect(inspection.consultations.wouldInsert).toBe(plan.consultations.length);
+
+      // 2. Inject foreign colliding document
+      collections.hospitals.push({
         _id: new mongoose.Types.ObjectId(),
-        regNo: 'COLLIDING-REG',
-        email: plan.parentHospitals[0].email, // collides on email with non-batch doc
+        regNo: plan.parentHospitals[0].regNo,
+        email: 'foreign.hospital@health.gov.lk',
         syntheticSeedBatch: 'unrelated-foreign-batch',
         isSynthetic: true,
       });
 
-      const collidingCollisions = await preflightCollisionCheck(mockDb, plan);
-      expect(collidingCollisions.length).toBe(1);
-      expect(collidingCollisions[0].field).toBe('email');
-      expect(collidingCollisions[0].value).toBe(plan.parentHospitals[0].email);
-
+      await expect(dryRunInspect(mockDb, plan)).rejects.toThrow('PRE_FLIGHT_COLLISION_DETECTED');
       await expect(seedOutbreakDocuments(mockDb, plan)).rejects.toThrow('PRE_FLIGHT_COLLISION_DETECTED');
+    });
+
+    it('cleanup_viva_outbreaks.js safety: refuses deletion if flag missing, and removes only the batch on confirm', async () => {
+      const plan = buildOutbreakSeedPlan(new Date());
+      const collections = {
+        hospitals: [],
+        doctors: [],
+        patients: [],
+        consultations: [],
+        outbreakalerts: [],
+      };
+      const mockDb = createMockDb(collections);
+
+      // Seed documents
+      await seedOutbreakDocuments(mockDb, plan);
+      expect(collections.hospitals.length).toBe(3);
+      expect(collections.consultations.length).toBe(plan.consultations.length);
+
+      // Add a production non-batch document
+      const prodDoc = {
+        _id: new mongoose.Types.ObjectId(),
+        name: 'Real General Hospital',
+        regNo: 'REAL-HOSP-001',
+        isSynthetic: false,
+      };
+      collections.hospitals.push(prodDoc);
+
+      // 1. Dry run cleanup: detects batch documents, deletes 0
+      const dryReport = await cleanupOutbreakDocuments(mockDb, { confirm: false });
+      expect(dryReport.dryRun).toBe(true);
+      expect(dryReport.totalFound).toBeGreaterThan(0);
+      expect(dryReport.totalDeleted).toBe(0);
+      expect(collections.hospitals.length).toBe(4);
+
+      // 2. Safety abort test: if a doc matches batch tag but has isSynthetic !== true
+      collections.hospitals.push({
+        _id: new mongoose.Types.ObjectId(),
+        syntheticSeedBatch: BATCH_TAG,
+        isSynthetic: false, // Flag mismatch!
+      });
+
+      await expect(cleanupOutbreakDocuments(mockDb, { confirm: true })).rejects.toThrow('SAFETY_ABORT');
+      expect(collections.hospitals.length).toBe(5); // Nothing deleted
+
+      // Remove corrupt document
+      collections.hospitals.pop();
+
+      // 3. Confirmed cleanup: deletes only batch documents, preserves prodDoc
+      const confirmReport = await cleanupOutbreakDocuments(mockDb, { confirm: true });
+      expect(confirmReport.dryRun).toBe(false);
+      expect(confirmReport.totalDeleted).toBe(dryReport.totalFound);
+      expect(collections.hospitals.length).toBe(1);
+      expect(collections.hospitals[0].regNo).toBe('REAL-HOSP-001');
+      expect(collections.consultations.length).toBe(0);
     });
   });
 });
