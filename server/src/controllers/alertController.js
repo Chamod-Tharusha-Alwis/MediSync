@@ -21,8 +21,13 @@ exports.getActiveAlerts = async (req, res) => {
     if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
-    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1});
-    res.json({ data: alerts });
+    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1}).lean();
+    let growthData = null;
+    try {
+      growthData = await service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' });
+    } catch (_) {}
+    const enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
+    res.json({ data: enriched });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
   }

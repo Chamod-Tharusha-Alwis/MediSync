@@ -62,6 +62,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   const payload=[...buckets.values()].map(({sourceConsultationIds,...b})=>({...b,previous_baseline_avg:b.previous_baseline_avg*7/23}));
   const summary={results:[],suppressed:[],consultations_analysed:selection.cases.length,data_points:selection.cases.length,mode,source:mode,policy:POLICY,excluded:selection.excluded,
     message:'Verified episode counts only. Model signals require administrator review; external delivery is disabled.'};
+  const growthMetrics = computeGrowthFromCases({ cases: selection.cases, windowHours: 72, now });
   if(!payload.length)return summary;
 
   let mlResults = [];
@@ -131,8 +132,9 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
-      alertMap.set(`${cr.district}|${cr.disease}`, item);
-      summary.results.push(item);
+      const enrichedItem = enrichAlertWith72h(item, growthMetrics);
+      alertMap.set(`${cr.district}|${cr.disease}`, enrichedItem);
+      summary.results.push(enrichedItem);
 
       try {
         const { notifyOutbreakAlert } = require('./notificationService');
@@ -186,8 +188,9 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       severity: sev,
       isSimulation: mode === 'simulation'
     };
-    alertMap.set(key, item);
-    summary.results.push(item);
+    const enrichedItem = enrichAlertWith72h(item, growthMetrics);
+    alertMap.set(key, enrichedItem);
+    summary.results.push(enrichedItem);
 
     try {
       const { notifyOutbreakAlert } = require('./notificationService');
@@ -525,6 +528,87 @@ async function calculateGrowthMetrics({ windowHours = 72, mode = 'real', now = n
   return computeGrowthFromCases({ cases: selection.cases, windowHours, now });
 }
 
+function diseasesMatch(d1, d2) {
+  if (!d1 || !d2) return false;
+  const s1 = String(d1).trim().toLowerCase();
+  const s2 = String(d2).trim().toLowerCase();
+  if (s1 === s2) return true;
+  const c1 = s1.replace(/^icd(?:10|11):/, '').replace('.', '');
+  const c2 = s2.replace(/^icd(?:10|11):/, '').replace('.', '');
+  if (c1 === c2) return true;
+  try {
+    const { diseaseLabel } = require('./publicHealthStats');
+    const l1 = (diseaseLabel(d1) || '').toLowerCase();
+    const l2 = (diseaseLabel(d2) || '').toLowerCase();
+    if (l1 && l2 && (l1 === l2 || l1 === s2 || l2 === s1)) return true;
+  } catch (_) {}
+  return false;
+}
+
+function enrichAlertWith72h(alert, growthData) {
+  const { getDistrictPopulation } = require('./incidenceService');
+  const alertObj = typeof alert?.toObject === 'function' ? alert.toObject() : { ...alert };
+  const dist = (alertObj.district || alertObj.location || '').trim();
+  const dis = (alertObj.disease || '').trim();
+  const dMatch = growthData?.districts?.find(d => 
+    diseasesMatch(d.disease, dis) &&
+    d.district?.toLowerCase() === dist.toLowerCase()
+  );
+  const iMatch = growthData?.island?.find(i => 
+    diseasesMatch(i.disease, dis)
+  );
+
+  const currentCases = dMatch ? dMatch.currentCases : (alertObj.caseCount || alertObj.affectedCount || 0);
+  const previousCases = dMatch ? dMatch.previousCases : 0;
+  const absoluteChange = dMatch ? dMatch.absoluteChange : currentCases;
+  const percentChange = dMatch ? dMatch.percentChange : (currentCases > 0 ? 'new' : 0);
+  const population = dMatch?.population || getDistrictPopulation(dist);
+  const incidencePer100k = (population && population > 0)
+    ? Number(((currentCases / population) * 100000).toFixed(2))
+    : (dMatch?.incidencePer100k ?? null);
+
+  const rawShare = (population && population > 0 && currentCases > 0)
+    ? ((currentCases / population) * 100)
+    : 0;
+
+  let formattedShare = '0%';
+  if (currentCases > 0 && population > 0) {
+    if (rawShare < 0.0001) formattedShare = rawShare.toFixed(5) + '%';
+    else if (rawShare < 0.01) formattedShare = rawShare.toFixed(4) + '%';
+    else formattedShare = rawShare.toFixed(2) + '%';
+    if (parseFloat(formattedShare) === 0) formattedShare = '<0.00001%';
+  }
+
+  const islandCases = iMatch ? iMatch.currentCases : currentCases;
+  const islandPreviousCases = iMatch ? iMatch.previousCases : 0;
+  const islandChange = iMatch ? iMatch.absoluteChange : islandCases;
+  const islandPercentChange = iMatch ? iMatch.percentChange : (islandCases > 0 ? 'new' : 0);
+
+  const plainText = `${dist ? dist + ': ' : ''}${currentCases} cases in the last 72h (previous 72h: ${previousCases}, ${absoluteChange >= 0 ? '+' : ''}${absoluteChange}). ${formattedShare} of the district population, ${incidencePer100k ?? '0.00'} per 100,000. Island-wide: ${islandCases} cases.`;
+
+  return {
+    ...alertObj,
+    metrics72h: {
+      currentCases,
+      previousCases,
+      absoluteChange,
+      percentChange,
+      population,
+      incidencePer100k,
+      popSharePct: rawShare,
+      formattedShare,
+      islandCases,
+      islandPreviousCases,
+      islandChange,
+      islandPercentChange,
+      censusYear: 2012,
+      censusName: 'Department of Census and Statistics - Census 2012',
+      honestyNote: 'Verified MediSync cases (lower bound; only consultations recorded in MediSync are counted)',
+      plainText
+    }
+  };
+}
+
 module.exports = {
   POLICY,
   synthetic,
@@ -539,6 +623,8 @@ module.exports = {
   getColomboMidnight,
   computeGrowthFromCases,
   calculateGrowthMetrics,
+  diseasesMatch,
+  enrichAlertWith72h,
   DISTRICT_TO_PROVINCE,
   OFFICIAL_PROVINCES,
   PROVINCE_TO_DISTRICTS

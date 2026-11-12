@@ -91,6 +91,34 @@ function calculateIslandIncidencePer100k(cases) {
   };
 }
 
+function formatPopulationShare(cases, districtName) {
+  const pop = exports.getDistrictPopulation(districtName);
+  if (typeof cases !== 'number' || cases <= 0 || !pop) {
+    return {
+      sharePct: 0,
+      formattedShare: '0%',
+      incidencePer100k: 0,
+      population: pop,
+      display: cases > 0 && !pop ? 'N/A' : '0%'
+    };
+  }
+  const rawPct = (cases / pop) * 100;
+  let formattedShare;
+  if (rawPct < 0.0001) formattedShare = rawPct.toFixed(5) + '%';
+  else if (rawPct < 0.01) formattedShare = rawPct.toFixed(4) + '%';
+  else formattedShare = rawPct.toFixed(2) + '%';
+  if (parseFloat(formattedShare) === 0) formattedShare = '<0.00001%';
+
+  const incidence = Number(((cases / pop) * 100000).toFixed(2));
+  return {
+    sharePct: rawPct,
+    formattedShare,
+    incidencePer100k: incidence,
+    population: pop,
+    display: `${formattedShare} of district population, ${incidence} per 100,000`
+  };
+}
+
 exports.DISTRICT_POPULATION_2024 = DISTRICT_POPULATION_2024;
 exports.getDistrictPopulation = getDistrictPopulation;
 exports.getProvincePopulation = getProvincePopulation;
@@ -98,3 +126,4 @@ exports.getIslandPopulation = getIslandPopulation;
 exports.calculateIncidencePer100k = calculateIncidencePer100k;
 exports.calculateProvinceIncidencePer100k = calculateProvinceIncidencePer100k;
 exports.calculateIslandIncidencePer100k = calculateIslandIncidencePer100k;
+exports.formatPopulationShare = formatPopulationShare;

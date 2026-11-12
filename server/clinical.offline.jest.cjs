@@ -100,4 +100,8 @@ module.exports.testMatch.push(
   '<rootDir>/tests/medicineSafetyPanelLeak.test.js'
 );
 
-module.exports.testMatch.push('<rootDir>/tests/liveQaRepairs.test.js');
+module.exports.testMatch.push(
+  '<rootDir>/tests/liveQaRepairs.test.js',
+  '<rootDir>/tests/clientBuildCachePolicy.test.js',
+  '<rootDir>/tests/outbreakReadTimeMetrics.test.js'
+);
