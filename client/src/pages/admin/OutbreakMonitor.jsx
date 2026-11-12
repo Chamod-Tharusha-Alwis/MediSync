@@ -657,11 +657,11 @@ const OutbreakMonitor = () => {
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
                         </span>
-                        <span className="text-[11px] text-slate-500 font-mono" title="Department of Census and Statistics (Census 2012)">
+                        <span className="text-xs text-slate-500 font-mono" title="Department of Census and Statistics (Census 2012)">
                           Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
                         </span>
                       </p>
-                      <div className="mt-2 text-[11px] text-slate-400 font-mono flex justify-between select-none">
+                      <div className="mt-2 text-xs text-slate-400 font-mono flex justify-between select-none">
                         <span>Cases: {item.latest_actual ?? item.count ?? 0}</span>
                         <span title="Department of Census and Statistics (Census 2012)">Inc: {inc.display}</span>
                       </div>
@@ -790,7 +790,7 @@ const OutbreakMonitor = () => {
                       </td>
                       <td className="px-4 py-3 text-right font-bold">
                         {isNew ? (
-                          <span className="px-1.5 py-0.5 rounded text-[11px] bg-red-500/20 text-red-300 border border-red-500/40">NEW</span>
+                          <span className="px-1.5 py-0.5 rounded text-[11px] uppercase tracking-wide bg-red-500/20 text-red-300 border border-red-500/40">NEW</span>
                         ) : (
                           <span className={row.percentChange > 0 ? 'text-red-400' : (row.percentChange < 0 ? 'text-emerald-400' : 'text-slate-400')}>
                             {row.percentChange > 0 ? `+${row.percentChange}%` : `${row.percentChange}%`}
@@ -921,7 +921,7 @@ const OutbreakMonitor = () => {
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-slate-400">
                         <span title="Department of Census and Statistics (Census 2012)">{inc.display}</span>
-                        <div className="text-[11px] text-slate-500 font-mono">
+                        <div className="text-xs text-slate-500 font-mono">
                           Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
                         </div>
                       </td>
@@ -1053,7 +1053,7 @@ const OutbreakMonitor = () => {
                     {growthEvidence.percentChange === 'new' ? 'NEW SIGNAL' : `${growthEvidence.absoluteChange >= 0 ? '+' : ''}${growthEvidence.absoluteChange} (${growthEvidence.percentChange >= 0 ? '+' : ''}${growthEvidence.percentChange}%)`}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-400 font-mono text-[11px] pt-1.5 border-t border-white/5">
+                <div className="grid grid-cols-2 gap-2 text-slate-400 font-mono text-xs pt-1.5 border-t border-white/5">
                   <div>Last 72h Cases: <strong className="text-white">{growthEvidence.currentCases}</strong></div>
                   <div>Prior 72h Cases: <strong className="text-white">{growthEvidence.previousCases}</strong></div>
                   <div>Population: <strong className="text-white">{growthEvidence.population ? growthEvidence.population.toLocaleString() : 'N/A'}</strong></div>
