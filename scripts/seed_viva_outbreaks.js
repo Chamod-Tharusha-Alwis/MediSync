@@ -7,20 +7,23 @@
  * Deterministic multi-disease outbreak surveillance seeder for MediSync viva.
  *
  * Guarantees:
- * 1. Dry-run by default (0 database writes). Requires --confirm to write.
- * 2. 100% Synthetic data: tagged with syntheticSeedBatch: "viva-2026-11-outbreaks" and isSynthetic: true.
- * 3. Insert-only: checks existing records by deterministic _id/consultationId; never overwrites.
- * 4. Zero live emails or external side-effects.
- * 5. Mathematically verified against evaluateOutbreakCriteria:
- *    - Dengue (A90) in Gampaha: Floor PASS, Persistence PASS -> Critical
- *    - Influenza (J11.1) in Kandy: Floor PASS, Persistence PASS -> High
- *    - Leptospirosis (A27) in Galle: Floor PASS, Persistence PASS -> High
- *    - Typhoid (A01) in Ratnapura: Floor PASS, Persistence PASS -> Moderate
- *    - Kalutara: single-day spike (N=6), suppressed by PERSISTENCE_CRITERIA_NOT_MET
- *    - Matara: small cluster (N=4 < 5), suppressed by CASE_FLOOR_NOT_MET
+ * 1. Dynamic MongoDB _id generation: zero fixed ObjectIds in insert payloads.
+ * 2. Idempotent upserts ($setOnInsert only) keyed on deterministic synthetic business keys:
+ *    - Hospital: regNo (plaintext unique)
+ *    - Doctor:   doctorId (plaintext unique)
+ *    - Patient:  patientNic_bi / nic (blind-indexed / plaintext unique)
+ *    - Consultation: consultationId (plaintext unique)
+ * 3. Dynamic reference resolution: doctor.hospitals, consultation.patientId,
+ *    consultation.doctorId, and consultation.hospitalId resolved via read-back _id.
+ * 4. Connected read-only dry-run: connects, inspects collections, counts planned vs
+ *    existing, flags foreign collisions with PRE_FLIGHT_COLLISION_DETECTED.
+ * 5. Production safety guard: refuses --confirm against medisync_prod unless
+ *    a successful connected dry-run was run in the same session.
+ * 6. Target database override: supports --db=<database>.
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
@@ -43,21 +46,72 @@ const { writeNicFields } = require('../server/src/security/nicPersistence');
 
 const BATCH_TAG = 'viva-2026-11-outbreaks';
 const DAY_MS = 86400000;
+const DUMMY_SYNTHETIC_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+const DRYRUN_SESSION_FILE = path.join(os.tmpdir(), '.medisync_outbreak_seed_dryrun_session.json');
 
-function deterministicObjectId(namespace, collection, index) {
-  const hash = crypto.createHash('sha256')
-    .update(`${namespace}:${collection}:${index}`)
-    .digest('hex');
-  return new mongoose.Types.ObjectId(hash.slice(0, 24));
+function parseCliArgs(argv = process.argv.slice(2)) {
+  let targetDb = null;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a.startsWith('--db=')) {
+      targetDb = a.slice('--db='.length).trim();
+    } else if (a === '--db') {
+      targetDb = argv[++i]?.trim();
+    }
+  }
+  return {
+    confirm: argv.includes('--confirm'),
+    dryRun: !argv.includes('--confirm'),
+    verifyOnly: argv.includes('--verify'),
+    targetDb: targetDb || null,
+  };
 }
 
-function parseCliArgs() {
-  const args = process.argv.slice(2);
-  return {
-    confirm: args.includes('--confirm'),
-    dryRun: !args.includes('--confirm'),
-    verifyOnly: args.includes('--verify'),
-  };
+function extractDatabaseName(uri, override = null) {
+  if (override) return override;
+  if (!uri) return 'medisync_prod';
+  try {
+    const u = new URL(uri.replace(/^mongodb(?:\+srv)?:\/\//, 'http://'));
+    const name = u.pathname.replace(/^\//, '').split('?')[0];
+    return name || 'medisync_prod';
+  } catch (_) {
+    return 'medisync_prod';
+  }
+}
+
+function recordDryRunSession(dbName, report) {
+  try {
+    fs.writeFileSync(DRYRUN_SESSION_FILE, JSON.stringify({
+      database: dbName,
+      batchTag: BATCH_TAG,
+      timestamp: Date.now(),
+      pid: process.pid,
+      report,
+    }), 'utf8');
+  } catch (_) {}
+}
+
+function verifyDryRunSession(dbName) {
+  if (dbName !== 'medisync_prod') {
+    // Non-production databases (e.g. medisync_seedtest, test) do not require prior session gate
+    return true;
+  }
+  if (!fs.existsSync(DRYRUN_SESSION_FILE)) return false;
+  try {
+    const session = JSON.parse(fs.readFileSync(DRYRUN_SESSION_FILE, 'utf8'));
+    const isRecent = (Date.now() - session.timestamp) < 15 * 60 * 1000; // 15 mins validity
+    return session.database === dbName && session.batchTag === BATCH_TAG && isRecent;
+  } catch (_) {
+    return false;
+  }
+}
+
+function clearDryRunSession() {
+  try {
+    if (fs.existsSync(DRYRUN_SESSION_FILE)) {
+      fs.unlinkSync(DRYRUN_SESSION_FILE);
+    }
+  } catch (_) {}
 }
 
 function buildOutbreakSeedPlan(referenceDate = new Date()) {
@@ -103,105 +157,47 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
   addScenarioEpisodes({ conditionKey: 'influenza', district: 'Kandy', icdCode: 'J11.1', icdDescription: 'Influenza with other respiratory manifestations', daysAgo: 2, count: 2, scenario: 'Kandy-Influenza-Window' });
   addScenarioEpisodes({ conditionKey: 'influenza', district: 'Kandy', icdCode: 'J11.1', icdDescription: 'Influenza with other respiratory manifestations', daysAgo: 1, count: 2, scenario: 'Kandy-Influenza-Window' });
 
-  // ── 3. Galle Leptospirosis (A27) — High (N=7 >= 5, 3 consecutive days z > 2.0) ──
-  for (const ago of [50, 45, 40, 35, 30, 25, 20, 15, 12, 10]) {
-    addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: ago, count: 1, scenario: 'Galle-Leptospirosis-Baseline' });
+  // ── 3. Galle Leptospirosis (A27) — High (N=7 >= 5, 3 consecutive days z > 2.0, maxZ >= 3.0) ──
+  // 56-day Baseline: 10 cases across days -50 to -12
+  for (const ago of [50, 46, 42, 38, 34, 30, 26, 22, 18, 12]) {
+    addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: ago, count: 1, scenario: 'Galle-Lepto-Baseline' });
   }
-  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 3, count: 3, scenario: 'Galle-Leptospirosis-Window' });
-  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 2, count: 2, scenario: 'Galle-Leptospirosis-Window' });
-  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 1, count: 2, scenario: 'Galle-Leptospirosis-Window' });
+  // 7-day Window: 7 cases (2, 3, 2 across days -3, -2, -1)
+  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 3, count: 2, scenario: 'Galle-Lepto-Window' });
+  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 2, count: 3, scenario: 'Galle-Lepto-Window' });
+  addScenarioEpisodes({ conditionKey: 'leptospirosis', district: 'Galle', icdCode: 'A27', icdDescription: 'Leptospirosis', daysAgo: 1, count: 2, scenario: 'Galle-Lepto-Window' });
 
-  // ── 4. Ratnapura Typhoid (A01) — Moderate/Medium (N=6 >= 5, 2 consecutive days z > 2.0) ──
-  for (const ago of [50, 46, 42, 38, 34, 30, 26, 22, 18, 14, 12, 10]) {
+  // ── 4. Ratnapura Typhoid (A01) — Moderate (N=6 >= 5, 2 consecutive days z > 2.0, maxZ >= 2.0) ──
+  // 56-day Baseline: 8 cases across days -52 to -14
+  for (const ago of [52, 47, 41, 35, 29, 23, 18, 14]) {
     addScenarioEpisodes({ conditionKey: 'typhoid', district: 'Ratnapura', icdCode: 'A01', icdDescription: 'Typhoid and paratyphoid fevers', daysAgo: ago, count: 1, scenario: 'Ratnapura-Typhoid-Baseline' });
   }
+  // 7-day Window: 6 cases (3, 3 across days -2, -1)
   addScenarioEpisodes({ conditionKey: 'typhoid', district: 'Ratnapura', icdCode: 'A01', icdDescription: 'Typhoid and paratyphoid fevers', daysAgo: 2, count: 3, scenario: 'Ratnapura-Typhoid-Window' });
   addScenarioEpisodes({ conditionKey: 'typhoid', district: 'Ratnapura', icdCode: 'A01', icdDescription: 'Typhoid and paratyphoid fevers', daysAgo: 1, count: 3, scenario: 'Ratnapura-Typhoid-Window' });
 
-  // ── 5. Kalutara Dengue — Suppressed by PERSISTENCE_CRITERIA_NOT_MET (1-day spike of 6) ──
-  for (const ago of [50, 45, 40, 35, 30, 25, 20, 15, 12, 10]) {
-    addScenarioEpisodes({ conditionKey: 'dengue', district: 'Kalutara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: ago, count: 1, scenario: 'Kalutara-Dengue-Baseline' });
+  // ── 5. Kalutara Dengue (A90) — Suppressed: Single-day spike (persistence not met) ──
+  // 56-day Baseline: 12 cases across days -52 to -10
+  for (const ago of [52, 48, 44, 40, 36, 32, 28, 24, 20, 16, 13, 10]) {
+    addScenarioEpisodes({ conditionKey: 'dengue', district: 'Kalutara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: ago, count: 1, scenario: 'Kalutara-SingleDaySpike-Baseline' });
   }
-  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Kalutara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 2, count: 6, scenario: 'Kalutara-Dengue-Window' });
+  // 7-day Window: 6 cases all concentrated on day -1 (single day spike)
+  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Kalutara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 1, count: 6, scenario: 'Kalutara-SingleDaySpike-Window' });
 
-  // ── 6. Matara Dengue — Suppressed by CASE_FLOOR_NOT_MET (cluster of 4 < 5) ──
-  for (const ago of [45, 35, 25, 15]) {
-    addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: ago, count: 1, scenario: 'Matara-Dengue-Baseline' });
+  // ── 6. Matara Dengue (A90) — Suppressed: Small cluster (N=4 < 5 case floor) ──
+  // 56-day Baseline: 12 cases across days -52 to -10
+  for (const ago of [52, 48, 44, 40, 36, 32, 28, 24, 20, 16, 13, 10]) {
+    addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: ago, count: 1, scenario: 'Matara-SmallCluster-Baseline' });
   }
-  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 2, count: 2, scenario: 'Matara-Dengue-Window' });
-  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 1, count: 2, scenario: 'Matara-Dengue-Window' });
+  // 7-day Window: 4 cases across days -3, -2, -1 (floor not met)
+  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 3, count: 1, scenario: 'Matara-SmallCluster-Window' });
+  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 2, count: 2, scenario: 'Matara-SmallCluster-Window' });
+  addScenarioEpisodes({ conditionKey: 'dengue', district: 'Matara', icdCode: 'A90', icdDescription: 'Dengue fever [classical dengue]', daysAgo: 1, count: 1, scenario: 'Matara-SmallCluster-Window' });
 
-  // Deterministic parent documents to guarantee zero orphan references
-  const DUMMY_SYNTHETIC_PASSWORD_HASH = '$2a$10$wT1rK0c1234567890abcdef.dummyHashForSyntheticDocOnly';
-
-  const parentDoctors = [
-    {
-      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 1),
-      doctorId: `${BATCH_TAG}-DOC-01`,
-      fullName: 'Dr. Nirmal Senanayake',
-      email: 'dr.nirmal.outbreaks@qa.medisync.local',
-      slmcNumber: 'SLMC-98101',
-      licenseNo: 'SLMC-98101',
-      specialization: 'General Medicine',
-      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
-      district: 'Gampaha',
-      isActive: true,
-      isVerified: true,
-      isSynthetic: true,
-      syntheticSeedBatch: BATCH_TAG,
-    },
-    {
-      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 2),
-      doctorId: `${BATCH_TAG}-DOC-02`,
-      fullName: 'Dr. Anoma Wijesinghe',
-      email: 'dr.anoma.outbreaks@qa.medisync.local',
-      slmcNumber: 'SLMC-98102',
-      licenseNo: 'SLMC-98102',
-      specialization: 'Pulmonology',
-      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
-      district: 'Kandy',
-      isActive: true,
-      isVerified: true,
-      isSynthetic: true,
-      syntheticSeedBatch: BATCH_TAG,
-    },
-    {
-      _id: deterministicObjectId(BATCH_TAG, 'Doctor', 3),
-      doctorId: `${BATCH_TAG}-DOC-03`,
-      fullName: 'Dr. Chandana Jayasuriya',
-      email: 'dr.chandana.outbreaks@qa.medisync.local',
-      slmcNumber: 'SLMC-98103',
-      licenseNo: 'SLMC-98103',
-      specialization: 'Infectious Diseases',
-      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
-      district: 'Galle',
-      isActive: true,
-      isVerified: true,
-      isSynthetic: true,
-      syntheticSeedBatch: BATCH_TAG,
-    },
-  ];
-
-  const parentPatients = Array.from({ length: 12 }, (_, i) => {
-    const pIdx = i + 1;
-    const nic = `9990${String(pIdx).padStart(8, '0')}`;
-    return {
-      _id: deterministicObjectId(BATCH_TAG, 'Patient', pIdx),
-      nic,
-      fullName: `Surveillance Case Subject ${pIdx}`,
-      email: `viva.outbreak.patient.${pIdx}@qa.medisync.local`,
-      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
-      district: ['Gampaha', 'Kandy', 'Galle', 'Ratnapura', 'Kalutara', 'Matara'][i % 6],
-      isActive: true,
-      isSynthetic: true,
-      syntheticSeedBatch: BATCH_TAG,
-      ...writeNicFields(nic),
-    };
-  });
+  // ── Deterministic Parent Entities (No fixed _id - MongoDB generates _id on insert) ──
 
   const parentHospitals = [
     {
-      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 1),
       regNo: 'VIVA-OUTBREAK-HOSP-01',
       name: 'District General Hospital Gampaha',
       type: 'government',
@@ -217,7 +213,6 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
       syntheticSeedBatch: BATCH_TAG,
     },
     {
-      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 2),
       regNo: 'VIVA-OUTBREAK-HOSP-02',
       name: 'Kandy Teaching Hospital',
       type: 'government',
@@ -233,7 +228,6 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
       syntheticSeedBatch: BATCH_TAG,
     },
     {
-      _id: deterministicObjectId(BATCH_TAG, 'Hospital', 3),
       regNo: 'VIVA-OUTBREAK-HOSP-03',
       name: 'Karapitiya Teaching Hospital Galle',
       type: 'government',
@@ -250,10 +244,73 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
     },
   ];
 
-  // Map planned episodes to full Consultation documents
+  const parentDoctors = [
+    {
+      doctorId: `${BATCH_TAG}-DOC-01`,
+      fullName: 'Dr. Kasun Perera',
+      email: 'dr.kasun.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98101',
+      licenseNo: 'SLMC-98101',
+      specialization: 'Epidemiology',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Gampaha',
+      targetHospitalRegNo: 'VIVA-OUTBREAK-HOSP-01',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      doctorId: `${BATCH_TAG}-DOC-02`,
+      fullName: 'Dr. Anoma Wijesinghe',
+      email: 'dr.anoma.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98102',
+      licenseNo: 'SLMC-98102',
+      specialization: 'Pulmonology',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Kandy',
+      targetHospitalRegNo: 'VIVA-OUTBREAK-HOSP-02',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+    {
+      doctorId: `${BATCH_TAG}-DOC-03`,
+      fullName: 'Dr. Chandana Jayasuriya',
+      email: 'dr.chandana.outbreaks@qa.medisync.local',
+      slmcNumber: 'SLMC-98103',
+      licenseNo: 'SLMC-98103',
+      specialization: 'Infectious Diseases',
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: 'Galle',
+      targetHospitalRegNo: 'VIVA-OUTBREAK-HOSP-03',
+      isActive: true,
+      isVerified: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    },
+  ];
+
+  const parentPatients = Array.from({ length: 12 }, (_, i) => {
+    const pIdx = i + 1;
+    const nic = `9990${String(pIdx).padStart(8, '0')}`;
+    return {
+      nic,
+      fullName: `Surveillance Case Subject ${pIdx}`,
+      email: `viva.outbreak.patient.${pIdx}@qa.medisync.local`,
+      password: DUMMY_SYNTHETIC_PASSWORD_HASH,
+      district: ['Gampaha', 'Kandy', 'Galle', 'Ratnapura', 'Kalutara', 'Matara'][i % 6],
+      isActive: true,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+      ...writeNicFields(nic),
+    };
+  });
+
+  // Map planned episodes to Consultation documents
   const consultations = episodes.map((ep, idx) => {
     const consultationId = `${BATCH_TAG}-CON-${String(idx + 1).padStart(4, '0')}`;
-    const _id = deterministicObjectId(BATCH_TAG, 'Consultation', idx + 1);
     const minuteOfDay = 510 + ((idx * 19) % 480);
     const episodeDate = new Date(todayMidnight - ep.daysAgo * DAY_MS + minuteOfDay * 60000);
     const episodeId = `EP-${ep.district}-${episodeDate.toISOString().slice(0, 10)}-${String(idx + 1).padStart(4, '0')}`;
@@ -263,11 +320,10 @@ function buildOutbreakSeedPlan(referenceDate = new Date()) {
     const hosp = parentHospitals[idx % parentHospitals.length];
 
     return {
-      _id,
       consultationId,
-      patientId: pat._id,
-      doctorId: doc._id,
-      hospitalId: hosp._id,
+      targetPatientNic: pat.nic,
+      targetDoctorId: doc.doctorId,
+      targetHospitalRegNo: hosp.regNo,
       patientNic: pat.nic,
       ...writeNicFields(pat.nic),
       diagnosis: ep.icdDescription,
@@ -354,11 +410,13 @@ async function preflightCollisionCheck(db, plan) {
     }
   }
 
-  // 3. Check Patients for collisions on nic or email
+  // 3. Check Patients for collisions on patientNic_bi, nic, or email
+  const patBis = plan.parentPatients.map(p => p.patientNic_bi).filter(Boolean);
   const patNics = plan.parentPatients.map(p => p.nic);
   const patEmails = plan.parentPatients.map(p => p.email);
   const existingPatients = await db.collection('patients').find({
     $or: [
+      { patientNic_bi: { $in: patBis } },
       { nic: { $in: patNics } },
       { email: { $in: patEmails } },
     ]
@@ -367,10 +425,15 @@ async function preflightCollisionCheck(db, plan) {
   for (const doc of existingPatients) {
     const isOurBatch = doc.syntheticSeedBatch === BATCH_TAG && doc.isSynthetic === true;
     if (!isOurBatch) {
+      const field = (doc.patientNic_bi && patBis.includes(doc.patientNic_bi))
+        ? 'patientNic_bi'
+        : (doc.nic && patNics.includes(doc.nic))
+        ? 'nic'
+        : 'email';
       collisions.push({
         collection: 'patients',
-        field: patNics.includes(doc.nic) ? 'nic' : 'email',
-        value: patNics.includes(doc.nic) ? doc.nic : doc.email,
+        field,
+        value: doc[field] || doc.nic,
         existingId: String(doc._id),
         existingSeedBatch: doc.syntheticSeedBatch || 'none',
         reason: 'Collides with pre-existing non-batch patient',
@@ -401,6 +464,75 @@ async function preflightCollisionCheck(db, plan) {
   return collisions;
 }
 
+async function dryRunInspect(db, plan) {
+  const collisions = await preflightCollisionCheck(db, plan);
+  if (collisions.length > 0) {
+    const err = new Error(`PRE_FLIGHT_COLLISION_DETECTED: ${collisions.length} collision(s) detected with pre-existing non-batch documents.`);
+    err.collisions = collisions;
+    throw err;
+  }
+
+  // Count existing in-batch documents across each collection
+  const hospRegNos = plan.parentHospitals.map(h => h.regNo);
+  const docIds = plan.parentDoctors.map(d => d.doctorId);
+  const patBis = plan.parentPatients.map(p => p.patientNic_bi).filter(Boolean);
+  const conIds = plan.consultations.map(c => c.consultationId);
+
+  const existingHospitals = await db.collection('hospitals').find({
+    regNo: { $in: hospRegNos },
+    syntheticSeedBatch: BATCH_TAG,
+    isSynthetic: true,
+  }).toArray();
+
+  const existingDoctors = await db.collection('doctors').find({
+    doctorId: { $in: docIds },
+    syntheticSeedBatch: BATCH_TAG,
+    isSynthetic: true,
+  }).toArray();
+
+  const existingPatients = await db.collection('patients').find({
+    $or: [
+      { patientNic_bi: { $in: patBis } },
+      { nic: { $in: plan.parentPatients.map(p => p.nic) } },
+    ],
+    syntheticSeedBatch: BATCH_TAG,
+    isSynthetic: true,
+  }).toArray();
+
+  const existingConsultations = await db.collection('consultations').find({
+    consultationId: { $in: conIds },
+    syntheticSeedBatch: BATCH_TAG,
+    isSynthetic: true,
+  }).toArray();
+
+  return {
+    hospitals: {
+      planned: plan.parentHospitals.length,
+      alreadyExist: existingHospitals.length,
+      wouldInsert: plan.parentHospitals.length - existingHospitals.length,
+      existingIds: existingHospitals.map(d => String(d._id)),
+    },
+    doctors: {
+      planned: plan.parentDoctors.length,
+      alreadyExist: existingDoctors.length,
+      wouldInsert: plan.parentDoctors.length - existingDoctors.length,
+      existingIds: existingDoctors.map(d => String(d._id)),
+    },
+    patients: {
+      planned: plan.parentPatients.length,
+      alreadyExist: existingPatients.length,
+      wouldInsert: plan.parentPatients.length - existingPatients.length,
+      existingIds: existingPatients.map(d => String(d._id)),
+    },
+    consultations: {
+      planned: plan.consultations.length,
+      alreadyExist: existingConsultations.length,
+      wouldInsert: plan.consultations.length - existingConsultations.length,
+      existingIds: existingConsultations.map(d => String(d._id)),
+    },
+  };
+}
+
 async function seedOutbreakDocuments(db, plan) {
   // Pre-flight collision check
   const collisions = await preflightCollisionCheck(db, plan);
@@ -421,12 +553,19 @@ async function seedOutbreakDocuments(db, plan) {
     consultations: { planned: plan.consultations.length, inserted: 0, existing: 0 },
   };
 
+  const hospitalMap = new Map(); // regNo -> _id
+  const doctorMap = new Map();   // doctorId -> _id
+  const patientMap = new Map();  // nic -> _id
+
   // 1. Insert parent hospitals: keyed on synthetic regNo (idempotent, insert-only)
   for (const hosp of plan.parentHospitals) {
     report.hospitals.regNos.push(hosp.regNo);
+    const insertDoc = { ...hosp, isSynthetic: true, syntheticSeedBatch: BATCH_TAG };
+    delete insertDoc._id; // Ensure MongoDB generates _id!
+
     const res = await db.collection('hospitals').updateOne(
       { regNo: hosp.regNo },
-      { $setOnInsert: { ...hosp, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { $setOnInsert: insertDoc },
       { upsert: true }
     );
     if (res.upsertedCount > 0) {
@@ -434,14 +573,31 @@ async function seedOutbreakDocuments(db, plan) {
     } else {
       report.hospitals.existing++;
     }
+
+    const found = await db.collection('hospitals').findOne(
+      { regNo: hosp.regNo },
+      { projection: { _id: 1, regNo: 1 } }
+    );
+    if (!found || !found._id) throw new Error(`FAILED_TO_RESOLVE_HOSPITAL_ID for ${hosp.regNo}`);
+    hospitalMap.set(hosp.regNo, found._id);
   }
 
   // 2. Insert parent doctors: keyed on synthetic doctorId (idempotent, insert-only)
   for (const doc of plan.parentDoctors) {
     report.doctors.doctorIds.push(doc.doctorId);
+    const resolvedHospId = hospitalMap.get(doc.targetHospitalRegNo);
+    const insertDoc = {
+      ...doc,
+      hospitals: resolvedHospId ? [resolvedHospId] : [],
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    };
+    delete insertDoc._id; // Ensure MongoDB generates _id!
+    delete insertDoc.targetHospitalRegNo;
+
     const res = await db.collection('doctors').updateOne(
       { doctorId: doc.doctorId },
-      { $setOnInsert: { ...doc, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { $setOnInsert: insertDoc },
       { upsert: true }
     );
     if (res.upsertedCount > 0) {
@@ -449,14 +605,31 @@ async function seedOutbreakDocuments(db, plan) {
     } else {
       report.doctors.existing++;
     }
+
+    const found = await db.collection('doctors').findOne(
+      { doctorId: doc.doctorId },
+      { projection: { _id: 1, doctorId: 1 } }
+    );
+    if (!found || !found._id) throw new Error(`FAILED_TO_RESOLVE_DOCTOR_ID for ${doc.doctorId}`);
+    doctorMap.set(doc.doctorId, found._id);
   }
 
-  // 3. Insert parent patients: keyed on synthetic nic (idempotent, insert-only)
+  // 3. Insert parent patients: keyed on patientNic_bi or nic (idempotent, insert-only)
   for (const pat of plan.parentPatients) {
     report.patients.nics.push(pat.nic);
+    const insertDoc = { ...pat, isSynthetic: true, syntheticSeedBatch: BATCH_TAG };
+    delete insertDoc._id; // Ensure MongoDB generates _id!
+
+    const patFilter = {
+      $or: [
+        { patientNic_bi: pat.patientNic_bi },
+        { nic: pat.nic },
+      ],
+    };
+
     const res = await db.collection('patients').updateOne(
-      { nic: pat.nic },
-      { $setOnInsert: { ...pat, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      patFilter,
+      { $setOnInsert: insertDoc },
       { upsert: true }
     );
     if (res.upsertedCount > 0) {
@@ -464,13 +637,41 @@ async function seedOutbreakDocuments(db, plan) {
     } else {
       report.patients.existing++;
     }
+
+    const found = await db.collection('patients').findOne(
+      patFilter,
+      { projection: { _id: 1, nic: 1, patientNic_bi: 1 } }
+    );
+    if (!found || !found._id) throw new Error(`FAILED_TO_RESOLVE_PATIENT_ID for ${pat.nic}`);
+    patientMap.set(pat.nic, found._id);
   }
 
   // 4. Insert consultations: keyed on synthetic consultationId (idempotent, insert-only)
   for (const c of plan.consultations) {
+    const resolvedPatientId = patientMap.get(c.targetPatientNic);
+    const resolvedDoctorId = doctorMap.get(c.targetDoctorId);
+    const resolvedHospitalId = hospitalMap.get(c.targetHospitalRegNo);
+
+    if (!resolvedPatientId) throw new Error(`MISSING_PARENT_PATIENT_ID for consultation ${c.consultationId}`);
+    if (!resolvedDoctorId) throw new Error(`MISSING_PARENT_DOCTOR_ID for consultation ${c.consultationId}`);
+    if (!resolvedHospitalId) throw new Error(`MISSING_PARENT_HOSPITAL_ID for consultation ${c.consultationId}`);
+
+    const insertDoc = {
+      ...c,
+      patientId: resolvedPatientId,
+      doctorId: resolvedDoctorId,
+      hospitalId: resolvedHospitalId,
+      isSynthetic: true,
+      syntheticSeedBatch: BATCH_TAG,
+    };
+    delete insertDoc._id; // Ensure MongoDB generates _id!
+    delete insertDoc.targetPatientNic;
+    delete insertDoc.targetDoctorId;
+    delete insertDoc.targetHospitalRegNo;
+
     const res = await db.collection('consultations').updateOne(
       { consultationId: c.consultationId },
-      { $setOnInsert: { ...c, isSynthetic: true, syntheticSeedBatch: BATCH_TAG } },
+      { $setOnInsert: insertDoc },
       { upsert: true }
     );
     if (res.upsertedCount > 0) {
@@ -485,9 +686,18 @@ async function seedOutbreakDocuments(db, plan) {
 
 async function runSeeder() {
   const args = parseCliArgs();
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!uri) {
+    console.error('ERROR: MONGODB_URI not configured in server/.env');
+    process.exit(1);
+  }
+
+  const dbName = extractDatabaseName(uri, args.targetDb);
+
   console.log(`=== MediSync Multi-Disease Outbreak Seeder ===`);
   console.log(`Batch Namespace: ${BATCH_TAG}`);
-  console.log(`Mode:            ${args.confirm ? 'LIVE CONFIRM (WRITING)' : 'DRY-RUN (READ-ONLY)'}\n`);
+  console.log(`Target Database: ${dbName}${args.targetDb ? ' (manual override)' : ''}`);
+  console.log(`Mode:            ${args.confirm ? 'LIVE CONFIRM (WRITING)' : 'CONNECTED DRY-RUN (READ-ONLY)'}\n`);
 
   const plan = buildOutbreakSeedPlan(new Date());
   console.log(`Planned Consultations: ${plan.totalConsultations}`);
@@ -496,7 +706,7 @@ async function runSeeder() {
   // Run mathematical proof against Stage D outbreak detector
   console.log(`--- Running Mathematical Proof (evaluateOutbreakCriteria) ---`);
   const proofCases = plan.consultations.map(c => ({
-    consultationId: String(c._id),
+    consultationId: c.consultationId,
     diseaseId: `ICD10:${c.icdCode.replace('.', '')}`,
     disease: `ICD10:${c.icdCode.replace('.', '')}`,
     district: c.district,
@@ -534,31 +744,52 @@ async function runSeeder() {
     return;
   }
 
-  if (args.dryRun) {
-    console.log(`\n[DRY-RUN] 0 database writes executed. Pass --confirm to commit.`);
-    return;
-  }
-
-  // Live execution with --confirm
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!uri) {
-    console.error('ERROR: MONGODB_URI not configured in server/.env');
-    process.exit(1);
-  }
-
-  console.log(`\nConnecting to database...`);
-  await mongoose.connect(uri);
+  // Connect to database (both dry-run and live confirm connect)
+  console.log(`\nConnecting to database '${dbName}'...`);
+  await mongoose.connect(uri, { dbName });
   const db = mongoose.connection.db;
 
   try {
-    console.log(`Executing pre-flight collision check and insert-only seeding...`);
+    if (args.dryRun) {
+      console.log(`Executing connected pre-flight collision check and dry-run inspection...`);
+      const inspection = await dryRunInspect(db, plan);
+
+      console.log(`\n=== Connected Dry-Run Inspection Receipt ===`);
+      console.log(`Target Database: ${dbName}`);
+      console.log(`Hospitals:     ${inspection.hospitals.alreadyExist} already exist, ${inspection.hospitals.wouldInsert} would be inserted (planned: ${inspection.hospitals.planned})`);
+      console.log(`Doctors:       ${inspection.doctors.alreadyExist} already exist, ${inspection.doctors.wouldInsert} would be inserted (planned: ${inspection.doctors.planned})`);
+      console.log(`Patients:      ${inspection.patients.alreadyExist} already exist, ${inspection.patients.wouldInsert} would be inserted (planned: ${inspection.patients.planned})`);
+      console.log(`Consultations: ${inspection.consultations.alreadyExist} already exist, ${inspection.consultations.wouldInsert} would be inserted (planned: ${inspection.consultations.planned})`);
+
+      recordDryRunSession(dbName, inspection);
+      console.log(`\n[DRY-RUN] Connected verification passed. 0 database writes executed.`);
+      if (dbName === 'medisync_prod') {
+        console.log(`Dry-run session recorded. You may now execute: node scripts/seed_viva_outbreaks.js --confirm`);
+      } else {
+        console.log(`Dry-run session recorded. You may execute: node scripts/seed_viva_outbreaks.js --confirm --db=${dbName}`);
+      }
+      return;
+    }
+
+    // Live execution with --confirm
+    if (dbName === 'medisync_prod' && !verifyDryRunSession(dbName)) {
+      console.error(`\n❌ ERROR: Refusing to run --confirm against production database '${dbName}'.`);
+      console.error(`A successful connected dry-run for '${dbName}' must be executed in the same session first.`);
+      console.error(`Please run: node scripts/seed_viva_outbreaks.js\nReview the output, then re-run with --confirm.`);
+      process.exit(1);
+    }
+
+    console.log(`Executing insert-only seeding against '${dbName}'...`);
     const report = await seedOutbreakDocuments(db, plan);
 
     console.log(`\n=== Seed Execution Complete ===`);
+    console.log(`Target Database: ${dbName}`);
     console.log(`Hospitals:     ${report.hospitals.inserted} inserted, ${report.hospitals.existing} already existed (regNos: ${report.hospitals.regNos.join(', ')})`);
     console.log(`Doctors:       ${report.doctors.inserted} inserted, ${report.doctors.existing} already existed (doctorIds: ${report.doctors.doctorIds.join(', ')})`);
     console.log(`Patients:      ${report.patients.inserted} inserted, ${report.patients.existing} already existed (${report.patients.nics.length} NICs)`);
     console.log(`Consultations: ${report.consultations.inserted} inserted, ${report.consultations.existing} already existed (planned: ${report.consultations.planned})`);
+
+    clearDryRunSession();
   } finally {
     await mongoose.disconnect();
     console.log(`Disconnected from database.`);
@@ -575,6 +806,13 @@ if (require.main === module) {
 module.exports = {
   buildOutbreakSeedPlan,
   BATCH_TAG,
+  parseCliArgs,
+  extractDatabaseName,
   preflightCollisionCheck,
+  dryRunInspect,
   seedOutbreakDocuments,
+  recordDryRunSession,
+  verifyDryRunSession,
+  clearDryRunSession,
+  DRYRUN_SESSION_FILE,
 };
