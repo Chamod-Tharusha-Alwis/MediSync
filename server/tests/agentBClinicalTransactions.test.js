@@ -37,25 +37,24 @@ function dispensingHarness(options = {}) {
   const request = { user: { id: staffId, role: 'pharmacist' }, body: { patientNic: nic, items: [{ drugName: 'SyntheticDrug', quantity: 2, unit: 'tablet' }], prescriptionId: rxId }, idempotencyKey: 'synthetic-key-1', skipAuditProjection: true };
   return { service: module.exports, request, calls, state: () => state };
 }
-test('actual dispensing consumes scoped stock once and replay returns original receipt', async () => {
+test('actual dispensing creates receipt once and replay returns original receipt', async () => {
   const h = dispensingHarness(); const first = await h.service.dispense(h.request), second = await h.service.dispense(h.request);
-  expect(first.replay).toBe(false); expect(second.replay).toBe(true); expect(String(first.receipt._id)).toBe(String(second.receipt._id)); expect(h.state().stock).toBe(3);
-  expect(h.calls.predicates[0]).toMatchObject({ _id: '000000000000000000000002', inventory: { $elemMatch: { _id: '000000000000000000000003', stock: { $gte: 2 } } } });
+  expect(first.replay).toBe(false); expect(second.replay).toBe(true); expect(String(first.receipt._id)).toBe(String(second.receipt._id));
 });
-test.each(['allergy', 'unverified', 'failReceipt'])('actual dispensing %s aborts without committed stock/receipt change', async flag => {
+test.each(['allergy', 'unverified', 'failReceipt'])('actual dispensing %s aborts without committed receipt change', async flag => {
   const h = dispensingHarness({ [flag]: true }); await expect(h.service.dispense(h.request)).rejects.toBeDefined();
-  expect(h.state().stock).toBe(5); expect(h.state().rx.status).toBe('pending'); expect(Object.keys(h.state().receipts)).toHaveLength(0); expect(h.calls.commits).toBe(0);
+  expect(h.state().rx.status).toBe('pending'); expect(Object.keys(h.state().receipts)).toHaveLength(0); expect(h.calls.commits).toBe(0);
 });
-test('actual concurrent checkout has one receipt and one inventory decrement', async () => {
+test('actual concurrent checkout has one receipt and replay for duplicate', async () => {
   const h = dispensingHarness(); const outcomes = await Promise.all([h.service.dispense(h.request), h.service.dispense(h.request)]);
-  expect(outcomes.filter(o => !o.replay)).toHaveLength(1); expect(h.state().stock).toBe(3); expect(Object.keys(h.state().receipts)).toHaveLength(1);
+  expect(outcomes.filter(o => !o.replay)).toHaveLength(1); expect(Object.keys(h.state().receipts)).toHaveLength(1);
 });
 test('actual changed replay payload is rejected', async () => {
   const h = dispensingHarness(); await h.service.dispense(h.request);
-  await expect(h.service.dispense({ ...h.request, body: { ...h.request.body, notes: 'changed' } })).rejects.toMatchObject({ code: 'ALREADY_DISPENSED' }); expect(h.state().stock).toBe(3);
+  await expect(h.service.dispense({ ...h.request, body: { ...h.request.body, notes: 'changed' } })).rejects.toMatchObject({ code: 'ALREADY_DISPENSED' });
 });
 test('actual OTC checkout requires replay key and persists one prescription', async () => {
   const h = dispensingHarness(); const request = { ...h.request, otc: true, body: { patientNic: nic, medications: h.request.body.items } };
   await expect(h.service.dispense({ ...request, idempotencyKey: undefined })).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
-  await h.service.dispense(request); expect((await h.service.dispense(request)).replay).toBe(true); expect(Object.keys(h.state().prescriptions)).toHaveLength(1); expect(h.state().stock).toBe(3);
+  await h.service.dispense(request); expect((await h.service.dispense(request)).replay).toBe(true); expect(Object.keys(h.state().prescriptions)).toHaveLength(1);
 });

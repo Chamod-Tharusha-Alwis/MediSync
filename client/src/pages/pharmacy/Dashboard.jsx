@@ -46,6 +46,7 @@ const Dispense = () => {
   
   // Alternative dispense modal states
   const [showDispenseModal, setShowDispenseModal] = useState(false);
+  const [safetyReviewed, setSafetyReviewed] = useState(false);
   const [selectedRx, setSelectedRx] = useState(null);
   const [isAlt, setIsAlt] = useState(false);
   const [altDetails, setAltDetails] = useState('');
@@ -144,29 +145,18 @@ const Dispense = () => {
 
   const openDispenseModal = async (rx) => {
     const generation = searchGeneration.current;
-    let stock = [];
-    try {
-      const res = await api.get('/pharmacy/inventory');
-      if (generation !== searchGeneration.current) return;
-      stock = res?.data?.data || [];
-    } catch (_) {
-      if (generation === searchGeneration.current) toast.error(t('liveQa.stockUnavailable', 'Pharmacy stock is unavailable.'));
-      return;
-    }
     if (generation !== searchGeneration.current) return;
-    setInventory(stock);
+    setInventory([]);
     const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
-    setDispenseItems(meds.map(m => {
-      const matches = stock.filter(i => i.drugName?.trim().toLowerCase() === m.name?.trim().toLowerCase());
-      return {
-        prescribed: m.name,
-        drugName: m.name,
-        dosage: m.dosage || rx.dosage || 'Standard',
-        inventoryItemId: matches.length === 1 ? matches[0]._id : (matches[0]?._id || ''),
-        quantity: m.durationDays ? String(Math.max(1, parseInt(m.durationDays, 10))) : '1',
-        unit: matches[0]?.unit || 'units'
-      };
-    }));
+    setDispenseItems(meds.map(m => ({
+      prescribed: m.name,
+      drugName: m.name,
+      dosage: m.dosage || rx.dosage || 'Standard',
+      frequency: m.frequency || rx.frequency || 'As directed',
+      duration: m.durationDays ? `${m.durationDays} days` : 'Standard duration',
+      quantity: m.durationDays ? String(Math.max(1, parseInt(m.durationDays, 10))) : '1',
+      unit: 'units'
+    })));
 
     // Resolve co-prescribed medications from the same consultation/encounter so DDI warnings trigger in the safety panel
     const coRxs = Array.isArray(prescriptions)
@@ -184,6 +174,7 @@ const Dispense = () => {
 
     setCheckoutKey(`rx:${rx._id || rx.prescriptionId}`);
     setIsAlt(false);
+    setSafetyReviewed(false);
     setSafetyAck({ acknowledged: false, reason: '' });
     setAltDetails('');
     setSelectedRx(rx);
@@ -193,18 +184,15 @@ const Dispense = () => {
   const confirmDispense = async () => {
     if (!selectedRx) return;
     if (isAlt && !altDetails.trim()) return toast.error('Please describe the alternative medication dispensed.');
-    const items = dispenseItems.map(item => {
-      const inv = inventory.find(i => i._id === item.inventoryItemId);
-      return {
-        inventoryItemId: inv?._id || item.inventoryItemId || undefined,
-        drugName: inv?.drugName || item.drugName || item.prescribed,
-        unit: inv?.unit || item.unit || 'units',
-        dosage: item.dosage || selectedRx.dosage || 'Standard',
-        quantityDispensed: Number(item.quantity)
-      };
-    });
+    const items = dispenseItems.map(item => ({
+      drugName: item.drugName || item.prescribed,
+      unit: item.unit || 'units',
+      dosage: item.dosage || selectedRx.dosage || 'Standard',
+      frequency: item.frequency || selectedRx.frequency || 'As directed',
+      quantityDispensed: Number(item.quantity)
+    }));
     if (items.some(i => !Number.isSafeInteger(i.quantityDispensed) || i.quantityDispensed <= 0)) {
-      return toast.error('Select inventory and enter a positive whole quantity for every medicine.');
+      return toast.error('Enter a positive whole quantity for every medicine.');
     }
     setDispensing(true);
     try {
@@ -448,16 +436,39 @@ const Dispense = () => {
             )}
 
             {dispenseItems.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <label className={labelClass} htmlFor={`stock-${index}`}>Inventory for {item.prescribed}</label>
-                <select id={`stock-${index}`} className="glass-input w-full" value={item.inventoryItemId}
-                  disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, inventoryItemId:e.target.value} : m))}>
-                  <option value="">{inventory.length === 0 ? "Untracked / External Stock (Dispense directly)" : t("pharmacy.selectMedicine", "Select medicine")}</option>
-                  {inventory.filter(i => isAlt || i.drugName.trim().toLowerCase() === item.prescribed.trim().toLowerCase()).map(i => <option key={i._id} value={i._id}>{i.drugName} — {i.stock} {i.unit}</option>)}
-                </select>
-                <label className={labelClass} htmlFor={`qty-${index}`}>{t("pharmacy.quantity", "Quantity in inventory units")}</label>
-                <input id={`qty-${index}`} type="number" min="1" step="1" className="glass-input w-full" value={item.quantity}
-                  disabled={dispensing} onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, quantity:e.target.value} : m))} />
+              <div key={index} className="p-3.5 rounded-xl border border-white/5 bg-slate-950/40 space-y-2.5">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[11px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
+                    <span className="text-white font-bold">{item.drugName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] uppercase font-bold text-slate-500 block">Dosage</span>
+                    <span className="text-slate-300">{item.dosage}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] uppercase font-bold text-slate-500 block">Frequency</span>
+                    <span className="text-slate-300">{item.frequency}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] uppercase font-bold text-slate-500 block">Duration</span>
+                    <span className="text-slate-300">{item.duration}</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-white/5">
+                  <label className={labelClass} htmlFor={`qty-${index}`}>{t("pharmacy.quantity", "Quantity Dispensed")}</label>
+                  <input
+                    id={`qty-${index}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    aria-label="Quantity in inventory units"
+                    className="glass-input w-full text-xs"
+                    value={item.quantity}
+                    disabled={dispensing}
+                    onChange={e => setDispenseItems(prev => prev.map((m, i) => i === index ? {...m, quantity: e.target.value} : m))}
+                  />
+                </div>
               </div>
             ))}
 
@@ -498,6 +509,20 @@ const Dispense = () => {
               onAcknowledgmentChange={setSafetyAck}
             />
 
+            <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-700/60 bg-slate-950/40 cursor-pointer hover:bg-slate-950/70 transition-all select-none text-xs text-slate-300 font-medium">
+              <input
+                type="checkbox"
+                data-testid="pharmacist-safety-checkbox"
+                checked={safetyReviewed}
+                onChange={e => {
+                  setSafetyReviewed(e.target.checked);
+                  setSafetyAck({ acknowledged: e.target.checked, reason: 'Pharmacist reviewed safety information' });
+                }}
+                className="mt-0.5 rounded border-slate-700 bg-slate-950 text-teal-500 focus:ring-teal-400"
+              />
+              <span>I have reviewed the safety information</span>
+            </label>
+
             <div className="flex gap-3 pt-3 border-t border-white/5">
               <button
                 onClick={() => setShowDispenseModal(false)}
@@ -511,7 +536,7 @@ const Dispense = () => {
                 className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
               >
                 {dispensing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                Dispense Now
+                Confirm Dispense
               </button>
             </div>
           </div>

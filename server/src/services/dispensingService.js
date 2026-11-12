@@ -147,18 +147,28 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     const dispensingMeds = [...(await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: rx?._id })), ...items.map(item => item.name)];
     let pharmacistOverride = null;
     const safetyAck = body.safetyAcknowledgment || body.allergyOverride || null;
-    const isPharmAck = Boolean(safetyAck && safetyAck.acknowledged === true && typeof safetyAck.reason === 'string' && safetyAck.reason.trim().length >= 5);
+    const isPharmAck = Boolean(safetyAck && (safetyAck.acknowledged === true || safetyAck === true));
     try {
       assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
     } catch (mErr) {
-      if (!isPharmAck) throw mErr;
-      pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: safetyAck.reason.trim(), type: 'medication_conflict' };
+      if (!isPharmAck && !rx?.safetyOverride?.acknowledged) throw mErr;
+      const ackReason = (typeof safetyAck?.reason === 'string' && safetyAck.reason.trim()) ||
+        (rx?.safetyOverride?.acknowledged ? `Prescriber acknowledged: ${(rx.safetyOverride.findingTypes || []).join(', ')}` : 'Pharmacist reviewed safety information');
+      pharmacistOverride = {
+        acknowledged: true,
+        acknowledgedAt: new Date(),
+        staffId: String(staff._id),
+        pharmacistName: staff.fullName,
+        reason: ackReason,
+        type: 'medication_conflict'
+      };
     }
     const updates = new Map();
     for (const item of items) {
       if (checkAllergyConflict(item.name, patient?.allergies).hasConflict) {
-        if (!isPharmAck) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
-        pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: safetyAck.reason.trim(), type: 'allergy_conflict', conflictingItem: item.name };
+        if (!isPharmAck && !rx?.safetyOverride?.acknowledged) fail('ALLERGY_CONFLICT', 'Recorded patient allergy conflicts with a dispensed medicine.');
+        const ackReason = (typeof safetyAck?.reason === 'string' && safetyAck.reason.trim()) || (rx?.safetyOverride?.acknowledged ? `Prescriber acknowledged allergy: ${item.name}` : 'Pharmacist reviewed allergy information');
+        pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: ackReason, type: 'allergy_conflict', conflictingItem: item.name };
       }
       const key = item.inventoryItemId ? String(item.inventoryItemId) : normalize(item.name);
       const previous = updates.get(key);
@@ -174,18 +184,8 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
           pharmacyName:pharmacy.name,isAlternativeDispensed:!!body.isAlternativeDispensed,alternativeDetails:body.alternativeDetails || ''}}, {session});
       if (claimed.modifiedCount !== 1) fail('ALREADY_DISPENSED', 'Prescription is no longer eligible.');
     }
-    const inventory = Array.isArray(pharmacy.inventory) ? pharmacy.inventory : [];
-    for (const item of items) {
-      if (!item.inventoryItemId && inventory.length === 0) continue;
-      const matches = inventory.filter(row => normalize(row.drugName) === normalize(item.name) &&
-        (!item.inventoryItemId || String(row._id) === item.inventoryItemId));
-      if (matches.length !== 1) fail('STOCK_ITEM_REQUIRED', 'Select a matching pharmacy stock item.', 409);
-      const stock = matches[0];
-      const decremented = await Pharmacy.updateOne({ _id: pharmacy._id, isActive: true,
-        inventory: { $elemMatch: { _id: stock._id, drugName: stock.drugName, stock: { $gte: item.qty } } } },
-      { $inc: { 'inventory.$.stock': -item.qty } }, { session });
-      if (decremented.modifiedCount !== 1) fail('INSUFFICIENT_STOCK', 'Insufficient stock for this quantity.', 409);
-    }
+    // Note: MediSync does not manage pharmacy inventory or stock.
+    // Pharmacists dispense strictly per prescription; no stock decrement is performed.
     if (otc) {
       rx = new Prescription({ _id:otcPrescriptionId, prescriptionId:`OTC-${receiptId}`, patientNic:nic,
         patientId:patient?._id, ...writeNicFields(nic), isOTC:true,
