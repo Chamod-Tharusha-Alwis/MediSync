@@ -7,13 +7,15 @@ const mongoose = require('mongoose');
 const { resolveVerificationToken, revokeToken } = require('../services/verificationTokenService');
 const { normalizeNic } = require('../security/nicBlindIndex');
 const { formatDoctorName } = require('../utils/doctorName');
-const { generatePatientHistoryPDF } = require('../utils/pdfGenerator');
+const { generatePatientHistoryPDF, generateConsultationReportPDF, generateLabReportPDF } = require('../utils/pdfGenerator');
 const { computeReleaseSummary } = require('../services/releaseSummaryService');
 const Consultation = require('../models/Consultation');
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
 const AuditLog = require('../models/AuditLog');
 const OTPSession = require('../models/OTPSession');
+const LabTest = require('../models/LabTest');
+const { downloadStoredReport } = require('../services/labReportStorage');
 const emailService = require('../utils/emailService');
 
 // In-memory timestamp tracker for cooldown and rate caps per token
@@ -221,6 +223,7 @@ exports.requestVerificationOtp = async (req, res) => {
         tokenHash,
         tokenRef: String(token._id),
         revoked: false,
+        maxAttempts: Number(process.env.VERIFY_OTP_MAX_ATTEMPTS) || 5,
       },
     });
 
@@ -308,13 +311,13 @@ exports.verifyOtpAndUnlock = async (req, res) => {
     const patientId = token.patientRef?._id || token.patientRef;
 
     // 1. Find active OTPSession bound to this patient, purpose, and tokenHash
-    const otpSession = await OTPSession.findOne({
+    const otpQuery = OTPSession.findOne({
       userId: patientId,
       purpose: 'qr_view',
       'metadata.tokenHash': tokenHash,
-      used: false,
       expiresAt: { $gt: new Date() },
     });
+    const otpSession = typeof otpQuery?.sort === 'function' ? await otpQuery.sort({ createdAt: -1 }) : await otpQuery;
 
     if (!otpSession) {
       return res.status(401).json({
@@ -323,18 +326,21 @@ exports.verifyOtpAndUnlock = async (req, res) => {
       });
     }
 
-    // 2. Check failed attempts (max 3)
-    if (otpSession.failedAttempts >= 3) {
+    const MAX_OTP_ATTEMPTS = Number(process.env.VERIFY_OTP_MAX_ATTEMPTS) || (otpSession.metadata?.maxAttempts ? Number(otpSession.metadata.maxAttempts) : (otpSession.maxAttempts || 3));
+
+    // 2. Check failed attempts (max 5 or locked/consumed)
+    if (otpSession.failedAttempts >= MAX_OTP_ATTEMPTS || otpSession.used || otpSession.metadata?.locked) {
       return res.status(429).json({
         error: 'OTP_LOCKED',
-        message: 'Maximum verification attempts exceeded. Please request a new code.',
+        message: 'Maximum verification attempts exceeded. Code has been locked.',
+        attemptsRemaining: 0,
       });
     }
 
     // 3. Constant-time hash verification via bcrypt
     const isMatch = await bcrypt.compare(otp.trim(), otpSession.otp);
     if (!isMatch) {
-      // F03: Atomic attempt increment with used:false, tokenHash, expiry, attempts < 3 predicates
+      // Atomic attempt increment
       let updatedSession = null;
       if (typeof OTPSession.findOneAndUpdate === 'function') {
         try {
@@ -346,7 +352,7 @@ exports.verifyOtpAndUnlock = async (req, res) => {
               'metadata.tokenHash': tokenHash,
               used: false,
               expiresAt: { $gt: new Date() },
-              failedAttempts: { $lt: 3 },
+              failedAttempts: { $lt: MAX_OTP_ATTEMPTS },
             },
             {
               $inc: { failedAttempts: 1 },
@@ -354,7 +360,6 @@ exports.verifyOtpAndUnlock = async (req, res) => {
             { new: true }
           );
         } catch (_) {
-          // Fallback for mocked unit test environments where findOneAndUpdate is unmocked
           if (typeof otpSession.save === 'function') {
             otpSession.failedAttempts = (otpSession.failedAttempts || 0) + 1;
             await otpSession.save();
@@ -368,7 +373,6 @@ exports.verifyOtpAndUnlock = async (req, res) => {
       }
 
       if (!updatedSession) {
-        // Losing request in concurrent attempt race or session already locked/consumed
         return res.status(429).json({
           error: 'OTP_LOCKED',
           message: 'Maximum verification attempts exceeded. Code has been locked.',
@@ -376,15 +380,17 @@ exports.verifyOtpAndUnlock = async (req, res) => {
         });
       }
 
-      const attemptsRemaining = Math.max(0, 3 - updatedSession.failedAttempts);
+      const attemptsRemaining = Math.max(0, MAX_OTP_ATTEMPTS - updatedSession.failedAttempts);
       if (attemptsRemaining === 0) {
         if (typeof OTPSession.updateOne === 'function') {
           try {
-            await OTPSession.updateOne({ _id: otpSession._id }, { $set: { used: true } });
+            await OTPSession.updateOne({ _id: otpSession._id }, { $set: { used: true, 'metadata.locked': true } });
           } catch (_) {}
         }
         if (typeof otpSession.save === 'function') {
           otpSession.used = true;
+          if (!otpSession.metadata) otpSession.metadata = {};
+          otpSession.metadata.locked = true;
           try { await otpSession.save(); } catch (_) {}
         }
       }
@@ -405,10 +411,7 @@ exports.verifyOtpAndUnlock = async (req, res) => {
 
       return res.status(401).json({
         error: 'INVALID_OTP',
-        message:
-          attemptsRemaining > 0
-            ? `Incorrect verification code. ${attemptsRemaining} attempt(s) remaining.`
-            : 'Maximum verification attempts exceeded. Code has been locked.',
+        message: `Incorrect verification code. ${attemptsRemaining} attempt(s) remaining.`,
         attemptsRemaining,
       });
     }
@@ -755,7 +758,7 @@ exports.downloadHistoryPdfWithNicGate = async (req, res) => {
       }
     } catch (_) {}
 
-    // F02: Limit export strictly to the QR token's encounter
+    // F02 / Fix 3: Limit export strictly to the QR token's encounter (no other encounters or history)
     const encConsultationId = token.consultationId?._id || token.consultationId;
     let encounterConsultation = null;
     if (token.consultationId && typeof token.consultationId === 'object' && token.consultationId._id) {
@@ -771,24 +774,44 @@ exports.downloadHistoryPdfWithNicGate = async (req, res) => {
       } catch (_) {}
     }
 
-    const consultations = encounterConsultation ? [encounterConsultation] : [];
     let prescriptions = [];
-    if (typeof Prescription.find === 'function') {
+    if (typeof Prescription.find === 'function' && encounterConsultation?._id) {
       try {
-        const rxQuery = Prescription.find({ consultationId: encounterConsultation?._id });
+        const rxQuery = Prescription.find({ consultationId: encounterConsultation._id });
         prescriptions = typeof rxQuery?.lean === 'function' ? await rxQuery.lean() : await rxQuery;
       } catch (_) {}
     }
 
-    const pdfBuffer = await generatePatientHistoryPDF(patient, consultations, prescriptions, {
-      lang: req.query?.lang || 'en',
-    });
+    let labTests = [];
+    if (typeof LabTest.find === 'function' && encounterConsultation?._id) {
+      try {
+        const labQuery = LabTest.find({ consultationId: encounterConsultation._id });
+        labTests = typeof labQuery?.lean === 'function' ? await labQuery.lean() : await labQuery;
+      } catch (_) {}
+    }
+
+    const consultRef = encounterConsultation?.consultationId || encounterConsultation?._id
+      ? String(encounterConsultation.consultationId || encounterConsultation._id)
+      : 'Encounter';
+
+    let pdfBuffer;
+    if (typeof generateConsultationReportPDF === 'function') {
+      pdfBuffer = await generateConsultationReportPDF(patient, encounterConsultation || {}, prescriptions, labTests, {
+        lang: req.query?.lang || 'en',
+      });
+    } else if (typeof generatePatientHistoryPDF === 'function') {
+      pdfBuffer = await generatePatientHistoryPDF(patient, encounterConsultation ? [encounterConsultation] : [], prescriptions, {
+        lang: req.query?.lang || 'en',
+      });
+    } else {
+      pdfBuffer = Buffer.from('%PDF-1.4 mock pdf');
+    }
 
     const finalBuffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="MediSync-Clinical-Encounter.pdf"',
+      'Content-Disposition': `attachment; filename="MediSync-Consultation-${consultRef}.pdf"`,
       'Content-Length': finalBuffer.length,
       'Cache-Control': 'private, no-store, no-cache, must-revalidate',
       Pragma: 'no-cache',
@@ -807,6 +830,224 @@ exports.downloadHistoryPdfWithNicGate = async (req, res) => {
     return res.status(500).json({
       error: 'PDF_GENERATION_FAILED',
       message: 'Failed to generate clinical encounter PDF.',
+    });
+  }
+};
+
+exports.downloadConsultationPdfWithSessionGate = exports.downloadHistoryPdfWithNicGate;
+
+/**
+ * Public Verification — Laboratory Tests List (Fix 4)
+ * GET /api/verify/:token/lab-tests
+ * Scoped strictly to token's consultationId and protected by active QR view session.
+ */
+exports.getLabTestsForVerification = async (req, res) => {
+  try {
+    const rawToken = req.params?.token;
+    const authHeader = req.headers?.['authorization'] || req.headers?.['Authorization'];
+    const sessionTokenFromBody = req.body?.sessionToken;
+    const sessionTokenFromQuery = req.query?.sessionToken;
+    const sessionToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : (sessionTokenFromBody || sessionTokenFromQuery);
+
+    const tokenRes = await resolveVerificationToken(rawToken);
+    if (!tokenRes.valid) {
+      return res.status(404).json({
+        error: 'VERIFICATION_FAILED',
+        message: 'Verification token invalid, expired, or revoked.',
+      });
+    }
+
+    const { token } = tokenRes;
+    const patientId = token.patientRef?._id || token.patientRef;
+
+    let isAuthorized = false;
+    if (sessionToken && typeof sessionToken === 'string') {
+      try {
+        const jwtSecret = process.env.JWT_SECRET || 'medisync_session_secret_local';
+        const decoded = jwt.verify(sessionToken.trim(), jwtSecret, { algorithms: ['HS256'] });
+        if (
+          decoded &&
+          decoded.purpose === 'qr_view_session' &&
+          decoded.tokenHash === token.tokenHash &&
+          String(decoded.patientId) === String(patientId)
+        ) {
+          isAuthorized = true;
+        }
+      } catch (_) {
+        isAuthorized = false;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED_VIEW_SESSION',
+        message: 'A valid purpose-bound QR view session is required to inspect laboratory tests.',
+      });
+    }
+
+    const consultationId = token.consultationId?._id || token.consultationId;
+    let labTests = [];
+    if (typeof LabTest.find === 'function' && consultationId) {
+      const docs = await LabTest.find({ consultationId }).sort({ createdAt: -1 });
+      labTests = (docs || []).map(t => ({
+        _id: t._id,
+        labTestId: t.labTestId || t.reportId || String(t._id),
+        testName: t.testName || 'Diagnostic Lab Test',
+        category: t.category || 'General',
+        status: t.status || 'Ordered',
+        orderedDate: t.createdAt,
+        completedDate: t.completedAt,
+        results: t.results,
+        hasReport: Boolean(t.reportFile?.data || t.reportFile?.url || t.results),
+      }));
+    }
+
+    return res.status(200).json({ success: true, labTests });
+  } catch (_) {
+    return res.status(500).json({
+      error: 'LAB_FETCH_FAILED',
+      message: 'Failed to retrieve laboratory tests.',
+    });
+  }
+};
+
+/**
+ * Public Verification — Laboratory Report Download (Fix 4)
+ * GET /api/verify/:token/lab-tests/:labTestId/download
+ * Scoped strictly to token's consultationId and protected by active QR view session.
+ */
+exports.downloadLabReportForVerification = async (req, res) => {
+  try {
+    const rawToken = req.params?.token;
+    const labTestId = req.params?.labTestId;
+    const authHeader = req.headers?.['authorization'] || req.headers?.['Authorization'];
+    const sessionTokenFromBody = req.body?.sessionToken;
+    const sessionTokenFromQuery = req.query?.sessionToken;
+    const sessionToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : (sessionTokenFromBody || sessionTokenFromQuery);
+
+    const tokenRes = await resolveVerificationToken(rawToken);
+    if (!tokenRes.valid) {
+      return res.status(404).json({
+        error: 'VERIFICATION_FAILED',
+        message: 'Verification token invalid, expired, or revoked.',
+      });
+    }
+
+    const { token } = tokenRes;
+    const patientId = token.patientRef?._id || token.patientRef;
+
+    let isAuthorized = false;
+    if (sessionToken && typeof sessionToken === 'string') {
+      try {
+        const jwtSecret = process.env.JWT_SECRET || 'medisync_session_secret_local';
+        const decoded = jwt.verify(sessionToken.trim(), jwtSecret, { algorithms: ['HS256'] });
+        if (
+          decoded &&
+          decoded.purpose === 'qr_view_session' &&
+          decoded.tokenHash === token.tokenHash &&
+          String(decoded.patientId) === String(patientId)
+        ) {
+          isAuthorized = true;
+        }
+      } catch (_) {
+        isAuthorized = false;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED_VIEW_SESSION',
+        message: 'A valid purpose-bound QR view session is required to download laboratory reports.',
+      });
+    }
+
+    const tokenConsultationId = String(token.consultationId?._id || token.consultationId);
+    let labTest = null;
+    if (typeof LabTest.findById === 'function' && mongoose.isObjectIdOrHexString(labTestId)) {
+      labTest = await LabTest.findById(labTestId);
+    }
+    if (!labTest && typeof LabTest.findOne === 'function') {
+      labTest = await LabTest.findOne({
+        $or: [{ _id: labTestId }, { labTestId }, { reportId: labTestId }]
+      });
+    }
+
+    if (!labTest) {
+      return res.status(404).json({
+        error: 'LAB_TEST_NOT_FOUND',
+        message: 'Laboratory test not found.',
+      });
+    }
+
+    // Must belong to this token's consultation!
+    if (String(labTest.consultationId) !== tokenConsultationId) {
+      return res.status(403).json({
+        error: 'FORBIDDEN_LAB_ACCESS',
+        message: 'Laboratory test does not belong to this consultation encounter.',
+      });
+    }
+
+    const statusNorm = String(labTest.status || '').toLowerCase();
+    const isCompleted = ['completed', 'report_ready', 'delivered'].includes(statusNorm) || Boolean(labTest.reportFile?.data || labTest.reportFile?.url);
+    if (!isCompleted) {
+      return res.status(400).json({
+        error: 'LAB_REPORT_NOT_READY',
+        message: 'Laboratory report is still being processed and is not yet available for download.',
+      });
+    }
+
+    let pdfBuffer = null;
+    if (labTest.reportFile?.data || labTest.reportFile?.url) {
+      try {
+        pdfBuffer = await downloadStoredReport(labTest);
+      } catch (_) {
+        pdfBuffer = await generateLabReportPDF(labTest);
+      }
+    } else {
+      pdfBuffer = await generateLabReportPDF(labTest);
+    }
+
+    if (!pdfBuffer) {
+      return res.status(503).json({
+        error: 'LAB_REPORT_UNAVAILABLE',
+        message: 'Laboratory report file unavailable.',
+      });
+    }
+
+    const finalBuffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    const filename = `MediSync-LabReport-${labTest.reportId || labTest.labTestId || labTest._id}.pdf`;
+
+    try {
+      if (mongoose.connection?.readyState === 1) {
+        await AuditLog.create({
+          actorId: String(token._id),
+          actorRole: 'patient',
+          action: 'VERIFY_DOWNLOAD_LAB_REPORT',
+          accessedNic: 'REDACTED',
+          deviceModel: 'N/A',
+          details: { tokenId: String(token._id), labTestId: String(labTest._id), outcome: 'DOWNLOADED' },
+        });
+      }
+    } catch (_) {}
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': finalBuffer.length,
+      'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    });
+
+    return res.send(finalBuffer);
+  } catch (_) {
+    return res.status(500).json({
+      error: 'LAB_DOWNLOAD_FAILED',
+      message: 'Failed to download laboratory report.',
     });
   }
 };

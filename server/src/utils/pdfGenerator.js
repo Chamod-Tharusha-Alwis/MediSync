@@ -1100,6 +1100,305 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
 };
 
 /**
+ * Generates an encrypted Consultation Report PDF scoped strictly to a single clinical encounter.
+ * Contains: encounter reference, practitioner, facility, vitals, symptoms, diagnosis,
+ * medicines with schedule and release status, safety overrides, and laboratory section.
+ * Does NOT contain any prior patient history or unrelated consultations.
+ */
+exports.generateConsultationReportPDF = async (
+  patientDetails = {},
+  consultationData = {},
+  prescriptions = [],
+  labTests = [],
+  options = {}
+) => {
+  const pdfDoc = wrapPdfDoc(await PDFDocument.create());
+  let page = pdfDoc.addPage([595, 842]);
+  const { width, height } = page.getSize();
+
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  // 1. Resolve Patient Info
+  const resolvedName = patientDetails.fullName || patientDetails.name || consultationData.patientName || 'Unavailable';
+  const resolvedNic = patientDetails.nic || consultationData.patientNic || 'Unavailable';
+  let resolvedAge = 'N/A';
+  if (patientDetails.dateOfBirth || consultationData.patientDOB) {
+    const dob = new Date(patientDetails.dateOfBirth || consultationData.patientDOB);
+    if (!isNaN(dob.getTime())) {
+      resolvedAge = `${Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000))} years`;
+    }
+  } else if (patientDetails.age || consultationData.age) {
+    resolvedAge = `${patientDetails.age || consultationData.age} years`;
+  }
+  const resolvedGender = patientDetails.gender || consultationData.patientGender || 'N/A';
+
+  // 2. Resolve Doctor Info
+  const doctorDetails = consultationData.doctorId && typeof consultationData.doctorId === 'object'
+    ? consultationData.doctorId
+    : (options.doctorDetails || {});
+  const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Unavailable';
+  const doctorName = formatDoctorName(rawDoctor, 'Unavailable');
+  const rawSlmc = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber;
+  const slmcReg = (rawSlmc && rawSlmc !== 'SLMC-REG-VERIFIED') ? `SLMC Reg. No.: ${rawSlmc}` : 'SLMC reg. no.: not on file';
+  const docId = doctorDetails._id || doctorDetails.id || consultationData.doctorId;
+  const docIdStr = docId ? ` | ID: DOC-${String(docId).slice(-6)}` : '';
+  const specialtyStr = doctorDetails.specialization || doctorDetails.specialty || consultationData.doctorSpecialty || 'General Practice';
+  const hospitalStr = doctorDetails.hospitalName || consultationData.hospitalName || (consultationData.loginType === 'hospital' ? 'Hospital Encounter' : (consultationData.hospitalId ? 'Unavailable' : 'Private Practice'));
+
+  const now = new Date();
+  const consultDate = consultationData.createdAt ? new Date(consultationData.createdAt) : now;
+  const dateStr = formatSriLankaDate(consultDate, 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hour12: true }).format(consultDate) + ' (Sri Lanka time)';
+
+  const consultRef = consultationData.consultationId || consultationData._id
+    ? String(consultationData.consultationId || consultationData._id)
+    : `CONS-${Date.now().toString().slice(-6)}`;
+
+  // 3. Draw Watermark
+  drawConfidentialityWatermark(page, { width, height, fontBold });
+
+  // 4. Draw Header
+  let currentY = drawHeader(page, {
+    title: 'MEDISYNC CONSULTATION REPORT',
+    subtitle: 'Official Clinical Encounter & Verification Record',
+    doctorName,
+    refLabel: 'Consult Ref',
+    refValue: consultRef,
+    dateString: dateStr,
+    timeString: timeStr,
+    workspaceLabel: consultationData.loginType === 'hospital' ? 'Hospital Encounter' : 'Private Practice',
+    fontRegular,
+    fontBold,
+    width,
+    height,
+    hasQr: Boolean(options?.verificationUrl || consultationData?.verificationUrl),
+  });
+
+  const verificationUrl = options?.verificationUrl || consultationData?.verificationUrl;
+  if (verificationUrl) {
+    try {
+      const QRCode = require('qrcode');
+      const qrPng = await QRCode.toBuffer(verificationUrl, { type: 'png', width: 120, margin: 1 });
+      const qrImg = await pdfDoc.embedPng(qrPng);
+      const qrBoxX = width - 84;
+      const qrBoxY = height - 98;
+      page.drawRectangle({
+        x: qrBoxX - 3,
+        y: qrBoxY - 3,
+        width: 60,
+        height: 70,
+        color: rgb(0.06, 0.22, 0.40),
+        borderColor: TEAL,
+        borderWidth: 1,
+      });
+      page.drawImage(qrImg, { x: qrBoxX, y: qrBoxY + 11, width: 54, height: 54 });
+      page.drawText('SCAN TO VERIFY', { x: qrBoxX + 4, y: qrBoxY + 3, size: 5.5, font: fontBold, color: WHITE });
+    } catch (_) {}
+  }
+
+  // 5. Draw Patient Details
+  currentY = drawPatientDetails(page, {
+    patientName: resolvedName,
+    patientNIC: resolvedNic,
+    age: resolvedAge,
+    gender: resolvedGender,
+    yStart: currentY,
+    fontRegular,
+    fontBold,
+    width,
+  });
+
+  // 6. Clinical Assessment & Diagnosis Section
+  page.drawText('CLINICAL ASSESSMENT & DIAGNOSIS', {
+    x: 40, y: currentY,
+    size: 11, font: fontBold, color: PURPLE,
+  });
+  currentY -= 16;
+
+  const diagnosis = consultationData.diagnosis || 'Clinical evaluation and diagnostic assessment';
+  const isIcd11 = consultationData.icdVersion === 'ICD-11' || (/^[1-9][A-Z0-9]{3}/i.test(consultationData.icdCode || '') || /^[A-S][A-Z][0-9]{2}/i.test(consultationData.icdCode || ''));
+  const icdVersionLabel = isIcd11 ? 'ICD-11 Reference:' : 'ICD-10 Reference:';
+  const icdDefaultDesc = isIcd11 ? 'ICD-11 MMS Coded Entry' : 'ICD-10 Coded Entry';
+  const icdText = consultationData.icdCode
+    ? `${consultationData.icdCode} - ${consultationData.icdDescription || icdDefaultDesc}`
+    : 'Not Specified';
+  const symptomsList = Array.isArray(consultationData.symptoms) && consultationData.symptoms.length > 0
+    ? consultationData.symptoms.join(', ')
+    : 'None Reported';
+
+  const diagFields = [
+    ['Primary Diagnosis:', diagnosis],
+    [icdVersionLabel, icdText],
+    ['Recorded Symptoms:', symptomsList],
+  ];
+
+  if (consultationData.vitals) {
+    const v = consultationData.vitals;
+    const vitalsParts = [];
+    if (v.bloodPressure) vitalsParts.push(`BP: ${v.bloodPressure}`);
+    if (v.temperature) vitalsParts.push(`Temp: ${v.temperature} C`);
+    if (v.heartRate) vitalsParts.push(`HR: ${v.heartRate} bpm`);
+    if (v.weight) vitalsParts.push(`Weight: ${v.weight} kg`);
+    if (vitalsParts.length > 0) diagFields.push(['Vital Signs:', vitalsParts.join(' | ')]);
+  }
+
+  const diagBoxH = diagFields.length * 18 + 16;
+  page.drawRectangle({
+    x: 40, y: currentY - diagBoxH + 12,
+    width: width - 80, height: diagBoxH,
+    color: BG_LAV, borderColor: BORDER, borderWidth: 1,
+  });
+
+  currentY -= 2;
+  diagFields.forEach(([lbl, val]) => {
+    page.drawText(lbl, { x: 52, y: currentY, size: 9, font: fontBold, color: DARK });
+    const valLines = wrapText(val, fontRegular, 9, width - 240);
+    valLines.slice(0, 2).forEach((line, idx) => {
+      page.drawText(line, { x: 180, y: currentY - (idx * 11), size: 9, font: fontRegular, color: DARK });
+    });
+    currentY -= Math.max(18, valLines.length * 11 + 4);
+  });
+  currentY -= 8;
+
+  // 7. Prescribed Medications Section
+  const rxList = Array.isArray(prescriptions) && prescriptions.length > 0
+    ? prescriptions
+    : (Array.isArray(consultationData.medications) ? consultationData.medications : []);
+
+  if (currentY - 100 < 100) {
+    drawFooter(page, { now, fontRegular, fontBold, width });
+    page = pdfDoc.addPage([595, 842]);
+    drawConfidentialityWatermark(page, { width, height, fontBold });
+    currentY = height - 50;
+  }
+
+  page.drawText('PRESCRIBED MEDICATIONS', {
+    x: 40, y: currentY,
+    size: 11, font: fontBold, color: PURPLE,
+  });
+  currentY -= 14;
+
+  page.drawLine({
+    start: { x: 40, y: currentY },
+    end:   { x: width - 40, y: currentY },
+    thickness: 1, color: TEAL,
+  });
+  currentY -= 12;
+
+  if (rxList.length > 0) {
+    rxList.forEach((rx, idx) => {
+      const drugName = rx.drugName || rx.name || 'Prescribed Agent';
+      const dosage = rx.dosage || '';
+      const freq = rx.frequency || '';
+      const dur = rx.duration || (rx.durationDays ? `${rx.durationDays} days` : '');
+      const status = rx.status ? ` [Status: ${rx.status}]` : '';
+      const summary = `${idx + 1}. ${drugName} ${dosage} - ${freq} (${dur})${status}`.trim();
+
+      page.drawText(summary, { x: 52, y: currentY, size: 9, font: fontRegular, color: DARK });
+      currentY -= 14;
+    });
+  } else {
+    page.drawText('No medications prescribed for this consultation.', { x: 52, y: currentY, size: 9, font: fontOblique, color: MID });
+    currentY -= 14;
+  }
+  currentY -= 6;
+
+  // 8. Laboratory Investigations Section
+  if (currentY - 90 < 100) {
+    drawFooter(page, { now, fontRegular, fontBold, width });
+    page = pdfDoc.addPage([595, 842]);
+    drawConfidentialityWatermark(page, { width, height, fontBold });
+    currentY = height - 50;
+  }
+
+  page.drawText('LABORATORY INVESTIGATIONS', {
+    x: 40, y: currentY,
+    size: 11, font: fontBold, color: PURPLE,
+  });
+  currentY -= 14;
+
+  page.drawLine({
+    start: { x: 40, y: currentY },
+    end:   { x: width - 40, y: currentY },
+    thickness: 1, color: TEAL,
+  });
+  currentY -= 12;
+
+  const validLabTests = Array.isArray(labTests) ? labTests : [];
+  if (validLabTests.length > 0) {
+    validLabTests.forEach((lab, idx) => {
+      const testName = lab.testName || lab.name || 'Diagnostic Laboratory Test';
+      const category = lab.category ? `(${lab.category})` : '';
+      const status = lab.status ? `[Status: ${lab.status}]` : '';
+      const labDate = lab.createdAt ? `Ordered: ${formatSriLankaDate(new Date(lab.createdAt), 'en-GB')}` : '';
+      const line = `${idx + 1}. ${testName} ${category} ${status} ${labDate}`.trim();
+      page.drawText(line, { x: 52, y: currentY, size: 9, font: fontRegular, color: DARK });
+      currentY -= 14;
+
+      if (lab.results && typeof lab.results === 'string') {
+        const resLines = wrapText(`Findings: ${lab.results}`, fontOblique, 8.5, width - 120);
+        resLines.slice(0, 2).forEach(rl => {
+          page.drawText(rl, { x: 64, y: currentY, size: 8.5, font: fontOblique, color: MID });
+          currentY -= 12;
+        });
+      }
+    });
+  } else {
+    page.drawText('No laboratory tests ordered for this consultation.', { x: 52, y: currentY, size: 9, font: fontOblique, color: MID });
+    currentY -= 14;
+  }
+  currentY -= 6;
+
+  // 9. Doctor Safety Acknowledgment (if any)
+  const consultOverrideTypes = [...new Set([
+    ...(consultationData.safetyOverride?.findingTypes || []),
+    ...(consultationData.prescriptions || []).flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || []),
+    ...rxList.flatMap(r => r.safetyOverride?.findingTypes || (r.safetyOverride?.findings || []).map(f => f.type) || [])
+  ])].filter(Boolean);
+
+  if (consultOverrideTypes.length > 0) {
+    if (currentY - 30 < 100) {
+      drawFooter(page, { now, fontRegular, fontBold, width });
+      page = pdfDoc.addPage([595, 842]);
+      drawConfidentialityWatermark(page, { width, height, fontBold });
+      currentY = height - 50;
+    }
+    page.drawText(`Doctor acknowledged safety warnings: ${consultOverrideTypes.join(', ')}`, {
+      x: 40,
+      y: currentY,
+      size: 8.5,
+      font: fontOblique,
+      color: RED_STAMP,
+    });
+    currentY -= 16;
+  }
+
+  // 10. Attestation Block
+  if (currentY - 80 < 100) {
+    drawFooter(page, { now, fontRegular, fontBold, width });
+    page = pdfDoc.addPage([595, 842]);
+    drawConfidentialityWatermark(page, { width, height, fontBold });
+    currentY = height - 50;
+  }
+
+  const sigBoxH = 54;
+  page.drawRectangle({
+    x: 40, y: currentY - sigBoxH,
+    width: width - 80, height: sigBoxH,
+    color: BG_GREY, borderColor: BORDER, borderWidth: 1,
+  });
+  page.drawText(`Consulting Medical Professional: ${doctorName}${docIdStr}`, { x: 52, y: currentY - 16, size: 9, font: fontBold, color: NAVY });
+  page.drawText(`${slmcReg} | Specialty: ${specialtyStr}`, { x: 52, y: currentY - 30, size: 8.5, font: fontRegular, color: MID });
+  page.drawText(`Facility / Practice: ${hospitalStr}`, { x: 52, y: currentY - 44, size: 8, font: fontRegular, color: MID });
+
+  // 11. Footer & Encrypt
+  drawFooter(page, { now, fontRegular, fontBold, width });
+  return await applyPDFEncryption(pdfDoc, resolvedNic, options, { consultationRef: consultRef, patientNic: resolvedNic });
+};
+
+/**
  * Generates a comprehensive executive analytics and outbreak surveillance PDF report.
  * Designed for administrators and health authorities to audit platform utilization.
  */
