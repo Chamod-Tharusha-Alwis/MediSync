@@ -3,14 +3,21 @@
 process.env.BABEL_ENV = 'production';
 process.env.NODE_ENV = 'production';
 
-if (!process.env.REACT_APP_COMMIT_HASH) {
+function resolveCommitHash() {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) {
+    return process.env.VERCEL_GIT_COMMIT_SHA.trim().slice(0, 7);
+  }
   try {
     const { execSync } = require('child_process');
-    process.env.REACT_APP_COMMIT_HASH = process.env.VERCEL_GIT_COMMIT_SHA || execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
-  } catch (e) {
-    process.env.REACT_APP_COMMIT_HASH = 'dev';
+    const hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+    if (hash) return hash;
+  } catch (_) {}
+  if (process.env.REACT_APP_COMMIT_HASH && process.env.REACT_APP_COMMIT_HASH !== 'dev') {
+    return process.env.REACT_APP_COMMIT_HASH.trim().slice(0, 7);
   }
+  return 'dev';
 }
+process.env.REACT_APP_COMMIT_HASH = resolveCommitHash();
 
 require('react-scripts/config/env');
 require('../src/config/productionClientPolicy').assertProductionClientProfile(process.env);
