@@ -444,13 +444,18 @@ exports.checkMedicineSafety = async (req, res) => {
         try {
           const Prescription = require('../models/Prescription');
           const now = new Date();
-          const activeDocs = await Prescription.find({
+          const selectResult = Prescription.find({
             patientId,
             status: { $in: ['pending', 'issued', 'dispensed'] },
             $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }]
-          }).select('drugName medications consultationRef prescriptionId durationDays dosage frequency createdAt').lean();
+          }).select('drugName medications consultationRef prescriptionId durationDays dosage frequency createdAt');
+
+          const activeDocs = typeof selectResult?.lean === 'function'
+            ? await selectResult.lean()
+            : await selectResult;
 
           for (const doc of activeDocs || []) {
+            doc.decryptFieldsSync?.();
             const ref = doc.consultationRef || doc.prescriptionId || 'CON-RECORD';
             if (Array.isArray(doc.medications) && doc.medications.length) {
               for (const m of doc.medications) {
@@ -473,7 +478,7 @@ exports.checkMedicineSafety = async (req, res) => {
     const result = await evaluateMedicineSafety({
       medications,
       patientId,
-      activePrescriptions,
+      activePrescriptions: resolvedActiveRx,
       acknowledgment,
       actorId: req.user?._id || req.user?.id || 'system',
       actorRole: req.user?.role || 'doctor',

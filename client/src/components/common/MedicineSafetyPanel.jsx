@@ -21,11 +21,15 @@ export default function MedicineSafetyPanel({
     let active = true;
     if (!medications || medications.length === 0) {
       setSafetyData(null);
+      setLoading(false);
       return;
     }
 
+    // Immediately reset to prevent showing stale green check during loading
+    setSafetyData(null);
+    setLoading(true);
+
     const checkSafety = async () => {
-      setLoading(true);
       try {
         const res = consultationNic
           ? await api.post('/prescriptions/consultation-safety', {
