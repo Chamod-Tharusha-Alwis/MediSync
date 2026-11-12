@@ -382,8 +382,19 @@ const OutbreakMonitor = () => {
         deliveryEnabled: true,
       });
     } catch (err) {
+      const status = err.response?.status;
       const data = err.response?.data;
       const code = data?.error || data?.code;
+
+      if (status === 409 || code === 'ALERT_ALREADY_APPROVED' || code === 'ONLY_PENDING_CAN_BE_APPROVED' || /already|pending/i.test(data?.error || '')) {
+        toast.error('This outbreak alert has already been approved and activated.');
+        return;
+      }
+      if (status === 400 && (code === 'NATIONWIDE_CONFIRMATION_REQUIRED' || /nationwide/i.test(data?.message || data?.error || ''))) {
+        toast.error(data?.message || `Nationwide broadcast requires typing the exact disease name (${approveModal.targetDisease || 'the disease name'}) to confirm.`);
+        return;
+      }
+
       const friendlyErrors = {
         NATIONWIDE_CONFIRMATION_REQUIRED: `Nationwide broadcast requires typing the exact disease name (${approveModal.targetDisease || 'the disease name'}) to confirm.`,
         ALERT_ALREADY_APPROVED: 'This outbreak alert has already been approved and activated.',
