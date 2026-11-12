@@ -93,7 +93,9 @@ module.exports.testMatch.push(
   '<rootDir>/tests/icdClassificationAlignment.test.js',
   '<rootDir>/tests/vivaSeedData.test.js',
   '<rootDir>/tests/orphanReferenceNullSafety.test.js',
-  '<rootDir>/tests/securityRemediationF01toF09.test.js'
+  '<rootDir>/tests/securityRemediationF01toF09.test.js',
+  '<rootDir>/tests/outbreakApprovalDelivery.test.js',
+  '<rootDir>/tests/postRehearsalFixes.test.js'
 );
 
 module.exports.testMatch.push('<rootDir>/tests/liveQaRepairs.test.js');
