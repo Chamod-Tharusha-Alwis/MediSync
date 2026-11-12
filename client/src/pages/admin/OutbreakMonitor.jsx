@@ -626,6 +626,7 @@ const OutbreakMonitor = () => {
                 }
 
                 const zColor = tierLabel === 'CRITICAL' ? 'text-red-400' : (tierLabel === 'HIGH' ? 'text-orange-400' : (tierLabel === 'WARNING' ? 'text-amber-400' : 'text-slate-300'));
+                const inc = calculateIncidencePer100k(item.latest_actual ?? item.count ?? 0, item.district);
 
                 return (
                   <div
@@ -639,12 +640,21 @@ const OutbreakMonitor = () => {
                           {tierLabel}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
+                      <p className="text-xs text-slate-400 flex items-center justify-between gap-1">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-mono" title="Department of Census and Statistics (Census 2012)">
+                          Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
+                        </span>
                       </p>
+                      <div className="mt-2 text-[11px] text-slate-400 font-mono flex justify-between select-none">
+                        <span>Cases: {item.latest_actual ?? item.count ?? 0}</span>
+                        <span title="Department of Census and Statistics (Census 2012)">Inc: {inc.display}</span>
+                      </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-end select-none">
+                    <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-end select-none">
                       <div>
                         <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
                         <span className={`text-sm font-mono font-bold ${zColor}`}>
@@ -793,7 +803,10 @@ const OutbreakMonitor = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                        {inc.hasPopulation ? inc.display : <span title="Census 2024 population table download pending manual entry">N/A (Census pending)</span>}
+                        <span title="Department of Census and Statistics (Census 2012)">{inc.display}</span>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${sev.text} ${sev.bg} ${sev.border}`}>
