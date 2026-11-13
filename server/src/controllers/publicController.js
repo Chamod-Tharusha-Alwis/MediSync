@@ -52,9 +52,17 @@ exports.getHealthStats = async (req, res) => {
     // Calendar zero-fill alone is not forecasting evidence. Keep the existing
     // insufficient-history UI when fewer than three dates contain actual cases.
     stage = 'FORECAST_AND_DTO';
-    const forecastResult = aggregate.trend.filter(day => day.count > 0).length >= 3
-      ? calculate14DayForecast(aggregate.trend)
-      : { forecast: [] };
+    const todayStr = reportTime.toISOString().slice(0, 10);
+    const lastDay = aggregate.trend[aggregate.trend.length - 1];
+    // Exclude incomplete trailing today observation with 0 cases to prevent artificial drop to 0
+    const completeTrend = (lastDay && lastDay.date === todayStr && lastDay.count === 0 && aggregate.trend.some(p => p.count > 0))
+      ? aggregate.trend.slice(0, -1)
+      : aggregate.trend;
+
+    // Calendar zero-fill alone is not forecasting evidence. Require at least 14 days of data.
+    const forecastResult = completeTrend.filter(day => day.count > 0).length >= 14
+      ? calculate14DayForecast(completeTrend, { minPoints: 14 })
+      : { forecast: [], hasSufficientData: false, message: 'Insufficient historical data for trend projection (minimum 14 days required)' };
     const statsData = {
       ...healthDto({
         ...aggregate,

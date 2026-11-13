@@ -501,6 +501,35 @@
       ]
     },
     {
+      "name": "outbreakscans",
+      "model": "OutbreakScan",
+      "source": "server/src/models/OutbreakScan.js",
+      "purpose": "Outbreak scan audit telemetry",
+      "whenAll": [
+        "MEDISYNC_OUTBREAK_SCAN_STORAGE_APPROVED"
+      ],
+      "capped": false,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": true,
+          "sparse": false
+        },
+        {
+          "name": "mode_1_scannedAt_-1",
+          "key": {
+            "mode": 1,
+            "scannedAt": -1
+          },
+          "unique": false,
+          "sparse": false
+        }
+      ]
+    },
+    {
       "name": "patients",
       "model": "Patient",
       "source": "server/src/models/Patient.js",
