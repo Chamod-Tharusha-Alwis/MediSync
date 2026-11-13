@@ -260,41 +260,6 @@ const DoctorPatientDetail = () => {
                 </div>
               </div>
 
-              {/* AI Health Risk Dashboard */}
-              <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 mb-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-[0.02]">
-                  <Activity className="w-40 h-40 text-teal-400" />
-                </div>
-                <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                  <Activity className="w-4.5 h-4.5 text-teal-400 animate-pulse" /> AI Patient Health Risk Assessment
-                </h3>
-                <div className="space-y-4">
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    ML-engine analyzed disease indicators and patient history details. Predictions show relative diagnostic risk values.
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5">
-                      <div className="flex justify-between items-center text-xs font-semibold text-slate-300 mb-2">
-                        <span>Cardiovascular Disease Risk</span>
-                        <span className="text-teal-400 font-bold font-mono">14.8%</span>
-                      </div>
-                      <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                        <div className="bg-gradient-to-r from-teal-500 to-teal-400 h-full w-[14.8%] transition-all duration-500" />
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5">
-                      <div className="flex justify-between items-center text-xs font-semibold text-slate-300 mb-2">
-                        <span>Diabetic / Metabolic Risk</span>
-                        <span className="text-amber-400 font-bold font-mono">28.5%</span>
-                      </div>
-                      <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                        <div className="bg-gradient-to-r from-amber-500 to-amber-400 h-full w-[28.5%] transition-all duration-500" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Tabs */}
               <div className="flex gap-4 mb-6 border-b border-white/5">
                 <button
