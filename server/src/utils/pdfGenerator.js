@@ -296,9 +296,11 @@ function drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice }) {
 }
 
 // ── Shared Helper: Clinical PDF Encryption Security Gate ────────────────
-// Production clinical PDF exports fail closed unconditionally with typed SECURITY_HOLD.
-// Legacy weak ciphers (RC4) are completely eliminated from production runtime.
-// Modern AES-256 requires approved tooling and authorized key delivery.
+// Clinical PDF exports fail closed with typed SECURITY_HOLD unless PDF_EXPORT_ENABLED === 'true'.
+// When enabled, the output is encrypted with RC4-128 (the only cipher provided by
+// @pdfsmaller/pdf-encrypt-lite) using an identifier-derived password. RC4 is NOT
+// eliminated; AES-256 would require different tooling and a secure key-delivery path.
+// The algorithm-name check below only rejects explicitly requested weaker modes.
 async function applyPDFEncryption(pdfDoc, optionsOrNic, explicitOptions = {}, context = {}) {
   const requestedAlgo = explicitOptions?.algorithm || (typeof optionsOrNic === 'object' ? optionsOrNic?.algorithm : null);
   if (requestedAlgo && /rc4-40|des|md5|weak|40/i.test(requestedAlgo)) {
