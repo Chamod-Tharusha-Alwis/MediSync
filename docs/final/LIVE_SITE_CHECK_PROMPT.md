@@ -56,14 +56,18 @@ Fill in your authorized live credentials before starting the demonstration:
    - Entering 5 incorrect OTPs triggers lockout (`OTP_LOCKED`, HTTP 429), permanently locking the UI.
 4. **Inspect Laboratory Tests & Download Encounter PDF**:
    - View ordered diagnostic tests linked specifically to this consultation.
-   - Click **Download Consultation Report (PDF)**: Document contains strictly this single clinical encounter, with zero historical records exposed.
+   - **PDF caveats (read before demonstrating):**
+     - The download works only if **both** flags are on: `PDF_EXPORT_ENABLED=true` on Render **and** `REACT_APP_PDF_EXPORT_ENABLED=true` on Vercel, followed by a Vercel rebuild. Both default to off. When off, the server answers HTTP 503 `SECURITY_HOLD` and the button stays disabled.
+     - When on, the PDF is encrypted with **RC4-128** (`/V 2 /R 3`), not AES. The password is the patient NIC (or the consultation reference), so it is low-entropy. Describe it as a casual-access deterrent, not confidentiality. If neither value exists, the export is refused. See `PDF_ENCRYPTION_LIMITATION.md`.
+     - Recommended: keep both flags off for the viva unless an examiner asks; if shown, use synthetic records only.
+   - If enabled, click **Download Consultation Report (PDF)**: the document contains only this single clinical encounter, with no historical records.
 
 ### Phase 3: Direct Pharmacy Dispensing & Duplicate Block
 1. Navigate to `/login` and sign in with `<OWNER_PHARMACIST_EMAIL>`.
 2. Open the Pharmacy Dispense interface (`/pharmacy/dashboard/dispense`).
 3. Enter patient NIC `200012345678` and verify consent.
 4. View the pending prescription issued in Phase 1:
-   - Notice that MediSync operates **inventory-free**: no stock dropdowns or inventory decrements.
+   - Notice that MediSync operates **inventory-free**: no stock dropdowns, inventory decrements, manual OTC checkout or restock analytics. The pharmacy menu shows Dispense, History, Staff (admin) and Settings only.
    - Pharmacist verifies prescribed medications and reviews prescriber safety override.
    - Check "I have reviewed safety information".
 5. Click **Confirm Dispense**:
@@ -89,7 +93,8 @@ Fill in your authorized live credentials before starting the demonstration:
    - **Gampaha Dengue**: Triggers Pending Alert ($N \ge 5$, 4 consecutive days $z > 2.0$, Critical Severity).
    - **Kandy Influenza**: Triggers Pending Alert ($N \ge 5$, 4 consecutive days $z > 2.0$, High Severity).
    - **Kalutara (Negative Control)**: Suppressed by Gate 2 Persistence (`PERSISTENCE_CRITERIA_NOT_MET`, single-day spike of 6 cases).
-   - **Matara (Negative Control)**: Suppressed by Gate 1 Floor (`CASE_FLOOR_NOT_MET`, cluster of 4 cases < 5).
+   - **Matara (Negative Control)**: Suppressed by Gate 1 Floor (`CASE_FLOOR_NOT_MET`, cluster of 3 cases < 5; seeded as 1 case on each of days −3, −2 and −1 in `scripts/seed_viva_outbreaks.js`).
+   - Detection is district-level only, so neither negative control can raise a province or island alert.
 6. **Inspect Filtered Growth Table**:
    - Displays **only** diseases with an active or pending outbreak alert (Top 10 by last 72h cases).
    - Shows primary 72h metric, previous 72h change, DCS population share (e.g. `0.0005%`, never 0%), and incidence per 100k.
@@ -99,10 +104,12 @@ Fill in your authorized live credentials before starting the demonstration:
    - Click **"Preview Recipients"**: displays recipient count breakdown by role.
    - Click **"Send Me a Test Email"**: delivers an instant test email to the administrator.
    - Select Broadcast Scope: **District Only** or **Nationwide**.
-   - Notice **Demonstration Data Banner**: Alert generated from synthetic seed data is restricted to `OUTBREAK_DEMO_EMAIL_ALLOWLIST` with `[DEMONSTRATION]` subject prefix.
+   - Notice **Demonstration Data Banner**: an alert built from synthetic seed data (`isDemoData: true`, `syntheticSeedBatch: viva-2026-11-outbreaks`) is restricted to `OUTBREAK_DEMO_EMAIL_ALLOWLIST` (or, if that is empty, only your own reviewer address), with a `[DEMONSTRATION]` subject prefix and a red banner.
+   - **Before approving:** run the scan once after deploying the hardening build so that existing viva alerts pick up their demonstration flags. Confirm the preview says demonstration and shows only allowlisted recipients.
+   - Real (non-demo) alerts send no email unless `OUTBREAK_EMAIL_DELIVERY_ENABLED=true`. Keep it unset or `false` for the viva.
    - Click **Confirm Approval**: The alert transitions to `Active`.
 8. Navigate to the Public Health Observatory (`/public-health`):
-   - The **Active Disease Advisories** section immediately displays the approved alerts.
+   - The **Active Disease Advisories** section displays the approved alerts. Viva alerts carry a red "Demonstration data" label.
    - Zero advisories appear for suppressed districts (Kalutara or Matara).
    - 3 Summary cards display live verified counts, active alert counts, and projection status.
    - The 14-day OLS trend chart with 95% prediction interval renders honestly labeled as statistical trend projection.
