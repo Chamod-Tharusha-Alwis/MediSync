@@ -9,11 +9,21 @@ const root = path.resolve(__dirname, '..');
 const drugsPath = path.join(root, 'server/reference-data/drugs_clean.json');
 const interactionsPath = path.join(root, 'server/reference-data/interactions_clean.json');
 const safetyLimitsPath = path.join(root, 'server/src/data/medicine_safety_limits.json');
-const gapsOutDir = path.join(root, 'docs/final/data');
-const gapsJsonPath = path.join(gapsOutDir, 'medicine_coverage_gaps.json');
-const coverageDocPath = path.join(root, 'docs/final/MEDICINE_COVERAGE.md');
+const defaultGapsOutDir = path.join(root, 'docs/final/data');
+const defaultCoverageDocPath = path.join(root, 'docs/final/MEDICINE_COVERAGE.md');
 
-function runAudit() {
+/**
+ * Computes the medicine coverage audit.
+ * Writes NOTHING unless asked: pass { write: true } (CLI: --write) to update the committed
+ * docs/final files, or { outDir } to write both outputs into another directory (tests use a
+ * temp dir). This stops the offline suite from rewriting tracked docs.
+ */
+function runAudit(options = {}) {
+  const outDir = options.outDir ? path.resolve(options.outDir) : null;
+  const shouldWrite = options.write === true || Boolean(outDir);
+  const gapsOutDir = outDir || defaultGapsOutDir;
+  const gapsJsonPath = path.join(gapsOutDir, 'medicine_coverage_gaps.json');
+  const coverageDocPath = outDir ? path.join(outDir, 'MEDICINE_COVERAGE.md') : defaultCoverageDocPath;
   if (!fs.existsSync(drugsPath)) {
     throw new Error(`Drugs file not found: ${drugsPath}`);
   }
@@ -108,11 +118,13 @@ function runAudit() {
     benchmarkGaps: benchmarkGaps
   };
 
-  if (!fs.existsSync(gapsOutDir)) {
-    fs.mkdirSync(gapsOutDir, { recursive: true });
+  if (shouldWrite) {
+    if (!fs.existsSync(gapsOutDir)) {
+      fs.mkdirSync(gapsOutDir, { recursive: true });
+    }
+    fs.writeFileSync(gapsJsonPath, JSON.stringify(gapData, null, 2), 'utf8');
+    console.log(`[AUDIT] Saved gap analysis to ${gapsJsonPath}`);
   }
-  fs.writeFileSync(gapsJsonPath, JSON.stringify(gapData, null, 2), 'utf8');
-  console.log(`[AUDIT] Saved gap analysis to ${gapsJsonPath}`);
 
   // 6. Write Markdown Report
   const mdContent = `# MediSync Medicine Catalog Coverage Audit
@@ -160,14 +172,18 @@ ${benchmarkGaps.slice(0, 10).map((g, idx) => `| ${idx + 1} | \`${g.generic}\` | 
   > *"Automated interaction checking is incomplete for \\"<drug>\\" (unresolved ingredient(s): <list>). Clinical assessment required."*
 `;
 
-  fs.writeFileSync(coverageDocPath, mdContent, 'utf8');
-  console.log(`[AUDIT] Saved coverage report to ${coverageDocPath}`);
+  if (shouldWrite) {
+    fs.writeFileSync(coverageDocPath, mdContent, 'utf8');
+    console.log(`[AUDIT] Saved coverage report to ${coverageDocPath}`);
+  }
 
   return gapData;
 }
 
 if (require.main === module) {
-  const data = runAudit();
+  const write = process.argv.includes('--write');
+  const data = runAudit({ write });
+  if (!write) console.log('[AUDIT] Dry run: no files written. Re-run with --write to update docs/final.');
   console.log(`Audit Complete: ${data.benchmarkResolved}/${data.benchmarkTotal} resolved (${data.benchmarkPercentResolved}%).`);
 }
 

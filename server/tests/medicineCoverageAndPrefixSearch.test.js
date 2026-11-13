@@ -10,18 +10,39 @@ const { computeClinicalFindings } = require('../src/utils/clinicalSafetyValidato
 
 describe('Task R5: Medicine Catalog Coverage Audit & Prefix Search', () => {
   test('1. Medicine coverage audit runs and computes benchmark % resolved accurately', () => {
-    const data = runAudit();
+    // Task 5: the audit must never rewrite tracked docs during tests; outputs go to a temp dir.
+    const crypto = require('crypto');
+    const os = require('os');
+    const gapsFile = path.resolve(__dirname, '../../docs/final/data/medicine_coverage_gaps.json');
+    const docFile = path.resolve(__dirname, '../../docs/final/MEDICINE_COVERAGE.md');
+    const digest = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    const before = [digest(gapsFile), digest(docFile)];
+
+    const outDir = fs.mkdtempSync(path.join(process.env.MEDISYNC_TEST_TMP || os.tmpdir(), 'coverage-audit-'));
+    const data = runAudit({ outDir });
     expect(data.benchmarkTotal).toBe(300);
     expect(data.benchmarkResolved).toBeGreaterThanOrEqual(220);
     expect(data.benchmarkPercentResolved).toBeGreaterThanOrEqual(70);
     expect(Array.isArray(data.benchmarkGaps)).toBe(true);
     expect(data.benchmarkGaps.length).toBe(data.benchmarkTotal - data.benchmarkResolved);
 
-    // Verify output files exist on disk
+    // Outputs land in the temp dir; the committed files are byte-identical afterwards.
+    expect(fs.existsSync(path.join(outDir, 'medicine_coverage_gaps.json'))).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'MEDICINE_COVERAGE.md'))).toBe(true);
+    expect([digest(gapsFile), digest(docFile)]).toEqual(before);
+    fs.rmSync(outDir, { recursive: true, force: true });
+  });
+
+  test('1b. runAudit() with no options writes nothing (dry run by default)', () => {
+    const crypto = require('crypto');
     const gapsFile = path.resolve(__dirname, '../../docs/final/data/medicine_coverage_gaps.json');
-    const docFile = path.resolve(__dirname, '../../docs/final/MEDICINE_COVERAGE.md');
-    expect(fs.existsSync(gapsFile)).toBe(true);
-    expect(fs.existsSync(docFile)).toBe(true);
+    const digest = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    const before = digest(gapsFile);
+    const writeSpy = jest.spyOn(fs, 'writeFileSync');
+    runAudit();
+    expect(writeSpy).not.toHaveBeenCalled();
+    writeSpy.mockRestore();
+    expect(digest(gapsFile)).toBe(before);
   });
 
   test('2. Prefix search resolves "citalopr" to Citalopram without silent auto-substitution', async () => {
