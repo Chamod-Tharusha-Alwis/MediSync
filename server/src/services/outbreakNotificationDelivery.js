@@ -33,6 +33,42 @@ function isSyntheticOrDemo(alert = {}) {
 }
 
 /**
+ * Async provenance check used before any delivery decision. An alert is demonstration data if
+ * its own flags say so OR any of its source consultations is synthetic (covers alerts created
+ * before scan-time tagging existed). A lookup failure is treated as demonstration (fail closed:
+ * real users are never contacted when provenance cannot be established).
+ */
+async function isDemoOutbreakAlert(alert = {}, options = {}) {
+  if (isSyntheticOrDemo(alert)) return true;
+  const ids = Array.isArray(alert.sourceConsultationIds) ? alert.sourceConsultationIds.filter(Boolean) : [];
+  if (ids.length === 0) return false;
+  try {
+    const Consultation = options.Consultation || require('../models/Consultation');
+    const collection = Consultation && Consultation.collection;
+    if (!collection || typeof collection.countDocuments !== 'function') return true;
+    const mongoose = require('mongoose');
+    const objectIds = ids.map(id => (mongoose.isObjectIdOrHexString(id) ? new mongoose.Types.ObjectId(String(id)) : id));
+    const syntheticCount = await collection.countDocuments({
+      _id: { $in: objectIds },
+      $or: [{ isSynthetic: true }, { isDemoData: true }, { syntheticSeedBatch: { $exists: true } }],
+    });
+    return syntheticCount > 0;
+  } catch (_) {
+    return true;
+  }
+}
+
+/**
+ * External delivery policy:
+ * - Demonstration alerts go only to the allowlist; delivery is on unless OUTBREAK_EMAIL_DELIVERY_ENABLED === 'false'.
+ * - Real (non-demo) broadcast fails closed: it requires OUTBREAK_EMAIL_DELIVERY_ENABLED === 'true'.
+ */
+function isOutbreakDeliveryEnabled(isDemo, environment = process.env) {
+  const flag = environment.OUTBREAK_EMAIL_DELIVERY_ENABLED;
+  return isDemo ? flag !== 'false' : flag === 'true';
+}
+
+/**
  * Resolves audience of registered, active non-synthetic users for district or national scope.
  * If synthetic/demo alert: strictly returns OUTBREAK_DEMO_EMAIL_ALLOWLIST (never real users).
  */
@@ -43,15 +79,16 @@ async function resolveOutbreakRecipients(alert = {}, scope = 'district', maxCap 
 
   // DEMONSTRATION DATA RULE:
   // If alert is synthetic/simulated, never query real patients or healthcare staff.
-  if (isSyntheticOrDemo(alert)) {
+  if (options.isDemo === true || await isDemoOutbreakAlert(alert, options)) {
     const rawAllowlist = process.env.OUTBREAK_DEMO_EMAIL_ALLOWLIST || '';
     const allowlist = rawAllowlist
       .split(',')
       .map(e => e.trim().toLowerCase())
       .filter(e => e && e.includes('@'));
 
-    const fallbackEmail = (options.adminEmail || 'admin@medisync.lk').trim().toLowerCase();
-    const demoEmails = allowlist.length > 0 ? allowlist : [fallbackEmail];
+    // Fallback is only the signed-in reviewer's own address; no hardcoded mailbox.
+    const fallbackEmail = String(options.adminEmail || '').trim().toLowerCase();
+    const demoEmails = allowlist.length > 0 ? allowlist : (fallbackEmail.includes('@') ? [fallbackEmail] : []);
 
     const recipients = demoEmails.map(email => ({
       email,
@@ -225,5 +262,7 @@ module.exports = {
   resolveOutbreakRecipients,
   sendOutbreakAdvisoryEmail,
   isSyntheticOrDemo,
+  isDemoOutbreakAlert,
+  isOutbreakDeliveryEnabled,
   DEFAULT_MAX_RECIPIENTS,
 };

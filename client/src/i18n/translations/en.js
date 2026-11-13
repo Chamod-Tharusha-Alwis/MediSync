@@ -490,7 +490,8 @@ export const en = {
     "noScanYet": "No scan yet",
     "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed",
     "sendTestEmail": "Send me a test email",
-    "demonstrationNotice": "Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients."
+    "demonstrationNotice": "Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.",
+    "demonstrationPublicLabel": "Demonstration data: generated from synthetic seed records. Not an active public health notice."
   },
   "alerts": {
     "outbreakAlert": "Epidemiological Outbreak Alert",

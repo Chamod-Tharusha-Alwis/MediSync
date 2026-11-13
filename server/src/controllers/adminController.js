@@ -950,8 +950,10 @@ exports.previewOutbreakRecipients = async (req, res) => {
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
     const scope = String(req.query?.scope || 'district').toLowerCase();
     const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
-    const { resolveOutbreakRecipients } = require('../services/outbreakNotificationDelivery');
-    const info = await resolveOutbreakRecipients(alert, scope, maxCap, { adminEmail: req.user?.email });
+    const delivery = require('../services/outbreakNotificationDelivery');
+    const isDemo = await delivery.isDemoOutbreakAlert(alert);
+    const info = await delivery.resolveOutbreakRecipients(alert, scope, maxCap, { adminEmail: req.user?.email, ...(isDemo ? { isDemo: true } : {}) });
+    const isDemonstration = Boolean(isDemo || info.isDemonstration);
     res.json({
       scope,
       district: info.district,
@@ -959,8 +961,8 @@ exports.previewOutbreakRecipients = async (req, res) => {
       totalEligible: info.totalFound,
       capped: info.capped,
       maxCap: info.maxCap,
-      isDemonstration: Boolean(info.isDemonstration),
-      deliveryEnabled: process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false'
+      isDemonstration,
+      deliveryEnabled: delivery.isOutbreakDeliveryEnabled(isDemonstration)
     });
   } catch (err) {
     res.status(500).json({ error: 'Unable to preview recipients.' });
@@ -995,8 +997,12 @@ exports.approveAlert = async (req, res) => {
       }
     }
 
-    // Kill switch: env var OUTBREAK_EMAIL_DELIVERY_ENABLED, defaults to true
-    const isDeliveryEnabled = process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false';
+    // Delivery policy (outbreakNotificationDelivery.isOutbreakDeliveryEnabled):
+    // demonstration alerts reach only the allowlist and are on unless the flag is 'false';
+    // real broadcasts fail closed and need OUTBREAK_EMAIL_DELIVERY_ENABLED === 'true'.
+    const delivery = require('../services/outbreakNotificationDelivery');
+    const isDemoAlert = await delivery.isDemoOutbreakAlert(alert);
+    const isDeliveryEnabled = delivery.isOutbreakDeliveryEnabled(isDemoAlert);
     const isEmailRequested = emailScope !== 'none';
     const effectiveScope = (!isDeliveryEnabled && isEmailRequested) ? 'none' : emailScope;
 
@@ -1029,12 +1035,13 @@ exports.approveAlert = async (req, res) => {
         emailDelivery.attempted = true;
         try {
           const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
-          const { resolveOutbreakRecipients, sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
-          const audience = await resolveOutbreakRecipients(alert, emailScope, maxCap, { adminEmail: req.user?.email });
+          const audience = await delivery.resolveOutbreakRecipients(alert, emailScope, maxCap, { adminEmail: req.user?.email, ...(isDemoAlert ? { isDemo: true } : {}) });
           emailDelivery.recipientCount = audience.recipients.length;
+          emailDelivery.isDemonstration = Boolean(isDemoAlert || audience.isDemonstration);
 
           if (audience.recipients.length > 0) {
-            const deliveryResult = await sendOutbreakAdvisoryEmail(audience.recipients, updated, {
+            const deliveryResult = await delivery.sendOutbreakAdvisoryEmail(audience.recipients, updated, {
+              isDemo: emailDelivery.isDemonstration,
               adminEmail: req.user?.email,
               approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
             });
@@ -1067,7 +1074,8 @@ exports.approveAlert = async (req, res) => {
           sentCount: emailDelivery.sentCount,
           failedCount: emailDelivery.failedCount,
           emailSkipped: emailDelivery.skipped,
-          deliveryEnabled: isDeliveryEnabled
+          deliveryEnabled: isDeliveryEnabled,
+          isDemonstration: isDemoAlert
         },
         timestamp: new Date()
       });

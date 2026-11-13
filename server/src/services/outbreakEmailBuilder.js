@@ -36,7 +36,7 @@ function buildOutbreakAdvisoryEmail(alert = {}, options = {}) {
 
   const isDemo = options.isDemo !== undefined
     ? Boolean(options.isDemo)
-    : Boolean(alert.isSimulation || alert.isSynthetic || alert.syntheticSeedBatch);
+    : Boolean(alert.isSimulation || alert.isSynthetic || alert.isDemoData || alert.syntheticSeedBatch);
   const isTest = Boolean(options.isTest);
 
   const diseaseData = resolveDiseaseDetails(diseaseRaw);
@@ -71,10 +71,10 @@ function buildOutbreakAdvisoryEmail(alert = {}, options = {}) {
   // Demo Banner HTML & Text
   const demoBannerHtml = isDemo ? `
     <tr>
-      <td style="padding: 16px 24px; background-color: #FFF8E1; border-bottom: 2px solid #FFA000;">
+      <td data-demo-banner="true" style="padding: 16px 24px; background-color: #FFEBEE; border-top: 4px solid #D32F2F; border-bottom: 4px solid #D32F2F;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; color: #5D4037; text-transform: uppercase; letter-spacing: 0.5px;">
+            <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; color: #B71C1C; text-transform: uppercase; letter-spacing: 0.5px;">
               ⚠ DEMONSTRATION ALERT: Generated from synthetic test data. Not an active public health notice.
             </td>
           </tr>

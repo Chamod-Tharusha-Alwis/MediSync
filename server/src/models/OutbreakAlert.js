@@ -68,6 +68,9 @@ const outbreakAlertSchema = new mongoose.Schema({
     type: String
   },
   datasetBatch: { type: String },
+  // Set by the surveillance scan when any contributing consultation is synthetic seed data.
+  isSynthetic: { type: Boolean },
+  syntheticSeedBatch: { type: String },
   isSimulation: {
     type: Boolean,
     default: false

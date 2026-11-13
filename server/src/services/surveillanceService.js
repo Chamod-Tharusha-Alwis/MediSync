@@ -3,11 +3,29 @@ const mongoose = require('mongoose');
 const POLICY = '5w-verified-episodes-v1';
 const DAY = 86400000;
 const DISTRICTS = new Set('Ampara|Anuradhapura|Badulla|Batticaloa|Colombo|Galle|Gampaha|Hambantota|Jaffna|Kalutara|Kandy|Kegalle|Kilinochchi|Kurunegala|Mannar|Matale|Matara|Monaragala|Mullaitivu|Nuwara Eliya|Polonnaruwa|Puttalam|Ratnapura|Trincomalee|Vavuniya'.split('|'));
+const VIVA_DEMO_SEED_BATCH = 'viva-2026-11-outbreaks';
 const synthetic = c => {
-  if (c && c.syntheticSeedBatch === 'viva-2026-11-outbreaks') return false;
+  if (c && c.syntheticSeedBatch === VIVA_DEMO_SEED_BATCH) return false;
   return c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
 };
 const realAlertFilter = () => ({ isSimulation: false, isDemoData: { $ne: true }, isSynthetic: { $ne: true }, isUniversityDemo: { $ne: true }, isSyntheticUniversityData: { $ne: true }, isTestFixture: { $ne: true }, datasetVersion: { $exists: false }, datasetBatch: { $exists: false }, testRunId: { $exists: false }, phase5wOwner: { $exists: false } });
+const DEMONSTRATION_ALERT_LABEL = 'Demonstration alert generated from synthetic seed data. Not an active public health notice.';
+// Provenance flags written onto a scan-created alert. If any contributing consultation is
+// synthetic, the alert is demonstration data: isDemoData=true and it carries the seed batch id,
+// so approval delivery is confined to OUTBREAK_DEMO_EMAIL_ALLOWLIST.
+function alertProvenance(mode, bucket) {
+  const isSimulation = mode === 'simulation';
+  const batches = bucket && bucket.syntheticSeedBatches ? [...bucket.syntheticSeedBatches].sort() : [];
+  const hasSynthetic = Boolean(bucket && (bucket.hasSynthetic || batches.length));
+  const flags = { isSimulation, isDemoData: isSimulation || hasSynthetic };
+  if (hasSynthetic) {
+    flags.isSynthetic = true;
+    flags.syntheticLabel = DEMONSTRATION_ALERT_LABEL;
+    if (batches.length) flags.syntheticSeedBatch = batches.join(',');
+  }
+  return flags;
+}
+const demoFlags = ({ isSimulation, ...rest }) => rest;
 function diseaseId(c) {
   const code = String(c.icdCode || '').trim().toUpperCase();
   const version = String(c.icdVersion || '').toUpperCase().replace(/[-\s]/g, '');
@@ -34,7 +52,15 @@ function selectCases(candidates, { mode = 'real', now = new Date(), lookbackDays
     if (!id || !patient || !c._id || !String(v.episodeId || '').trim() || !DISTRICTS.has(c.district)) { reject('identity_or_location'); continue; }
     const key = `${patient}|${id}|${v.episodeId}`;
     if (seen.has(key)) { reject('repeat_episode'); continue; }
-    seen.add(key); cases.push({ consultationId:String(c._id), diseaseId:id, disease:id, district:c.district, time, createdAt: c.createdAt });
+    seen.add(key);
+    const row = { consultationId:String(c._id), diseaseId:id, disease:id, district:c.district, time, createdAt: c.createdAt };
+    // Seeded viva cases are counted (see synthetic() above) but their provenance must
+    // travel with them so any alert they contribute to is labelled as demonstration data.
+    if (c.isSynthetic === true || c.syntheticSeedBatch) {
+      row.isSynthetic = true;
+      if (c.syntheticSeedBatch) row.syntheticSeedBatch = String(c.syntheticSeedBatch);
+    }
+    cases.push(row);
   }
   return { cases, excluded, policy:POLICY };
 }
@@ -58,11 +84,13 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   const buckets = new Map();
   for (const c of selection.cases) {
     const key = `${c.district}|${c.diseaseId}`;
-    if (!buckets.has(key)) buckets.set(key,{district:c.district,disease:c.disease,last_7_days_count:0,previous_baseline_avg:0,sourceConsultationIds:[]});
+    if (!buckets.has(key)) buckets.set(key,{district:c.district,disease:c.disease,last_7_days_count:0,previous_baseline_avg:0,sourceConsultationIds:[],syntheticSeedBatches:new Set(),hasSynthetic:false});
     const b=buckets.get(key);b.sourceConsultationIds.push(c.consultationId);
+    if (c.isSynthetic === true) b.hasSynthetic = true;
+    if (c.syntheticSeedBatch) b.syntheticSeedBatches.add(c.syntheticSeedBatch);
     if(c.time>=+now-7*DAY)b.last_7_days_count++;else b.previous_baseline_avg++;
   }
-  const payload=[...buckets.values()].map(({sourceConsultationIds,...b})=>({...b,previous_baseline_avg:b.previous_baseline_avg*7/23}));
+  const payload=[...buckets.values()].map(({sourceConsultationIds,syntheticSeedBatches,hasSynthetic,...b})=>({...b,previous_baseline_avg:b.previous_baseline_avg*7/23}));
   const summary={results:[],suppressed:[],consultations_analysed:selection.cases.length,data_points:selection.cases.length,mode,source:mode,policy:POLICY,excluded:selection.excluded,
     message:'Verified episode counts only. Model signals require administrator review; external delivery is disabled.'};
   const growthMetrics = computeGrowthFromCases({ cases: selection.cases, windowHours: 72, now });
@@ -84,6 +112,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     if (cr.triggered) {
       const ids = b ? [...b.sourceConsultationIds].sort() : [];
       const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,cr.district,cr.disease,ids])).digest('hex').slice(0,24));
+      const provenance = alertProvenance(mode, b);
       const alertData = {
         disease: cr.disease,
         location: cr.district,
@@ -94,8 +123,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         status: 'Pending',
         surveillancePolicy: POLICY,
         sourceConsultationIds: ids,
-        isSimulation: mode === 'simulation',
-        isDemoData: mode === 'simulation',
+        ...provenance,
         message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`,
         maxZ: cr.maxZ,
         consecutiveDays: cr.maxConsecutiveDays,
@@ -108,10 +136,12 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
             status: 'Pending',
             surveillancePolicy: POLICY,
             sourceConsultationIds: ids,
-            isSimulation: mode === 'simulation',
-            isDemoData: mode === 'simulation',
+            isSimulation: provenance.isSimulation,
           },
           $set: {
+            // Demonstration provenance is re-asserted on every scan so alerts created before
+            // this fix pick up their labels on the next run. isSimulation is fixed by the id.
+            ...demoFlags(provenance),
             disease: cr.disease,
             location: cr.district,
             district: cr.district,
@@ -155,7 +185,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         deviationPct: devPct,
         spike_percentage: devPct,
         status: alertDoc ? alertDoc.status : 'Pending',
-        isSimulation: mode === 'simulation',
+        ...provenance,
         sourceConsultationIds: ids,
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
@@ -189,6 +219,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     const ids = [...b.sourceConsultationIds].sort();
     const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,b.district,b.disease,ids])).digest('hex').slice(0,24));
     const sev = ({low:'Low',medium:'Moderate',high:'High',critical:'Critical'})[String(r.severity || r.risk_level).toLowerCase()] || 'Moderate';
+    const provenance = alertProvenance(mode, b);
     const alertData = {
       disease: b.disease,
       location: b.district,
@@ -199,8 +230,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       status: 'Pending',
       surveillancePolicy: POLICY,
       sourceConsultationIds: ids,
-      isSimulation: mode === 'simulation',
-      isDemoData: mode === 'simulation',
+      ...provenance,
       message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
     };
     await OutbreakAlert.updateOne(
@@ -210,10 +240,10 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
           status: 'Pending',
           surveillancePolicy: POLICY,
           sourceConsultationIds: ids,
-          isSimulation: mode === 'simulation',
-          isDemoData: mode === 'simulation',
+          isSimulation: provenance.isSimulation,
         },
         $set: {
+          ...demoFlags(provenance),
           disease: b.disease,
           location: b.district,
           district: b.district,
@@ -235,7 +265,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       alertId: String(_id),
       status: alertDoc ? alertDoc.status : 'Pending',
       severity: sev,
-      isSimulation: mode === 'simulation'
+      ...provenance
     };
     const enrichedItem = enrichAlertWith72h(item, growthMetrics);
     alertMap.set(key, enrichedItem);
@@ -720,6 +750,9 @@ function enrichAlertWith72h(alert, growthData) {
 
 module.exports = {
   POLICY,
+  VIVA_DEMO_SEED_BATCH,
+  DEMONSTRATION_ALERT_LABEL,
+  alertProvenance,
   synthetic,
   realAlertFilter,
   diseaseId,

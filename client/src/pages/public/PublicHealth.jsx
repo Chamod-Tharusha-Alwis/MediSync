@@ -808,6 +808,11 @@ export default function PublicHealth() {
                             {alert.severity}
                           </span>
                         </div>
+                        {alert.isDemonstration && (
+                          <p data-testid="public-alert-demonstration-label" className="text-xs font-bold text-red-300 bg-red-500/15 border border-red-500/40 rounded px-2 py-1">
+                            {t('outbreak.demonstrationPublicLabel', 'Demonstration data: generated from synthetic seed records. Not an active public health notice.')}
+                          </p>
+                        )}
                         <p className="text-xs text-slate-300 leading-relaxed">
                           {alert.message}
                         </p>
