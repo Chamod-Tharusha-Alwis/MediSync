@@ -113,3 +113,4 @@ module.exports.testMatch.push('<rootDir>/tests/outbreakDemoTaggingTask1.test.js'
 module.exports.testMatch.push('<rootDir>/tests/pdfEncryptionHonestyTask2.test.js');
 module.exports.testMatch.push('<rootDir>/tests/pharmacyInventoryRemovalTask3.test.js');
 module.exports.testMatch.push('<rootDir>/tests/docsReconciliationTask4.test.js');
+module.exports.testMatch.push('<rootDir>/tests/repoHygieneTask6.test.js');

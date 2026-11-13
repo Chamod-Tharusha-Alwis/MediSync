@@ -244,33 +244,33 @@ describe('Viva Voce Demonstration Seed Plan', () => {
     test('buildVivaSeedPlan assigns plus aliases to all personas when ownerEmail is provided', () => {
       const aliasPlan = buildVivaSeedPlan({
         now: new Date('2026-11-10T12:00:00.000Z'),
-        ownerEmail: 'chamod.tester@gmail.com'
+        ownerEmail: 'owner.tester@example.org'
       });
 
       // Demo Patient
-      expect(aliasPlan.demoPatient.email).toBe('chamod.tester+patient@gmail.com');
+      expect(aliasPlan.demoPatient.email).toBe('owner.tester+patient@example.org');
 
       // Doctors
       const docs = aliasPlan.documentsByModel.Doctor;
-      expect(docs[0].email).toBe('chamod.tester+doctor1@gmail.com');
-      expect(docs[1].email).toBe('chamod.tester+doctor2@gmail.com');
-      expect(docs[2].email).toBe('chamod.tester+doctor3@gmail.com');
-      expect(docs[3].email).toBe('chamod.tester+doctor4@gmail.com');
+      expect(docs[0].email).toBe('owner.tester+doctor1@example.org');
+      expect(docs[1].email).toBe('owner.tester+doctor2@example.org');
+      expect(docs[2].email).toBe('owner.tester+doctor3@example.org');
+      expect(docs[3].email).toBe('owner.tester+doctor4@example.org');
 
       // Pharmacy Staff
       const staff = aliasPlan.documentsByModel.PharmacyStaff;
-      expect(staff[0].email).toBe('chamod.tester+pharmacist1@gmail.com');
-      expect(staff[1].email).toBe('chamod.tester+pharmacist2@gmail.com');
-      expect(staff[2].email).toBe('chamod.tester+pharmacyadmin@gmail.com');
+      expect(staff[0].email).toBe('owner.tester+pharmacist1@example.org');
+      expect(staff[1].email).toBe('owner.tester+pharmacist2@example.org');
+      expect(staff[2].email).toBe('owner.tester+pharmacyadmin@example.org');
 
       // Hospital Admins
       const hosps = aliasPlan.documentsByModel.Hospital;
-      expect(hosps[0].email).toBe('chamod.tester+hospitaladmin1@gmail.com');
-      expect(hosps[1].email).toBe('chamod.tester+hospitaladmin2@gmail.com');
+      expect(hosps[0].email).toBe('owner.tester+hospitaladmin1@example.org');
+      expect(hosps[1].email).toBe('owner.tester+hospitaladmin2@example.org');
 
       // Other patients
       const patients = aliasPlan.documentsByModel.Patient;
-      expect(patients[1].email).toBe('chamod.tester+patient2@gmail.com');
+      expect(patients[1].email).toBe('owner.tester+patient2@example.org');
     });
 
     test('seeded personas have twoFactorEnabled: false for instant direct viva login', () => {
@@ -293,7 +293,7 @@ describe('Viva Voce Demonstration Seed Plan', () => {
     test('when ownerEmail is provided, all seeded patient, doctor, and pharmacy staff emails are routable', () => {
       const aliasPlan = buildVivaSeedPlan({
         now: new Date('2026-11-10T12:00:00.000Z'),
-        ownerEmail: 'chamod.tester@gmail.com'
+        ownerEmail: 'owner.tester@example.org'
       });
       const allAccounts = [
         ...aliasPlan.documentsByModel.Patient,
@@ -306,7 +306,7 @@ describe('Viva Voce Demonstration Seed Plan', () => {
         expect(acc.email).not.toContain('.invalid');
         expect(acc.email).not.toContain('.example');
         expect(acc.email).toContain('+');
-        expect(acc.email).toContain('@gmail.com');
+        expect(acc.email).toContain('@example.org');
       }
     });
   });

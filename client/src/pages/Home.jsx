@@ -2,7 +2,7 @@ import { useTranslation } from '../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { HeartPulse, Stethoscope, Building2, Pill, ArrowRight, Activity } from 'lucide-react';
+import { HeartPulse, Stethoscope, Building2, Pill, ArrowRight } from 'lucide-react';
 import PublicNavbar from '../components/common/PublicNavbar';
 
 const AnimatedTimelineStep = ({ step, index, isEven, currentIcon }) => {

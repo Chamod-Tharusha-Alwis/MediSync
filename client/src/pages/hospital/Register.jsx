@@ -2,7 +2,7 @@ import { passwordAccepted, PASSWORD_REQUIREMENTS } from '../../utils/passwordPol
 import { useTranslation } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle, MapPin, Hash, ShieldCheck, Building, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, MapPin, Hash, ShieldCheck, Building, Loader2 } from 'lucide-react';
 import axios from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';

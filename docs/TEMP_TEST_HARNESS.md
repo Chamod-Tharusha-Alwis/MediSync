@@ -16,11 +16,11 @@ This document inventories all temporary test aids, flags, and bypasses introduce
   - Enabled strictly via environment variable `TEST_OTP_ENABLED=true`.
   - OTP value is injected via `TEST_OTP_CODE` (must be 6-digit numeric string). Never hardcoded in source or committed.
   - Restricted strictly to the allowlist of exactly five test account emails:
-    1. `medisync.system.lk@gmail.com` (Admin)
-    2. `chamodtharusha13@gmail.com` (Patient)
-    3. `chamodalwis1309@gmail.com` (Doctor)
-    4. `ayuaranacare@gmail.com` (Hospital)
-    5. `coctharusha0913@gmail.com` (Pharmacy)
+    1. `admin.owner@example.org` (Admin)
+    2. `patient.owner@example.org` (Patient)
+    3. `doctor.owner@example.org` (Doctor)
+    4. `hospital.owner@example.org` (Hospital)
+    5. `pharmacy.owner@example.org` (Pharmacy)
   - Intercepts OTP email dispatch for allowlisted emails when active, preserving email provider quota.
   - Logs every use without logging the OTP code (`[Security Audit] Temporary test OTP verified successfully for allowlisted test account: <masked>`).
 

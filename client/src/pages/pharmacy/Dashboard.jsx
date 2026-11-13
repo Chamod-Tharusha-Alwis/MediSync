@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  Package, Clock, Search, CheckCircle, Pill, Plus, Loader2, Users, UserCircle, Shield, Mail, AlertTriangle, X, Settings, Camera, Key, Save
+  Package, Clock, Search, CheckCircle, Pill, Plus, Loader2, Users, UserCircle, Shield, Mail, AlertTriangle, X, Settings, Camera, Save
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';

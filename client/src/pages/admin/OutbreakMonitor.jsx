@@ -5,14 +5,14 @@ import { useTranslation } from '../../i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
-  TrendingUp, MapPin, ShieldAlert, Radio, X, Users,
+  TrendingUp, MapPin, ShieldAlert, X, Users,
   CheckCircle2, Clock, Mail
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
-import { calculateIncidencePer100k, formatPopulationShare } from '../../utils/populationIncidence';
+import { formatPopulationShare } from '../../utils/populationIncidence';
 
 function diseasesMatch(d1, d2) {
   if (!d1 || !d2) return false;
@@ -479,7 +479,6 @@ const OutbreakMonitor = () => {
     }
   };
 
-  const activeCount = alerts.filter(a => a.status === 'Active' && a.approvedBy && a.approvedAt).length;
   const displayedAlerts = selectedDistrict
     ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
     : alerts;
@@ -539,12 +538,6 @@ const OutbreakMonitor = () => {
     }
     return '0 (0%)';
   }
-
-  const activeGrowthList = growthData ? (approveModal.scope === 'national' ? growthData.island : growthData.districts) : [];
-  const growthEvidence = activeGrowthList?.find(item =>
-    item.disease?.toLowerCase() === approveModal.targetDisease?.toLowerCase() &&
-    (approveModal.scope === 'national' || item.district?.toLowerCase() === (approveModal.targetDistrict || approveModal.previewDistrict || '').toLowerCase())
-  ) || growthData?.districts?.find(item => item.disease?.toLowerCase() === approveModal.targetDisease?.toLowerCase());
 
   const outbreakAlerts = useMemo(() => {
     return (alerts || []).filter(a => a.status === 'Pending' || a.status === 'Active');

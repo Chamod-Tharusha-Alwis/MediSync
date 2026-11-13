@@ -109,6 +109,9 @@ export default function VerifyConsultation() {
       initialOtpSentRef.current = true;
       handleRequestOtp(true);
     }
+    // handleRequestOtp is declared later in this component (adding it here would hit the
+    // temporal dead zone) and initialOtpSentRef already guarantees a single automatic request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record, sessionToken]);
 
   // 3. Cooldown timer countdown

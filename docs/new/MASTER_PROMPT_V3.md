@@ -105,7 +105,7 @@ Atlas network/users, Redis rotation, Render/Vercel environment variables and pla
 - Force-push or rewrite history.
 
 ### 3.5 Email policy
-- Fake users get **no email address**, or an operator-controlled plus-alias (for example `chamodtharusha13+fake001@gmail.com`) for the few accounts used in OTP tests. Bounces to made-up addresses can harm the Resend account.
+- Fake users get **no email address**, or an operator-controlled plus-alias (for example `patient.owner+fake001@example.org`) for the few accounts used in OTP tests. Bounces to made-up addresses can harm the Resend account.
 - Reuse sessions; one login per role per test run. Plan emails per flow in the test plan; prefer splitting tests across days to exceeding D7.
 - Seed scripts must not trigger notifications or emails.
 

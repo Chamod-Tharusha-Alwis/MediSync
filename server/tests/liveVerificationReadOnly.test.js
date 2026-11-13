@@ -63,7 +63,9 @@ test('default install fences DB/seed imports, fetch writes, subprocesses and zer
   expect(String(guard.BLOCKED)).not.toMatch(/https?:|fixture/);
 });
 
-test('all ten tracked live verification entry points install the fence before other imports',()=>{
-  const files=['verify_b6_flow_live.cjs','verify_c1_flow_live.cjs','verify_c2_flow_live.cjs','verify_c3_map_live.cjs','verify_live_public_health_browser.js','verify_m2_step23_live.cjs','verify_phase1_ml.js','verify_phase2_reference_data.js','verify_phase3_consultation_409.js','verify_public_health_live.cjs'];
+test('all tracked live verification entry points install the fence before other imports',()=>{
+  // verify_b6_flow_live.cjs and verify_c1_flow_live.cjs were retired (they needed the removed TEST_OTP bypass).
+  for(const retired of ['verify_b6_flow_live.cjs','verify_c1_flow_live.cjs'])expect(fs.existsSync(path.resolve(__dirname,'../../scripts',retired))).toBe(false);
+  const files=['verify_c2_flow_live.cjs','verify_c3_map_live.cjs','verify_live_public_health_browser.js','verify_m2_step23_live.cjs','verify_phase1_ml.js','verify_phase2_reference_data.js','verify_phase3_consultation_409.js','verify_public_health_live.cjs'];
   for(const file of files)expect(fs.readFileSync(path.resolve(__dirname,'../../scripts',file),'utf8').split(/\r?\n/)[0]).toBe("require('./liveVerificationReadOnly.cjs').install();");
 });
