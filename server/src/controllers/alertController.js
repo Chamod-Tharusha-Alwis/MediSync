@@ -27,7 +27,8 @@ exports.getActiveAlerts = async (req, res) => {
       growthData = await service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' });
     } catch (_) {}
     const enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
-    res.json({ data: enriched });
+    const lastScan = await service.getLastScan(simulation ? 'simulation' : 'real');
+    res.json({ data: enriched, lastScan });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
   }

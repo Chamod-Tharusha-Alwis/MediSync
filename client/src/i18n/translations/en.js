@@ -484,7 +484,11 @@ export const en = {
     "approveAlert": "Approve & Activate Alert",
     "resolveAlert": "Resolve Outbreak",
     "broadcastNotice": "Dispatch District Advisory",
-    "activeAlerts": "Active Outbreak Alerts"
+    "activeAlerts": "Active Outbreak Alerts",
+    "universalIcdCoverage": "Outbreak detection covers every ICD code recorded in verified consultations.",
+    "lastScanLabel": "Last scan",
+    "noScanYet": "No scan yet",
+    "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed"
   },
   "alerts": {
     "outbreakAlert": "Epidemiological Outbreak Alert",

@@ -17,17 +17,15 @@ test.each(['en','si','ta'])('actual page has honest unavailable copy in %s; GET 
   await screen.findByRole('status');
   expect(screen.getAllByText({en:'Not available',si:'ලබා ගත නොහැක',ta:'கிடைக்கவில்லை'}[language]).length).toBeGreaterThan(0);
   expect(screen.queryByText('15,420')).not.toBeInTheDocument();expect(screen.queryByText('SURVEILLANCE')).not.toBeInTheDocument();
-  expect(api.post).not.toHaveBeenCalled();expect(api.get.mock.calls.map(x=>x[0])).toEqual(['/admin/ml-status','/admin/outbreak/alerts','/admin/outbreak/growth?window=72h']);
+  expect(api.post).not.toHaveBeenCalled();expect(api.get.mock.calls.map(x=>x[0])).toEqual(['/admin/ml-status','/admin/outbreak/alerts','/admin/outbreak/growth?window=72h','/admin/outbreak/last-scan']);
 });
-test('valid top-level envelope displays zero reference profiles, not fabricated clinical telemetry',async()=>{
+test('valid top-level envelope displays ML service status and universal ICD coverage without reference profiles card',async()=>{
   mount({available:true,status:'available',dataPoints:0,dataPointUnit:'reference disease profiles'});
-  await screen.findByText('Available');expect(screen.getByText('Symptom reference profiles')).toBeInTheDocument();
-  expect(screen.getAllByText('0').length).toBeGreaterThan(0);
-  expect(screen.getByRole('status')).toHaveTextContent('not a patient or outbreak count');
-  expect(screen.getByText(/Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually/)).toBeInTheDocument();
+  await screen.findByText('Available');expect(screen.queryByText('Symptom reference profiles')).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Outbreak detection covers every ICD code recorded in verified consultations.');
 });
 test.each([{}, {data:{dataPoints:10}},{available:true,dataPoints:10,dataPointUnit:'patients'}])('invalid envelope remains unavailable %#',async dto=>{
-  mount(dto);await screen.findByRole('status');expect(screen.getAllByText('Not available').length).toBeGreaterThan(1);
+  mount(dto);await screen.findByRole('status');expect(screen.getAllByText('Not available').length).toBeGreaterThan(0);
   expect(screen.queryByText('Available')).not.toBeInTheDocument();
 });
 test('legacy HTTP failure and alert-read failure render unavailable without unhandled rejection or invented empty success',async()=>{

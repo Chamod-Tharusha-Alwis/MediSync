@@ -629,6 +629,18 @@ exports.getOutbreakGrowth = async (req, res) => {
   }
 };
 
+// ─── Outbreak Last Scan Telemetry ─────────────────────────────────────────────
+exports.getLastScan = async (req, res) => {
+  try {
+    const service = require('../services/surveillanceService');
+    const mode = (req.query?.mode === 'simulation') ? 'simulation' : 'real';
+    const lastScan = await service.getLastScan(mode);
+    res.json({ success: true, lastScan });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve last scan record' });
+  }
+};
+
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
   const { probeAdminMlStatusWithRetry, createStatusGet } = require('../services/adminMlStatusService');

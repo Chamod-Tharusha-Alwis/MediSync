@@ -247,7 +247,49 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     } catch (_) {}
   }
 
+  summary.outbreaksDetected = alertMap.size;
+  summary.signalsSuppressed = summary.suppressed?.length || 0;
+
+  let scanRecord = null;
+  try {
+    const OutbreakScan = require('../models/OutbreakScan');
+    if (OutbreakScan && typeof OutbreakScan.create === 'function') {
+      scanRecord = await OutbreakScan.create({
+        scannedAt: now,
+        casesScanned: selection.cases.length,
+        outbreaksDetected: alertMap.size,
+        signalsSuppressed: summary.suppressed?.length || 0,
+        mode,
+        triggeredBy: io ? 'admin_manual' : 'scheduled'
+      });
+    }
+  } catch (_) {}
+
+  summary.lastScan = scanRecord ? {
+    scannedAt: scanRecord.scannedAt,
+    casesScanned: scanRecord.casesScanned,
+    outbreaksDetected: scanRecord.outbreaksDetected,
+    signalsSuppressed: scanRecord.signalsSuppressed,
+    mode: scanRecord.mode
+  } : {
+    scannedAt: now,
+    casesScanned: selection.cases.length,
+    outbreaksDetected: alertMap.size,
+    signalsSuppressed: summary.suppressed?.length || 0,
+    mode
+  };
+
   return summary;
+}
+
+async function getLastScan(mode = 'real') {
+  try {
+    const OutbreakScan = require('../models/OutbreakScan');
+    if (!OutbreakScan || typeof OutbreakScan.findOne !== 'function') return null;
+    return await OutbreakScan.findOne({ mode }).sort({ scannedAt: -1 }).lean();
+  } catch (_) {
+    return null;
+  }
 }
 const COLOMBO_OFFSET_MS = 330 * 60000; // Asia/Colombo +05:30
 
@@ -576,6 +618,18 @@ async function calculateGrowthMetrics({ windowHours = 72, mode = 'real', now = n
   return computeGrowthFromCases({ cases: selection.cases, windowHours, now });
 }
 
+const CLINICAL_ALIASES = [
+  ['a90', 'dengue', 'dengue fever'],
+  ['j11', 'j111', 'influenza', 'flu'],
+  ['a27', 'leptospirosis'],
+  ['a01', 'enteric fever', 'typhoid'],
+  ['b01', 'chickenpox'],
+  ['b05', 'measles'],
+  ['b26', 'mumps'],
+  ['a00', 'cholera'],
+  ['a920', 'chikungunya']
+];
+
 function diseasesMatch(d1, d2) {
   if (!d1 || !d2) return false;
   const s1 = String(d1).trim().toLowerCase();
@@ -584,11 +638,18 @@ function diseasesMatch(d1, d2) {
   const c1 = s1.replace(/^icd(?:10|11):/, '').replace('.', '');
   const c2 = s2.replace(/^icd(?:10|11):/, '').replace('.', '');
   if (c1 === c2) return true;
+
+  for (const group of CLINICAL_ALIASES) {
+    const m1 = group.some(a => s1 === a || c1 === a || s1.includes(a));
+    const m2 = group.some(a => s2 === a || c2 === a || s2.includes(a));
+    if (m1 && m2) return true;
+  }
+
   try {
     const { diseaseLabel } = require('./publicHealthStats');
-    const l1 = (diseaseLabel(d1) || '').toLowerCase();
-    const l2 = (diseaseLabel(d2) || '').toLowerCase();
-    if (l1 && l2 && (l1 === l2 || l1 === s2 || l2 === s1)) return true;
+    const l1 = (diseaseLabel(d1.startsWith?.('ICD') ? d1 : `ICD10:${c1.toUpperCase()}`) || diseaseLabel(d1) || '').toLowerCase();
+    const l2 = (diseaseLabel(d2.startsWith?.('ICD') ? d2 : `ICD10:${c2.toUpperCase()}`) || diseaseLabel(d2) || '').toLowerCase();
+    if (l1 && l2 && (l1 === l2 || l1 === s2 || l2 === s1 || l1.includes(s2) || l2.includes(s1))) return true;
   } catch (_) {}
   return false;
 }
@@ -674,6 +735,7 @@ module.exports = {
   calculateGrowthMetrics,
   diseasesMatch,
   enrichAlertWith72h,
+  getLastScan,
   DISTRICT_TO_PROVINCE,
   OFFICIAL_PROVINCES,
   PROVINCE_TO_DISTRICTS

@@ -484,7 +484,11 @@ export const si = {
     "approveAlert": "අනතුරු ඇඟවීම සක්‍රිය කරන්න",
     "resolveAlert": "වසංගත තත්ත්වය අවසන් කරන්න",
     "broadcastNotice": "දිස්ත්‍රික් නිවේදනය නිකුත් කරන්න",
-    "activeAlerts": "සක්‍රිය වසංගත ඇඟවීම්"
+    "activeAlerts": "සක්‍රිය වසංගත ඇඟවීම්",
+    "universalIcdCoverage": "වසංගත හඳුනාගැනීම තහවුරු කරන ලද වෛද්‍ය උපදේශනවල සටහන් කර ඇති සෑම ICD කේතයක්ම ආවරණය කරයි.",
+    "lastScanLabel": "අවසාන ස්කෑන් කිරීම",
+    "noScanYet": "තවම ස්කෑන් කර නැත",
+    "scanSummary": "ස්කෑන් කිරීම සම්පූර්ණයි: වසංගත {{outbreaks}} ක් අනාවරණය විය, සංඥා {{suppressed}} ක් මැඩපවත්වන ලදී"
   },
   "alerts": {
     "outbreakAlert": "වසංගත රෝග අනතුරු ඇඟවීම",

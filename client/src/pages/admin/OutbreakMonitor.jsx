@@ -1,17 +1,39 @@
 import SurveillanceReviewQueue from './SurveillanceReviewQueue';
 import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
-  TrendingUp, MapPin, ShieldAlert, Radio, X, Users
+  TrendingUp, MapPin, ShieldAlert, Radio, X, Users,
+  CheckCircle2, Clock
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 import { calculateIncidencePer100k, formatPopulationShare } from '../../utils/populationIncidence';
+
+function diseasesMatch(d1, d2) {
+  if (!d1 || !d2) return false;
+  const s1 = String(d1).trim().toLowerCase();
+  const s2 = String(d2).trim().toLowerCase();
+  if (s1 === s2) return true;
+  const n1 = s1.replace(/^icd(?:10|11):/i, '').replace(/\./g, '');
+  const n2 = s2.replace(/^icd(?:10|11):/i, '').replace(/\./g, '');
+  if (n1 === n2 || n1.startsWith(n2) || n2.startsWith(n1)) return true;
+  const aliases = [
+    ['a90', 'dengue'],
+    ['j11', 'j111', 'influenza', 'flu'],
+    ['a27', 'leptospirosis'],
+    ['a01', 'enteric fever', 'typhoid'],
+    ['b01', 'chickenpox'],
+    ['b05', 'measles'],
+    ['b26', 'mumps'],
+    ['a00', 'cholera']
+  ];
+  return aliases.some(group => group.some(g => n1.includes(g)) && group.some(g => n2.includes(g)));
+}
 
 
 const sevConfig = {
@@ -222,6 +244,8 @@ const OutbreakMonitor = () => {
   const [surveillanceLevel, setSurveillanceLevel] = useState('district'); // 'district' | 'province' | 'island'
   const [growthData, setGrowthData] = useState(null);
   const [growthView, setGrowthView] = useState('district'); // 'district' | 'island'
+  const [lastScan,   setLastScan]   = useState(null);
+  const [suppressedOpen, setSuppressedOpen] = useState(false);
   const lastScanAtRef = React.useRef(0);
   
   // New workflow state
@@ -264,10 +288,11 @@ const OutbreakMonitor = () => {
     let pollCount = 0;
 
     const fetchStatusAndAlerts = async () => {
-      const [s, a, g] = await Promise.allSettled([
+      const [s, a, g, sc] = await Promise.allSettled([
         api.get('/admin/ml-status'),
         api.get('/admin/outbreak/alerts'),
         api.get('/admin/outbreak/growth?window=72h'),
+        api.get('/admin/outbreak/last-scan'),
       ]);
       if (!mounted) return;
       const status = s.status === 'fulfilled' ? s.value?.data : null;
@@ -285,6 +310,11 @@ const OutbreakMonitor = () => {
       if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
         setAlerts(a.value.data.data);
         setAlertsLoaded(true);
+      }
+      if (a.status === 'fulfilled' && a.value?.data?.lastScan) {
+        setLastScan(a.value.data.lastScan);
+      } else if (sc.status === 'fulfilled' && sc.value?.data?.lastScan) {
+        setLastScan(sc.value.data.lastScan);
       }
       if (g.status === 'fulfilled' && g.value?.data?.districts) {
         setGrowthData(g.value.data);
@@ -329,6 +359,16 @@ const OutbreakMonitor = () => {
       }
 
       setMlResult(result);
+      if (result.lastScan) {
+        setLastScan(result.lastScan);
+      } else if (result.consultations_analysed !== undefined) {
+        setLastScan({
+          scannedAt: new Date().toISOString(),
+          casesScanned: result.consultations_analysed,
+          outbreaksDetected: result.results?.filter(r => r.anomaly)?.length || 0,
+          signalsSuppressed: result.suppressed?.length || 0
+        });
+      }
       
       const anomalies = result.results?.filter(r => r.anomaly) || [];
       if (anomalies.length > 0) {
@@ -423,15 +463,6 @@ const OutbreakMonitor = () => {
     }
   };
 
-  if (loading) return (
-    <div className="flex h-64 items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
-        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider animate-pulse">Initializing Command Center…</p>
-      </div>
-    </div>
-  );
-
   const activeCount = alerts.filter(a => a.status === 'Active' && a.approvedBy && a.approvedAt).length;
   const displayedAlerts = selectedDistrict
     ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
@@ -499,6 +530,96 @@ const OutbreakMonitor = () => {
     (approveModal.scope === 'national' || item.district?.toLowerCase() === (approveModal.targetDistrict || approveModal.previewDistrict || '').toLowerCase())
   ) || growthData?.districts?.find(item => item.disease?.toLowerCase() === approveModal.targetDisease?.toLowerCase());
 
+  const outbreakAlerts = useMemo(() => {
+    return (alerts || []).filter(a => a.status === 'Pending' || a.status === 'Active');
+  }, [alerts]);
+
+  const outbreakSummary = useMemo(() => {
+    const pendingOrActiveCount = outbreakAlerts.length;
+    const outbreakDiseases = new Set(outbreakAlerts.map(a => a.disease));
+
+    let last72hTotal = 0;
+    let prev72hTotal = 0;
+
+    const matchedIslandRows = (growthData?.island || []).filter(r =>
+      [...outbreakDiseases].some(d => diseasesMatch(d, r.disease))
+    );
+
+    if (matchedIslandRows.length > 0) {
+      for (const r of matchedIslandRows) {
+        last72hTotal += (Number(r.currentCases) || 0);
+        prev72hTotal += (Number(r.previousCases) || 0);
+      }
+    } else {
+      for (const a of outbreakAlerts) {
+        const m72 = deriveAlert72h(a, growthData);
+        last72hTotal += (Number(m72.currentCases) || 0);
+        prev72hTotal += (Number(m72.previousCases) || 0);
+      }
+    }
+
+    let overallChangePct = '0%';
+    if (prev72hTotal === 0) {
+      overallChangePct = last72hTotal > 0 ? 'new' : '0%';
+    } else {
+      const diff = last72hTotal - prev72hTotal;
+      const pct = (diff / prev72hTotal) * 100;
+      overallChangePct = `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
+    }
+    const netChange = last72hTotal - prev72hTotal;
+
+    const matchedDistrictRows = (growthData?.districts || []).filter(r =>
+      [...outbreakDiseases].some(d => diseasesMatch(d, r.disease))
+    );
+    let highestIncidence = null;
+    let maxRate = -1;
+    for (const r of matchedDistrictRows) {
+      const rate = typeof r.incidencePer100k === 'number' ? r.incidencePer100k : 0;
+      if (rate > maxRate) {
+        maxRate = rate;
+        highestIncidence = {
+          district: r.district,
+          incidencePer100k: rate,
+          cases: r.currentCases,
+          disease: r.disease
+        };
+      }
+    }
+
+    return {
+      outbreaksDetected: pendingOrActiveCount,
+      last72hTotal,
+      prev72hTotal,
+      netChange,
+      overallChangePct,
+      highestIncidence
+    };
+  }, [outbreakAlerts, growthData]);
+
+  const filteredGrowthRows = useMemo(() => {
+    if (!growthData) return [];
+    const outbreakDiseases = new Set(outbreakAlerts.map(a => a.disease));
+    if (outbreakDiseases.size === 0) return [];
+
+    const sourceList = growthView === 'district' ? (growthData.districts || []) : (growthData.island || []);
+
+    const matched = sourceList.filter(row => {
+      return [...outbreakDiseases].some(d => diseasesMatch(d, row.disease));
+    });
+
+    matched.sort((a, b) => (Number(b.currentCases) || 0) - (Number(a.currentCases) || 0));
+    return matched.slice(0, 10);
+  }, [growthData, growthView, outbreakAlerts]);
+
+  if (loading) return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider animate-pulse">Initializing Command Center…</p>
+      </div>
+    </div>
+  );
+
   return (
     <PageTransition className="space-y-6">
       <button type="button" className="glass-button" aria-expanded={reviewOpen} onClick={() => setReviewOpen(value => !value)}>
@@ -516,18 +637,20 @@ const OutbreakMonitor = () => {
           <p className="text-slate-400 mt-1 text-sm font-medium">Real-time epidemiological ML anomaly surveillance center.</p>
         </div>
 
-        {/* Countdown */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl select-none shadow-[0_0_15px_rgba(239,68,68,0.05)]">
-          <Radio className="w-4 h-4 text-red-400 animate-pulse" />
+        {/* Last Scan Status */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl select-none shadow-[0_0_15px_rgba(59,130,246,0.05)]">
+          <Clock className="w-4 h-4 text-blue-400" />
           <div className="text-left">
-            <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Next Automated Scan</span>
-            <span className="text-sm font-mono font-black text-red-400 tracking-wider">{t("adminStatus.notAvailable", "Not available")}</span>
+            <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">{t("outbreak.lastScanLabel", "Last scan")}</span>
+            <span className="text-xs font-mono font-bold text-slate-200 tracking-wide">
+              {lastScan ? `${formatSriLankaDateTime(lastScan.scannedAt)}, ${lastScan.casesScanned} cases scanned` : t("outbreak.noScanYet", "No scan yet")}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Overall Outbreak Summary Tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatTile
           icon={Activity} label={t("adminStatus.referenceService", "ML reference service")}
           value={
@@ -544,33 +667,59 @@ const OutbreakMonitor = () => {
           delay={0} pulse={modelStatus?.available === true || modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking'}
         />
         <StatTile
-          icon={TrendingUp} label={t("adminStatus.referenceProfiles", "Symptom reference profiles")}
-          value={
-            modelStatus?.available === true && Number.isFinite(modelStatus.dataPoints)
-              ? modelStatus.dataPoints.toLocaleString()
-              : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking')
-                ? t("adminStatus.waking", "Service waking up, retry in 30-60s")
-                : t("adminStatus.notAvailable", "Not available")
-          }
-          subtext={t("adminStatus.coverageStatement", "Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually")}
-          accentText={modelStatus?.available === true ? "text-blue-400" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "text-amber-400" : "text-slate-400"}
-          accentBg={modelStatus?.available === true ? "bg-blue-500/10" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "bg-amber-500/10" : "bg-slate-800/20"}
-          accentBorder={modelStatus?.available === true ? "border-blue-500/20" : (modelStatus?.availabilityState === 'waking' || modelStatus?.status === 'waking') ? "border-amber-500/20" : "border-slate-700/30"}
-          glowBg={modelStatus?.available === true ? "bg-blue-500/20" : "bg-slate-800/10"}
+          icon={ShieldAlert} label="Outbreaks Detected"
+          value={alertsLoaded ? outbreakSummary.outbreaksDetected : t("adminStatus.notAvailable", "Not available")}
+          subtext="Pending + Active alerts"
+          accentText={outbreakSummary.outbreaksDetected > 0 ? "text-red-400" : "text-emerald-400"}
+          accentBg={outbreakSummary.outbreaksDetected > 0 ? "bg-red-500/10" : "bg-emerald-500/10"}
+          accentBorder={outbreakSummary.outbreaksDetected > 0 ? "border-red-500/20" : "border-emerald-500/20"}
+          glowBg={outbreakSummary.outbreaksDetected > 0 ? "bg-red-500/20" : "bg-emerald-500/20"}
+          delay={0.04} pulse={outbreakSummary.outbreaksDetected > 0}
+        />
+        <StatTile
+          icon={TrendingUp} label="Outbreak Cases (72h)"
+          value={alertsLoaded ? `${outbreakSummary.last72hTotal} cases` : t("adminStatus.notAvailable", "Not available")}
+          subtext="All outbreak diseases combined"
+          accentText="text-white"
+          accentBg="bg-blue-500/10"
+          accentBorder="border-blue-500/20"
+          glowBg="bg-blue-500/20"
           delay={0.08}
         />
         <StatTile
-          icon={ShieldAlert} label={t("outbreak.activeAlerts", "Active Outbreak Alerts")} value={alertsLoaded ? activeCount : t("adminStatus.notAvailable", "Not available")}
-          accentText={activeCount > 0 ? 'text-red-400' : 'text-emerald-400'}
-          accentBg={activeCount > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}
-          accentBorder={activeCount > 0 ? 'border-red-500/20' : 'border-emerald-500/20'}
-          glowBg={activeCount > 0 ? 'bg-red-500/20' : 'bg-emerald-500/20'}
-          delay={0.16} pulse={activeCount > 0}
+          icon={Activity} label="Previous 72h Cases"
+          value={alertsLoaded ? `${outbreakSummary.prev72hTotal} cases` : t("adminStatus.notAvailable", "Not available")}
+          subtext={`Net change: ${outbreakSummary.netChange >= 0 ? '+' : ''}${outbreakSummary.netChange}`}
+          accentText="text-slate-300"
+          accentBg="bg-slate-800/20"
+          accentBorder="border-slate-700/30"
+          glowBg="bg-slate-800/10"
+          delay={0.12}
+        />
+        <StatTile
+          icon={Zap} label="Overall Trajectory Change"
+          value={alertsLoaded ? outbreakSummary.overallChangePct : t("adminStatus.notAvailable", "Not available")}
+          subtext="Comparing 72h windows"
+          accentText={outbreakSummary.netChange > 0 ? "text-red-400" : (outbreakSummary.netChange < 0 ? "text-emerald-400" : "text-slate-300")}
+          accentBg={outbreakSummary.netChange > 0 ? "bg-red-500/10" : "bg-slate-800/20"}
+          accentBorder={outbreakSummary.netChange > 0 ? "border-red-500/20" : "border-slate-700/30"}
+          glowBg={outbreakSummary.netChange > 0 ? "bg-red-500/20" : "bg-slate-800/10"}
+          delay={0.16}
+        />
+        <StatTile
+          icon={MapPin} label="Highest Incidence District"
+          value={outbreakSummary.highestIncidence ? formatDistrictName(outbreakSummary.highestIncidence.district) : 'None'}
+          subtext={outbreakSummary.highestIncidence ? `${outbreakSummary.highestIncidence.incidencePer100k} / 100k (${outbreakSummary.highestIncidence.cases} cases)` : 'No active outbreak'}
+          accentText="text-amber-400"
+          accentBg="bg-amber-500/10"
+          accentBorder="border-amber-500/20"
+          glowBg="bg-amber-500/20"
+          delay={0.20}
         />
       </div>
 
       <p role="status" className="text-sm text-slate-400">
-        {t("adminStatus.caution", "Clinical validation is not established. Forecast: Not available. The reference count is not a patient or outbreak count.")}
+        {t("outbreak.universalIcdCoverage", "Outbreak detection covers every ICD code recorded in verified consultations.")}
       </p>
 
       {/* On-Demand Trigger Frame */}
@@ -611,131 +760,26 @@ const OutbreakMonitor = () => {
           </div>
         )}
 
-        {/* Detected Signals Cards */}
-        {mlResult && !detecting && mlResult.results?.length > 0 && (
-          <div className="pt-6 border-t border-white/5 space-y-4">
-            <div className="flex justify-between items-center select-none">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Detected Signals ({mlResult.results.length})</h4>
-              <span className="text-xs font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
-            </div>
-
-            {/* Results Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              {mlResult.results.map((item, idx) => {
-                const rawZ = typeof item.zScore === 'number' && Number.isFinite(item.zScore)
-                  ? item.zScore
-                  : (typeof item.z_score === 'number' && Number.isFinite(item.z_score)
-                    ? item.z_score
-                    : (typeof item.maxZ === 'number' && Number.isFinite(item.maxZ)
-                      ? item.maxZ
-                      : (item.baseline ? ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1)) : null)));
-                const zDisplay = rawZ !== null && Number.isFinite(rawZ) ? rawZ.toFixed(2) : 'N/A';
-
-                const rawDev = typeof item.deviationPct === 'number' && Number.isFinite(item.deviationPct)
-                  ? item.deviationPct
-                  : (typeof item.spike_percentage === 'number' && Number.isFinite(item.spike_percentage)
-                    ? item.spike_percentage
-                    : (item.baseline && item.baseline > 0 ? ((item.latest_actual - item.baseline) / item.baseline) * 100 : null));
-                const formattedDev = rawDev !== null && Number.isFinite(rawDev) ? `${rawDev > 0 ? '+' : ''}${Math.round(rawDev)}%` : 'N/A';
-                
-                // Determine normalized tier label
-                const s = (item.severity || item.risk_level || '').toLowerCase();
-                let tierLabel = 'NORMAL';
-                let badgeStyle = 'bg-slate-800 border border-slate-700 text-slate-400';
-                let cardStyle = 'bg-slate-950/20 border-white/5';
-                let devColor = (rawDev !== null && rawDev < 0) ? 'text-slate-500' : 'text-emerald-400';
-
-                if (s === 'critical') {
-                  tierLabel = 'CRITICAL';
-                  badgeStyle = 'bg-red-500/15 border border-red-500/30 text-red-400 font-black tracking-wider';
-                  cardStyle = 'bg-red-500/[0.04] border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.12)]';
-                  devColor = 'text-red-400 font-bold';
-                } else if (s === 'high') {
-                  tierLabel = 'HIGH';
-                  badgeStyle = 'bg-orange-500/15 border border-orange-500/30 text-orange-400 font-black tracking-wider';
-                  cardStyle = 'bg-orange-500/[0.04] border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.12)]';
-                  devColor = 'text-orange-400 font-bold';
-                } else if (s === 'warning' || s === 'medium' || s === 'moderate') {
-                  tierLabel = 'WARNING';
-                  badgeStyle = 'bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black tracking-wider';
-                  cardStyle = 'bg-amber-500/[0.03] border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.10)]';
-                  devColor = 'text-amber-400 font-bold';
-                }
-
-                const zColor = tierLabel === 'CRITICAL' ? 'text-red-400' : (tierLabel === 'HIGH' ? 'text-orange-400' : (tierLabel === 'WARNING' ? 'text-amber-400' : 'text-slate-300'));
-                const m72 = deriveAlert72h(item, growthData);
-                const changeStr = formatChange(m72.currentCases, m72.previousCases, m72.percentChange);
-
-                return (
-                  <div
-                    key={`${item.disease}-${item.district}-${idx}`}
-                    className={`p-4 rounded-xl border flex flex-col justify-between transition-all duration-200 ${cardStyle}`}
-                  >
-                    <div>
-                      <div className="flex justify-between items-start gap-2 mb-2 select-none">
-                        <span className="text-white font-bold text-sm truncate">{item.disease}</span>
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${badgeStyle}`}>
-                          {tierLabel}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 flex items-center justify-between gap-1">
-                        <span className="flex items-center gap-1 font-semibold text-slate-300">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
-                        </span>
-                        <span className="text-xs text-slate-500 font-mono" title="Department of Census and Statistics (Census 2012)">
-                          Pop: {m72.population ? m72.population.toLocaleString() : 'N/A'}
-                        </span>
-                      </p>
-
-                      {/* Primary figure: Verified cases in last 72 hours */}
-                      <div className="my-2.5 p-3 rounded-xl bg-slate-900/80 border border-white/5 space-y-1.5">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                          Verified cases (last 72h)
-                        </div>
-                        <div className="text-2xl font-black text-white font-mono leading-none">
-                          {m72.currentCases} <span className="text-xs font-normal text-slate-400">cases</span>
-                        </div>
-                        <div className="pt-2 space-y-1 text-xs text-slate-300 font-sans border-t border-white/5">
-                          <div>
-                            Previous 72h: <span className="font-mono text-white font-semibold">{m72.previousCases}</span> cases, {changeStr}
-                          </div>
-                          <div title="Department of Census and Statistics (Census 2012). Verified MediSync cases (lower bound).">
-                            <span className="font-mono font-semibold text-white">{m72.formattedShare}</span> of district population, <span className="font-mono font-semibold text-white">{m72.incidencePer100k !== null ? m72.incidencePer100k : 'N/A'}</span> per 100,000
-                          </div>
-                          <div className="text-slate-400">
-                            Island-wide: <span className="font-mono font-semibold text-white">{m72.islandCases}</span> cases
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-slate-500 italic" title="Lower bound: counts only consultations recorded in MediSync">
-                        *Verified MediSync cases (lower bound)
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-end select-none">
-                      <div>
-                        <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Z-Score</span>
-                        <span className={`text-sm font-mono font-bold ${zColor}`}>
-                          {zDisplay}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[11px] uppercase font-bold text-slate-500 block leading-tight">Deviation</span>
-                        <span className={`text-sm font-mono ${devColor}`}>
-                          {formattedDev}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Single Scan Summary Line */}
+        {mlResult && !detecting && (
+          <div className="pt-4 border-t border-white/5">
+            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg select-none">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-sm font-bold text-white">
+                  Scan complete: {mlResult.results?.filter(r => r.anomaly)?.length ?? mlResult.outbreaksDetected ?? 0} outbreaks detected, {mlResult.suppressed?.length ?? mlResult.signalsSuppressed ?? 0} signals suppressed
+                </span>
+              </div>
+              <span className="text-xs font-mono font-semibold text-slate-400">
+                {mlResult.consultations_analysed ?? 0} cases scanned
+              </span>
             </div>
           </div>
         )}
 
-        {/* Suppressed Signals Panel */}
+        {/* Suppressed Signals Panel - Collapsed by default */}
         {mlResult?.suppressed && mlResult.suppressed.length > 0 && (
-          <div className="pt-6 border-t border-white/5 space-y-4">
+          <div className="pt-4 border-t border-white/5 space-y-3">
             <div className="flex justify-between items-center select-none">
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -745,27 +789,35 @@ const OutbreakMonitor = () => {
                   Districts evaluated by surveillance criteria where alerts were suppressed to prevent false alarms.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-slate-500">{mlResult.suppressed.length} suppressed</span>
+              <button
+                type="button"
+                onClick={() => setSuppressedOpen(prev => !prev)}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-white/5 transition-all"
+              >
+                {suppressedOpen ? 'Hide Suppressed Signals' : `View ${mlResult.suppressed.length} Suppressed Signals`}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {mlResult.suppressed.map((sig, idx) => (
-                <div key={`suppressed-${sig.district}-${sig.disease}-${idx}`} className="p-3 bg-slate-950/40 rounded-xl border border-white/5 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold text-slate-300">{sig.disease}</span>
-                    <span className="px-2 py-0.5 rounded text-[11px] uppercase tracking-wide font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                      {sig.reason === 'CASE_FLOOR_NOT_MET' ? 'Floor (<5 cases)' : sig.reason === 'PERSISTENCE_CRITERIA_NOT_MET' ? 'Persistence (<2 days)' : sig.reason}
-                    </span>
+            {suppressedOpen && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                {mlResult.suppressed.map((sig, idx) => (
+                  <div key={`suppressed-${sig.district}-${sig.disease}-${idx}`} className="p-3 bg-slate-950/40 rounded-xl border border-white/5 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-bold text-slate-300">{sig.disease}</span>
+                      <span className="px-2 py-0.5 rounded text-[11px] uppercase tracking-wide font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                        {sig.reason === 'CASE_FLOOR_NOT_MET' ? 'Floor (<5 cases)' : sig.reason === 'PERSISTENCE_CRITERIA_NOT_MET' ? 'Persistence (<2 days)' : sig.reason}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-500" /> {formatDistrictName(sig.district)}
+                      </span>
+                      <span>{sig.count} cases</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-500" /> {formatDistrictName(sig.district)}
-                    </span>
-                    <span>{sig.count} cases</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -776,10 +828,10 @@ const OutbreakMonitor = () => {
           <div>
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Last 72-Hour Epidemiological Growth</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Outbreak Disease 72-Hour Growth</h3>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Case trajectories comparing recent 72h window to prior 72h window. Note: Small sample sizes make percentages sensitive; evaluate absolute count alongside rate.
+              Epidemiological trajectories for detected outbreak diseases only (Top 10 by last-72h case volume).
             </p>
           </div>
           <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 border border-white/10 rounded-xl text-xs font-bold select-none">
@@ -800,40 +852,43 @@ const OutbreakMonitor = () => {
           </div>
         </div>
 
-        {growthData && (growthView === 'district' ? growthData.districts : growthData.island)?.length > 0 ? (
+        {filteredGrowthRows.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3">Disease Vector</th>
+                  <th className="px-4 py-3">Disease Vector &amp; ICD</th>
                   <th className="px-4 py-3">Region</th>
                   <th className="px-4 py-3 text-right">Last 72h</th>
                   <th className="px-4 py-3 text-right">Prior 72h</th>
                   <th className="px-4 py-3 text-right">Net Change</th>
-                  <th className="px-4 py-3 text-right">Growth Rate</th>
-                  <th className="px-4 py-3 text-right">Incidence</th>
+                  <th className="px-4 py-3 text-right">Change %</th>
+                  <th className="px-4 py-3 text-right">Share of Population</th>
+                  <th className="px-4 py-3 text-right">Per 100,000</th>
                   <th className="px-4 py-3 text-center">7-Day Daily Trend</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-200 font-mono">
-                {(growthView === 'district' ? growthData.districts : growthData.island).map((row, idx) => {
+                {filteredGrowthRows.map((row, idx) => {
                   const isPositive = row.absoluteChange > 0;
                   const isNew = row.percentChange === 'new';
+                  const regionName = growthView === 'district' ? row.district : 'Island-wide';
+                  const popShare = formatPopulationShare(row.currentCases, regionName);
                   return (
                     <tr key={`${row.disease}-${row.district}-${idx}`} className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-4 py-3 font-sans font-bold text-white">{row.disease}</td>
                       <td className="px-4 py-3 font-sans text-slate-400">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-500" />
-                          {formatDistrictName(row.district)}
+                          {growthView === 'district' ? formatDistrictName(row.district) : 'Island-wide'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-white">{row.currentCases}</td>
-                      <td className="px-4 py-3 text-right text-slate-400">{row.previousCases}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${isPositive ? 'text-red-400' : (row.absoluteChange < 0 ? 'text-slate-500' : 'text-slate-300')}`}>
+                      <td className="px-4 py-3 text-right font-bold text-white font-mono">{row.currentCases}</td>
+                      <td className="px-4 py-3 text-right text-slate-400 font-mono">{row.previousCases}</td>
+                      <td className={`px-4 py-3 text-right font-bold font-mono ${isPositive ? 'text-red-400' : (row.absoluteChange < 0 ? 'text-emerald-400' : 'text-slate-400')}`}>
                         {row.absoluteChange > 0 ? `+${row.absoluteChange}` : row.absoluteChange}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold">
+                      <td className="px-4 py-3 text-right font-bold font-mono">
                         {isNew ? (
                           <span className="px-1.5 py-0.5 rounded text-[11px] uppercase tracking-wide bg-red-500/20 text-red-300 border border-red-500/40">NEW</span>
                         ) : (
@@ -842,13 +897,16 @@ const OutbreakMonitor = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-400" title="Department of Census and Statistics (Census 2012)">
-                        {row.incidencePer100k !== null ? `${row.incidencePer100k} / 100k` : 'N/A'}
+                      <td className="px-4 py-3 text-right font-mono font-semibold text-white" title="Department of Census and Statistics (Census 2012)">
+                        {popShare.formattedShare}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-slate-300" title="Department of Census and Statistics (Census 2012)">
+                        {popShare.incidencePer100k !== null ? `${popShare.incidencePer100k} / 100k` : 'N/A'}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-end justify-center gap-1 h-5">
                           {row.dailyCounts?.map((cnt, cIdx) => {
-                            const maxCnt = Math.max(1, ...row.dailyCounts);
+                            const maxCnt = Math.max(1, ...(row.dailyCounts || []));
                             const hPct = Math.max(15, Math.round((cnt / maxCnt) * 100));
                             return (
                               <div
@@ -866,10 +924,13 @@ const OutbreakMonitor = () => {
                 })}
               </tbody>
             </table>
+            <div className="text-xs text-slate-500 italic px-4 py-3 border-t border-white/5">
+              * Verified MediSync cases (lower bound; only consultations recorded in MediSync are counted). Department of Census and Statistics (Census 2012).
+            </div>
           </div>
         ) : (
           <div className="p-6 text-center text-slate-500 text-xs">
-            No 72-hour clinical episode growth detected in current window.
+            No active or pending outbreak alerts found in current 72-hour growth telemetry.
           </div>
         )}
       </div>

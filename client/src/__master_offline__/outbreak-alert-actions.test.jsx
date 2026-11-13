@@ -141,9 +141,8 @@ describe('Outbreak Monitor Alert Action Buttons Lifecycle (Task B)', () => {
       createdAt: new Date().toISOString()
     }];
     await mountWithAlerts(alerts);
-    expect(screen.getByText('Symptom reference profiles')).toBeInTheDocument();
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.getByText(/Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually/)).toBeInTheDocument();
+    expect(screen.queryByText('Symptom reference profiles')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Outbreak detection covers every ICD code recorded in verified consultations.');
   });
 
   test('approve modal enforces disease confirmation on nationwide scope and enables button on match', async () => {
