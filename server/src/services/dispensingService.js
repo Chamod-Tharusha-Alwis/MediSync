@@ -81,13 +81,12 @@ function validateItems(raw, isPartial = false) {
     const name = typeof (item.drugName ?? item.name) === 'string' ? (item.drugName ?? item.name).trim() : '';
     const rawQty = item.quantityDispensed ?? item.quantity ?? item.qty;
     if (!['number', 'string'].includes(typeof rawQty) || String(rawQty).trim() === '' || !Number.isSafeInteger(Number(rawQty)) || Number(rawQty) <= 0) {
-      fail('INVALID_QUANTITY', 'Quantity must be a positive whole number of inventory units.');
+      fail('INVALID_QUANTITY', 'Quantity must be a positive whole number of dispensed units.');
     }
     if (!name) fail('INVALID_ITEM', 'Medicine name is required.');
     if (!isPartial && item.status && item.status !== 'dispensed') fail('PARTIAL_DISPENSE_REQUIRES_REVIEW', 'Partial dispensing is not supported by this full-prescription checkout.');
-    const itemStatus = ['dispensed', 'partial', 'out_of_stock'].includes(item.status) ? item.status : (isPartial ? 'partial' : 'dispensed');
-    if (item.inventoryItemId && !mongoose.isObjectIdOrHexString(item.inventoryItemId)) fail('INVALID_ITEM', 'Invalid inventory item identifier.');
-    return { name, qty: Number(rawQty), inventoryItemId: item.inventoryItemId ? String(item.inventoryItemId) : null,
+    const itemStatus = ['dispensed', 'partial'].includes(item.status) ? item.status : (isPartial ? 'partial' : 'dispensed');
+    return { name, qty: Number(rawQty),
       unit: normalize(item.unit), dosage: typeof item.dosage === 'string' ? item.dosage.trim() : '',
       frequency: typeof item.frequency === 'string' ? item.frequency.trim() : '', status: itemStatus };
   });
@@ -170,11 +169,11 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
         const ackReason = (typeof safetyAck?.reason === 'string' && safetyAck.reason.trim()) || (rx?.safetyOverride?.acknowledged ? `Prescriber acknowledged allergy: ${item.name}` : 'Pharmacist reviewed allergy information');
         pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName, reason: ackReason, type: 'allergy_conflict', conflictingItem: item.name };
       }
-      const key = item.inventoryItemId ? String(item.inventoryItemId) : normalize(item.name);
+      const key = normalize(item.name);
       const previous = updates.get(key);
       const qty = (previous?.qty || 0) + item.qty;
       if (!Number.isSafeInteger(qty)) fail('INVALID_QUANTITY', 'Total quantity exceeds the supported range.');
-      updates.set(key, { inventoryItemId: item.inventoryItemId || null, drugName: item.name, unit: item.unit || 'units',
+      updates.set(key, { drugName: item.name, unit: item.unit || 'units',
         dosage: item.dosage || rx?.dosage || item.unit || 'Standard', frequency: item.frequency || 'As directed', qty, status: item.status || (isPartial ? 'partial' : 'dispensed') });
     }
     if (rx) {
@@ -201,7 +200,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
       idempotencyKey:key,requestHash:hash,
       isAlternativeDispensed:Boolean(body.isAlternativeDispensed),alternativeDetails:body.alternativeDetails || '',
       audit:{actorId:String(staff._id),actorRole:user.role||'pharmacist',action:otc?'OTC_PRESCRIPTION_DISPENSED':'PRESCRIPTION_DISPENSED',timestamp:new Date()},
-      items:[...updates.values()].map(i=>({inventoryItemId:i.inventoryItemId,drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:i.status || (isPartial ? 'partial' : 'dispensed')})) };
+      items:[...updates.values()].map(i=>({drugName:i.drugName,dosage:i.dosage,unit:i.unit,quantityDispensed:i.qty,status:i.status || (isPartial ? 'partial' : 'dispensed')})) };
     if (pharmacistOverride) receiptData.pharmacistOverride = pharmacistOverride;
     const receipt = new Dispensing(receiptData);
     await claimPharmacyAuthorization({ user, nic, authorization, session });

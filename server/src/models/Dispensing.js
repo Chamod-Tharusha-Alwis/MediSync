@@ -25,7 +25,6 @@ const dispensingSchema = new mongoose.Schema({
   isAlternativeDispensed: { type: Boolean, default: false },
   alternativeDetails: { type: String, default: '' },
   items: [{
-    inventoryItemId: { type: mongoose.Schema.Types.ObjectId },
     unit: String,
     drugName: {
       type: String,
@@ -41,6 +40,7 @@ const dispensingSchema = new mongoose.Schema({
     },
     status: {
       type: String,
+      // 'out_of_stock' is kept only so legacy receipts still validate; new requests cannot set it.
       enum: ['dispensed', 'out_of_stock', 'partial'],
       required: true
     }

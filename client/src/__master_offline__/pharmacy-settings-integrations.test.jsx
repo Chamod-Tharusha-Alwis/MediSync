@@ -19,11 +19,11 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-test('unsupported external inventory integration is explicitly unavailable without fake credentials, endpoint or copy action', async () => {
+test('settings show no inventory integration, fake credentials, endpoint or copy action (inventory is out of scope)', async () => {
   const { container } = render(<PharmacyDashboard />);
   await screen.findByRole('heading', { name: 'Pharmacy Settings' });
-  expect(screen.getByRole('status')).toHaveTextContent('External inventory integration is unavailable');
-  expect(screen.getByRole('status')).toHaveTextContent('No integration client, token or webhook has been provisioned');
+  expect(container).not.toHaveTextContent(/inventory/i);
+  expect(container).not.toHaveTextContent(/\bstock\b/i);
   expect(container).not.toHaveTextContent('sk_sandbox_mock_credential_67890');
   expect(container).not.toHaveTextContent('api.medisync.io');
   expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();

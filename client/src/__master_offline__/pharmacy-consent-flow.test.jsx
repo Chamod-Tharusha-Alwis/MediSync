@@ -120,7 +120,7 @@ test('prescription dispensing carries the patient-bound provider grant into its 
   api.post.mockResolvedValue({ data: { data: { receiptNumber: 'OWNED-RECEIPT' } } });
   render(<PharmacyDashboard />); query('QA-ONE', false); fireEvent.click(await screen.findByText('Grant synthetic consent'));
   await screen.findByText('Patient QA-ONE'); fireEvent.click(screen.getByRole('button', { name: 'Dispense Medication' }));
-  fireEvent.change(await screen.findByLabelText('Quantity in inventory units'), { target: { value: '1' } });
+  fireEvent.change(await screen.findByLabelText('Quantity dispensed'), { target: { value: '1' } });
   fireEvent.click(screen.getByRole('button', { name: /Confirm Dispense|Dispense Now/i }));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
   expect(api.post.mock.calls[0][0]).toBe('/pharmacy/dispense');
@@ -128,17 +128,11 @@ test('prescription dispensing carries the patient-bound provider grant into its 
   expect(api.post.mock.calls[0][2].headers['x-patient-access']).toBe('synthetic-consent-token');
 });
 
-test('OTC consent is remembered by the provider and a role denial is displayed without a new OTP loop', async () => {
-  setMockRoute('/dashboard/otc'); api.get.mockResolvedValue({ data: { data: [{ _id: 'owned-stock', drugName: 'Synthetic Medicine', stock: 3, unit: 'tablet' }] } });
-  api.post.mockRejectedValue({ response: { status: 403, data: { error: 'Access denied: insufficient permissions' } } });
-  render(<PharmacyDashboard />); await screen.findByText('Synthetic Medicine (Stock: 3 tablet)');
-  fireEvent.change(screen.getByLabelText('Patient NIC *'), { target: { value: 'QA-ONE' } });
-  fireEvent.change(screen.getByPlaceholderText('Medication name* (select stock or type)'), { target: { value: 'Synthetic Medicine' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Fulfill Dispensation' }));
-  fireEvent.click(await screen.findByText('Grant synthetic consent'));
-  await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Access denied: insufficient permissions'));
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Fulfill Dispensation' }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
-  expect(api.post.mock.calls[1][2].headers['x-patient-access']).toBe('synthetic-consent-token');
+test('the removed manual OTC route renders no checkout and never requests pharmacy inventory', async () => {
+  setMockRoute('/dashboard/otc');
+  const { container } = render(<PharmacyDashboard />);
+  await waitFor(() => expect(container).not.toHaveTextContent('Manual OTC Checkout'));
+  expect(screen.queryByRole('button', { name: 'Fulfill Dispensation' })).not.toBeInTheDocument();
+  expect(api.get.mock.calls.map(call => call[0])).not.toContain('/pharmacy/inventory');
+  expect(api.post).not.toHaveBeenCalled();
 });

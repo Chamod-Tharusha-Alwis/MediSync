@@ -126,7 +126,9 @@ test('QA cookie refresh accepts only its loopback Origin without a production or
 });
 test('legacy maintenance entry points deny before loading environment files or provider/database modules', () => {
   const fs = require('fs'), path = require('path');
-  for (const name of ['seedUsers', 'seedUniversityDemoDataset', 'seedOutbreakDemo', 'seedPharmacyMLData', 'seedRestockData', 'wipeOutbreakDemo', 'wipeSeedRestockData']) {
+  // Restock seed/wipe utilities were deleted with pharmacy inventory (Task 3).
+  for (const gone of ['seedRestockData', 'wipeSeedRestockData']) expect(fs.existsSync(path.resolve(__dirname, '../src/utils', gone + '.js'))).toBe(false);
+  for (const name of ['seedUsers', 'seedUniversityDemoDataset', 'seedOutbreakDemo', 'seedPharmacyMLData', 'wipeOutbreakDemo']) {
     const source = fs.readFileSync(path.resolve(__dirname, '../src/utils', name + '.js'), 'utf8'); expect(source.split('\n')[0]).toContain("require('../security/maintenanceAdmission').denyLegacyMaintenance()");
   }
   expect(() => require('../src/security/maintenanceAdmission').denyLegacyMaintenance()).toThrow('LEGACY_DATASET_MAINTENANCE_DISABLED');

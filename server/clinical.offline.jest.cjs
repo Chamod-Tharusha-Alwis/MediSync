@@ -111,3 +111,4 @@ module.exports.testMatch.push(
 // Final hardening run (Nov 2026): one registered suite per task.
 module.exports.testMatch.push('<rootDir>/tests/outbreakDemoTaggingTask1.test.js');
 module.exports.testMatch.push('<rootDir>/tests/pdfEncryptionHonestyTask2.test.js');
+module.exports.testMatch.push('<rootDir>/tests/pharmacyInventoryRemovalTask3.test.js');

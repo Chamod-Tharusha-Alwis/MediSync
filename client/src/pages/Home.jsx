@@ -77,7 +77,7 @@ const Home = () => {
       title: 'Secure Prescription Terminal',
       steps: [
         'Verify patient identity via National Identity Card (NIC) lookup to retrieve active prescriptions.',
-        'Review authorized prescriptions and record dispensing with inventory checks.',
+        'Review authorized prescriptions and record verified dispensing against each prescription.',
         'Dispensing requests use transaction and duplicate-request protections.'
       ]
     },

@@ -43,7 +43,7 @@ test('dynamic route registration fails instead of silently omitting a function',
 });
 test('real current import graph excludes the historical university application; all matrix IDs and classes are complete',()=>{
   const result=inventory(path.resolve(__dirname,'../..'));
-  expect(result.rows.length).toBeGreaterThan(500);expect(result.kinds.API).toBe(233);
+  expect(result.rows.length).toBeGreaterThan(500);expect(result.kinds.API).toBe(228); // 233 minus 5 restock/seed-restock routes removed with pharmacy inventory (Task 3)
   expect(result.rows.some(r=>r.file==='client/src/UniversityApp.jsx')).toBe(false);
   expect(result.notReachableClientFiles).toContain('client/src/UniversityApp.jsx');
   expect(new Set(result.rows.map(r=>r.id)).size).toBe(result.rows.length);

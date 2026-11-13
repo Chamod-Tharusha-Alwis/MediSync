@@ -596,135 +596,6 @@ exports.getStats = async (req, res) => {
   }
 };
 
-exports.predictRestock = async (req, res) => {
-  try {
-    const axios = require('axios');
-    const { generateToken } = require('../utils/internalAuth');
-    const { data } = await axios.post(
-      `${process.env.ML_ENGINE_URL}/predict-district-demand`,
-      req.body,
-      { headers: { 'x-internal-key': generateToken() } }
-    );
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: 'ML Engine unavailable' });
-  }
-};
-
-exports.getDistrictRestockAlerts = async (req, res) => {
-  try {
-    const axios = require('axios');
-
-    // 1. Resolve the pharmacist's district via their linked Pharmacy
-    const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
-    if (!staff || !staff.pharmacyId) {
-      return res.status(400).json({ error: 'Pharmacist is not linked to a pharmacy' });
-    }
-    const district = staff.pharmacyId.district;
-
-    // 2. Find all pharmacies in this district
-    const pharmaciesInDistrict = await Pharmacy.find({ district }).select('_id');
-    const pharmacyIds = pharmaciesInDistrict.map(p => p._id);
-
-    // 3. Aggregate dispensing over the last 14 days for these pharmacies
-    const since = new Date();
-    since.setDate(since.getDate() - 14);
-
-    const dispensings = await Dispensing.find({
-      pharmacyId: { $in: pharmacyIds },
-      dispensedAt: { $gte: since }
-    }).select('items dispensedAt');
-
-    if (dispensings.length === 0) {
-      return res.status(200).json({ 
-          message: "Not enough dispensing data to generate ML predictions.",
-          alerts: [] 
-      });
-    }
-
-    // 4. Build drugTrends: { "Paracetamol": [ {date, count}, ... ] }
-    const rawCounts = {}; // { drugName: { dateStr: count } }
-
-    for (const record of dispensings) {
-      const dateStr = record.dispensedAt.toISOString().slice(0, 10);
-      for (const item of (record.items || [])) {
-        const name = item.drugName?.trim();
-        if (!name) continue;
-        if (!rawCounts[name]) rawCounts[name] = {};
-        rawCounts[name][dateStr] = (rawCounts[name][dateStr] || 0) + (item.quantityDispensed || 1);
-      }
-    }
-
-    // 5. Convert to sorted arrays for the ML engine
-    const drugTrends = {};
-    for (const [drug, dateCounts] of Object.entries(rawCounts)) {
-      drugTrends[drug] = Object.entries(dateCounts)
-        .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    // 6. Call ML engine with built-in high-availability analytical fallback
-    try {
-      const { generateToken } = require('../utils/internalAuth');
-      const mlRes = await axios.post(
-        `${process.env.ML_ENGINE_URL || 'http://localhost:5001'}/predict-district-demand`,
-        { district, drugTrends },
-        { headers: { 'x-internal-key': generateToken() }, timeout: 60000 }
-      );
-      return res.json(mlRes.data);
-    } catch (mlErr) {
-      console.warn('[getDistrictRestockAlerts] ML Engine unavailable, executing built-in predictive engine:');
-      
-      const alerts = [];
-      for (const [drugName, dailyCounts] of Object.entries(drugTrends)) {
-        if (!dailyCounts || dailyCounts.length < 2) continue;
-        const counts = dailyCounts.map(d => d.count || 0);
-        const n = counts.length;
-        const mid = Math.floor(n / 2);
-        const baselineAvg = counts.slice(0, mid).reduce((a, b) => a + b, 0) / Math.max(1, mid);
-        const recentAvg = counts.slice(mid).reduce((a, b) => a + b, 0) / Math.max(1, n - mid);
-        const pctChange = ((recentAvg - baselineAvg) / Math.max(1, baselineAvg)) * 100;
-        const slope = (counts[counts.length - 1] - counts[0]) / Math.max(1, n - 1);
-
-        if (pctChange >= 50 || (slope > 0 && recentAvg >= baselineAvg * 1.5)) {
-          alerts.push({
-            drugName,
-            trend: `+${Math.round(pctChange)}%`,
-            recentDailyAvg: Math.round(recentAvg * 10) / 10,
-            baselineDailyAvg: Math.round(baselineAvg * 10) / 10,
-            status: "Critical",
-            message: `Dispensing surged by ${Math.round(pctChange)}% in ${district}. Restock immediately.`
-          });
-        } else if (pctChange >= 25 || (slope > 0 && recentAvg >= baselineAvg * 1.25)) {
-          alerts.push({
-            drugName,
-            trend: `+${Math.round(pctChange)}%`,
-            recentDailyAvg: Math.round(recentAvg * 10) / 10,
-            baselineDailyAvg: Math.round(baselineAvg * 10) / 10,
-            status: "Warning",
-            message: `Dispensing up ${Math.round(pctChange)}% in ${district}. Consider restocking soon.`
-          });
-        }
-      }
-
-      alerts.sort((a, b) => (a.status === 'Critical' ? -1 : 1));
-
-      return res.json({
-        district,
-        alerts,
-        drugsAnalyzed: Object.keys(drugTrends).length,
-        generatedAt: new Date().toISOString()
-      });
-    }
-  } catch (err) {
-    console.error('[getDistrictRestockAlerts]');
-    res.status(500).json({ error: 'Failed to generate restock alerts' });
-  }
-};
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   District Health Demand — Epidemiological burdens & top dispensed medications (U11)
-   ───────────────────────────────────────────────────────────────────────────── */
 exports.getDistrictDemand = async (req, res) => {
   try {
     const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
@@ -892,7 +763,7 @@ function getColomboDateRange(range = '24h', customStart, customEnd) {
   };
 }
 
-exports.getRestockAnalytics = async (req, res) => {
+exports.getDispensingAnalytics = async (req, res) => {
   try {
     const staff = await PharmacyStaff.findById(req.user.id).populate('pharmacyId');
     if (!staff || !staff.pharmacyId) {
@@ -949,7 +820,7 @@ exports.getRestockAnalytics = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[getRestockAnalytics]', error);
+    console.error('[getDispensingAnalytics]', error);
     res.status(500).json({ error: 'Failed to fetch dispensing analytics' });
   }
 };

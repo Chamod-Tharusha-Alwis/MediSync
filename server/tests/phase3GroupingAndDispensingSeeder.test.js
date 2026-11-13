@@ -218,7 +218,7 @@ describe('Phase 3 — Grouped Prescriptions, Receipt History, Analytics & SEED_2
 
     // 3. Before seeding SEED_2026_11_B, 24h analytics returns 0
     const emptyResPayload = await new Promise((resolve, reject) => {
-      pharmacyController.getRestockAnalytics(
+      pharmacyController.getDispensingAnalytics(
         { user: { id: String(staffId) }, query: { range: '24h' } },
         {
           status: code => ({ json: body => reject(new Error(`Unexpected ${code}: ${JSON.stringify(body)}`)) }),
@@ -258,7 +258,7 @@ describe('Phase 3 — Grouped Prescriptions, Receipt History, Analytics & SEED_2
 
     // 7. 30d analytics now returns populated medication volumes
     const populatedResPayload = await new Promise((resolve, reject) => {
-      pharmacyController.getRestockAnalytics(
+      pharmacyController.getDispensingAnalytics(
         { user: { id: String(staffId) }, query: { range: '30d' } },
         {
           status: code => ({ json: body => reject(new Error(`Unexpected ${code}: ${JSON.stringify(body)}`)) }),

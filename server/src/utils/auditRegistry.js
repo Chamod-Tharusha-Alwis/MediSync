@@ -142,9 +142,6 @@ const ROUTE_AUDIT_MAP = [
   { routeFile: 'pharmacyRoutes.js', method: 'GET', path: '/prescriptions/pending/:nic', action: 'VIEW_PENDING_PRESCRIPTIONS', sensitive: true },
   { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/dispense', action: 'DISPENSE_PRESCRIPTION' },
   { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/dispense-otc', action: 'DISPENSE_OTC' },
-  { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/predict-restock', action: 'PREDICT_RESTOCK' },
-  { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/seed-restock', action: 'DENIED_DATASET_MAINTENANCE' },
-  { routeFile: 'pharmacyRoutes.js', method: 'DELETE', path: '/seed-restock', action: 'DENIED_DATASET_MAINTENANCE' },
 
   // ── prescriptionRoutes.js ──
   { routeFile: 'prescriptionRoutes.js', method: 'POST', path: '/consultation-safety', action: 'CHECK_MEDICINE_SAFETY' },

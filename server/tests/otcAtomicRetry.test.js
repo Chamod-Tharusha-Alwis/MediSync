@@ -12,7 +12,7 @@ jest.mock('../src/services/currentMedicationSafety', () => ({
   assertMedicationResult: jest.fn(),
 }));
 
-const { runTransaction, dispense, DispenseError } = require('../src/services/dispensingService');
+const { runTransaction, dispense, DispenseError, validateItems } = require('../src/services/dispensingService');
 const { claimPharmacyAuthorization } = require('../src/services/pharmacyCommitGuard');
 const Pharmacy = require('../src/models/Pharmacy');
 const PharmacyStaff = require('../src/models/PharmacyStaff');
@@ -125,7 +125,9 @@ describe('Task P11-C: Pharmacy OTC Atomic Failures & Retry', () => {
 
     test('replay with identical idempotency key and payload returns existing receipt with replay: true', async () => {
       const items = [{ name: 'Paracetamol 500mg', qty: 10, unit: 'tablets' }];
-      const normalizedItems = [{ name: 'Paracetamol 500mg', qty: 10, inventoryItemId: null, unit: 'tablets', dosage: '', frequency: '', status: 'dispensed' }];
+      // Derive the normalized shape from the service so the idempotency hash tracks it (no inventory fields).
+      const normalizedItems = validateItems(items);
+      expect(normalizedItems[0]).not.toHaveProperty('inventoryItemId');
       const hash = crypto.createHash('sha256').update(JSON.stringify({
         staff: String(authorizedUser.id),
         nic: patientNic,
