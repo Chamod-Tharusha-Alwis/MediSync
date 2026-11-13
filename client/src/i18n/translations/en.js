@@ -488,7 +488,9 @@ export const en = {
     "universalIcdCoverage": "Outbreak detection covers every ICD code recorded in verified consultations.",
     "lastScanLabel": "Last scan",
     "noScanYet": "No scan yet",
-    "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed"
+    "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed",
+    "sendTestEmail": "Send me a test email",
+    "demonstrationNotice": "Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients."
   },
   "alerts": {
     "outbreakAlert": "Epidemiological Outbreak Alert",

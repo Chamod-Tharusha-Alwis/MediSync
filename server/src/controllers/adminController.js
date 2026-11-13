@@ -951,7 +951,7 @@ exports.previewOutbreakRecipients = async (req, res) => {
     const scope = String(req.query?.scope || 'district').toLowerCase();
     const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
     const { resolveOutbreakRecipients } = require('../services/outbreakNotificationDelivery');
-    const info = await resolveOutbreakRecipients(alert, scope, maxCap);
+    const info = await resolveOutbreakRecipients(alert, scope, maxCap, { adminEmail: req.user?.email });
     res.json({
       scope,
       district: info.district,
@@ -959,6 +959,7 @@ exports.previewOutbreakRecipients = async (req, res) => {
       totalEligible: info.totalFound,
       capped: info.capped,
       maxCap: info.maxCap,
+      isDemonstration: Boolean(info.isDemonstration),
       deliveryEnabled: process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false'
     });
   } catch (err) {
@@ -996,7 +997,7 @@ exports.approveAlert = async (req, res) => {
 
     // Kill switch: env var OUTBREAK_EMAIL_DELIVERY_ENABLED, defaults to true
     const isDeliveryEnabled = process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false';
-    const isEmailRequested = emailScope !== 'none' && !service.synthetic(alert);
+    const isEmailRequested = emailScope !== 'none';
     const effectiveScope = (!isDeliveryEnabled && isEmailRequested) ? 'none' : emailScope;
 
     const updated = await OutbreakAlert.findOneAndUpdate(
@@ -1029,11 +1030,14 @@ exports.approveAlert = async (req, res) => {
         try {
           const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
           const { resolveOutbreakRecipients, sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
-          const audience = await resolveOutbreakRecipients(alert, emailScope, maxCap);
+          const audience = await resolveOutbreakRecipients(alert, emailScope, maxCap, { adminEmail: req.user?.email });
           emailDelivery.recipientCount = audience.recipients.length;
 
           if (audience.recipients.length > 0) {
-            const deliveryResult = await sendOutbreakAdvisoryEmail(audience.recipients, updated);
+            const deliveryResult = await sendOutbreakAdvisoryEmail(audience.recipients, updated, {
+              adminEmail: req.user?.email,
+              approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
+            });
             emailDelivery.sentCount = deliveryResult.sentCount || 0;
             emailDelivery.failedCount = deliveryResult.failedCount || 0;
           }
@@ -1125,6 +1129,61 @@ exports.resolveAlert = async (req, res) => {
     res.json({ message: `Alert ${alert.status.toLowerCase()} successfully`, data: alert });
   } catch (error) {
     res.status(500).json({ error: 'Failed to resolve alert' });
+  }
+};
+
+// ─── TEST OUTBREAK ADVISORY EMAIL ─────────────────────────────────────────────
+exports.sendTestOutbreakEmail = async (req, res) => {
+  try {
+    if (!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Administrator review required.' });
+    }
+    const OutbreakAlert = require('../models/OutbreakAlert');
+    const alert = await OutbreakAlert.findById(req.params.id);
+    if (!alert) return res.status(404).json({ error: 'Alert not found' });
+
+    const adminEmail = (req.user?.email || 'admin@medisync.lk').trim().toLowerCase();
+    const { sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
+
+    const result = await sendOutbreakAdvisoryEmail(
+      [{ email: adminEmail, role: 'admin_test', district: alert.location || alert.district || 'National' }],
+      alert,
+      {
+        isTest: true,
+        adminEmail,
+        approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
+      }
+    );
+
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        actorId: String(req.user?.id || req.user?._id || 'unknown'),
+        actorRole: req.user?.role || 'admin',
+        action: 'TEST_EMAIL_SENT',
+        accessedNic: String(alert._id),
+        deviceModel: `test_email|${alert.disease}|${alert.location || alert.district}`,
+        details: {
+          alertId: String(alert._id),
+          disease: alert.disease,
+          district: alert.location || alert.district,
+          sentCount: result.sentCount,
+          failedCount: result.failedCount
+        },
+        timestamp: new Date()
+      });
+    } catch (_) {}
+
+    return res.json({
+      success: result.sentCount > 0,
+      recipient: adminEmail,
+      sentCount: result.sentCount,
+      failedCount: result.failedCount,
+      subject: result.subject,
+      message: result.sentCount > 0 ? `Test email sent successfully to ${adminEmail}` : 'Test email failed to send.'
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to send test email.' });
   }
 };
 

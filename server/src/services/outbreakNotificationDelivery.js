@@ -5,23 +5,69 @@
  *
  * Scoped outbreak advisory email delivery service.
  * - Resolves opted-in, active, non-synthetic patients and healthcare staff.
- * - Deduplicates emails and applies configurable recipient caps.
- * - Dispatches strictly de-identified public health advisories (disease, district, general prevention advice, /public-health link).
- * - Zero patient identifiers or private clinical data.
+ * - Enforces DEMONSTRATION ALLOWLIST for synthetic/simulated alerts:
+ *     Never dispatches to real patients or clinicians if isSimulation, isSynthetic, or syntheticSeedBatch is present.
+ *     Routes only to OUTBREAK_DEMO_EMAIL_ALLOWLIST (defaulting to admin email).
+ * - Builds professional trilingual responsive emails with DCS population & 72h metrics.
+ * - Plain text fallback identical in content.
+ * - Throttled sequential dispatch with audit logs (recipient counts only, zero recipient email exposure).
+ *
+ * Review status: Curated for viva demonstration; pending human clinical review.
  */
-
-const mongoose = require('mongoose');
 
 const DEFAULT_MAX_RECIPIENTS = 100;
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 50;
 
 /**
- * Resolves audience of registered, active non-synthetic users for district or national scope.
+ * Determines whether an alert is synthetic, simulated, or demo data.
  */
-async function resolveOutbreakRecipients(alert, scope = 'district', maxCap = DEFAULT_MAX_RECIPIENTS) {
+function isSyntheticOrDemo(alert = {}) {
+  return Boolean(
+    alert.isSimulation === true ||
+    alert.isSynthetic === true ||
+    alert.syntheticSeedBatch ||
+    alert.isDemoData === true ||
+    alert.isTestFixture === true
+  );
+}
+
+/**
+ * Resolves audience of registered, active non-synthetic users for district or national scope.
+ * If synthetic/demo alert: strictly returns OUTBREAK_DEMO_EMAIL_ALLOWLIST (never real users).
+ */
+async function resolveOutbreakRecipients(alert = {}, scope = 'district', maxCap = DEFAULT_MAX_RECIPIENTS, options = {}) {
   const normScope = String(scope || 'district').toLowerCase();
   const district = normScope === 'national' ? null : (alert.location || alert.district || null);
+  const effectiveCap = Math.max(1, Number(maxCap) || DEFAULT_MAX_RECIPIENTS);
+
+  // DEMONSTRATION DATA RULE:
+  // If alert is synthetic/simulated, never query real patients or healthcare staff.
+  if (isSyntheticOrDemo(alert)) {
+    const rawAllowlist = process.env.OUTBREAK_DEMO_EMAIL_ALLOWLIST || '';
+    const allowlist = rawAllowlist
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(e => e && e.includes('@'));
+
+    const fallbackEmail = (options.adminEmail || 'admin@medisync.lk').trim().toLowerCase();
+    const demoEmails = allowlist.length > 0 ? allowlist : [fallbackEmail];
+
+    const recipients = demoEmails.map(email => ({
+      email,
+      role: 'demonstration_allowlist',
+      district: district || 'National'
+    }));
+
+    return {
+      recipients: recipients.slice(0, effectiveCap),
+      totalFound: demoEmails.length,
+      capped: demoEmails.length > effectiveCap,
+      district: district || 'National',
+      maxCap: effectiveCap,
+      isDemonstration: true
+    };
+  }
 
   const Patient = require('../models/Patient');
   const Hospital = require('../models/Hospital');
@@ -65,7 +111,7 @@ async function resolveOutbreakRecipients(alert, scope = 'district', maxCap = DEF
       if (h._id) hospitalIds.push(h._id);
     }
 
-    // 3. Doctors associated with district hospitals or registered in district
+    // 3. Doctors associated with district hospitals
     const doctorFilter = {
       isActive: { $ne: false },
       isSynthetic: { $ne: true },
@@ -91,7 +137,6 @@ async function resolveOutbreakRecipients(alert, scope = 'district', maxCap = DEF
   } catch (_) {}
 
   const allRecipients = Array.from(emailMap.values());
-  const effectiveCap = Math.max(1, Number(maxCap) || DEFAULT_MAX_RECIPIENTS);
   const cappedRecipients = allRecipients.slice(0, effectiveCap);
 
   return {
@@ -100,49 +145,42 @@ async function resolveOutbreakRecipients(alert, scope = 'district', maxCap = DEF
     capped: allRecipients.length > effectiveCap,
     district: district || 'National',
     maxCap: effectiveCap,
+    isDemonstration: false
   };
 }
 
 /**
- * Returns generic prevention guidance for verified communicable diseases.
+ * Dispatches professional trilingual advisory emails to the provided recipient list in throttled batches.
+ *
+ * @param {Array} recipients - Recipient list [{ email, role, district }] or string emails
+ * @param {Object} alert - Alert document or object
+ * @param {Object} options - { isDemo, isTest, adminEmail, approverRole }
  */
-function getPreventionGuidance(diseaseName) {
-  const norm = String(diseaseName || '').toLowerCase();
-  if (norm.includes('dengue') || norm.includes('a90')) {
-    return 'Eliminate standing water sources around premises. Apply mosquito repellents and seek immediate medical evaluation at the onset of sudden high fever, severe headache, or joint pain.';
-  }
-  if (norm.includes('influenza') || norm.includes('flu') || norm.includes('j11') || norm.includes('j10')) {
-    return 'Practice respiratory hygiene: cover coughs and sneezes, wash hands frequently with soap or alcohol sanitizer, wear a protective mask in crowded spaces, and self-isolate if experiencing flu symptoms.';
-  }
-  if (norm.includes('leptospirosis') || norm.includes('a27') || norm.includes('rat fever')) {
-    return 'Avoid wading through flood water or muddy fields without protective footwear. Farmers and outdoor workers should take prophylactic medication under public health supervision.';
-  }
-  if (norm.includes('typhoid') || norm.includes('a01') || norm.includes('cholera') || norm.includes('a00')) {
-    return 'Consume only boiled or chlorination-treated drinking water. Ensure all food is thoroughly cooked and practice rigorous hand washing before meals.';
-  }
-  return 'Maintain strict personal and environmental hygiene. Consult a licensed medical practitioner immediately upon experiencing persistent fever or acute symptoms.';
-}
-
-/**
- * Dispatches strictly de-identified advisory emails to the provided recipient list in throttled batches.
- */
-async function sendOutbreakAdvisoryEmail(recipients = [], alert = {}) {
+async function sendOutbreakAdvisoryEmail(recipients = [], alert = {}, options = {}) {
   if (!Array.isArray(recipients) || recipients.length === 0) {
     return { sentCount: 0, failedCount: 0, errors: [] };
   }
 
   const { sendOutbreakAlert } = require('../utils/emailService');
-  const disease = alert.disease || 'Communicable Disease';
-  const district = alert.location || alert.district || 'National';
-  const severity = alert.severity || 'High';
-  const guidance = getPreventionGuidance(disease);
-  const publicHealthUrl = `${process.env.FRONTEND_URL || 'https://medisync.chamodtharusha.com.lk'}/public-health`;
+  const { buildOutbreakAdvisoryEmail } = require('./outbreakEmailBuilder');
+  const { enrichAlertWith72h, calculateGrowthMetrics } = require('./surveillanceService');
 
-  const advisoryBody = `
-    Public Health Advisory: A ${severity}-priority epidemiological signal for ${disease} has been verified in ${district}.
-    Precautionary Measures: ${guidance}
-    To view real-time district statistics, risk indicators, and active surveillance maps, visit the official MediSync Public Health Observatory at: ${publicHealthUrl}
-  `;
+  // Ensure alert has real-time 72h metrics if not already attached
+  let enrichedAlert = alert;
+  if (!alert.metrics72h) {
+    try {
+      const growthData = await calculateGrowthMetrics({ windowHours: 72 });
+      enrichedAlert = enrichAlertWith72h(alert, growthData);
+    } catch (_) {
+      enrichedAlert = alert;
+    }
+  }
+
+  const isDemo = options.isDemo !== undefined ? options.isDemo : isSyntheticOrDemo(alert);
+  const emailPayload = buildOutbreakAdvisoryEmail(enrichedAlert, {
+    ...options,
+    isDemo,
+  });
 
   let sentCount = 0;
   let failedCount = 0;
@@ -154,9 +192,12 @@ async function sendOutbreakAdvisoryEmail(recipients = [], alert = {}) {
     const emailList = chunk.map((r) => (typeof r === 'string' ? r : r.email)).filter(Boolean);
 
     try {
-      const res = await sendOutbreakAlert(emailList, district, advisoryBody, alert.maxZ || 'N/A');
+      const res = await sendOutbreakAlert(emailList, emailPayload);
       if (res && res.success !== false) {
-        sentCount += emailList.length;
+        sentCount += (res.acceptedCount !== undefined ? res.acceptedCount : emailList.length);
+        if (res.totalCount && res.acceptedCount !== undefined && res.totalCount > res.acceptedCount) {
+          failedCount += (res.totalCount - res.acceptedCount);
+        }
       } else {
         failedCount += emailList.length;
         errors.push(res?.errorCode || 'DELIVERY_REJECTED');
@@ -171,12 +212,18 @@ async function sendOutbreakAdvisoryEmail(recipients = [], alert = {}) {
     }
   }
 
-  return { sentCount, failedCount, errors };
+  return {
+    sentCount,
+    failedCount,
+    errors,
+    subject: emailPayload.subject,
+    isDemonstration: isDemo
+  };
 }
 
 module.exports = {
   resolveOutbreakRecipients,
   sendOutbreakAdvisoryEmail,
-  getPreventionGuidance,
+  isSyntheticOrDemo,
   DEFAULT_MAX_RECIPIENTS,
 };

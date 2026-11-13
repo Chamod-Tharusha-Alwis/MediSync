@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Activity, Zap, AlertTriangle, Loader2,
   TrendingUp, MapPin, ShieldAlert, Radio, X, Users,
-  CheckCircle2, Clock
+  CheckCircle2, Clock, Mail
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -249,6 +249,7 @@ const OutbreakMonitor = () => {
   const lastScanAtRef = React.useRef(0);
   
   // New workflow state
+  const [testEmailSending, setTestEmailSending] = useState(false);
   const [approveModal, setApproveModal] = useState({
     isOpen: false,
     alertId: null,
@@ -260,6 +261,7 @@ const OutbreakMonitor = () => {
     previewCount: null,
     previewDistrict: null,
     deliveryEnabled: true,
+    isDemonstration: false,
   });
 
   const fetchRecipientPreview = async (alertId, scope) => {
@@ -276,6 +278,7 @@ const OutbreakMonitor = () => {
         previewCount: res.data.recipientCount,
         previewDistrict: res.data.district,
         deliveryEnabled: res.data.deliveryEnabled !== false,
+        isDemonstration: Boolean(res.data.isDemonstration),
       }));
     } catch (_) {
       setApproveModal(prev => ({ ...prev, previewLoading: false, previewCount: null }));
@@ -460,6 +463,19 @@ const OutbreakMonitor = () => {
       ));
     } catch (err) {
       toast.error(err.response?.data?.error || `Failed to ${action} alert`);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!approveModal.alertId) return;
+    setTestEmailSending(true);
+    try {
+      const res = await api.post(`/admin/outbreak/${approveModal.alertId}/test-email`);
+      toast.success(res.data.message || `Test email dispatched to ${res.data.recipient || 'your inbox'}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to dispatch test email');
+    } finally {
+      setTestEmailSending(false);
     }
   };
 
@@ -1297,26 +1313,46 @@ const OutbreakMonitor = () => {
                   </div>
                 </div>
               )}
+
+              {approveModal.isDemonstration && (
+                <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl space-y-1 text-xs text-amber-200">
+                  <span className="font-bold">⚠ DEMONSTRATION ALERT:</span> {t('outbreak.demonstrationNotice', 'Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.')} ({approveModal.previewCount !== null ? approveModal.previewCount : 1} recipient).
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-between items-center gap-3">
               <button
-                onClick={() => setApproveModal({ isOpen: false, alertId: null, scope: 'none' })}
-                className="px-4 py-2 rounded-lg text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors"
+                type="button"
+                onClick={handleSendTestEmail}
+                disabled={testEmailSending}
+                className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                Cancel
+                {testEmailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5 text-blue-400" />}
+                {t('outbreak.sendTestEmail', 'Send me a test email')}
               </button>
-              <button
-                onClick={handleApproveAlert}
-                disabled={
-                  approveModal.scope === 'national' &&
-                  (!approveModal.targetDisease ||
-                    approveModal.confirmDisease.trim().toLowerCase() !== approveModal.targetDisease.trim().toLowerCase())
-                }
-                className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Confirm Approval
-              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setApproveModal({ isOpen: false, alertId: null, scope: 'none' })}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApproveAlert}
+                  disabled={
+                    approveModal.scope === 'national' &&
+                    (!approveModal.targetDisease ||
+                      approveModal.confirmDisease.trim().toLowerCase() !== approveModal.targetDisease.trim().toLowerCase())
+                  }
+                  className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Confirm Approval
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>

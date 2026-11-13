@@ -20,7 +20,7 @@ describe('Phase D4 — Trilingual Coverage Badge and Non-Profiled Notice Parity'
     const siKeys = extractKeys(si);
     const taKeys = extractKeys(ta);
 
-    const expectedKeyCount = 840 + Object.keys(en.liveQa || {}).length + Object.keys(en.diseaseAnalytics || {}).length + 4;
+    const expectedKeyCount = 840 + Object.keys(en.liveQa || {}).length + Object.keys(en.diseaseAnalytics || {}).length + 6;
     expect(enKeys.length).toBe(expectedKeyCount);
     expect(siKeys.length).toBe(expectedKeyCount);
     expect(taKeys.length).toBe(expectedKeyCount);
