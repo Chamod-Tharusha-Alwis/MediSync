@@ -135,7 +135,10 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
      - **Trigger Manual Outbreak Detection Scan**: Click the **Run Statistical Detection Scan** button (dispatches POST /api/admin/outbreak/trigger).
      - The statistical engine evaluates verified consultations against the 56-day district baseline and 7-day window:
        - **Gampaha Dengue**: Triggers Pending Alert ( \ge 5$, 4 consecutive days  > 2.0$, Critical Severity).
-       - **Kandy Influenza**: Triggers Pending Alert ( \ge 5$, 4 consecutive days  > 2.0$, High Severity).
+       - **Kandy Influenza**: Triggers Pending Alert ($N \ge 5$, 4 consecutive days $z > 2.0$, High Severity).
+        - **Galle Leptospirosis**: Triggers Pending Alert ($N \ge 5$, Critical Severity, verified Viva batch).
+        - **Ratnapura Typhoid**: Triggers Pending Alert ($N \ge 5$, Critical Severity, verified Viva batch).
+        - **Inspect Primary 72h Metric**: Point out the primary figure "Verified cases (last 72h)" displayed prominently on every card, table row, and approval modal, alongside previous 72h change, DCS population share (e.g. 0.0005%), incidence per 100k, and island-wide totals.
        - **Kalutara Negative Control**: Evaluates 6 cases on Day -2, but 0 on others; Gate 2 suppresses the single-day spike (PERSISTENCE_CRITERIA_NOT_MET, No Alert).
        - **Matara Negative Control**: Evaluates 4 cases; Gate 1 suppresses clusters under 5 cases (CASE_FLOOR_NOT_MET, No Alert).
      - **Admin Review & Approval Workflow**:
@@ -161,6 +164,24 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
   6. Show the **14-Day Statistical Projection** curve with explicit labeling: *"Descriptive projection; not a validated clinical forecast"*.
 - **Key Talking Point for Examiners**:
   > *"Traditional paper epidemiological notification (Form H-544) takes weeks to reach the central Epidemiology Unit [OWNER: cite notification delay study]. MediSync aggregates syndromic data in real time as consultations occur, giving public health inspectors instant early-warning capability."*
+
+---
+
+### Step 5b: Per-Disease Syndromic Analytics & ICD Autocomplete
+- **Role**: System Administrator / Epidemiological Officer.
+- **URL**: `/admin/dashboard/analytics`.
+- **Actions**:
+  1. Navigate to `/admin/dashboard/analytics`.
+  2. Locate the **Disease Analytics** section: observe clean zero-graph initial state.
+  3. In the search box, demonstrate fast server-side ICD autocomplete across 71,700+ concepts:
+     - Type `dengue` or `A90` (or in Sinhala `ඩෙංගු` / Tamil `டெங்கு`).
+     - Select `A90 - Dengue fever [classical dengue]`.
+  4. Select time range preset buttons: `72h`, `7d`, `30d`, or Custom date range.
+  5. Point out the loaded telemetry (aggregates only, zero PII):
+     - **Summary Tiles**: Total Verified Cases, Districts Affected, Change vs Previous Period (+/- change and % or "new"), Peak Day.
+     - **Cases Over Time Chart**: Responsive continuous zero-filled AreaChart bucketed automatically by hour/day/week.
+     - **Breakdown Toggles**: Switch between **District Breakdown** (table of all 25 districts with cases, DCS population, share, and incidence per 100k; toggle between top 10 and all 25), **Province Breakdown** (9 provinces), and **Island-Wide Total**.
+     - **Honesty Disclosure**: Footnote explicitly designating metrics as verified MediSync clinical cases (lower bound).
 
 ---
 

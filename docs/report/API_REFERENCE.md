@@ -129,6 +129,8 @@
 | Method | Path | Auth / Role | Description & Gates |
 |---|---|---|---|
 | `GET` | `/api/admin/analytics/dashboard` | Super Admin | System-wide operational dashboard: total users, active outbreaks, consultation trends. |
+| `GET` | `/api/admin/analytics/diseases/search` | Admin, Super Admin, Health Officer | Autocomplete search over ICD-10 (71k concepts) and WHO ICD-11 core catalog with debounced matching, localized synonyms (Sinhala/Tamil), and max 20 results. |
+| `GET` | `/api/admin/analytics/diseases/:code` | Admin, Super Admin, Health Officer | Aggregated epidemiological surveillance metrics for selected ICD code across time range (?from=&to=&bucket=): summary tiles (total, affected districts, change vs previous period, peak day), zero-filled time series, 25-district breakdown with DCS incidence & share, province breakdown, and island-wide totals. |
 | `GET` | `/api/admin/system-health` | Super Admin | Database, Redis cache, and ML service connectivity telemetry. |
 | `GET` | `/api/admin/users` | Super Admin | List all registered platform accounts with status and roles. |
 | `PUT` | `/api/admin/users/toggle-status` | Super Admin | Suspend or activate user account standing. |

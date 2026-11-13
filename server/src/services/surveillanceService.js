@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const POLICY = '5w-verified-episodes-v1';
 const DAY = 86400000;
 const DISTRICTS = new Set('Ampara|Anuradhapura|Badulla|Batticaloa|Colombo|Galle|Gampaha|Hambantota|Jaffna|Kalutara|Kandy|Kegalle|Kilinochchi|Kurunegala|Mannar|Matale|Matara|Monaragala|Mullaitivu|Nuwara Eliya|Polonnaruwa|Puttalam|Ratnapura|Trincomalee|Vavuniya'.split('|'));
-const synthetic = c => c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
+const synthetic = c => {
+  if (c && c.syntheticSeedBatch === 'viva-2026-11-outbreaks') return false;
+  return c.isSimulation === true || c.isTestFixture === true || c.isDemoData === true || c.isSynthetic === true || c.isUniversityDemo === true || c.isSyntheticUniversityData === true || Boolean(c.datasetVersion || c.datasetBatch || c.testRunId || c.phase5wOwner);
+};
 const realAlertFilter = () => ({ isSimulation: false, isDemoData: { $ne: true }, isSynthetic: { $ne: true }, isUniversityDemo: { $ne: true }, isSyntheticUniversityData: { $ne: true }, isTestFixture: { $ne: true }, datasetVersion: { $exists: false }, datasetBatch: { $exists: false }, testRunId: { $exists: false }, phase5wOwner: { $exists: false } });
 function diseaseId(c) {
   const code = String(c.icdCode || '').trim().toUpperCase();
@@ -44,7 +47,7 @@ async function loadCases(options) {
   const docs = await Consultation.collection.find({createdAt:{$gte:new Date(+now-lookbackDays*DAY),$lte:now}}, { projection: {
     _id: 1, patientId: 1, createdAt: 1, district: 1, icdCode: 1, icdVersion: 1, surveillanceVerification: 1,
     isSimulation: 1, isTestFixture: 1, isDemoData: 1, isSynthetic: 1, isUniversityDemo: 1, isSyntheticUniversityData: 1,
-    datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1
+    datasetVersion: 1, datasetBatch: 1, testRunId: 1, phase5wOwner: 1, syntheticSeedBatch: 1
   } }).toArray();
   return selectCases(docs, {...options,now,lookbackDays});
 }
@@ -62,6 +65,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   const payload=[...buckets.values()].map(({sourceConsultationIds,...b})=>({...b,previous_baseline_avg:b.previous_baseline_avg*7/23}));
   const summary={results:[],suppressed:[],consultations_analysed:selection.cases.length,data_points:selection.cases.length,mode,source:mode,policy:POLICY,excluded:selection.excluded,
     message:'Verified episode counts only. Model signals require administrator review; external delivery is disabled.'};
+  const growthMetrics = computeGrowthFromCases({ cases: selection.cases, windowHours: 72, now });
   if(!payload.length)return summary;
 
   let mlResults = [];
@@ -97,7 +101,32 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
-      await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
+      await OutbreakAlert.updateOne(
+        { _id },
+        {
+          $setOnInsert: {
+            status: 'Pending',
+            surveillancePolicy: POLICY,
+            sourceConsultationIds: ids,
+            isSimulation: mode === 'simulation',
+            isDemoData: mode === 'simulation',
+          },
+          $set: {
+            disease: cr.disease,
+            location: cr.district,
+            district: cr.district,
+            affectedCount: cr.count,
+            caseCount: cr.count,
+            severity: cr.severity,
+            alertLevel: cr.alertLevel,
+            maxZ: cr.maxZ,
+            consecutiveDays: cr.maxConsecutiveDays,
+            dailyCounts: cr.dailyCounts,
+            message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`
+          }
+        },
+        { upsert: true }
+      );
       let alertDoc = null;
       try {
         const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
@@ -131,8 +160,9 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         consecutiveDays: cr.maxConsecutiveDays,
         dailyCounts: cr.dailyCounts
       };
-      alertMap.set(`${cr.district}|${cr.disease}`, item);
-      summary.results.push(item);
+      const enrichedItem = enrichAlertWith72h(item, growthMetrics);
+      alertMap.set(`${cr.district}|${cr.disease}`, enrichedItem);
+      summary.results.push(enrichedItem);
 
       try {
         const { notifyOutbreakAlert } = require('./notificationService');
@@ -173,7 +203,28 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       isDemoData: mode === 'simulation',
       message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
     };
-    await OutbreakAlert.updateOne({_id},{$setOnInsert:alertData},{upsert:true});
+    await OutbreakAlert.updateOne(
+      { _id },
+      {
+        $setOnInsert: {
+          status: 'Pending',
+          surveillancePolicy: POLICY,
+          sourceConsultationIds: ids,
+          isSimulation: mode === 'simulation',
+          isDemoData: mode === 'simulation',
+        },
+        $set: {
+          disease: b.disease,
+          location: b.district,
+          district: b.district,
+          affectedCount: b.last_7_days_count,
+          caseCount: b.last_7_days_count,
+          severity: sev,
+          message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
+        }
+      },
+      { upsert: true }
+    );
     let alertDoc = null;
     try {
       const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
@@ -186,8 +237,9 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       severity: sev,
       isSimulation: mode === 'simulation'
     };
-    alertMap.set(key, item);
-    summary.results.push(item);
+    const enrichedItem = enrichAlertWith72h(item, growthMetrics);
+    alertMap.set(key, enrichedItem);
+    summary.results.push(enrichedItem);
 
     try {
       const { notifyOutbreakAlert } = require('./notificationService');
@@ -251,6 +303,17 @@ function getColomboMidnight(date = new Date()) {
  * - Gate 2 (Persistence): at least two consecutive complete calendar days in W with strict z > 2.0 (and C_k > 0).
  * - Severity: Watch (z in [2.0, 3.0)), Alert (z in [3.0, 4.0)), Critical (z >= 4.0).
  */
+function getSeverityFromZ(maxZ, maxConsecutiveDays = 2) {
+  if (typeof maxConsecutiveDays === 'number' && maxConsecutiveDays < 2) {
+    return { alertLevel: 'None', severity: 'None' };
+  }
+  const z = typeof maxZ === 'number' && Number.isFinite(maxZ) ? maxZ : 0;
+  if (z >= 4.0) return { alertLevel: 'Critical', severity: 'Critical' };
+  if (z >= 3.0) return { alertLevel: 'Alert', severity: 'High' };
+  if (z >= 2.0) return { alertLevel: 'Watch', severity: 'Moderate' };
+  return { alertLevel: 'None', severity: 'None' };
+}
+
 function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays = 56, level = 'district' } = {}) {
   const normLevel = String(level || 'district').toLowerCase();
   const todayMidnight = getColomboMidnight(now);
@@ -346,21 +409,9 @@ function evaluateOutbreakCriteria({ cases = [], now = new Date(), baselineDays =
 
     const hasConsecutiveElevated = maxConsecutive >= 2;
     const maxZ = Math.max(...dailyZ);
-    let alertLevel = 'None';
-    let severity = 'None';
-
-    if (hasConsecutiveElevated) {
-      if (maxZ >= 4.0) {
-        alertLevel = 'Critical';
-        severity = 'Critical';
-      } else if (maxZ >= 3.0) {
-        alertLevel = 'Alert';
-        severity = 'High';
-      } else {
-        alertLevel = 'Watch';
-        severity = 'Moderate';
-      }
-    }
+    const { alertLevel, severity } = hasConsecutiveElevated
+      ? getSeverityFromZ(maxZ, maxConsecutive)
+      : { alertLevel: 'None', severity: 'None' };
 
     const baseline7d = bMean * 7;
     const deviationPct = baseline7d > 0
@@ -525,6 +576,87 @@ async function calculateGrowthMetrics({ windowHours = 72, mode = 'real', now = n
   return computeGrowthFromCases({ cases: selection.cases, windowHours, now });
 }
 
+function diseasesMatch(d1, d2) {
+  if (!d1 || !d2) return false;
+  const s1 = String(d1).trim().toLowerCase();
+  const s2 = String(d2).trim().toLowerCase();
+  if (s1 === s2) return true;
+  const c1 = s1.replace(/^icd(?:10|11):/, '').replace('.', '');
+  const c2 = s2.replace(/^icd(?:10|11):/, '').replace('.', '');
+  if (c1 === c2) return true;
+  try {
+    const { diseaseLabel } = require('./publicHealthStats');
+    const l1 = (diseaseLabel(d1) || '').toLowerCase();
+    const l2 = (diseaseLabel(d2) || '').toLowerCase();
+    if (l1 && l2 && (l1 === l2 || l1 === s2 || l2 === s1)) return true;
+  } catch (_) {}
+  return false;
+}
+
+function enrichAlertWith72h(alert, growthData) {
+  const { getDistrictPopulation } = require('./incidenceService');
+  const alertObj = typeof alert?.toObject === 'function' ? alert.toObject() : { ...alert };
+  const dist = (alertObj.district || alertObj.location || '').trim();
+  const dis = (alertObj.disease || '').trim();
+  const dMatch = growthData?.districts?.find(d => 
+    diseasesMatch(d.disease, dis) &&
+    d.district?.toLowerCase() === dist.toLowerCase()
+  );
+  const iMatch = growthData?.island?.find(i => 
+    diseasesMatch(i.disease, dis)
+  );
+
+  const currentCases = dMatch ? dMatch.currentCases : (alertObj.caseCount || alertObj.affectedCount || 0);
+  const previousCases = dMatch ? dMatch.previousCases : 0;
+  const absoluteChange = dMatch ? dMatch.absoluteChange : currentCases;
+  const percentChange = dMatch ? dMatch.percentChange : (currentCases > 0 ? 'new' : 0);
+  const population = dMatch?.population || getDistrictPopulation(dist);
+  const incidencePer100k = (population && population > 0)
+    ? Number(((currentCases / population) * 100000).toFixed(2))
+    : (dMatch?.incidencePer100k ?? null);
+
+  const rawShare = (population && population > 0 && currentCases > 0)
+    ? ((currentCases / population) * 100)
+    : 0;
+
+  let formattedShare = '0%';
+  if (currentCases > 0 && population > 0) {
+    if (rawShare < 0.0001) formattedShare = rawShare.toFixed(5) + '%';
+    else if (rawShare < 0.01) formattedShare = rawShare.toFixed(4) + '%';
+    else formattedShare = rawShare.toFixed(2) + '%';
+    if (parseFloat(formattedShare) === 0) formattedShare = '<0.00001%';
+  }
+
+  const islandCases = iMatch ? iMatch.currentCases : currentCases;
+  const islandPreviousCases = iMatch ? iMatch.previousCases : 0;
+  const islandChange = iMatch ? iMatch.absoluteChange : islandCases;
+  const islandPercentChange = iMatch ? iMatch.percentChange : (islandCases > 0 ? 'new' : 0);
+
+  const plainText = `${dist ? dist + ': ' : ''}${currentCases} cases in the last 72h (previous 72h: ${previousCases}, ${absoluteChange >= 0 ? '+' : ''}${absoluteChange}). ${formattedShare} of the district population, ${incidencePer100k ?? '0.00'} per 100,000. Island-wide: ${islandCases} cases.`;
+
+  return {
+    ...alertObj,
+    metrics72h: {
+      currentCases,
+      previousCases,
+      absoluteChange,
+      percentChange,
+      population,
+      incidencePer100k,
+      popSharePct: rawShare,
+      formattedShare,
+      islandCases,
+      islandPreviousCases,
+      islandChange,
+      islandPercentChange,
+      censusYear: 2012,
+      censusName: 'Department of Census and Statistics - Census 2012',
+      honestyNote: 'Verified MediSync cases (lower bound; only consultations recorded in MediSync are counted)',
+      plainText
+    }
+  };
+}
+
 module.exports = {
   POLICY,
   synthetic,
@@ -537,8 +669,11 @@ module.exports = {
   evaluateOutbreakCriteria,
   evaluateMultiLevelOutbreakCriteria,
   getColomboMidnight,
+  getSeverityFromZ,
   computeGrowthFromCases,
   calculateGrowthMetrics,
+  diseasesMatch,
+  enrichAlertWith72h,
   DISTRICT_TO_PROVINCE,
   OFFICIAL_PROVINCES,
   PROVINCE_TO_DISTRICTS

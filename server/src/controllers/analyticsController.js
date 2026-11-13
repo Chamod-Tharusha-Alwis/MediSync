@@ -131,3 +131,65 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
   }
 };
+
+const diseaseAnalyticsService = require('../services/diseaseAnalyticsService');
+const { recordAudit } = require('../utils/auditLogger');
+
+exports.searchDiseases = async (req, res) => {
+  try {
+    if (!['admin', 'super_admin', 'health_officer'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Administrative analytics access required' });
+    }
+    const q = req.query.q || '';
+    const limit = req.query.limit || 20;
+    const results = diseaseAnalyticsService.searchDiseases(q, limit);
+
+    await recordAudit({
+      actorId: req.user?.id,
+      actorRole: req.user?.role,
+      action: 'ANALYTICS_DISEASE_SEARCH',
+      details: { q: String(q).slice(0, 50), count: results.length }
+    });
+
+    return res.json({ data: results });
+  } catch (err) {
+    console.error('[AnalyticsController] searchDiseases failed:', err);
+    return res.status(500).json({ error: 'Failed to search disease catalog' });
+  }
+};
+
+exports.getDiseaseAnalytics = async (req, res) => {
+  try {
+    if (!['admin', 'super_admin', 'health_officer'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Administrative analytics access required' });
+    }
+    const { code } = req.params;
+    const { from, to, bucket } = req.query;
+
+    const data = await diseaseAnalyticsService.getDiseaseAnalytics({
+      code,
+      from,
+      to,
+      bucket
+    });
+
+    await recordAudit({
+      actorId: req.user?.id,
+      actorRole: req.user?.role,
+      action: 'ANALYTICS_DISEASE_QUERY',
+      details: {
+        code: String(code).slice(0, 20),
+        totalCases: data.summary?.totalCases ?? 0
+      }
+    });
+
+    return res.json({ data });
+  } catch (err) {
+    if (err.status === 400) {
+      return res.status(400).json({ error: err.message });
+    }
+    console.error('[AnalyticsController] getDiseaseAnalytics failed:', err);
+    return res.status(500).json({ error: 'Failed to fetch disease analytics' });
+  }
+};
+

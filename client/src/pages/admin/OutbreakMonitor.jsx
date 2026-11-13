@@ -7,12 +7,11 @@ import {
   Activity, Zap, AlertTriangle, Loader2,
   TrendingUp, MapPin, ShieldAlert, Radio, X, Users
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import api from '../../api/axiosInstance';
 import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
-import { calculateIncidencePer100k } from '../../utils/populationIncidence';
+import { calculateIncidencePer100k, formatPopulationShare } from '../../utils/populationIncidence';
 
 
 const sevConfig = {
@@ -383,8 +382,19 @@ const OutbreakMonitor = () => {
         deliveryEnabled: true,
       });
     } catch (err) {
+      const status = err.response?.status;
       const data = err.response?.data;
       const code = data?.error || data?.code;
+
+      if (status === 409 || code === 'ALERT_ALREADY_APPROVED' || code === 'ONLY_PENDING_CAN_BE_APPROVED' || /already|pending/i.test(data?.error || '')) {
+        toast.error('This outbreak alert has already been approved and activated.');
+        return;
+      }
+      if (status === 400 && (code === 'NATIONWIDE_CONFIRMATION_REQUIRED' || /nationwide/i.test(data?.message || data?.error || ''))) {
+        toast.error(data?.message || `Nationwide broadcast requires typing the exact disease name (${approveModal.targetDisease || 'the disease name'}) to confirm.`);
+        return;
+      }
+
       const friendlyErrors = {
         NATIONWIDE_CONFIRMATION_REQUIRED: `Nationwide broadcast requires typing the exact disease name (${approveModal.targetDisease || 'the disease name'}) to confirm.`,
         ALERT_ALREADY_APPROVED: 'This outbreak alert has already been approved and activated.',
@@ -427,23 +437,61 @@ const OutbreakMonitor = () => {
     ? alerts.filter(a => a.location === selectedDistrict || a.district === selectedDistrict)
     : alerts;
 
-  // Prepare chart data from ML results
-  const chartData = mlResult?.results?.map(item => {
-    const rawZ = typeof item.zScore === 'number' && Number.isFinite(item.zScore)
-      ? item.zScore
-      : (typeof item.z_score === 'number' && Number.isFinite(item.z_score)
-        ? item.z_score
-        : (typeof item.maxZ === 'number' && Number.isFinite(item.maxZ)
-          ? item.maxZ
-          : (item.baseline ? ((item.latest_actual - item.baseline) / Math.sqrt(item.baseline || 1)) : 0)));
-    const zScore = Number.isFinite(rawZ) ? rawZ : 0;
+  function deriveAlert72h(alert, gData) {
+    if (alert?.metrics72h) return alert.metrics72h;
+    const dist = (alert?.district || alert?.location || '').trim();
+    const dis = (alert?.disease || '').trim();
+    const normDis = dis.replace(/^icd(?:10|11):/i, '').replace('.', '').toLowerCase();
+    const dMatch = gData?.districts?.find(d => {
+      const dDis = (d.disease || '').replace(/^icd(?:10|11):/i, '').replace('.', '').toLowerCase();
+      return (dDis === normDis || d.disease?.toLowerCase() === dis.toLowerCase()) &&
+        d.district?.toLowerCase() === dist.toLowerCase();
+    });
+    const iMatch = gData?.island?.find(i => {
+      const iDis = (i.disease || '').replace(/^icd(?:10|11):/i, '').replace('.', '').toLowerCase();
+      return iDis === normDis || i.disease?.toLowerCase() === dis.toLowerCase();
+    });
+
+    const currentCases = dMatch ? dMatch.currentCases : (alert?.caseCount || alert?.affectedCount || 0);
+    const previousCases = dMatch ? dMatch.previousCases : 0;
+    const diff = currentCases - previousCases;
+    const pct = dMatch ? dMatch.percentChange : (currentCases > 0 ? 'new' : 0);
+    const popShare = formatPopulationShare(currentCases, dist);
+    const islandCases = iMatch ? iMatch.currentCases : currentCases;
+    const islandPrev = iMatch ? iMatch.previousCases : 0;
+    const islandDiff = islandCases - islandPrev;
+
     return {
-      name: `${item.disease} (${formatDistrictName(item.district)})`,
-      zScore: parseFloat(zScore.toFixed(2)),
-      latest: item.latest_actual,
-      baseline: item.baseline
+      currentCases,
+      previousCases,
+      absoluteChange: diff,
+      percentChange: pct,
+      population: popShare.population,
+      incidencePer100k: popShare.incidencePer100k,
+      formattedShare: popShare.formattedShare,
+      islandCases,
+      islandPreviousCases: islandPrev,
+      islandChange: islandDiff,
+      censusYear: 2012,
+      plainText: `${dist ? dist + ': ' : ''}${currentCases} cases in the last 72h (previous 72h: ${previousCases}, ${diff >= 0 ? '+' : ''}${diff}). ${popShare.formattedShare} of the district population, ${popShare.incidencePer100k} per 100,000. Island-wide: ${islandCases} cases.`
     };
-  }) || [];
+  }
+
+  function formatChange(current, previous, percentChange) {
+    const diff = current - previous;
+    if (percentChange === 'new' || (previous === 0 && current > 0)) {
+      return `+${diff} (new)`;
+    }
+    if (diff > 0) {
+      const pct = typeof percentChange === 'number' ? `+${percentChange}%` : '';
+      return `+${diff} ${pct ? `(${pct})` : ''}`.trim();
+    }
+    if (diff < 0) {
+      const pct = typeof percentChange === 'number' ? `${percentChange}%` : '';
+      return `${diff} ${pct ? `(${pct})` : ''}`.trim();
+    }
+    return '0 (0%)';
+  }
 
   const activeGrowthList = growthData ? (approveModal.scope === 'national' ? growthData.island : growthData.districts) : [];
   const growthEvidence = activeGrowthList?.find(item =>
@@ -563,36 +611,12 @@ const OutbreakMonitor = () => {
           </div>
         )}
 
-        {/* Recharts Z-Score Bar Chart Output with Dotted Warning Threshold Line */}
-        {mlResult && !detecting && chartData.length > 0 && (
+        {/* Detected Signals Cards */}
+        {mlResult && !detecting && mlResult.results?.length > 0 && (
           <div className="pt-6 border-t border-white/5 space-y-4">
             <div className="flex justify-between items-center select-none">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Computed Z-Scores by Disease Vector</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Detected Signals ({mlResult.results.length})</h4>
               <span className="text-xs font-mono font-bold text-slate-500">{mlResult.consultations_analysed} cases scanned</span>
-            </div>
-
-            <div className="h-64 w-full bg-slate-950/40 rounded-xl border border-white/5 p-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}
-                    itemStyle={{ color: '#ef4444', fontSize: 12 }}
-                  />
-                  <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning Limit (Z = 2.0)', fill: '#ef4444', fontSize: 12, position: 'top' }} />
-                  <Bar dataKey="zScore" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <rect
-                        key={`bar-${index}`}
-                        fill={entry.zScore >= 2.0 ? 'rgba(239, 68, 68, 0.75)' : 'rgba(59, 130, 246, 0.6)'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
             </div>
 
             {/* Results Summary Cards */}
@@ -639,7 +663,8 @@ const OutbreakMonitor = () => {
                 }
 
                 const zColor = tierLabel === 'CRITICAL' ? 'text-red-400' : (tierLabel === 'HIGH' ? 'text-orange-400' : (tierLabel === 'WARNING' ? 'text-amber-400' : 'text-slate-300'));
-                const inc = calculateIncidencePer100k(item.latest_actual ?? item.count ?? 0, item.district);
+                const m72 = deriveAlert72h(item, growthData);
+                const changeStr = formatChange(m72.currentCases, m72.previousCases, m72.percentChange);
 
                 return (
                   <div
@@ -654,16 +679,36 @@ const OutbreakMonitor = () => {
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 flex items-center justify-between gap-1">
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 font-semibold text-slate-300">
                           <MapPin className="w-3.5 h-3.5 text-slate-500" /> {formatDistrictName(item.district)}
                         </span>
                         <span className="text-xs text-slate-500 font-mono" title="Department of Census and Statistics (Census 2012)">
-                          Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
+                          Pop: {m72.population ? m72.population.toLocaleString() : 'N/A'}
                         </span>
                       </p>
-                      <div className="mt-2 text-xs text-slate-400 font-mono flex justify-between select-none">
-                        <span>Cases: {item.latest_actual ?? item.count ?? 0}</span>
-                        <span title="Department of Census and Statistics (Census 2012)">Inc: {inc.display}</span>
+
+                      {/* Primary figure: Verified cases in last 72 hours */}
+                      <div className="my-2.5 p-3 rounded-xl bg-slate-900/80 border border-white/5 space-y-1.5">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          Verified cases (last 72h)
+                        </div>
+                        <div className="text-2xl font-black text-white font-mono leading-none">
+                          {m72.currentCases} <span className="text-xs font-normal text-slate-400">cases</span>
+                        </div>
+                        <div className="pt-2 space-y-1 text-xs text-slate-300 font-sans border-t border-white/5">
+                          <div>
+                            Previous 72h: <span className="font-mono text-white font-semibold">{m72.previousCases}</span> cases, {changeStr}
+                          </div>
+                          <div title="Department of Census and Statistics (Census 2012). Verified MediSync cases (lower bound).">
+                            <span className="font-mono font-semibold text-white">{m72.formattedShare}</span> of district population, <span className="font-mono font-semibold text-white">{m72.incidencePer100k !== null ? m72.incidencePer100k : 'N/A'}</span> per 100,000
+                          </div>
+                          <div className="text-slate-400">
+                            Island-wide: <span className="font-mono font-semibold text-white">{m72.islandCases}</span> cases
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-500 italic" title="Lower bound: counts only consultations recorded in MediSync">
+                        *Verified MediSync cases (lower bound)
                       </div>
                     </div>
 
@@ -884,7 +929,7 @@ const OutbreakMonitor = () => {
                 <tr>
                   <th className="px-6 py-4">Disease Vector</th>
                   <th className="px-6 py-4">Location</th>
-                  <th className="px-6 py-4">Incidence</th>
+                  <th className="px-6 py-4">Verified Cases (72h)</th>
                   <th className="px-6 py-4">Severity</th>
                   <th className="px-6 py-4">Audit Verification</th>
                   <th className="px-6 py-4 text-right">Timestamp</th>
@@ -895,7 +940,8 @@ const OutbreakMonitor = () => {
                   const sev = getSev(alert.severity);
                   const isLive = alert.status === 'Active' && (!alert.feedbackStatus || alert.feedbackStatus === 'unverified');
                   const isCrit = alert.severity === 'Critical' || alert.severity === 'High';
-                  const inc = calculateIncidencePer100k(alert.caseCount || alert.affectedCount || 0, alert.location || alert.district);
+                  const m72 = deriveAlert72h(alert, growthData);
+                  const changeStr = formatChange(m72.currentCases, m72.previousCases, m72.percentChange);
                   return (
                     <tr key={alert._id} className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-6 py-4">
@@ -919,10 +965,21 @@ const OutbreakMonitor = () => {
                           {formatDistrictName(alert.location || alert.district) || 'N/A'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                        <span title="Department of Census and Statistics (Census 2012)">{inc.display}</span>
-                        <div className="text-xs text-slate-500 font-mono">
-                          Pop: {inc.population ? inc.population.toLocaleString() : 'N/A'}
+                      <td className="px-6 py-4 text-xs">
+                        <div className="font-mono text-sm font-bold text-white">
+                          {m72.currentCases} cases <span className="text-xs font-normal text-slate-400">(last 72h)</span>
+                        </div>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">
+                          Prev 72h: {m72.previousCases} ({changeStr})
+                        </div>
+                        <div
+                          className="text-xs text-slate-400 font-mono mt-0.5"
+                          title="Department of Census and Statistics (Census 2012). Verified MediSync cases (lower bound)."
+                        >
+                          {m72.formattedShare} pop ({m72.incidencePer100k !== null ? `${m72.incidencePer100k} / 100k` : 'N/A'})
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">
+                          Island: {m72.islandCases} cases
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -1043,24 +1100,44 @@ const OutbreakMonitor = () => {
             </h2>
             <p className="text-sm text-slate-400 mb-4">Select the scope for email notifications. This will immediately alert users in the selected region.</p>
             
-            {growthEvidence && (
-              <div className="mb-5 p-3.5 bg-slate-950/70 border border-white/10 rounded-xl space-y-2 text-xs">
-                <div className="flex justify-between items-center text-slate-300 font-semibold">
-                  <span className="flex items-center gap-1.5 text-white">
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 72h Growth Telemetry Evidence
-                  </span>
-                  <span className="font-mono text-emerald-400 font-bold">
-                    {growthEvidence.percentChange === 'new' ? 'NEW SIGNAL' : `${growthEvidence.absoluteChange >= 0 ? '+' : ''}${growthEvidence.absoluteChange} (${growthEvidence.percentChange >= 0 ? '+' : ''}${growthEvidence.percentChange}%)`}
-                  </span>
+            {(() => {
+              const modalTarget = alerts?.find(a => String(a._id) === String(approveModal.alertId)) || {
+                disease: approveModal.targetDisease,
+                district: approveModal.targetDistrict || approveModal.previewDistrict
+              };
+              const m72 = deriveAlert72h(modalTarget, growthData);
+              const changeStr = formatChange(m72.currentCases, m72.previousCases, m72.percentChange);
+              return (
+                <div className="mb-5 p-3.5 bg-slate-950/70 border border-white/10 rounded-xl space-y-2 text-xs">
+                  <div className="flex justify-between items-center text-slate-300 font-semibold">
+                    <span className="flex items-center gap-1.5 text-white">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Verified Cases (Last 72h) Telemetry
+                    </span>
+                    <span className="font-mono text-emerald-400 font-bold">
+                      {m72.percentChange === 'new' ? 'NEW SIGNAL' : changeStr}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-slate-900/90 border border-white/5 space-y-1">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Verified cases (last 72h)
+                    </div>
+                    <div className="text-xl font-black text-white font-mono leading-none">
+                      {m72.currentCases} <span className="text-xs font-normal text-slate-400">cases</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-slate-300 font-mono text-xs pt-1.5 border-t border-white/5">
+                    <div>Previous 72h: <strong className="text-white">{m72.previousCases} ({changeStr})</strong></div>
+                    <div>Island-wide: <strong className="text-white">{m72.islandCases} cases</strong></div>
+                    <div className="col-span-2" title="Department of Census and Statistics (Census 2012)">
+                      Share of population: <strong className="text-white">{m72.formattedShare} ({m72.incidencePer100k !== null ? `${m72.incidencePer100k} / 100k` : 'N/A'})</strong>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 italic pt-1 border-t border-white/5">
+                    *Verified MediSync cases (lower bound; only consultations recorded in MediSync are counted). DCS Census 2012.
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-400 font-mono text-xs pt-1.5 border-t border-white/5">
-                  <div>Last 72h Cases: <strong className="text-white">{growthEvidence.currentCases}</strong></div>
-                  <div>Prior 72h Cases: <strong className="text-white">{growthEvidence.previousCases}</strong></div>
-                  <div>Population: <strong className="text-white">{growthEvidence.population ? growthEvidence.population.toLocaleString() : 'N/A'}</strong></div>
-                  <div>Incidence: <strong className="text-white" title="Department of Census and Statistics (Census 2012)">{growthEvidence.incidencePer100k !== null ? `${growthEvidence.incidencePer100k} / 100k` : 'N/A'}</strong></div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
             
             <div className="space-y-3 mb-6">
               {[

@@ -18,8 +18,12 @@ const PROJECTION = Object.freeze(Object.fromEntries([
 // Preserve the existing DiseaseCombobox/seed catalog display contract. These
 // aliases label reviewed canonical codes; they never inspect clinical free text.
 const DISPLAY_ALIASES = Object.freeze({
-  'ICD10:A010': 'Typhoid fever', 'ICD10:A90': 'Dengue', 'ICD10:A279': 'Leptospirosis', 'ICD10:A09': 'Diarrhoeal disease',
-  'ICD10:J101': 'Influenza', 'ICD10:A920': 'Chikungunya', 'ICD10:U071': 'COVID-19'
+  'ICD10:A010': 'Typhoid fever', 'ICD10:A01': 'Typhoid fever',
+  'ICD10:A90': 'Dengue',
+  'ICD10:A279': 'Leptospirosis', 'ICD10:A27': 'Leptospirosis',
+  'ICD10:A09': 'Diarrhoeal disease',
+  'ICD10:J101': 'Influenza', 'ICD10:J11': 'Influenza', 'ICD10:J111': 'Influenza',
+  'ICD10:A920': 'Chikungunya', 'ICD10:U071': 'COVID-19'
 });
 let referenceLabels;
 function diseaseLabel(id) {

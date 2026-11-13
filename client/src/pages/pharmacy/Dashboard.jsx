@@ -210,7 +210,13 @@ const Dispense = () => {
       setPrescriptions(prev => prev.filter(p => (p.prescriptionId || p._id) !== (selectedRx.prescriptionId || selectedRx._id)));
       setShowDispenseModal(false);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to dispense');
+      const status = err.response?.status;
+      const errorMsg = err.response?.data?.error || err.response?.data?.message;
+      if (status === 409 || err.response?.data?.code === 'ALREADY_DISPENSED' || /already|eligible/i.test(errorMsg || '')) {
+        toast.error('This prescription has already been dispensed.');
+      } else {
+        toast.error(errorMsg || 'Failed to dispense');
+      }
     } finally {
       setDispensing(false);
     }
@@ -242,7 +248,13 @@ const Dispense = () => {
       toast.success(`Successfully dispensed ${successCount} prescription order(s) for consultation ${group.consultationRef}.`);
       setPrescriptions(prev => prev.filter(p => !group.prescriptions.some(grx => (grx._id || grx.prescriptionId) === (p._id || p.prescriptionId))));
     } catch (err) {
-      toast.error(err.response?.data?.error || `Failed during bulk dispense (dispensed ${successCount}).`);
+      const status = err.response?.status;
+      const errorMsg = err.response?.data?.error || err.response?.data?.message;
+      if (status === 409 || err.response?.data?.code === 'ALREADY_DISPENSED' || /already|eligible/i.test(errorMsg || '')) {
+        toast.error('This prescription has already been dispensed.');
+      } else {
+        toast.error(errorMsg || `Failed during bulk dispense (dispensed ${successCount}).`);
+      }
     } finally {
       setDispensing(false);
     }
