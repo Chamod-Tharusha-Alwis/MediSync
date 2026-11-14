@@ -7,7 +7,7 @@ The architecture encompasses a zero-trust multi-tenant MERN core (MongoDB, Expre
 
 To assist clinicians under high OPD volume, MediSync incorporates a dual-tier symptom matching pipeline: Tier 1 executes an n-gram TF-IDF vectorizer coupled with cosine similarity scoring over 41 standardized clinical disease profiles, while Tier 2 provides sparse retrieval against a curated, quarantined knowledge base derived from CDC/SymCAT ambulatory survey data (174 auto-accepted condition profiles mapped to public-domain ICD-10-CM concepts). When Tier 1 top match confidence is $\ge 40.0\%$, Tier 1 takes absolute precedence; otherwise, the engine queries Tier 2. On the epidemiological surveillance front, MediSync runs automated spatio-temporal anomaly detection across Sri Lanka's 25 administrative districts, utilizing a 7-day observation window compared against a 56-day baseline, strictly gated by a 3-tier filter: case count floor ($N \ge 5$), 2 consecutive calendar days of elevation, and statistical standardized deviation ($z > 2.0$).
 
-This technical report documents the complete architectural specification, security protocols, empirical ML evaluation, verification rigor (3,465 offline tests across 207 suites), deployment infrastructure, operational limitations, and academic viva defenses for the MediSync undergraduate software engineering capstone submission.
+This technical report documents the complete architectural specification, security protocols, empirical ML evaluation, verification rigor (3,768 offline tests), deployment infrastructure, operational limitations, and academic viva defenses for the MediSync undergraduate software engineering capstone submission.
 
 ---
 
@@ -183,7 +183,7 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
-- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests across 207 suites) shall execute cleanly offline in less than 180 seconds without external network dependencies.
+- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,768 tests) shall execute cleanly offline in less than 180 seconds without external network dependencies.
 - **NFR-MAINT-02 (Protected Integrity)**: Critical security and calculation files (15 files) shall be locked via SHA-256 hashes in a monitored release ledger.
 
 ---
@@ -582,7 +582,7 @@ Honesty and transparency are paramount in academic engineering evaluation. The f
 ## 8.1 Verification Philosophy & Test Pyramid
 MediSync enforces an **offline-first, deterministic quality assurance methodology**. Because clinical software must guarantee non-regression across safety-critical invariants (drug interaction warnings, prescription immutability, role access boundaries), testing cannot depend on fragile external network connections, live cloud databases, or non-deterministic test fixtures.
 
-The automated verification pyramid consists of **3,465 tests across 207 test suites**, achieving a 100% pass rate with zero flaky or intermittent tests:
+The automated verification pyramid consists of **3,768 tests** (243 Jest suites plus the Python and root runners), achieving a 100% pass rate with zero flaky or intermittent tests:
 
 ```
                   / \
@@ -597,12 +597,12 @@ The automated verification pyramid consists of **3,465 tests across 207 test sui
 ```
 
 Figure **F13** visually details the distribution of test suites and test counts across functional components:
-- **Backend Services & Isolated DB**: 2,635 tests across 123 suites
-- **Client Component & UI Contracts**: 666 tests across 78 suites
-- **Root Security & Infrastructure**: 55 tests
+- **Backend Services & Isolated DB**: 2,943 tests across 161 suites
+- **Client Component & UI Contracts**: 676 tests across 80 suites
+- **Root Security & Infrastructure**: 40 tests
 - **ML Scoring & Flask Tests**: 78 tests (40 scoring + 31 Flask API + 7 status contracts)
 - **Email & PDF Harness**: 31 tests across 2 suites
-- **Total**: **3,465 passed, 0 failed across 207 suites**
+- **Total**: **3,768 passed, 0 failed**
 
 ---
 
@@ -645,7 +645,7 @@ In compliance with project ethical guidelines, verification status is strictly s
 
 | Verification Scope | Status | Evidence / Verification Method |
 |---|---|---|
-| **Backend REST API Logic** | OFFLINE VERIFIED | 3,465 passed tests via in-memory database mock |
+| **Backend REST API Logic** | OFFLINE VERIFIED | 2,943 passed backend tests via in-memory database mock |
 | **Field-Level Encryption & Blind Index** | OFFLINE VERIFIED | Automated test assertions in `server/tests/crypto.test.js` |
 | **Deterministic Medicine Safety Engine** | OFFLINE VERIFIED | Validated against rule datasets in unit tests |
 | **ML Inference Logic & Fallbacks** | OFFLINE VERIFIED | Pytest suite & 15 sanity cases via Flask `test_client` |
@@ -735,7 +735,7 @@ Empirical validation of MediSync was conducted using the master offline test gat
 
 | Metric Category | Target Invariant | Measured Result | Status |
 |---|---|---|---|
-| **Total Tests Passed** | $\ge 3,400$ | **3,465** | PASS |
+| **Total Tests Passed** | 0 failed | **3,768 passed, 0 failed** | PASS |
 | **Total Tests Failed** | 0 | **0** | PASS |
 | **Total Test Suites** | $\ge 200$ | **207** | PASS |
 | **Execution Time** | $< 180\text{ s}$ | **114.2 s** | PASS |
@@ -876,7 +876,7 @@ Key engineering contributions achieved in this work include:
 2. **Deterministic Clinical Medication Safety**: Delivered an in-memory safety verification engine enforcing drug-drug interaction detection, maximum daily dose ceilings, and duration limits synchronously during consultation workflows.
 3. **Automated Spatio-Temporal Syndromic Surveillance**: Implemented a multi-district epidemiological surveillance subsystem integrating 7-day rolling window standardized deviation tracking against a 56-day baseline across communicable diseases, regulated by a 3-tier suppression gate ($N \ge 5$, 2 consecutive elevated days, $z > 2.0$) to eliminate noise and alert fatigue.
 4. **Low-Resource Machine Learning Decision Support**: Formulated and validated a dual-tier diagnostic guidance pipeline combining a calibrated TF-IDF cosine similarity matcher (41 classes) with sparse knowledge-base retrieval (174 validated profiles), maintaining a peak process resident memory (RSS) of 196.82 MB (well under the 512 MB cloud threshold) and a mean inference latency of 0.77 ms.
-5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,465 tests across 207 test suites with 0 failures, locked against an immutable 15-file SHA-256 release ledger.
+5. **Rigorous Offline Verification & Release Integrity**: Established an automated offline quality gate encompassing 3,768 tests with 0 failures, locked against an immutable 15-file SHA-256 release ledger.
 6. **Equitable Trilingual Localization**: Achieved 100% string key parity across English, Sinhala, and Tamil (835 verified keys in each language), ensuring user accessibility across diverse linguistic backgrounds.
 
 ---
@@ -921,7 +921,7 @@ Every quantitative and technical assertion in this technical report traces direc
 | **ML Process RSS Post-Load** | 195.91 MB | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
 | **ML Process RSS Peak** | 196.82 MB (38.44% of 512 MB ceiling) | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
 | **ML Inference Latency** | Mean: 0.77 ms, p50: 0.64 ms, p95: 1.24 ms | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
-| **Total Test Count** | 3,465 passed, 0 failed across 207 suites | Master test runner receipts | `node scripts/run_offline_tests.js` |
+| **Total Test Count** | 3,768 passed, 0 failed | Master test runner receipts | `node scripts/run_offline_tests.js` |
 | **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
 | **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
 | **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |

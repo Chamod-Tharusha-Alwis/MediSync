@@ -79,5 +79,5 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 - **NFR-USE-02 (Accessibility)**: The frontend application shall comply with WCAG 2.1 Level AA color contrast ratios and support responsive layouts across mobile, tablet, and desktop viewports.
 
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
-- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,465 tests across 207 suites) shall execute cleanly offline in less than 180 seconds without external network dependencies.
+- **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,768 tests) shall execute cleanly offline in less than 180 seconds without external network dependencies.
 - **NFR-MAINT-02 (Protected Integrity)**: Critical security and calculation files (15 files) shall be locked via SHA-256 hashes in a monitored release ledger.

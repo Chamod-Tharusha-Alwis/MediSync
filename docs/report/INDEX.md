@@ -2,7 +2,7 @@
 
 **Repository Branch**: `feat/sub5-submission-pack`  
 **Submission Deadline**: 20 November 2026  
-**Baseline Quality Gate**: 3,465 Tests Passed / 0 Failed (207 Suites) | 15/15 Protected Ledger Pins Locked  
+**Baseline Quality Gate**: 3,768 Tests Passed / 0 Failed | 15/15 Protected Ledger Pins Locked  
 
 This directory serves as the unified submission and defense kit for the MediSync undergraduate software engineering capstone. Every document, figure, dataset, and architectural diagram is indexed below with its relative path and purpose.
 

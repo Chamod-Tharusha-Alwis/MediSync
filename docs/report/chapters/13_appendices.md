@@ -28,7 +28,7 @@ Every quantitative and technical assertion in this technical report traces direc
 | **ML Process RSS Post-Load** | 195.91 MB | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
 | **ML Process RSS Peak** | 196.82 MB (38.44% of 512 MB ceiling) | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
 | **ML Inference Latency** | Mean: 0.77 ms, p50: 0.64 ms, p95: 1.24 ms | `docs/report/data/ml_resource_measurements.json` | `python scripts/benchmark_ml_resources.py` |
-| **Total Test Count** | 3,465 passed, 0 failed across 207 suites | Master test runner receipts | `node scripts/run_offline_tests.js` |
+| **Total Test Count** | 3,768 passed, 0 failed | Master test runner receipts | `node scripts/run_offline_tests.js` |
 | **Protected File Ledger** | 15/15 files valid SHA-256 | `docs/release/PROTECTED_HASHES.json` | `node scripts/run_offline_tests.js` |
 | **Frontend Production Build** | Exit code 0, 119 modules compiled | Client build output | `npm --prefix client run build` |
 | **Documentation Links** | 95 relative links, 0 broken (100% OK) | `scripts/check_report_links.py` | `python scripts/check_report_links.py` |

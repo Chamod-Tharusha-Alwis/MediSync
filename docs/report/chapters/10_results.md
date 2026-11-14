@@ -5,7 +5,7 @@ Empirical validation of MediSync was conducted using the master offline test gat
 
 | Metric Category | Target Invariant | Measured Result | Status |
 |---|---|---|---|
-| **Total Tests Passed** | $\ge 3,400$ | **3,465** | PASS |
+| **Total Tests Passed** | 0 failed | **3,768 passed, 0 failed** | PASS |
 | **Total Tests Failed** | 0 | **0** | PASS |
 | **Total Test Suites** | $\ge 200$ | **207** | PASS |
 | **Execution Time** | $< 180\text{ s}$ | **114.2 s** | PASS |

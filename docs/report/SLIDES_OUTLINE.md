@@ -186,12 +186,12 @@ This outline provides the slide structure, visual layout recommendations, and de
 ### Slide 15: Automated Quality Gate & Verification Rigor
 - **Visuals**: Figure **F13** (Verification Test Pyramid).
 - **Key Points**:
-  - **3,465 Tests Passed / 0 Failed across 207 Test Suites** (100% Pass Rate).
+  - **3,768 Tests Passed / 0 Failed** (100% Pass Rate).
   - Master offline runner (`run_offline_tests.js`) executes in ~114 seconds.
   - **15-File Protected Ledger**: SHA-256 cryptographic hashes locked in `PROTECTED_HASHES.json`.
   - Frontend production build exit code 0.
 - **Speaker Notes**:
-  > *"Quality assurance is enforced through a deterministic offline test pyramid of 3,465 automated tests across 207 suites with zero failures. Furthermore, a 15-file SHA-256 cryptographic ledger locks down all security, encryption, and calculation code against accidental modification."*
+  > *"Quality assurance is enforced through a deterministic offline test pyramid of 3,768 automated tests with zero failures. Furthermore, a 15-file SHA-256 cryptographic ledger locks down all security, encryption, and calculation code against accidental modification."*
 
 ---
 
@@ -229,7 +229,7 @@ This outline provides the slide structure, visual layout recommendations, and de
   3. Real-time syndromic surveillance with automated 3-tier outbreak gating.
   4. Ultra-lightweight ML triage operating in $< 200\text{ MB}$ memory.
   5. Dictionary key parity across EN, SI and TA. Source review found 99.32% of values differ from English in SI and TA.
-  6. 3,465 automated test verifications and 15-file cryptographic release lock.
+  6. 3,768 automated tests and 15-file cryptographic release lock.
 - **Speaker Notes**:
   > *"In summary, MediSync demonstrates that rigorous, privacy-preserving digital healthcare and early disease detection can be achieved on modern cloud platforms within developing nation resource limits."*
 
