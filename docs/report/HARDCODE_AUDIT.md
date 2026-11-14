@@ -30,7 +30,7 @@ In clinical healthcare systems, data integrity and provenance are safety-critica
 | **Diagnostic Catalog** | `server/reference-data/icd10_clean.json` | 71,704 validated ICD-10-CM diagnostic concepts | **Reference Data** | **Verified & Maintained**. Official US ICD-10-CM / WHO classification standard. |
 | **Diagnostic Catalog** | `server/reference-data/icd11_clean.json` | Curated WHO ICD-11 diagnostic classifications | **Reference Data** | **Verified & Maintained**. Official WHO ICD-11 MMS release catalog. |
 | **Medication Formulary** | `server/reference-data/drugs_clean.json`, `ml-engine/data/drugs_clean.json` | 3,000 curated clinical pharmaceutical drugs | **Reference Data** | **Verified & Maintained**. Derived from FDA/National Formulary datasets; pinned by SHA-256 in `manifest.json`. |
-| **Global Drug Catalog** | `ml-engine/data/medicines.csv` | 23,939 globally approved pharmaceutical medicines | **Reference Data** | **Verified & Maintained**. Comprehensive international pharmaceutical formulary catalog (>20,000 approved drugs). |
+| **Retail Medicine Listing (local only)** | `ml-engine/data/medicines.csv` | Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**. | **Local preprocessing input** | Not part of the server catalogue. |
 | **Drug Interactions** | `ml-engine/data/interactions_clean.json` | Curated drug-drug interaction pairs and severity rules | **Reference Data** | **Verified & Maintained**. Clinical pharmacology interaction matrix. |
 | **Administrative Regions** | `server/src/services/surveillanceService.js` (`PROVINCE_TO_DISTRICTS`) | Mapping of 9 Sri Lankan Provinces to 25 Administrative Districts | **Reference Data** | **Verified & Maintained**. Standard administrative gazette boundaries. |
 | **Demonstration Seed** | `scripts/seed_viva_outbreaks.js`, `scripts/seed_viva_patient.js` | Synthetic patient NIC `200012345678` and outbreak consultation series | **Labelled Demonstration Seed** | **Verified & Maintained**. Strictly isolated via `isSynthetic: true` and `syntheticSeedBatch: "viva-2026-11-outbreaks"`. Prohibited from real login or production email. |
@@ -87,12 +87,12 @@ To eliminate unverified or speculative population denominators in epidemiologica
 
 ## 4. Pharmaceutical Drug Catalog Reality Verification
 
-The owner requested confirmation of all globally approved pharmaceutical drugs available in the platform:
+Which medicine data the platform actually uses:
 
-1. **Global Master Formulary (`ml-engine/data/medicines.csv`)**:
-   - Total entries: **23,939 approved pharmaceutical products** (23,940 lines including header).
-   - Confirms that MediSync supports over 20,000 globally available medications.
-2. **Clinical Reference Catalog (`server/reference-data/drugs_clean.json`)**:
+1. **Retail medicine listing (`ml-engine/data/medicines.csv`, local only)**:
+   - Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**.
+   - It does **not** show that MediSync supports 20,000+ approved medicines.
+2. **Clinical Reference Catalog (the server catalogue) (`server/reference-data/drugs_clean.json`)**:
    - Total entries: **3,000 curated high-frequency clinical medications** with dosage forms, contraindications, and interaction mappings.
    - Pinned by SHA-256 hash in `server/src/security/productionArtifactPins.json`.
 

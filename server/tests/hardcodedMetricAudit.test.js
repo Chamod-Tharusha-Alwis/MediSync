@@ -108,12 +108,47 @@ describe('Part 7 Hardcoded Metric & Data Integrity Audit', () => {
     expect(drugs.length).toBe(3000);
   });
 
-  test('5. Global pharmaceutical catalog medicines.csv contains over 20,000 approved drugs', () => {
-    const globalCsv = path.join(root, 'ml-engine/data/medicines.csv');
-    expect(fs.existsSync(globalCsv)).toBe(true);
-    const content = fs.readFileSync(globalCsv, 'utf8');
-    const lines = content.split('\n').filter(l => l.trim().length > 0);
-    // 1 header + 23,939 drugs = 23,940 lines
-    expect(lines.length).toBeGreaterThan(20000);
+  test('5. Server medicine catalogue is the tracked 3,000-entry formulary; no doc presents the retail CSV as the catalogue', () => {
+    // ml-engine/data/medicines.csv is a gitignored retail scrape (unclear licence) that is absent in CI.
+    // Assert only on tracked data, and assert the docs do not overclaim it. No silent skip.
+    const drugs = JSON.parse(fs.readFileSync(path.join(root, 'server/reference-data/drugs_clean.json'), 'utf8'));
+    expect(drugs).toHaveLength(3000);
+
+    // The server never reads the retail CSV.
+    const serverFiles = [];
+    (function walk(dir) {
+      for (const name of fs.readdirSync(dir)) {
+        const full = path.join(dir, name);
+        if (fs.statSync(full).isDirectory()) walk(full);
+        else if (/\.(js|cjs|json)$/.test(name)) serverFiles.push(full);
+      }
+    })(path.join(root, 'server/src'));
+    const readers = serverFiles.filter(file => fs.readFileSync(file, 'utf8').includes('medicines.csv'));
+    expect(readers.map(file => path.relative(root, file))).toEqual([]);
+
+    // No tracked doc may present the 23,939-row CSV as approved medicines or the server catalogue.
+    const docs = [];
+    for (const dir of ['docs/final', 'docs/report', 'docs/new']) {
+      (function walk(d) {
+        if (!fs.existsSync(d)) return;
+        for (const name of fs.readdirSync(d)) {
+          const full = path.join(d, name);
+          if (fs.statSync(full).isDirectory()) walk(full);
+          else if (name.endsWith('.md')) docs.push(full);
+        }
+      })(path.join(root, dir));
+    }
+    expect(docs.length).toBeGreaterThan(10);
+    const OVERCLAIM = /globally approved|approved (pharmaceutical )?(medicines|drugs|products)|over 20,000|>20,000|global master/i;
+    const DISCLAIMED = /not used by the server|not a list of approved|does not hold 20,000|does \*\*not\*\* show/i;
+    const offending = [];
+    for (const file of docs) {
+      fs.readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+        if (/23,?939|medicines\.csv/.test(line) && OVERCLAIM.test(line) && !DISCLAIMED.test(line)) {
+          offending.push(`${path.relative(root, file)}:${i + 1}`);
+        }
+      });
+    }
+    expect(offending).toEqual([]);
   });
 });
