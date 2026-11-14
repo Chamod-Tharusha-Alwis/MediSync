@@ -1,0 +1,815 @@
+{
+  "schemaVersion": 1,
+  "clinicalValidation": "not_established",
+  "description": "Reference drug pairs for the interaction-checker benchmark. Every pair is taken from the text of a US FDA prescribing label, retrieved through the openFDA drug label API.",
+  "retrievedDate": "2026-11-14",
+  "source": "US FDA prescription drug labels (openFDA drug label API; the same labels are published on DailyMed)",
+  "definitions": {
+    "interacting": "The cited label describes an interaction between the two drugs: a change in drug levels, a dose limit, a warning, or a contraindication.",
+    "non_interacting": "The cited label states that a study found no interaction, or no clinically significant interaction, between the two drugs. It is a statement by that one label, not proof that no reference lists any interaction."
+  },
+  "selectionRules": [
+    "Both drugs must have a single-ingredient product in the 3,000-entry catalogue that the checker resolves.",
+    "Pairs were chosen from label text before the checker was run on any of them.",
+    "A pair was dropped when labels disagreed (for example digoxin with ivabradine is kept as interacting because the digoxin label warns of bradycardia).",
+    "basis is a paraphrase of the label, not a quotation."
+  ],
+  "labels": {
+    "theophylline": {
+      "labelDrug": "Theophylline",
+      "manufacturer": "Glenmark Pharmaceuticals Inc., USA",
+      "setId": "48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "labelEffectiveDate": "20260129",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2248330a8e-be08-4d38-b8b1-d30fbd5a35de%22"
+    },
+    "digoxin": {
+      "labelDrug": "Digoxin",
+      "manufacturer": "A-S Medication Solutions",
+      "setId": "0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "labelEffectiveDate": "20230814",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220a88434e-4a1b-4ade-a51e-38145e22a232%22"
+    },
+    "roflumilast": {
+      "labelDrug": "Roflumilast",
+      "manufacturer": "AvKARE",
+      "setId": "55009549-3f0c-1f58-e063-6294a90a6c03",
+      "labelEffectiveDate": "20260624",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2255009549-3f0c-1f58-e063-6294a90a6c03%22"
+    },
+    "amlodipine": {
+      "labelDrug": "Amlodipine",
+      "manufacturer": "Pangea Pharmaceuticals, LLC",
+      "setId": "886a7f97-60a4-4206-a6c7-5206069ed487",
+      "labelEffectiveDate": "20260928",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22886a7f97-60a4-4206-a6c7-5206069ed487%22"
+    },
+    "ivabradine": {
+      "labelDrug": "Ivabradine",
+      "manufacturer": "Golden State Medical Supply, Inc.",
+      "setId": "236cc914-7eef-600c-e063-6394a90a4bd1",
+      "labelEffectiveDate": "20250415",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22236cc914-7eef-600c-e063-6394a90a4bd1%22"
+    },
+    "ranolazine": {
+      "labelDrug": "Ranolazine",
+      "manufacturer": "Glenmark Pharmaceuticals Inc., USA",
+      "setId": "0cf58732-c242-49b0-8e3f-248778b4458d",
+      "labelEffectiveDate": "20260123",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220cf58732-c242-49b0-8e3f-248778b4458d%22"
+    },
+    "metronidazole": {
+      "labelDrug": "Metronidazole",
+      "manufacturer": "Northwind Health Company, LLC",
+      "setId": "06bd4afb-4a45-294c-e063-6394a90a7ab1",
+      "labelEffectiveDate": "20260101",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06bd4afb-4a45-294c-e063-6394a90a7ab1",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2206bd4afb-4a45-294c-e063-6394a90a7ab1%22"
+    },
+    "methotrexate": {
+      "labelDrug": "Methotrexate",
+      "manufacturer": "Hospira, Inc.",
+      "setId": "0d63ba29-b692-41b4-87e8-351265c8273f",
+      "labelEffectiveDate": "20261027",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0d63ba29-b692-41b4-87e8-351265c8273f",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220d63ba29-b692-41b4-87e8-351265c8273f%22"
+    },
+    "montelukast": {
+      "labelDrug": "Montelukast",
+      "manufacturer": "NuCare Pharmaceuticals,Inc.",
+      "setId": "56429f04-97b6-06a9-e054-00144ff88e88",
+      "labelEffectiveDate": "20240717",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=56429f04-97b6-06a9-e054-00144ff88e88",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2256429f04-97b6-06a9-e054-00144ff88e88%22"
+    },
+    "levetiracetam": {
+      "labelDrug": "Levetiracetam",
+      "manufacturer": "Mylan Pharmaceuticals Inc.",
+      "setId": "0a987d59-560f-4650-96ec-31aec81953b5",
+      "labelEffectiveDate": "20250412",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a987d59-560f-4650-96ec-31aec81953b5",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220a987d59-560f-4650-96ec-31aec81953b5%22"
+    },
+    "memantine": {
+      "labelDrug": "Memantine",
+      "manufacturer": "American Health Packaging",
+      "setId": "304a3059-4f7f-4ec4-839d-86492bb5e07b",
+      "labelEffectiveDate": "20250422",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=304a3059-4f7f-4ec4-839d-86492bb5e07b",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22304a3059-4f7f-4ec4-839d-86492bb5e07b%22"
+    },
+    "levofloxacin": {
+      "labelDrug": "Levofloxacin",
+      "manufacturer": "Redpharm Drug",
+      "setId": "0a0fd993-7bea-42d8-e063-6394a90a4e0e",
+      "labelEffectiveDate": "20250409",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a0fd993-7bea-42d8-e063-6394a90a4e0e",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220a0fd993-7bea-42d8-e063-6394a90a4e0e%22"
+    },
+    "linezolid": {
+      "labelDrug": "Linezolid",
+      "manufacturer": "Hp Halden Pharma AS",
+      "setId": "217f3ee2-2534-4c32-8e9d-09b6d65df4af",
+      "labelEffectiveDate": "20240717",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=217f3ee2-2534-4c32-8e9d-09b6d65df4af",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22217f3ee2-2534-4c32-8e9d-09b6d65df4af%22"
+    },
+    "azithromycin": {
+      "labelDrug": "Azithromycin",
+      "manufacturer": "Lupin Pharmaceuticals, Inc.",
+      "setId": "01649d79-4677-4577-a3e4-e054f3f9fc3b",
+      "labelEffectiveDate": "20260820",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01649d79-4677-4577-a3e4-e054f3f9fc3b",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2201649d79-4677-4577-a3e4-e054f3f9fc3b%22"
+    },
+    "galantamine": {
+      "labelDrug": "Galantamine",
+      "manufacturer": "Upsher-Smith Laboratories, LLC",
+      "setId": "10497273-d907-0514-e063-6294a90a1362",
+      "labelEffectiveDate": "20260601",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10497273-d907-0514-e063-6294a90a1362",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2210497273-d907-0514-e063-6294a90a1362%22"
+    },
+    "rivastigmine": {
+      "labelDrug": "Rivastigmine",
+      "manufacturer": "Mylan Pharmaceuticals Inc.",
+      "setId": "4ab335d1-19ee-4cd9-9776-8086645d19e4",
+      "labelEffectiveDate": "20240921",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ab335d1-19ee-4cd9-9776-8086645d19e4",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%224ab335d1-19ee-4cd9-9776-8086645d19e4%22"
+    },
+    "donepezil_hydrochloride": {
+      "labelDrug": "Donepezil Hydrochloride",
+      "manufacturer": "Macleods Pharmaceuticals Limited",
+      "setId": "06dd25a5-1bf2-446d-ad75-ff9d55117660",
+      "labelEffectiveDate": "20230811",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06dd25a5-1bf2-446d-ad75-ff9d55117660",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2206dd25a5-1bf2-446d-ad75-ff9d55117660%22"
+    },
+    "levocetirizine_dihydrochloride": {
+      "labelDrug": "Levocetirizine Dihydrochloride",
+      "manufacturer": "Proficient Rx LP",
+      "setId": "1ceff0e6-1e66-4494-b986-1bd23eb6813e",
+      "labelEffectiveDate": "20220301",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1ceff0e6-1e66-4494-b986-1bd23eb6813e",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%221ceff0e6-1e66-4494-b986-1bd23eb6813e%22"
+    }
+  },
+  "pairs": [
+    {
+      "drugA": "amlodipine",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "amlodipine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: amlodipine may increase cyclosporine exposure; monitor trough levels.",
+      "id": "P01"
+    },
+    {
+      "drugA": "amlodipine",
+      "drugB": "tacrolimus",
+      "expected": "interacting",
+      "sourceLabel": "amlodipine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: amlodipine may increase tacrolimus exposure; monitor trough levels.",
+      "id": "P02"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "amiodarone",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists amiodarone among drugs that raise digoxin concentrations by more than 50%.",
+      "id": "P03"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "carvedilol",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists carvedilol among drugs that raise digoxin concentrations by less than 50%.",
+      "id": "P04"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists clarithromycin among drugs that raise digoxin exposure by more than 50%.",
+      "id": "P05"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "diltiazem",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists diltiazem among drugs that raise digoxin concentrations by less than 50%.",
+      "id": "P06"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists erythromycin among drugs that raise digoxin concentrations by more than 50%.",
+      "id": "P07"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "gentamicin",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists gentamicin among drugs that raise digoxin concentrations by more than 50%.",
+      "id": "P08"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "indomethacin",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists indomethacin among drugs that raise digoxin concentrations by less than 50%.",
+      "id": "P09"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "ivabradine",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists ivabradine as a pharmacodynamic interaction: it can increase the risk of bradycardia.",
+      "id": "P10"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "nifedipine",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists nifedipine among drugs that raise digoxin concentrations by less than 50%.",
+      "id": "P11"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "propafenone",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists propafenone among drugs that raise digoxin exposure by more than 50%.",
+      "id": "P12"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "ranolazine",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists ranolazine among drugs that raise digoxin concentrations by more than 50%.",
+      "id": "P13"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "salbutamol",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists albuterol (salbutamol) among drugs that decrease digoxin concentrations.",
+      "id": "P14"
+    },
+    {
+      "drugA": "digoxin",
+      "drugB": "trimethoprim",
+      "expected": "interacting",
+      "sourceLabel": "digoxin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists trimethoprim among drugs that raise digoxin concentrations by less than 50%.",
+      "id": "P15"
+    },
+    {
+      "drugA": "ivabradine",
+      "drugB": "amiodarone",
+      "expected": "interacting",
+      "sourceLabel": "ivabradine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: bradycardia risk increases with drugs that slow heart rate, such as amiodarone.",
+      "id": "P16"
+    },
+    {
+      "drugA": "ivabradine",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "ivabradine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: strong CYP3A4 inhibitors, including clarithromycin, are contraindicated with ivabradine.",
+      "id": "P17"
+    },
+    {
+      "drugA": "ivabradine",
+      "drugB": "diltiazem",
+      "expected": "interacting",
+      "sourceLabel": "ivabradine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid moderate CYP3A4 inhibitors such as diltiazem with ivabradine.",
+      "id": "P18"
+    },
+    {
+      "drugA": "methotrexate",
+      "drugB": "dapsone",
+      "expected": "interacting",
+      "sourceLabel": "methotrexate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0d63ba29-b692-41b4-87e8-351265c8273f",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists antifolate drugs such as dapsone among drugs that increase methotrexate toxicity risk.",
+      "id": "P19"
+    },
+    {
+      "drugA": "metronidazole",
+      "drugB": "disulfiram",
+      "expected": "interacting",
+      "sourceLabel": "metronidazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06bd4afb-4a45-294c-e063-6394a90a7ab1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: psychotic reactions reported with concurrent disulfiram; do not give within two weeks of disulfiram.",
+      "id": "P20"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: do not use ranolazine with strong CYP3A inhibitors, including clarithromycin.",
+      "id": "P21"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: P-gp inhibitors such as cyclosporine may increase ranolazine concentrations.",
+      "id": "P22"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "diltiazem",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: limit the ranolazine dose with moderate CYP3A inhibitors, including diltiazem.",
+      "id": "P23"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: limit the ranolazine dose with moderate CYP3A inhibitors, including erythromycin.",
+      "id": "P24"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "sirolimus",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: ranolazine may increase concentrations of narrow-range CYP3A substrates such as sirolimus.",
+      "id": "P25"
+    },
+    {
+      "drugA": "ranolazine",
+      "drugB": "tacrolimus",
+      "expected": "interacting",
+      "sourceLabel": "ranolazine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: ranolazine may increase concentrations of narrow-range CYP3A substrates such as tacrolimus.",
+      "id": "P26"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: CYP3A4 inhibitors such as erythromycin increase roflumilast exposure and may increase adverse reactions.",
+      "id": "P27"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "adenosine",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: theophylline blocks adenosine receptors, so higher adenosine doses may be needed.",
+      "id": "P28"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "ciprofloxacin",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: ciprofloxacin raises theophylline levels.",
+      "id": "P29"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: clarithromycin raises theophylline levels.",
+      "id": "P30"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "disulfiram",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: disulfiram decreases theophylline clearance.",
+      "id": "P31"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: erythromycin decreases theophylline clearance.",
+      "id": "P32"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "methotrexate",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: methotrexate decreases theophylline clearance.",
+      "id": "P33"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "mexiletine",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: mexiletine decreases theophylline clearance.",
+      "id": "P34"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "propafenone",
+      "expected": "interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically significant interactions: propafenone decreases theophylline clearance.",
+      "id": "P35"
+    },
+    {
+      "drugA": "amlodipine",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "amlodipine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: co-administered amlodipine does not affect exposure to digoxin.",
+      "id": "P36"
+    },
+    {
+      "drugA": "amlodipine",
+      "drugB": "erythromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "amlodipine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: erythromycin co-administration did not significantly change amlodipine exposure.",
+      "id": "P37"
+    },
+    {
+      "drugA": "azithromycin",
+      "drugB": "cetirizine",
+      "expected": "non_interacting",
+      "sourceLabel": "azithromycin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01649d79-4677-4577-a3e4-e054f3f9fc3b",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label interaction table: azithromycin had no effect on cetirizine exposure (ratio close to 1).",
+      "id": "P38"
+    },
+    {
+      "drugA": "cetirizine",
+      "drugB": "erythromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "levocetirizine_dihydrochloride",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1ceff0e6-1e66-4494-b986-1bd23eb6813e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label (studies with racemic cetirizine): cetirizine did not interact with erythromycin.",
+      "id": "P39"
+    },
+    {
+      "drugA": "donepezil",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "donepezil_hydrochloride",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06dd25a5-1bf2-446d-ad75-ff9d55117660",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: donepezil metabolism is not significantly affected by digoxin, and donepezil had no effect on digoxin pharmacokinetics.",
+      "id": "P40"
+    },
+    {
+      "drugA": "galantamine",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "galantamine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10497273-d907-0514-e063-6294a90a1362",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: galantamine had no effect on the steady-state pharmacokinetics of digoxin.",
+      "id": "P41"
+    },
+    {
+      "drugA": "galantamine",
+      "drugB": "memantine",
+      "expected": "non_interacting",
+      "sourceLabel": "galantamine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10497273-d907-0514-e063-6294a90a1362",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: memantine had no effect on the pharmacokinetics of galantamine.",
+      "id": "P42"
+    },
+    {
+      "drugA": "levetiracetam",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "levetiracetam",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a987d59-560f-4650-96ec-31aec81953b5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: levetiracetam did not influence digoxin pharmacokinetics or pharmacodynamics, and digoxin did not influence levetiracetam.",
+      "id": "P43"
+    },
+    {
+      "drugA": "levofloxacin",
+      "drugB": "cyclosporine",
+      "expected": "non_interacting",
+      "sourceLabel": "levofloxacin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a0fd993-7bea-42d8-e063-6394a90a4e0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no significant effect on cyclosporine was detected; no dosage adjustment is required for either drug.",
+      "id": "P44"
+    },
+    {
+      "drugA": "levofloxacin",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "levofloxacin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a0fd993-7bea-42d8-e063-6394a90a4e0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no significant effect on digoxin was detected; no dosage adjustment is required for either drug.",
+      "id": "P45"
+    },
+    {
+      "drugA": "linezolid",
+      "drugB": "gentamicin",
+      "expected": "non_interacting",
+      "sourceLabel": "linezolid",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=217f3ee2-2534-4c32-8e9d-09b6d65df4af",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: the pharmacokinetics of linezolid or gentamicin are not altered when given together.",
+      "id": "P46"
+    },
+    {
+      "drugA": "memantine",
+      "drugB": "donepezil",
+      "expected": "non_interacting",
+      "sourceLabel": "memantine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=304a3059-4f7f-4ec4-839d-86492bb5e07b",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: co-administration of memantine with donepezil did not affect the pharmacokinetics of either compound.",
+      "id": "P47"
+    },
+    {
+      "drugA": "montelukast",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "montelukast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=56429f04-97b6-06a9-e054-00144ff88e88",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no dose adjustment is needed when montelukast is co-administered with digoxin.",
+      "id": "P48"
+    },
+    {
+      "drugA": "montelukast",
+      "drugB": "theophylline",
+      "expected": "non_interacting",
+      "sourceLabel": "montelukast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=56429f04-97b6-06a9-e054-00144ff88e88",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no dose adjustment is needed when montelukast is co-administered with theophylline.",
+      "id": "P49"
+    },
+    {
+      "drugA": "rivastigmine",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "rivastigmine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ab335d1-19ee-4cd9-9776-8086645d19e4",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no pharmacokinetic interaction was observed between oral rivastigmine and digoxin.",
+      "id": "P50"
+    },
+    {
+      "drugA": "rivastigmine",
+      "drugB": "memantine",
+      "expected": "non_interacting",
+      "sourceLabel": "rivastigmine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ab335d1-19ee-4cd9-9776-8086645d19e4",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: cholinesterase inhibition by rivastigmine is not affected by concomitant memantine.",
+      "id": "P51"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "budesonide",
+      "expected": "non_interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant drug interaction was observed with inhaled budesonide.",
+      "id": "P52"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant drug interaction was observed with oral digoxin.",
+      "id": "P53"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "montelukast",
+      "expected": "non_interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant drug interaction was observed with oral montelukast.",
+      "id": "P54"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "salbutamol",
+      "expected": "non_interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant drug interaction was observed with inhaled salbutamol.",
+      "id": "P55"
+    },
+    {
+      "drugA": "roflumilast",
+      "drugB": "theophylline",
+      "expected": "non_interacting",
+      "sourceLabel": "roflumilast",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant drug interaction was observed with oral theophylline.",
+      "id": "P56"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "amoxicillin",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: amoxicillin.",
+      "id": "P57"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "ampicillin",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: ampicillin.",
+      "id": "P58"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "azithromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: azithromycin.",
+      "id": "P59"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "cefaclor",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: cefaclor.",
+      "id": "P60"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "diltiazem",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: diltiazem.",
+      "id": "P61"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "metronidazole",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: metronidazole.",
+      "id": "P62"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "nifedipine",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: nifedipine.",
+      "id": "P63"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "ofloxacin",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: ofloxacin.",
+      "id": "P64"
+    },
+    {
+      "drugA": "theophylline",
+      "drugB": "salbutamol",
+      "expected": "non_interacting",
+      "sourceLabel": "theophylline",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: albuterol (salbutamol), systemic and inhaled.",
+      "id": "P65"
+    }
+  ]
+}

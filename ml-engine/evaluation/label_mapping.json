@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "frozen": true,
+  "frozenBeforeFirstEngineRun": true,
+  "rules": [
+    "A dataset diagnosis maps to a MediSync profile only when both name the same disease.",
+    "tier1_profile is the exact profile name from ml-engine/data/dataset.csv (41 curated profiles), including its original spelling.",
+    "tier2_profiles lists Tier 2 knowledge-base profiles (disease_symptom_kb.v1.json) only when the name is the same disease name apart from case or spacing.",
+    "Narrower, broader or merely related profiles are not accepted (see notAccepted).",
+    "A prediction is correct when the predicted profile name equals tier1_profile or one of tier2_profiles (case-insensitive, trimmed)."
+  ],
+  "mapping": {
+    "allergy": {
+      "tier1_profile": "Allergy",
+      "tier2_profiles": ["Allergy"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": []
+    },
+    "arthritis": {
+      "tier1_profile": "Arthritis",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": ["Osteoarthristis (Tier 1): a specific arthritis type with its own profile", "Rheumatoid arthritis (Tier 2): a specific arthritis type"]
+    },
+    "bronchial asthma": {
+      "tier1_profile": "Bronchial Asthma",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": ["Acute bronchospasm (Tier 2): a symptom-level condition, not asthma"]
+    },
+    "cervical spondylosis": {
+      "tier1_profile": "Cervical spondylosis",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": []
+    },
+    "chicken pox": {
+      "tier1_profile": "Chicken pox",
+      "tier2_profiles": ["Chickenpox"],
+      "reason": "Same disease; Tier 2 differs only in spacing.",
+      "notAccepted": ["Shingles (herpes zoster) (Tier 2): same virus, different disease"]
+    },
+    "common cold": {
+      "tier1_profile": "Common Cold",
+      "tier2_profiles": ["Common cold"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": ["Acute sinusitis (Tier 2): different condition"]
+    },
+    "dengue": {
+      "tier1_profile": "Dengue",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": []
+    },
+    "diabetes": {
+      "tier1_profile": "Diabetes",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1 (profile name has a trailing space in dataset.csv, trimmed by the engine).",
+      "notAccepted": ["Diabetes insipidus (Tier 2): unrelated disease despite the name", "Hypoglycemia (Tier 1/2): a different condition"]
+    },
+    "drug reaction": {
+      "tier1_profile": "Drug Reaction",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": ["Erythema multiforme (Tier 2): one possible reaction pattern, not the same label"]
+    },
+    "fungal infection": {
+      "tier1_profile": "Fungal infection",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": ["Athlete's foot (Tier 2): one specific fungal infection, narrower", "Aspergillosis, Cryptococcosis, Histoplasmosis (Tier 2): specific systemic mycoses, narrower"]
+    },
+    "gastroesophageal reflux disease": {
+      "tier1_profile": "GERD",
+      "tier2_profiles": [],
+      "reason": "GERD is the standard abbreviation of gastroesophageal reflux disease.",
+      "notAccepted": ["Esophagitis, Gastritis (Tier 2): related but different conditions"]
+    },
+    "hypertension": {
+      "tier1_profile": "Hypertension",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1 (profile name has a trailing space in dataset.csv, trimmed by the engine).",
+      "notAccepted": ["Pulmonary hypertension (Tier 2): different disease", "Orthostatic hypotension (Tier 2): different condition"]
+    },
+    "impetigo": {
+      "tier1_profile": "Impetigo",
+      "tier2_profiles": ["Impetigo"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": []
+    },
+    "jaundice": {
+      "tier1_profile": "Jaundice",
+      "tier2_profiles": [],
+      "reason": "Same name in Tier 1.",
+      "notAccepted": ["hepatitis A/B/C/D/E, Alcoholic hepatitis, Chronic cholestasis (Tier 1), Liver disease (Tier 2): causes of jaundice, not the same label"]
+    },
+    "malaria": {
+      "tier1_profile": "Malaria",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": []
+    },
+    "migraine": {
+      "tier1_profile": "Migraine",
+      "tier2_profiles": ["Migraine"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": []
+    },
+    "peptic ulcer disease": {
+      "tier1_profile": "Peptic ulcer diseae",
+      "tier2_profiles": [],
+      "reason": "Same disease; the Tier 1 profile name carries a spelling error from its source file.",
+      "notAccepted": ["Gastritis, Gastrointestinal hemorrhage (Tier 2): related but different conditions", "GERD (Tier 1): different disease"]
+    },
+    "pneumonia": {
+      "tier1_profile": "Pneumonia",
+      "tier2_profiles": ["Pneumonia"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": ["Acute bronchitis (Tier 2): different disease"]
+    },
+    "psoriasis": {
+      "tier1_profile": "Psoriasis",
+      "tier2_profiles": ["Psoriasis"],
+      "reason": "Same disease name in both tiers.",
+      "notAccepted": []
+    },
+    "typhoid": {
+      "tier1_profile": "Typhoid",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": []
+    },
+    "urinary tract infection": {
+      "tier1_profile": "Urinary tract infection",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": ["Cystitis (Tier 2): one form of urinary tract infection, narrower", "Bladder disorder, Urethral disorder (Tier 2): not infections specifically"]
+    },
+    "varicose veins": {
+      "tier1_profile": "Varicose veins",
+      "tier2_profiles": [],
+      "reason": "Same disease name in Tier 1.",
+      "notAccepted": []
+    }
+  }
+}
