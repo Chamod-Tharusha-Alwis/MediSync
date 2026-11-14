@@ -1,0 +1,145 @@
+{
+  "metadata": {
+    "evaluation_date": "2026-11-13",
+    "git_commit": "ead70e5121074927d0fa295de7ef323073e10cd9",
+    "status": "reproducible_synthetic_simulation",
+    "command": "ml-engine/.venv/Scripts/python.exe scripts/ml_eval/generate_evaluation_package.py"
+  },
+  "outbreak_detector_simulation": {
+    "simulation": {
+      "n_series": 1200,
+      "n_days": 60,
+      "random_seed": 42,
+      "positive_count": 600,
+      "negative_count": 600
+    },
+    "primary_detector": {
+      "name": "Dual-Gate (Floor + Persistence)",
+      "metrics": {
+        "tp": 359,
+        "fp": 91,
+        "tn": 509,
+        "fn": 241,
+        "sensitivity": 0.5983,
+        "specificity": 0.8483,
+        "precision": 0.7978,
+        "f1": 0.6838,
+        "false_alarms_per_year": 0.92
+      },
+      "bootstrap_95ci": {
+        "sensitivity": [
+          0.5553,
+          0.6364
+        ],
+        "specificity": [
+          0.8177,
+          0.8754
+        ],
+        "precision": [
+          0.7598,
+          0.8326
+        ]
+      },
+      "detection_delay": {
+        "median_days": 1.0,
+        "iqr_days": [
+          1.0,
+          1.0
+        ]
+      },
+      "roc_auc": 0.5878
+    },
+    "ablation": {
+      "Raw EARS C2": {
+        "tp": 600,
+        "fp": 598,
+        "tn": 2,
+        "fn": 0,
+        "sensitivity": 1.0,
+        "specificity": 0.0033,
+        "precision": 0.5008,
+        "f1": 0.6674,
+        "false_alarms_per_year": 6.06
+      },
+      "Floor Only (N >= 5)": {
+        "tp": 600,
+        "fp": 594,
+        "tn": 6,
+        "fn": 0,
+        "sensitivity": 1.0,
+        "specificity": 0.01,
+        "precision": 0.5025,
+        "f1": 0.6689,
+        "false_alarms_per_year": 6.02
+      },
+      "Persistence Only (2-Day)": {
+        "tp": 367,
+        "fp": 106,
+        "tn": 494,
+        "fn": 233,
+        "sensitivity": 0.6117,
+        "specificity": 0.8233,
+        "precision": 0.7759,
+        "f1": 0.6841,
+        "false_alarms_per_year": 1.07
+      },
+      "Dual-Gate (Floor + Persistence)": {
+        "tp": 359,
+        "fp": 91,
+        "tn": 509,
+        "fn": 241,
+        "sensitivity": 0.5983,
+        "specificity": 0.8483,
+        "precision": 0.7978,
+        "f1": 0.6838,
+        "false_alarms_per_year": 0.92
+      }
+    }
+  },
+  "projection_backtest": {
+    "1d": {
+      "OLS_MAE": 1.98,
+      "OLS_RMSE": 2.65,
+      "Naive_Last_MAE": 2.71,
+      "Naive_Last_RMSE": 3.63,
+      "Naive_Mean7_MAE": 2.66,
+      "Naive_Mean7_RMSE": 3.31,
+      "Coverage_95Pct": 94.9
+    },
+    "3d": {
+      "OLS_MAE": 1.97,
+      "OLS_RMSE": 2.64,
+      "Naive_Last_MAE": 2.98,
+      "Naive_Last_RMSE": 3.84,
+      "Naive_Mean7_MAE": 3.14,
+      "Naive_Mean7_RMSE": 3.92,
+      "Coverage_95Pct": 95.3
+    },
+    "7d": {
+      "OLS_MAE": 2.03,
+      "OLS_RMSE": 2.69,
+      "Naive_Last_MAE": 3.96,
+      "Naive_Last_RMSE": 4.91,
+      "Naive_Mean7_MAE": 4.23,
+      "Naive_Mean7_RMSE": 5.5,
+      "Coverage_95Pct": 94.9
+    },
+    "14d": {
+      "OLS_MAE": 2.08,
+      "OLS_RMSE": 2.74,
+      "Naive_Last_MAE": 5.81,
+      "Naive_Last_RMSE": 7.62,
+      "Naive_Mean7_MAE": 6.17,
+      "Naive_Mean7_RMSE": 8.62,
+      "Coverage_95Pct": 95.5
+    }
+  },
+  "symptom_suggestion_engine": {
+    "method": "TF-IDF Vectorizer + Lexical Cosine Similarity",
+    "trained_model": false,
+    "profiles_count": 41,
+    "evaluation_status": "clinical_accuracy_not_established",
+    "independent_dataset_required": true,
+    "limitation_statement": "Knowledge-based retrieval over curated reference profiles. True out-of-sample diagnostic accuracy has not been established on independent clinical cases."
+  }
+}

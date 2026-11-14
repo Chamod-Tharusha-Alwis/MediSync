@@ -1295,33 +1295,46 @@ exports.sendFollowUpReminder = async (to, patientName, doctorName, date) => {
 // -----------------------------------------------------------------------------
 // 5. PUBLIC HEALTH OUTBREAK ALERTS (Bulk — Gmail SMTP Fallback Prohibited)
 // -----------------------------------------------------------------------------
-exports.sendOutbreakAlert = async (emailList, district, message, zScore) => {
+exports.sendOutbreakAlert = async (emailList, districtOrPayload, message, zScore) => {
   if (!emailList || emailList.length === 0) {
     return { success: true, providerAccepted: false, deliveryConfirmed: false };
   }
 
-  const mailOptions = {
-    from: getResendFromAddress(),
-    allowFallback: false, // Rule: Never use Gmail as unrestricted fallback for mass outbreak broadcasts
-    subject: `⚠ MediSync Public Health Alert — ${district}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ffcdd2; border-radius: 8px; overflow: hidden;">
-        <div style="background-color: #C62828; padding: 20px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px;">⚠ Public Health Alert</h1>
-        </div>
-        <div style="padding: 30px; background-color: #fff8f8;">
-          <div style="margin-bottom: 20px;">
-            <span style="display: inline-block; padding: 4px 10px; background-color: #ffebee; color: #c62828; border-radius: 4px; font-weight: bold; font-size: 14px;">District: ${district}</span>
-            <span style="display: inline-block; padding: 4px 10px; background-color: #ffebee; color: #c62828; border-radius: 4px; font-weight: bold; font-size: 14px; margin-left: 10px;">Z-Score: ${zScore}</span>
+  let mailOptions;
+  if (districtOrPayload && typeof districtOrPayload === 'object' && districtOrPayload.html) {
+    mailOptions = {
+      from: getResendFromAddress(),
+      allowFallback: false,
+      subject: districtOrPayload.subject || 'MediSync Public Health Alert',
+      html: districtOrPayload.html,
+      text: districtOrPayload.text || '',
+    };
+  } else {
+    const district = districtOrPayload;
+    mailOptions = {
+      from: getResendFromAddress(),
+      allowFallback: false, // Rule: Never use Gmail as unrestricted fallback for mass outbreak broadcasts
+      subject: `⚠ MediSync Public Health Alert — ${district}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ffcdd2; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #C62828; padding: 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px;">⚠ Public Health Alert</h1>
           </div>
-          <p style="font-size: 16px; color: #333333; line-height: 1.5;">${message}</p>
+          <div style="padding: 30px; background-color: #fff8f8;">
+            <div style="margin-bottom: 20px;">
+              <span style="display: inline-block; padding: 4px 10px; background-color: #ffebee; color: #c62828; border-radius: 4px; font-weight: bold; font-size: 14px;">District: ${district}</span>
+              <span style="display: inline-block; padding: 4px 10px; background-color: #ffebee; color: #c62828; border-radius: 4px; font-weight: bold; font-size: 14px; margin-left: 10px;">Z-Score: ${zScore}</span>
+            </div>
+            <p style="font-size: 16px; color: #333333; line-height: 1.5;">${message}</p>
+          </div>
+          <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #e0e0e0;">
+            <p style="font-size: 12px; color: #777777; margin: 0;">This is an automated alert from the MediSync AI Engine.</p>
+          </div>
         </div>
-        <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border-top: 1px solid #e0e0e0;">
-          <p style="font-size: 12px; color: #777777; margin: 0;">This is an automated alert from the MediSync AI Engine.</p>
-        </div>
-      </div>
-    `,
-  };
+      `,
+      text: typeof message === 'string' ? message : '',
+    };
+  }
 
   const recipients = Array.isArray(emailList) ? emailList : [emailList].filter(Boolean);
   const results = await Promise.all(

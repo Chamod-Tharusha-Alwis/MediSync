@@ -37,12 +37,8 @@ const pharmacySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  inventory: [{
-    drugName: { type: String, required: true, trim: true },
-    stock: { type: Number, default: 0, min: 0 },
-    reorderLevel: { type: Number, default: 50 },
-    unit: { type: String, default: 'tablets' }
-  }],
+  // Inventory/stock fields were removed: MediSync does not manage pharmacy stock.
+  // Legacy documents may still hold an `inventory` array; it is no longer read or written.
   createdAt: {
     type: Date,
     default: Date.now

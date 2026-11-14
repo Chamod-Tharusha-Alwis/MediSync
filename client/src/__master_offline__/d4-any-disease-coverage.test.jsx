@@ -20,10 +20,10 @@ describe('Phase D4 — Trilingual Coverage Badge and Non-Profiled Notice Parity'
     const siKeys = extractKeys(si);
     const taKeys = extractKeys(ta);
 
-    const expectedKeyCount = 840 + Object.keys(en.liveQa || {}).length + Object.keys(en.diseaseAnalytics || {}).length;
-    expect(enKeys.length).toBe(expectedKeyCount);
-    expect(siKeys.length).toBe(expectedKeyCount);
-    expect(taKeys.length).toBe(expectedKeyCount);
+    // Exact parity: every language defines precisely the same leaf keys (no magic total to bump).
+    expect(enKeys.length).toBeGreaterThan(800);
+    expect([...siKeys].sort()).toEqual([...enKeys].sort());
+    expect([...taKeys].sort()).toEqual([...enKeys].sort());
 
     expect(en.doctor.coverageBadge).toContain('41 reference symptom profiles curated');
     expect(en.doctor.coverageBadge).toContain('71,704 ICD-10 conditions');

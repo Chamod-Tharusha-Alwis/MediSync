@@ -151,13 +151,13 @@ Set the demonstration password via hidden prompt and apply the 917 documents to 
 **PowerShell (Windows - Secure Hidden Prompt)**:
 ```powershell
 $env:SEED_TEST_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host "Enter seed demo password" -AsSecureString)).Password
-node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="chamod.alwis1999@gmail.com"
+node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="seed.owner@example.org"
 ```
 
 **Bash (Linux / macOS)**:
 ```bash
 read -s -p "Enter seed demo password: " SEED_TEST_PASSWORD && export SEED_TEST_PASSWORD
-node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="chamod.alwis1999@gmail.com"
+node scripts/seed-viva-data.js --confirm --db=medisync_prod --owner-email="seed.owner@example.org"
 ```
 
 ### Step 6: Verify Live Database State

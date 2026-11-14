@@ -101,8 +101,9 @@ const PatientProfile = () => {
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
-  const [uploadingPic, setUploadingPic] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Uploads are disabled (see uploadFile); the progress UI stays wired for when delivery is verified.
+  const [uploadingPic] = useState(false);
+  const [uploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const uploadFile = async (file) => { toast.info('Profile image uploads are unavailable while private delivery is being verified.'); };

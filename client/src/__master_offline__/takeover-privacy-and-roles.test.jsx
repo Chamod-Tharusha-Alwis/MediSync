@@ -26,7 +26,8 @@ test('assistant session may enter pharmacy portal but not doctor portal',()=>{
 });
 test.each(['assistant','pharmacist','pharmacy_admin'])('%s gets only permitted dispensing navigation',role=>{
   localStorage.setItem('role',role);render(<PharmacyDashboard/>);
-  expect(Boolean(screen.queryByText('Manual OTC'))).toBe(role!=='assistant');
+  expect(screen.queryByText('Manual OTC')).not.toBeInTheDocument();
+  expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
   expect(Boolean(screen.queryByText('Dispense'))).toBe(role!=='assistant');
   expect(screen.getByText('Settings')).toBeInTheDocument();
 });

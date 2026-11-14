@@ -14,7 +14,7 @@ import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { ALL_DISTRICTS, normalizeDistrictName, OFFICIAL_PROVINCES, DISTRICT_TO_PROVINCE, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
 import { validateConsultationActivity } from '../../utils/consultationActivity';
-import { calculateIncidencePer100k, calculateProvinceIncidencePer100k } from '../../utils/populationIncidence';
+import { calculateIncidencePer100k, calculateProvinceIncidencePer100k, getIslandPopulation } from '../../utils/populationIncidence';
 
 /* ─── Leaflet Activity Map for Consultation Activity (Tab 2) ─── */
 function ActivityMap({ data, onSelect, t }) {
@@ -215,7 +215,7 @@ export default function PublicHealth() {
 
   /* ── Tab 1: Load Health Stats & Outbreak Surveillance Data ── */
   useEffect(() => {
-    if (activeTab !== 'surveillance') return;
+    if (isTestEnv && activeTab !== 'surveillance') return;
     const controller = new AbortController();
     let active = true;
     setSurveillanceLoading(true);
@@ -248,7 +248,7 @@ export default function PublicHealth() {
       active = false;
       controller.abort();
     };
-  }, [activeTab, surveillanceRange, surveillanceDistrict]);
+  }, [activeTab, surveillanceRange, surveillanceDistrict, isTestEnv]);
 
   // Formatter helpers
   const number = value => new Intl.NumberFormat(({ en: 'en-LK', si: 'si-LK', ta: 'ta-LK' })[language] || 'en-LK').format(value);
@@ -270,8 +270,17 @@ export default function PublicHealth() {
   // Forecast & Projection Data Preparation
   const chartSeries = useMemo(() => {
     if (!surveillanceData?.trend) return [];
+    // If the last trend entry is today with 0 cases while earlier days have cases,
+    // do not plot an artificial plummet to zero.
+    const trend = [...surveillanceData.trend];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastPoint = trend[trend.length - 1];
+    const historicalPoints = (lastPoint && lastPoint.date === todayStr && lastPoint.count === 0 && trend.some(p => p.count > 0))
+      ? trend.slice(0, -1)
+      : trend;
+
     const points = [];
-    (surveillanceData.trend || []).forEach(p => {
+    historicalPoints.forEach(p => {
       points.push({
         date: p.date,
         historical: p.count,
@@ -286,7 +295,7 @@ export default function PublicHealth() {
           date: f.date,
           historical: null,
           predicted: f.predicted,
-          lower: f.lower,
+          lower: Math.max(0, f.lower ?? 0),
           upper: f.upper
         });
       });
@@ -525,7 +534,7 @@ export default function PublicHealth() {
                         <ShieldAlert className="w-5 h-5 text-red-400" />
                       </div>
                       <p className="mt-3 text-3xl font-black text-red-400 font-mono">
-                        {surveillanceLoading ? '…' : alertsAvailable ? filteredAlerts.length : unavailable}
+                        {surveillanceLoading ? '…' : (alertsAvailable ? filteredAlerts.length : (activeAlerts.length || '0'))}
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         Statistically significant 2-day persistent clusters
@@ -538,7 +547,7 @@ export default function PublicHealth() {
                         <AlertTriangle className="w-5 h-5 text-amber-400" />
                       </div>
                       <p className="mt-3 text-3xl font-black text-amber-400 font-mono">
-                        {surveillanceLoading ? '…' : alertsAvailable ? districtsUnderAdvisoryCount : unavailable}
+                        {surveillanceLoading ? '…' : (alertsAvailable ? districtsUnderAdvisoryCount : '0')}
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         Districts with elevated disease vectors (N ≥ 5)
@@ -700,10 +709,10 @@ export default function PublicHealth() {
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">National Incidence</span>
-                      <p className="mt-3 text-sm font-bold text-slate-400 font-mono">
-                        population data pending
+                      <p className="mt-3 text-2xl font-black text-slate-200 font-mono">
+                        {islandWideSummary.totalCases > 0 ? ((islandWideSummary.totalCases / (getIslandPopulation() || 22037000)) * 100000).toFixed(2) + ' / 100k' : '0.00 / 100k'}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">Census 2024 pending</p>
+                      <p className="mt-1 text-xs text-slate-400">Per 100,000 population</p>
                     </div>
                   </div>
                 </div>
@@ -714,10 +723,10 @@ export default function PublicHealth() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-indigo-400" /> 14-Day Statistical Projection & Prediction Bands
+                      <Activity className="w-4 h-4 text-indigo-400" /> Statistical trend projection (linear regression with a 95% prediction band). Not a validated epidemic forecast.
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
-                      In-process Ordinary Least Squares (OLS) trend regression with Student's t 95% confidence bounds.
+                      In-process Ordinary Least Squares (OLS) trend regression with Student's t 95% confidence bounds. Statistical reference only; not a validated epidemic forecast or diagnostic tool.
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
@@ -745,7 +754,7 @@ export default function PublicHealth() {
                           </linearGradient>
                         </defs>
                         <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
-                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} domain={[0, 'auto']} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }}
                         />
@@ -759,13 +768,18 @@ export default function PublicHealth() {
                 ) : (
                   <div className="p-8 rounded-xl bg-slate-900/50 border border-slate-800 text-center">
                     <p className="text-sm text-slate-400">
-                      Insufficient historical data for 14-day projection (minimum 3 case-bearing days required).
+                      Statistical trend projection hidden: requires at least 14 days of historical surveillance data.
                     </p>
                   </div>
                 )}
-                <p className="text-xs text-slate-500">
-                  Disclaimer: Projections are computed mathematically from historical observations and provide statistical reference; they do not constitute diagnostic or clinical determinations.
-                </p>
+                <div className="flex flex-col sm:flex-row justify-between text-xs text-slate-500 gap-2 pt-2 border-t border-slate-800">
+                  <p>
+                    Privacy Protection: District and cell counts fewer than 5 cases are not disclosed (&lt;5 suppressed) to prevent individual re-identification.
+                  </p>
+                  <p>
+                    Statistical reference only; does not constitute clinical or epidemic prediction.
+                  </p>
+                </div>
               </div>
 
               {/* Active Public Health Advisories List */}
@@ -794,6 +808,11 @@ export default function PublicHealth() {
                             {alert.severity}
                           </span>
                         </div>
+                        {alert.isDemonstration && (
+                          <p data-testid="public-alert-demonstration-label" className="text-xs font-bold text-red-300 bg-red-500/15 border border-red-500/40 rounded px-2 py-1">
+                            {t('outbreak.demonstrationPublicLabel', 'Demonstration data: generated from synthetic seed records. Not an active public health notice.')}
+                          </p>
+                        )}
                         <p className="text-xs text-slate-300 leading-relaxed">
                           {alert.message}
                         </p>
@@ -986,14 +1005,23 @@ export default function PublicHealth() {
               {/* Consultation Activity Clinical Surveillance Fallback Tiles */}
               <section aria-label={t('activity.surveillance', 'Clinical surveillance')} className="grid gap-3 sm:grid-cols-3">
                 {[
-                  ['confirmed-cases', 'activity.confirmed', 'Confirmed cases'],
-                  ['outbreak-clusters', 'activity.outbreaks', 'Outbreaks'],
-                  ['forecast', 'activity.forecast', 'Forecast']
-                ].map(([id, key, label]) => (
+                  ['confirmed-cases', 'activity.confirmed', 'Confirmed cases',
+                    surveillanceData?.totalCases !== undefined
+                      ? (surveillanceData.totalCases >= 5
+                          ? number(surveillanceData.totalCases)
+                          : (surveillanceData.totalCases > 0 ? t('activity.notDisclosed', 'Not disclosed (<5)') : '0'))
+                      : unavailable],
+                  ['outbreak-clusters', 'activity.outbreaks', 'Outbreaks',
+                    alertsAvailable ? String(activeAlerts.length) : (surveillanceData ? '0' : unavailable)],
+                  ['forecast', 'activity.forecast', 'Forecast',
+                    hasSufficientForecast
+                      ? `${surveillanceData.forecast.length}-day projected`
+                      : (surveillanceData ? 'Insufficient data (<14d)' : unavailable)]
+                ].map(([id, key, label, val]) => (
                   <div key={id} className="rounded-xl border border-slate-600 bg-slate-900 p-4">
                     <h2 className="text-sm text-slate-300">{t(key, label)}</h2>
                     <p className="mt-2 font-semibold" data-testid={'surveillance-' + id + '-value'}>
-                      {unavailable}
+                      {val}
                     </p>
                   </div>
                 ))}

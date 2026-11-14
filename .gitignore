@@ -79,3 +79,6 @@ ml-engine/data/*.csv
 # Temporary documentation/audit dumps (keep only candidate fixture required by offline test)
 docs/temp/
 !docs/temp/CODEX_PRODUCTION_DB_GUARD_FOR_APPROVAL.candidate.js
+
+# docs/temp holds local QA receipts and must stay untracked (untracked in the Nov 2026 hardening run;
+# older commits still contain those files). Only the candidate above is required by a test.

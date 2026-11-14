@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-11-13T09:53:17.815Z",
+  "benchmark": "Single-Pass Statistical Surveillance & 72h Aggregation Benchmark",
+  "results": [
+    {
+      "consultationCount": 1000,
+      "criteriaDurationMs": 1.05,
+      "growthDurationMs": 1.47,
+      "totalDurationMs": 2.52,
+      "throughputConsultationsPerSec": 948047,
+      "diseaseGroupsEvaluated": 1000,
+      "heapDeltaMb": 2.13
+    },
+    {
+      "consultationCount": 10000,
+      "criteriaDurationMs": 13.28,
+      "growthDurationMs": 2.39,
+      "totalDurationMs": 15.67,
+      "throughputConsultationsPerSec": 752910,
+      "diseaseGroupsEvaluated": 9971,
+      "heapDeltaMb": 10.19
+    },
+    {
+      "consultationCount": 100000,
+      "criteriaDurationMs": 67.72,
+      "growthDurationMs": 20.08,
+      "totalDurationMs": 87.8,
+      "throughputConsultationsPerSec": 1476712,
+      "diseaseGroupsEvaluated": 97251,
+      "heapDeltaMb": 107.72
+    }
+  ]
+}

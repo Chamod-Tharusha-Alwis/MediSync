@@ -5,6 +5,15 @@ const Doctor = require('../models/Doctor');
 const emailService = require('../utils/emailService');
 const { verifyToken } = require('../utils/internalAuth');
 
+const DEMONSTRATION_LABEL = 'Demonstration alert generated from synthetic seed data. Not an active public health notice.';
+function labelDemonstrationAlert(alert) {
+  return { ...alert, isDemoData: true, isDemonstration: true, syntheticLabel: alert.syntheticLabel || DEMONSTRATION_LABEL };
+}
+function mergeAlerts(primary = [], extra = []) {
+  const seen = new Set((primary || []).map(a => String(a._id)));
+  return [...(primary || []), ...(extra || []).filter(a => !seen.has(String(a._id)))];
+}
+
 // Legacy push endpoints cannot bypass provenance or administrator review.
 exports.triggerAlert = async (req, res) => {
   if (!verifyToken(req.headers['x-internal-key'])) return res.status(403).json({error:'Forbidden'});
@@ -21,13 +30,21 @@ exports.getActiveAlerts = async (req, res) => {
     if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
-    const alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:{$in:['Active','Pending']}}).select('-sourceConsultationIds').sort({createdAt:-1}).lean();
+    const statusFilter = { $in: ['Active', 'Pending'] };
+    let alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter}).select('-sourceConsultationIds').sort({createdAt:-1}).lean();
+    if (!simulation) {
+      // Viva demonstration alerts are labelled isDemoData and carry their seed batch; reviewers
+      // still need to see them, so they are listed separately and keep their labels.
+      const demo = await OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean();
+      alerts = mergeAlerts(alerts, (demo || []).map(labelDemonstrationAlert));
+    }
     let growthData = null;
     try {
       growthData = await service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' });
     } catch (_) {}
     const enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
-    res.json({ data: enriched });
+    const lastScan = await service.getLastScan(simulation ? 'simulation' : 'real');
+    res.json({ data: enriched, lastScan });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
   }
@@ -46,14 +63,20 @@ exports.getPublicApprovedAlerts = async (_req, res) => {
   try {
     const { POLICY, realAlertFilter } = require('../services/surveillanceService');
     const { diseaseLabel } = require('../services/publicHealthStats');
+    const { VIVA_DEMO_SEED_BATCH } = require('../services/surveillanceService');
+    const approved = { status: 'Active', approvedBy: { $type: 'objectId' }, approvedAt: { $type: 'date', $lte: new Date() } };
     const alerts = await OutbreakAlert.find({
-      ...realAlertFilter(), surveillancePolicy: POLICY, status: 'Active',
-      approvedBy: { $type: 'objectId' },
-      approvedAt: { $type: 'date', $lte: new Date() },
+      ...realAlertFilter(), surveillancePolicy: POLICY, ...approved,
       syntheticSeedBatch: { $exists: false },
     }).select('_id disease location severity affectedCount').sort({ createdAt: -1 }).lean();
-    return res.json({ data: alerts.map(({ _id, disease, location, severity, affectedCount }) => ({
+    // Approved viva demonstration alerts are published only with an explicit demonstration label.
+    const demo = await OutbreakAlert.find({
+      surveillancePolicy: POLICY, ...approved, isSimulation: false, syntheticSeedBatch: VIVA_DEMO_SEED_BATCH,
+    }).select('_id disease location severity affectedCount').sort({ createdAt: -1 }).lean();
+    const rows = mergeAlerts(alerts, (demo || []).map(labelDemonstrationAlert));
+    return res.json({ data: rows.map(({ _id, disease, location, severity, affectedCount, isDemonstration, syntheticLabel }) => ({
       _id, disease: diseaseLabel(disease), location, severity, affectedCount,
+      ...(isDemonstration ? { isDemonstration: true, syntheticLabel } : {}),
     })) });
   } catch (_) {
     return res.status(503).json({ error: 'PUBLIC_ALERTS_UNAVAILABLE' });

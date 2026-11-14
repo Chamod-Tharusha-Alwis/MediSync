@@ -245,12 +245,13 @@ function fitQuadratic(x, y) {
 function calculate14DayForecast(trend, options = {}) {
   const forecastDays = Math.max(1, Math.min(60, Number(options.forecastDays) || 14));
   const confidenceLevel = options.confidenceLevel === 0.99 ? 0.99 : 0.95;
+  const minRequired = Math.max(3, Number(options.minPoints) || 3);
 
-  if (!Array.isArray(trend) || trend.length < 3) {
+  if (!Array.isArray(trend) || trend.length < minRequired) {
     return {
       forecast: [],
       hasSufficientData: false,
-      message: 'Insufficient historical data (minimum 3 data points required)'
+      message: `Insufficient historical data (minimum ${minRequired} data points required)`
     };
   }
 
@@ -282,11 +283,11 @@ function calculate14DayForecast(trend, options = {}) {
       return parseMs(a.date) - parseMs(b.date);
     });
 
-  if (clean.length < 3) {
+  if (clean.length < minRequired) {
     return {
       forecast: [],
       hasSufficientData: false,
-      message: 'Insufficient historical data (minimum 3 data points required)'
+      message: `Insufficient historical data (minimum ${minRequired} data points required)`
     };
   }
 

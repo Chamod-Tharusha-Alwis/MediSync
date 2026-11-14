@@ -629,6 +629,18 @@ exports.getOutbreakGrowth = async (req, res) => {
   }
 };
 
+// ─── Outbreak Last Scan Telemetry ─────────────────────────────────────────────
+exports.getLastScan = async (req, res) => {
+  try {
+    const service = require('../services/surveillanceService');
+    const mode = (req.query?.mode === 'simulation') ? 'simulation' : 'real';
+    const lastScan = await service.getLastScan(mode);
+    res.json({ success: true, lastScan });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve last scan record' });
+  }
+};
+
 // ─── NEW: ML — getMLStatus ───────────────────────────────────────────────────
 exports.getMLStatus = async (req, res) => {
   const { probeAdminMlStatusWithRetry, createStatusGet } = require('../services/adminMlStatusService');
@@ -938,8 +950,10 @@ exports.previewOutbreakRecipients = async (req, res) => {
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
     const scope = String(req.query?.scope || 'district').toLowerCase();
     const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
-    const { resolveOutbreakRecipients } = require('../services/outbreakNotificationDelivery');
-    const info = await resolveOutbreakRecipients(alert, scope, maxCap);
+    const delivery = require('../services/outbreakNotificationDelivery');
+    const isDemo = await delivery.isDemoOutbreakAlert(alert);
+    const info = await delivery.resolveOutbreakRecipients(alert, scope, maxCap, { adminEmail: req.user?.email, ...(isDemo ? { isDemo: true } : {}) });
+    const isDemonstration = Boolean(isDemo || info.isDemonstration);
     res.json({
       scope,
       district: info.district,
@@ -947,7 +961,8 @@ exports.previewOutbreakRecipients = async (req, res) => {
       totalEligible: info.totalFound,
       capped: info.capped,
       maxCap: info.maxCap,
-      deliveryEnabled: process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false'
+      isDemonstration,
+      deliveryEnabled: delivery.isOutbreakDeliveryEnabled(isDemonstration)
     });
   } catch (err) {
     res.status(500).json({ error: 'Unable to preview recipients.' });
@@ -982,9 +997,13 @@ exports.approveAlert = async (req, res) => {
       }
     }
 
-    // Kill switch: env var OUTBREAK_EMAIL_DELIVERY_ENABLED, defaults to true
-    const isDeliveryEnabled = process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED !== 'false';
-    const isEmailRequested = emailScope !== 'none' && !service.synthetic(alert);
+    // Delivery policy (outbreakNotificationDelivery.isOutbreakDeliveryEnabled):
+    // demonstration alerts reach only the allowlist and are on unless the flag is 'false';
+    // real broadcasts fail closed and need OUTBREAK_EMAIL_DELIVERY_ENABLED === 'true'.
+    const delivery = require('../services/outbreakNotificationDelivery');
+    const isDemoAlert = await delivery.isDemoOutbreakAlert(alert);
+    const isDeliveryEnabled = delivery.isOutbreakDeliveryEnabled(isDemoAlert);
+    const isEmailRequested = emailScope !== 'none';
     const effectiveScope = (!isDeliveryEnabled && isEmailRequested) ? 'none' : emailScope;
 
     const updated = await OutbreakAlert.findOneAndUpdate(
@@ -1016,12 +1035,16 @@ exports.approveAlert = async (req, res) => {
         emailDelivery.attempted = true;
         try {
           const maxCap = Number(process.env.OUTBREAK_MAX_EMAIL_RECIPIENTS) || 100;
-          const { resolveOutbreakRecipients, sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
-          const audience = await resolveOutbreakRecipients(alert, emailScope, maxCap);
+          const audience = await delivery.resolveOutbreakRecipients(alert, emailScope, maxCap, { adminEmail: req.user?.email, ...(isDemoAlert ? { isDemo: true } : {}) });
           emailDelivery.recipientCount = audience.recipients.length;
+          emailDelivery.isDemonstration = Boolean(isDemoAlert || audience.isDemonstration);
 
           if (audience.recipients.length > 0) {
-            const deliveryResult = await sendOutbreakAdvisoryEmail(audience.recipients, updated);
+            const deliveryResult = await delivery.sendOutbreakAdvisoryEmail(audience.recipients, updated, {
+              isDemo: emailDelivery.isDemonstration,
+              adminEmail: req.user?.email,
+              approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
+            });
             emailDelivery.sentCount = deliveryResult.sentCount || 0;
             emailDelivery.failedCount = deliveryResult.failedCount || 0;
           }
@@ -1051,7 +1074,8 @@ exports.approveAlert = async (req, res) => {
           sentCount: emailDelivery.sentCount,
           failedCount: emailDelivery.failedCount,
           emailSkipped: emailDelivery.skipped,
-          deliveryEnabled: isDeliveryEnabled
+          deliveryEnabled: isDeliveryEnabled,
+          isDemonstration: isDemoAlert
         },
         timestamp: new Date()
       });
@@ -1113,6 +1137,61 @@ exports.resolveAlert = async (req, res) => {
     res.json({ message: `Alert ${alert.status.toLowerCase()} successfully`, data: alert });
   } catch (error) {
     res.status(500).json({ error: 'Failed to resolve alert' });
+  }
+};
+
+// ─── TEST OUTBREAK ADVISORY EMAIL ─────────────────────────────────────────────
+exports.sendTestOutbreakEmail = async (req, res) => {
+  try {
+    if (!['admin','super_admin','superadmin','health_officer'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Administrator review required.' });
+    }
+    const OutbreakAlert = require('../models/OutbreakAlert');
+    const alert = await OutbreakAlert.findById(req.params.id);
+    if (!alert) return res.status(404).json({ error: 'Alert not found' });
+
+    const adminEmail = (req.user?.email || 'admin@medisync.lk').trim().toLowerCase();
+    const { sendOutbreakAdvisoryEmail } = require('../services/outbreakNotificationDelivery');
+
+    const result = await sendOutbreakAdvisoryEmail(
+      [{ email: adminEmail, role: 'admin_test', district: alert.location || alert.district || 'National' }],
+      alert,
+      {
+        isTest: true,
+        adminEmail,
+        approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
+      }
+    );
+
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        actorId: String(req.user?.id || req.user?._id || 'unknown'),
+        actorRole: req.user?.role || 'admin',
+        action: 'TEST_EMAIL_SENT',
+        accessedNic: String(alert._id),
+        deviceModel: `test_email|${alert.disease}|${alert.location || alert.district}`,
+        details: {
+          alertId: String(alert._id),
+          disease: alert.disease,
+          district: alert.location || alert.district,
+          sentCount: result.sentCount,
+          failedCount: result.failedCount
+        },
+        timestamp: new Date()
+      });
+    } catch (_) {}
+
+    return res.json({
+      success: result.sentCount > 0,
+      recipient: adminEmail,
+      sentCount: result.sentCount,
+      failedCount: result.failedCount,
+      subject: result.subject,
+      message: result.sentCount > 0 ? `Test email sent successfully to ${adminEmail}` : 'Test email failed to send.'
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to send test email.' });
   }
 };
 

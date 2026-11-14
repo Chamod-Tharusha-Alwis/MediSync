@@ -61,7 +61,8 @@ describe('Task P11-A2 & P11-A3: PDF Security Encryption & Clean Layout', () => {
       expect(normalizePdfPassword('95 123 4567 v')).toBe('951234567V');
       expect(normalizePdfPassword('N/A', 'CONS-2026-999')).toBe('CONS-2026-999');
       expect(normalizePdfPassword(null, 'CONS-001')).toBe('CONS-001');
-      expect(normalizePdfPassword(undefined, null)).toBe('MEDISYNC');
+      // No fixed default password: absent NIC and reference yields null (caller fails closed).
+      expect(normalizePdfPassword(undefined, null)).toBeNull();
     });
 
     test('securePdfBuffer encrypts a PDF with standard /Encrypt dictionary and password lock', async () => {

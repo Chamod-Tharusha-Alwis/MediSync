@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-11-13T09:54:49.632Z",
+  "testSuite": "universalIcdOutbreakCoverage.test.js",
+  "totalDiseasesTested": 335,
+  "icd10ChaptersCovered": 21,
+  "trueSpikeDetectionRatePercent": 100,
+  "falseAlertRatePercent": 0,
+  "testedCodesSample": [
+    {
+      "code": "ICD10:A000",
+      "description": "Cholera due to Vibrio cholerae 01, biovar cholerae",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A0811",
+      "description": "Acute gastroenteropathy due to Norwalk agent",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A213",
+      "description": "Gastrointestinal tularemia",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A3686",
+      "description": "Diphtheritic conjunctivitis",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A484",
+      "description": "Brazilian purpuric fever",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A5213",
+      "description": "Late syphilitic meningitis",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A598",
+      "description": "Trichomoniasis of other sites",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A801",
+      "description": "Acute paralytic poliomyelitis, wild virus, imported",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:A968",
+      "description": "Other arenaviral hemorrhagic fevers",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B08011",
+      "description": "Vaccinia not from vaccine",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B2709",
+      "description": "Gammaherpesviral mononucleosis with other complications",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B383",
+      "description": "Cutaneous coccidioidomycosis",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B508",
+      "description": "Other severe and complicated Plasmodium falciparum malaria",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B6732",
+      "description": "Echinococcus granulosus infection, multiple sites",
+      "chapter": "Chapter I (Infections)"
+    },
+    {
+      "code": "ICD10:B853",
+      "description": "Phthiriasis",
+      "chapter": "Chapter I (Infections)"
+    }
+  ]
+}

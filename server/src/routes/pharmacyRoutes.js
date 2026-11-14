@@ -28,8 +28,11 @@ router.post('/change-first-password', loginLimiter, pharmacyController.changeFir
 const pharmacyAuth = protect(['pharmacist', 'pharmacy_admin', 'assistant']);
 const dispensingAuth = protect(['pharmacist', 'pharmacy_admin']);
 
-// Profile
+// Inventory management is decommissioned; the route is kept only to return 410 Gone
+// to stale clients (removing it would turn that into an ambiguous 404).
 router.get('/inventory', pharmacyAuth, pharmacyController.getInventory);
+
+// Profile
 router.get('/staff/me', pharmacyAuth, pharmacyController.getMe);
 
 // Staff management (all roles can list; only admin can add/toggle)
@@ -48,13 +51,7 @@ router.get('/stats', pharmacyAuth, pharmacyController.getStats);
 // District demand & epidemiological burden (U11)
 router.get('/district-demand', pharmacyAuth, pharmacyController.getDistrictDemand);
 
-// Analytics & volume ranges in Asia/Colombo (U12)
-router.get('/analytics/dispensing', pharmacyAuth, pharmacyController.getRestockAnalytics);
-router.get('/analytics/restock', pharmacyAuth, pharmacyController.getRestockAnalytics);
-router.post('/predict-restock', pharmacyAuth, pharmacyController.predictRestock);
-router.get('/restock-alerts', pharmacyAuth, pharmacyController.getDistrictRestockAlerts);
-const maintenanceDenied = (_req, res) => res.status(403).json({ error: 'Dataset maintenance requires a separately approved operator procedure' });
-router.post('/seed-restock', pharmacyAuth, maintenanceDenied);
-router.delete('/seed-restock', pharmacyAuth, maintenanceDenied);
+// Dispensing volume by medicine in Asia/Colombo (U12). Counts dispensed items only; no stock.
+router.get('/analytics/dispensing', pharmacyAuth, pharmacyController.getDispensingAnalytics);
 
 module.exports = router;

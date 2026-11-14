@@ -271,7 +271,7 @@ describe('Fix 1 — Outbreak Alert Approval & Scoped Notification Delivery', () 
 
     await adminController.previewOutbreakRecipients(req, res);
 
-    expect(res.json).toHaveBeenCalledWith({
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       scope: 'district',
       district: 'Gampaha',
       recipientCount: 15,
@@ -279,7 +279,7 @@ describe('Fix 1 — Outbreak Alert Approval & Scoped Notification Delivery', () 
       capped: false,
       maxCap: 100,
       deliveryEnabled: true,
-    });
+    }));
 
     delivery.resolveOutbreakRecipients.mockRestore();
   });

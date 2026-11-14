@@ -1,9 +1,0 @@
-{
-  "at": "2026-11-05T13:51:23.829Z",
-  "approvalPatch": "docs/temp/CODEX_PASSWORD_ATTEMPTS_5_IN_15_REVIEW_20261105T134807Z.patch",
-  "patchPreserved": true,
-  "patchSha256": "ec55ae4d546df304bd317853e392375382a3619c763c5ec2c3fc6acb334e5398",
-  "committed": false,
-  "reason": "Unified-diff blank context lines contain required spaces and triggered git diff --cached --check when nesting the patch as a text addition. The local review patch is excluded; source/test and sanitized evidence remain staged. No whitespace policy or source safeguards were changed.",
-  "undo": "git restore --staged -- exact local approval patch; file bytes preserved"
-}

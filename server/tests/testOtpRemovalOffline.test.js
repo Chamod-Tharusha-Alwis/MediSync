@@ -63,7 +63,7 @@ describe('Test OTP Harness Removal and Zero-Bypass Specification', () => {
 
       const realOtp = '849201';
       const realOtpHash = await bcrypt.hash(realOtp, 10);
-      const testEmail = 'chamodalwis1309@gmail.com';
+      const testEmail = 'doctor.owner@example.org';
       const userId = '507f191e810c19729de860ea';
 
       const mockUser = {
@@ -130,7 +130,7 @@ describe('Test OTP Harness Removal and Zero-Bypass Specification', () => {
 
       const realOtp = '849201';
       const realOtpHash = await bcrypt.hash(realOtp, 10);
-      const testEmail = 'chamodalwis1309@gmail.com';
+      const testEmail = 'doctor.owner@example.org';
       const userId = '507f191e810c19729de860ea';
 
       const mockUser = {
@@ -189,20 +189,14 @@ describe('Test OTP Harness Removal and Zero-Bypass Specification', () => {
     }
   });
 
-  test('5. assertClinicalEntry warns when TEST_OTP_ENABLED or TEST_OTP_CODE is set in production', () => {
+  test('5. assertClinicalEntry ignores TEST_OTP_* entirely (warning branch removed; no bypass exists)', () => {
     const { assertClinicalEntry } = require('../src/security/clinicalEntryPolicy');
+    const source = require('fs').readFileSync(require('path').resolve(__dirname, '../src/security/clinicalEntryPolicy.js'), 'utf8');
+    expect(source).not.toContain('TEST_OTP');
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
     try {
-      assertClinicalEntry({ NODE_ENV: 'production', TEST_OTP_ENABLED: 'true' });
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[SECURITY WARNING] TEST_OTP_ENABLED or TEST_OTP_CODE detected in production environment'));
-
-      warnSpy.mockClear();
-      assertClinicalEntry({ MEDISYNC_DEPLOYMENT_MODE: 'clinical', TEST_OTP_CODE: '123456' });
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[SECURITY WARNING] TEST_OTP_ENABLED or TEST_OTP_CODE detected in production environment'));
-
-      warnSpy.mockClear();
-      assertClinicalEntry({ NODE_ENV: 'production' });
+      expect(() => assertClinicalEntry({ NODE_ENV: 'production', TEST_OTP_ENABLED: 'true' })).not.toThrow();
+      expect(() => assertClinicalEntry({ MEDISYNC_DEPLOYMENT_MODE: 'clinical', TEST_OTP_CODE: '123456' })).not.toThrow();
       expect(warnSpy).not.toHaveBeenCalled();
     } finally {
       warnSpy.mockRestore();

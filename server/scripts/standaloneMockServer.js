@@ -127,14 +127,6 @@ const MOCK_USERS = {
   }
 };
 
-const MOCK_INVENTORY = [
-  { id: 'inv_1', drug: 'Paracetamol 500mg', brand: 'Panadol', category: 'Analgesics', stock: 450, unit: 'tablets', reorderLevel: 100, status: 'In Stock' },
-  { id: 'inv_2', drug: 'Amoxicillin 500mg', brand: 'Amoxil', category: 'Antibiotics', stock: 120, unit: 'capsules', reorderLevel: 50, status: 'In Stock' },
-  { id: 'inv_3', drug: 'Metformin 500mg', brand: 'Glucophage', category: 'Antidiabetic', stock: 380, unit: 'tablets', reorderLevel: 80, status: 'In Stock' },
-  { id: 'inv_4', drug: 'Atorvastatin 20mg', brand: 'Lipitor', category: 'Cardiovascular', stock: 24, unit: 'tablets', reorderLevel: 40, status: 'Low Stock' },
-  { id: 'inv_5', drug: 'Omeprazole 20mg', brand: 'Losec', category: 'Gastrointestinal', stock: 310, unit: 'capsules', reorderLevel: 60, status: 'In Stock' }
-];
-
 let mockPrescriptions = [
   {
     _id: 'rx_101',
@@ -405,11 +397,8 @@ app.post(['/api/doctor/consultation', '/api/doctor/consultations'], (req, res) =
 // ─── PHARMACY ENDPOINTS ──────────────────────────────────────────────────────
 
 app.get('/api/pharmacy/inventory', (req, res) => {
-  res.json({
-    status: 'success',
-    mode: 'MOCK',
-    data: MOCK_INVENTORY
-  });
+  // Mirrors the real API: inventory management is decommissioned.
+  res.status(410).json({ error: 'INVENTORY_MANAGEMENT_DECOMMISSIONED', mode: 'MOCK' });
 });
 
 app.get(['/api/pharmacy/prescriptions/pending/:nic', '/api/pharmacy/prescriptions/pending'], (req, res) => {
@@ -428,7 +417,7 @@ app.post('/api/pharmacy/dispense', (req, res) => {
   res.json({
     status: 'success',
     mode: 'MOCK',
-    message: 'Prescription dispensed and inventory adjusted atomically.',
+    message: 'Prescription verified and dispensed.',
     dispensedAt: new Date().toISOString()
   });
 });
@@ -443,49 +432,7 @@ app.get('/api/pharmacy/history', (req, res) => {
   });
 });
 
-app.get('/api/pharmacy/analytics/restock', (req, res) => {
-  res.json({
-    status: 'success',
-    mode: 'MOCK',
-    data: {
-      criticalItems: 1,
-      turnoverRate: '8.4%',
-      predictedShortages: [{ drug: 'Atorvastatin 20mg', daysRemaining: 3 }]
-    }
-  });
-});
 
-app.get('/api/pharmacy/restock-alerts', (req, res) => {
-  res.json({
-    status: 'success',
-    mode: 'MOCK',
-    district: 'Colombo',
-    drugsAnalyzed: 14,
-    alerts: [
-      {
-        id: 'al_1',
-        drugName: 'Paracetamol 500mg',
-        status: 'Critical',
-        trend: '+45%',
-        message: 'Surge in regional fever presentations triggering higher dispensing rates.',
-        baselineDailyAvg: 120,
-        recentDailyAvg: 174
-      },
-      {
-        id: 'al_2',
-        drugName: 'Amoxicillin 500mg',
-        status: 'Warning',
-        trend: '+22%',
-        message: 'Moderate increase in respiratory presentations.',
-        baselineDailyAvg: 60,
-        recentDailyAvg: 73
-      }
-    ],
-    data: [
-      { id: 'al_1', drug: 'Paracetamol 500mg', drugName: 'Paracetamol 500mg', currentStock: 24, threshold: 40, urgency: 'Critical', status: 'Critical' }
-    ]
-  });
-});
 
 app.get('/api/pharmacy/staff', (req, res) => {
   res.json({
