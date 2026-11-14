@@ -206,9 +206,9 @@ If two pharmacy terminals submit dispensing confirmations simultaneously, only t
 
 ### Q31: How many pharmaceutical drugs are available globally on the platform?
 **Answer**:  
-MediSync maintains two tiers of drug data:
-1. **Global Master Catalog (`ml-engine/data/medicines.csv`)**: Contains **23,939 approved pharmaceutical medicines**, fulfilling the requirement for over 20,000 globally available medications.
-2. **Clinical Formulary Catalog (`server/reference-data/drugs_clean.json`)**: Contains **3,000 curated high-frequency clinical medications** with dosage forms, contraindications, and drug-drug interaction pairs pinned by cryptographic hash in `productionArtifactPins.json`.
+MediSync's server catalogue is the clinical formulary below. It does not hold 20,000+ approved medicines.
+1. **Retail medicine listing (`ml-engine/data/medicines.csv`, local only)**: Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**.
+2. **Clinical Formulary Catalog (the server catalogue) (`server/reference-data/drugs_clean.json`)**: Contains **3,000 curated high-frequency clinical medications** with dosage forms, contraindications, and drug-drug interaction pairs pinned by cryptographic hash in `productionArtifactPins.json`.
 
 ### Q32: What data in the demonstration is synthetic versus real?
 **Answer**:  
