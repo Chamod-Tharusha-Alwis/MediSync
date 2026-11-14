@@ -67,7 +67,7 @@ An attacker who knows a patient's date of birth and gender can brute-force the r
 
 ### Q11: Does MediSync support partial dispensing across multiple community pharmacies?
 **Answer**:  
-No. To maintain complete transactional atomicity and eliminate complex distributed reconciliation hazards across independent pharmacies, the dispensing engine (`server/src/services/dispensingService.js`) enforces full prescription checkout. All medications on a prescription order must be fulfilled together, or an explicit physician amendment must be recorded.
+Partly. The dispensing engine (`server/src/services/dispensingService.js`) accepts a partial dispense (`isPartialDispense`), which moves the prescription to `partially_dispensed`; a later checkout completes it and moves it to `dispensed`. Each checkout is one MongoDB transaction with a conditional status update, so the same step cannot be recorded twice. The dispensed medicines must match the prescription, unless an explicit substitution (`isAlternativeDispensed`) is recorded.
 
 ---
 
@@ -75,10 +75,11 @@ No. To maintain complete transactional atomicity and eliminate complex distribut
 
 ### Q12: Explain your implementation of field-level encryption. How is it implemented?
 **Answer**:  
-Implemented in `server/src/utils/versionedEncryption.js`:
-- Sensitive patient identifiers (names, contact info, NICs, allergies, medical notes) are encrypted at rest using AES-256-CBC with per-record random Initialization Vectors (IV).
-- Cryptographic integrity is verified via versioned key headers (`v1`, `v2`), supporting zero-downtime key rotation.
-- In-flight communication is strictly secured using TLS 1.3.
+Implemented in `server/src/utils/versionedEncryption.js` on top of `mongoose-field-encryption`:
+- Sensitive fields (Patient `fullName`, `contactInfo`, `allergies`; Consultation `patientNic`, `diagnosis`, `notes`) are encrypted at rest with AES-256-CBC and a random 16-byte IV per value.
+- **There is no integrity protection.** CBC mode carries no MAC or authentication tag, so a modified ciphertext is not detected. The key is derived from a hex SHA-256 digest, which caps effective key entropy at 128 bits. See `docs/final/FIELD_ENCRYPTION.md` for the limits and the planned AES-256-GCM migration.
+- A per-document `keyVersion` selects the decryption key, which supports key rotation. It is a key selector, not an integrity check.
+- In transit, TLS is provided by the hosting platforms (Vercel for the client, Render for the API and ML service). The repository does not configure a TLS version.
 
 ### Q13: How does Blind Indexing work, and why is it necessary?
 **Answer**:  
@@ -93,16 +94,17 @@ Every encrypted payload begins with a `keyVersion` identifier (e.g., `v1`, `v2`)
 
 ### Q15: How are passwords and temporary tokens protected?
 **Answer**:  
-- Passwords are salted and hashed using `bcryptjs` with 12 adaptive work rounds.
-- Temporary OTPs and password reset tokens are generated using cryptographically strong pseudo-random number generators (`crypto.randomInt()`).
-- Tokens are stored in dedicated MongoDB collections (`OTPSession`, `RecoveryToken`) configured with automated database engine Time-To-Live (TTL) indexes, ensuring automatic document destruction after 300 seconds and 900 seconds, respectively.
+- Passwords are hashed with `bcryptjs` at cost factor 12 (`bcrypt.genSalt(12)` in `server/src/utils/passwordUtils.js`).
+- 6-digit OTPs are generated with `crypto.randomInt(100000, 1000000)` and stored bcrypt-hashed (cost 10). Most OTPs expire after 10 minutes; the QR verification OTP expires after 5 minutes (`verificationController.js`).
+- Password reset tokens are 32 random bytes (`crypto.randomBytes(32)`), stored only as a SHA-256 hash, and expire after 20 minutes (self-service reset) or 24 hours (admin-issued recovery token).
+- `OTPSession` has a MongoDB TTL index on `expiresAt`, so expired OTP documents are deleted automatically. `RecoveryToken` has **no** TTL index; expiry is enforced at use (`expiresAt: { $gt: now }`) and tokens are marked used, but expired rows are not deleted automatically.
 
 ### Q16: What are the primary compliance aspects of the Sri Lanka Personal Data Protection Act No. 9 of 2022 in MediSync?
 **Answer**:  
 1. **Lawful Basis & Consent**: Patients explicitly authorize clinician access to their longitudinal health records via OTP, with the ability to revoke consent.
 2. **Data Minimization**: Only clinically relevant parameters are captured.
-3. **Storage Limitation**: Temporary authentication credentials self-destruct via TTL indexes.
-4. **Integrity and Confidentiality**: Mandated through field-level encryption at rest and TLS 1.3 in transit.
+3. **Storage Limitation**: OTP sessions are removed by a TTL index; password reset tokens expire at use but are not auto-deleted.
+4. **Integrity and Confidentiality**: Field-level AES-256-CBC encryption at rest (confidentiality only, no integrity tag) and TLS in transit provided by Vercel/Render.
 
 ---
 
@@ -118,7 +120,9 @@ Every encrypted payload begins with a `keyVersion` identifier (e.g., `v1`, `v2`)
 **Answer**:  
 To prevent alert fatigue caused by random daily statistical fluctuations and low-denominator Poisson spikes, MediSync enforces **Dual Noise Suppression Gates**:
 1. **Gate 1 (Case Floor)**: Absolute 7-day case volume must reach at least 5 cases ($N \ge 5$).
-2. **Gate 2 (Persistence Gate)**: Elevation must exceed the anomaly threshold ($z \ge 2.0$) for **at least 2 consecutive calendar days**.
+2. **Gate 2 (Persistence Gate)**: The daily z-score must be strictly above the threshold ($z > 2.0$, with at least one case that day) on **at least 2 consecutive complete calendar days** (`server/src/services/surveillanceService.js:474`).
+
+Note: the ablation script below uses a non-strict comparison (`z_today >= z_threshold` with threshold 2.0). For continuous z-scores the two differ only when z is exactly 2.0.
 
 In our 1,200-series ablation benchmark (`scripts/ml_eval/evaluate_outbreak_detector.py`):
 - Raw EARS C2 produced **598 false alarms out of 600 clean series (6.06 false alarms/year)**.
@@ -165,13 +169,13 @@ Free uptime monitoring services typically enforce a hardcoded HTTP connection ti
 
 ### Q25: What does your automated test suite cover?
 **Answer**:  
-The test suite contains over 3,400 assertions across unit, integration, and security layers:
+The offline suite (`node scripts/run_offline_tests.js`) runs 3,768 tests with 0 failures: backend 2,943, client 676, ML 78 (40 scoring + 31 Flask + 7 status contract), root 40, and email/PDF 31. They cover unit, integration, and security layers:
 - **Unit Tests**: Cryptographic encryption/decryption, blind index generation, medicine safety rules, dosage limits, dataset loaders.
 - **Integration Tests**: Multi-document consultations, prescription state transitions, duplicate dispensing prevention, lab PDF validation.
 - **Security Tests**: Role-based access control, route-level authorization, database injection guards, token expiration.
 - **ML & Statistical Tests**: Outbreak surveillance universal coverage across 300+ sampled ICD codes, EARS C2 dual-gate filtering, OLS trend forecasting bounds, and symptom matching sanity tests.
 - **Data Integrity Tests**: `hardcodedMetricAudit.test.js` verifying zero fake metrics in JSX, exact DCS census table matching, and drug catalog verification.
-- **Localization**: 100% trilingual dictionary key parity across English, Sinhala, and Tamil (916 keys).
+- **Localization**: 100% trilingual dictionary key parity across English, Sinhala, and Tamil (900 leaf keys in each).
 
 ### Q26: What is the 15-File Protected Ledger?
 **Answer**:  
@@ -184,31 +188,32 @@ Located in `docs/release/PROTECTED_HASHES.json`, the ledger records immutable SH
 
 ### Q28: How do you prevent malicious script uploads disguised as lab reports?
 **Answer**:  
-In `server/controllers/labController.js`, file uploads undergo three strict layers of validation:
+In `server/src/controllers/labController.js`, file uploads undergo three strict layers of validation:
 1. Extension check: Must strictly equal `.pdf`.
 2. MIME-type check: Must equal `application/pdf`.
 3. Binary inspection: Reads the first 5 bytes of the physical file stream to confirm the magic byte signature `%PDF-` (`0x25 0x50 0x44 0x2D`). Polyglot scripts (e.g., PHP or JS disguised as a PDF) are rejected before being written to disk.
 
 ### Q29: How is 100% trilingual parity verified across English, Sinhala, and Tamil?
 **Answer**:  
-An automated test suite loads all locale dictionaries (`en.js`, `si.js`, `ta.js`), computes the set of unique translation keys, and asserts that the symmetric difference between any two language dictionaries is empty ($A \triangle B = \emptyset$). All 916 registered UI keys exist in all three languages.
+`client/src/__master_offline__/d4-any-disease-coverage.test.jsx` loads all locale dictionaries (`en.js`, `si.js`, `ta.js`), flattens them to leaf keys, and asserts that the Sinhala and Tamil key lists equal the English list exactly ($A \triangle B = \emptyset$). It deliberately pins no exact total. Today each language has 900 leaf keys.
 
 ### Q30: How does the system handle concurrent dispensing attempts on the same prescription?
 **Answer**:  
-Prescription status transitions employ MongoDB atomic conditional update operators:
+Inside a MongoDB transaction, `server/src/services/dispensingService.js` claims the prescription with a conditional update:
 ```javascript
-Prescription.findOneAndUpdate(
-  { _id: prescriptionId, status: { $in: ['active', 'partially_dispensed'] } },
-  { $set: { status: 'dispensed' } }
+Prescription.updateOne(
+  { _id: rx._id, status: { $in: ['pending', 'issued', 'partially_dispensed'] }, expiresAt: { $gt: new Date() } },
+  { $set: { status: targetStatus /* 'dispensed' or 'partially_dispensed' */, dispensedAt: new Date(), ... } },
+  { session }
 )
 ```
-If two pharmacy terminals submit dispensing confirmations simultaneously, only the first transaction finds the matching document with status `active`. The second transaction matches 0 documents and fails with HTTP 409 Conflict.
+If two pharmacy terminals confirm at the same time, only one update matches. The other gets `modifiedCount !== 1` and is rejected with `ALREADY_DISPENSED` ("Prescription is no longer eligible."), which returns HTTP 400 (the default status of `DispenseError`), not 409. A repeat of an already-recorded checkout is caught earlier by a deterministic receipt ID and also returns `ALREADY_DISPENSED`.
 
 ### Q31: How many pharmaceutical drugs are available globally on the platform?
 **Answer**:  
 MediSync's server catalogue is the clinical formulary below. It does not hold 20,000+ approved medicines.
 1. **Retail medicine listing (`ml-engine/data/medicines.csv`, local only)**: Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**.
-2. **Clinical Formulary Catalog (the server catalogue) (`server/reference-data/drugs_clean.json`)**: Contains **3,000 curated high-frequency clinical medications** with dosage forms, contraindications, and drug-drug interaction pairs pinned by cryptographic hash in `productionArtifactPins.json`.
+2. **Server medicine catalogue (`server/reference-data/drugs_clean.json`)**: 3,000 product entries. `ml-engine/preprocess_datasets.py` builds it by taking the first 3,000 unique product names from the retail listing above, in file order (not by frequency). Each entry has a name, generic name, brand, keyword-derived category, dosages and indication. The `interactions`, `sideEffects` and `icdCodes` fields are empty in all 3,000 entries, and there is no contraindications field. Drug-drug interactions are a separate file (`interactions_clean.json`, 191,541 pairs). The file is pinned by SHA-256 in `server/reference-data/manifest.json`, which marks it `clinicalValidation: not_established` and `licenseReview: not_verified`.
 
 ### Q32: What data in the demonstration is synthetic versus real?
 **Answer**:  
@@ -232,4 +237,4 @@ Outbreak alert creation uses an idempotent query check: before creating a `Pendi
 
 ### Q36: What was your specific contribution to this project?
 **Answer**:  
-`[OWNER: Insert your personal role, e.g., lead architectural design, implementing the zero-trust field encryption pipeline, engineering the dual-tier ML microservice and sparse retrieval engine, developing the three-tier outbreak surveillance system, and constructing the 3,465-test automated verification suite.]`
+`[OWNER: Insert your personal role, e.g., lead architectural design, implementing the zero-trust field encryption pipeline, engineering the dual-tier ML microservice and sparse retrieval engine, developing the three-tier outbreak surveillance system, and constructing the automated verification suite.]`

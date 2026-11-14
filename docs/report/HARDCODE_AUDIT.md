@@ -12,7 +12,7 @@
 In clinical healthcare systems, data integrity and provenance are safety-critical. This audit systematically scans the repository to identify, catalog, and classify every instance of non-dynamic data, static metrics, mock structures, and reference catalogs.
 
 ### Classification Categories:
-1. **Reference Data (Approved)**: Authoritative clinical, administrative, or demographic standards with a cited external source (e.g., WHO ICD catalogs, Department of Census and Statistics population data, FDA/DrugBank formularies).
+1. **Reference Data (Approved)**: Authoritative clinical, administrative, or demographic standards with a cited external source (e.g., WHO ICD catalogs, Department of Census and Statistics population data). Where a dataset's source is not documented in the repository, this audit says so.
 2. **Labelled Demonstration Seed (Approved)**: Explicitly tagged synthetic records used solely for live demonstration workflows, marked with `isSynthetic: true` and `syntheticSeedBatch`.
 3. **Test Fixtures (Approved)**: Mock objects and simulated responses contained strictly within test files to isolate unit and integration tests.
 4. **Hardcoded Fake / Fabricated Metric (Excised)**: Static numbers, artificial percentages, or unverified statistical claims displayed in user-facing components. **All identified instances have been completely removed.**
@@ -26,10 +26,10 @@ In clinical healthcare systems, data integrity and provenance are safety-critica
 | **Client UI** | `client/src/pages/doctor/PatientDetail.jsx` (lines 268–296) | "Cardiovascular Disease Risk: 14.8%", "Diabetic / Metabolic Risk: 28.5%" | **Hardcoded Fake** | **EXCISED / REMOVED**. Removed artificial AI risk card and fake progress bars. Replaced with patient clinical vitals and history tabs. |
 | **Client Error** | `client/src/pages/public/NotFound.jsx` (line 15) | `<p ...>404</p>` | **Standard UI Constant** | **Approved Reference**. Standard HTTP status code for route-not-found page. |
 | **Client Empty States** | `client/src/pages/admin/OutbreakMonitor.jsx` (lines 540, 577) | `'0%'`, `'0 (0%)'` | **Standard UI Constant** | **Approved Reference**. Neutral fallback value when observation counts equal zero. |
-| **Demographics** | `server/src/data/districtPopulation2024.json`, `client/src/data/districtPopulation2024.json` | 25 administrative districts with official census populations (Island total: 20,358,680) | **Reference Data** | **Verified & Maintained**. Sourced from Department of Census and Statistics (DCS) Census of Population and Housing. |
+| **Demographics** | `server/src/data/districtPopulation2024.json`, `client/src/data/districtPopulation2024.json` | 25 administrative districts with census populations (Island total: 20,358,680) | **Reference Data** | Census 2012 table, not reconciled with the latest published tables. The file name says 2024, but the data is `year: 2012` from the DCS Census of Population and Housing. |
 | **Diagnostic Catalog** | `server/reference-data/icd10_clean.json` | 71,704 validated ICD-10-CM diagnostic concepts | **Reference Data** | **Verified & Maintained**. Official US ICD-10-CM / WHO classification standard. |
 | **Diagnostic Catalog** | `server/reference-data/icd11_clean.json` | Curated WHO ICD-11 diagnostic classifications | **Reference Data** | **Verified & Maintained**. Official WHO ICD-11 MMS release catalog. |
-| **Medication Formulary** | `server/reference-data/drugs_clean.json`, `ml-engine/data/drugs_clean.json` | 3,000 curated clinical pharmaceutical drugs | **Reference Data** | **Verified & Maintained**. Derived from FDA/National Formulary datasets; pinned by SHA-256 in `manifest.json`. |
+| **Medicine Catalogue (server)** | `server/reference-data/drugs_clean.json`, `ml-engine/data/drugs_clean.json` | 3,000 product entries (name, generic name, brand, keyword category, dosages, indication; `interactions`, `sideEffects`, `icdCodes` empty in every entry) | **Derived data, licence not verified** | Built by `ml-engine/preprocess_datasets.py` from the first 3,000 unique product names in the retail listing below (file order). No FDA or national-formulary source is documented in the repository. Pinned by SHA-256 in `server/reference-data/manifest.json` (`clinicalValidation: not_established`, `licenseReview: not_verified`). |
 | **Retail Medicine Listing (local only)** | `ml-engine/data/medicines.csv` | Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**. | **Local preprocessing input** | Not part of the server catalogue. |
 | **Drug Interactions** | `ml-engine/data/interactions_clean.json` | Curated drug-drug interaction pairs and severity rules | **Reference Data** | **Verified & Maintained**. Clinical pharmacology interaction matrix. |
 | **Administrative Regions** | `server/src/services/surveillanceService.js` (`PROVINCE_TO_DISTRICTS`) | Mapping of 9 Sri Lankan Provinces to 25 Administrative Districts | **Reference Data** | **Verified & Maintained**. Standard administrative gazette boundaries. |
@@ -39,7 +39,7 @@ In clinical healthcare systems, data integrity and provenance are safety-critica
 
 ---
 
-## 3. Official Department of Census and Statistics (DCS) Population Verification
+## 3. Department of Census and Statistics (DCS) Population Table
 
 To eliminate unverified or speculative population denominators in epidemiological incidence calculations, MediSync uses official census data published by the Department of Census and Statistics (DCS) Sri Lanka.
 
@@ -47,41 +47,41 @@ To eliminate unverified or speculative population denominators in epidemiologica
 - **Source URL:** [http://www.statistics.gov.lk/Population/StaticalInformation/CPH2011](http://www.statistics.gov.lk/Population/StaticalInformation/CPH2011)  
 - **Publication Name:** *Census of Population and Housing 2012 (Final Report)*  
 - **Census Year:** 2012 (Final Enumerated Baseline)  
-- **Status:** **OFFICIAL VERIFIED**  
-- **Verification Command:** `node server/node_modules/jest/bin/jest.js server/tests/hardcodedMetricAudit.test.js`
+- **Status:** Census 2012 table, not reconciled with the latest published tables.  
+- **What the test checks:** `node server/node_modules/jest/bin/jest.js server/tests/hardcodedMetricAudit.test.js` (test 2) checks that the server and client copies are byte-identical, list the 25 districts, and sum to 20,358,680. It does not compare the figures with a DCS publication.
 
 ### Official District Population Table (25 Administrative Districts):
-| District | Province | Official Enumerated Population | Incidence Normalization Baseline |
+| District | Province | Census 2012 Population | Incidence Normalization Baseline |
 | :--- | :--- | :--- | :--- |
-| **Colombo** | Western | 2,324,349 | Verified DCS Census Baseline |
-| **Gampaha** | Western | 2,304,833 | Verified DCS Census Baseline |
-| **Kalutara** | Western | 1,221,948 | Verified DCS Census Baseline |
-| **Kandy** | Central | 1,375,382 | Verified DCS Census Baseline |
-| **Matale** | Central | 484,531 | Verified DCS Census Baseline |
-| **Nuwara Eliya** | Central | 711,122 | Verified DCS Census Baseline |
-| **Galle** | Southern | 1,063,334 | Verified DCS Census Baseline |
-| **Matara** | Southern | 814,048 | Verified DCS Census Baseline |
-| **Hambantota** | Southern | 599,903 | Verified DCS Census Baseline |
-| **Jaffna** | Northern | 583,882 | Verified DCS Census Baseline |
-| **Kilinochchi** | Northern | 113,510 | Verified DCS Census Baseline |
-| **Mannar** | Northern | 99,570 | Verified DCS Census Baseline |
-| **Vavuniya** | Northern | 172,115 | Verified DCS Census Baseline |
-| **Mullaitivu** | Northern | 92,001 | Verified DCS Census Baseline |
-| **Batticaloa** | Eastern | 526,567 | Verified DCS Census Baseline |
-| **Ampara** | Eastern | 649,402 | Verified DCS Census Baseline |
-| **Trincomalee** | Eastern | 379,541 | Verified DCS Census Baseline |
-| **Kurunegala** | North Western | 1,618,465 | Verified DCS Census Baseline |
-| **Puttalam** | North Western | 762,396 | Verified DCS Census Baseline |
-| **Anuradhapura** | North Central | 860,575 | Verified DCS Census Baseline |
-| **Polonnaruwa** | North Central | 406,088 | Verified DCS Census Baseline |
-| **Badulla** | Uva | 815,405 | Verified DCS Census Baseline |
-| **Monaragala** | Uva | 451,058 | Verified DCS Census Baseline |
-| **Ratnapura** | Sabaragamuwa | 1,088,007 | Verified DCS Census Baseline |
-| **Kegalle** | Sabaragamuwa | 840,648 | Verified DCS Census Baseline |
+| **Colombo** | Western | 2,324,349 | DCS Census 2012 |
+| **Gampaha** | Western | 2,304,833 | DCS Census 2012 |
+| **Kalutara** | Western | 1,221,948 | DCS Census 2012 |
+| **Kandy** | Central | 1,375,382 | DCS Census 2012 |
+| **Matale** | Central | 484,531 | DCS Census 2012 |
+| **Nuwara Eliya** | Central | 711,122 | DCS Census 2012 |
+| **Galle** | Southern | 1,063,334 | DCS Census 2012 |
+| **Matara** | Southern | 814,048 | DCS Census 2012 |
+| **Hambantota** | Southern | 599,903 | DCS Census 2012 |
+| **Jaffna** | Northern | 583,882 | DCS Census 2012 |
+| **Kilinochchi** | Northern | 113,510 | DCS Census 2012 |
+| **Mannar** | Northern | 99,570 | DCS Census 2012 |
+| **Vavuniya** | Northern | 172,115 | DCS Census 2012 |
+| **Mullaitivu** | Northern | 92,001 | DCS Census 2012 |
+| **Batticaloa** | Eastern | 526,567 | DCS Census 2012 |
+| **Ampara** | Eastern | 649,402 | DCS Census 2012 |
+| **Trincomalee** | Eastern | 379,541 | DCS Census 2012 |
+| **Kurunegala** | North Western | 1,618,465 | DCS Census 2012 |
+| **Puttalam** | North Western | 762,396 | DCS Census 2012 |
+| **Anuradhapura** | North Central | 860,575 | DCS Census 2012 |
+| **Polonnaruwa** | North Central | 406,088 | DCS Census 2012 |
+| **Badulla** | Uva | 815,405 | DCS Census 2012 |
+| **Monaragala** | Uva | 451,058 | DCS Census 2012 |
+| **Ratnapura** | Sabaragamuwa | 1,088,007 | DCS Census 2012 |
+| **Kegalle** | Sabaragamuwa | 840,648 | DCS Census 2012 |
 | **National Total (Island-wide)** | — | **20,358,680** | **Exact District Sum** |
 
 > [!NOTE]
-> **2024 Census Note:** While the DCS launched preliminary operations for the Census of Population and Housing 2024, final gazetted district breakdown tables have not yet superseded the 2012 Final enumeration. Sri Lanka's estimated 2024 national population is approximately 22.04 million (~22,037,000 mid-year projection). Using the verified 20,358,680 census enumeration guarantees that all district incidence calculations are mathematically consistent and strictly conservative.
+> **2024 Census Note:** While the DCS launched preliminary operations for the Census of Population and Housing 2024, final gazetted district breakdown tables have not yet superseded the 2012 Final enumeration. Sri Lanka's estimated 2024 national population is approximately 22.04 million (~22,037,000 mid-year projection). The 2012 enumeration (20,358,680) is used as-is. That keeps district incidence calculations internally consistent, but rates are computed against 2012 populations and have not been reconciled with newer tables.
 
 ---
 
@@ -92,9 +92,10 @@ Which medicine data the platform actually uses:
 1. **Retail medicine listing (`ml-engine/data/medicines.csv`, local only)**:
    - Retail scrape of an Indian online pharmacy listing (INR prices; 23,939 rows; 6,378 unique generic names); licence unclear, so it is **not committed** (gitignored). Not a list of approved medicines; read only by `ml-engine/preprocess_datasets.py`; **not used by the server**.
    - It does **not** show that MediSync supports 20,000+ approved medicines.
-2. **Clinical Reference Catalog (the server catalogue) (`server/reference-data/drugs_clean.json`)**:
-   - Total entries: **3,000 curated high-frequency clinical medications** with dosage forms, contraindications, and interaction mappings.
-   - Pinned by SHA-256 hash in `server/src/security/productionArtifactPins.json`.
+2. **Server medicine catalogue (`server/reference-data/drugs_clean.json`)**:
+   - 3,000 product entries, built by `ml-engine/preprocess_datasets.py` from the first 3,000 unique product names in the retail listing above (file order, not frequency).
+   - Fields: name, generic name, brand, keyword-derived category, dosages, indication. `interactions`, `sideEffects` and `icdCodes` are empty in every entry; there is no contraindications field. Drug-drug interactions are a separate file (`interactions_clean.json`, 191,541 pairs).
+   - Pinned by SHA-256 in `server/reference-data/manifest.json`, which records `clinicalValidation: not_established` and `licenseReview: not_verified`.
 
 ---
 
@@ -106,5 +107,5 @@ To prevent future introduction of hardcoded metrics or fake statistics into clie
   1. Scans all `.jsx` files in `client/src/pages` and `client/src/components`.
   2. Ensures no literal numeric statistics or percentage tokens exist inside JSX elements unless explicitly whitelisted in `APPROVED_LITERALS` (`404`, `0%`, `0 (0%)`).
   3. Verifies that `client/src/data/districtPopulation2024.json` and `server/src/data/districtPopulation2024.json` are byte-identical and match the 25 DCS census districts.
-  4. Verifies 71,704 ICD-10 leaf concepts and 3,000 formulary drugs.
-  5. Verifies that `medicines.csv` exceeds 20,000 records.
+  4. Verifies 71,704 ICD-10 leaf concepts and 3,000 entries in `drugs_clean.json`.
+  5. Uses tracked data only, because `medicines.csv` is gitignored and absent in CI. It checks that `drugs_clean.json` has 3,000 entries, that no file under `server/src` references `medicines.csv`, and that no Markdown doc in `docs/final`, `docs/report` or `docs/new` presents the 23,939-row retail CSV (which is not used by the server) as approved medicines or as the server catalogue. A doc line that mentions the CSV alongside such a claim must also carry a disclaimer.

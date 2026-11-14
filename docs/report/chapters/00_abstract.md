@@ -7,7 +7,7 @@ The architecture encompasses a zero-trust multi-tenant MERN core (MongoDB, Expre
 
 To assist clinicians under high OPD volume, MediSync incorporates a dual-tier symptom matching pipeline: Tier 1 executes an n-gram TF-IDF vectorizer coupled with cosine similarity scoring over 41 standardized clinical disease profiles, while Tier 2 provides sparse retrieval against a curated, quarantined knowledge base derived from CDC/SymCAT ambulatory survey data (174 auto-accepted condition profiles mapped to public-domain ICD-10-CM concepts). When Tier 1 top match confidence is $\ge 40.0\%$, Tier 1 takes absolute precedence; otherwise, the engine queries Tier 2. On the epidemiological surveillance front, MediSync runs automated spatio-temporal anomaly detection across Sri Lanka's 25 administrative districts, utilizing a 7-day observation window compared against a 56-day baseline, strictly gated by a 3-tier filter: case count floor ($N \ge 5$), 2 consecutive calendar days of elevation, and statistical standardized deviation ($z > 2.0$).
 
-This technical report documents the complete architectural specification, security protocols, empirical ML evaluation, verification rigor (3,465 offline tests across 207 suites), deployment infrastructure, operational limitations, and academic viva defenses for the MediSync undergraduate software engineering capstone submission.
+This technical report documents the complete architectural specification, security protocols, empirical ML evaluation, verification rigor (3,768 offline tests), deployment infrastructure, operational limitations, and academic viva defenses for the MediSync undergraduate software engineering capstone submission.
 
 ---
 
