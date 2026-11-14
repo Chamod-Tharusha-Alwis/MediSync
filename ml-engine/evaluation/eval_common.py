@@ -52,13 +52,18 @@ def write_json(path, payload):
 
 
 def git_state():
-    """Commit hash of HEAD and whether tracked files differ from it."""
+    """Commit hash of HEAD and whether tracked engine or evaluation code differs from it.
+
+    Result files (JSON, PNG) are outputs of the run, so they are left out of the check.
+    """
     def run(*args):
         return subprocess.run(['git', *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    changed = [line for line in run('status', '--porcelain', '--untracked-files=no', '--', 'ml-engine').splitlines()
+               if not line.endswith(('evaluation_results.json', '.png'))]
     return {
         'commit': run('rev-parse', 'HEAD'),
         'branch': run('rev-parse', '--abbrev-ref', 'HEAD'),
-        'trackedFilesModified': bool(run('status', '--porcelain', '--untracked-files=no')),
+        'engineOrEvaluationCodeModified': bool(changed),
     }
 
 
