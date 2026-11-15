@@ -127,14 +127,15 @@ describe('AI evaluation results: honesty and provenance', () => {
     }
     expect(leaked).toEqual([]);
 
-    // The two benchmark scripts and the shared helper may contain only declared configuration numbers.
-    // 32 = random key bytes, 200 = HTTP OK, 60 = network timeout seconds, 20261114 = seed, 2000 = bootstrap resamples, 95 = interval level.
-    const ALLOWED = new Set(['0', '1', '2', '3', '5', '6', '20', '32', '60', '95', '100', '200', '2000', '20261114', '0.0', '0.9']);
+    // In the run_*.py scripts and the shared helper, every number other than 0, 1, 2 and 100 must be a named,
+    // module-level UPPER_CASE constant (a declared setting such as a seed or a resample count), not inline in the code.
+    const TRIVIAL = new Set(['0', '1', '2', '100', '0.0', '1.0']);
     const unexpected = [];
     for (const { name, text } of sources.filter(source => /^(run_.*|eval_common)\.py$/.test(source.name))) {
-      const code = text.replace(/"""[\s\S]*?"""/g, '').replace(/#.*$/gm, '').replace(/f?'(?:[^'\\\n]|\\.)*'|f?"(?:[^"\\\n]|\\.)*"/g, "''");
+      const code = text.replace(/"""[\s\S]*?"""/g, '').replace(/#.*$/gm, '').replace(/f?'(?:[^'\\\n]|\\.)*'|f?"(?:[^"\\\n]|\\.)*"/g, "''")
+        .split('\n').filter(line => !/^[A-Z][A-Z0-9_]*\s*=/.test(line)).join('\n');
       for (const literal of code.match(/(?<![\w.])\d+(?:\.\d+)?(?![\w.])/g) || []) {
-        if (!ALLOWED.has(literal)) unexpected.push(`${name}: ${literal}`);
+        if (!TRIVIAL.has(literal)) unexpected.push(`${name}: ${literal}`);
       }
     }
     expect(unexpected).toEqual([]);

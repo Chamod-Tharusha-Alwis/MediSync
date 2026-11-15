@@ -26,12 +26,16 @@ INTERACTION_REFERENCE_PATH = os.path.join(EVAL_DIR, 'interaction_reference.json'
 RESULTS_PATH = os.path.join(EVAL_DIR, 'evaluation_results.json')
 
 CLINICAL_VALIDATION = 'not_established'
+HASH_BLOCK_BYTES = 1 << 20
+API_KEY_BYTES = 32
+HTTP_OK = 200
+VERSION_PARTS = 3
 
 
 def sha256_file(path):
     digest = hashlib.sha256()
     with open(path, 'rb') as handle:
-        for block in iter(lambda: handle.read(1 << 20), b''):
+        for block in iter(lambda: handle.read(HASH_BLOCK_BYTES), b''):
             digest.update(block)
     return digest.hexdigest()
 
@@ -91,7 +95,7 @@ def load_engine():
     import dotenv
     dotenv.load_dotenv = lambda *args, **kwargs: False
     os.environ['MEDISYNC_ML_DB_PATH'] = os.path.join(tempfile.mkdtemp(prefix='medisync_eval_'), 'eval_ml.db')
-    os.environ['INTERNAL_API_KEY'] = secrets.token_hex(32)
+    os.environ['INTERNAL_API_KEY'] = secrets.token_hex(API_KEY_BYTES)
     os.environ.pop('MEDISYNC_ML_QA', None)
     if ML_DIR not in sys.path:
         sys.path.insert(0, ML_DIR)
@@ -104,7 +108,7 @@ def load_engine():
         token = hmac.new(os.environ['INTERNAL_API_KEY'].encode(), hour.encode(), hashlib.sha256).hexdigest()
         with contextlib.redirect_stdout(io.StringIO()):
             response = client.post(route, headers={'x-internal-key': token}, json=payload)
-        if response.status_code != 200:
+        if response.status_code != HTTP_OK:
             raise RuntimeError(f'{route} returned HTTP {response.status_code}')
         return response.get_json()
 
@@ -126,7 +130,7 @@ def require_tfidf_engine(engine):
 def environment_info():
     """Library versions used for this run (the production lock file may pin different versions)."""
     from importlib.metadata import version
-    info = {'python': '.'.join(str(part) for part in sys.version_info[:3])}
+    info = {'python': '.'.join(str(part) for part in sys.version_info[:VERSION_PARTS])}
     for package in ('scikit-learn', 'numpy', 'scipy', 'pandas', 'Flask'):
         try:
             info[package] = version(package)

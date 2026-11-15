@@ -6,9 +6,9 @@ fitted TF-IDF vectorizer and matrix (read-only) and the fields the /api/ml/predi
 Nothing in the engine is changed.
 
 Score decomposition used by app.py for Tier 1 (read from the code, not re-implemented here):
-    confidence = 100 * (0.65 * cosine + 0.35 * overlap_ratio)
+    confidence = COSINE_WEIGHT_PERCENT * cosine + OVERLAP_WEIGHT_PERCENT * overlap_ratio
 The route returns `confidence` and `cosine_sim` (= 100 * cosine), so overlap_ratio is recovered as
-(confidence - 0.65 * cosine_sim) / 35, for curated (Tier 1) answers only.
+(confidence - COSINE_WEIGHT_PERCENT / 100 * cosine_sim) / OVERLAP_WEIGHT_PERCENT, for curated (Tier 1) answers only.
 
 Runs for both symptom benchmarks (gretelai and DDXPlus); each writes its own results section.
 Usage:  python ml-engine/evaluation/investigate_symptom_errors.py   (after both benchmark scripts)

@@ -33,6 +33,7 @@ PREDICT_ROUTE = '/api/ml/predict-disease'
 DATASET_KEY = 'gretelai_test'
 OTHER_PROFILE = '(another profile)'
 NO_PREDICTION = '(no prediction)'
+WORST_DIAGNOSES = 5
 
 
 def norm(name):
@@ -293,7 +294,7 @@ def run_benchmark(section, manifest, inputs, texts, gold, mapping_path, keyword_
                              if record['predictedClass'] == OTHER_PROFILE)
     worst = sorted(classes, key=lambda label: (all_block['perDiagnosis'][label]['recall'], -all_block['perDiagnosis'][label]['support'], label))
     worst_five = []
-    for label in worst[:5]:
+    for label in worst[:WORST_DIAGNOSES]:
         wrong = Counter(('no prediction' if not record['top5'] else record['top5'][0]['profile'])
                         for record in row_records if record['referenceDiagnosis'] == label and not record['hitTop1'])
         worst_five.append({'diagnosis': label, **{key: all_block['perDiagnosis'][label][key] for key in ('recall', 'precision', 'f1', 'support')},

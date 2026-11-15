@@ -25,6 +25,7 @@ N_BOOTSTRAP = 2000
 CI_LEVEL_PERCENT = 95
 ECE_BINS = 10
 ROUND_DP = 6
+QUARTILE_PERCENTS = (25, 50, 75)
 
 
 def rounded(value):
@@ -39,7 +40,7 @@ def score_and_hit(rows):
 def summary(values):
     if values.size == 0:
         return {'count': 0}
-    q1, med, q3 = np.percentile(values, [25, 50, 75])
+    q1, med, q3 = np.percentile(values, QUARTILE_PERCENTS)
     return {'count': int(values.size), 'min': rounded(values.min()), 'q1': rounded(q1), 'median': rounded(med),
             'q3': rounded(q3), 'max': rounded(values.max())}
 
