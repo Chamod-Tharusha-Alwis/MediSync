@@ -11,9 +11,8 @@ const root = path.resolve(__dirname, '../..');
 const evalDir = path.join(root, 'ml-engine/evaluation');
 const results = JSON.parse(fs.readFileSync(path.join(evalDir, 'evaluation_results.json'), 'utf8'));
 const report = fs.readFileSync(path.join(root, 'docs/report/AI_EVALUATION.md'), 'utf8');
-// The scripts that produce the evaluation. (generate_*.py in the same folder are older chart scripts, not part of it.)
-const EVALUATION_SCRIPTS = ['eval_common.py', 'fetch_dataset.py', 'run_symptom_benchmark.py', 'run_interaction_benchmark.py',
-  'verify_interaction_sources.py', 'make_figures.py', 'write_report.py'];
+// Every evaluation script in the folder. generate_*.py are deprecated chart scripts with hardcoded numbers, excluded on purpose.
+const EVALUATION_SCRIPTS = fs.readdirSync(evalDir).filter(name => name.endsWith('.py') && !name.startsWith('generate_')).sort();
 const sources = EVALUATION_SCRIPTS.map(name => ({ name, text: fs.readFileSync(path.join(evalDir, name), 'utf8') }));
 const symptoms = results.symptomBenchmark;
 const interactions = results.interactionBenchmark;
@@ -140,12 +139,21 @@ describe('AI evaluation results: honesty and provenance', () => {
     expect(unexpected).toEqual([]);
   });
 
-  test('6. the downloaded dataset is gitignored and the manifest records its provenance', () => {
-    expect(fs.readFileSync(path.join(root, '.gitignore'), 'utf8')).toMatch(/^ml-engine\/evaluation\/data\/$/m);
-    const manifest = JSON.parse(fs.readFileSync(path.join(evalDir, 'manifest.json'), 'utf8'));
-    expect(manifest.sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(manifest.provenanceNote).toMatch(/not real patient data/);
-    expect(symptoms.datasetManifest.sha256).toBe(manifest.sha256);
+  test('6. downloaded datasets are gitignored and the manifest records licence and provenance for each', () => {
+    const gitignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
+    expect(gitignore).toMatch(/^ml-engine\/evaluation\/data\/\*$/m);
+    expect(gitignore).toMatch(/^!ml-engine\/evaluation\/data\/manifest\.json$/m);
+    const { datasets } = JSON.parse(fs.readFileSync(path.join(evalDir, 'data/manifest.json'), 'utf8'));
+    expect(Object.keys(datasets).length).toBeGreaterThanOrEqual(1);
+    for (const [key, entry] of Object.entries(datasets)) {
+      expect([key, entry.sha256]).toEqual([key, expect.stringMatching(/^[0-9a-f]{64}$/)]);
+      expect([key, typeof entry.licence.licence, entry.licence.licence.length > 0]).toEqual([key, 'string', true]);
+      expect([key, Number.isInteger(entry.rows) && entry.rows > 0]).toEqual([key, true]);
+      expect([key, entry.url]).toEqual([key, expect.stringMatching(/^https:\/\//)]);
+      expect([key, entry.downloadDate]).toEqual([key, expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)]);
+    }
+    expect(datasets.gretelai_test.nature).toMatch(/not real patient data/);
+    expect(symptoms.datasetManifest.sha256).toBe(datasets.gretelai_test.sha256);
     expect(symptoms.run.git.commit).toMatch(/^[0-9a-f]{40}$/);
     expect(interactions.run.git.commit).toMatch(/^[0-9a-f]{40}$/);
   });

@@ -20,7 +20,7 @@ EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 ML_DIR = os.path.dirname(EVAL_DIR)
 REPO_ROOT = os.path.dirname(ML_DIR)
 DATA_DIR = os.path.join(EVAL_DIR, 'data')
-MANIFEST_PATH = os.path.join(EVAL_DIR, 'manifest.json')
+DATA_MANIFEST_PATH = os.path.join(DATA_DIR, 'manifest.json')
 MAPPING_PATH = os.path.join(EVAL_DIR, 'label_mapping.json')
 INTERACTION_REFERENCE_PATH = os.path.join(EVAL_DIR, 'interaction_reference.json')
 RESULTS_PATH = os.path.join(EVAL_DIR, 'evaluation_results.json')
@@ -133,6 +133,19 @@ def environment_info():
         except Exception:
             info[package] = 'not installed'
     return info
+
+
+def dataset_entry(key):
+    """Manifest entry of one dataset, after checking the local file still matches its recorded SHA-256."""
+    if not os.path.exists(DATA_MANIFEST_PATH):
+        sys.exit(f'Missing {DATA_MANIFEST_PATH}. Run fetch_datasets.py first.')
+    entry = read_json(DATA_MANIFEST_PATH)['datasets'][key]
+    path = os.path.join(DATA_DIR, entry['file'])
+    if not os.path.exists(path):
+        sys.exit(f'Missing {path}. Run fetch_datasets.py, or download {entry["url"]} to that path.')
+    if sha256_file(path) != entry['sha256']:
+        sys.exit(f'{path} does not match data/manifest.json. Refusing to evaluate a different file.')
+    return {**entry, 'path': path}
 
 
 def update_results(section, payload):

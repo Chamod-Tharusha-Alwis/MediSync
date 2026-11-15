@@ -1,0 +1,108 @@
+{
+  "clinicalValidation": "not_established",
+  "datasets": {
+    "ddxplus_conditions": {
+      "bytes": 26793,
+      "downloadDate": "2026-11-15",
+      "file": "ddxplus/release_conditions.json",
+      "licence": {
+        "evidence": "figshare API licence field, article 20043374 (https://creativecommons.org/licenses/by/4.0/)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/ddxplus/release_conditions.json (gitignored, not committed)",
+      "name": "DDXPlus condition dictionary",
+      "nature": "The 49 pathologies with English names and ICD-10 codes.",
+      "page": "https://doi.org/10.6084/m9.figshare.20043374",
+      "rows": 49,
+      "sha256": "960112db157169215c5a5c1eac0993317d2363c0cf2dadf173735dc503810d48",
+      "url": "https://ndownloader.figshare.com/files/62657140",
+      "usedFor": "V1: English pathology names"
+    },
+    "ddxplus_evidences": {
+      "bytes": 198524,
+      "downloadDate": "2026-11-15",
+      "file": "ddxplus/release_evidences.json",
+      "licence": {
+        "evidence": "figshare API licence field, article 20043374 (https://creativecommons.org/licenses/by/4.0/)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/ddxplus/release_evidences.json (gitignored, not committed)",
+      "name": "DDXPlus evidence dictionary",
+      "nature": "Questions and answer meanings for each evidence code.",
+      "page": "https://doi.org/10.6084/m9.figshare.20043374",
+      "rows": 223,
+      "sha256": "980f7020ec068b290b49cca7f2ab0a2058faae37f9a94b113e10b6fe0c882f31",
+      "url": "https://ndownloader.figshare.com/files/40495562",
+      "usedFor": "V1: turns evidence codes into English text"
+    },
+    "ddxplus_test_patients": {
+      "bytes": 18986243,
+      "downloadDate": "2026-11-15",
+      "file": "ddxplus/release_test_patients.zip",
+      "licence": {
+        "evidence": "figshare API licence field, article 20043374 (https://creativecommons.org/licenses/by/4.0/)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/ddxplus/release_test_patients.zip (gitignored, not committed)",
+      "name": "DDXPlus (English release, test patients)",
+      "nature": "Synthetic patients generated from a proprietary medical knowledge base (Fansi Tchango et al., NeurIPS 2022). Not real patient data.",
+      "page": "https://doi.org/10.6084/m9.figshare.20043374",
+      "rows": 134529,
+      "sha256": "ad3bb981f3453fd7abffb35cc595a1c02197e409c581bff97c1265c33eb00d23",
+      "url": "https://ndownloader.figshare.com/files/40495565",
+      "usedFor": "V1 second independent symptom benchmark"
+    },
+    "gretelai_test": {
+      "bytes": 42506,
+      "downloadDate": "2026-11-15",
+      "file": "test.jsonl",
+      "licence": {
+        "evidence": "Hugging Face API cardData.license for gretelai/symptom_to_diagnosis",
+        "licence": "apache-2.0"
+      },
+      "localPath": "ml-engine/evaluation/data/test.jsonl (gitignored, not committed)",
+      "name": "gretelai/symptom_to_diagnosis (test split)",
+      "nature": "Adapted from the Symptom2Disease dataset and rewritten with a large language model (dataset page). Synthetic, LLM-rewritten text; not real patient data.",
+      "page": "https://huggingface.co/datasets/gretelai/symptom_to_diagnosis",
+      "rows": 212,
+      "sha256": "7581c68031d7433fcce22c9aac08f35595b67402ceef92a7dd7336207f3b6195",
+      "url": "https://huggingface.co/datasets/gretelai/symptom_to_diagnosis/resolve/722cfb0e11f8ae37339c7f573b5e10429b94df49/test.jsonl",
+      "usedFor": "V1 symptom benchmark (test split)"
+    },
+    "gretelai_train": {
+      "bytes": 170994,
+      "downloadDate": "2026-11-15",
+      "file": "train.jsonl",
+      "licence": {
+        "evidence": "Hugging Face API cardData.license for gretelai/symptom_to_diagnosis",
+        "licence": "apache-2.0"
+      },
+      "localPath": "ml-engine/evaluation/data/train.jsonl (gitignored, not committed)",
+      "name": "gretelai/symptom_to_diagnosis (train split)",
+      "nature": "Same source and nature as the test split.",
+      "page": "https://huggingface.co/datasets/gretelai/symptom_to_diagnosis",
+      "rows": 853,
+      "sha256": "9b8ff27dab30cdeb194d6581dcebffe0d91e21921f974f091736c1f25cad283c",
+      "url": "https://huggingface.co/datasets/gretelai/symptom_to_diagnosis/resolve/722cfb0e11f8ae37339c7f573b5e10429b94df49/train.jsonl",
+      "usedFor": "V2 calibration map only (validation split). Never used to score the engine."
+    },
+    "opendengue_national": {
+      "bytes": 330958,
+      "downloadDate": "2026-11-15",
+      "file": "opendengue/National_extract_V1_3_1.zip",
+      "licence": {
+        "evidence": "opendengue.org page footer: \"Content licensed under ...\" (the GitHub repository has no LICENSE file)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/opendengue/National_extract_V1_3_1.zip (gitignored, not committed)",
+      "name": "OpenDengue national extract V1.3.1",
+      "nature": "Public aggregate dengue case counts compiled by the OpenDengue project (LSHTM). Sri Lanka rows come from Ministry of Health reports. These are national counts, not MediSync consultations.",
+      "page": "https://opendengue.org/",
+      "rows": 29540,
+      "sha256": "c588335f25f2202e4f87d271381f385c76ffd4dcb68348f40c2a6fcab8889d4e",
+      "url": "https://raw.githubusercontent.com/OpenDengue/master-repo/main/data/releases/V1.3.1/National_extract_V1_3_1.zip",
+      "usedFor": "V4 outbreak detector and projection back-test (Sri Lanka rows only)"
+    }
+  },
+  "note": "Public, non-patient datasets only. Files are gitignored; this manifest is committed."
+}

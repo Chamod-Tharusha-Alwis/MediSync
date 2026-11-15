@@ -1,11 +1,11 @@
-"""Part A: independent benchmark of the MediSync symptom engine (offline).
+"""Symptom engine benchmark (offline): shared routine plus the gretelai/symptom_to_diagnosis run.
 
-Each test row of gretelai/symptom_to_diagnosis is sent to the real
-/api/ml/predict-disease route through Flask's test client, so the code path is
-the one the API uses. No engine logic is re-implemented or changed here.
+Each row is sent to the real /api/ml/predict-disease route through Flask's test client, so the
+code path is the one the API uses. No engine logic is re-implemented or changed here.
+run_ddxplus_benchmark.py reuses run_benchmark() for the second dataset.
 
-Every number written to evaluation_results.json is computed below from the
-engine's responses. This is an engineering benchmark, not clinical validation.
+Every number written to evaluation_results.json is computed below from the engine's responses.
+This is an engineering benchmark on public, non-patient data, not clinical validation.
 
 Usage:  python ml-engine/evaluation/run_symptom_benchmark.py
 """
@@ -18,7 +18,7 @@ from collections import Counter
 
 import numpy as np
 
-from eval_common import (DATA_DIR, MANIFEST_PATH, MAPPING_PATH, ML_DIR, CLINICAL_VALIDATION, environment_info,
+from eval_common import (MAPPING_PATH, ML_DIR, CLINICAL_VALIDATION, dataset_entry, environment_info,
                          git_state, load_engine, read_json, require_tfidf_engine, sha256_file, sha256_text,
                          today_utc, update_results)
 
@@ -30,7 +30,7 @@ NEAR_DUPLICATE_COSINE = 0.9
 ROUND_DP = 6
 MIN_SOURCE_TEXT_CHARS = 20
 PREDICT_ROUTE = '/api/ml/predict-disease'
-TEST_FILE = os.path.join(DATA_DIR, 'test.jsonl')
+DATASET_KEY = 'gretelai_test'
 OTHER_PROFILE = '(another profile)'
 NO_PREDICTION = '(no prediction)'
 
@@ -44,16 +44,11 @@ def rounded(value):
 
 
 # ---------------------------------------------------------------- data
-def load_test_rows():
-    manifest = read_json(MANIFEST_PATH)
-    if not os.path.exists(TEST_FILE):
-        sys.exit(f'Missing {TEST_FILE}. Run fetch_dataset.py, or download {manifest["fileUrl"]} to that path.')
-    actual = sha256_file(TEST_FILE)
-    if actual != manifest['sha256']:
-        sys.exit(f'{TEST_FILE} does not match manifest.json (sha256 {actual}). Refusing to benchmark a different file.')
-    with open(TEST_FILE, 'r', encoding='utf-8') as handle:
+def load_jsonl(dataset_key):
+    entry = dataset_entry(dataset_key)
+    with open(entry['path'], 'r', encoding='utf-8') as handle:
         rows = [json.loads(line) for line in handle if line.strip()]
-    return manifest, rows
+    return {k: v for k, v in entry.items() if k != 'path'}, rows
 
 
 def accepted_names(mapping):
@@ -107,11 +102,14 @@ def per_class_report(gold, predicted, classes):
                          'support': tp + fn, 'truePositives': tp, 'falsePositives': fp, 'falseNegatives': fn,
                          'precisionUndefined': tp + fp == 0}
     supports = [report[label]['support'] for label in classes]
-    f1s = [report[label]['f1'] for label in classes]
     total = sum(supports)
-    macro = sum(f1s) / len(classes) if classes else 0.0
-    weighted = sum(f * s for f, s in zip(f1s, supports)) / total if total else 0.0
-    return report, rounded(macro), rounded(weighted)
+
+    def macro(key):
+        return rounded(sum(report[label][key] for label in classes) / len(classes)) if classes else 0.0
+
+    weighted = sum(report[label]['f1'] * s for label, s in zip(classes, supports)) / total if total else 0.0
+    return report, {'macroPrecision': macro('precision'), 'macroRecall': macro('recall'), 'macroF1': macro('f1'),
+                    'weightedF1': rounded(weighted)}
 
 
 # ---------------------------------------------------------------- baselines
@@ -221,18 +219,24 @@ def evaluate_subset(name, row_ids, engine_hits, gold, predicted_class, classes):
     block = {'description': name, 'rows': len(row_ids)}
     for k in TOP_KS:
         block[f'top{k}'] = accuracy_with_ci([engine_hits[k][i] for i in row_ids], indices)
-    report, macro, weighted = per_class_report([gold[i] for i in row_ids], [predicted_class[i] for i in row_ids], classes)
-    block.update({'perDiagnosis': report, 'macroF1': macro, 'weightedF1': weighted})
+    report, averages = per_class_report([gold[i] for i in row_ids], [predicted_class[i] for i in row_ids], classes)
+    block.update({'perDiagnosis': report, **averages,
+                  'averagingNote': 'Macro averages give each diagnosis equal weight; a never-predicted diagnosis counts as precision 0.'})
     return block, indices
 
 
-def main():
-    manifest, rows = load_test_rows()
-    mapping = read_json(MAPPING_PATH)
+def run_benchmark(section, manifest, inputs, texts, gold, mapping_path, keyword_pool, notes, row_ids=None):
+    """Run the engine on every row and write one results section.
+
+    inputs: what is sent as "symptoms" (a string or a list of strings, unchanged).
+    texts: one string per row, used for the keyword baseline and the leakage check.
+    keyword_pool: 'tier1' (41 curated profiles) or 'all' (Tier 1 and Tier 2 profiles).
+    """
+    mapping = read_json(mapping_path)
     accepted = accepted_names(mapping)
-    missing = sorted({row['output_text'] for row in rows} - set(accepted))
+    missing = sorted(set(gold) - set(accepted))
     if missing:
-        sys.exit(f'label_mapping.json has no entry for: {missing}')
+        sys.exit(f'{os.path.basename(mapping_path)} has no entry for: {missing}')
 
     engine, post = load_engine()
     require_tfidf_engine(engine)
@@ -247,16 +251,15 @@ def main():
 
     classes = sorted(accepted)
     name_to_class = {name: diagnosis for diagnosis, names in accepted.items() for name in names}
-    texts = [row['input_text'] for row in rows]
-    gold = [row['output_text'] for row in rows]
+    rows = list(range(len(gold)))
     covered = [bool(accepted[label]) for label in gold]
     covered_classes = sorted(label for label in classes if accepted[label])
 
     # A4: run the real route once per row.
     engine_hits = {k: [] for k in TOP_KS}
     predicted_class, row_records, tiers = [], [], Counter()
-    for index, (text, label) in enumerate(zip(texts, gold)):
-        response = post(PREDICT_ROUTE, {'symptoms': text})
+    for index, (payload, text, label) in enumerate(zip(inputs, texts, gold)):
+        response = post(PREDICT_ROUTE, {'symptoms': payload})
         predictions = response.get('predictions') or []
         ranked = [item['disease'] for item in predictions]
         for k in TOP_KS:
@@ -265,7 +268,8 @@ def main():
         predicted_class.append(NO_PREDICTION if top is None else name_to_class.get(top, OTHER_PROFILE))
         tiers[str(response.get('tier'))] += 1
         row_records.append({
-            'row': index, 'inputSha256': sha256_text(text), 'referenceDiagnosis': label, 'covered': covered[index],
+            'row': index if row_ids is None else row_ids[index], 'inputSha256': sha256_text(text),
+            'referenceDiagnosis': label, 'covered': covered[index],
             'tier': response.get('tier'),
             'top5': [{'profile': item['disease'], 'confidence': item['confidence'], 'source': item.get('source')} for item in predictions],
             'predictedClass': predicted_class[-1],
@@ -276,7 +280,7 @@ def main():
     covered_ids = [i for i in all_ids if covered[i]]
 
     # A5: metrics on both row sets.
-    all_block, all_indices = evaluate_subset('All test rows; a row whose diagnosis has no MediSync profile counts as wrong.',
+    all_block, all_indices = evaluate_subset('All rows; a row whose diagnosis has no MediSync profile counts as wrong.',
                                              all_ids, engine_hits, gold, predicted_class, classes)
     covered_block, _ = evaluate_subset('Covered rows only: rows whose diagnosis maps to a MediSync profile.',
                                        covered_ids, engine_hits, gold, predicted_class, covered_classes)
@@ -296,12 +300,17 @@ def main():
                            'top1Errors': [{'predictedProfile': name, 'rows': count} for name, count in sorted(wrong.items(), key=lambda item: (-item[1], item[0]))]})
 
     # A6: baselines on exactly the same rows.
-    covered_tier1 = sorted({mapping['mapping'][label]['tier1_profile'] for label in covered_classes if mapping['mapping'][label].get('tier1_profile')})
+    def representative(label):
+        entry = mapping['mapping'][label]
+        return entry.get('tier1_profile') or (entry.get('tier2_profiles') or [label])[0]
+
+    covered_tier1 = sorted({representative(label) for label in covered_classes})
     random_rng = np.random.default_rng(SEED + 1)
+    pool = list(engine.symptom_data) + (list(engine.kb_disease_data) if keyword_pool == 'all' else [])
     profiles = [{'name': item['disease'], 'words': tokens(item['disease']) | tokens(' '.join(item.get('symptoms', [])))}
-                for item in engine.symptom_data]
+                for item in pool]
     class_counts = Counter(gold)
-    majority_order = [mapping['mapping'][label]['tier1_profile'] if accepted[label] else label
+    majority_order = [representative(label) if accepted[label] else label
                       for label, _ in sorted(class_counts.items(), key=lambda item: (-item[1], item[0]))]
     baseline_rankings = {
         'random': ('Random guess over covered profiles', lambda text: list(random_rng.permutation(covered_tier1))),
@@ -320,14 +329,15 @@ def main():
             entry[f'top{k}'] = accuracy_with_ci(hits[k], all_indices)
             entry[f'top{k}']['engineComparison'] = paired_difference(engine_hits[k], hits[k], all_indices)
         baselines[key] = entry
-    baselines['random']['definition'] = (f'For each row, a uniformly random ordering of the {len(covered_tier1)} covered Tier 1 profiles '
-                                         f'(seed {SEED + 1}).')
+    baselines['random']['definition'] = (f'For each row, a uniformly random ordering of {len(covered_tier1)} profiles, one per covered '
+                                         f'diagnosis (seed {SEED + 1}).')
     baselines['random']['analyticExpectation'] = {f'top{k}': rounded(min(k, len(covered_tier1)) / len(covered_tier1)) for k in TOP_KS}
-    baselines['majority']['definition'] = ('Always predict the most frequent diagnoses of the test split (ties broken alphabetically). '
-                                           'It uses the test label counts, which favours this baseline.')
+    baselines['majority']['definition'] = ('Always predict the most frequent diagnoses of the evaluated rows (ties broken alphabetically). '
+                                           'It uses the evaluated label counts, which favours this baseline.')
     baselines['majority']['predictedOrder'] = majority_order[:max(TOP_KS)]
-    baselines['keywordOverlap']['definition'] = ('Rank all 41 Tier 1 profiles by the number of distinct words the input shares with the '
-                                                 'profile name and symptom list. No TF-IDF, no weights; ties broken alphabetically.')
+    pool_name = 'Tier 1 and Tier 2' if keyword_pool == 'all' else 'Tier 1'
+    baselines['keywordOverlap']['definition'] = (f'Rank {len(profiles)} profiles ({pool_name}) by the number of distinct words the input '
+                                                 'shares with the profile name and symptom list. No TF-IDF, no weights; ties broken alphabetically.')
 
     # A7: leakage.
     leakage, overlapping = leakage_check(texts, engine)
@@ -338,21 +348,20 @@ def main():
         leakage['resultsWithoutOverlappingRows'] = {key: without_block[key] for key in ['rows', 'macroF1', 'weightedF1'] + [f'top{k}' for k in TOP_KS]}
     else:
         leakage['resultsWithoutOverlappingRows'] = None
+    leakage['trainSplitChecked'] = notes.get('trainSplitChecked', False)
     leakage['sharedLabelVocabulary'] = {
-        'datasetDiagnosesWithSameNamedTier1Profile': len(covered_classes),
+        'datasetDiagnosesWithAProfile': len(covered_classes),
         'datasetDiagnoses': len(classes),
-        'note': ('The benchmark text is different from the profile data, but the dataset uses the same disease label set as the '
-                 'source of the Tier 1 profiles (ml-engine/data/dataset.csv). Whether Symptom2Disease was itself written from that '
-                 'symptom list is not verified. If it was, this benchmark is easier than data from an unrelated source would be.'),
+        'note': notes['labelVocabulary'],
     }
 
-    update_results('symptomBenchmark', {
+    update_results(section, {
         'clinicalValidation': CLINICAL_VALIDATION,
         'run': {'date': today_utc(), 'git': git_state(), 'seed': SEED, 'randomBaselineSeed': SEED + 1,
                 'bootstrapResamples': N_BOOTSTRAP, 'ciLevelPercent': CI_LEVEL_PERCENT, 'ciMethod': 'percentile bootstrap over test rows',
-                'route': PREDICT_ROUTE,
-                'inputFormat': 'The raw input_text sentence is sent unchanged as the "symptoms" string. No pre-processing.',
-                'labelMappingSha256': sha256_file(MAPPING_PATH), 'environment': environment_info()},
+                'route': PREDICT_ROUTE, 'inputFormat': notes['inputFormat'],
+                'labelMapping': os.path.basename(mapping_path), 'labelMappingSha256': sha256_file(mapping_path),
+                'environment': environment_info()},
         'datasetManifest': manifest,
         'engine': {'tier1Profiles': len(engine.symptom_data), 'tier2Profiles': len(engine.kb_disease_data),
                    'rowsAnsweredByTier': dict(sorted(tiers.items())),
@@ -360,7 +369,8 @@ def main():
         'coverage': {'testRows': len(rows), 'coveredRows': len(covered_ids), 'uncoveredRows': len(rows) - len(covered_ids),
                      'diagnoses': len(classes), 'coveredDiagnoses': len(covered_classes),
                      'uncoveredDiagnoses': sorted(set(classes) - set(covered_classes)),
-                     'coveredByTier2AsWell': sorted(label for label in covered_classes if mapping['mapping'][label].get('tier2_profiles'))},
+                     'coveredByTier2AsWell': sorted(label for label in covered_classes if mapping['mapping'][label].get('tier2_profiles')),
+                     'coveredByTier2Only': sorted(label for label in covered_classes if not mapping['mapping'][label].get('tier1_profile'))},
         'allRows': all_block,
         'coveredRowsOnly': covered_block,
         'confusionMatrixTop1': {'rowsAreReferenceDiagnoses': classes, 'columnsArePredictions': columns, 'counts': matrix.tolist(),
@@ -374,6 +384,19 @@ def main():
                       **{f'top{k}': all_block[f'top{k}'] for k in TOP_KS},
                       'macroF1': all_block['macroF1'], 'weightedF1': all_block['weightedF1'],
                       'overlappingRows': len(overlapping)}, indent=2))
+
+
+def main():
+    manifest, rows = load_jsonl(DATASET_KEY)
+    texts = [row['input_text'] for row in rows]
+    run_benchmark('symptomBenchmark', manifest, texts, texts, [row['output_text'] for row in rows], MAPPING_PATH, 'tier1', {
+        'inputFormat': 'The raw input_text sentence is sent unchanged as the "symptoms" string. No pre-processing.',
+        'labelVocabulary': ('The benchmark text is different from the profile data, but the dataset uses the same disease label set as '
+                            'the source of the Tier 1 profiles (ml-engine/data/dataset.csv). Whether Symptom2Disease was itself written '
+                            'from that symptom list is not verified. If it was, this benchmark is easier than data from an unrelated '
+                            'source would be.'),
+    })
+
 
 
 if __name__ == '__main__':
