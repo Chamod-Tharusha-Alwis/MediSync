@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "frozen": true,
+  "frozenBeforeFirstRun": true,
+  "score": "The 'confidence' field of the engine's top-1 prediction, as returned by /api/ml/predict-disease. It is a similarity score on a 0-100 scale that can exceed 100. It is not a probability.",
+  "scoreBandEdges": [0, 20, 40, 60, 80, 100],
+  "scoreBandRule": "Band i holds scores s with edge[i] <= s < edge[i+1]; the last band holds every score >= the last edge.",
+  "testSets": ["symptomBenchmark (gretelai test split)", "ddxplusBenchmark (DDXPlus test sample)"],
+  "distributionSummary": "For correct and incorrect top-1 answers separately: count, minimum, quartiles, median and maximum of the score.",
+  "bandAccuracy": "Top-1 accuracy within each score band, with a 95% percentile bootstrap interval (2,000 resamples, fixed seed).",
+  "calibrationMap": {
+    "method": "Isotonic regression (scikit-learn IsotonicRegression, increasing, out_of_bounds='clip') from top-1 score to 'top-1 answer is correct'.",
+    "fittedOn": "gretelai_train: the train split of gretelai/symptom_to_diagnosis, scored by the same engine and the same frozen label_mapping.json. It is a validation split for this purpose only.",
+    "evaluatedOn": "gretelai_test only. The map is never fitted on a test split.",
+    "evaluationMetrics": "Brier score and expected calibration error (10 equal-width bins on the calibrated value) of the calibrated value on the test split, with the base-rate Brier score (always predicting the validation accuracy) for comparison.",
+    "notAppliedTo": "DDXPlus: its label set and coverage differ, so a map fitted on gretelai does not transfer."
+  },
+  "notReported": "ROC-AUC and log loss of the raw score, because the raw score is not a probability."
+}
