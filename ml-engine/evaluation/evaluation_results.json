@@ -10647,5 +10647,204 @@
       "route": "/api/ml/predict-disease",
       "seed": 20261114
     }
+  },
+  "symptomErrorInvestigation": {
+    "clinicalValidation": "not_established",
+    "finding": "The TF-IDF vectorizer in ml-engine/app.py is built without a stop-word list. Profile documents that contain stop words (for example \"and\" inside multi-word symptom names) gain cosine similarity from any free-text input that uses those words, whatever the symptoms are. The overlap ratio in the combined score is not capped at 1, which adds to the effect when one input phrase matches several profile symptoms.",
+    "fixStatus": "Not fixed. Both causes are in ml-engine/app.py, which is one of the 15 protected files. Changing it needs the owner's approval and a new entry in docs/release/PROTECTED_HASHES.json. No AFTER result exists.",
+    "isItABug": "Yes for free-text input: the ranking depends on function words, not symptoms. In the application, doctors send short symptom phrases, where the effect is smaller but not zero.",
+    "largestSummedTermShares": [
+      {
+        "feature": "and",
+        "shareOfCosine": 0.9067
+      },
+      {
+        "feature": "lips",
+        "shareOfCosine": 0.0298
+      },
+      {
+        "feature": "sweating",
+        "shareOfCosine": 0.0127
+      },
+      {
+        "feature": "vision",
+        "shareOfCosine": 0.0124
+      },
+      {
+        "feature": "headache",
+        "shareOfCosine": 0.0112
+      },
+      {
+        "feature": "nausea",
+        "shareOfCosine": 0.008
+      }
+    ],
+    "matchedSymptomsOnThoseRows": [
+      {
+        "rows": 10,
+        "symptom": "headache"
+      },
+      {
+        "rows": 3,
+        "symptom": "sweating"
+      },
+      {
+        "rows": 3,
+        "symptom": "vomiting"
+      },
+      {
+        "rows": 2,
+        "symptom": "nausea"
+      }
+    ],
+    "overlapRatio": {
+      "median": 0.0001,
+      "rowsAboveOne": 4,
+      "rowsWithCuratedTop": 37
+    },
+    "profile": "Hypoglycemia",
+    "profileTopWeightedFeatures": [
+      {
+        "feature": "and",
+        "weight": 0.2724
+      },
+      {
+        "feature": "vision drying",
+        "weight": 0.1761
+      },
+      {
+        "feature": "tingling lips",
+        "weight": 0.1761
+      },
+      {
+        "feature": "tingling",
+        "weight": 0.1761
+      },
+      {
+        "feature": "speech sweating",
+        "weight": 0.1761
+      },
+      {
+        "feature": "speech",
+        "weight": 0.1761
+      },
+      {
+        "feature": "slurred speech",
+        "weight": 0.1761
+      },
+      {
+        "feature": "slurred",
+        "weight": 0.1761
+      }
+    ],
+    "question": "Why is one profile ranked first on many rows where the answer is wrong?",
+    "rowsContainingTheWordAnd": 37,
+    "rowsRankedFirstInTotal": 37,
+    "rowsRankedFirstWhenWrong": 37,
+    "run": {
+      "date": "2026-11-15",
+      "git": {
+        "branch": "eval/public-validation",
+        "commit": "34f326d1b232e661a1b678f3eb0a4c883fa00d14",
+        "engineOrEvaluationCodeModified": true
+      }
+    },
+    "shareOfCosineFromStopWordFeatures": {
+      "max": 1.0,
+      "median": 1.0,
+      "min": 0.6354,
+      "rowsAtOrAboveHalf": 37
+    },
+    "testRows": 212,
+    "testRowsContainingTheWordAnd": 207,
+    "vectorizer": {
+      "ngramRange": [
+        1,
+        2
+      ],
+      "profilesContainingEachStopWord": {
+        "and": [
+          "Diabetes",
+          "Migraine",
+          "Hypothyroidism",
+          "Hypoglycemia"
+        ],
+        "around": [
+          "Impetigo"
+        ],
+        "back": [
+          "Cervical spondylosis",
+          "Dengue"
+        ],
+        "behind": [
+          "Dengue"
+        ],
+        "during": [
+          "Dimorphic hemmorhoids(piles)"
+        ],
+        "from": [
+          "Allergy"
+        ],
+        "in": [
+          "AIDS",
+          "Cervical spondylosis",
+          "Tuberculosis",
+          "Dimorphic hemmorhoids(piles)",
+          "Psoriasis"
+        ],
+        "of": [
+          "Chronic cholestasis",
+          "Peptic ulcer diseae",
+          "Hypertension",
+          "Cervical spondylosis",
+          "Paralysis (brain hemorrhage)",
+          "Chicken pox",
+          "Dengue",
+          "hepatitis A",
+          "Hepatitis B",
+          "Hepatitis C",
+          "Hepatitis D",
+          "Hepatitis E",
+          "Alcoholic hepatitis",
+          "Tuberculosis",
+          "Common Cold",
+          "(vertigo) Paroymsal  Positional Vertigo",
+          "Urinary tract infection"
+        ],
+        "on": [
+          "GERD",
+          "Varicose veins"
+        ],
+        "one": [
+          "Paralysis (brain hemorrhage)"
+        ],
+        "over": [
+          "Chicken pox",
+          "Dengue"
+        ],
+        "side": [
+          "Paralysis (brain hemorrhage)"
+        ],
+        "the": [
+          "Dengue"
+        ]
+      },
+      "stopWordFeaturesInVocabulary": [
+        "and",
+        "around",
+        "back",
+        "behind",
+        "during",
+        "from",
+        "in",
+        "of",
+        "on",
+        "one",
+        "over",
+        "side",
+        "the"
+      ],
+      "stopWords": "None"
+    }
   }
 }

@@ -45,10 +45,20 @@ def read_json(path):
         return json.load(handle)
 
 
+def _plain(value):
+    """json.dump hook for NumPy scalars."""
+    if hasattr(value, 'item'):
+        return value.item()
+    raise TypeError(f'{type(value).__name__} is not JSON serializable')
+
+
 def write_json(path, payload):
-    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
-        json.dump(payload, handle, indent=2, sort_keys=True, ensure_ascii=False)
-        handle.write('\n')
+    """Serialise fully first, then replace the file, so a failure never leaves a truncated file."""
+    text = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, default=_plain) + '\n'
+    temporary = path + '.tmp'
+    with open(temporary, 'w', encoding='utf-8', newline='\n') as handle:
+        handle.write(text)
+    os.replace(temporary, path)
 
 
 def git_state():
