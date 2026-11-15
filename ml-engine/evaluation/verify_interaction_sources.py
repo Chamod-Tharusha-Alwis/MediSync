@@ -9,6 +9,7 @@ Usage:  python ml-engine/evaluation/verify_interaction_sources.py
 """
 import json
 import os
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -16,6 +17,7 @@ import urllib.request
 from eval_common import DATA_DIR, INTERACTION_REFERENCE_PATH, read_json, today_utc, update_results
 
 CACHE_DIR = os.path.join(DATA_DIR, 'labels')
+EXCERPT_CHARS = 400
 API = 'https://api.fda.gov/drug/label.json?limit=1&search='
 # Alternative spellings used by the labels.
 US_NAMES = {'salbutamol': ['salbutamol', 'albuterol'],
@@ -34,6 +36,15 @@ def fetch_label(set_id):
     return read_json(path)
 
 
+def label_excerpt(label, sections, names):
+    """First sentence in the cited section(s) that names the partner, with markup removed."""
+    plain = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', ' '.join(' '.join(label.get(section, [])) for section in sections)))
+    for sentence in re.split(r'(?<=[.;])\s+', plain):
+        if any(name in sentence.lower() for name in names):
+            return sentence.strip()[:EXCERPT_CHARS]
+    return None
+
+
 def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
     reference = read_json(INTERACTION_REFERENCE_PATH)
@@ -48,8 +59,10 @@ def main():
         text = ' '.join(' '.join(label.get(section, [])) for section in sections).lower()
         names = US_NAMES.get(pair['drugB'], [pair['drugB']])
         found = any(name in text for name in names)
+        excerpt = label_excerpt(label, sections, names)
         same_version = label.get('effective_time') == label_info['labelEffectiveDate']
-        checked.append({'id': pair['id'], 'partnerNamedInCitedSection': found, 'labelVersionUnchanged': same_version})
+        checked.append({'id': pair['id'], 'partnerNamedInCitedSection': found, 'labelVersionUnchanged': same_version,
+                        'labelExcerpt': excerpt})
         if not found:
             failures.append(pair['id'])
     update_results('interactionSourceCheck', {
@@ -58,6 +71,9 @@ def main():
         'labelsWithChangedVersion': sorted({pair['sourceLabel'] for pair, row in zip(reference['pairs'], checked) if not row['labelVersionUnchanged']}),
         'meaning': ('Confirms only that the cited label section names the partner drug. Whether the text describes an interaction '
                     'was judged by reading the label.'),
+        'excerptNote': ('labelExcerpt is the first sentence of the cited section that names the partner drug, copied from the FDA label '
+                        '(public domain, CC0 via openFDA). It may not be the sentence the basis paraphrases.'),
+        'pairs': checked,
     })
     print(f'{len(checked) - len(failures)} of {len(checked)} citations confirmed; not confirmed: {failures or "none"}')
     if failures:

@@ -24,6 +24,7 @@ CI_LEVEL_PERCENT = 95
 ROUND_DP = 6
 CHECK_ROUTE = '/api/ml/check-interactions'
 WARNING, NO_WARNING, UNVERIFIED = 'warning', 'no_warning', 'unverified'
+CATALOGUE, TYPED = 'catalogue_product', 'typed_name'
 INTERACTING, NON_INTERACTING = 'interacting', 'non_interacting'
 
 
@@ -92,19 +93,33 @@ def main():
 
     records = []
     for pair in reference['pairs']:
-        chosen = []
+        chosen, sources = [], []
         for ingredient in (pair['drugA'], pair['drugB']):
             names = products.get(canonical_name(engine, ingredient), [])
-            chosen.append(names[0] if names else None)
-        if None in chosen:
-            outcome, severity, reason = UNVERIFIED, None, 'No single-ingredient catalogue product resolves to this ingredient.'
-        else:
-            response = post(CHECK_ROUTE, {'drugs': chosen})
-            outcome, severity = classify(response, chosen[0], chosen[1])
-            reason = response.get('statusMessage') if outcome == UNVERIFIED else None
+            chosen.append(names[0] if names else ingredient)
+            sources.append(CATALOGUE if names else TYPED)
+        response = post(CHECK_ROUTE, {'drugs': chosen})
+        outcome, severity = classify(response, chosen[0], chosen[1])
+        reason = response.get('statusMessage') if outcome == UNVERIFIED else None
         records.append({'id': pair['id'], 'drugA': pair['drugA'], 'drugB': pair['drugB'], 'expected': pair['expected'],
-                        'catalogueProductA': chosen[0], 'catalogueProductB': chosen[1], 'checkerOutcome': outcome,
-                        'checkerSeverity': severity, 'unverifiedReason': reason, 'sourceUrl': pair['sourceUrl']})
+                        'addedIn': pair.get('addedIn'), 'inputA': chosen[0], 'inputB': chosen[1], 'inputSourceA': sources[0],
+                        'inputSourceB': sources[1], 'checkerOutcome': outcome, 'checkerSeverity': severity,
+                        'unresolvedIngredients': response.get('unresolvedIngredients') or [], 'unverifiedReason': reason,
+                        'sourceUrl': pair['sourceUrl'], 'sourceSection': pair['sourceSection'], 'basis': pair['basis']})
+
+    subsets = {}
+    for name in sorted({r['addedIn'] for r in records}):
+        subset = [r for r in records if r['addedIn'] == name]
+        counts = {(e, o): sum(1 for r in subset if r['expected'] == e and r['checkerOutcome'] == o)
+                  for e in (INTERACTING, NON_INTERACTING) for o in (WARNING, NO_WARNING, UNVERIFIED)}
+        pos = sum(v for (e, _), v in counts.items() if e == INTERACTING)
+        neg = sum(v for (e, _), v in counts.items() if e == NON_INTERACTING)
+        subsets[name] = {'pairs': len(subset), 'interactingPairs': pos, 'nonInteractingPairs': neg,
+                         'counts': [[counts[(INTERACTING, o)] for o in (WARNING, NO_WARNING, UNVERIFIED)],
+                                    [counts[(NON_INTERACTING, o)] for o in (WARNING, NO_WARNING, UNVERIFIED)]],
+                         'sensitivity': ratio(counts[(INTERACTING, WARNING)], pos),
+                         'specificity': ratio(counts[(NON_INTERACTING, NO_WARNING)], neg),
+                         'unverifiedShare': ratio(sum(1 for r in subset if r['checkerOutcome'] == UNVERIFIED), len(subset))}
 
     def count(expected, outcome):
         return sum(1 for record in records if record['expected'] == expected and record['checkerOutcome'] == outcome)
@@ -125,8 +140,10 @@ def main():
         'run': {'date': today_utc(), 'git': git_state(), 'seed': SEED, 'bootstrapResamples': N_BOOTSTRAP,
                 'ciLevelPercent': CI_LEVEL_PERCENT, 'ciMethod': 'percentile bootstrap over reference pairs',
                 'route': CHECK_ROUTE,
-                'inputFormat': ('For each ingredient, the first catalogue product (alphabetical) that the checker resolves to exactly '
-                                'that one ingredient. The two product names are sent as the "drugs" list.'),
+                'inputFormat': ('For each ingredient: the first catalogue product (alphabetical) that the checker resolves to exactly '
+                                'that one ingredient; if there is none, the ingredient name as a prescriber would type it. The two '
+                                'names are sent as the "drugs" list. A pair is unverified when the checker reports any unresolved '
+                                'ingredient.'),
                 'referenceSha256': sha256_file(INTERACTION_REFERENCE_PATH), 'environment': environment_info()},
         'referenceSet': {'pairs': len(records), 'interactingPairs': positives, 'nonInteractingPairs': negatives,
                          'source': reference['source'], 'labelsCited': len(reference['labels']),
@@ -144,10 +161,13 @@ def main():
             'falseAlarmRate': {'value': ratio(fp, negatives), 'ci95': bootstrap_ci(negative_alarm), 'numerator': fp, 'denominator': negatives},
             'unverifiedPairs': pos_unverified + neg_unverified,
             'unverifiedInteractingPairs': pos_unverified, 'unverifiedNonInteractingPairs': neg_unverified,
+            'unverifiedShare': ratio(pos_unverified + neg_unverified, len(records)),
             'resolvedPairsOnly': {'sensitivity': ratio(tp, tp + fn), 'specificity': ratio(tn, tn + fp),
                                   'falseAlarmRate': ratio(fp, tn + fp), 'pairs': tp + fn + fp + tn}},
         'falseAlarms': [r['id'] for r in records if r['expected'] == NON_INTERACTING and r['checkerOutcome'] == WARNING],
         'missedInteractions': [r['id'] for r in records if r['expected'] == INTERACTING and r['checkerOutcome'] != WARNING],
+        'bySubset': subsets,
+        'pairsWithATypedName': sum(1 for r in records if TYPED in (r['inputSourceA'], r['inputSourceB'])),
         'catalogueLimits': {
             **resolution,
             'doseLimitIngredients': len(limits['limits']),
@@ -157,8 +177,8 @@ def main():
             'catalogueClinicalValidation': catalogue_manifest.get('clinicalValidation'),
             'catalogueOrigin': ('drugs_clean.json is built by ml-engine/preprocess_datasets.py from a retail pharmacy listing '
                                 '(medicines.csv); its licence is not verified.'),
-            'selectionBias': ('Every benchmark pair uses products that the checker fully resolves. Catalogue entries that do not '
-                              'resolve are reported by the checker as unverified and are not represented in the pair metrics.')},
+            'selectionBias': ('The V0 pairs use only products the checker fully resolves, which favours the checker. The V3 pairs were '
+                              'chosen without regard to resolution and include drugs absent from the checker reference data.')},
         'pairs': records,
     })
     print(json.dumps({'confusion [warning, no warning, unverified]': {'interacting': [tp, fn, pos_unverified],

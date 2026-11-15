@@ -115628,12 +115628,1005 @@
     }
   },
   "interactionSourceCheck": {
-    "date": "2026-11-14",
+    "date": "2026-11-15",
+    "excerptNote": "labelExcerpt is the first sentence of the cited section that names the partner drug, copied from the FDA label (public domain, CC0 via openFDA). It may not be the sentence the basis paraphrases.",
     "labelsWithChangedVersion": [],
     "meaning": "Confirms only that the cited label section names the partner drug. Whether the text describes an interaction was judged by reading the label.",
-    "pairsChecked": 65,
+    "pairs": [
+      {
+        "id": "P001",
+        "labelExcerpt": "Immunosuppressants Amlodipine may increase the systemic exposure of cyclosporine or tacrolimus when co-administered.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P002",
+        "labelExcerpt": "Immunosuppressants Amlodipine may increase the systemic exposure of cyclosporine or tacrolimus when co-administered.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P003",
+        "labelExcerpt": "7.2 Pharmacokinetic Drug Interactions Digoxin concentrations increased greater than 50% Digoxin Serum Concentration Increase Digoxin AUC Increase Recommendations Amiodarone 70% NA Measure serum digoxin concentrations before initiating concomitant drugs.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P004",
+        "labelExcerpt": "Carvedilol 16% 14% Conivaptan 33% 43% Diltiazem 20% NA Indomethacin 40% NA Mirabegron 29% 27% Nefazodone 27% 15% Nifedipine 45% NA Propantheline 24% 24% Quinine NA 33% Rabeprazole 29% 19% Saquinavir 27% 49% Spironolactone 25% NA Telmisartan 20 - 49% NA Ticagrelor 31% 28% Tolvaptan 30% 20% Trimethoprim 22 - 28% NA Digoxin concentrations increased, but magnitude is unclear Alprazolam, azithromycin, ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P005",
+        "labelExcerpt": "Captopril 58% 39% Clarithromycin NA 70% Dronedarone NA 150% Gentamicin 129 - 212% NA Erthromycin 100% NA Itraconazole 80% NA Lapatinib NA 180% Propafenone NA 60 - 270% Quinidine 100% NA Ranolazine 50% NA Ritonavir NA 86% Telaprevir 50% 85% Tetracycline 100% NA Verapamil 50 - 75% NA Digoxin concentrations increased less than 50% Atorvastatin 22% 15% Measure serum digoxin concentrations before initi",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P006",
+        "labelExcerpt": "Carvedilol 16% 14% Conivaptan 33% 43% Diltiazem 20% NA Indomethacin 40% NA Mirabegron 29% 27% Nefazodone 27% 15% Nifedipine 45% NA Propantheline 24% 24% Quinine NA 33% Rabeprazole 29% 19% Saquinavir 27% 49% Spironolactone 25% NA Telmisartan 20 - 49% NA Ticagrelor 31% 28% Tolvaptan 30% 20% Trimethoprim 22 - 28% NA Digoxin concentrations increased, but magnitude is unclear Alprazolam, azithromycin, ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P007",
+        "labelExcerpt": "Captopril 58% 39% Clarithromycin NA 70% Dronedarone NA 150% Gentamicin 129 - 212% NA Erthromycin 100% NA Itraconazole 80% NA Lapatinib NA 180% Propafenone NA 60 - 270% Quinidine 100% NA Ranolazine 50% NA Ritonavir NA 86% Telaprevir 50% 85% Tetracycline 100% NA Verapamil 50 - 75% NA Digoxin concentrations increased less than 50% Atorvastatin 22% 15% Measure serum digoxin concentrations before initi",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P008",
+        "labelExcerpt": "Captopril 58% 39% Clarithromycin NA 70% Dronedarone NA 150% Gentamicin 129 - 212% NA Erthromycin 100% NA Itraconazole 80% NA Lapatinib NA 180% Propafenone NA 60 - 270% Quinidine 100% NA Ranolazine 50% NA Ritonavir NA 86% Telaprevir 50% 85% Tetracycline 100% NA Verapamil 50 - 75% NA Digoxin concentrations increased less than 50% Atorvastatin 22% 15% Measure serum digoxin concentrations before initi",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P009",
+        "labelExcerpt": "Carvedilol 16% 14% Conivaptan 33% 43% Diltiazem 20% NA Indomethacin 40% NA Mirabegron 29% 27% Nefazodone 27% 15% Nifedipine 45% NA Propantheline 24% 24% Quinine NA 33% Rabeprazole 29% 19% Saquinavir 27% 49% Spironolactone 25% NA Telmisartan 20 - 49% NA Ticagrelor 31% 28% Tolvaptan 30% 20% Trimethoprim 22 - 28% NA Digoxin concentrations increased, but magnitude is unclear Alprazolam, azithromycin, ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P010",
+        "labelExcerpt": "Hyperpolarization-activated cyclic nucleotide-gated channel blocker Ivabradine Can increase the risk of bradycardia.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P011",
+        "labelExcerpt": "Carvedilol 16% 14% Conivaptan 33% 43% Diltiazem 20% NA Indomethacin 40% NA Mirabegron 29% 27% Nefazodone 27% 15% Nifedipine 45% NA Propantheline 24% 24% Quinine NA 33% Rabeprazole 29% 19% Saquinavir 27% 49% Spironolactone 25% NA Telmisartan 20 - 49% NA Ticagrelor 31% 28% Tolvaptan 30% 20% Trimethoprim 22 - 28% NA Digoxin concentrations increased, but magnitude is unclear Alprazolam, azithromycin, ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P012",
+        "labelExcerpt": "Captopril 58% 39% Clarithromycin NA 70% Dronedarone NA 150% Gentamicin 129 - 212% NA Erthromycin 100% NA Itraconazole 80% NA Lapatinib NA 180% Propafenone NA 60 - 270% Quinidine 100% NA Ranolazine 50% NA Ritonavir NA 86% Telaprevir 50% 85% Tetracycline 100% NA Verapamil 50 - 75% NA Digoxin concentrations increased less than 50% Atorvastatin 22% 15% Measure serum digoxin concentrations before initi",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P013",
+        "labelExcerpt": "Captopril 58% 39% Clarithromycin NA 70% Dronedarone NA 150% Gentamicin 129 - 212% NA Erthromycin 100% NA Itraconazole 80% NA Lapatinib NA 180% Propafenone NA 60 - 270% Quinidine 100% NA Ranolazine 50% NA Ritonavir NA 86% Telaprevir 50% 85% Tetracycline 100% NA Verapamil 50 - 75% NA Digoxin concentrations increased less than 50% Atorvastatin 22% 15% Measure serum digoxin concentrations before initi",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P014",
+        "labelExcerpt": "Digoxin concentrations decreased Acarbose, activated charcoal, albuterol, antacids, certain cancer chemotherapy or radiation therapy, cholestyramine, colestipol, extenatide, kaolin-pectin, meals high in bran, metoclopramide, miglitol, neomycin, penicillamine, phenytoin, rifampin, St.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P015",
+        "labelExcerpt": "Carvedilol 16% 14% Conivaptan 33% 43% Diltiazem 20% NA Indomethacin 40% NA Mirabegron 29% 27% Nefazodone 27% 15% Nifedipine 45% NA Propantheline 24% 24% Quinine NA 33% Rabeprazole 29% 19% Saquinavir 27% 49% Spironolactone 25% NA Telmisartan 20 - 49% NA Ticagrelor 31% 28% Tolvaptan 30% 20% Trimethoprim 22 - 28% NA Digoxin concentrations increased, but magnitude is unclear Alprazolam, azithromycin, ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P016",
+        "labelExcerpt": "The risk of bradycardia increases with concomitant administration of drugs that slow heart rate (e.g., digoxin, amiodarone, beta-blockers).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P017",
+        "labelExcerpt": "Examples of strong CYP3A4 inhibitors include azole antifungals (e.g.,itraconazole), macrolide antibiotics (e.g., clarithromycin, telithromycin), HIV protease inhibitors (e.g.nelfinavir), and nefazodone.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P018",
+        "labelExcerpt": "Examples of moderate CYP3A4 inhibitors include diltiazem, verapamil, and grapefruit juice [see Warnings and Precautions (5.3) and Clinical Pharmacology (12.3) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P019",
+        "labelExcerpt": "If coadministration cannot be avoided, monitor closely for methotrexate adverse reactions when coadministered with: • Penicillin or sulfonamide antibiotics • Highly protein bound drugs (e.g., oral anticoagulants, phenytoin, salicylates, sulfonamides, sulfonylureas, and tetracyclines) • Proton pump inhibitors • Probenecid • Antifolate drugs (e.g., dapsone, pemetrexed, pyrimethamine and sulfonamides",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P020",
+        "labelExcerpt": "Drug Interactions Disulfiram Psychotic reactions have been reported in alcoholic patients who are using metronidazole and disulfiram concurrently.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P021",
+        "labelExcerpt": "( 7.2 ) 7.1 Effects of Other Drugs on Ranolazine Strong CYP3A Inhibitors Do not use ranolazine with strong CYP3A inhibitors, including ketoconazole, itraconazole, clarithromycin, nefazodone, nelfinavir, ritonavir, indinavir, and saquinavir [see Contraindications (4) , Clinical Pharmacology (12.3) ] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P022",
+        "labelExcerpt": "( 7.1 ) • P-gp inhibitors (e.g., cyclosporine): Ranolazine exposure increased.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P023",
+        "labelExcerpt": "7 DRUG INTERACTIONS • Moderate CYP3A inhibitors (e.g., diltiazem, verapamil, erythromycin): Limit ranolazine extended-release tablets to 500 mg twice daily.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P024",
+        "labelExcerpt": "7 DRUG INTERACTIONS • Moderate CYP3A inhibitors (e.g., diltiazem, verapamil, erythromycin): Limit ranolazine extended-release tablets to 500 mg twice daily.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P025",
+        "labelExcerpt": "Doses of other sensitive CYP3A substrates (e.g., lovastatin) and CYP3A substrates with narrow therapeutic range (e.g., cyclosporine, tacrolimus, sirolimus) may need to be reduced with ranolazine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P026",
+        "labelExcerpt": "Doses of other sensitive CYP3A substrates (e.g., lovastatin) and CYP3A substrates with narrow therapeutic range (e.g., cyclosporine, tacrolimus, sirolimus) may need to be reduced with ranolazine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P027",
+        "labelExcerpt": "Use with inhibitors of CYP3A4 or dual inhibitors of CYP3A4 and CYP1A2 (e.g., erythromycin, ketoconazole, fluvoxamine, enoxacin, cimetidine) will increase roflumilast systemic exposure and may result in increased adverse reactions.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P028",
+        "labelExcerpt": "The drugs listed in Table III have either been documented not to interact with theophylline or do not produce a clinically significant interaction (i.e., Drug Type of Interaction Effect** Adenosine Theophylline blocks adenosine receptors.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P029",
+        "labelExcerpt": "70% increase Ciprofloxacin Similar to cimetidine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P030",
+        "labelExcerpt": "40% increase Clarithromycin Similar to erythromycin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P031",
+        "labelExcerpt": "Disulfiram Decreases theophylline clearance by inhibiting hydroxylation and demethylation.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P032",
+        "labelExcerpt": "If theophylline is being initiated in a patient who is already taking a drug that inhibits theophylline clearance (e.g., cimetidine, erythromycin), the dose of theophylline required to achieve a therapeutic serum theophylline concentration will be smaller.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P033",
+        "labelExcerpt": "Methotrexate (MTX) Decreases theophylline clearance.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P034",
+        "labelExcerpt": "Mexiletine Similar to disulfiram.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P035",
+        "labelExcerpt": "Propafenone Decreases theophylline clearance and pharmacologic interaction.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P036",
+        "labelExcerpt": "Drug Interaction In vitro data indicate that amlodipine has no effect on the human plasma protein binding of digoxin, phenytoin, warfarin, and indomethacin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P037",
+        "labelExcerpt": "Erythromycin coadministration in healthy volunteers did not significantly change amlodipine systemic exposure.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P038",
+        "labelExcerpt": "No Effect = 1.00 Mean C max Mean AUC Atorvastatin 10 mg/day for 8 days 500 mg/day orally on days 6 to 8 12 0.83 (0.63 to 1.08) 1.01 (0.81 to 1.25) Carbamazepine 200 mg/day for 2 days, then 200 mg twice a day for 18 days 500 mg/day orally for days 16 to 18 7 0.97 (0.88 to 1.06) 0.96 (0.88 to 1.06) Cetirizine 20 mg/day for 11 days 500 mg orally on day 7, then 250 mg/day on days 8 to 11 14 1.03 (0.93",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P039",
+        "labelExcerpt": "7.1 Antipyrine, Azithromycin, Cimetidine, Erythromycin, Ketoconazole, Theophylline, and Pseudoephedrine Pharmacokinetic interaction studies performed with racemic cetirizine demonstrated that cetirizine did not interact with antipyrine, pseudoephedrine, erythromycin, azithromycin, ketoconazole, and cimetidine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P040",
+        "labelExcerpt": "Formal pharmacokinetic studies evaluated the potential of donepezil hydrochloride for interaction with theophylline, cimetidine, warfarin, digoxin, and ketoconazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P041",
+        "labelExcerpt": "Digoxin Multiple doses of galantamine at 24 mg/day had no effect on the steady-state pharmacokinetics of digoxin (at a dose of 0.375 mg once daily) when those two drugs were co-administered.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P042",
+        "labelExcerpt": "Memantine Memantine, an N-methyl-D-aspartate receptor antagonist, when administered at a dose of 10 mg two times a day, had no effect on the pharmacokinetics of galantamine (16 mg/day) at steady state.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P043",
+        "labelExcerpt": "Potential pharmacokinetic interactions of or with levetiracetam were assessed in clinical pharmacokinetic studies (phenytoin, valproate, warfarin, digoxin, oral contraceptive, probenecid) and through pharmacokinetic screening in the placebo-controlled clinical studies in epilepsy patients.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P044",
+        "labelExcerpt": "7.6 Cyclosporine No significant effect of levofloxacin on the peak plasma concentrations, AUC, and other disposition parameters for cyclosporine was detected in a clinical study involving healthy volunteers.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P045",
+        "labelExcerpt": "7.7 Digoxin No significant effect of levofloxacin on the peak plasma concentrations, AUC, and other disposition parameters for digoxin was detected in a clinical study involving healthy volunteers.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P046",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P047",
+        "labelExcerpt": "In vitro studies have shown that memantine does not affect the reversible inhibition of acetylcholinesterase by donepezil, galantamine, or tacrine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P048",
+        "labelExcerpt": "7 DRUG INTERACTIONS No dose adjustment is needed when montelukast sodium is co-administered with theophylline, prednisone, prednisolone, oral contraceptives, terfenadine, digoxin, warfarin, gemfibrozil, itraconazole, thyroid hormones, sedative hypnotics, non-steroidal anti-inflammatory agents, benzodiazepines, decongestants, and Cytochrome P450 (CYP) enzyme inducers [see Clinical Pharmacology (12.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P049",
+        "labelExcerpt": "7 DRUG INTERACTIONS No dose adjustment is needed when montelukast sodium is co-administered with theophylline, prednisone, prednisolone, oral contraceptives, terfenadine, digoxin, warfarin, gemfibrozil, itraconazole, thyroid hormones, sedative hypnotics, non-steroidal anti-inflammatory agents, benzodiazepines, decongestants, and Cytochrome P450 (CYP) enzyme inducers [see Clinical Pharmacology (12.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P050",
+        "labelExcerpt": "No pharmacokinetic interaction was observed between rivastigmine taken orally and digoxin, warfarin, diazepam, or fluoxetine in studies in healthy volunteers.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P051",
+        "labelExcerpt": "In vitro and in vivo studies demonstrate that the inhibition of cholinesterase by rivastigmine is not affected by the concomitant administration of memantine, an N-methyl-D-aspartate receptor antagonist.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P052",
+        "labelExcerpt": "No significant drug interactions were observed when 500 mcg oral roflumilast was administered with inhaled salbutamol, formoterol, budesonide and oral montelukast, digoxin, theophylline, warfarin, sildenafil, midazolam, or antacids.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P053",
+        "labelExcerpt": "No significant drug interactions were observed when 500 mcg oral roflumilast was administered with inhaled salbutamol, formoterol, budesonide and oral montelukast, digoxin, theophylline, warfarin, sildenafil, midazolam, or antacids.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P054",
+        "labelExcerpt": "No significant drug interactions were observed when 500 mcg oral roflumilast was administered with inhaled salbutamol, formoterol, budesonide and oral montelukast, digoxin, theophylline, warfarin, sildenafil, midazolam, or antacids.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P055",
+        "labelExcerpt": "No significant drug interactions were observed when 500 mcg oral roflumilast was administered with inhaled salbutamol, formoterol, budesonide and oral montelukast, digoxin, theophylline, warfarin, sildenafil, midazolam, or antacids.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P056",
+        "labelExcerpt": "No significant drug interactions were observed when 500 mcg oral roflumilast was administered with inhaled salbutamol, formoterol, budesonide and oral montelukast, digoxin, theophylline, warfarin, sildenafil, midazolam, or antacids.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P057",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P058",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P059",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P060",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P061",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P062",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P063",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P064",
+        "labelExcerpt": "70% increase Ciprofloxacin Similar to cimetidine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P065",
+        "labelExcerpt": "20% increase albuterol, systemic and inhaled mebendazole amoxicillin medroxyprogesterone ampicillin, with or without methylprednisolone sulbactam metronidazole atenolol metoprolol azithromycin nadolol caffeine, dietary ingestion nifedipine cefaclor nizatidine co-trimoxazole (trimethoprim and sulfamethoxazole) norfloxacin ofloxacin diltiazem omeprazole dirithromycin prednisone, prednisolone enflura",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P066",
+        "labelExcerpt": "Concomitant use of cyclosporine, danazol or gemfibrozil [see Drug Interactions (7.1) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P067",
+        "labelExcerpt": "Concomitant use of cyclosporine, danazol or gemfibrozil [see Drug Interactions (7.1) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P068",
+        "labelExcerpt": "Amiodarone, Dronedarone, Ranolazine, or Calcium Channel Blockers Clinical Impact: The risk of myopathy and rhabdomyolysis is increased by concomitant use of amiodarone, dronedarone, ranolazine, or calcium channel blockers with simvastatin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P069",
+        "labelExcerpt": "For patients taking amiodarone, amlodipine, or ranolazine, do not exceed simvastatin 20 mg daily [see Dosage and Administration (2.5) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P070",
+        "labelExcerpt": "Amiodarone, Dronedarone, Ranolazine, or Calcium Channel Blockers Clinical Impact: The risk of myopathy and rhabdomyolysis is increased by concomitant use of amiodarone, dronedarone, ranolazine, or calcium channel blockers with simvastatin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P071",
+        "labelExcerpt": "Examples: Select azole anti-fungals (e.g., itraconazole, ketoconazole, posaconazole, and voriconazole), select macrolide antibiotics (e.g., erythromycin and clarithromycin), select HIV protease inhibitors (e.g., nelfinavir, ritonavir, and darunavir/ritonavir), select HCV protease inhibitors (e.g., boceprevir and telaprevir), cobicistat-containing products, and nefazodone.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P072",
+        "labelExcerpt": "Examples: Select azole anti-fungals (e.g., itraconazole, ketoconazole, posaconazole, and voriconazole), select macrolide antibiotics (e.g., erythromycin and clarithromycin), select HIV protease inhibitors (e.g., nelfinavir, ritonavir, and darunavir/ritonavir), select HCV protease inhibitors (e.g., boceprevir and telaprevir), cobicistat-containing products, and nefazodone.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P073",
+        "labelExcerpt": "Colchicine Clinical Impact: Cases of myopathy and rhabdomyolysis have been reported with concomitant use of colchicine with simvastatin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P074",
+        "labelExcerpt": "Omeprazole or Esomeprazole Avoid concomitant use of clopidogrel with omeprazole or esomeprazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P075",
+        "labelExcerpt": "Omeprazole or Esomeprazole Avoid concomitant use of clopidogrel with omeprazole or esomeprazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P076",
+        "labelExcerpt": "Rifampin strongly induces CYP2C19 resulting to both an increase level of clopidogrel active metabolite and platelet inhibition, which in particular might potentiate the risk of bleeding.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P077",
+        "labelExcerpt": "( 7.3 ) • Nonsteroidal anti-inflammatory drugs (NSAIDs), warfarin, selective serotonin and serotonin norepinephrine reuptake inhibitors (SSRIs, SNRIs): Increases risk of bleeding.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P078",
+        "labelExcerpt": "7 DRUG INTERACTIONS •Sildenafil tablets can potentiate the hypotensive effects of nitrates, alpha blockers, and anti-hypertensives ( 4.1 , 5.5 , 7.1 , 7.2 , 7.3 , 12.2 ) •With concomitant use of alpha blockers, initiate sildenafil tablets at 25 mg dose (2.3) •CYP3A4 inhibitors (e.g., ritonavir, ketoconazole, itraconazole, erythromycin): Increase sildenafil tablets exposure (2.4 , 7.4, 12.3 ) •Rito",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P079",
+        "labelExcerpt": "7 DRUG INTERACTIONS •Sildenafil tablets can potentiate the hypotensive effects of nitrates, alpha blockers, and anti-hypertensives ( 4.1 , 5.5 , 7.1 , 7.2 , 7.3 , 12.2 ) •With concomitant use of alpha blockers, initiate sildenafil tablets at 25 mg dose (2.3) •CYP3A4 inhibitors (e.g., ritonavir, ketoconazole, itraconazole, erythromycin): Increase sildenafil tablets exposure (2.4 , 7.4, 12.3 ) •Rito",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P080",
+        "labelExcerpt": "7.3 Amlodipine When sildenafil tablets 100 mg were co-administered with amlodipine (5 mg or 10 mg) to hypertensive patients, the mean additional reduction on supine blood pressure was 8 mmHg systolic and 7 mmHg diastolic [see Warnings and Precautions (5.5), Clinical Pharmacology (12.2)].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P081",
+        "labelExcerpt": "Pharmacokinetic data from patients in clinical trials showed no effect on sildenafil pharmacokinetics of CYP2C9 inhibitors (such as tolbutamide, warfarin), CYP2D6 inhibitors (such as selective serotonin reuptake inhibitors, tricyclic antidepressants), thiazide and related diuretics, ACE inhibitors, and calcium channel blockers.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P082",
+        "labelExcerpt": "Sildenafil tablets (50 mg) did not potentiate the increase in bleeding time caused by aspirin (150 mg).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P083",
+        "labelExcerpt": "7 DRUG INTERACTIONS • Diuretics, NSAID, renin-angiotensin system antagonists, or metronidazole may increase lithium serum concentrations.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P084",
+        "labelExcerpt": "Methyldopa, Phenytoin and Carbamazepine Clinical Impact: Concomitant use may increase risk of adverse reactions of these drugs.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P085",
+        "labelExcerpt": "Methyldopa, Phenytoin and Carbamazepine Clinical Impact: Concomitant use may increase risk of adverse reactions of these drugs.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P086",
+        "labelExcerpt": "Therefore increased monitoring of valproate and concomitant drug concentrations and dosage adjustment are indicated whenever enzyme-inducing or inhibiting drugs are introduced or withdrawn ( 7.1 ) Aspirin, carbapenem antibiotics, estrogen-containing hormonal contraceptives, methotrexate: Monitoring of valproate concentrations is recommended ( 7.1 ) Co-administration of valproate can affect the pha",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P087",
+        "labelExcerpt": "7 DRUG INTERACTIONS Hepatic enzyme-inducing drugs (e.g., phenytoin, carbamazepine, phenobarbital, primidone, rifampin) can increase valproate clearance, while enzyme inhibitors (e.g., felbamate) can decrease valproate clearance.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P088",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P089",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P090",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P091",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P092",
+        "labelExcerpt": "7 DRUG INTERACTIONS P-gp inducers: Avoid coadministration with PRADAXA ( 5.5 ) P-gp inhibitors in adult patients with CrCl 30-50 mL/min: Reduce dosage or avoid ( 7 ) P-gp inhibitors in adult patients with CrCl < 30 mL/min: Not recommended ( 7 ) 7.1 Reduction of Risk of Stroke and Systemic Embolism in Non-valvular Atrial Fibrillation in Adult Patients The concomitant use of PRADAXA with P-gp induce",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P093",
+        "labelExcerpt": "In patients with moderate renal impairment (CrCl 30-50 mL/min), reduce the dosage of PRADAXA to 75 mg twice daily when administered concomitantly with the P-gp inhibitors dronedarone or systemic ketoconazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P094",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P095",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P096",
+        "labelExcerpt": null,
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P097",
+        "labelExcerpt": "rhabdomyolysis has been reported Coadministration of P-gp and/or CYP3A4 inhibitors (e.g., clarithromycin or cyclosporine) have been demonstrated to alter the concentration of colchicine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P098",
+        "labelExcerpt": "rhabdomyolysis has been reported Coadministration of P-gp and/or CYP3A4 inhibitors (e.g., clarithromycin or cyclosporine) have been demonstrated to alter the concentration of colchicine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P099",
+        "labelExcerpt": "Other Potentially Significant Drug Interactions Concomitant Drug Class or Food Noted or Anticipated Outcome Clinical Comment HMG-CoA Reductase Inhibitors: atorvastatin, fluvastatin, lovastatin, pravastatin, simvastatin Pharmacokinetic and/or pharmacodynamic interaction: the addition of one drug to a stable long-term regimen of the other has resulted in myopathy and rhabdomyolysis (including a fata",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P100",
+        "labelExcerpt": "Other Lipid-Lowering Drugs: fibrates, gemfibrozil Digitalis Glycosides: digoxin P-gp substrate;",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P101",
+        "labelExcerpt": "In healthy volunteers given theophylline coadministered with colchicine tablets (0.6 mg twice daily × 14 days), theophylline concentrations were not affected.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P102",
+        "labelExcerpt": "Drug Interactions: Pharmacokinetic Parameters for Colchicine Tablets in the Presence of the Coadministered Drug Coadministered Drug Dose of Coadministered Drug (mg) Dose of Colchicine Tablets (mg) N % Change in Colchicine Concentrations from Baseline (Range: Min – Max) C max AUC 0-t Cyclosporine 100 mg single dose 0.6 mg single dose 23 270.0 (62.0 to 606.9) 259.0 (75.8 to 511.9) Clarithromycin 250",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P103",
+        "labelExcerpt": "Avoid use with strong inducers of CYP3A (e.g., rifampin, phenytoin, carbamazepine and phenobarbital) [see Clinical Pharmacology ( 12.3) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P104",
+        "labelExcerpt": "Avoid use of strong inhibitors of CYP3A (e.g., ketoconazole, itraconazole, voriconazole, clarithromycin, nefazodone, ritonavir, saquinavir, nelfinavir, indinavir, atazanavir and telithromycin) [see Clinical Pharmacology ( 12.3 )] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P105",
+        "labelExcerpt": "Avoid use of strong inhibitors of CYP3A (e.g., ketoconazole, itraconazole, voriconazole, clarithromycin, nefazodone, ritonavir, saquinavir, nelfinavir, indinavir, atazanavir and telithromycin) [see Clinical Pharmacology ( 12.3 )] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P106",
+        "labelExcerpt": "( 7.4 ) • Monitor digoxin levels with initiation of or any change in ticagrelor.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P107",
+        "labelExcerpt": "( 7.3) • Patients receiving more than 40 mg per day of simvastatin or lovastatin or more than 20 mg per day of rosuvastatin may be at increased risk of statin-related adverse effects.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P108",
+        "labelExcerpt": "Mercaptopurine or Azathioprine: Allopurinol inhibits xanthine oxidase mediated metabolism of mercaptopurine and azathioprine.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P109",
+        "labelExcerpt": "Cyclosporine: Concomitant use of allopurinol increases cyclosporine concentrations which may increase the risk of adverse reactions.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P110",
+        "labelExcerpt": "Theophylline: Concomitant use of allopurinol doses greater than or equal to 600 mg/day may decrease the clearance of theophylline.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P111",
+        "labelExcerpt": "7 DRUG INTERACTIONS The following drugs may increase the risk of serious skin reactions: bendamustine, thiazide diuretics, ampicillin and amoxicillin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P112",
+        "labelExcerpt": "7.4 Anticoagulants and NSAIDs/Aspirin Coadministration of enoxaparin, warfarin, aspirin, clopidogrel and chronic NSAID use may increase the risk of bleeding [see Clinical Pharmacology (12.3) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P113",
+        "labelExcerpt": "7.4 Anticoagulants and NSAIDs/Aspirin Coadministration of enoxaparin, warfarin, aspirin, clopidogrel and chronic NSAID use may increase the risk of bleeding [see Clinical Pharmacology (12.3) ].",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P114",
+        "labelExcerpt": "7.3 Drugs that Induce Cytochrome P450 3A Enzymes and Drug Transport Systems Avoid concomitant use of XARELTO with drugs that are combined P-gp and strong CYP3A inducers (e.g., carbamazepine, phenytoin, rifampin, St.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P115",
+        "labelExcerpt": "7.2 Drugs that Inhibit Cytochrome P450 3A Enzymes and Drug Transport Systems Interaction with Combined P-gp and Strong CYP3A Inhibitors Avoid concomitant administration of XARELTO with known combined P-gp and strong CYP3A inhibitors (e.g., ketoconazole and ritonavir) [see Warnings and Precautions (5.6) and Clinical Pharmacology (12.3) ] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P116",
+        "labelExcerpt": "Although clarithromycin is a combined P-gp and strong CYP3A inhibitor, pharmacokinetic data suggests that no precautions are necessary with concomitant administration with XARELTO as the change in exposure is unlikely to affect the bleeding risk [see Clinical Pharmacology (12.3) ] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P117",
+        "labelExcerpt": "Coadministration of XARELTO (30 mg single dose) with the H 2 -receptor antagonist ranitidine (150 mg twice daily), the antacid aluminum hydroxide/magnesium hydroxide (10 mL) or XARELTO (20 mg single dose) with the PPI omeprazole (40 mg once daily) did not show an effect on the bioavailability and exposure of rivaroxaban (see Figure 3 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P118",
+        "labelExcerpt": "Coadministration of XARELTO (30 mg single dose) with the H 2 -receptor antagonist ranitidine (150 mg twice daily), the antacid aluminum hydroxide/magnesium hydroxide (10 mL) or XARELTO (20 mg single dose) with the PPI omeprazole (40 mg once daily) did not show an effect on the bioavailability and exposure of rivaroxaban (see Figure 3 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P119",
+        "labelExcerpt": "7.2 Combined P-gp and Strong CYP3A4 Inducers Avoid concomitant use of ELIQUIS with combined P-gp and strong CYP3A4 inducers (e.g., rifampin, carbamazepine, phenytoin, St.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P120",
+        "labelExcerpt": "7.2 Combined P-gp and Strong CYP3A4 Inducers Avoid concomitant use of ELIQUIS with combined P-gp and strong CYP3A4 inducers (e.g., rifampin, carbamazepine, phenytoin, St.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P121",
+        "labelExcerpt": "Pharmacodynamic Drug Interaction Studies Pharmacodynamic drug interaction studies with aspirin, clopidogrel, aspirin and clopidogrel, prasugrel, enoxaparin, and naproxen were conducted.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P122",
+        "labelExcerpt": "Clarithromycin Although clarithromycin is a combined P-gp and strong CYP3A4 inhibitor, pharmacokinetic data suggest that no dose adjustment is necessary with concomitant administration with ELIQUIS [see Clinical Pharmacology (12.3) ] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P123",
+        "labelExcerpt": "In studies conducted in healthy subjects, apixaban did not meaningfully alter the pharmacokinetics of digoxin, naproxen, atenolol, prasugrel, or acetylsalicylic acid.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P124",
+        "labelExcerpt": "Figure 2: Effect of Coadministered Drugs on the Pharmacokinetics of Apixaban In dedicated studies conducted in healthy subjects, famotidine, atenolol, prasugrel, and enoxaparin did not meaningfully alter the pharmacokinetics of apixaban.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P125",
+        "labelExcerpt": "Figure 2: Effect of Coadministered Drugs on the Pharmacokinetics of Apixaban In dedicated studies conducted in healthy subjects, famotidine, atenolol, prasugrel, and enoxaparin did not meaningfully alter the pharmacokinetics of apixaban.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P126",
+        "labelExcerpt": "Starting escitalopram tablets in a patient who is being treated with MAOIs such as linezolid or intravenous methylene blue is also contraindicated because of an increased risk of serotonin syndrome [see Dosage and Administration ( 2.6 ) and Warnings and Precautions ( 5.2 ) ] .",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P127",
+        "labelExcerpt": "Drugs That Interfere With Hemostasis (NSAIDs, Aspirin, Warfarin, etc.) Clinical Impact: Concomitant use of escitalopram and an antiplatelet or anticoagulant may potentiate the risk of bleeding.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P128",
+        "labelExcerpt": "Other Serotonergic Drugs Clinical Impact: Concomitant use of escitalopram and other serotonergic drugs (including other SSRIs, SNRIs, SNRIs, triptans, tricycle antidepressant, opioids, lithium, buspirone, amphetamines, tryptophan and St.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P129",
+        "labelExcerpt": "Digoxin In subjects who had received 21 days of 40 mg/day racemic citalopram, combined administration of citalopram and digoxin (single dose of 1mg) did not significantly affect the pharmacokinetics of either citalopram or digoxin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P130",
+        "labelExcerpt": "Theophylline Combined administration of racemic citalopram (40 mg/day for 21 days) and the CYP1A2 substrate theophylline (single dose of 300 mg) did not affect the pharmacokinetics of theophylline.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P131",
+        "labelExcerpt": "Coadministration of other drugs known to prolong the QT interval and which are metabolized via the enzyme CYP3A4 such as erythromycin, pimozide, and quinidine are contraindicated in patients receiving fluconazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P132",
+        "labelExcerpt": "Amiodarone : Concomitant administration of fluconazole with amiodarone may increase QT prolongation.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P133",
+        "labelExcerpt": "HMG-CoA reductase inhibitors : The risk of myopathy and rhabdomyolysis increases when fluconazole is coadministered with HMG-CoA reductase inhibitors metabolized through CYP3A4, such as atorvastatin and simvastatin, or through CYP2C9, such as fluvastatin (decreased hepatic metabolism of the statin).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P134",
+        "labelExcerpt": "Carbamazepine : Fluconazole inhibits the metabolism of carbamazepine and an increase in serum carbamazepine of 30% has been observed.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P135",
+        "labelExcerpt": ") Azithromycin: An open-label, randomized, three-way crossover study in 18 healthy subjects assessed the effect of a single 800 mg oral dose of fluconazole on the pharmacokinetics of a single 1200 mg oral dose of azithromycin as well as the effects of azithromycin on the pharmacokinetics of fluconazole.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P136",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P137",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P138",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P139",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P140",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P141",
+        "labelExcerpt": "Table 2: Examples of CYP450 Interactions with Warfarin Enzyme Inhibitors Inducers CYP2C9 amiodarone, capecitabine, cotrimoxazole, etravirine, fluconazole, fluvastatin, fluvoxamine, metronidazole, miconazole, oxandrolone, sulfinpyrazone, tigecycline, voriconazole, zafirlukast aprepitant, bosentan, carbamazepine, phenobarbital, rifampin CYP1A2 acyclovir, allopurinol, caffeine, cimetidine, ciprofloxa",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P142",
+        "labelExcerpt": "Table 3: Drugs that Can Increase the Risk of Bleeding Drug Class Specific Drugs Anticoagulants argatroban, dabigatran, bivalirudin, desirudin, heparin, lepirudin Antiplatelet Agents aspirin, cilostazol, clopidogrel, dipyridamole, prasugrel, ticlopidine Nonsteroidal Anti-Inflammatory Agents celecoxib, diclofenac, diflunisal, fenoprofen, ibuprofen, indomethacin, ketoprofen, ketorolac, mefenamic acid",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P143",
+        "labelExcerpt": "Table 3: Drugs that Can Increase the Risk of Bleeding Drug Class Specific Drugs Anticoagulants argatroban, dabigatran, bivalirudin, desirudin, heparin, lepirudin Antiplatelet Agents aspirin, cilostazol, clopidogrel, dipyridamole, prasugrel, ticlopidine Nonsteroidal Anti-Inflammatory Agents celecoxib, diclofenac, diflunisal, fenoprofen, ibuprofen, indomethacin, ketoprofen, ketorolac, mefenamic acid",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P144",
+        "labelExcerpt": "Table 3: Drugs that Can Increase the Risk of Bleeding Drug Class Specific Drugs Anticoagulants argatroban, dabigatran, bivalirudin, desirudin, heparin, lepirudin Antiplatelet Agents aspirin, cilostazol, clopidogrel, dipyridamole, prasugrel, ticlopidine Nonsteroidal Anti-Inflammatory Agents celecoxib, diclofenac, diflunisal, fenoprofen, ibuprofen, indomethacin, ketoprofen, ketorolac, mefenamic acid",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P145",
+        "labelExcerpt": "7 DRUG INTERACTIONS 7.1 Insulin Secretagogues or Insulin Coadministration of sitagliptin tablets with an insulin secretagogue (e.g., sulfonylurea) or insulin may require lower doses of the insulin secretagogue or insulin to reduce the risk of hypoglycemia.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P146",
+        "labelExcerpt": "Sitagliptin and Metformin Hydrochloride Coadministration In a two-day study in healthy subjects, sitagliptin alone increased active GLP-1 concentrations, whereas metformin alone increased active and total GLP-1 concentrations to similar extents.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P147",
+        "labelExcerpt": "In Vivo Assessment of Drug Interactions Effects of Sitagliptin on Other Drugs In clinical studies, sitagliptin did not meaningfully alter the pharmacokinetics of metformin, glyburide, simvastatin, rosiglitazone, digoxin, warfarin, or an oral contraceptive (ethinyl estradiol and norethindrone) (Table 4), providing in vivo evidence of a low propensity for causing drug interactions with substrates of",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P148",
+        "labelExcerpt": "Sitagliptin is a P-gp substrate, but does not inhibit P-gp mediated transport of digoxin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P149",
+        "labelExcerpt": "In Vivo Assessment of Drug Interactions Effects of Sitagliptin on Other Drugs In clinical studies, sitagliptin did not meaningfully alter the pharmacokinetics of metformin, glyburide, simvastatin, rosiglitazone, digoxin, warfarin, or an oral contraceptive (ethinyl estradiol and norethindrone) (Table 4), providing in vivo evidence of a low propensity for causing drug interactions with substrates of",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P150",
+        "labelExcerpt": "7 DRUG INTERACTIONS Strong P-glycoprotein/CYP3A4 inducer: The efficacy of TRADJENTA may be reduced when administered in combination (e.g., with rifampin).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P151",
+        "labelExcerpt": "7.2 Insulin Secretagogues or Insulin Insulin and insulin secretagogues are known to cause hypoglycemia.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P152",
+        "labelExcerpt": "Insulin or Insulin Secretagogues Clinical Impact The risk of hypoglycemia is increased when JARDIANCE is used in combination with insulin secretagogues (e.g., sulfonylurea) or insulin.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P153",
+        "labelExcerpt": "Lithium Clinical Impact Concomitant use of an SGLT2 inhibitor with lithium may decrease serum lithium concentrations.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P154",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P155",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P156",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P157",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P158",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P159",
+        "labelExcerpt": "d empagliflozin, 10 mg, single dose Empagliflozin had no clinically relevant effect on the pharmacokinetics of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, digoxin, ramipril, simvastatin, hydrochlorothiazide, torsemide, and oral contraceptives when coadministered in healthy volunteers (see Figure 2 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P160",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P161",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P162",
+        "labelExcerpt": "In vivo Assessment of Drug Interactions Empagliflozin pharmacokinetics were similar with and without coadministration of metformin, glimepiride, pioglitazone, sitagliptin, linagliptin, warfarin, verapamil, ramipril, and simvastatin in healthy volunteers and with or without coadministration of hydrochlorothiazide and torsemide in patients with type 2 diabetes mellitus (see Figure 1 ).",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P163",
+        "labelExcerpt": "7 DRUG INTERACTIONS Strong CYP2C8 inhibitors (e.g., gemfibrozil) increase pioglitazone concentrations.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P164",
+        "labelExcerpt": "( 2.3 , 7.1 ) CYP2C8 inducers (e.g., rifampin) may decrease pioglitazone concentrations.",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      },
+      {
+        "id": "P165",
+        "labelExcerpt": "symbols of ↑ and ↓ indicate the exposure increase and decrease, respectively Change in C max 45 mg (N = 12) Warfarin Pioglitazone had no clinically significant effect on prothrombin time Daily loading then maintenance doses based PT and INR values Quick's Value = 35 ± 5% R-Warfarin ↓ 3% R-Warfarin ↓ 2% S-Warfarin ↓ 1% S-Warfarin ↑ 1% 45 mg (N = 12) Digoxin 0.200 mg twice daily (loading dose) then ",
+        "labelVersionUnchanged": true,
+        "partnerNamedInCitedSection": true
+      }
+    ],
+    "pairsChecked": 165,
     "pairsNotConfirmed": [],
-    "pairsWithPartnerNamedInCitedSection": 65
+    "pairsWithPartnerNamedInCitedSection": 165
   },
   "scope": "Offline engineering benchmark on public, non-patient data. It measures agreement with dataset labels only.",
   "symptomBenchmark": {

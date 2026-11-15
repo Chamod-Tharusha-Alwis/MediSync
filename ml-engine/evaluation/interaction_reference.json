@@ -2,16 +2,18 @@
   "schemaVersion": 1,
   "clinicalValidation": "not_established",
   "description": "Reference drug pairs for the interaction-checker benchmark. Every pair is taken from the text of a US FDA prescribing label, retrieved through the openFDA drug label API.",
-  "retrievedDate": "2026-11-14",
+  "retrievedDate": "2026-11-14 (P001-P065); 2026-11-15 (P066 onwards)",
   "source": "US FDA prescription drug labels (openFDA drug label API; the same labels are published on DailyMed)",
   "definitions": {
     "interacting": "The cited label describes an interaction between the two drugs: a change in drug levels, a dose limit, a warning, or a contraindication.",
     "non_interacting": "The cited label states that a study found no interaction, or no clinically significant interaction, between the two drugs. It is a statement by that one label, not proof that no reference lists any interaction."
   },
   "selectionRules": [
-    "Both drugs must have a single-ingredient product in the 3,000-entry catalogue that the checker resolves.",
+    "V0 pairs (P001-P065): both drugs have a single-ingredient catalogue product that the checker resolves.",
+    "V3 pairs (P066 onwards): chosen from label text without regard to whether the checker can resolve the drugs. They include drugs with no resolvable catalogue product (for example warfarin, simvastatin) and drugs absent from the checker reference data (for example lithium, valproate, dabigatran, insulin).",
     "Pairs were chosen from label text before the checker was run on any of them.",
-    "A pair was dropped when labels disagreed (for example digoxin with ivabradine is kept as interacting because the digoxin label warns of bradycardia).",
+    "A pair was dropped when labels disagree or a label contradicts itself (for example divalproex with carbamazepine, montelukast with warfarin, apixaban with aspirin).",
+    "A label that reports no pharmacokinetic change but warns of a pharmacodynamic effect (for example bleeding or hypoglycemia) is recorded as interacting.",
     "basis is a paraphrase of the label, not a quotation."
   ],
   "labels": {
@@ -158,6 +160,150 @@
       "labelEffectiveDate": "20220301",
       "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1ceff0e6-1e66-4494-b986-1bd23eb6813e",
       "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%221ceff0e6-1e66-4494-b986-1bd23eb6813e%22"
+    },
+    "simvastatin": {
+      "labelDrug": "Simvastatin",
+      "manufacturer": "A-S Medication Solutions",
+      "setId": "02245025-218d-4297-aeb6-91fefa178291",
+      "labelEffectiveDate": "20251125",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2202245025-218d-4297-aeb6-91fefa178291%22"
+    },
+    "clopidogrel": {
+      "labelDrug": "Clopidogrel",
+      "manufacturer": "A-S Medication Solutions",
+      "setId": "3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "labelEffectiveDate": "20240929",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%223aef6fd4-7160-4678-9362-ca76174bfd0e%22"
+    },
+    "sildenafil": {
+      "labelDrug": "Sildenafil",
+      "manufacturer": "Proficient Rx LP",
+      "setId": "0aced3eb-cb0b-4135-905c-b274505aa740",
+      "labelEffectiveDate": "20220502",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220aced3eb-cb0b-4135-905c-b274505aa740%22"
+    },
+    "lithium_carbonate": {
+      "labelDrug": "Lithium Carbonate",
+      "manufacturer": "REMEDYREPACK INC.",
+      "setId": "01c4facd-ed79-4078-ba33-2044de372d0f",
+      "labelEffectiveDate": "20260427",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01c4facd-ed79-4078-ba33-2044de372d0f",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2201c4facd-ed79-4078-ba33-2044de372d0f%22"
+    },
+    "divalproex_sodium": {
+      "labelDrug": "Divalproex Sodium",
+      "manufacturer": "Bryant Ranch Prepack",
+      "setId": "0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "labelEffectiveDate": "20250820",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220822300b-68c0-4e70-b1ba-8eb42cf373f7%22"
+    },
+    "dabigatran_etexilate_mesylate": {
+      "labelDrug": "Dabigatran Etexilate Mesylate",
+      "manufacturer": "Boehringer Ingelheim Pharmaceuticals Inc.",
+      "setId": "ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "labelEffectiveDate": "20250625",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22ba74e3cd-b06f-4145-b284-5fd6b84ff3c9%22"
+    },
+    "colchicine": {
+      "labelDrug": "Colchicine",
+      "manufacturer": "Proficient Rx LP",
+      "setId": "0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "labelEffectiveDate": "20250701",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220f69b9c6-8c00-45e2-b950-34dc5ae62352%22"
+    },
+    "ticagrelor": {
+      "labelDrug": "Ticagrelor",
+      "manufacturer": "Dr. Reddys Laboratories Inc",
+      "setId": "1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "labelEffectiveDate": "20260530",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%221225fd45-9b56-1671-ee77-cd0c9f2174a5%22"
+    },
+    "allopurinol": {
+      "labelDrug": "Allopurinol",
+      "manufacturer": "Bryant Ranch Prepack",
+      "setId": "005048dd-844f-468c-bf56-1a09727e3477",
+      "labelEffectiveDate": "20240708",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22005048dd-844f-468c-bf56-1a09727e3477%22"
+    },
+    "rivaroxaban": {
+      "labelDrug": "Rivaroxaban",
+      "manufacturer": "Janssen Pharmaceuticals, Inc.",
+      "setId": "10db92f9-2300-4a80-836b-673e1ae91610",
+      "labelEffectiveDate": "20260910",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2210db92f9-2300-4a80-836b-673e1ae91610%22"
+    },
+    "apixaban": {
+      "labelDrug": "Apixaban",
+      "manufacturer": "A-S Medication Solutions",
+      "setId": "2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "labelEffectiveDate": "20230509",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%222f47aa0e-0235-4220-85dd-dfcb8ad0d009%22"
+    },
+    "escitalopram": {
+      "labelDrug": "Escitalopram",
+      "manufacturer": "REMEDYREPACK INC.",
+      "setId": "0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "labelEffectiveDate": "20260917",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%220ef807d2-5d66-40c2-be3e-ff6176a35295%22"
+    },
+    "fluconazole": {
+      "labelDrug": "Fluconazole",
+      "manufacturer": "NuCare Pharmaceuticals,Inc.",
+      "setId": "068623f9-0f87-50bc-e063-6294a90aea00",
+      "labelEffectiveDate": "20250114",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22068623f9-0f87-50bc-e063-6294a90aea00%22"
+    },
+    "warfarin": {
+      "labelDrug": "Warfarin",
+      "manufacturer": "REMEDYREPACK INC.",
+      "setId": "2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "labelEffectiveDate": "20260625",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%222cbcc99d-9107-4d39-a1e9-e19305de8b5d%22"
+    },
+    "sitagliptin": {
+      "labelDrug": "Sitagliptin",
+      "manufacturer": "Golden State Medical Supply, Inc.",
+      "setId": "58e23b30-451c-f451-e063-6394a90a35a7",
+      "labelEffectiveDate": "20261001",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2258e23b30-451c-f451-e063-6394a90a35a7%22"
+    },
+    "linagliptin": {
+      "labelDrug": "Linagliptin",
+      "manufacturer": "A-S Medication Solutions",
+      "setId": "b1da67d4-51e0-41b7-9fe1-7f38c0d1baa1",
+      "labelEffectiveDate": "20240122",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b1da67d4-51e0-41b7-9fe1-7f38c0d1baa1",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22b1da67d4-51e0-41b7-9fe1-7f38c0d1baa1%22"
+    },
+    "empagliflozin": {
+      "labelDrug": "Empagliflozin",
+      "manufacturer": "Aphena Pharma Solutions - Tennessee, LLC",
+      "setId": "334f1b3d-5670-6685-e063-6294a90a7e47",
+      "labelEffectiveDate": "20260617",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%22334f1b3d-5670-6685-e063-6294a90a7e47%22"
+    },
+    "pioglitazone": {
+      "labelDrug": "Pioglitazone",
+      "manufacturer": "AvKARE",
+      "setId": "22569835-bc9f-7787-e063-6394a90a6232",
+      "labelEffectiveDate": "20260119",
+      "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=22569835-bc9f-7787-e063-6394a90a6232",
+      "openFdaQuery": "https://api.fda.gov/drug/label.json?search=set_id:%2222569835-bc9f-7787-e063-6394a90a6232%22"
     }
   },
   "pairs": [
@@ -169,7 +315,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
       "sourceSection": "drug_interactions",
       "basis": "Label: amlodipine may increase cyclosporine exposure; monitor trough levels.",
-      "id": "P01"
+      "id": "P001",
+      "addedIn": "V0"
     },
     {
       "drugA": "amlodipine",
@@ -179,7 +326,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
       "sourceSection": "drug_interactions",
       "basis": "Label: amlodipine may increase tacrolimus exposure; monitor trough levels.",
-      "id": "P02"
+      "id": "P002",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -189,7 +337,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists amiodarone among drugs that raise digoxin concentrations by more than 50%.",
-      "id": "P03"
+      "id": "P003",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -199,7 +348,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists carvedilol among drugs that raise digoxin concentrations by less than 50%.",
-      "id": "P04"
+      "id": "P004",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -209,7 +359,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists clarithromycin among drugs that raise digoxin exposure by more than 50%.",
-      "id": "P05"
+      "id": "P005",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -219,7 +370,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists diltiazem among drugs that raise digoxin concentrations by less than 50%.",
-      "id": "P06"
+      "id": "P006",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -229,7 +381,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists erythromycin among drugs that raise digoxin concentrations by more than 50%.",
-      "id": "P07"
+      "id": "P007",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -239,7 +392,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists gentamicin among drugs that raise digoxin concentrations by more than 50%.",
-      "id": "P08"
+      "id": "P008",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -249,7 +403,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists indomethacin among drugs that raise digoxin concentrations by less than 50%.",
-      "id": "P09"
+      "id": "P009",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -259,7 +414,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists ivabradine as a pharmacodynamic interaction: it can increase the risk of bradycardia.",
-      "id": "P10"
+      "id": "P010",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -269,7 +425,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists nifedipine among drugs that raise digoxin concentrations by less than 50%.",
-      "id": "P11"
+      "id": "P011",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -279,7 +436,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists propafenone among drugs that raise digoxin exposure by more than 50%.",
-      "id": "P12"
+      "id": "P012",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -289,7 +447,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists ranolazine among drugs that raise digoxin concentrations by more than 50%.",
-      "id": "P13"
+      "id": "P013",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -299,7 +458,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists albuterol (salbutamol) among drugs that decrease digoxin concentrations.",
-      "id": "P14"
+      "id": "P014",
+      "addedIn": "V0"
     },
     {
       "drugA": "digoxin",
@@ -309,7 +469,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a88434e-4a1b-4ade-a51e-38145e22a232",
       "sourceSection": "drug_interactions",
       "basis": "Label lists trimethoprim among drugs that raise digoxin concentrations by less than 50%.",
-      "id": "P15"
+      "id": "P015",
+      "addedIn": "V0"
     },
     {
       "drugA": "ivabradine",
@@ -319,7 +480,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
       "sourceSection": "drug_interactions",
       "basis": "Label: bradycardia risk increases with drugs that slow heart rate, such as amiodarone.",
-      "id": "P16"
+      "id": "P016",
+      "addedIn": "V0"
     },
     {
       "drugA": "ivabradine",
@@ -329,7 +491,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
       "sourceSection": "drug_interactions",
       "basis": "Label: strong CYP3A4 inhibitors, including clarithromycin, are contraindicated with ivabradine.",
-      "id": "P17"
+      "id": "P017",
+      "addedIn": "V0"
     },
     {
       "drugA": "ivabradine",
@@ -339,7 +502,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=236cc914-7eef-600c-e063-6394a90a4bd1",
       "sourceSection": "drug_interactions",
       "basis": "Label: avoid moderate CYP3A4 inhibitors such as diltiazem with ivabradine.",
-      "id": "P18"
+      "id": "P018",
+      "addedIn": "V0"
     },
     {
       "drugA": "methotrexate",
@@ -349,7 +513,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0d63ba29-b692-41b4-87e8-351265c8273f",
       "sourceSection": "drug_interactions",
       "basis": "Label lists antifolate drugs such as dapsone among drugs that increase methotrexate toxicity risk.",
-      "id": "P19"
+      "id": "P019",
+      "addedIn": "V0"
     },
     {
       "drugA": "metronidazole",
@@ -359,7 +524,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06bd4afb-4a45-294c-e063-6394a90a7ab1",
       "sourceSection": "drug_interactions",
       "basis": "Label: psychotic reactions reported with concurrent disulfiram; do not give within two weeks of disulfiram.",
-      "id": "P20"
+      "id": "P020",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -369,7 +535,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: do not use ranolazine with strong CYP3A inhibitors, including clarithromycin.",
-      "id": "P21"
+      "id": "P021",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -379,7 +546,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: P-gp inhibitors such as cyclosporine may increase ranolazine concentrations.",
-      "id": "P22"
+      "id": "P022",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -389,7 +557,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: limit the ranolazine dose with moderate CYP3A inhibitors, including diltiazem.",
-      "id": "P23"
+      "id": "P023",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -399,7 +568,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: limit the ranolazine dose with moderate CYP3A inhibitors, including erythromycin.",
-      "id": "P24"
+      "id": "P024",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -409,7 +579,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: ranolazine may increase concentrations of narrow-range CYP3A substrates such as sirolimus.",
-      "id": "P25"
+      "id": "P025",
+      "addedIn": "V0"
     },
     {
       "drugA": "ranolazine",
@@ -419,7 +590,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0cf58732-c242-49b0-8e3f-248778b4458d",
       "sourceSection": "drug_interactions",
       "basis": "Label: ranolazine may increase concentrations of narrow-range CYP3A substrates such as tacrolimus.",
-      "id": "P26"
+      "id": "P026",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -429,7 +601,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "drug_interactions",
       "basis": "Label: CYP3A4 inhibitors such as erythromycin increase roflumilast exposure and may increase adverse reactions.",
-      "id": "P27"
+      "id": "P027",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -439,7 +612,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: theophylline blocks adenosine receptors, so higher adenosine doses may be needed.",
-      "id": "P28"
+      "id": "P028",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -449,7 +623,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: ciprofloxacin raises theophylline levels.",
-      "id": "P29"
+      "id": "P029",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -459,7 +634,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: clarithromycin raises theophylline levels.",
-      "id": "P30"
+      "id": "P030",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -469,7 +645,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: disulfiram decreases theophylline clearance.",
-      "id": "P31"
+      "id": "P031",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -479,7 +656,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: erythromycin decreases theophylline clearance.",
-      "id": "P32"
+      "id": "P032",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -489,7 +667,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: methotrexate decreases theophylline clearance.",
-      "id": "P33"
+      "id": "P033",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -499,7 +678,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: mexiletine decreases theophylline clearance.",
-      "id": "P34"
+      "id": "P034",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -509,7 +689,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of clinically significant interactions: propafenone decreases theophylline clearance.",
-      "id": "P35"
+      "id": "P035",
+      "addedIn": "V0"
     },
     {
       "drugA": "amlodipine",
@@ -519,7 +700,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: co-administered amlodipine does not affect exposure to digoxin.",
-      "id": "P36"
+      "id": "P036",
+      "addedIn": "V0"
     },
     {
       "drugA": "amlodipine",
@@ -529,7 +711,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=886a7f97-60a4-4206-a6c7-5206069ed487",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: erythromycin co-administration did not significantly change amlodipine exposure.",
-      "id": "P37"
+      "id": "P037",
+      "addedIn": "V0"
     },
     {
       "drugA": "azithromycin",
@@ -539,7 +722,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01649d79-4677-4577-a3e4-e054f3f9fc3b",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label interaction table: azithromycin had no effect on cetirizine exposure (ratio close to 1).",
-      "id": "P38"
+      "id": "P038",
+      "addedIn": "V0"
     },
     {
       "drugA": "cetirizine",
@@ -549,7 +733,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1ceff0e6-1e66-4494-b986-1bd23eb6813e",
       "sourceSection": "drug_interactions",
       "basis": "Label (studies with racemic cetirizine): cetirizine did not interact with erythromycin.",
-      "id": "P39"
+      "id": "P039",
+      "addedIn": "V0"
     },
     {
       "drugA": "donepezil",
@@ -559,7 +744,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06dd25a5-1bf2-446d-ad75-ff9d55117660",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: donepezil metabolism is not significantly affected by digoxin, and donepezil had no effect on digoxin pharmacokinetics.",
-      "id": "P40"
+      "id": "P040",
+      "addedIn": "V0"
     },
     {
       "drugA": "galantamine",
@@ -569,7 +755,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10497273-d907-0514-e063-6294a90a1362",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: galantamine had no effect on the steady-state pharmacokinetics of digoxin.",
-      "id": "P41"
+      "id": "P041",
+      "addedIn": "V0"
     },
     {
       "drugA": "galantamine",
@@ -579,7 +766,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10497273-d907-0514-e063-6294a90a1362",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: memantine had no effect on the pharmacokinetics of galantamine.",
-      "id": "P42"
+      "id": "P042",
+      "addedIn": "V0"
     },
     {
       "drugA": "levetiracetam",
@@ -589,7 +777,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a987d59-560f-4650-96ec-31aec81953b5",
       "sourceSection": "drug_interactions",
       "basis": "Label: levetiracetam did not influence digoxin pharmacokinetics or pharmacodynamics, and digoxin did not influence levetiracetam.",
-      "id": "P43"
+      "id": "P043",
+      "addedIn": "V0"
     },
     {
       "drugA": "levofloxacin",
@@ -599,7 +788,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a0fd993-7bea-42d8-e063-6394a90a4e0e",
       "sourceSection": "drug_interactions",
       "basis": "Label: no significant effect on cyclosporine was detected; no dosage adjustment is required for either drug.",
-      "id": "P44"
+      "id": "P044",
+      "addedIn": "V0"
     },
     {
       "drugA": "levofloxacin",
@@ -609,7 +799,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a0fd993-7bea-42d8-e063-6394a90a4e0e",
       "sourceSection": "drug_interactions",
       "basis": "Label: no significant effect on digoxin was detected; no dosage adjustment is required for either drug.",
-      "id": "P45"
+      "id": "P045",
+      "addedIn": "V0"
     },
     {
       "drugA": "linezolid",
@@ -619,7 +810,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=217f3ee2-2534-4c32-8e9d-09b6d65df4af",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: the pharmacokinetics of linezolid or gentamicin are not altered when given together.",
-      "id": "P46"
+      "id": "P046",
+      "addedIn": "V0"
     },
     {
       "drugA": "memantine",
@@ -629,7 +821,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=304a3059-4f7f-4ec4-839d-86492bb5e07b",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: co-administration of memantine with donepezil did not affect the pharmacokinetics of either compound.",
-      "id": "P47"
+      "id": "P047",
+      "addedIn": "V0"
     },
     {
       "drugA": "montelukast",
@@ -639,7 +832,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=56429f04-97b6-06a9-e054-00144ff88e88",
       "sourceSection": "drug_interactions",
       "basis": "Label: no dose adjustment is needed when montelukast is co-administered with digoxin.",
-      "id": "P48"
+      "id": "P048",
+      "addedIn": "V0"
     },
     {
       "drugA": "montelukast",
@@ -649,7 +843,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=56429f04-97b6-06a9-e054-00144ff88e88",
       "sourceSection": "drug_interactions",
       "basis": "Label: no dose adjustment is needed when montelukast is co-administered with theophylline.",
-      "id": "P49"
+      "id": "P049",
+      "addedIn": "V0"
     },
     {
       "drugA": "rivastigmine",
@@ -659,7 +854,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ab335d1-19ee-4cd9-9776-8086645d19e4",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no pharmacokinetic interaction was observed between oral rivastigmine and digoxin.",
-      "id": "P50"
+      "id": "P050",
+      "addedIn": "V0"
     },
     {
       "drugA": "rivastigmine",
@@ -669,7 +865,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ab335d1-19ee-4cd9-9776-8086645d19e4",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: cholinesterase inhibition by rivastigmine is not affected by concomitant memantine.",
-      "id": "P51"
+      "id": "P051",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -679,7 +876,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no significant drug interaction was observed with inhaled budesonide.",
-      "id": "P52"
+      "id": "P052",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -689,7 +887,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no significant drug interaction was observed with oral digoxin.",
-      "id": "P53"
+      "id": "P053",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -699,7 +898,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no significant drug interaction was observed with oral montelukast.",
-      "id": "P54"
+      "id": "P054",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -709,7 +909,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no significant drug interaction was observed with inhaled salbutamol.",
-      "id": "P55"
+      "id": "P055",
+      "addedIn": "V0"
     },
     {
       "drugA": "roflumilast",
@@ -719,7 +920,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55009549-3f0c-1f58-e063-6294a90a6c03",
       "sourceSection": "clinical_pharmacology",
       "basis": "Label: no significant drug interaction was observed with oral theophylline.",
-      "id": "P56"
+      "id": "P056",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -729,7 +931,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: amoxicillin.",
-      "id": "P57"
+      "id": "P057",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -739,7 +942,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: ampicillin.",
-      "id": "P58"
+      "id": "P058",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -749,7 +953,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: azithromycin.",
-      "id": "P59"
+      "id": "P059",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -759,7 +964,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: cefaclor.",
-      "id": "P60"
+      "id": "P060",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -769,7 +975,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: diltiazem.",
-      "id": "P61"
+      "id": "P061",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -779,7 +986,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: metronidazole.",
-      "id": "P62"
+      "id": "P062",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -789,7 +997,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: nifedipine.",
-      "id": "P63"
+      "id": "P063",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -799,7 +1008,8 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: ofloxacin.",
-      "id": "P64"
+      "id": "P064",
+      "addedIn": "V0"
     },
     {
       "drugA": "theophylline",
@@ -809,7 +1019,1108 @@
       "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48330a8e-be08-4d38-b8b1-d30fbd5a35de",
       "sourceSection": "drug_interactions",
       "basis": "Label table of drugs documented not to interact, or with no clinically significant interaction: albuterol (salbutamol), systemic and inhaled.",
-      "id": "P65"
+      "id": "P065",
+      "addedIn": "V0"
+    },
+    {
+      "id": "P066",
+      "drugA": "simvastatin",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "contraindications",
+      "basis": "Label: concomitant use of cyclosporine with simvastatin is contraindicated (myopathy risk).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P067",
+      "drugA": "simvastatin",
+      "drugB": "gemfibrozil",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "contraindications",
+      "basis": "Label: concomitant use of gemfibrozil with simvastatin is contraindicated.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P068",
+      "drugA": "simvastatin",
+      "drugB": "amiodarone",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: with amiodarone, do not exceed simvastatin 20 mg daily.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P069",
+      "drugA": "simvastatin",
+      "drugB": "amlodipine",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: with amlodipine, do not exceed simvastatin 20 mg daily.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P070",
+      "drugA": "simvastatin",
+      "drugB": "ranolazine",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: with ranolazine, do not exceed simvastatin 20 mg daily.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P071",
+      "drugA": "simvastatin",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: strong CYP3A4 inhibitors such as clarithromycin are contraindicated with simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P072",
+      "drugA": "simvastatin",
+      "drugB": "itraconazole",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: strong CYP3A4 inhibitors such as itraconazole are contraindicated with simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P073",
+      "drugA": "simvastatin",
+      "drugB": "colchicine",
+      "expected": "interacting",
+      "sourceLabel": "simvastatin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=02245025-218d-4297-aeb6-91fefa178291",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: myopathy and rhabdomyolysis reported with colchicine and simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P074",
+      "drugA": "clopidogrel",
+      "drugB": "omeprazole",
+      "expected": "interacting",
+      "sourceLabel": "clopidogrel",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid concomitant use of clopidogrel with omeprazole (reduced antiplatelet activity).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P075",
+      "drugA": "clopidogrel",
+      "drugB": "esomeprazole",
+      "expected": "interacting",
+      "sourceLabel": "clopidogrel",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid concomitant use of clopidogrel with esomeprazole.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P076",
+      "drugA": "clopidogrel",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "clopidogrel",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: rifampin strongly induces CYP2C19 and may potentiate bleeding risk with clopidogrel.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P077",
+      "drugA": "clopidogrel",
+      "drugB": "warfarin",
+      "expected": "interacting",
+      "sourceLabel": "clopidogrel",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aef6fd4-7160-4678-9362-ca76174bfd0e",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: clopidogrel with warfarin increases bleeding risk through independent effects on hemostasis.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P078",
+      "drugA": "sildenafil",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "sildenafil",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: erythromycin raised sildenafil Cmax and AUC by 160% and 182%; consider a 25 mg starting dose.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P079",
+      "drugA": "sildenafil",
+      "drugB": "ketoconazole",
+      "expected": "interacting",
+      "sourceLabel": "sildenafil",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: with strong CYP3A4 inhibitors such as ketoconazole, consider a 25 mg starting dose.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P080",
+      "drugA": "sildenafil",
+      "drugB": "amlodipine",
+      "expected": "interacting",
+      "sourceLabel": "sildenafil",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: sildenafil with amlodipine gave an additional supine blood pressure reduction.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P081",
+      "drugA": "sildenafil",
+      "drugB": "warfarin",
+      "expected": "non_interacting",
+      "sourceLabel": "sildenafil",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no significant interactions were shown with warfarin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P082",
+      "drugA": "sildenafil",
+      "drugB": "aspirin",
+      "expected": "non_interacting",
+      "sourceLabel": "sildenafil",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0aced3eb-cb0b-4135-905c-b274505aa740",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: sildenafil did not potentiate the increase in bleeding time caused by aspirin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P083",
+      "drugA": "lithium",
+      "drugB": "metronidazole",
+      "expected": "interacting",
+      "sourceLabel": "lithium_carbonate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01c4facd-ed79-4078-ba33-2044de372d0f",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: metronidazole may increase lithium serum concentrations.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P084",
+      "drugA": "lithium",
+      "drugB": "carbamazepine",
+      "expected": "interacting",
+      "sourceLabel": "lithium_carbonate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01c4facd-ed79-4078-ba33-2044de372d0f",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically important interactions: monitor for adverse reactions with carbamazepine.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P085",
+      "drugA": "lithium",
+      "drugB": "phenytoin",
+      "expected": "interacting",
+      "sourceLabel": "lithium_carbonate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01c4facd-ed79-4078-ba33-2044de372d0f",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of clinically important interactions: monitor for adverse reactions with phenytoin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P086",
+      "drugA": "valproate",
+      "drugB": "aspirin",
+      "expected": "interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: aspirin raised valproate free fraction 4-fold; caution with co-administration.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P087",
+      "drugA": "valproate",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: enzyme-inducing drugs such as rifampin can increase valproate clearance; monitor and adjust.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P088",
+      "drugA": "valproate",
+      "drugB": "acetaminophen",
+      "expected": "non_interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: valproate had no effect on the pharmacokinetics of acetaminophen.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P089",
+      "drugA": "valproate",
+      "drugB": "lithium",
+      "expected": "non_interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: valproate had no effect on the steady-state kinetics of lithium.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P090",
+      "drugA": "valproate",
+      "drugB": "cimetidine",
+      "expected": "non_interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: cimetidine does not affect the clearance of valproate.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P091",
+      "drugA": "valproate",
+      "drugB": "ranitidine",
+      "expected": "non_interacting",
+      "sourceLabel": "divalproex_sodium",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0822300b-68c0-4e70-b1ba-8eb42cf373f7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: ranitidine does not affect the clearance of valproate.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P092",
+      "drugA": "dabigatran",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "dabigatran_etexilate_mesylate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: P-gp inducers such as rifampin reduce dabigatran exposure and should generally be avoided.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P093",
+      "drugA": "dabigatran",
+      "drugB": "ketoconazole",
+      "expected": "interacting",
+      "sourceLabel": "dabigatran_etexilate_mesylate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: reduce the dabigatran dose with systemic ketoconazole in moderate renal impairment.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P094",
+      "drugA": "dabigatran",
+      "drugB": "pantoprazole",
+      "expected": "non_interacting",
+      "sourceLabel": "dabigatran_etexilate_mesylate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: dabigatran did not meaningfully alter pantoprazole, and proton pump inhibitors did not appreciably change dabigatran trough levels.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P095",
+      "drugA": "dabigatran",
+      "drugB": "ranitidine",
+      "expected": "non_interacting",
+      "sourceLabel": "dabigatran_etexilate_mesylate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: dabigatran did not meaningfully alter ranitidine, and H2 antagonists did not appreciably change dabigatran trough levels.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P096",
+      "drugA": "dabigatran",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "dabigatran_etexilate_mesylate",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba74e3cd-b06f-4145-b284-5fd6b84ff3c9",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: dabigatran did not meaningfully alter digoxin, and digoxin did not appreciably change dabigatran trough levels.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P097",
+      "drugA": "colchicine",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: P-gp/CYP3A4 inhibitors such as clarithromycin alter colchicine concentrations.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P098",
+      "drugA": "colchicine",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: P-gp/CYP3A4 inhibitors such as cyclosporine alter colchicine concentrations.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P099",
+      "drugA": "colchicine",
+      "drugB": "atorvastatin",
+      "expected": "interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists atorvastatin among statins with a pharmacokinetic and/or pharmacodynamic interaction (myopathy).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P100",
+      "drugA": "colchicine",
+      "drugB": "gemfibrozil",
+      "expected": "interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists gemfibrozil among fibrates with an interaction (myopathy).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P101",
+      "drugA": "colchicine",
+      "drugB": "theophylline",
+      "expected": "non_interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: theophylline concentrations were not affected by colchicine.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P102",
+      "drugA": "colchicine",
+      "drugB": "ethinyl estradiol",
+      "expected": "non_interacting",
+      "sourceLabel": "colchicine",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: hormone concentrations (ethinyl estradiol and norethindrone) were not affected by colchicine.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P103",
+      "drugA": "ticagrelor",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "ticagrelor",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid use with strong CYP3A inducers such as rifampin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P104",
+      "drugA": "ticagrelor",
+      "drugB": "ketoconazole",
+      "expected": "interacting",
+      "sourceLabel": "ticagrelor",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid use of strong CYP3A inhibitors such as ketoconazole.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P105",
+      "drugA": "ticagrelor",
+      "drugB": "clarithromycin",
+      "expected": "interacting",
+      "sourceLabel": "ticagrelor",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid use of strong CYP3A inhibitors such as clarithromycin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P106",
+      "drugA": "ticagrelor",
+      "drugB": "digoxin",
+      "expected": "interacting",
+      "sourceLabel": "ticagrelor",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: ticagrelor inhibits P-gp; monitor digoxin levels.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P107",
+      "drugA": "ticagrelor",
+      "drugB": "rosuvastatin",
+      "expected": "interacting",
+      "sourceLabel": "ticagrelor",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1225fd45-9b56-1671-ee77-cd0c9f2174a5",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: ticagrelor increases rosuvastatin concentrations; avoid rosuvastatin doses above 20 mg.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P108",
+      "drugA": "allopurinol",
+      "drugB": "azathioprine",
+      "expected": "interacting",
+      "sourceLabel": "allopurinol",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: allopurinol increases azathioprine exposure, which may cause myelosuppression.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P109",
+      "drugA": "allopurinol",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "allopurinol",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: allopurinol increases cyclosporine concentrations.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P110",
+      "drugA": "allopurinol",
+      "drugB": "theophylline",
+      "expected": "interacting",
+      "sourceLabel": "allopurinol",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: allopurinol at 600 mg/day or more may decrease theophylline clearance.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P111",
+      "drugA": "allopurinol",
+      "drugB": "amoxicillin",
+      "expected": "interacting",
+      "sourceLabel": "allopurinol",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists amoxicillin among drugs that increase the risk of skin rash with allopurinol.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P112",
+      "drugA": "rivaroxaban",
+      "drugB": "aspirin",
+      "expected": "interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: co-administration of aspirin may increase the risk of bleeding.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P113",
+      "drugA": "rivaroxaban",
+      "drugB": "warfarin",
+      "expected": "interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: co-administration of warfarin may increase the risk of bleeding.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P114",
+      "drugA": "rivaroxaban",
+      "drugB": "carbamazepine",
+      "expected": "interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid combined P-gp and strong CYP3A inducers such as carbamazepine.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P115",
+      "drugA": "rivaroxaban",
+      "drugB": "ketoconazole",
+      "expected": "interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid combined P-gp and strong CYP3A inhibitors such as ketoconazole.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P116",
+      "drugA": "rivaroxaban",
+      "drugB": "clarithromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no precautions are necessary with clarithromycin, as the change in exposure is unlikely to affect bleeding risk.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P117",
+      "drugA": "rivaroxaban",
+      "drugB": "omeprazole",
+      "expected": "non_interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: omeprazole did not show an effect on rivaroxaban bioavailability and exposure.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P118",
+      "drugA": "rivaroxaban",
+      "drugB": "ranitidine",
+      "expected": "non_interacting",
+      "sourceLabel": "rivaroxaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: ranitidine did not show an effect on rivaroxaban bioavailability and exposure.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P119",
+      "drugA": "apixaban",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid combined P-gp and strong CYP3A4 inducers such as rifampin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P120",
+      "drugA": "apixaban",
+      "drugB": "phenytoin",
+      "expected": "interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: avoid combined P-gp and strong CYP3A4 inducers such as phenytoin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P121",
+      "drugA": "apixaban",
+      "drugB": "naproxen",
+      "expected": "interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: anti-FXa activity rose 50% to 60% when apixaban was given with naproxen.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P122",
+      "drugA": "apixaban",
+      "drugB": "clarithromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: no dose adjustment is necessary with clarithromycin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P123",
+      "drugA": "apixaban",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: apixaban did not meaningfully alter the pharmacokinetics of digoxin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P124",
+      "drugA": "apixaban",
+      "drugB": "atenolol",
+      "expected": "non_interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: apixaban did not meaningfully alter atenolol, and atenolol did not meaningfully alter apixaban.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P125",
+      "drugA": "apixaban",
+      "drugB": "famotidine",
+      "expected": "non_interacting",
+      "sourceLabel": "apixaban",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2f47aa0e-0235-4220-85dd-dfcb8ad0d009",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: famotidine did not meaningfully alter the pharmacokinetics of apixaban.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P126",
+      "drugA": "escitalopram",
+      "drugB": "linezolid",
+      "expected": "interacting",
+      "sourceLabel": "escitalopram",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "sourceSection": "contraindications",
+      "basis": "Label: do not start escitalopram in a patient treated with linezolid (serotonin syndrome).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P127",
+      "drugA": "escitalopram",
+      "drugB": "warfarin",
+      "expected": "interacting",
+      "sourceLabel": "escitalopram",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: for patients taking warfarin, carefully monitor the INR.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P128",
+      "drugA": "escitalopram",
+      "drugB": "lithium",
+      "expected": "interacting",
+      "sourceLabel": "escitalopram",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "sourceSection": "drug_interactions",
+      "basis": "Label lists lithium among serotonergic drugs that increase the risk of serotonin syndrome.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P129",
+      "drugA": "escitalopram",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "escitalopram",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label (studies with racemic citalopram): no significant effect on the pharmacokinetics of citalopram or digoxin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P130",
+      "drugA": "escitalopram",
+      "drugB": "theophylline",
+      "expected": "non_interacting",
+      "sourceLabel": "escitalopram",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ef807d2-5d66-40c2-be3e-ff6176a35295",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label (studies with racemic citalopram): did not affect the pharmacokinetics of theophylline.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P131",
+      "drugA": "fluconazole",
+      "drugB": "erythromycin",
+      "expected": "interacting",
+      "sourceLabel": "fluconazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "sourceSection": "contraindications",
+      "basis": "Label: erythromycin is contraindicated with fluconazole (QT prolongation).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P132",
+      "drugA": "fluconazole",
+      "drugB": "amiodarone",
+      "expected": "interacting",
+      "sourceLabel": "fluconazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: fluconazole with amiodarone may increase QT prolongation; use caution.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P133",
+      "drugA": "fluconazole",
+      "drugB": "simvastatin",
+      "expected": "interacting",
+      "sourceLabel": "fluconazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: the risk of myopathy increases when fluconazole is given with simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P134",
+      "drugA": "fluconazole",
+      "drugB": "carbamazepine",
+      "expected": "interacting",
+      "sourceLabel": "fluconazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: fluconazole raised serum carbamazepine by 30%; dose adjustment may be necessary.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P135",
+      "drugA": "fluconazole",
+      "drugB": "azithromycin",
+      "expected": "non_interacting",
+      "sourceLabel": "fluconazole",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=068623f9-0f87-50bc-e063-6294a90aea00",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: there was no significant pharmacokinetic interaction between fluconazole and azithromycin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P136",
+      "drugA": "warfarin",
+      "drugB": "amiodarone",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: amiodarone inhibits CYP2C9 and CYP3A4 (may raise INR).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P137",
+      "drugA": "warfarin",
+      "drugB": "fluconazole",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: fluconazole inhibits CYP2C9 and CYP3A4.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P138",
+      "drugA": "warfarin",
+      "drugB": "metronidazole",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: metronidazole inhibits CYP2C9.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P139",
+      "drugA": "warfarin",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: rifampin induces CYP2C9 (may lower INR).",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P140",
+      "drugA": "warfarin",
+      "drugB": "ciprofloxacin",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: ciprofloxacin inhibits CYP1A2 and CYP3A4.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P141",
+      "drugA": "warfarin",
+      "drugB": "cyclosporine",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of CYP450 interactions: cyclosporine inhibits CYP3A4.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P142",
+      "drugA": "warfarin",
+      "drugB": "ibuprofen",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs that can increase the risk of bleeding: ibuprofen.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P143",
+      "drugA": "warfarin",
+      "drugB": "naproxen",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs that can increase the risk of bleeding: naproxen.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P144",
+      "drugA": "warfarin",
+      "drugB": "sertraline",
+      "expected": "interacting",
+      "sourceLabel": "warfarin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+      "sourceSection": "drug_interactions",
+      "basis": "Label table of drugs that can increase the risk of bleeding: sertraline.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P145",
+      "drugA": "sitagliptin",
+      "drugB": "insulin",
+      "expected": "interacting",
+      "sourceLabel": "sitagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: with insulin, lower insulin doses may be needed to reduce the risk of hypoglycemia.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P146",
+      "drugA": "sitagliptin",
+      "drugB": "metformin",
+      "expected": "non_interacting",
+      "sourceLabel": "sitagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: sitagliptin did not meaningfully alter the pharmacokinetics of metformin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P147",
+      "drugA": "sitagliptin",
+      "drugB": "simvastatin",
+      "expected": "non_interacting",
+      "sourceLabel": "sitagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: sitagliptin did not meaningfully alter the pharmacokinetics of simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P148",
+      "drugA": "sitagliptin",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "sitagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: sitagliptin did not meaningfully alter the pharmacokinetics of digoxin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P149",
+      "drugA": "sitagliptin",
+      "drugB": "warfarin",
+      "expected": "non_interacting",
+      "sourceLabel": "sitagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e23b30-451c-f451-e063-6394a90a35a7",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: sitagliptin did not meaningfully alter the pharmacokinetics of warfarin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P150",
+      "drugA": "linagliptin",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "linagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b1da67d4-51e0-41b7-9fe1-7f38c0d1baa1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: rifampin decreased linagliptin exposure; alternative treatment is strongly recommended.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P151",
+      "drugA": "linagliptin",
+      "drugB": "insulin",
+      "expected": "interacting",
+      "sourceLabel": "linagliptin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b1da67d4-51e0-41b7-9fe1-7f38c0d1baa1",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: hypoglycemia risk is increased with insulin; lower insulin doses may be needed.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P152",
+      "drugA": "empagliflozin",
+      "drugB": "insulin",
+      "expected": "interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: hypoglycemia risk is increased with insulin; lower insulin doses may be needed.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P153",
+      "drugA": "empagliflozin",
+      "drugB": "lithium",
+      "expected": "interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: an SGLT2 inhibitor may decrease serum lithium concentrations; monitor lithium.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P154",
+      "drugA": "empagliflozin",
+      "drugB": "metformin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: empagliflozin had no clinically relevant effect on metformin, and pharmacokinetics were similar with and without it.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P155",
+      "drugA": "empagliflozin",
+      "drugB": "pioglitazone",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with pioglitazone.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P156",
+      "drugA": "empagliflozin",
+      "drugB": "sitagliptin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with sitagliptin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P157",
+      "drugA": "empagliflozin",
+      "drugB": "linagliptin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with linagliptin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P158",
+      "drugA": "empagliflozin",
+      "drugB": "warfarin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with warfarin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P159",
+      "drugA": "empagliflozin",
+      "drugB": "digoxin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: empagliflozin had no clinically relevant effect on the pharmacokinetics of digoxin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P160",
+      "drugA": "empagliflozin",
+      "drugB": "ramipril",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with ramipril.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P161",
+      "drugA": "empagliflozin",
+      "drugB": "simvastatin",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: no clinically relevant pharmacokinetic effect in either direction with simvastatin.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P162",
+      "drugA": "empagliflozin",
+      "drugB": "verapamil",
+      "expected": "non_interacting",
+      "sourceLabel": "empagliflozin",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=334f1b3d-5670-6685-e063-6294a90a7e47",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: empagliflozin pharmacokinetics were similar with and without verapamil.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P163",
+      "drugA": "pioglitazone",
+      "drugB": "gemfibrozil",
+      "expected": "interacting",
+      "sourceLabel": "pioglitazone",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=22569835-bc9f-7787-e063-6394a90a6232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: gemfibrozil increases pioglitazone exposure; limit pioglitazone to 15 mg daily.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P164",
+      "drugA": "pioglitazone",
+      "drugB": "rifampin",
+      "expected": "interacting",
+      "sourceLabel": "pioglitazone",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=22569835-bc9f-7787-e063-6394a90a6232",
+      "sourceSection": "drug_interactions",
+      "basis": "Label: rifampin may significantly decrease pioglitazone exposure.",
+      "addedIn": "V3"
+    },
+    {
+      "id": "P165",
+      "drugA": "pioglitazone",
+      "drugB": "warfarin",
+      "expected": "non_interacting",
+      "sourceLabel": "pioglitazone",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=22569835-bc9f-7787-e063-6394a90a6232",
+      "sourceSection": "clinical_pharmacology",
+      "basis": "Label: pioglitazone had no clinically significant effect on prothrombin time with warfarin.",
+      "addedIn": "V3"
     }
   ]
 }
