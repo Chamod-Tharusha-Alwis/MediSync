@@ -1,3 +1,5 @@
+# DEPRECATED: this script contains hardcoded numbers and does not measure the engine.
+# Do not use its output as evidence. Use run_all.py in this folder instead.
 """
 MediSync ML Evaluation & Chart Generation Suite
 Generates publication-quality evaluation graphs (200 DPI) for:

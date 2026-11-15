@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# DEPRECATED: this script contains hardcoded numbers and does not measure the engine.
+# Do not use its output as evidence. Use run_all.py in this folder instead.
 """
 MediSync Report Figure Generation Suite (Phase S4)
 Generates publication-quality figures F01 through F14 (200 DPI, headless Agg).
