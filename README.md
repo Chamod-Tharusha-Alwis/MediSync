@@ -19,7 +19,7 @@ MediSync is a secure, full-stack healthcare platform featuring a zero-trust arch
 - **Dynamic Outbreak Surveillance**: Dynamic grouping by `(entity, diseaseId)` evaluating Gate 1 ($N \ge 5$), Gate 2 (2 consecutive elevated days), and Gate 3 ($z > 2.0$) for **any** recorded ICD code with zero disease whitelists.
 
 ## Verification & Quality Gates
-- **Offline Quality Gate**: `node scripts/run_offline_tests.js` (**3,465 tests passed, 0 failed**, 0 skipped across 207 suites).
+- **Offline Quality Gate**: `node scripts/run_offline_tests.js` (**3,777 tests passed, 0 failed**, 0 skipped).
 - **Client Build**: `npm --prefix client run build` (Exit code 0, 119 bundled modules, zero demo dependencies).
 - **Protected File Ledger**: 15 critical security, model, and database files pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`.
 - **Clinical Validation Disclaimer**: All ML inference and epidemiological trend observation endpoints operate under the regulatory contract `clinicalValidation: not_established`.

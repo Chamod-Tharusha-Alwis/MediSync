@@ -3,7 +3,7 @@
 ## 8.1 Verification Philosophy & Test Pyramid
 MediSync enforces an **offline-first, deterministic quality assurance methodology**. Because clinical software must guarantee non-regression across safety-critical invariants (drug interaction warnings, prescription immutability, role access boundaries), testing cannot depend on fragile external network connections, live cloud databases, or non-deterministic test fixtures.
 
-The automated verification pyramid consists of **3,768 tests** (243 Jest suites plus the Python and root runners), achieving a 100% pass rate with zero flaky or intermittent tests:
+The automated verification pyramid consists of **3,777 tests** (244 Jest suites plus the Python and root runners), achieving a 100% pass rate with zero flaky or intermittent tests:
 
 ```
                   / \
@@ -18,12 +18,12 @@ The automated verification pyramid consists of **3,768 tests** (243 Jest suites 
 ```
 
 Figure **F13** visually details the distribution of test suites and test counts across functional components:
-- **Backend Services & Isolated DB**: 2,943 tests across 161 suites
+- **Backend Services & Isolated DB**: 2,952 tests across 162 suites
 - **Client Component & UI Contracts**: 676 tests across 80 suites
 - **Root Security & Infrastructure**: 40 tests
 - **ML Scoring & Flask Tests**: 78 tests (40 scoring + 31 Flask API + 7 status contracts)
 - **Email & PDF Harness**: 31 tests across 2 suites
-- **Total**: **3,768 passed, 0 failed**
+- **Total**: **3,777 passed, 0 failed**
 
 ---
 
@@ -66,7 +66,7 @@ In compliance with project ethical guidelines, verification status is strictly s
 
 | Verification Scope | Status | Evidence / Verification Method |
 |---|---|---|
-| **Backend REST API Logic** | OFFLINE VERIFIED | 2,943 passed backend tests via in-memory database mock |
+| **Backend REST API Logic** | OFFLINE VERIFIED | 2,952 passed backend tests via in-memory database mock |
 | **Field-Level Encryption & Blind Index** | OFFLINE VERIFIED | Automated test assertions in `server/tests/crypto.test.js` |
 | **Deterministic Medicine Safety Engine** | OFFLINE VERIFIED | Validated against rule datasets in unit tests |
 | **ML Inference Logic & Fallbacks** | OFFLINE VERIFIED | Pytest suite & 15 sanity cases via Flask `test_client` |
