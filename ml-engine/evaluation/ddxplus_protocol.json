@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "frozen": true,
+  "frozenBeforeFirstEngineRun": true,
+  "dataset": "ddxplus_test_patients",
+  "sample": {
+    "split": "test",
+    "rule": "Stratified random sample: up to perPathology patients for each of the 49 pathologies, drawn with numpy default_rng(seed) from the rows of that pathology, in file order.",
+    "perPathology": 60,
+    "seed": 20261115
+  },
+  "inputRule": [
+    "Only symptom evidences are used (is_antecedent = false). Antecedents (history and risk factors) are left out because MediSync takes symptoms.",
+    "Each evidence becomes one item of the 'symptoms' list sent to /api/ml/predict-disease, as the application sends a list of symptoms.",
+    "Binary evidence: the English question text (question_en), unchanged.",
+    "Categorical or multi-choice evidence: the English question text followed by the English meaning of each value present (value_meaning.en), joined by a space.",
+    "A value with no English meaning (for example a number on a 0 to 10 scale) adds nothing, so the question text is used alone.",
+    "Values whose English meaning is 'NA' are dropped."
+  ],
+  "correctness": "A prediction is correct when the predicted profile name equals tier1_profile or one of tier2_profiles in ddxplus_label_mapping.json (case-insensitive, trimmed).",
+  "baselines": [
+    "Random guess: for each row, a random ordering of one profile per covered pathology (seed + 1).",
+    "Majority class: always the most frequent pathologies of the sample (ties alphabetical).",
+    "Keyword overlap: rank all loaded Tier 1 and Tier 2 profiles by the number of distinct words shared with the input. No TF-IDF."
+  ]
+}

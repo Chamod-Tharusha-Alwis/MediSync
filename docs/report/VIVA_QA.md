@@ -169,7 +169,7 @@ Free uptime monitoring services typically enforce a hardcoded HTTP connection ti
 
 ### Q25: What does your automated test suite cover?
 **Answer**:  
-The offline suite (`node scripts/run_offline_tests.js`) runs 3,768 tests with 0 failures: backend 2,943, client 676, ML 78 (40 scoring + 31 Flask + 7 status contract), root 40, and email/PDF 31. They cover unit, integration, and security layers:
+The offline suite (`node scripts/run_offline_tests.js`) runs 3,777 tests with 0 failures: backend 2,952, client 676, ML 78 (40 scoring + 31 Flask + 7 status contract), root 40, and email/PDF 31. They cover unit, integration, and security layers:
 - **Unit Tests**: Cryptographic encryption/decryption, blind index generation, medicine safety rules, dosage limits, dataset loaders.
 - **Integration Tests**: Multi-document consultations, prescription state transitions, duplicate dispensing prevention, lab PDF validation.
 - **Security Tests**: Role-based access control, route-level authorization, database injection guards, token expiration.
