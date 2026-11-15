@@ -115,6 +115,7 @@ describe('AI evaluation results: honesty and provenance', () => {
     walk(results, (value, trail) => {
       if (typeof value !== 'number' || Number.isInteger(value) || trail.includes('run') || trail.includes('threshold')) return;
       if (round6(value * 100) % 1 === 0) return; // values such as 0.7 are too coarse to tell apart from layout constants
+      if (Math.abs(value) < 0.001) return; // tiny values (such as a 0.0001 median) collide with layout offsets like 0.01
       for (const form of [String(value), value.toFixed(4), value.toFixed(3), (value * 100).toFixed(2)]) metrics.add(form);
     });
     expect(metrics.size).toBeGreaterThan(100);

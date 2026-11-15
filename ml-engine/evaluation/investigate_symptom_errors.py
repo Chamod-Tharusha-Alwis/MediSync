@@ -10,7 +10,8 @@ Score decomposition used by app.py for Tier 1 (read from the code, not re-implem
 The route returns `confidence` and `cosine_sim` (= 100 * cosine), so overlap_ratio is recovered as
 (confidence - 0.65 * cosine_sim) / 35, for curated (Tier 1) answers only.
 
-Usage:  python ml-engine/evaluation/investigate_symptom_errors.py   (after run_symptom_benchmark.py)
+Runs for both symptom benchmarks (gretelai and DDXPlus); each writes its own results section.
+Usage:  python ml-engine/evaluation/investigate_symptom_errors.py   (after both benchmark scripts)
 """
 import json
 import os
@@ -20,7 +21,7 @@ from statistics import median
 
 import numpy as np
 
-from eval_common import DATA_DIR, CLINICAL_VALIDATION, git_state, load_engine, read_json, require_tfidf_engine, RESULTS_PATH, today_utc, update_results
+from eval_common import CLINICAL_VALIDATION, dataset_entry, git_state, load_engine, read_json, require_tfidf_engine, RESULTS_PATH, today_utc, update_results
 
 COSINE_WEIGHT_PERCENT = 65
 OVERLAP_WEIGHT_PERCENT = 35
@@ -32,15 +33,38 @@ def rounded(value):
     return round(float(value), ROUND_DP)
 
 
-def main():
-    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-    results = read_json(RESULTS_PATH)
-    rows = results['symptomBenchmark']['rows']
-    with open(os.path.join(DATA_DIR, 'test.jsonl'), 'r', encoding='utf-8') as handle:
+def gretelai_payloads():
+    with open(dataset_entry('gretelai_test')['path'], 'r', encoding='utf-8') as handle:
         texts = [json.loads(line)['input_text'] for line in handle if line.strip()]
+    return {index: text for index, text in enumerate(texts)}
 
+
+def ddxplus_payloads():
+    import ast
+    from run_ddxplus_benchmark import PROTOCOL_PATH, draw_sample, load_patients, symptom_items
+    protocol = read_json(PROTOCOL_PATH)
+    patients = load_patients(dataset_entry(protocol['dataset'])['path'])
+    evidences = read_json(dataset_entry('ddxplus_evidences')['path'])
+    sample = draw_sample(patients, protocol['sample']['perPathology'], protocol['sample']['seed'])
+    return {index: symptom_items(ast.literal_eval(patients[index]['EVIDENCES']), evidences) for index in sample}
+
+
+def query_text(payload):
+    """The string app.py vectorises: a string input is lower-cased; a list is joined with spaces and lower-cased."""
+    return payload.lower() if isinstance(payload, str) else ' '.join(payload).lower()
+
+
+def main():
     engine, post = load_engine()
     require_tfidf_engine(engine)
+    for source, target, payloads in (('symptomBenchmark', 'symptomErrorInvestigation', gretelai_payloads()),
+                                     ('ddxplusBenchmark', 'ddxplusErrorInvestigation', ddxplus_payloads())):
+        investigate(engine, post, source, target, payloads)
+
+
+def investigate(engine, post, source, target_section, payloads):
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+    rows = read_json(RESULTS_PATH)[source]['rows']
     vectorizer, matrix = engine.tfidf_vectorizer, engine.tfidf_matrix
     features = vectorizer.get_feature_names_out()
     profiles = [item['disease'] for item in engine.symptom_data]
@@ -55,19 +79,21 @@ def main():
         return any(token in ENGLISH_STOP_WORDS for token in feature.split())
 
     ranked_features = sorted(((profile_weights[j], features[j]) for j in profile_weights.nonzero()[0]), reverse=True)
-    stop_shares, overlap_ratios, matched, has_and = [], [], Counter(), 0
+    stop_shares, overlap_ratios, matched, has_stop = [], [], Counter(), 0
+    profile_tokens = set(engine.disease_docs[target].split())
     term_totals = Counter()
     for row in all_first:
-        text = texts[row['row']]
-        query = vectorizer.transform([text.lower()]).toarray().ravel()
+        payload = payloads[row['row']]
+        text = query_text(payload)
+        query = vectorizer.transform([text]).toarray().ravel()
         contribution = query * profile_weights
         total = contribution.sum()
         stop_part = sum(contribution[j] for j in contribution.nonzero()[0] if has_stop_token(features[j]))
         stop_shares.append(stop_part / total if total else 0.0)
         for j in contribution.nonzero()[0]:
             term_totals[features[j]] += contribution[j]
-        has_and += 'and' in text.lower().split()
-        top = post('/api/ml/predict-disease', {'symptoms': text})['predictions'][0]
+        has_stop += any(token in ENGLISH_STOP_WORDS and token in profile_tokens for token in text.split())
+        top = post('/api/ml/predict-disease', {'symptoms': payload})['predictions'][0]
         if top.get('source') == 'curated':
             overlap_ratios.append((top['confidence'] - COSINE_WEIGHT_PERCENT / 100 * top['cosine_sim']) / OVERLAP_WEIGHT_PERCENT)
         matched.update(top['matched_symptoms'])
@@ -75,7 +101,8 @@ def main():
     stop_vocabulary = sorted({feature for feature in features if feature in ENGLISH_STOP_WORDS})
     stop_word_profiles = {word: [profiles[i] for i in range(len(profiles)) if word in engine.disease_docs[i].split()] for word in stop_vocabulary}
     total_terms = sum(term_totals.values())
-    update_results('symptomErrorInvestigation', {
+    texts = [query_text(payload) for payload in payloads.values()]
+    update_results(target_section, {
         'clinicalValidation': CLINICAL_VALIDATION,
         'run': {'date': today_utc(), 'git': git_state()},
         'question': 'Why is one profile ranked first on many rows where the answer is wrong?',
@@ -86,9 +113,10 @@ def main():
                        'stopWordFeaturesInVocabulary': stop_vocabulary,
                        'profilesContainingEachStopWord': stop_word_profiles},
         'profileTopWeightedFeatures': [{'feature': f, 'weight': rounded(w)} for w, f in ranked_features[:8]],
-        'rowsContainingTheWordAnd': has_and,
-        'testRowsContainingTheWordAnd': sum('and' in text.lower().split() for text in texts),
-        'testRows': len(texts),
+        'profileStopWords': sorted(token for token in profile_tokens if token in ENGLISH_STOP_WORDS),
+        'rowsSharingAStopWordWithTheProfile': has_stop,
+        'evaluatedRowsSharingAStopWordWithTheProfile': sum(any(t in ENGLISH_STOP_WORDS and t in profile_tokens for t in text.split()) for text in texts),
+        'evaluatedRows': len(texts),
         'shareOfCosineFromStopWordFeatures': {'median': rounded(median(stop_shares)), 'min': rounded(min(stop_shares)),
                                               'max': rounded(max(stop_shares)),
                                               'rowsAtOrAboveHalf': sum(share >= MAJORITY_SHARE for share in stop_shares)},
@@ -105,7 +133,7 @@ def main():
         'fixStatus': ('Not fixed. Both causes are in ml-engine/app.py, which is one of the 15 protected files. Changing it needs '
                       'the owner\'s approval and a new entry in docs/release/PROTECTED_HASHES.json. No AFTER result exists.'),
     })
-    print(f'{suspect}: first on {suspect_rows} wrong rows; median share of its cosine from stop-word features '
+    print(f'{source}: {suspect} first on {suspect_rows} wrong rows; median share of its cosine from stop-word features '
           f'{median(stop_shares):.2f}; overlap ratio > 1 on {sum(r > 1 + 1e-9 for r in overlap_ratios)} rows')
 
 
