@@ -54,7 +54,7 @@ def build_segments(weeks, max_imputed):
     dates = sorted(weeks)
     segments, current = [], [{'date': dates[0], 'count': weeks[dates[0]], 'imputed': False}]
     for previous, date in zip(dates, dates[1:]):
-        missing = (date - previous).days // 7 - 1
+        missing = (date - previous).days // WEEK.days - 1
         if missing > max_imputed:
             segments.append(current)
             current = []
