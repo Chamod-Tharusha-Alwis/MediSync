@@ -1,232 +1,264 @@
-"""Write docs/report/AI_EVALUATION.md from evaluation_results.json.
+"""Write docs/report/AI_EVALUATION.md from evaluation_results.json and data/manifest.json.
 
-No figure is typed by hand: every number in the report is read from the results file.
+No figure is typed by hand: every number in the report is read from those two files and formatted
+here. server/tests/aiEvaluationIntegrity.test.js checks that every number in the report appears in them.
 
 Usage:  python ml-engine/evaluation/write_report.py
 """
 import os
 
-from eval_common import REPO_ROOT, RESULTS_PATH, read_json
+from eval_common import DATA_MANIFEST_PATH, REPO_ROOT, RESULTS_PATH, read_json
 
 REPORT_PATH = os.path.join(REPO_ROOT, 'docs', 'report', 'AI_EVALUATION.md')
 FIGURES = '../../ml-engine/evaluation'
+PERCENT = 100
+EXCERPT_CHARS = 220
+SHA_PREFIX = 12
+COMMIT_PREFIX = 7
 
 
 def pct(value):
-    return 'n/a' if value is None else f'{value * 100:.1f}%'
+    return 'n/a' if value is None else f'{value * PERCENT:.1f}%'
 
 
 def interval(ci):
     return 'n/a' if not ci else f'{pct(ci[0])} to {pct(ci[1])}'
 
 
+def dec(value, places=3):
+    return 'n/a' if value is None else f'{value:.{places}f}'
+
+
+def whole(value):
+    return 'n/a' if value is None else f'{value:.0f}'
+
+
 def table(header, rows):
     lines = ['| ' + ' | '.join(header) + ' |', '|' + '|'.join('---' for _ in header) + '|']
-    lines += ['| ' + ' | '.join(str(cell) for cell in row) + ' |' for row in rows]
-    return '\n'.join(lines)
-
-
-def accuracy_rows(block, ks):
-    return [[f'Top-{k}', f"{block[f'top{k}']['correct']} / {block[f'top{k}']['n']}", pct(block[f'top{k}']['accuracy']),
-             interval(block[f'top{k}']['ci95'])] for k in ks]
+    lines += ['| ' + ' | '.join(str(cell).replace('|', '/') for cell in row) + ' |' for row in rows]
+    return '\n'.join(lines) + '\n'
 
 
 def verdict(comparison):
     if comparison['engineBeatsBaseline']:
-        return 'Yes' if comparison['ciExcludesZero'] else 'Higher, but the difference is within sampling error'
-    return 'No' if comparison['ciExcludesZero'] else 'No (lower, but the difference is within sampling error)'
+        return 'Yes' if comparison['ciExcludesZero'] else 'Higher, within sampling error'
+    return 'No, lower' if comparison['ciExcludesZero'] else 'No (lower, within sampling error)'
+
+
+def symptom_section(add, block, name, figure):
+    ks = sorted(int(key[3:]) for key in block['allRows'] if key.startswith('top'))
+    cov = block['coverage']
+    add(table(['Coverage', 'Count'], [
+        ['Rows evaluated', cov['testRows']], ['Rows whose diagnosis has a MediSync profile (covered)', cov['coveredRows']],
+        ['Rows without a profile (counted as wrong in "all rows")', cov['uncoveredRows']],
+        ['Diagnoses in the data', cov['diagnoses']], ['Diagnoses with a profile', cov['coveredDiagnoses']],
+        ['Diagnoses covered only by a Tier 2 profile', len(cov['coveredByTier2Only'])]]))
+    rows = []
+    for label, part in (('All rows', block['allRows']), ('Covered rows only', block['coveredRowsOnly'])):
+        rows.append([label, part['rows']] + [f"{pct(part[f'top{k}']['accuracy'])} ({interval(part[f'top{k}']['ci95'])})" for k in ks]
+                    + [dec(part['macroPrecision']), dec(part['macroRecall']), dec(part['macroF1']), dec(part['weightedF1'])])
+    add(table(['Rows', 'n'] + [f'Top-{k} (95% CI)' for k in ks] + ['Macro precision', 'Macro recall', 'Macro F1', 'Weighted F1'], rows))
+    base = [['MediSync engine'] + [pct(block['allRows'][f'top{k}']['accuracy']) for k in ks] + ['']]
+    for entry in block['baselines'].values():
+        base.append([entry['label']] + [f"{pct(entry[f'top{k}']['accuracy'])} ({interval(entry[f'top{k}']['ci95'])})" for k in ks]
+                    + [verdict(entry['top1']['engineComparison'])])
+    add(f'Baselines on the same {name} rows (all rows):\n')
+    add(table(['System'] + [f'Top-{k}' for k in ks] + ['Engine better at top-1?'], base))
+    for entry in block['baselines'].values():
+        add(f"- {entry['label']}: {entry['definition']}")
+    add('')
+    add(f'![{name} accuracy against baselines]({FIGURES}/{figure})\n')
+    add(table(['Diagnosis the engine gets most wrong', 'Recall', 'Rows', 'What it ranked first instead (rows)'],
+              [[w['diagnosis'], dec(w['recall'], 2), w['support'], '; '.join(f"{e['predictedProfile']} ({e['rows']})" for e in w['top1Errors'][:4])]
+               for w in block['fiveMostWrongDiagnoses']]))
+    leak = block['leakageCheck']
+    exact = sum(v['exactOrContainedMatches'] for v in leak['bySource'].values())
+    near = sum(v['nearDuplicatesAboveThreshold'] for v in leak['bySource'].values())
+    highest = max(v['maxCosineSimilarity'] for v in leak['bySource'].values())
+    add(f"Leakage check against all profile-building text: {exact} exact matches, {near} near-duplicates (cosine above "
+        f"{leak['threshold']}); highest similarity {dec(highest)}. Rows overlapping profile data: {leak['overlappingRowCount']}. "
+        f"Near-duplicate pairs inside the evaluated rows themselves: {leak['nearDuplicatePairsInsideTestSet']}. "
+        f"{leak['sharedLabelVocabulary']['note']}\n")
 
 
 def main():
     results = read_json(RESULTS_PATH)
-    s, b = results['symptomBenchmark'], results['interactionBenchmark']
-    ks = sorted(int(key[3:]) for key in s['allRows'] if key.startswith('top'))
-    cov, leak, manifest, run = s['coverage'], s['leakageCheck'], s['datasetManifest'], s['run']
-    m, cm, lim = b['metrics'], b['confusionMatrix']['counts'], b['catalogueLimits']
-    pairs = {p['id']: p for p in b['pairs']}
+    datasets = read_json(DATA_MANIFEST_PATH)['datasets']
+    s, d = results['symptomBenchmark'], results['ddxplusBenchmark']
+    inv_s, inv_d = results['symptomErrorInvestigation'], results['ddxplusErrorInvestigation']
+    cal, ib, src, ob = results['calibration'], results['interactionBenchmark'], results['interactionSourceCheck'], results['outbreakBacktest']
+    m = ib['metrics']
+    det, proj = ob['detector'], ob['projection']
+    run = s['run']
     out = []
     add = out.append
 
-    add('# MediSync AI Evaluation (offline benchmark)\n')
-    add(f"**Clinical validation: {results['clinicalValidation'].replace('_', ' ')}.** This document reports an engineering benchmark on "
-        'public, non-patient data. It measures how often the software agrees with dataset labels and drug-label statements. '
-        'It does not show that the software is safe or effective for patient care.\n')
-    add(f"Generated by `ml-engine/evaluation/write_report.py` from `ml-engine/evaluation/evaluation_results.json`. "
-        f"Run date {run['date']}; code at commit `{run['git']['commit'][:7]}` on branch `{run['git']['branch']}`. "
-        'Every number below is read from that results file.\n')
+    add('# MediSync AI Evaluation on Public Data (offline)\n')
+    add(f"**Clinical validation: {results['clinicalValidation'].replace('_', ' ')}.** Everything below is an engineering benchmark on public, "
+        'non-patient data. It measures agreement with dataset labels, FDA label statements and public case counts. It does not show that '
+        'MediSync is safe or effective for patient care. See [VALIDATION_LIMITS.md](VALIDATION_LIMITS.md) for what is not established.\n')
+    add(f"Generated by `ml-engine/evaluation/write_report.py` from `ml-engine/evaluation/evaluation_results.json` and "
+        f"`ml-engine/evaluation/data/manifest.json`. Code at commit `{run['git']['commit'][:COMMIT_PREFIX]}`; run date {run['date']}. "
+        'Reproduce everything with `python ml-engine/evaluation/run_all.py`.\n')
 
-    add('## 1. Summary\n')
-    add(table(['Component', 'Result', '95% interval'], [
-        ['Symptom engine, top-1 accuracy', f"{pct(s['allRows']['top1']['accuracy'])} ({s['allRows']['top1']['correct']} of {s['allRows']['top1']['n']} rows)", interval(s['allRows']['top1']['ci95'])],
-        ['Symptom engine, top-3 accuracy', pct(s['allRows']['top3']['accuracy']), interval(s['allRows']['top3']['ci95'])],
-        ['Symptom engine, top-5 accuracy', pct(s['allRows']['top5']['accuracy']), interval(s['allRows']['top5']['ci95'])],
-        ['Symptom engine, macro F1 / weighted F1', f"{s['allRows']['macroF1']:.3f} / {s['allRows']['weightedF1']:.3f}", ''],
-        ['Naive keyword-overlap baseline, top-1', pct(s['baselines']['keywordOverlap']['top1']['accuracy']), interval(s['baselines']['keywordOverlap']['top1']['ci95'])],
-        ['Interaction checker, sensitivity', f"{pct(m['sensitivity']['value'])} ({m['sensitivity']['numerator']} of {m['sensitivity']['denominator']})", interval(m['sensitivity']['ci95'])],
-        ['Interaction checker, specificity', f"{pct(m['specificity']['value'])} ({m['specificity']['numerator']} of {m['specificity']['denominator']})", interval(m['specificity']['ci95'])],
-    ]) + '\n')
-    keyword_top1 = s['baselines']['keywordOverlap']['top1']['engineComparison']
-    add('In plain terms:\n')
-    add(f"- The symptom engine's first suggestion matched the dataset label in {pct(s['allRows']['top1']['accuracy'])} of rows, and the label "
-        f"was among its five suggestions in {pct(s['allRows']['top5']['accuracy'])} of rows.")
-    for key in ('random', 'majority'):
-        entry = s['baselines'][key]
-        add(f"- Against the baseline \"{entry['label']}\" ({pct(entry['top1']['accuracy'])} top-1), engine better: "
-            f"**{verdict(entry['top1']['engineComparison'])}**.")
-    add(f"- Against the naive keyword-overlap matcher the "
-        f"difference in top-1 accuracy is {keyword_top1['engineMinusBaseline'] * 100:+.1f} percentage points "
-        f"(95% interval {keyword_top1['ci95'][0] * 100:+.1f} to {keyword_top1['ci95'][1] * 100:+.1f}); "
-        f"engine better: **{verdict(keyword_top1)}**.")
-    add(f"- The interaction checker warned on {m['sensitivity']['numerator']} of {m['sensitivity']['denominator']} label-documented interactions and "
-        f"raised a warning on {m['falseAlarmRate']['numerator']} of {m['falseAlarmRate']['denominator']} pairs that a label reports as not interacting.\n")
+    add('## Summary\n')
+    ddx_random = d['baselines']['random']['top1']
+    add(table(['Component', 'Data', 'Main result (95% CI)', 'Against baselines'], [
+        ['Symptom engine', f"gretelai test split, {s['coverage']['testRows']} rows",
+         f"top-1 {pct(s['allRows']['top1']['accuracy'])} ({interval(s['allRows']['top1']['ci95'])}); top-5 {pct(s['allRows']['top5']['accuracy'])}",
+         f"above random and majority; keyword overlap: {verdict(s['baselines']['keywordOverlap']['top1']['engineComparison']).lower()}"],
+        ['Symptom engine', f"DDXPlus sample, {d['coverage']['testRows']} rows ({d['coverage']['coveredRows']} covered)",
+         f"all rows top-1 {pct(d['allRows']['top1']['accuracy'])} ({interval(d['allRows']['top1']['ci95'])}); covered rows top-1 "
+         f"{pct(d['coveredRowsOnly']['top1']['accuracy'])}",
+         f"random guess {pct(ddx_random['accuracy'])}: engine better? {verdict(ddx_random['engineComparison']).lower()}"],
+        ['Score calibration', 'gretelai (map fitted on train split)',
+         f"test Brier {dec(cal['calibrationMap']['testBrierScore'])} vs base rate {dec(cal['calibrationMap']['testBaseRateBrierScore'])}; "
+         f"ECE {dec(cal['calibrationMap']['testExpectedCalibrationError'])}", ''],
+        ['Interaction checker', f"{ib['referenceSet']['pairs']} FDA-label pairs",
+         f"sensitivity {pct(m['sensitivity']['value'])} ({interval(m['sensitivity']['ci95'])}); specificity {pct(m['specificity']['value'])} "
+         f"({interval(m['specificity']['ci95'])})", f"{m['unverifiedPairs']} pairs unverified ({pct(m['unverifiedShare'])})"],
+        ['Outbreak detector', f"OpenDengue Sri Lanka, {det['evaluatedWeeks']} weeks",
+         f"week sensitivity {pct(det['weekSensitivity']['value'])} ({interval(det['weekSensitivity']['ci95'])}); specificity "
+         f"{pct(det['weekSpecificity']['value'])}", f"{det['detectedPeriods']} of {det['evaluablePeriods']} reference period(s) detected; "
+         f"{det['falseAlarmEpisodes']} false-alarm episodes"],
+        ['Trend projection', 'OpenDengue Sri Lanka, 1-week horizon',
+         f"MAE {whole(proj['byHorizon']['h1']['mae']['projection']['value'])} cases; interval coverage {pct(proj['byHorizon']['h1']['intervalCoverage']['value'])}",
+         f"last value MAE {whole(proj['byHorizon']['h1']['mae']['lastValue']['value'])}: projection worse"],
+    ]))
 
-    add('## 2. How to reproduce\n')
-    add('```\npython ml-engine/evaluation/fetch_dataset.py            # downloads the test split into a gitignored folder\n'
-        'python ml-engine/evaluation/run_symptom_benchmark.py\npython ml-engine/evaluation/run_interaction_benchmark.py\n'
-        'python ml-engine/evaluation/make_figures.py\npython ml-engine/evaluation/write_report.py\n```\n')
-    env = run['environment']
-    add(f"Seeds: {run['seed']} (bootstrap) and {run['randomBaselineSeed']} (random baseline); {run['bootstrapResamples']} bootstrap resamples; "
-        f"{run['ciLevelPercent']}% percentile intervals. Library versions for this run: Python {env['python']}, scikit-learn {env['scikit-learn']}, "
-        f"NumPy {env['numpy']}, SciPy {env['scipy']}. The scripts stop if scikit-learn cannot be loaded, because the engine would otherwise "
-        'fall back to a different matcher.\n')
+    add('## Datasets\n')
+    add(table(['Dataset', 'Licence (as published)', 'Rows', 'SHA-256 (prefix)', 'Downloaded', 'Nature'],
+              [[e['name'], e['licence']['licence'], e['rows'], f"`{e['sha256'][:SHA_PREFIX]}`", e['downloadDate'], e['nature']]
+               for e in datasets.values()]))
+    add('FDA drug labels (openFDA, CC0 1.0 public domain) are cited per pair in `ml-engine/evaluation/interaction_reference.json`. '
+        'All files are gitignored; only the manifest is committed.\n')
 
-    add('## 3. Part A: symptom engine\n')
-    add('### 3.1 Dataset\n')
-    add(table(['Item', 'Value'], [
-        ['Dataset', f"`{manifest['dataset']}` ({manifest['datasetPage']})"],
-        ['Split used', manifest['split']], ['Licence', manifest['licence']], ['Downloaded', manifest['downloadDate']],
-        ['Rows / diagnoses', f"{manifest['rows']} / {manifest['distinctDiagnoses']}"], ['SHA-256 of the file', f"`{manifest['sha256']}`"],
-        ['Nature of the text', manifest['provenanceNote']],
-    ]) + '\n')
-    add(f"Each row's text was sent unchanged to `{run['route']}`, the route the application calls. The dataset file is not committed.\n")
-
-    add('### 3.2 Label mapping and coverage\n')
-    add('`ml-engine/evaluation/label_mapping.json` maps each dataset diagnosis to a MediSync profile, with a reason for each decision. '
-        f"It was frozen before the engine was run (SHA-256 `{run['labelMappingSha256'][:16]}…`).\n")
-    add(table(['Coverage', 'Count'], [
-        ['Test rows', cov['testRows']], ['Rows whose diagnosis has a MediSync profile (covered)', cov['coveredRows']],
-        ['Rows without a profile (not covered)', cov['uncoveredRows']], ['Diagnoses in the dataset', cov['diagnoses']],
-        ['Diagnoses with a profile', cov['coveredDiagnoses']], ['Diagnoses without a profile', len(cov['uncoveredDiagnoses'])],
-    ]) + '\n')
-    tiers = s['engine']['rowsAnsweredByTier']
-    add(f"The engine holds {s['engine']['tier1Profiles']} curated profiles (Tier 1) and {s['engine']['tier2Profiles']} knowledge-base profiles (Tier 2). "
-        f"Rows answered by tier: {', '.join(f'Tier {tier}: {count}' for tier, count in tiers.items())}. "
-        f"Rows with no prediction: {s['engine']['rowsWithNoPrediction']}.\n")
-
-    add('### 3.3 Accuracy\n')
-    add('**(a) Covered rows only**\n')
-    add(table(['Metric', 'Correct / rows', 'Accuracy', '95% bootstrap interval'], accuracy_rows(s['coveredRowsOnly'], ks)) + '\n')
-    add(f"Macro F1 {s['coveredRowsOnly']['macroF1']:.3f}; weighted F1 {s['coveredRowsOnly']['weightedF1']:.3f}.\n")
-    add('**(b) All rows (a row without a MediSync profile counts as wrong)**\n')
-    add(table(['Metric', 'Correct / rows', 'Accuracy', '95% bootstrap interval'], accuracy_rows(s['allRows'], ks)) + '\n')
-    add(f"Macro F1 {s['allRows']['macroF1']:.3f}; weighted F1 {s['allRows']['weightedF1']:.3f}.\n")
-    if cov['uncoveredRows'] == 0:
-        add('Every diagnosis in this dataset has a MediSync profile, so (a) and (b) cover the same rows and give the same figures.\n')
-
-    add('### 3.4 Baselines on the same rows\n')
-    rows = [['MediSync engine'] + [f"{pct(s['allRows'][f'top{k}']['accuracy'])} ({interval(s['allRows'][f'top{k}']['ci95'])})" for k in ks] + ['']]
-    for entry in s['baselines'].values():
-        rows.append([entry['label']] + [f"{pct(entry[f'top{k}']['accuracy'])} ({interval(entry[f'top{k}']['ci95'])})" for k in ks]
-                    + [verdict(entry['top1']['engineComparison'])])
-    add(table(['System'] + [f'Top-{k} (95% interval)' for k in ks] + ['Does the engine beat it at top-1?'], rows) + '\n')
-    for entry in s['baselines'].values():
-        add(f"- **{entry['label']}**: {entry['definition']}")
-    add('\n"Within sampling error" means the 95% interval of the paired difference includes zero.\n')
-    add(f'![Accuracy against baselines]({FIGURES}/symptom_accuracy_vs_baselines.png)\n')
-
-    add('### 3.5 Per-diagnosis results (top-1, all rows)\n')
-    report = s['allRows']['perDiagnosis']
-    add(table(['Diagnosis', 'Precision', 'Recall', 'F1', 'Support'],
-              [[label, 'n/a (never predicted)' if v['precisionUndefined'] else f"{v['precision']:.2f}", f"{v['recall']:.2f}", f"{v['f1']:.2f}", v['support']]
-               for label, v in sorted(report.items())]) + '\n')
-    add(f'![Per-diagnosis F1]({FIGURES}/per_class_f1.png)\n')
-    add('### 3.6 The five diagnoses the engine gets most wrong\n')
-    add(table(['Diagnosis', 'Recall', 'Support', 'What the engine suggested first instead'],
-              [[w['diagnosis'], f"{w['recall']:.2f}", w['support'], '; '.join(f"{e['predictedProfile']} ({e['rows']})" for e in w['top1Errors'])]
-               for w in s['fiveMostWrongDiagnoses']]) + '\n')
-    others = s['confusionMatrixTop1']['otherProfilesPredicted']
-    add('Profiles outside the 22 dataset diagnoses that the engine most often put first: '
-        + ', '.join(f"{o['profile']} ({o['rows']} rows)" for o in others[:5]) + '.\n')
+    add('## V1. Symptom engine\n')
+    add('Each row is sent unchanged to the real `/api/ml/predict-disease` route. Label mappings were frozen in files committed before '
+        'the engine was run on each dataset. A diagnosis maps only to a profile naming the same disease.\n')
+    add('### gretelai/symptom_to_diagnosis (test split)\n')
+    symptom_section(add, s, 'gretelai', 'symptom_accuracy_vs_baselines.png')
     add(f'![Top-1 confusion matrix]({FIGURES}/confusion_matrix_symptoms.png)\n')
+    add(f'![Per-diagnosis F1]({FIGURES}/per_class_f1.png)\n')
+    add('### DDXPlus (second, independent dataset)\n')
+    add(f"Sample: {d['datasetManifest']['sample']['rows']} test patients ({d['datasetManifest']['sample']['perPathology']} per pathology at most, "
+        f"seed {d['datasetManifest']['sample']['seed']}) from {d['datasetManifest']['sample']['testSplitRows']} in the test split. "
+        f"{d['run']['inputFormat']}\n")
+    symptom_section(add, d, 'DDXPlus', 'ddxplus_accuracy_vs_baselines.png')
 
-    add('### 3.7 Leakage check\n')
-    add(leak['method'] + '\n')
-    add(table(['Source of profile data', 'Documents', 'Exact matches', f"Near-duplicates (cosine > {leak['threshold']})", 'Highest similarity'],
-              [[source, v['documents'], v['exactOrContainedMatches'], v['nearDuplicatesAboveThreshold'], f"{v['maxCosineSimilarity']:.3f}"]
-               for source, v in leak['bySource'].items()]) + '\n')
-    add(f"Test rows that overlap profile-building data: **{leak['overlappingRowCount']}**. "
-        f"Near-duplicate pairs inside the test set: {leak['nearDuplicatePairsInsideTestSet']}.\n")
-    if leak['resultsWithoutOverlappingRows']:
-        without = leak['resultsWithoutOverlappingRows']
-        add(f"Without the overlapping rows ({without['rows']} rows): " + ', '.join(f"top-{k} {pct(without[f'top{k}']['accuracy'])}" for k in ks) + '.\n')
-    else:
-        add('No overlap was found, so there is no separate "without overlapping rows" result.\n')
-    shared = leak['sharedLabelVocabulary']
-    add(f"Two cautions. First, {shared['datasetDiagnosesWithSameNamedTier1Profile']} of the {shared['datasetDiagnoses']} dataset diagnoses have a "
-        f"same-named Tier 1 profile. {shared['note']} Second, the train split was not downloaded, so it was not checked.\n")
-    add(f"Licence status: SymCAT (source of the Tier 2 profiles): **{leak['symcatLicenceStatus']}**. "
-        f"Curated profile source: {leak['curatedProfileSourceLicenceStatus']}.\n")
+    add('### Why one profile is ranked first on many wrong answers\n')
+    for inv, name in ((inv_s, 'gretelai'), (inv_d, 'DDXPlus')):
+        share = inv['shareOfCosineFromStopWordFeatures']
+        top_terms = ', '.join(f"\"{t['feature']}\" {pct(t['shareOfCosine'])}" for t in inv['largestSummedTermShares'][:3])
+        add(f"- **{name}: {inv['profile']}** is ranked first on {inv['rowsRankedFirstWhenWrong']} wrong rows. Its profile text contains the "
+            f"stop words {', '.join(inv['profileStopWords'])}. Median share of its cosine score coming from stop-word features: "
+            f"{dec(share['median'], 2)} (at least half on {share['rowsAtOrAboveHalf']} rows). Largest contributors: {top_terms}. "
+            f"Overlap ratio above 1 on {inv['overlapRatio']['rowsAboveOne']} rows.")
+    add('')
+    add(f"**Finding.** {inv_s['finding']} **Is it a bug?** {inv_s['isItABug']} **Status:** {inv_s['fixStatus']}\n")
 
-    add('## 4. Part B: medicine interaction checker\n')
-    ref = b['referenceSet']
-    add(f"Reference set: {ref['pairs']} drug pairs ({ref['interactingPairs']} interacting, {ref['nonInteractingPairs']} non-interacting) taken from "
-        f"{ref['labelsCited']} {ref['source']}, retrieved {ref['retrievedDate']}. Each pair and its source URL is in "
-        '`ml-engine/evaluation/interaction_reference.json`.\n')
-    add(f"- **Interacting** means: {ref['definitions']['interacting']}")
-    add(f"- **Non-interacting** means: {ref['definitions']['non_interacting']}\n")
-    add(f"{b['run']['inputFormat']} The request goes to `{b['run']['route']}`.\n")
-    add('### 4.1 Confusion matrix\n')
-    add(table(['', 'Checker: warning', 'Checker: no warning', 'Checker: unverified'],
-              [['Reference: interacting'] + cm[0], ['Reference: non-interacting'] + cm[1]]) + '\n')
-    add(f'![Interaction confusion matrix]({FIGURES}/interaction_confusion.png)\n')
-    add('### 4.2 Metrics\n')
-    add(table(['Metric', 'Value', 'Count', '95% bootstrap interval'],
+    add('## V2. Scores and calibration\n')
+    add('The engine returns similarity scores (0 to 100, and above 100 when the overlap ratio exceeds 1), not probabilities. '
+        'No ROC-AUC or log loss of the raw score is reported.\n')
+    for section, name in (('symptomBenchmark', 'gretelai test split'), ('ddxplusBenchmark', 'DDXPlus sample')):
+        block = cal['testSets'][section]
+        c, w = block['correctTop1Scores'], block['incorrectTop1Scores']
+        add(f"**{name}:** median top-1 score {dec(c['median'], 2)} when correct (n {c['count']}) and {dec(w['median'], 2)} when wrong "
+            f"(n {w['count']}); scores above 100: {block['scoreAbove100']}.\n")
+        add(table(['Score band', 'Rows', 'Correct', 'Top-1 accuracy (95% CI)'],
+                  [[b['band'], b['rows'], b['correct'], f"{pct(b['accuracy'])} ({interval(b['ci95'])})"] for b in block['accuracyByScoreBand']]))
+    cm = cal['calibrationMap']
+    add(f"**Calibration map ({cm['label']})** Validation rows {cm['validationRows']}; validation top-1 accuracy {pct(cm['validationTop1Accuracy'])}. "
+        f"On the {cm['testRows']} test rows: Brier score {dec(cm['testBrierScore'])} against {dec(cm['testBaseRateBrierScore'])} for always "
+        f"predicting the base rate; expected calibration error {dec(cm['testExpectedCalibrationError'])} ({cm['eceBins']} bins). "
+        f"Sentences present in both splits: {cm['inputSentencesInBothSplits']}. The map is not applied to DDXPlus.\n")
+    add(f'![Scores and accuracy by band]({FIGURES}/score_by_correctness.png)\n')
+
+    add('## V3. Medicine interaction checker\n')
+    add(f"{ib['referenceSet']['pairs']} pairs ({ib['referenceSet']['interactingPairs']} interacting, {ib['referenceSet']['nonInteractingPairs']} "
+        f"non-interacting) cited to {ib['referenceSet']['labelsCited']} FDA labels; {src['pairsWithPartnerNamedInCitedSection']} of "
+        f"{src['pairsChecked']} citations confirmed by `verify_interaction_sources.py`. {ib['run']['inputFormat']}\n")
+    add(table(['', 'Warning', 'No warning', 'Unverified'],
+              [['Reference: interacting'] + ib['confusionMatrix']['counts'][0], ['Reference: non-interacting'] + ib['confusionMatrix']['counts'][1]]))
+    add(table(['Metric (all pairs; unverified counts against the checker)', 'Value', 'Count', '95% CI'],
               [[name, pct(m[key]['value']), f"{m[key]['numerator']} / {m[key]['denominator']}", interval(m[key]['ci95'])]
-               for name, key in (('Sensitivity (recall)', 'sensitivity'), ('Specificity', 'specificity'),
-                                 ('Precision', 'precision'), ('False-alarm rate', 'falseAlarmRate'))]) + '\n')
-    add(f"Pairs the resolver could not resolve (unverified): **{m['unverifiedPairs']}** "
-        f"({m['unverifiedInteractingPairs']} interacting, {m['unverifiedNonInteractingPairs']} non-interacting). {m['rule']}\n")
+               for name, key in (('Sensitivity', 'sensitivity'), ('Specificity', 'specificity'), ('Precision', 'precision'),
+                                 ('False-alarm rate', 'falseAlarmRate'))]))
+    add(table(['Subset', 'Pairs', 'Sensitivity', 'Specificity', 'Unverified share'],
+              [[name, b['pairs'], pct(b['sensitivity']), pct(b['specificity']), pct(b['unverifiedShare'])] for name, b in ib['bySubset'].items()]))
+    add('V0 is the original set (only drugs the checker resolves); V3 is the new set chosen without regard to resolution.\n')
+    add(f'![Interaction confusion matrix]({FIGURES}/interaction_confusion.png)\n')
+    excerpts = {p['id']: p['labelExcerpt'] for p in src['pairs']}
+    pairs = {p['id']: p for p in ib['pairs']}
 
-    def listing(ids):
-        return '; '.join(f"{pairs[i]['drugA']} + {pairs[i]['drugB']}" for i in ids) or 'none'
-    add(f"- Missed interactions: {listing(b['missedInteractions'])}.")
-    add(f"- False alarms: {listing(b['falseAlarms'])}.\n")
-    add('A false alarm here means the checker warned although the cited label reports no interaction. The checker\'s own reference '
-        'dataset may list an interaction that the label judged not clinically significant, so some of these warnings may be defensible.\n')
-    add('### 4.3 Catalogue limits\n')
-    add(table(['Limit', 'Value'], [
-        ['Catalogue entries', lim['catalogueEntries']],
-        ['Entries that fully resolve to active ingredients', f"{lim['entriesFullyResolvedToActiveIngredients']} ({pct(lim['fullyResolvedShare'])})"],
-        ['Entries that resolve partly / not at all', f"{lim['entriesPartlyResolved']} / {lim['entriesNotResolved']}"],
-        ['Ingredients with dose limits', f"{lim['doseLimitIngredients']} ({', '.join(lim['doseLimitIngredientNames'])})"],
-        ['Catalogue licence review', lim['catalogueLicenceReview'].replace('_', ' ')],
-        ['Catalogue origin', 'Product names come from a retail pharmacy listing whose licence is not verified.'],
-    ]) + '\n')
-    add(lim['selectionBias'] + '\n')
+    def listing(ids, title):
+        add(f'**{title} ({len(ids)})**\n')
+        add(table(['ID', 'Pair', 'Checker', 'Label basis (paraphrase)', 'Label text (excerpt)'],
+                  [[i, f"{pairs[i]['drugA']} + {pairs[i]['drugB']}", pairs[i]['checkerOutcome'].replace('_', ' '), pairs[i]['basis'],
+                    (excerpts.get(i) or '')[:EXCERPT_CHARS]] for i in ids]))
+    listing(ib['missedInteractions'], 'Every missed interaction (no warning or unverified)')
+    listing(ib['falseAlarms'], 'Every false alarm')
+    add('A false alarm means the checker warned although the cited label reports no interaction or no clinically significant one. '
+        "The checker's own reference data may list an interaction that the label judged unimportant.\n")
+    lim = ib['catalogueLimits']
+    add(f"Catalogue limits: {lim['entriesFullyResolvedToActiveIngredients']} of {lim['catalogueEntries']} entries ({pct(lim['fullyResolvedShare'])}) "
+        f"resolve fully to active ingredients; dose limits exist for {lim['doseLimitIngredients']} ingredients "
+        f"({', '.join(lim['doseLimitIngredientNames'])}); {lim['catalogueOrigin']}\n")
 
-    supports = [value['support'] for value in report.values()]
-    add('## 5. Limits\n')
+    add('## V4. Outbreak detector and trend projection (OpenDengue)\n')
+    add(f"**{ob['scope']}** Data: {ob['dataset']['name']}, {ob['dataset']['sriLankaWeeklyRows']} Sri Lanka weekly rows. "
+        f"{ob['protocol']['detector']['unitSubstitution']}\n")
+    add(table(['Segment', 'From', 'To', 'Weeks', 'Imputed weeks', 'Detector-evaluable weeks', 'Reference outbreak periods'],
+              [[g['segment'], g['firstWeek'], g['lastWeek'], g['weeks'], g['imputedWeeks'], g['detectorEvaluableWeeks'], g['referenceOutbreakPeriods']]
+               for g in ob['segments']]))
+    add(f"Reference rule (frozen before running): {ob['protocol']['referenceOutbreakRule']['epidemicWeek']} "
+        f"{ob['protocol']['referenceOutbreakRule']['outbreakPeriod']}\n")
+    conf = det['confusion']
+    add(table(['Detector metric (weekly)', 'Value', '95% block-bootstrap CI'],
+              [['Sensitivity', f"{pct(det['weekSensitivity']['value'])} ({conf['truePositive']} / {conf['truePositive'] + conf['falseNegative']})", interval(det['weekSensitivity']['ci95'])],
+               ['Specificity', f"{pct(det['weekSpecificity']['value'])} ({conf['trueNegative']} / {conf['trueNegative'] + conf['falsePositive']})", interval(det['weekSpecificity']['ci95'])],
+               ['Precision', f"{pct(det['weekPrecision']['value'])} ({conf['truePositive']} / {conf['truePositive'] + conf['falsePositive']})", interval(det['weekPrecision']['ci95'])]]))
+    periods = [p for p in det['referencePeriods'] if p['evaluable']]
+    add('Reference outbreak periods: ' + '; '.join(f"{p['start']} to {p['end']} ({p['weeks']} weeks, peak {p['peakCount']} cases), "
+                                                   f"detected: {p['detected']}, delay {p['delayWeeks']} weeks" for p in periods) + '. '
+        f"With {det['evaluablePeriods']} evaluable period(s), no detection rate can be estimated. False-alarm episodes "
+        f"({det['falseAlarmEpisodes']}): " + '; '.join(f"from {e['start']} for {e['weeks']} weeks" for e in det['falseAlarmEpisodeList']) + '.\n')
+    add(f'![Detector back-test]({FIGURES}/outbreak_detector_backtest.png)\n')
+    rows = []
+    for h, b in sorted(proj['byHorizon'].items(), key=lambda item: int(item[0][1:])):
+        rows.append([f'{h[1:]} week(s)', b['origins'], f"{whole(b['mae']['projection']['value'])} ({whole(b['mae']['projection']['ci95'][0])} to {whole(b['mae']['projection']['ci95'][1])})",
+                     whole(b['mae']['lastValue']['value']), whole(b['mae']['seasonalNaive']['value']),
+                     f"{pct(b['intervalCoverage']['value'])} ({interval(b['intervalCoverage']['ci95'])})"])
+    add(table(['Horizon', 'Origins', 'Projection MAE (95% CI)', 'Last-value MAE', 'Seasonal-naive MAE', 'Interval coverage (nominal 95%)'], rows))
+    add('Projection model types chosen by the server function: ' + ', '.join(f'{k} {v}' for k, v in proj['modelTypesUsed'].items()) + '.\n')
+    add(f'![Projection back-test]({FIGURES}/projection_backtest.png)\n')
+
+    add('## Weak results, stated plainly\n')
     for line in [
-        'The symptom benchmark text is LLM-rewritten. It is synthetic and does not come from real patients.',
-        f"It covers only {cov['diagnoses']} diagnoses, with {min(supports)} to {max(supports)} rows each, so per-diagnosis figures are imprecise.",
-        f"Coverage is partial with respect to the engine: the dataset exercises {cov['coveredDiagnoses']} of the {s['engine']['tier1Profiles']} curated profiles, and only {len(cov['coveredByTier2AsWell'])} of the {s['engine']['tier2Profiles']} knowledge-base profiles share a name with a dataset diagnosis. Diagnoses outside the dataset are untested.",
-        f"The dataset shares its label set with the source of the curated profiles, so it is not a fully unrelated source. Test rows found to overlap profile-building text: {leak['overlappingRowCount']}.",
-        'The application sends short symptom phrases chosen by a doctor. This benchmark sends free-text sentences, which the engine was not built around.',
-        'There are no real patients, no clinicians and no outcomes in this evaluation. It is not clinical validation, and clinical validation remains not established.',
-        f"The interaction reference set is small ({ref['pairs']} pairs) and comes from US labels. Its intervals are wide. It includes only products the checker can resolve, which favours the checker.",
-        'A "non-interacting" pair is one label\'s statement. Other references may disagree.',
-        f"Results were produced with scikit-learn {env['scikit-learn']}; the production lock file may pin a different version.",
-        'Nothing was tuned after the results were seen: the engine, thresholds, profiles, catalogue, mapping and test set are unchanged.',
+        f"On DDXPlus the engine's top-1 accuracy over all rows ({pct(d['allRows']['top1']['accuracy'])}) is below random guessing over the covered profiles ({pct(ddx_random['accuracy'])}).",
+        f"On gretelai the engine does not beat a naive keyword-overlap matcher ({pct(s['baselines']['keywordOverlap']['top1']['accuracy'])} top-1).",
+        f"Both datasets expose the same defect: the vectorizer keeps stop words, so \"{inv_s['largestSummedTermShares'][0]['feature']}\" and \"{inv_d['largestSummedTermShares'][0]['feature']}\" drive rankings. It is not fixed (protected file).",
+        f"On DDXPlus the score does not track correctness: accuracy in the highest populated band is {pct(next(b['accuracy'] for b in reversed(cal['testSets']['ddxplusBenchmark']['accuracyByScoreBand']) if b['rows']))}.",
+        f"The interaction checker raised {m['falseAlarmRate']['numerator']} false alarms among {m['falseAlarmRate']['denominator']} non-interacting pairs and could not resolve {m['unverifiedPairs']} pairs.",
+        f"The trend projection is less accurate than simply repeating last week's count at every horizon, and its 95% interval covers only {pct(proj['byHorizon']['h4']['intervalCoverage']['value'])} of targets at 4 weeks.",
+        f"The detector raised {det['falseAlarmEpisodes']} false-alarm episodes, and only {det['evaluablePeriods']} reference outbreak period was available, so its detection rate is unknown.",
     ]:
         add(f'- {line}')
     add('')
-    add('## 6. Files\n')
-    for path in ['ml-engine/evaluation/evaluation_results.json', 'ml-engine/evaluation/manifest.json', 'ml-engine/evaluation/label_mapping.json',
-                 'ml-engine/evaluation/interaction_reference.json', 'ml-engine/evaluation/run_symptom_benchmark.py',
-                 'ml-engine/evaluation/run_interaction_benchmark.py', 'ml-engine/evaluation/confusion_matrix_symptoms.png',
-                 'ml-engine/evaluation/symptom_accuracy_vs_baselines.png', 'ml-engine/evaluation/per_class_f1.png',
-                 'ml-engine/evaluation/interaction_confusion.png']:
-        add(f'- `{path}`')
+    add('## Limits\n')
+    for line in [
+        'No real patients, no clinicians, no outcomes. Clinical validation is not established. See VALIDATION_LIMITS.md.',
+        'gretelai text is LLM-rewritten; DDXPlus patients are synthetic; neither is a clinical population.',
+        f"Coverage is partial: {d['coverage']['coveredDiagnoses']} of {d['coverage']['diagnoses']} DDXPlus pathologies have a MediSync profile.",
+        'DDXPlus input is built from survey-style question text by a fixed rule. The application receives short symptom phrases chosen by a doctor.',
+        f"DDXPlus synthetic patients share templates ({d['leakageCheck']['nearDuplicatePairsInsideTestSet']} near-duplicate pairs in the sample), so its intervals are likely too narrow.",
+        'The interaction reference uses US labels; "non-interacting" is one label\'s statement, and the pairs are not a random sample of prescriptions.',
+        'The outbreak back-test uses national weekly counts with one week fed as one detector day; MediSync runs it on daily district counts.',
+        'Nothing was tuned after results were seen. The engine, thresholds, profiles and catalogues are unchanged.',
+        f"Library versions for this run: Python {run['environment']['python']}, scikit-learn {run['environment']['scikit-learn']}.",
+    ]:
+        add(f'- {line}')
+    add('')
     with open(REPORT_PATH, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write('\n'.join(out) + '\n')
     print('report written to', REPORT_PATH)

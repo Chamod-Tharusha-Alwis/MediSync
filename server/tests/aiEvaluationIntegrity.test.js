@@ -1,8 +1,9 @@
 'use strict';
 
-// Guards ml-engine/evaluation/evaluation_results.json and docs/report/AI_EVALUATION.md:
-//  - they must never claim clinical validation;
-//  - every reported metric must be computed by the evaluation scripts, not typed into their source.
+// Guards ml-engine/evaluation/evaluation_results.json, docs/report/AI_EVALUATION.md and docs/report/VALIDATION_LIMITS.md:
+//  - they must never claim clinical validation, and must not contain the forbidden phrases;
+//  - every reported metric must be computed by the evaluation scripts, not typed into their source;
+//  - every number in AI_EVALUATION.md must come from the results or the dataset manifest.
 
 const fs = require('fs');
 const path = require('path');
@@ -14,6 +15,8 @@ const report = fs.readFileSync(path.join(root, 'docs/report/AI_EVALUATION.md'), 
 // Every evaluation script in the folder. generate_*.py are deprecated chart scripts with hardcoded numbers, excluded on purpose.
 const EVALUATION_SCRIPTS = fs.readdirSync(evalDir).filter(name => name.endsWith('.py') && !name.startsWith('generate_')).sort();
 const sources = EVALUATION_SCRIPTS.map(name => ({ name, text: fs.readFileSync(path.join(evalDir, name), 'utf8') }));
+const dataManifest = JSON.parse(fs.readFileSync(path.join(evalDir, 'data/manifest.json'), 'utf8'));
+const limitsDoc = fs.readFileSync(path.join(root, 'docs/report/VALIDATION_LIMITS.md'), 'utf8');
 const symptoms = results.symptomBenchmark;
 const interactions = results.interactionBenchmark;
 const round6 = value => Math.round(value * 1e6) / 1e6;
@@ -52,21 +55,25 @@ describe('AI evaluation results: honesty and provenance', () => {
     expect(offending).toEqual([]);
   });
 
-  test('3. symptom metrics are reproduced from the per-row engine outputs stored in the results', () => {
-    const rows = symptoms.rows;
-    expect(rows.length).toBe(symptoms.datasetManifest.rows);
-    expect(rows.length).toBe(symptoms.coverage.testRows);
+  test.each([
+    ['symptomBenchmark', 'label_mapping.json', block => block.datasetManifest.rows],
+    ['ddxplusBenchmark', 'ddxplus_label_mapping.json', block => block.datasetManifest.sample.rows],
+  ])('3. %s metrics are reproduced from the per-row engine outputs stored in the results', (section, mappingFile, expectedRows) => {
+    const block = results[section];
+    const rows = block.rows;
+    expect(rows.length).toBe(expectedRows(block));
+    expect(rows.length).toBe(block.coverage.testRows);
     for (const k of [1, 3, 5]) {
       const hits = rows.filter(row => row[`hitTop${k}`] === 1).length;
-      const block = symptoms.allRows[`top${k}`];
-      expect(block.correct).toBe(hits);
-      expect(block.n).toBe(rows.length);
-      expect(block.accuracy).toBe(round6(hits / rows.length));
-      expect(block.ci95[0]).toBeLessThanOrEqual(block.accuracy);
-      expect(block.ci95[1]).toBeGreaterThanOrEqual(block.accuracy);
+      const top = block.allRows[`top${k}`];
+      expect(top.correct).toBe(hits);
+      expect(top.n).toBe(rows.length);
+      expect(top.accuracy).toBe(round6(hits / rows.length));
+      expect(top.ci95[0]).toBeLessThanOrEqual(top.accuracy);
+      expect(top.ci95[1]).toBeGreaterThanOrEqual(top.accuracy);
     }
     // A top-1 hit must be backed by a recorded engine prediction that the frozen mapping accepts.
-    const mapping = JSON.parse(fs.readFileSync(path.join(evalDir, 'label_mapping.json'), 'utf8')).mapping;
+    const mapping = JSON.parse(fs.readFileSync(path.join(evalDir, mappingFile), 'utf8')).mapping;
     const norm = name => String(name).replace(/\s+/g, ' ').trim().toLowerCase();
     for (const row of rows) {
       const entry = mapping[row.referenceDiagnosis];
@@ -75,10 +82,9 @@ describe('AI evaluation results: honesty and provenance', () => {
       expect(row.hitTop1).toBe(top !== null && accepted.includes(top) ? 1 : 0);
     }
     // Per-diagnosis figures and the confusion matrix agree with the rows.
-    const matrix = symptoms.confusionMatrixTop1;
-    expect(matrix.counts.flat().reduce((a, b) => a + b, 0)).toBe(rows.length);
+    expect(block.confusionMatrixTop1.counts.flat().reduce((x, y) => x + y, 0)).toBe(rows.length);
     let f1Sum = 0;
-    for (const [label, stats] of Object.entries(symptoms.allRows.perDiagnosis)) {
+    for (const [label, stats] of Object.entries(block.allRows.perDiagnosis)) {
       const support = rows.filter(row => row.referenceDiagnosis === label).length;
       const tp = rows.filter(row => row.referenceDiagnosis === label && row.predictedClass === label).length;
       const predicted = rows.filter(row => row.predictedClass === label).length;
@@ -87,7 +93,7 @@ describe('AI evaluation results: honesty and provenance', () => {
       expect(stats.precision).toBe(predicted ? round6(tp / predicted) : 0);
       f1Sum += stats.f1;
     }
-    expect(symptoms.allRows.macroF1).toBeCloseTo(f1Sum / Object.keys(symptoms.allRows.perDiagnosis).length, 5);
+    expect(block.allRows.macroF1).toBeCloseTo(f1Sum / Object.keys(block.allRows.perDiagnosis).length, 5);
   });
 
   test('4. interaction metrics are reproduced from the per-pair checker outputs stored in the results', () => {
@@ -116,7 +122,8 @@ describe('AI evaluation results: honesty and provenance', () => {
       if (typeof value !== 'number' || Number.isInteger(value) || trail.includes('run') || trail.includes('threshold')) return;
       if (round6(value * 100) % 1 === 0) return; // values such as 0.7 are too coarse to tell apart from layout constants
       if (Math.abs(value) < 0.001) return; // tiny values (such as a 0.0001 median) collide with layout offsets like 0.01
-      for (const form of [String(value), value.toFixed(4), value.toFixed(3), (value * 100).toFixed(2)]) metrics.add(form);
+      for (const form of [String(value), value.toFixed(4), value.toFixed(3)]) metrics.add(form);
+      if (Math.abs(value) >= 0.01) metrics.add((value * 100).toFixed(2)); // percentage form; below 1% it collides with layout constants
     });
     expect(metrics.size).toBeGreaterThan(100);
     const leaked = [];
@@ -158,5 +165,68 @@ describe('AI evaluation results: honesty and provenance', () => {
     expect(symptoms.datasetManifest.sha256).toBe(datasets.gretelai_test.sha256);
     expect(symptoms.run.git.commit).toMatch(/^[0-9a-f]{40}$/);
     expect(interactions.run.git.commit).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  test('7. every number in AI_EVALUATION.md comes from the results or the dataset manifest', () => {
+    // Accepted renderings of every number in the two JSON files (plain, rounded, and as a percentage),
+    // plus every number written inside their text fields (dates, versions, protocol text).
+    // Numbers inside row-level records (per-row scores, weekly series, forecast errors, calibration steps) are not accepted,
+    // so an invented figure cannot pass by matching one of thousands of row values by chance.
+    const ROW_LEVEL = new Set(['rows', 'weeks', 'mapSteps', 'overlappingRowIndices', 'h1', 'h2', 'h4']);
+    const isRowLevel = trail => trail.some((key, i) => ROW_LEVEL.has(key) && Number.isInteger(trail[i + 1]));
+    const accepted = new Set();
+    walk([results, dataManifest], (value, trail) => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        if (isRowLevel(trail)) return;
+        const a = Math.abs(value);
+        for (const form of [String(a), a.toFixed(0), a.toFixed(1), a.toFixed(2), a.toFixed(3), a.toFixed(4),
+          (a * 100).toFixed(0), (a * 100).toFixed(1), (a * 100).toFixed(2)]) accepted.add(form);
+      } else if (typeof value === 'string') {
+        for (const token of value.match(/\d+(?:\.\d+)?/g) || []) accepted.add(token);
+      }
+    });
+    const SMALL_INTEGER_MAX = 10; // structural numbers such as "Top-1", "Tier 2" or "V3"
+    const text = report
+      .split('\n').filter(line => !line.startsWith('#')).join('\n') // headings
+      .replace(/`[^`]*`/g, ' ') // code spans: paths, hashes, commands
+      .replace(/\]\([^)]*\)/g, '] ') // link and image targets
+      .replace(/(^|[\s(])[-+](?=\d)/gm, '$1'); // signs in front of numbers
+    const unmatched = [];
+    for (const token of text.match(/(?<![A-Za-z_\-\d.])\d+(?:\.\d+)?(?![\d])/g) || []) {
+      if (accepted.has(token)) continue;
+      if (/^\d+$/.test(token) && Number(token) <= SMALL_INTEGER_MAX) continue;
+      unmatched.push(token);
+    }
+    expect(unmatched).toEqual([]);
+    expect(accepted.size).toBeGreaterThan(500);
+
+    // The headline figures must be exactly the formatted JSON values.
+    const pct = v => `${(v * 100).toFixed(1)}%`;
+    const ci = c => `${pct(c[0])} to ${pct(c[1])}`;
+    const d = results.ddxplusBenchmark, m = interactions.metrics, det = results.outbreakBacktest.detector;
+    const h1 = results.outbreakBacktest.projection.byHorizon.h1;
+    for (const expected of [
+      `top-1 ${pct(symptoms.allRows.top1.accuracy)} (${ci(symptoms.allRows.top1.ci95)}); top-5 ${pct(symptoms.allRows.top5.accuracy)}`,
+      `all rows top-1 ${pct(d.allRows.top1.accuracy)} (${ci(d.allRows.top1.ci95)}); covered rows top-1 ${pct(d.coveredRowsOnly.top1.accuracy)}`,
+      `sensitivity ${pct(m.sensitivity.value)} (${ci(m.sensitivity.ci95)}); specificity ${pct(m.specificity.value)} (${ci(m.specificity.ci95)})`,
+      `week sensitivity ${pct(det.weekSensitivity.value)} (${ci(det.weekSensitivity.ci95)}); specificity ${pct(det.weekSpecificity.value)}`,
+      `MAE ${h1.mae.projection.value.toFixed(0)} cases; interval coverage ${pct(h1.intervalCoverage.value)}`,
+    ]) expect(report).toContain(expected);
+  });
+
+  test('8. the forbidden phrases appear nowhere in the evaluation outputs, limits page or scripts', () => {
+    // Built from parts so this file does not itself contain the phrases.
+    const phrases = [['clinically', 'validated'], ['clinically', 'proven'], ['accurate', 'for', 'patients']]
+      .map(words => new RegExp(words.join('\\s+'), 'i'));
+    const files = [['AI_EVALUATION.md', report], ['VALIDATION_LIMITS.md', limitsDoc],
+      ['evaluation_results.json', JSON.stringify(results)], ['data/manifest.json', JSON.stringify(dataManifest)],
+      ...sources.map(source => [source.name, source.text]),
+      ['outbreak_bridge.cjs', fs.readFileSync(path.join(evalDir, 'outbreak_bridge.cjs'), 'utf8')]];
+    const found = [];
+    for (const [name, text] of files) for (const phrase of phrases) if (phrase.test(text)) found.push(`${name}: ${phrase}`);
+    expect(found).toEqual([]);
+    for (const required of [/no real patients/i, /no clinician review/i, /no ethics approval/i, /no prospective study/i, /no regulatory assessment/i]) {
+      expect(limitsDoc).toMatch(required);
+    }
   });
 });
