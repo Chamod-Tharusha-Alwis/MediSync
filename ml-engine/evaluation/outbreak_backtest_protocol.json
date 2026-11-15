@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "frozen": true,
+  "frozenBeforeFirstRun": true,
+  "dataset": "opendengue_national",
+  "rows": "adm_0_name = 'SRI LANKA', T_res = 'Week', S_res = 'Admin0' (national weekly dengue case totals, weeks starting on Sunday).",
+  "whatThisTests": "The MediSync detector and projection algorithms on public aggregate counts. These are not MediSync consultations, so this tests the algorithms, not the platform.",
+  "gaps": {
+    "rule": "Build a weekly grid from the first to the last reported week. A run of at most maxImputedWeeks missing weeks is filled by linear interpolation between its neighbours, rounded to whole cases. A longer run splits the series into separate segments.",
+    "maxImputedWeeks": 3,
+    "imputedWeeksAreScored": false,
+    "note": "Imputed weeks are used only as model input. They are never a detector target, a reference label, or a projection target."
+  },
+  "referenceOutbreakRule": {
+    "written": "Before the detector or projection was run on these data.",
+    "epidemicWeek": "An observed week is an epidemic week when its count exceeds mean + thresholdSd x standard deviation of the observed counts in the same week of year (plus or minus seasonalWindowWeeks) in every OTHER year of the same segment.",
+    "thresholdSd": 2,
+    "seasonalWindowWeeks": 2,
+    "weekOfYear": "ISO week number of the Monday that follows the reported week start.",
+    "outbreakPeriod": "A run of at least minConsecutiveWeeks consecutive observed epidemic weeks.",
+    "minConsecutiveWeeks": 2,
+    "note": "This is a retrospective, seasonal 'endemic channel' style definition. It is independent of the detector, which compares against the previous 56 units only."
+  },
+  "detector": {
+    "function": "evaluateOutbreakCriteria in server/src/services/surveillanceService.js, called unchanged through a Node bridge, level 'island'.",
+    "unitSubstitution": "One weekly count is fed to the detector as one detector 'day'. The detector then compares a 7-week window with the previous 56 weeks. The detector was designed for daily counts per district, so this is a change of time scale.",
+    "evaluatedWeek": "Week t is evaluated when the 63 weeks t-62..t are all in the same segment. The flag for week t is the detector's 'triggered' result with week t as the last window unit.",
+    "eventMatch": "A reference outbreak period counts as detected when a flag falls in the weeks from its start minus earlyWeeks to its end.",
+    "earlyWeeks": 2,
+    "falseAlarmEpisode": "A run of consecutive flagged weeks that overlaps no reference outbreak period (with the same early allowance)."
+  },
+  "projection": {
+    "function": "calculate14DayForecast in server/src/utils/outbreakForecasting.js, called unchanged through the Node bridge with forecastDays = 4.",
+    "trainingWeeks": 14,
+    "horizonsWeeks": [1, 2, 4],
+    "unitSubstitution": "One weekly count is one input point; forecast step k is week t+k.",
+    "origin": "Every week t where the 14 training weeks and the target week t+h are in the same segment, and t+h is observed (not imputed).",
+    "baselines": {
+      "lastValue": "The count of week t.",
+      "seasonalNaive": "The count of week t+h-52 (same week one year earlier), when it lies in the same segment; otherwise the origin is left out for all methods at that horizon."
+    },
+    "metrics": "Mean absolute error per horizon for each method, and the share of targets inside the projection's 95% interval (lower <= actual <= upper).",
+    "uncertainty": "Moving-block bootstrap over origins (block length blockWeeks, 2,000 resamples, fixed seed) for each MAE and for the paired MAE difference against each baseline.",
+    "blockWeeks": 13
+  }
+}
