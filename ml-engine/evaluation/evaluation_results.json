@@ -1,4 +1,357 @@
 {
+  "calibration": {
+    "calibrationMap": {
+      "brierBetterThanBaseRate": true,
+      "eceBins": 10,
+      "inputSentencesInBothSplits": 1,
+      "label": "Isotonic map fitted on the gretelai TRAIN split (validation); evaluated on the gretelai TEST split.",
+      "mapSteps": [
+        {
+          "calibratedValue": 0.0,
+          "scoreFrom": 7.22
+        },
+        {
+          "calibratedValue": 0.0,
+          "scoreFrom": 11.77
+        },
+        {
+          "calibratedValue": 0.12,
+          "scoreFrom": 11.78
+        },
+        {
+          "calibratedValue": 0.12,
+          "scoreFrom": 13.18
+        },
+        {
+          "calibratedValue": 0.160714,
+          "scoreFrom": 13.22
+        },
+        {
+          "calibratedValue": 0.160714,
+          "scoreFrom": 14.78
+        },
+        {
+          "calibratedValue": 0.320513,
+          "scoreFrom": 14.79
+        },
+        {
+          "calibratedValue": 0.320513,
+          "scoreFrom": 17.93
+        },
+        {
+          "calibratedValue": 0.322314,
+          "scoreFrom": 17.94
+        },
+        {
+          "calibratedValue": 0.322314,
+          "scoreFrom": 45.77
+        },
+        {
+          "calibratedValue": 0.395833,
+          "scoreFrom": 45.86
+        },
+        {
+          "calibratedValue": 0.395833,
+          "scoreFrom": 47.77
+        },
+        {
+          "calibratedValue": 0.414286,
+          "scoreFrom": 47.81
+        },
+        {
+          "calibratedValue": 0.414286,
+          "scoreFrom": 53.23
+        },
+        {
+          "calibratedValue": 0.669725,
+          "scoreFrom": 53.4
+        },
+        {
+          "calibratedValue": 0.669725,
+          "scoreFrom": 85.13
+        },
+        {
+          "calibratedValue": 0.761905,
+          "scoreFrom": 85.24
+        },
+        {
+          "calibratedValue": 0.761905,
+          "scoreFrom": 117.68
+        },
+        {
+          "calibratedValue": 1.0,
+          "scoreFrom": 119.54
+        },
+        {
+          "calibratedValue": 1.0,
+          "scoreFrom": 162.01
+        }
+      ],
+      "testBaseRateBrierScore": 0.224487,
+      "testBrierScore": 0.193092,
+      "testExpectedCalibrationError": 0.03796,
+      "testReliability": [
+        {
+          "calibratedRange": "0.0-0.1",
+          "meanCalibrated": 0.0,
+          "observedAccuracy": 0.076923,
+          "rows": 13
+        },
+        {
+          "calibratedRange": "0.1-0.2",
+          "meanCalibrated": 0.143867,
+          "observedAccuracy": 0.103448,
+          "rows": 29
+        },
+        {
+          "calibratedRange": "0.3-0.4",
+          "meanCalibrated": 0.328077,
+          "observedAccuracy": 0.31405,
+          "rows": 121
+        },
+        {
+          "calibratedRange": "0.4-0.5",
+          "meanCalibrated": 0.414937,
+          "observedAccuracy": 0.4375,
+          "rows": 16
+        },
+        {
+          "calibratedRange": "0.6-0.7",
+          "meanCalibrated": 0.669725,
+          "observedAccuracy": 0.73913,
+          "rows": 23
+        },
+        {
+          "calibratedRange": "0.7-0.8",
+          "meanCalibrated": 0.761905,
+          "observedAccuracy": 0.5,
+          "rows": 8
+        },
+        {
+          "calibratedRange": "0.8-0.9",
+          "meanCalibrated": 0.874552,
+          "observedAccuracy": 1.0,
+          "rows": 1
+        },
+        {
+          "calibratedRange": "0.9-1.0",
+          "meanCalibrated": 1.0,
+          "observedAccuracy": 1.0,
+          "rows": 1
+        }
+      ],
+      "testRows": 212,
+      "trainTestOverlapNote": "Sentences that appear verbatim in both gretelai splits were not removed.",
+      "validationRows": 853,
+      "validationRowsWithAPrediction": 853,
+      "validationTop1Accuracy": 0.354045
+    },
+    "clinicalValidation": "not_established",
+    "protocol": {
+      "bandAccuracy": "Top-1 accuracy within each score band, with a 95% percentile bootstrap interval (2,000 resamples, fixed seed).",
+      "calibrationMap": {
+        "evaluatedOn": "gretelai_test only. The map is never fitted on a test split.",
+        "evaluationMetrics": "Brier score and expected calibration error (10 equal-width bins on the calibrated value) of the calibrated value on the test split, with the base-rate Brier score (always predicting the validation accuracy) for comparison.",
+        "fittedOn": "gretelai_train: the train split of gretelai/symptom_to_diagnosis, scored by the same engine and the same frozen label_mapping.json. It is a validation split for this purpose only.",
+        "method": "Isotonic regression (scikit-learn IsotonicRegression, increasing, out_of_bounds='clip') from top-1 score to 'top-1 answer is correct'.",
+        "notAppliedTo": "DDXPlus: its label set and coverage differ, so a map fitted on gretelai does not transfer."
+      },
+      "distributionSummary": "For correct and incorrect top-1 answers separately: count, minimum, quartiles, median and maximum of the score.",
+      "frozen": true,
+      "frozenBeforeFirstRun": true,
+      "notReported": "ROC-AUC and log loss of the raw score, because the raw score is not a probability.",
+      "schemaVersion": 1,
+      "score": "The 'confidence' field of the engine's top-1 prediction, as returned by /api/ml/predict-disease. It is a similarity score on a 0-100 scale that can exceed 100. It is not a probability.",
+      "scoreBandEdges": [
+        0,
+        20,
+        40,
+        60,
+        80,
+        100
+      ],
+      "scoreBandRule": "Band i holds scores s with edge[i] <= s < edge[i+1]; the last band holds every score >= the last edge.",
+      "testSets": [
+        "symptomBenchmark (gretelai test split)",
+        "ddxplusBenchmark (DDXPlus test sample)"
+      ]
+    },
+    "run": {
+      "bootstrapResamples": 2000,
+      "ciLevelPercent": 95,
+      "date": "2026-11-15",
+      "git": {
+        "branch": "eval/public-validation",
+        "commit": "060ae9b0aebdbbebc4f0dc5714db9d42f06d332b",
+        "engineOrEvaluationCodeModified": false
+      },
+      "seed": 20261116
+    },
+    "scoreIsNotAProbability": true,
+    "testSets": {
+      "ddxplusBenchmark": {
+        "accuracyByScoreBand": [
+          {
+            "accuracy": 0.0,
+            "band": "0-20",
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "correct": 0,
+            "rows": 1053
+          },
+          {
+            "accuracy": 0.006522,
+            "band": "20-40",
+            "ci95": [
+              0.002899,
+              0.01087
+            ],
+            "correct": 9,
+            "rows": 1380
+          },
+          {
+            "accuracy": 0.0,
+            "band": "40-60",
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "correct": 0,
+            "rows": 302
+          },
+          {
+            "accuracy": 0.23913,
+            "band": "60-80",
+            "ci95": [
+              0.163043,
+              0.326087
+            ],
+            "correct": 22,
+            "rows": 92
+          },
+          {
+            "accuracy": 0.0,
+            "band": "80-100",
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "correct": 0,
+            "rows": 89
+          },
+          {
+            "accuracy": null,
+            "band": "100+",
+            "ci95": null,
+            "correct": 0,
+            "rows": 0
+          }
+        ],
+        "correctTop1Scores": {
+          "count": 31,
+          "max": 73.72,
+          "median": 65.93,
+          "min": 20.47,
+          "q1": 38.24,
+          "q3": 70.775
+        },
+        "incorrectTop1Scores": {
+          "count": 2885,
+          "max": 99.26,
+          "median": 23.29,
+          "min": 7.41,
+          "q1": 18.43,
+          "q3": 30.02
+        },
+        "rowsWithAPrediction": 2916,
+        "scoreAbove100": 0
+      },
+      "symptomBenchmark": {
+        "accuracyByScoreBand": [
+          {
+            "accuracy": 0.208955,
+            "band": "0-20",
+            "ci95": [
+              0.119403,
+              0.313433
+            ],
+            "correct": 14,
+            "rows": 67
+          },
+          {
+            "accuracy": 0.226415,
+            "band": "20-40",
+            "ci95": [
+              0.113208,
+              0.339623
+            ],
+            "correct": 12,
+            "rows": 53
+          },
+          {
+            "accuracy": 0.439394,
+            "band": "40-60",
+            "ci95": [
+              0.318182,
+              0.560606
+            ],
+            "correct": 29,
+            "rows": 66
+          },
+          {
+            "accuracy": 0.692308,
+            "band": "60-80",
+            "ci95": [
+              0.461538,
+              0.923077
+            ],
+            "correct": 9,
+            "rows": 13
+          },
+          {
+            "accuracy": 0.5,
+            "band": "80-100",
+            "ci95": [
+              0.125,
+              0.875
+            ],
+            "correct": 4,
+            "rows": 8
+          },
+          {
+            "accuracy": 0.8,
+            "band": "100+",
+            "ci95": [
+              0.4,
+              1.0
+            ],
+            "correct": 4,
+            "rows": 5
+          }
+        ],
+        "correctTop1Scores": {
+          "count": 72,
+          "max": 120.68,
+          "median": 45.35,
+          "min": 11.74,
+          "q1": 23.7725,
+          "q3": 58.96
+        },
+        "incorrectTop1Scores": {
+          "count": 140,
+          "max": 116.36,
+          "median": 32.495,
+          "min": 7.13,
+          "q1": 14.32,
+          "q3": 44.13
+        },
+        "rowsWithAPrediction": 212,
+        "scoreAbove100": 5
+      }
+    }
+  },
   "clinicalValidation": "not_established",
   "ddxplusBenchmark": {
     "allRows": {
