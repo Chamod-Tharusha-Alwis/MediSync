@@ -280,6 +280,15 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   summary.outbreaksDetected = alertMap.size;
   summary.signalsSuppressed = summary.suppressed?.length || 0;
 
+  // 72-hour projection snapshot (write-once) for alerts raised by this scan, and the actual next-72h outcome
+  // for earlier snapshots whose period this scan now covers. Does not affect detection; failures are ignored.
+  try {
+    const collection = OutbreakAlert && OutbreakAlert.collection;
+    if (collection && typeof collection.updateOne === 'function' && typeof collection.find === 'function') {
+      summary.projection72h = await require('./alertProjection72h').recordSnapshotsAndOutcomes(collection, summary.results, selection.cases, { asOf: now, lookbackStart: +now - 63 * DAY, now: new Date() });
+    }
+  } catch (_) {}
+
   let scanRecord = null;
   try {
     const OutbreakScan = require('../models/OutbreakScan');
