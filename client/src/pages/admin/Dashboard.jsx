@@ -548,11 +548,25 @@ const ManageUsers = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENT: Overview Stats & Geo Maps
 // ─────────────────────────────────────────────────────────────────────────────
-const Overview = ({ stats, geo, activeAlerts: allAlerts }) => {
+// Skeleton shown only on the overview route while its data loads; other admin pages render immediately.
+const OverviewSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" data-testid="overview-skeleton">
+    <div className="h-8 w-72 rounded-lg bg-slate-800/50 animate-pulse" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {[0, 1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-slate-800/40 border border-white/5 animate-pulse" />)}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {[0, 1].map(i => <div key={i} className="h-72 rounded-2xl bg-slate-800/40 border border-white/5 animate-pulse" />)}
+    </div>
+  </div>
+);
+
+const Overview = ({ stats, geo, activeAlerts: allAlerts, loadErrors = [], onRetry }) => {
   // The admin alert list returns Active and Pending alerts. Only approved (Active) alerts drive the banner;
   // the map shows both, with pending alerts in a distinct dashed style.
-  const activeAlerts = (allAlerts || []).filter(a => a.status === 'Active');
-  const pendingCount = (allAlerts || []).filter(a => a.status === 'Pending').length;
+  const alertList = Array.isArray(allAlerts) ? allAlerts : [];
+  const activeAlerts = alertList.filter(a => a.status === 'Active');
+  const pendingCount = alertList.filter(a => a.status === 'Pending').length;
   const { t } = useTranslation();
   const [systemHealth, setSystemHealth] = useState(null);
 
@@ -583,6 +597,13 @@ const Overview = ({ stats, geo, activeAlerts: allAlerts }) => {
       <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('admin.commandCenter', 'Administration Dashboard')}</h1>
       <p className="text-slate-400 mt-1 text-sm font-medium">{t('admin.commandSubtitle', 'Platform surveillance logs, operational nodes, and regional health outbreaks map.')}</p>
     </div>
+
+    {loadErrors.length > 0 && (
+      <div role="alert" data-testid="overview-error" className="mb-4 p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-sm text-red-200">
+        Could not load {loadErrors.join(' and ')}. The rest of the page is shown with the data that did load.{' '}
+        {onRetry && <button type="button" className="underline" onClick={onRetry}>Retry</button>}
+      </div>
+    )}
 
     {/* ML Active Outbreak Alert Header */}
     {activeAlerts && activeAlerts.length > 0 && (
@@ -666,7 +687,7 @@ const Overview = ({ stats, geo, activeAlerts: allAlerts }) => {
         </h3>
         <p className="text-slate-500 text-xs select-none">Geographic mapping overlay of active health anomalies.</p>
         <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
-          <GeographicMap hospitals={geo?.hospitals || []} alerts={allAlerts || []} includePending />
+          <GeographicMap hospitals={geo?.hospitals || []} alerts={alertList} includePending />
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 select-none" data-testid="map-legend">
           {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#3b82f6']].map(([label, colour]) => (
@@ -773,25 +794,27 @@ const AdminDashboard = () => {
   const [geo, setGeo] = useState(null);
   const [activeAlerts, setActiveAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadErrors, setLoadErrors] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    // Statistics and alerts load independently: one slow or failed request no longer blanks the other.
     const fetchData = async () => {
-      try {
-        const [statsRes, alertsRes] = await Promise.all([
-          api.get('/admin/stats'),
-          api.get('/admin/outbreak/alerts')
-        ]);
-        setStats(statsRes.data.data);
-        setGeo(null);
-        setActiveAlerts(alertsRes.data.data);
-      } catch (err) {
-        toast.error('Failed to load system data');
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      const [statsRes, alertsRes] = await Promise.allSettled([
+        api.get('/admin/stats'),
+        api.get('/admin/outbreak/alerts')
+      ]);
+      const errors = [];
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data); else errors.push('platform statistics');
+      if (alertsRes.status === 'fulfilled') setActiveAlerts(Array.isArray(alertsRes.value.data?.data) ? alertsRes.value.data.data : []); else errors.push('outbreak alerts');
+      setGeo(null);
+      setLoadErrors(errors);
+      if (errors.length) toast.error('Failed to load system data');
+      setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [reloadKey]);
 
   // Socket.IO real-time integration
   useEffect(() => {
@@ -934,11 +957,9 @@ const AdminDashboard = () => {
         menuItems={menuItems}
       >
         <div className="mt-4">
-          {loading ? (
-            <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
-          ) : (
+          {(
             <Routes>
-              <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
+              <Route path="/dashboard" element={loading ? <OverviewSkeleton /> : <Overview stats={stats} geo={geo} activeAlerts={activeAlerts} loadErrors={loadErrors} onRetry={() => setReloadKey(k => k + 1)} />} />
               <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
               <Route path="/dashboard/users" element={<ManageUsers />} />
               <Route path="/dashboard/identity" element={<Navigate to="/admin/dashboard/users" replace />} />

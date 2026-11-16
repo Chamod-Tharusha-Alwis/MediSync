@@ -25,19 +25,22 @@ const ML_ENGINE_URL = process.env.ML_ENGINE_URL;
 // ─── EXISTING: getSystemStats ─────────────────────────────────────────────────
 exports.getSystemStats = async (req, res) => {
   try {
-    const totalDoctors = await Doctor.countDocuments({ role: 'doctor' });
-    const totalPatients = await Patient.countDocuments();
-    const totalHospitals = await Hospital.countDocuments();
-    const totalPharmacies = await PharmacyStaff.countDocuments({ role: 'pharmacy_admin' });
-    const totalConsultations = await Consultation.countDocuments();
-    const totalPrescriptions = await Prescription.countDocuments();
-
-    const recentAuditLogs = await AuditLog.find()
-      .sort({ timestamp: -1 })
-      .limit(10);
-    // Read-only feed for the dashboard: newest 200 events in natural (insertion) order of the capped
-    // collection, action, role and time only (no ids, NICs or details). Presentation is mapped on the client.
-    const auditEvents = await AuditLog.find({}, { action: 1, actorRole: 1, timestamp: 1 }).sort({ $natural: -1 }).limit(200).lean();
+    // The queries are independent, so they run concurrently: one database round trip instead of eight in
+    // sequence (measured: 859 ms -> see docs/demo/FIXPACK_RUNBOOK.md at 80 ms round-trip latency).
+    const [totalDoctors, totalPatients, totalHospitals, totalPharmacies, totalConsultations, totalPrescriptions, recentAuditLogs, auditEvents] = await Promise.all([
+      Doctor.countDocuments({ role: 'doctor' }),
+      Patient.countDocuments(),
+      Hospital.countDocuments(),
+      PharmacyStaff.countDocuments({ role: 'pharmacy_admin' }),
+      Consultation.countDocuments(),
+      Prescription.countDocuments(),
+      AuditLog.find()
+        .sort({ timestamp: -1 })
+        .limit(10),
+      // Read-only feed for the dashboard: newest 200 events in natural (insertion) order of the capped
+      // collection, action, role and time only (no ids, NICs or details). Presentation is mapped on the client.
+      AuditLog.find({}, { action: 1, actorRole: 1, timestamp: 1 }).sort({ $natural: -1 }).limit(200).lean(),
+    ]);
 
     res.json({
       data: {

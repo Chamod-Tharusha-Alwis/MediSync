@@ -241,6 +241,8 @@ const OutbreakMonitor = () => {
   const [detecting,   setDetecting]   = useState(false);
   const [alertsLoaded, setAlertsLoaded] = useState(false);
   const [error,       setError]       = useState(null);
+  const [alertsError, setAlertsError] = useState(false);
+  const reloadAlertsRef = React.useRef(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [surveillanceLevel, setSurveillanceLevel] = useState('district'); // 'district' | 'province' | 'island'
   const [growthData, setGrowthData] = useState(null);
@@ -293,25 +295,16 @@ const OutbreakMonitor = () => {
     let pollCount = 0;
 
     const fetchStatusAndAlerts = async () => {
-      const [s, a, g, sc] = await Promise.allSettled([
-        api.get('/admin/ml-status'),
+      // The ML status probe can take ~20 s while the ML engine wakes up (measured offline). The alert list
+      // no longer waits for it: alerts render as soon as they arrive and the status card updates later.
+      const statusPromise = api.get('/admin/ml-status').then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+      const [a, g, sc] = await Promise.allSettled([
         api.get('/admin/outbreak/alerts'),
         api.get('/admin/outbreak/growth?window=72h'),
         api.get('/admin/outbreak/last-scan'),
       ]);
       if (!mounted) return;
-      const status = s.status === 'fulfilled' ? s.value?.data : null;
-      const isAvailable = status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
-        && status.dataPointUnit === 'reference disease profiles';
-      const isWaking = status?.availabilityState === 'waking' || status?.status === 'waking';
-
-      setModelStatus(
-        isAvailable
-          ? status
-          : isWaking
-            ? status
-            : null
-      );
+      setAlertsError(a.status !== 'fulfilled');
       if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
         setAlerts(a.value.data.data);
         setAlertsLoaded(true);
@@ -326,12 +319,28 @@ const OutbreakMonitor = () => {
       }
       setLoading(false);
 
+      const s = await statusPromise;
+      if (!mounted) return;
+      const status = s.status === 'fulfilled' ? s.value?.data : null;
+      const isAvailable = status?.available === true && Number.isSafeInteger(status.dataPoints) && status.dataPoints >= 0
+        && status.dataPointUnit === 'reference disease profiles';
+      const isWaking = status?.availabilityState === 'waking' || status?.status === 'waking';
+
+      setModelStatus(
+        isAvailable
+          ? status
+          : isWaking
+            ? status
+            : null
+      );
+
       if (isWaking && pollCount < 6) {
         pollCount += 1;
         pollTimer = setTimeout(fetchStatusAndAlerts, 10000);
       }
     };
 
+    reloadAlertsRef.current = () => { setLoading(true); fetchStatusAndAlerts(); };
     fetchStatusAndAlerts();
 
     return () => {
@@ -623,11 +632,14 @@ const OutbreakMonitor = () => {
   }, [growthData, growthView, outbreakAlerts]);
 
   if (loading) return (
-    <div className="flex h-64 items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
-        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider animate-pulse">Initializing Command Center…</p>
+    <div className="space-y-4" aria-busy="true" data-testid="monitor-skeleton">
+      <div className="flex items-center gap-3">
+        <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Initializing Command Center…</p>
       </div>
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="h-14 rounded-xl bg-slate-800/40 border border-white/5 animate-pulse" />
+      ))}
     </div>
   );
 
@@ -1165,6 +1177,12 @@ const OutbreakMonitor = () => {
           </div>
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">
+            {alertsError && (
+              <div role="alert" className="mb-4 text-sm text-red-300" data-testid="alerts-error">
+                Alerts could not be loaded.{' '}
+                <button type="button" className="underline text-red-200" onClick={() => reloadAlertsRef.current && reloadAlertsRef.current()}>Retry</button>
+              </div>
+            )}
             <Activity className="w-12 h-12 mx-auto mb-3 opacity-30 animate-pulse" />
             <p className="text-sm font-semibold">{alertsLoaded ? t("adminStatus.noAlerts", "No alerts returned.") : t("adminStatus.notAvailable", "Not available")}</p>
           </div>

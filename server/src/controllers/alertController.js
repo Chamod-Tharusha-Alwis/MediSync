@@ -31,17 +31,22 @@ exports.getActiveAlerts = async (req, res) => {
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
     const statusFilter = { $in: ['Active', 'Pending'] };
-    let alerts = await OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter}).select('-sourceConsultationIds').sort({createdAt:-1}).lean();
+    // Growth metrics and the last scan do not depend on the alert list: start them now so the round trips overlap.
+    // Mongoose queries run only when awaited; Promise.resolve(query) starts each one immediately.
+    const growthPromise = Promise.resolve().then(() => service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' })).catch(() => null);
+    const lastScanPromise = Promise.resolve().then(() => service.getLastScan(simulation ? 'simulation' : 'real'));
+    lastScanPromise.catch(() => {}); // a rejection is still raised where it is awaited below
+    let alerts = Promise.resolve(OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter}).select('-sourceConsultationIds').sort({createdAt:-1}).lean());
+    const demoPromise = simulation ? null : Promise.resolve(OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean());
+    if (demoPromise) demoPromise.catch(() => {});
+    alerts = await alerts;
     if (!simulation) {
       // Viva demonstration alerts are labelled isDemoData and carry their seed batch; reviewers
       // still need to see them, so they are listed separately and keep their labels.
-      const demo = await OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean();
+      const demo = await demoPromise;
       alerts = mergeAlerts(alerts, (demo || []).map(labelDemonstrationAlert));
     }
-    let growthData = null;
-    try {
-      growthData = await service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' });
-    } catch (_) {}
+    const growthData = await growthPromise;
     let enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
     // Previous / actual / projected 72h from verified consultations. Stored snapshots are shown as stored;
     // alerts created before snapshots existed get a live computation as of their own creation time.
@@ -55,7 +60,7 @@ exports.getActiveAlerts = async (req, res) => {
         return { ...alert, alert72h: projection.alertView(alert, projection.computeAlertNumbers(alert, cases, { asOf, lookbackStart: +asOf - 63 * 86400000 })) };
       }));
     } catch (_) {}
-    const lastScan = await service.getLastScan(simulation ? 'simulation' : 'real');
+    const lastScan = await lastScanPromise;
     res.json({ data: enriched, lastScan });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
