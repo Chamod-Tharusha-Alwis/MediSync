@@ -134,9 +134,10 @@ function buildDetailedOutbreakEmail(alert = {}, numbers = {}, options = {}) {
   const frontend = safeUrl(options.frontendUrl || process.env.FRONTEND_URL) || 'https://medisync.chamodtharusha.com.lk';
   const links = { publicMap: `${frontend}/public-health`, adminPage: `${frontend}/admin/dashboard/outbreak`, settings: `${frontend}/settings` };
   const isSynthetic = Boolean(options.isSynthetic);
-  const subject = `${options.isTest ? '[TEST] ' : ''}[MediSync] ${L.alertFor(severity, name, district)}`;
-  const n = numbers;
-  const range = n.enoughHistory ? `${L.range} ${n.low}–${n.high}` : L.noHistory;
+  // [TEST] for the administrator test email; [DEMONSTRATION] for synthetic alerts (existing subject convention).
+  const subject = `${options.isTest ? '[TEST] ' : isSynthetic ? '[DEMONSTRATION] ' : ''}[MediSync] ${L.alertFor(severity, name, district)}`;
+  const n = { available: numbers && Number.isFinite(numbers.actual72h), ...numbers };
+  const range = n.available && n.enoughHistory ? `${L.range} ${n.low}–${n.high}` : L.noHistory;
 
   const summaryRows = [
     [L.disease, name], [L.icd, icd], [L.district, district], [L.severity, severity],
@@ -144,7 +145,8 @@ function buildDetailedOutbreakEmail(alert = {}, numbers = {}, options = {}) {
     [L.approvedBy, alert.approvedAt ? (options.approverRole || 'Administrator') : L.notApproved],
     [L.approvedAt, fmtDate(alert.approvedAt) || L.notApproved],
   ];
-  const numberRows = [
+  const na = 'not available';
+  const numberRows = !n.available ? [[L.numbers, na]] : [
     [L.actual, String(n.actual72h)], [L.previous, String(n.previous72h)],
     [L.change, `${n.change >= 0 ? '+' : ''}${n.change} (${fmtPct(n.percentChange)})`],
     [L.projected, `${n.projected} (${range}; ${L.caveat})`],
@@ -180,7 +182,7 @@ function buildDetailedOutbreakEmail(alert = {}, numbers = {}, options = {}) {
     '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>',
     '<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">',
     '<div style="max-width:640px;margin:0 auto;background:#ffffff;padding:24px;">',
-    isSynthetic ? `<div data-synthetic-banner="true" style="padding:12px;margin-bottom:16px;background:#fef3c7;border:2px solid #d97706;color:#92400e;font-weight:bold;">${e(L.banner)}</div>` : '',
+    isSynthetic ? `<div data-demo-banner="true" style="padding:12px;margin-bottom:16px;background:#FFEBEE;border:2px solid #D32F2F;color:#B71C1C;font-weight:bold;">${e(L.banner)}</div>` : '',
     `<h1 style="font-size:20px;color:#0f172a;margin:0 0 12px;">${e(subject)}</h1>`,
     h2(L.summary), table(summaryRows),
     h2(L.numbers), table(numberRows),

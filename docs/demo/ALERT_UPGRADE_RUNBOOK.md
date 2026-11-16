@@ -63,10 +63,10 @@ The controls that already exist stay in force:
    - the numbers match the screen;
    - the fact sheet shows sources with "accessed 2026-11-16";
    - the opt-out line is present.
-4. Only then choose **District** scope and approve.
+4. Only then choose **District** scope and approve. For a synthetic alert the subject starts with `[DEMONSTRATION] [MediSync] ...`, which is the existing demonstration convention.
    - For a synthetic alert, the recipients are the allowlist only.
    - Leave the scope at **None** if you want no email at all.
-5. The server log shows only `[OUTBREAK EMAIL] subject="..." messageId=...`. It never shows the body
+5. The server log shows only `[OUTBREAK EMAIL] subject="..." messageIds=... accepted=n/m`. It never shows the body
    or the addresses.
 
 ## 3. What to say at the viva

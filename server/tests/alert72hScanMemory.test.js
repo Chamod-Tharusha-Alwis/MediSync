@@ -39,7 +39,7 @@ jest.setTimeout(180000);
     expect(out.approval.emailDelivery).toMatchObject({ attempted: true, sentCount: 1, isDemonstration: true });
     expect(out.approval.capturedMails).toHaveLength(1);
     expect(out.approval.capturedMails[0].to).toEqual(['viva.admin@qa.medisync.local']);
-    expect(out.approval.capturedMails[0].subject).toBe('[MediSync] Critical: Dengue alert for Kurunegala');
+    expect(out.approval.capturedMails[0].subject).toBe('[DEMONSTRATION] [MediSync] Critical: Dengue alert for Kurunegala');
     expect(out.approval.capturedMails[0].textHead[1]).toBe('SYNTHETIC DEMONSTRATION ALERT. Not an active public health notice.');
   });
 });

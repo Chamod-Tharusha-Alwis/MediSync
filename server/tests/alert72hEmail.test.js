@@ -17,7 +17,7 @@ describe('detailed email content', () => {
   test.each(['en', 'si', 'ta'])('renders in %s with every number from the fixture and no patient field', language => {
     const m = buildDetailedOutbreakEmail(ALERT, NUMBERS, { language, isSynthetic: true, approverRole: 'Administrator', frontendUrl: 'https://example.test' });
     expect(m.language).toBe(language);
-    expect(m.subject).toMatch(/^\[MediSync\] Critical: /);
+    expect(m.subject).toMatch(/^\[DEMONSTRATION\] \[MediSync\] Critical: /);
     for (const body of [m.text, htmlText(m.html)]) {
       for (const v of ['38', '17', '+21 (+123.5%)', '38 (', '31–46', '138', '0.00233%', '2.33', '3, 2, 5, 10, 11, 13, 14', 'verified MediSync consultations only (lower bound)', 'A90', 'Kurunegala'])
         expect(body).toContain(v);
@@ -29,7 +29,9 @@ describe('detailed email content', () => {
 
   test('English subject format and sections', () => {
     const m = buildDetailedOutbreakEmail(ALERT, NUMBERS, { language: 'en', isSynthetic: true });
-    expect(m.subject).toBe('[MediSync] Critical: Dengue alert for Kurunegala');
+    expect(m.subject).toBe('[DEMONSTRATION] [MediSync] Critical: Dengue alert for Kurunegala');
+    expect(m.html).toContain('data-demo-banner="true"');
+    expect(buildDetailedOutbreakEmail({ ...ALERT, syntheticSeedBatch: undefined, isSynthetic: false }, NUMBERS, { language: 'en', isSynthetic: false }).subject).toBe('[MediSync] Critical: Dengue alert for Kurunegala');
     for (const h of ['Alert summary', 'What it is', 'How it spreads', 'Common symptoms', 'Danger signs and when to seek urgent care', 'Prevention and what the public can do',
       'Note for clinicians', 'What this alert means and does not mean', 'It needs review by a person', 'not a confirmed outbreak', 'No patient data is included',
       'projection, not a forecast', '/public-health', '/admin/dashboard/outbreak', 'https://www.health.gov.lk', 'opt out', 'https://www.who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue', 'accessed 2026-11-16'])
@@ -59,6 +61,12 @@ describe('detailed email content', () => {
     expect(escapeHtml(`<a href="x">'&`)).toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;');
   });
 
+  test('numbers that cannot be loaded are shown as not available, never invented', () => {
+    const m = buildDetailedOutbreakEmail(ALERT, {}, { language: 'en', isSynthetic: true });
+    expect(m.text).toContain('Numbers (computed from records): not available');
+    expect(m.text).not.toMatch(/Cases in the actual last 72 hours/);
+  });
+
   test('insufficient history shows no range', () => {
     const m = buildDetailedOutbreakEmail(ALERT, { ...NUMBERS, enoughHistory: false, low: null, high: null }, { language: 'en', isSynthetic: true });
     expect(m.text).toContain('not enough history for a range');
@@ -68,7 +76,10 @@ describe('detailed email content', () => {
 function fakeMail({ sentToday = 0 } = {}) {
   const sent = [];
   return { sent, getDailyDispatchedEmailCount: async () => sentToday,
-    sendMail: async o => { sent.push(o); return { providerAccepted: true, messageId: `m-${sent.length}` }; } };
+    sendOutbreakAlert: async (emails, payload) => {
+      for (const to of emails) sent.push({ to, ...payload });
+      return { success: true, acceptedCount: emails.length, totalCount: emails.length, messageIds: emails.map((_, i) => `m-${sent.length - emails.length + i + 1}`) };
+    } };
 }
 const base = { numbers: NUMBERS, languages: new Map(), approverRole: 'Administrator' };
 
@@ -120,7 +131,7 @@ describe('detailed email delivery controls', () => {
     expect(r.sentCount).toBe(3);
     expect(Object.keys(r.subjects).sort()).toEqual(['en', 'si', 'ta']);
     const logged = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
-    expect(logged).toContain('messageId=m-1');
+    expect(logged).toContain('messageIds=m-1');
     expect(logged).not.toMatch(/@example\.test|Danger signs|<html/);
   });
 });

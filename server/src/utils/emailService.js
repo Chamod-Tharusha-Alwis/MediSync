@@ -1349,6 +1349,7 @@ exports.sendOutbreakAlert = async (emailList, districtOrPayload, message, zScore
     errorCode: acceptedCount > 0 ? null : (results[0]?.errorCode || 'bulk_fallback_prohibited'),
     acceptedCount,
     totalCount: recipients.length,
+    messageIds: results.map((r) => r.messageId || null),
   };
 };
 

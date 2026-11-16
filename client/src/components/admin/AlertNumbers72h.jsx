@@ -18,7 +18,7 @@ export function SyntheticDemoBadge() {
     <span
       data-testid="synthetic-demo-badge"
       title={SYNTHETIC_ALERT_SENTENCE}
-      className="inline-block mt-0.5 px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold tracking-wider text-amber-400 whitespace-nowrap"
+      className="inline-block mt-0.5 px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-xs font-bold tracking-wider text-amber-400 whitespace-nowrap"
     >
       SYNTHETIC DEMO DATA
     </span>
@@ -33,7 +33,7 @@ export function ProjectionHelp({ view }) {
       <Info className="w-3 h-3 text-slate-500 cursor-help" aria-label="How the projection was made" tabIndex={0} />
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-4 top-0 z-20 hidden w-64 rounded-lg border border-white/10 bg-slate-950 p-2 text-[11px] font-normal leading-snug text-slate-300 shadow-lg group-hover:block group-focus-within:block"
+        className="pointer-events-none absolute left-4 top-0 z-20 hidden w-64 rounded-lg border border-white/10 bg-slate-950 p-2 text-xs font-normal leading-snug text-slate-300 shadow-lg group-hover:block group-focus-within:block"
       >
         {view?.helpText || 'Projection method unavailable.'}
       </span>
@@ -52,7 +52,7 @@ export function AlertNumbers72h({ view }) {
         <span>Projected next 72 hours: <span className="text-sky-300 font-bold" data-testid="n-projected">{view.projected ?? 'N/A'}</span> <span className="text-slate-500" data-testid="n-range">({fmtRange(view)})</span></span>
         <ProjectionHelp view={view} />
       </div>
-      <div className="text-[10px] italic text-slate-500">{view.caveat || 'projection, not a forecast'}</div>
+      <div className="text-xs italic text-slate-500">{view.caveat || 'projection, not a forecast'}</div>
       {o && (
         <div className="text-xs text-emerald-300" data-testid="n-outcome">
           Actual next 72 hours: <span className="font-bold">{o.actualNext72h}</span> (error {o.absoluteError}{o.withinRange === null ? '' : o.withinRange ? ', inside range' : ', outside range'})
@@ -77,30 +77,30 @@ export function AlertDetail72h({ alert }) {
       {v ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-3 rounded-xl bg-slate-900/70 border border-white/5">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500">Previous 72 hours</div>
+            <div className="text-xs uppercase tracking-wider text-slate-500">Previous 72 hours</div>
             <div className="text-2xl font-bold text-slate-100" data-testid="d-previous">{v.previous72h}</div>
-            <div className="text-[10px] text-slate-500">{w ? `${fmtDate(w.previousStart)} – ${fmtDate(w.previousEnd)}` : ''}</div>
+            <div className="text-xs text-slate-500">{w ? `${fmtDate(w.previousStart)} – ${fmtDate(w.previousEnd)}` : ''}</div>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/70 border border-white/5">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500">Actual last 72 hours</div>
+            <div className="text-xs uppercase tracking-wider text-slate-500">Actual last 72 hours</div>
             <div className="text-2xl font-bold text-white" data-testid="d-actual">{v.actual72h}</div>
-            <div className="text-[10px] text-slate-500">{w ? `${fmtDate(w.actualStart)} – ${fmtDate(w.actualEnd)} (ends at the last complete day)` : ''}</div>
+            <div className="text-xs text-slate-500">{w ? `${fmtDate(w.actualStart)} – ${fmtDate(w.actualEnd)} (ends at the last complete day)` : ''}</div>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/70 border border-sky-500/20">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 flex items-center gap-1">Projected next 72 hours <ProjectionHelp view={v} /></div>
+            <div className="text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1">Projected next 72 hours <ProjectionHelp view={v} /></div>
             <div className="text-2xl font-bold text-sky-300" data-testid="d-projected">{v.projected}</div>
-            <div className="text-[10px] text-slate-400">{fmtRange(v)} · {v.caveat}</div>
+            <div className="text-xs text-slate-400">{fmtRange(v)} · {v.caveat}</div>
             {v.outcome ? (
-              <div className="mt-1 text-[11px] text-emerald-300" data-testid="d-outcome">Actual next 72 hours: <b>{v.outcome.actualNext72h}</b> · absolute error {v.outcome.absoluteError}</div>
+              <div className="mt-1 text-xs text-emerald-300" data-testid="d-outcome">Actual next 72 hours: <b>{v.outcome.actualNext72h}</b> · absolute error {v.outcome.absoluteError}</div>
             ) : (
-              <div className="mt-1 text-[10px] text-slate-500">Actual next 72 hours appears after a scan covers {w ? `${fmtDate(w.nextStart)} – ${fmtDate(w.nextEnd)}` : 'that period'}.</div>
+              <div className="mt-1 text-xs text-slate-500">Actual next 72 hours appears after a scan covers {w ? `${fmtDate(w.nextStart)} – ${fmtDate(w.nextEnd)}` : 'that period'}.</div>
             )}
           </div>
         </div>
       ) : (
         <div className="text-slate-500">72-hour numbers are not available for this alert.</div>
       )}
-      <div className="text-[10px] text-slate-500">
+      <div className="text-xs text-slate-500">
         Counts: {v?.dataNote || 'verified MediSync consultations only (lower bound)'}. Method {v?.methodVersion || 'n/a'}; {v?.historyWindows ?? 0} past 72-hour windows; snapshot {v?.stored ? 'stored at scan time' : 'computed live (alert predates snapshots)'}.
       </div>
     </div>

@@ -1035,7 +1035,7 @@ const OutbreakMonitor = () => {
                               type="button"
                               onClick={() => setExpandedAlertId(prev => (prev === alert._id ? null : alert._id))}
                               aria-expanded={expandedAlertId === alert._id}
-                              className="block mt-1 text-[11px] text-sky-400 hover:text-sky-300 underline-offset-2 hover:underline"
+                              className="block mt-1 text-xs text-sky-400 hover:text-sky-300 underline-offset-2 hover:underline"
                             >
                               {expandedAlertId === alert._id ? 'Hide details' : 'Details'}
                             </button>

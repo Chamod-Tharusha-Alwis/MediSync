@@ -84,19 +84,24 @@ async function sendDetailedOutbreakEmail(recipients = [], alert = {}, options = 
   const room = Math.max(0, cap - used);
   if (room < allowed.length) { result.skippedCount += allowed.length - room; allowed = allowed.slice(0, room); if (!allowed.length) { result.blockedReason = 'DAILY_EMAIL_CAP_REACHED'; return result; } }
 
-  const numbers = options.numbers || await numbersForAlert(alert, { cases: options.cases });
+  // Numbers come from records; if they cannot be loaded the email says "not available" (never invented values).
+  let numbers = options.numbers || null;
+  if (!numbers) { try { numbers = await numbersForAlert(alert, { cases: options.cases }); } catch (_) { numbers = {}; } }
   const languages = options.languages || await resolveLanguages(allowed, { db: options.db });
-  const from = typeof emailService.getResendFromAddress === 'function' ? emailService.getResendFromAddress() : undefined;
-  for (const to of allowed) {
-    const language = languages.get(to) || 'en';
+  // One send per language group through the existing outbreak transport (emailService.sendOutbreakAlert).
+  const groups = new Map();
+  for (const to of allowed) { const lang = languages.get(to) || 'en'; if (!groups.has(lang)) groups.set(lang, []); groups.get(lang).push(to); }
+  for (const [language, emails] of groups) {
     const mail = buildDetailedOutbreakEmail(alert, numbers, { language, isSynthetic: isDemo, isTest: options.isTest, approverRole: options.approverRole, frontendUrl: options.frontendUrl });
     result.subjects[language] = mail.subject;
     try {
-      const res = await emailService.sendMail({ ...(from ? { from } : {}), allowFallback: false, to, subject: mail.subject, html: mail.html, text: mail.text });
-      if (res && res.providerAccepted) result.sentCount++; else { result.failedCount++; result.errors.push(res?.errorCode || 'DELIVERY_REJECTED'); }
-      console.log(`[OUTBREAK EMAIL] subject="${mail.subject}" messageId=${res?.messageId || 'none'} accepted=${Boolean(res?.providerAccepted)}`);
+      const res = await emailService.sendOutbreakAlert(emails, { subject: mail.subject, html: mail.html, text: mail.text });
+      const accepted = res && res.success !== false ? (res.acceptedCount !== undefined ? res.acceptedCount : emails.length) : 0;
+      result.sentCount += accepted; result.failedCount += emails.length - accepted;
+      if (!accepted) result.errors.push(res?.errorCode || 'DELIVERY_REJECTED');
+      console.log(`[OUTBREAK EMAIL] subject="${mail.subject}" messageIds=${(res?.messageIds || []).filter(Boolean).join(',') || 'none'} accepted=${accepted}/${emails.length}`);
     } catch (err) {
-      result.failedCount++; result.errors.push('TRANSPORT_ERROR');
+      result.failedCount += emails.length; result.errors.push('TRANSPORT_ERROR');
     }
   }
   result.subject = Object.values(result.subjects)[0];
