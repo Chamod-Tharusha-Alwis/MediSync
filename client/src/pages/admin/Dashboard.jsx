@@ -15,6 +15,7 @@ import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
+import AuditFeedPanel from '../../components/admin/AuditFeedPanel';
 import GeographicMap from '../../components/common/GeographicMap';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { formatDistrictName } from '../../utils/districtAdjacency';
@@ -547,7 +548,11 @@ const ManageUsers = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENT: Overview Stats & Geo Maps
 // ─────────────────────────────────────────────────────────────────────────────
-const Overview = ({ stats, geo, activeAlerts }) => {
+const Overview = ({ stats, geo, activeAlerts: allAlerts }) => {
+  // The admin alert list returns Active and Pending alerts. Only approved (Active) alerts drive the banner;
+  // the map shows both, with pending alerts in a distinct dashed style.
+  const activeAlerts = (allAlerts || []).filter(a => a.status === 'Active');
+  const pendingCount = (allAlerts || []).filter(a => a.status === 'Pending').length;
   const { t } = useTranslation();
   const [systemHealth, setSystemHealth] = useState(null);
 
@@ -650,59 +655,7 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         </h3>
         <p className="text-slate-500 text-xs select-none">Live auditing telemetry logs ingested from distributed workspaces.</p>
 
-        <div className="space-y-3.5 h-72 overflow-y-auto pr-2 custom-scrollbar">
-          {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
-            stats.recentAuditLogs.map((log) => {
-              const ACTION_MAP = {
-                login: 'Logged into the system',
-                register: 'Registered a new account',
-                create_patient: 'Registered a new patient',
-                update_patient: 'Updated patient profile',
-                create_consultation: 'Created a new consultation',
-                order_test: 'Ordered a new lab test',
-                update_test: 'Updated lab test results',
-                dispense_medication: 'Dispensed medication',
-                trigger_outbreak: 'Triggered an outbreak alert',
-                approve_outbreak: 'Approved an outbreak alert',
-                resolve_outbreak: 'Resolved an outbreak alert',
-                ban_user: 'Suspended a user',
-                lift_ban: 'Lifted user suspension'
-              };
-
-              const actionLower = (log.action || '').toLowerCase();
-              let badgeColor = 'bg-slate-800 text-slate-400 border border-slate-700/50';
-              if (actionLower.includes('login')) badgeColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-              if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-              if (actionLower.includes('delete') || actionLower.includes('block') || actionLower.includes('ban')) badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
-
-              const humanAction = ACTION_MAP[actionLower] || log.action;
-              const actorName = log.actorName || log.actorId;
-              const targetEntity = log.targetEntity || log.accessedNic || 'system node';
-
-              return (
-                <div key={log._id} className="bg-slate-950/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-                  <div className="flex justify-between items-start mb-2 select-none">
-                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
-                      {log.action}
-                    </span>
-                    <span className="text-xs text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-slate-300 font-medium">
-                    <span className="text-white font-bold">{actorName}</span>
-                    <span className="text-slate-500 ml-1 text-[11px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
-                    <br/>
-                    <span className="text-slate-400 mt-1 inline-block">{humanAction} regarding <span className="text-blue-400 font-semibold">{targetEntity}</span>.</span>
-                  </p>
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 select-none">
-              <ScrollText className="w-8 h-8 mb-2 opacity-30" />
-              <p className="text-xs">No active event logging recorded.</p>
-            </div>
-          )}
-        </div>
+        <AuditFeedPanel events={stats?.auditEvents || stats?.recentAuditLogs || []} />
       </div>
 
       {/* Geospatial Map */}
@@ -713,8 +666,20 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         </h3>
         <p className="text-slate-500 text-xs select-none">Geographic mapping overlay of active health anomalies.</p>
         <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
-          <GeographicMap hospitals={geo?.hospitals || []} alerts={activeAlerts || []} />
+          <GeographicMap hospitals={geo?.hospitals || []} alerts={allAlerts || []} includePending />
         </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 select-none" data-testid="map-legend">
+          {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#3b82f6']].map(([label, colour]) => (
+            <span key={label} className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colour }} />{label}</span>
+          ))}
+          <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-full border-2 border-slate-300" />Approved</span>
+          <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-full border-2 border-dashed border-slate-300" />Pending review</span>
+        </div>
+        {activeAlerts.length === 0 && (
+          <p className="text-xs text-slate-400" data-testid="map-empty-state">
+            No approved alerts.{pendingCount > 0 ? <> {pendingCount} pending alert{pendingCount === 1 ? '' : 's'} need{pendingCount === 1 ? 's' : ''} review in the <a href="/admin/dashboard/outbreak" className="text-sky-400 underline">outbreak monitor</a>.</> : ''}
+          </p>
+        )}
       </div>
     </div>
 
@@ -814,7 +779,7 @@ const AdminDashboard = () => {
       try {
         const [statsRes, alertsRes] = await Promise.all([
           api.get('/admin/stats'),
-          api.get('/alerts/active')
+          api.get('/admin/outbreak/alerts')
         ]);
         setStats(statsRes.data.data);
         setGeo(null);

@@ -35,6 +35,9 @@ exports.getSystemStats = async (req, res) => {
     const recentAuditLogs = await AuditLog.find()
       .sort({ timestamp: -1 })
       .limit(10);
+    // Read-only feed for the dashboard: newest 200 events in natural (insertion) order of the capped
+    // collection, action, role and time only (no ids, NICs or details). Presentation is mapped on the client.
+    const auditEvents = await AuditLog.find({}, { action: 1, actorRole: 1, timestamp: 1 }).sort({ $natural: -1 }).limit(200).lean();
 
     res.json({
       data: {
@@ -44,7 +47,8 @@ exports.getSystemStats = async (req, res) => {
         totalPharmacies,
         totalConsultations,
         totalPrescriptions,
-        recentAuditLogs
+        recentAuditLogs,
+        auditEvents
       }
     });
   } catch (error) {
