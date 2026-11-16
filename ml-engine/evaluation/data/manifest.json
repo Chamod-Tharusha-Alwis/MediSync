@@ -52,6 +52,40 @@
       "url": "https://ndownloader.figshare.com/files/40495565",
       "usedFor": "V1 second independent symptom benchmark"
     },
+    "ddxplus_train_patients": {
+      "bytes": 140923730,
+      "downloadDate": "2026-11-16",
+      "file": "ddxplus/release_train_patients.zip",
+      "licence": {
+        "evidence": "figshare API licence field, article 20043374 (https://creativecommons.org/licenses/by/4.0/)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/ddxplus/release_train_patients.zip (gitignored, not committed)",
+      "name": "DDXPlus (English release, train patients)",
+      "nature": "Synthetic patients generated from a proprietary medical knowledge base. Not real patient data.",
+      "page": "https://doi.org/10.6084/m9.figshare.20043374",
+      "rows": 1025602,
+      "sha256": "174ae1d56f36a15b7144838ecd214e1e1748a5369fc90c559529b6dc6ecfb218",
+      "url": "https://ndownloader.figshare.com/files/40495568",
+      "usedFor": "Study Phase C: training sample for the shadow models (offline study, not in production)"
+    },
+    "ddxplus_validate_patients": {
+      "bytes": 18706053,
+      "downloadDate": "2026-11-16",
+      "file": "ddxplus/release_validate_patients.zip",
+      "licence": {
+        "evidence": "figshare API licence field, article 20043374 (https://creativecommons.org/licenses/by/4.0/)",
+        "licence": "CC BY 4.0"
+      },
+      "localPath": "ml-engine/evaluation/data/ddxplus/release_validate_patients.zip (gitignored, not committed)",
+      "name": "DDXPlus (English release, validation patients)",
+      "nature": "Synthetic patients generated from a proprietary medical knowledge base. Not real patient data.",
+      "page": "https://doi.org/10.6084/m9.figshare.20043374",
+      "rows": 132448,
+      "sha256": "625a96855becf0efe5da339fd3d440aa99597d48f784957a97dacc3fceaa7e40",
+      "url": "https://ndownloader.figshare.com/files/40495571",
+      "usedFor": "Study Phase C: hyperparameter selection and permutation importance only"
+    },
     "gretelai_test": {
       "bytes": 42506,
       "downloadDate": "2026-11-15",

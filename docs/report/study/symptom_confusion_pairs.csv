@@ -1,0 +1,6 @@
+rank,truePathology,predictedPathology,rows,shareOfTrueClassRows
+1,Acute rhinosinusitis,Chronic rhinosinusitis,248,0.135593
+2,Unstable angina,Stable angina,30,0.015
+3,Chronic rhinosinusitis,Acute rhinosinusitis,19,0.0095
+4,Viral pharyngitis,Acute laryngitis,7,0.0035
+5,Acute laryngitis,Viral pharyngitis,1,0.0005

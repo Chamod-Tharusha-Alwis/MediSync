@@ -1,0 +1,4 @@
+split,rows,classes,smallestClassRows,largestClassRows,evidencesPerPatientMean,evidencesPerPatientMedian,evidencesPerPatientMin,evidencesPerPatientMax,symptomsPerPatientMean,patientsWithNoSymptomEvidence,ageMean,ageMin,ageMax,shareMale,missingAge,missingSex,missingEvidences
+train,141831,49,261,3000,18.738308,19,2,45,14.484739,0,39.462057,0,109,0.487404,0,0,0
+validate,27930,49,28,600,18.87952,19,2,45,14.624526,0,40.181812,0,109,0.482206,0,0,0
+test,85801,49,36,2000,19.340695,19,2,44,14.973334,0,40.219298,0,109,0.485216,0,0,0
