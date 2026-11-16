@@ -1,0 +1,20 @@
+{
+  "label": "synthetic demonstration data",
+  "measuredOn": "2026-11-16",
+  "mongod": "8.3.4",
+  "asWritten": {
+    "count": 30352,
+    "size": 32161563,
+    "totalIndexSize": 20480,
+    "bytesPerConsultation": 1060.3
+  },
+  "encryptedForm": {
+    "count": 30032,
+    "size": 35919969,
+    "totalIndexSize": 1089536,
+    "bytesPerConsultation": 1232.3
+  },
+  "bytesPerConsultationUsed": 1232.3,
+  "bytesPerParentDocument": 687,
+  "note": "collStats size (uncompressed BSON) + totalIndexSize, averaged over the collection; the larger of the two forms is used for projections."
+}
