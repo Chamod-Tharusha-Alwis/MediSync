@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 import { formatPopulationShare } from '../../utils/populationIncidence';
+import { AlertNumbers72h, AlertDetail72h, SyntheticDemoBadge, isSyntheticSeedAlert, SYNTHETIC_ALERT_SENTENCE } from '../../components/admin/AlertNumbers72h';
 
 function diseasesMatch(d1, d2) {
   if (!d1 || !d2) return false;
@@ -250,6 +251,7 @@ const OutbreakMonitor = () => {
   
   // New workflow state
   const [testEmailSending, setTestEmailSending] = useState(false);
+  const [expandedAlertId, setExpandedAlertId] = useState(null);
   const [approveModal, setApproveModal] = useState({
     isOpen: false,
     alertId: null,
@@ -1013,7 +1015,8 @@ const OutbreakMonitor = () => {
                   const m72 = deriveAlert72h(alert, growthData);
                   const changeStr = formatChange(m72.currentCases, m72.previousCases, m72.percentChange);
                   return (
-                    <tr key={alert._id} className="hover:bg-white/[0.01] transition-colors">
+                    <React.Fragment key={alert._id}>
+                    <tr className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {isLive && <PulseRing color={isCrit ? 'bg-red-500' : 'bg-amber-500'} />}
@@ -1021,11 +1024,21 @@ const OutbreakMonitor = () => {
                             <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
                             {alert.disease || 'Unknown'}
                             </span>
-                            {(alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
+                            {isSyntheticSeedAlert(alert) ? (
+                              <div><SyntheticDemoBadge /></div>
+                            ) : (alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
                               <span className="block text-[11px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
                                 {alert.syntheticLabel}
                               </span>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedAlertId(prev => (prev === alert._id ? null : alert._id))}
+                              aria-expanded={expandedAlertId === alert._id}
+                              className="block mt-1 text-[11px] text-sky-400 hover:text-sky-300 underline-offset-2 hover:underline"
+                            >
+                              {expandedAlertId === alert._id ? 'Hide details' : 'Details'}
+                            </button>
                           </div>
                         </div>
                       </td>
@@ -1036,6 +1049,7 @@ const OutbreakMonitor = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-xs">
+                        {alert.alert72h && <div className="mb-1.5"><AlertNumbers72h view={alert.alert72h} /></div>}
                         <div className="font-mono text-sm font-bold text-white">
                           {m72.currentCases} cases <span className="text-xs font-normal text-slate-400">(last 72h)</span>
                         </div>
@@ -1138,6 +1152,12 @@ const OutbreakMonitor = () => {
                         {alert.createdAt ? formatSriLankaDateTime(alert.createdAt) : 'N/A'}
                       </td>
                     </tr>
+                    {expandedAlertId === alert._id && (
+                      <tr>
+                        <td colSpan={6} className="p-0"><AlertDetail72h alert={alert} /></td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -1309,6 +1329,7 @@ const OutbreakMonitor = () => {
 
               {approveModal.isDemonstration && (
                 <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl space-y-1 text-xs text-amber-200">
+                  <span className="block font-semibold uppercase tracking-wide" data-testid="approve-synthetic-sentence">{SYNTHETIC_ALERT_SENTENCE}</span>
                   <span className="font-bold">⚠ DEMONSTRATION ALERT:</span> {t('outbreak.demonstrationNotice', 'Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.')} ({approveModal.previewCount !== null ? approveModal.previewCount : 1} recipient).
                 </div>
               )}
