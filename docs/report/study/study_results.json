@@ -367,5 +367,506 @@
       "originStep": 2,
       "origins": 130
     }
+  },
+  "phaseB": {
+    "byReference": {
+      "R1_strict": {
+        "configurations": {
+          "fixed_p75": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.564972,
+            "falseAlarmRate": 0.261905,
+            "family": "fixed_threshold",
+            "fn": 0,
+            "fp": 77,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "precision": 0.393701,
+            "recall": 1.0,
+            "threshold": 901.75,
+            "tn": 217,
+            "tp": 50
+          },
+          "fixed_p90": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.763359,
+            "falseAlarmRate": 0.105442,
+            "family": "fixed_threshold",
+            "fn": 0,
+            "fp": 31,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "precision": 0.617284,
+            "recall": 1.0,
+            "threshold": 1305.2,
+            "tn": 263,
+            "tp": 50
+          },
+          "fixed_p95": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.790322,
+            "falseAlarmRate": 0.085034,
+            "family": "fixed_threshold",
+            "fn": 1,
+            "fp": 25,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "precision": 0.662162,
+            "recall": 0.98,
+            "threshold": 1370.3,
+            "tn": 269,
+            "tp": 49
+          },
+          "z1.5_persist": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.469798,
+            "falseAlarmRate": 0.217687,
+            "family": "production_rule",
+            "fn": 15,
+            "fp": 64,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.353535,
+            "recall": 0.7,
+            "tn": 230,
+            "tp": 35,
+            "z": 1.5
+          },
+          "z1.5_single": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.413794,
+            "falseAlarmRate": 0.29932,
+            "family": "production_rule",
+            "fn": 14,
+            "fp": 88,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.290323,
+            "recall": 0.72,
+            "tn": 206,
+            "tp": 36,
+            "z": 1.5
+          },
+          "z2.0_persist": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.551181,
+            "falseAlarmRate": 0.142857,
+            "family": "production_rule",
+            "fn": 15,
+            "fp": 42,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.454545,
+            "recall": 0.7,
+            "tn": 252,
+            "tp": 35,
+            "z": 2.0
+          },
+          "z2.0_single": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.507042,
+            "falseAlarmRate": 0.190476,
+            "family": "production_rule",
+            "fn": 14,
+            "fp": 56,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.391304,
+            "recall": 0.72,
+            "tn": 238,
+            "tp": 36,
+            "z": 2.0
+          },
+          "z2.5_persist": {
+            "delaysWeeks": [
+              1
+            ],
+            "f1": 0.552381,
+            "falseAlarmRate": 0.088435,
+            "family": "production_rule",
+            "fn": 21,
+            "fp": 26,
+            "medianDelayWeeks": 1.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.527273,
+            "recall": 0.58,
+            "tn": 268,
+            "tp": 29,
+            "z": 2.5
+          },
+          "z2.5_single": {
+            "delaysWeeks": [
+              0
+            ],
+            "f1": 0.552845,
+            "falseAlarmRate": 0.132653,
+            "family": "production_rule",
+            "fn": 16,
+            "fp": 39,
+            "medianDelayWeeks": 0.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.465753,
+            "recall": 0.68,
+            "tn": 255,
+            "tp": 34,
+            "z": 2.5
+          },
+          "z3.0_persist": {
+            "delaysWeeks": [
+              2
+            ],
+            "f1": 0.466667,
+            "falseAlarmRate": 0.064626,
+            "family": "production_rule",
+            "fn": 29,
+            "fp": 19,
+            "medianDelayWeeks": 2.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.525,
+            "recall": 0.42,
+            "tn": 275,
+            "tp": 21,
+            "z": 3.0
+          },
+          "z3.0_single": {
+            "delaysWeeks": [
+              1
+            ],
+            "f1": 0.518519,
+            "falseAlarmRate": 0.102041,
+            "family": "production_rule",
+            "fn": 22,
+            "fp": 30,
+            "medianDelayWeeks": 1.0,
+            "periods": 1,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.482759,
+            "recall": 0.56,
+            "tn": 264,
+            "tp": 28,
+            "z": 3.0
+          }
+        },
+        "epidemicWeeks": 50,
+        "evaluatedWeeks": 344,
+        "periods": [
+          {
+            "end": "2017-12-10",
+            "start": "2017-01-08",
+            "weeks": 49
+          }
+        ],
+        "rule": {
+          "minConsecutiveWeeks": 2,
+          "seasonalWindowWeeks": 2,
+          "thresholdSd": 2
+        }
+      },
+      "R2_moderate": {
+        "configurations": {
+          "fixed_p75": {
+            "delaysWeeks": [
+              -2,
+              0
+            ],
+            "f1": 0.596685,
+            "falseAlarmRate": 0.251724,
+            "family": "fixed_threshold",
+            "fn": 0,
+            "fp": 73,
+            "medianDelayWeeks": -1.0,
+            "periods": 2,
+            "periodsDetected": 2,
+            "precision": 0.425197,
+            "recall": 1.0,
+            "threshold": 901.75,
+            "tn": 217,
+            "tp": 54
+          },
+          "fixed_p90": {
+            "delaysWeeks": [
+              0,
+              0
+            ],
+            "f1": 0.8,
+            "falseAlarmRate": 0.093103,
+            "family": "fixed_threshold",
+            "fn": 0,
+            "fp": 27,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 2,
+            "precision": 0.666667,
+            "recall": 1.0,
+            "threshold": 1305.2,
+            "tn": 263,
+            "tp": 54
+          },
+          "fixed_p95": {
+            "delaysWeeks": [
+              0,
+              0
+            ],
+            "f1": 0.828125,
+            "falseAlarmRate": 0.072414,
+            "family": "fixed_threshold",
+            "fn": 1,
+            "fp": 21,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 2,
+            "precision": 0.716216,
+            "recall": 0.981481,
+            "threshold": 1370.3,
+            "tn": 269,
+            "tp": 53
+          },
+          "z1.5_persist": {
+            "delaysWeeks": [
+              1,
+              0
+            ],
+            "f1": 0.496732,
+            "falseAlarmRate": 0.210345,
+            "family": "production_rule",
+            "fn": 16,
+            "fp": 61,
+            "medianDelayWeeks": 0.5,
+            "periods": 2,
+            "periodsDetected": 2,
+            "persistence": true,
+            "precision": 0.383838,
+            "recall": 0.703704,
+            "tn": 229,
+            "tp": 38,
+            "z": 1.5
+          },
+          "z1.5_single": {
+            "delaysWeeks": [
+              0,
+              0
+            ],
+            "f1": 0.449439,
+            "falseAlarmRate": 0.289655,
+            "family": "production_rule",
+            "fn": 14,
+            "fp": 84,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 2,
+            "persistence": false,
+            "precision": 0.322581,
+            "recall": 0.740741,
+            "tn": 206,
+            "tp": 40,
+            "z": 1.5
+          },
+          "z2.0_persist": {
+            "delaysWeeks": [
+              null,
+              0
+            ],
+            "f1": 0.534351,
+            "falseAlarmRate": 0.144828,
+            "family": "production_rule",
+            "fn": 19,
+            "fp": 42,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.454545,
+            "recall": 0.648148,
+            "tn": 248,
+            "tp": 35,
+            "z": 2.0
+          },
+          "z2.0_single": {
+            "delaysWeeks": [
+              null,
+              0
+            ],
+            "f1": 0.49315,
+            "falseAlarmRate": 0.193103,
+            "family": "production_rule",
+            "fn": 18,
+            "fp": 56,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.391304,
+            "recall": 0.666667,
+            "tn": 234,
+            "tp": 36,
+            "z": 2.0
+          },
+          "z2.5_persist": {
+            "delaysWeeks": [
+              null,
+              1
+            ],
+            "f1": 0.53211,
+            "falseAlarmRate": 0.089655,
+            "family": "production_rule",
+            "fn": 25,
+            "fp": 26,
+            "medianDelayWeeks": 1.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.527273,
+            "recall": 0.537037,
+            "tn": 264,
+            "tp": 29,
+            "z": 2.5
+          },
+          "z2.5_single": {
+            "delaysWeeks": [
+              null,
+              0
+            ],
+            "f1": 0.535433,
+            "falseAlarmRate": 0.134483,
+            "family": "production_rule",
+            "fn": 20,
+            "fp": 39,
+            "medianDelayWeeks": 0.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.465753,
+            "recall": 0.62963,
+            "tn": 251,
+            "tp": 34,
+            "z": 2.5
+          },
+          "z3.0_persist": {
+            "delaysWeeks": [
+              null,
+              2
+            ],
+            "f1": 0.446809,
+            "falseAlarmRate": 0.065517,
+            "family": "production_rule",
+            "fn": 33,
+            "fp": 19,
+            "medianDelayWeeks": 2.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": true,
+            "precision": 0.525,
+            "recall": 0.388889,
+            "tn": 271,
+            "tp": 21,
+            "z": 3.0
+          },
+          "z3.0_single": {
+            "delaysWeeks": [
+              null,
+              1
+            ],
+            "f1": 0.5,
+            "falseAlarmRate": 0.103448,
+            "family": "production_rule",
+            "fn": 26,
+            "fp": 30,
+            "medianDelayWeeks": 1.0,
+            "periods": 2,
+            "periodsDetected": 1,
+            "persistence": false,
+            "precision": 0.482759,
+            "recall": 0.518519,
+            "tn": 260,
+            "tp": 28,
+            "z": 3.0
+          }
+        },
+        "epidemicWeeks": 54,
+        "evaluatedWeeks": 344,
+        "periods": [
+          {
+            "end": "2014-11-30",
+            "start": "2014-11-09",
+            "weeks": 4
+          },
+          {
+            "end": "2017-12-10",
+            "start": "2017-01-08",
+            "weeks": 49
+          }
+        ],
+        "rule": {
+          "minConsecutiveWeeks": 2,
+          "seasonalWindowWeeks": 2,
+          "thresholdSd": 1
+        }
+      }
+    },
+    "dataset": {
+      "name": "OpenDengue national extract V1.3.1",
+      "sha256": "c588335f25f2202e4f87d271381f385c76ffd4dcb68348f40c2a6fcab8889d4e"
+    },
+    "fixedThresholds": {
+      "p75": 901.75,
+      "p90": 1305.2,
+      "p95": 1370.3
+    },
+    "label": "offline study, not in production",
+    "proxyStatement": "National weekly counts, one week fed as one detector day, are a proxy for the production detector, which runs on daily consultation episodes per district. This tests the rule, not the platform.",
+    "reimplementationCheck": {
+      "mismatches": 0,
+      "productionZ": 2.0,
+      "weeksCompared": 344
+    },
+    "run": {
+      "bootstrapResamples": 2000,
+      "ciLevelPercent": 95,
+      "date": "2026-11-16",
+      "git": {
+        "branch": "eval/ds-study",
+        "commit": "1b24bf6e357c97feb67920bd991983c6c13e3bb4",
+        "engineOrEvaluationCodeModified": false
+      },
+      "label": "offline study, not in production",
+      "seed": 20261116
+    },
+    "segment": {
+      "evaluableWeeks": 344,
+      "firstEvaluatedWeek": "2011-03-13",
+      "weeks": 418
+    }
   }
 }
