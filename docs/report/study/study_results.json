@@ -1,0 +1,371 @@
+{
+  "clinicalValidation": "not_established",
+  "environment": {
+    "Flask": "3.1.3",
+    "cmdstanpy": "1.3.0",
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "prophet": "1.5.0",
+    "python": "3.14.6",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "statsmodels": "0.15.0"
+  },
+  "label": "offline study, not in production",
+  "phaseA": {
+    "blockWeeks": 13,
+    "byHorizon": {
+      "h1": {
+        "ets": {
+          "horizon": 1,
+          "mae": 212.106557,
+          "maeCi95": [
+            119.986987,
+            311.499553
+          ],
+          "mase": 0.59119,
+          "model": "ets",
+          "origins": 125,
+          "rmse": 371.071941
+        },
+        "naive": {
+          "horizon": 1,
+          "mae": 212.144,
+          "maeCi95": [
+            122.2638,
+            323.5142
+          ],
+          "mase": 0.591295,
+          "model": "naive",
+          "origins": 125,
+          "rmse": 389.464001
+        },
+        "productionProjection": {
+          "horizon": 1,
+          "mae": 434.24,
+          "maeCi95": [
+            203.2038,
+            668.7108
+          ],
+          "mase": 1.210328,
+          "model": "productionProjection",
+          "origins": 125,
+          "rmse": 834.655627
+        },
+        "prophet": {
+          "horizon": 1,
+          "mae": 487.457734,
+          "maeCi95": [
+            271.550029,
+            790.396085
+          ],
+          "mase": 1.358658,
+          "model": "prophet",
+          "origins": 125,
+          "rmse": 768.949144
+        },
+        "prophet_vs_productionProjection": {
+          "blockBootstrapCi95": [
+            -90.582614,
+            281.225195
+          ],
+          "dieboldMarianoP": 0.471489,
+          "dieboldMarianoStatistic": 0.720058,
+          "meanAbsErrorDifference": 53.217734,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 125
+        },
+        "prophet_vs_sarima": {
+          "blockBootstrapCi95": [
+            131.740934,
+            455.578211
+          ],
+          "dieboldMarianoP": 0.0,
+          "dieboldMarianoStatistic": 5.706307,
+          "meanAbsErrorDifference": 266.485195,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 125
+        },
+        "sarima": {
+          "horizon": 1,
+          "mae": 220.972538,
+          "maeCi95": [
+            119.096344,
+            361.817739
+          ],
+          "mase": 0.615902,
+          "model": "sarima",
+          "origins": 125,
+          "rmse": 432.875257
+        },
+        "seasonalNaive": {
+          "horizon": 1,
+          "mae": 831.296,
+          "maeCi95": [
+            407.271,
+            1514.7488
+          ],
+          "mase": 2.317015,
+          "model": "seasonalNaive",
+          "origins": 125,
+          "rmse": 1486.260499
+        }
+      },
+      "h2": {
+        "ets": {
+          "horizon": 2,
+          "mae": 309.093033,
+          "maeCi95": [
+            138.881248,
+            557.561235
+          ],
+          "mase": 0.861514,
+          "model": "ets",
+          "origins": 126,
+          "rmse": 606.500822
+        },
+        "naive": {
+          "horizon": 2,
+          "mae": 304.579365,
+          "maeCi95": [
+            132.813889,
+            546.215079
+          ],
+          "mase": 0.848933,
+          "model": "naive",
+          "origins": 126,
+          "rmse": 621.537182
+        },
+        "productionProjection": {
+          "horizon": 2,
+          "mae": 562.547619,
+          "maeCi95": [
+            230.669048,
+            921.178175
+          ],
+          "mase": 1.567951,
+          "model": "productionProjection",
+          "origins": 126,
+          "rmse": 1064.838362
+        },
+        "prophet": {
+          "horizon": 2,
+          "mae": 590.970829,
+          "maeCi95": [
+            297.415606,
+            981.462307
+          ],
+          "mase": 1.647173,
+          "model": "prophet",
+          "origins": 126,
+          "rmse": 1013.136115
+        },
+        "prophet_vs_productionProjection": {
+          "blockBootstrapCi95": [
+            -150.653532,
+            298.472946
+          ],
+          "dieboldMarianoP": 0.784325,
+          "dieboldMarianoStatistic": 0.273687,
+          "meanAbsErrorDifference": 28.42321,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 126
+        },
+        "prophet_vs_sarima": {
+          "blockBootstrapCi95": [
+            127.959,
+            478.01373
+          ],
+          "dieboldMarianoP": 3.4e-05,
+          "dieboldMarianoStatistic": 4.143504,
+          "meanAbsErrorDifference": 285.151247,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 126
+        },
+        "sarima": {
+          "horizon": 2,
+          "mae": 305.819582,
+          "maeCi95": [
+            129.546914,
+            560.107857
+          ],
+          "mase": 0.85239,
+          "model": "sarima",
+          "origins": 126,
+          "rmse": 656.471427
+        },
+        "seasonalNaive": {
+          "horizon": 2,
+          "mae": 864.02381,
+          "maeCi95": [
+            424.946032,
+            1510.461111
+          ],
+          "mase": 2.408235,
+          "model": "seasonalNaive",
+          "origins": 126,
+          "rmse": 1540.376657
+        }
+      },
+      "h4": {
+        "ets": {
+          "horizon": 4,
+          "mae": 436.69258,
+          "maeCi95": [
+            202.730285,
+            779.105786
+          ],
+          "mase": 1.217164,
+          "model": "ets",
+          "origins": 126,
+          "rmse": 871.678215
+        },
+        "naive": {
+          "horizon": 4,
+          "mae": 504.18254,
+          "maeCi95": [
+            218.591667,
+            974.048016
+          ],
+          "mase": 1.405274,
+          "model": "naive",
+          "origins": 126,
+          "rmse": 1056.441207
+        },
+        "productionProjection": {
+          "horizon": 4,
+          "mae": 790.055556,
+          "maeCi95": [
+            358.840079,
+            1328.706349
+          ],
+          "mase": 2.202068,
+          "model": "productionProjection",
+          "origins": 126,
+          "rmse": 1514.11404
+        },
+        "prophet": {
+          "horizon": 4,
+          "mae": 674.196722,
+          "maeCi95": [
+            317.183156,
+            1168.136216
+          ],
+          "mase": 1.879143,
+          "model": "prophet",
+          "origins": 126,
+          "rmse": 1202.69282
+        },
+        "prophet_vs_productionProjection": {
+          "blockBootstrapCi95": [
+            -380.571813,
+            185.078062
+          ],
+          "dieboldMarianoP": 0.497905,
+          "dieboldMarianoStatistic": -0.67779,
+          "meanAbsErrorDifference": -115.858833,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 126
+        },
+        "prophet_vs_sarima": {
+          "blockBootstrapCi95": [
+            -19.112147,
+            389.892057
+          ],
+          "dieboldMarianoP": 0.137791,
+          "dieboldMarianoStatistic": 1.484066,
+          "meanAbsErrorDifference": 175.968266,
+          "negativeMeansFirstModelBetter": true,
+          "origins": 126
+        },
+        "sarima": {
+          "horizon": 4,
+          "mae": 498.228456,
+          "maeCi95": [
+            222.540021,
+            912.570535
+          ],
+          "mase": 1.388678,
+          "model": "sarima",
+          "origins": 126,
+          "rmse": 1055.800988
+        },
+        "seasonalNaive": {
+          "horizon": 4,
+          "mae": 862.785714,
+          "maeCi95": [
+            430.502778,
+            1568.963492
+          ],
+          "mase": 2.404784,
+          "model": "seasonalNaive",
+          "origins": 126,
+          "rmse": 1540.274576
+        }
+      }
+    },
+    "comparisonLimits": "Multi-step forecasts from overlapping windows are serially dependent; about 130 origins; absolute errors are heavy-tailed; a single national series. The Diebold-Mariano test assumes a stationary loss differential, which the 2017 epidemic breaks. Treat both the test and the block-bootstrap interval as rough.",
+    "dataset": {
+      "licence": "CC BY 4.0",
+      "name": "OpenDengue national extract V1.3.1",
+      "sha256": "c588335f25f2202e4f87d271381f385c76ffd4dcb68348f40c2a6fcab8889d4e"
+    },
+    "label": "offline study, not in production",
+    "maseScale": 358.778846,
+    "prophetSettings": {
+      "changepoint_prior_scale": 0.05,
+      "daily_seasonality": false,
+      "growth": "linear",
+      "interval_width": 0.95,
+      "seasonality_mode": "multiplicative",
+      "weekly_seasonality": false,
+      "yearly_seasonality": true
+    },
+    "run": {
+      "bootstrapResamples": 2000,
+      "ciLevelPercent": 95,
+      "date": "2026-11-16",
+      "git": {
+        "branch": "eval/ds-study",
+        "commit": "7e66fce898733fdfb8eb4604fbab74e29deccad0",
+        "engineOrEvaluationCodeModified": true
+      },
+      "label": "offline study, not in production",
+      "seed": 20261116
+    },
+    "sarima": {
+      "aic": -12.351064,
+      "gridFits": 72,
+      "order": [
+        1,
+        1,
+        2
+      ],
+      "seasonalOrder": [
+        1,
+        0,
+        0,
+        52
+      ]
+    },
+    "segment": {
+      "firstWeek": "2010-01-03",
+      "imputedWeeks": 13,
+      "lastWeek": "2017-12-31",
+      "weeks": 418
+    },
+    "split": {
+      "firstOrigin": "2012-12-23",
+      "horizons": [
+        1,
+        2,
+        4
+      ],
+      "initialTrainingWeeks": 156,
+      "lastOrigin": "2017-12-03",
+      "originStep": 2,
+      "origins": 130
+    }
+  }
+}
