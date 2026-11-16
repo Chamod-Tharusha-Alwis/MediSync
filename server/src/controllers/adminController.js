@@ -1041,6 +1041,7 @@ exports.approveAlert = async (req, res) => {
 
           if (audience.recipients.length > 0) {
             const deliveryResult = await delivery.sendOutbreakAdvisoryEmail(audience.recipients, updated, {
+              detailed: true,
               isDemo: emailDelivery.isDemonstration,
               adminEmail: req.user?.email,
               approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
@@ -1157,6 +1158,7 @@ exports.sendTestOutbreakEmail = async (req, res) => {
       [{ email: adminEmail, role: 'admin_test', district: alert.location || alert.district || 'National' }],
       alert,
       {
+        detailed: true,
         isTest: true,
         adminEmail,
         approverRole: req.user?.role === 'health_officer' ? 'Regional Epidemiologist / Health Officer' : 'Ministry of Health Authorized Administrator'
