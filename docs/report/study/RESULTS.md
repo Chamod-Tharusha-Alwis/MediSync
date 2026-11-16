@@ -52,13 +52,13 @@
 | B: R2_moderate, z2.5_single | recall 63.0%, false-alarm rate 13.4%, precision 46.6%, F1 0.535, detected 1/2, median delay 0.0 wk | detector_sweep.csv |
 | B: R2_moderate, z3.0_persist | recall 38.9%, false-alarm rate 6.6%, precision 52.5%, F1 0.447, detected 1/2, median delay 2.0 wk | detector_sweep.csv |
 | B: R2_moderate, z3.0_single | recall 51.9%, false-alarm rate 10.3%, precision 48.3%, F1 0.500, detected 1/2, median delay 1.0 wk | detector_sweep.csv |
-| C: linearSvm | top-1 98.1% (98.0% to 98.2%); top-3 100.0%; top-5 100.0%; macro F1 0.983 (98.2% to 98.4%); McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
-| C: logisticRegression | top-1 98.1% (98.0% to 98.2%); top-3 100.0%; top-5 100.0%; macro F1 0.983 (98.2% to 98.3%); Brier 0.027, ECE 0.004; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
-| C: logisticRegressionAllFields | top-1 99.6% (99.6% to 99.7%); top-3 100.0%; top-5 100.0%; macro F1 0.997 (99.6% to 99.7%); Brier 0.006, ECE 0.001; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
-| C: majorityClass | top-1 2.3% (2.2% to 2.4%); top-3 7.0%; top-5 11.7%; macro F1 0.001 (0.1% to 0.1%); McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
-| C: naiveBayes | top-1 98.0% (97.9% to 98.1%); top-3 100.0%; top-5 100.0%; macro F1 0.982 (98.1% to 98.2%); Brier 0.033, ECE 0.013; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
-| C: productionEngine | top-1 0.3% (0.3% to 0.4%); top-3 4.2%; top-5 5.9%; macro F1 0.006 (0.6% to 0.7%) | symptom_study_metrics.csv |
-| C: randomForest | top-1 98.0% (97.9% to 98.1%); top-3 100.0%; top-5 100.0%; macro F1 0.982 (98.1% to 98.3%); Brier 0.033, ECE 0.018; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: linearSvm | top-1 98.1% (98.0% to 98.2%); top-3 100.0%; top-5 100.0%; macro F1 0.983 (0.982 to 0.984); McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: logisticRegression | top-1 98.1% (98.0% to 98.2%); top-3 100.0%; top-5 100.0%; macro F1 0.983 (0.982 to 0.983); Brier 0.027, ECE 0.004; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: logisticRegressionAllFields | top-1 99.6% (99.6% to 99.7%); top-3 100.0%; top-5 100.0%; macro F1 0.997 (0.996 to 0.997); Brier 0.006, ECE 0.001; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: majorityClass | top-1 2.3% (2.2% to 2.4%); top-3 7.0%; top-5 11.7%; macro F1 0.001 (0.001 to 0.001); McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: naiveBayes | top-1 98.0% (97.9% to 98.1%); top-3 100.0%; top-5 100.0%; macro F1 0.982 (0.981 to 0.982); Brier 0.033, ECE 0.013; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
+| C: productionEngine | top-1 0.3% (0.3% to 0.4%); top-3 4.2%; top-5 5.9%; macro F1 0.006 (0.006 to 0.007) | symptom_study_metrics.csv |
+| C: randomForest | top-1 98.0% (97.9% to 98.1%); top-3 100.0%; top-5 100.0%; macro F1 0.982 (0.981 to 0.983); Brier 0.033, ECE 0.018; McNemar vs engine p = 0.0000 | symptom_study_metrics.csv |
 
 ## 2. Plain-language reading
 

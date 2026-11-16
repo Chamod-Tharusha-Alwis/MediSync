@@ -8,7 +8,7 @@ Written by `ml-engine/evaluation/study/write_cards.py` from the results files. C
 |---|---|
 | Intended use | Suggest candidate conditions from symptom phrases entered by a clinician, for the clinician to accept or reject. |
 | Evaluation data | gretelai/symptom_to_diagnosis test split (212 LLM-rewritten rows); DDXPlus test sample (85801 synthetic rows, 11 of 49 pathologies have a profile). |
-| Metrics | gretelai: top-1 34.0% (27.8% to 40.6%), top-5 56.1%. DDXPlus: top-1 0.3% (0.3% to 0.4%), top-5 5.9%, macro F1 0.006 (0.6% to 0.7%). |
+| Metrics | gretelai: top-1 34.0% (27.8% to 40.6%), top-5 56.1%. DDXPlus: top-1 0.3% (0.3% to 0.4%), top-5 5.9%, macro F1 0.006 (0.006 to 0.007). |
 | Comparison | Best shadow model in this study (logisticRegressionAllFields, 507 multi-hot features, offline study, not in production): DDXPlus top-1 99.6% (99.6% to 99.7%), macro F1 0.997; McNemar vs engine p = 0.0000. |
 | Known failures | The vectorizer keeps stop words, so function words drive rankings (Hypoglycemia first on 37 wrong gretelai rows). Similarity scores are not probabilities. |
 | Limits | Synthetic or LLM-rewritten benchmark text; partial profile coverage; no real patients; the application sends short phrases, not sentences. |

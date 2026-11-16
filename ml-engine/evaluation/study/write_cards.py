@@ -25,6 +25,10 @@ def num(v, places=3):
     return 'n/a' if v is None else f'{v:.{places}f}'
 
 
+def ci_num(c):
+    return 'n/a' if not c else f'{num(c[0])} to {num(c[1])}'
+
+
 def card(title, rows):
     out = [f'## {title}\n', '| Field | Content |', '|---|---|']
     out += [f'| {k} | {v} |' for k, v in rows]
@@ -56,7 +60,7 @@ def main():
                             f"({engine['rows']} synthetic rows, {engine['coveredPathologies']} of {c['classes']} pathologies have a profile)."),
         ('Metrics', f"gretelai: top-1 {pct(s['allRows']['top1']['accuracy'])} ({ci(s['allRows']['top1']['ci95'])}), top-5 {pct(s['allRows']['top5']['accuracy'])}. "
                     f"DDXPlus: top-1 {pct(engine['top1']['accuracy'])} ({ci(engine['top1']['ci95'])}), top-5 {pct(engine['top5']['accuracy'])}, "
-                    f"macro F1 {num(engine['macroF1']['value'])} ({ci(engine['macroF1']['ci95'])})."),
+                    f"macro F1 {num(engine['macroF1']['value'])} ({ci_num(engine['macroF1']['ci95'])})."),
         ('Comparison', f"Best shadow model in this study ({best_name}, {best['features']} multi-hot features, {STUDY_LABEL}): DDXPlus top-1 "
                        f"{pct(best['top1']['accuracy'])} ({ci(best['top1']['ci95'])}), macro F1 {num(best['macroF1']['value'])}; "
                        f"McNemar vs engine p = {num(best['mcnemarVsProductionEngine']['pValue'], 4)}."),

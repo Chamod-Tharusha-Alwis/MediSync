@@ -30,6 +30,10 @@ def num(v, places=3):
     return 'n/a' if v is None else f'{v:.{places}f}'
 
 
+def ci_num(c):
+    return 'n/a' if not c else f'{num(c[0])} to {num(c[1])}'
+
+
 def table(header, rows):
     lines = ['| ' + ' | '.join(header) + ' |', '|' + '|'.join('---' for _ in header) + '|']
     lines += ['| ' + ' | '.join(str(cell).replace('|', '/') for cell in row) + ' |' for row in rows]
@@ -76,7 +80,7 @@ def main():
         mc = m.get('mcnemarVsProductionEngine')
         extra += f"; McNemar vs engine p = {num(mc['pValue'], 4)}" if mc else ''
         rows.append([f'C: {model}', f"top-1 {pct(m['top1']['accuracy'])} ({ci(m['top1']['ci95'])}); top-3 {pct(m['top3']['accuracy'])}; top-5 {pct(m['top5']['accuracy'])}; "
-                     f"macro F1 {num(m['macroF1']['value'])} ({ci(m['macroF1']['ci95'])}){extra}", 'symptom_study_metrics.csv'])
+                     f"macro F1 {num(m['macroF1']['value'])} ({ci_num(m['macroF1']['ci95'])}){extra}", 'symptom_study_metrics.csv'])
     add(table(['Metric', 'Value (95% CI)', 'Source file'], rows))
 
     add('## 2. Plain-language reading\n')
