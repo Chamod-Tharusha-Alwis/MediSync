@@ -1,6 +1,6 @@
 # MediSync model cards (offline study, not in production)
 
-Written by `ml-engine/evaluation/study/write_cards.py` from the results files. Clinical validation: not established for every component. Run date 2026-11-16, code commit `8a836cb`.
+Written by `ml-engine/evaluation/study/write_cards.py` from the results files. Clinical validation: not established for every component. Run date 2026-11-16, code commit `1ba1850`.
 
 ## 1. Symptom suggestion engine (production: TF-IDF cosine retrieval, 41 curated + 174 knowledge-base profiles)
 

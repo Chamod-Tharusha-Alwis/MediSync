@@ -1,6 +1,6 @@
 # Data science study results (offline study, not in production)
 
-**Clinical validation: not established.** This is an offline study on public data. The shadow models trained here are research artefacts; they are not deployed and nothing in the application changed. Written by `ml-engine/evaluation/study/write_results.py` from `study_results.json` and the CSVs in this folder; `check_results.py` verifies every number below. Code commit `8a836cb`, run date 2026-11-16.
+**Clinical validation: not established.** This is an offline study on public data. The shadow models trained here are research artefacts; they are not deployed and nothing in the application changed. Written by `ml-engine/evaluation/study/write_results.py` from `study_results.json` and the CSVs in this folder; `check_results.py` verifies every number below. Code commit `1ba1850`, run date 2026-11-16.
 
 ## 1. Every metric and its source file
 
