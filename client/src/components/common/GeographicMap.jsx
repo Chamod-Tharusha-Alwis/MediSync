@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, GeoJSON, Marker, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, GeoJSON, Marker, Popup, CircleMarker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { formatDistrictName } from '../../utils/districtAdjacency';
@@ -60,7 +60,11 @@ const getSeverityColor = (severity) => {
   }
 };
 
-const GeographicMap = ({ hospitals = [], alerts = [] }) => {
+// includePending: admin dashboard only. Pending (unreviewed) alerts are drawn with a dashed outline and a
+// lighter fill so they cannot be mistaken for approved alerts. The public map keeps the default (approved only).
+// zoom: optional initial zoom. The 288 px dashboard card needs 6.5 so southern districts (Matara, Galle,
+// Hambantota) are inside the view; the public map keeps 7.
+const GeographicMap = ({ hospitals = [], alerts = [], includePending = false, zoom: initialZoom = 7 }) => {
   const [geography, setGeography] = useState(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -71,17 +75,20 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
     return () => controller.abort();
   }, []);
   const center = [7.8731, 80.7718]; // Center of Sri Lanka
-  const zoom = 7;
+  const zoom = initialZoom;
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-lg border border-slate-700/50 relative bg-[#0b1120]">
       <MapContainer
         center={center}
         zoom={zoom}
+        zoomSnap={0.25}
         style={{ height: '100%', width: '100%', backgroundColor: '#0b1120' }}
         zoomControl={false}
       >
-        {geography && <GeoJSON data={geography} style={{ color: '#334155', weight: 1, fillColor: '#1e293b', fillOpacity: 0.5 }} />}
+        {/* The district outline loads after the alert circles and would sit on top of them; interactive={false}
+            lets hover and click reach the alert circles (popups and tooltips). */}
+        {geography && <GeoJSON data={geography} interactive={false} style={{ color: '#334155', weight: 1, fillColor: '#1e293b', fillOpacity: 0.5 }} />}
 
         {/* Render Hospitals as standard markers */}
         {hospitals.map((hospital, index) => {
@@ -101,7 +108,9 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
         })}
 
         {/* Render ML Outbreak Alerts as Heatmap Zones */}
-        {alerts.filter(a => a.status === 'Active' || a.status === 'SIMULATION').map((alert, index) => {
+        {alerts.filter(a => a.status === 'Active' || a.status === 'SIMULATION' || (includePending && a.status === 'Pending')).map((alert, index) => {
+          const isPending = alert.status === 'Pending';
+          const last72h = alert.alert72h?.actual72h ?? alert.metrics72h?.currentCases ?? null;
           const districtName = alert.location || alert.district || 'Nationwide';
           const coords = districtCoordinates[formatDistrictName(districtName)] || districtCoordinates[districtName] || districtCoordinates['Nationwide'];
           const colors = getSeverityColor(alert.severity);
@@ -116,11 +125,17 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
               pathOptions={{
                 color: colors.color,
                 fillColor: colors.fillColor,
-                fillOpacity: 0.45,
+                fillOpacity: isPending ? 0.15 : 0.45,
                 weight: 2,
-                className: (isCrit || isHigh) ? 'animate-pulse' : ''
+                ...(isPending ? { dashArray: '6 4' } : {}),
+                className: (isCrit || isHigh) && !isPending ? 'animate-pulse' : ''
               }}
             >
+              {includePending && (
+                <Tooltip direction="top">
+                  {`${formatDistrictName(districtName) || districtName} · ${alert.disease} · last 72h: ${last72h ?? 'N/A'}${isPending ? ' · pending review' : ''}`}
+                </Tooltip>
+              )}
               <Popup>
                 <div className="text-slate-900 font-sans min-w-[190px] p-1">
                   <div className="flex items-center justify-between gap-2 mb-1.5 border-b border-slate-200 pb-1">
@@ -137,6 +152,9 @@ const GeographicMap = ({ hospitals = [], alerts = [] }) => {
                     )}
                   </div>
 
+                  {isPending && (
+                    <span className="inline-block mb-1 px-1.5 py-0.5 rounded border border-dashed border-slate-400 text-xs font-bold text-slate-700 uppercase tracking-wider">Pending review</span>
+                  )}
                   <h3 className="text-base font-bold text-slate-900 leading-snug">
                     {alert.disease}
                   </h3>

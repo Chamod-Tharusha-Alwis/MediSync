@@ -156,4 +156,4 @@ function main(fn) {
   fn().then(() => process.exit(0)).catch(err => { console.error(`\nERROR: ${err.message}`); process.exit(1); });
 }
 
-module.exports = { parseArgs, runSeed, runClean, main, MEASUREMENT_PATH, projection };
+module.exports = { parseArgs, runSeed, runClean, main, connect, MEASUREMENT_PATH, projection };

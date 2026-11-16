@@ -15,6 +15,7 @@ import api, { SOCKET_SERVER_URL } from '../../api/axiosInstance';
 import AppShell from '../../components/ui/AppShell';
 import StatCard from '../../components/common/StatCard';
 import PageTransition from '../../components/common/PageTransition';
+import AuditFeedPanel from '../../components/admin/AuditFeedPanel';
 import GeographicMap from '../../components/common/GeographicMap';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { formatDistrictName } from '../../utils/districtAdjacency';
@@ -547,7 +548,25 @@ const ManageUsers = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENT: Overview Stats & Geo Maps
 // ─────────────────────────────────────────────────────────────────────────────
-const Overview = ({ stats, geo, activeAlerts }) => {
+// Skeleton shown only on the overview route while its data loads; other admin pages render immediately.
+const OverviewSkeleton = () => (
+  <div className="space-y-4" aria-busy="true" data-testid="overview-skeleton">
+    <div className="h-8 w-72 rounded-lg bg-slate-800/50 animate-pulse" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {[0, 1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-slate-800/40 border border-white/5 animate-pulse" />)}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {[0, 1].map(i => <div key={i} className="h-72 rounded-2xl bg-slate-800/40 border border-white/5 animate-pulse" />)}
+    </div>
+  </div>
+);
+
+const Overview = ({ stats, geo, activeAlerts: allAlerts, loadErrors = [], onRetry }) => {
+  // The admin alert list returns Active and Pending alerts. Only approved (Active) alerts drive the banner;
+  // the map shows both, with pending alerts in a distinct dashed style.
+  const alertList = Array.isArray(allAlerts) ? allAlerts : [];
+  const activeAlerts = alertList.filter(a => a.status === 'Active');
+  const pendingCount = alertList.filter(a => a.status === 'Pending').length;
   const { t } = useTranslation();
   const [systemHealth, setSystemHealth] = useState(null);
 
@@ -578,6 +597,13 @@ const Overview = ({ stats, geo, activeAlerts }) => {
       <h1 className="text-3xl font-extrabold text-white tracking-tight">{t('admin.commandCenter', 'Administration Dashboard')}</h1>
       <p className="text-slate-400 mt-1 text-sm font-medium">{t('admin.commandSubtitle', 'Platform surveillance logs, operational nodes, and regional health outbreaks map.')}</p>
     </div>
+
+    {loadErrors.length > 0 && (
+      <div role="alert" data-testid="overview-error" className="mb-4 p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-sm text-red-200">
+        Could not load {loadErrors.join(' and ')}. The rest of the page is shown with the data that did load.{' '}
+        {onRetry && <button type="button" className="underline" onClick={onRetry}>Retry</button>}
+      </div>
+    )}
 
     {/* ML Active Outbreak Alert Header */}
     {activeAlerts && activeAlerts.length > 0 && (
@@ -650,59 +676,7 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         </h3>
         <p className="text-slate-500 text-xs select-none">Live auditing telemetry logs ingested from distributed workspaces.</p>
 
-        <div className="space-y-3.5 h-72 overflow-y-auto pr-2 custom-scrollbar">
-          {stats?.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
-            stats.recentAuditLogs.map((log) => {
-              const ACTION_MAP = {
-                login: 'Logged into the system',
-                register: 'Registered a new account',
-                create_patient: 'Registered a new patient',
-                update_patient: 'Updated patient profile',
-                create_consultation: 'Created a new consultation',
-                order_test: 'Ordered a new lab test',
-                update_test: 'Updated lab test results',
-                dispense_medication: 'Dispensed medication',
-                trigger_outbreak: 'Triggered an outbreak alert',
-                approve_outbreak: 'Approved an outbreak alert',
-                resolve_outbreak: 'Resolved an outbreak alert',
-                ban_user: 'Suspended a user',
-                lift_ban: 'Lifted user suspension'
-              };
-
-              const actionLower = (log.action || '').toLowerCase();
-              let badgeColor = 'bg-slate-800 text-slate-400 border border-slate-700/50';
-              if (actionLower.includes('login')) badgeColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-              if (actionLower.includes('create') || actionLower.includes('register')) badgeColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-              if (actionLower.includes('delete') || actionLower.includes('block') || actionLower.includes('ban')) badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
-
-              const humanAction = ACTION_MAP[actionLower] || log.action;
-              const actorName = log.actorName || log.actorId;
-              const targetEntity = log.targetEntity || log.accessedNic || 'system node';
-
-              return (
-                <div key={log._id} className="bg-slate-950/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-                  <div className="flex justify-between items-start mb-2 select-none">
-                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeColor}`}>
-                      {log.action}
-                    </span>
-                    <span className="text-xs text-slate-500 font-mono">{timeAgo(log.timestamp || log.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-slate-300 font-medium">
-                    <span className="text-white font-bold">{actorName}</span>
-                    <span className="text-slate-500 ml-1 text-[11px] uppercase">({log.actorRole?.replace('_', ' ')})</span>
-                    <br/>
-                    <span className="text-slate-400 mt-1 inline-block">{humanAction} regarding <span className="text-blue-400 font-semibold">{targetEntity}</span>.</span>
-                  </p>
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 select-none">
-              <ScrollText className="w-8 h-8 mb-2 opacity-30" />
-              <p className="text-xs">No active event logging recorded.</p>
-            </div>
-          )}
-        </div>
+        <AuditFeedPanel events={stats?.auditEvents || stats?.recentAuditLogs || []} />
       </div>
 
       {/* Geospatial Map */}
@@ -713,8 +687,20 @@ const Overview = ({ stats, geo, activeAlerts }) => {
         </h3>
         <p className="text-slate-500 text-xs select-none">Geographic mapping overlay of active health anomalies.</p>
         <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
-          <GeographicMap hospitals={geo?.hospitals || []} alerts={activeAlerts || []} />
+          <GeographicMap hospitals={geo?.hospitals || []} alerts={alertList} includePending zoom={6.5} />
         </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 select-none" data-testid="map-legend">
+          {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#3b82f6']].map(([label, colour]) => (
+            <span key={label} className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colour }} />{label}</span>
+          ))}
+          <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-full border-2 border-slate-300" />Approved</span>
+          <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-full border-2 border-dashed border-slate-300" />Pending review</span>
+        </div>
+        {activeAlerts.length === 0 && (
+          <p className="text-xs text-slate-400" data-testid="map-empty-state">
+            No approved alerts.{pendingCount > 0 ? <> {pendingCount} pending alert{pendingCount === 1 ? '' : 's'} need{pendingCount === 1 ? 's' : ''} review in the <a href="/admin/dashboard/outbreak" className="text-sky-400 underline">outbreak monitor</a>.</> : ''}
+          </p>
+        )}
       </div>
     </div>
 
@@ -808,25 +794,27 @@ const AdminDashboard = () => {
   const [geo, setGeo] = useState(null);
   const [activeAlerts, setActiveAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadErrors, setLoadErrors] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    // Statistics and alerts load independently: one slow or failed request no longer blanks the other.
     const fetchData = async () => {
-      try {
-        const [statsRes, alertsRes] = await Promise.all([
-          api.get('/admin/stats'),
-          api.get('/alerts/active')
-        ]);
-        setStats(statsRes.data.data);
-        setGeo(null);
-        setActiveAlerts(alertsRes.data.data);
-      } catch (err) {
-        toast.error('Failed to load system data');
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      const [statsRes, alertsRes] = await Promise.allSettled([
+        api.get('/admin/stats'),
+        api.get('/admin/outbreak/alerts')
+      ]);
+      const errors = [];
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data); else errors.push('platform statistics');
+      if (alertsRes.status === 'fulfilled') setActiveAlerts(Array.isArray(alertsRes.value.data?.data) ? alertsRes.value.data.data : []); else errors.push('outbreak alerts');
+      setGeo(null);
+      setLoadErrors(errors);
+      if (errors.length) toast.error('Failed to load system data');
+      setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [reloadKey]);
 
   // Socket.IO real-time integration
   useEffect(() => {
@@ -969,11 +957,9 @@ const AdminDashboard = () => {
         menuItems={menuItems}
       >
         <div className="mt-4">
-          {loading ? (
-            <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500 mx-auto" /></div>
-          ) : (
+          {(
             <Routes>
-              <Route path="/dashboard" element={<Overview stats={stats} geo={geo} activeAlerts={activeAlerts} />} />
+              <Route path="/dashboard" element={loading ? <OverviewSkeleton /> : <Overview stats={stats} geo={geo} activeAlerts={activeAlerts} loadErrors={loadErrors} onRetry={() => setReloadKey(k => k + 1)} />} />
               <Route path="/dashboard/analytics" element={<AnalyticsDashboard />} />
               <Route path="/dashboard/users" element={<ManageUsers />} />
               <Route path="/dashboard/identity" element={<Navigate to="/admin/dashboard/users" replace />} />
