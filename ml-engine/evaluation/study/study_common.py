@@ -122,7 +122,8 @@ def extra_versions():
 
 def run_record(seed=SEED):
     return {'date': today_utc(), 'git': git_state(), 'seed': seed, 'bootstrapResamples': N_BOOTSTRAP,
-            'ciLevelPercent': CI_LEVEL_PERCENT, 'label': STUDY_LABEL}
+            'ciLevelPercent': CI_LEVEL_PERCENT, 'label': STUDY_LABEL, 'interpreter': sys.executable,
+            'environment': {**environment_info(), **extra_versions()}}
 
 
 def sha256_of_outputs(names):
