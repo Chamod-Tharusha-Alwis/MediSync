@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Public-health background for outbreak alert emails. Every statement is a short paraphrase of the cited public source and lists the source ids it comes from. General information only, not individual medical advice.",
+  "language": "en",
+  "translationNote": "Facts are kept in English as written from the cited sources; Sinhala and Tamil emails show them in English with a note, pending a reviewed translation.",
+  "sources": {
+    "who-dengue": { "publisher": "World Health Organization", "title": "Dengue and severe dengue (fact sheet)", "url": "https://www.who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue", "pageDate": "2025-08-21", "accessed": "2026-11-16" },
+    "cdc-lepto": { "publisher": "US Centers for Disease Control and Prevention", "title": "About Leptospirosis", "url": "https://www.cdc.gov/leptospirosis/about/index.html", "pageDate": "2026-02-10", "accessed": "2026-11-16" },
+    "who-typhoid": { "publisher": "World Health Organization", "title": "Typhoid (fact sheet)", "url": "https://www.who.int/news-room/fact-sheets/detail/typhoid", "pageDate": "2023-03-30", "accessed": "2026-11-16" },
+    "who-diarrhoea": { "publisher": "World Health Organization", "title": "Diarrhoeal disease (fact sheet)", "url": "https://www.who.int/news-room/fact-sheets/detail/diarrhoeal-disease", "pageDate": "2024-03-07", "accessed": "2026-11-16" },
+    "who-influenza": { "publisher": "World Health Organization", "title": "Influenza (seasonal) (fact sheet)", "url": "https://www.who.int/news-room/fact-sheets/detail/influenza-(seasonal)", "pageDate": "2025-02-28", "accessed": "2026-11-16" },
+    "who-factsheets": { "publisher": "World Health Organization", "title": "Fact sheets (index)", "url": "https://www.who.int/news-room/fact-sheets", "pageDate": null, "accessed": "2026-11-16" }
+  },
+  "sheets": {
+    "A90": {
+      "name": "Dengue",
+      "icd10": "A90",
+      "whatItIs": [
+        { "text": "A viral infection caused by the dengue virus, carried mainly by Aedes aegypti mosquitoes.", "sources": ["who-dengue"] }
+      ],
+      "howItSpreads": [
+        { "text": "Spread by the bite of an infected female mosquito; mosquitoes pick up the virus by biting infected people, including people without symptoms.", "sources": ["who-dengue"] },
+        { "text": "An infected mosquito can pass on the virus for the rest of its life.", "sources": ["who-dengue"] }
+      ],
+      "symptoms": [
+        { "text": "Many people have mild or no symptoms and recover in 1 to 2 weeks.", "sources": ["who-dengue"] },
+        { "text": "Symptoms usually start 4 to 10 days after infection and last 2 to 7 days: high fever, severe headache, pain behind the eyes, muscle and joint pain, nausea, vomiting, swollen glands and rash.", "sources": ["who-dengue"] }
+      ],
+      "dangerSigns": [
+        { "text": "Severe symptoms often come after the fever goes down: severe abdominal pain, persistent vomiting, rapid breathing, bleeding gums or nose, blood in vomit or stool, restlessness, extreme thirst, pale or cold skin, weakness.", "sources": ["who-dengue"] },
+        { "text": "Anyone with these signs should get medical care immediately.", "sources": ["who-dengue"] }
+      ],
+      "prevention": [
+        { "text": "Avoid bites, especially in the daytime: clothing that covers the body, mosquito nets, window screens and repellents containing DEET, picaridin or IR3535.", "sources": ["who-dengue"] },
+        { "text": "Stop mosquito breeding: remove containers that hold standing water, dispose of waste properly, and cover, empty and clean water storage every week.", "sources": ["who-dengue"] }
+      ],
+      "clinicianNote": [
+        { "text": "There is no specific treatment; care is supportive (rest, fluids, paracetamol). NSAIDs such as ibuprofen and aspirin are avoided because they can increase bleeding risk.", "sources": ["who-dengue"] },
+        { "text": "Laboratory confirmation uses nucleic acid amplification tests, ELISA or rapid tests; direct detection methods are most useful in the first week of illness.", "sources": ["who-dengue"] }
+      ],
+      "links": ["who-dengue"]
+    },
+    "A27": {
+      "name": "Leptospirosis",
+      "icd10": "A27",
+      "whatItIs": [
+        { "text": "A bacterial disease caused by Leptospira that affects people and many kinds of animals.", "sources": ["cdc-lepto"] }
+      ],
+      "howItSpreads": [
+        { "text": "Infected animals pass the bacteria in urine, which can contaminate water or soil for weeks to months; people are infected through contact with that water or soil or with animal body fluids.", "sources": ["cdc-lepto"] },
+        { "text": "Risk rises after floods and heavy rain; spread from person to person is rare.", "sources": ["cdc-lepto"] }
+      ],
+      "symptoms": [
+        { "text": "Fever, muscle aches, headache, nausea or vomiting, jaundice, diarrhoea, chills, stomach pain, red eyes or rash; some people have no symptoms.", "sources": ["cdc-lepto"] },
+        { "text": "Illness usually starts 2 to 30 days after exposure and may come in two phases, the second sometimes more severe.", "sources": ["cdc-lepto"] }
+      ],
+      "dangerSigns": [
+        { "text": "Without treatment it can cause kidney or liver damage, meningitis, breathing problems and death.", "sources": ["cdc-lepto"] },
+        { "text": "Anyone who may have been exposed and becomes ill should see a healthcare provider right away.", "sources": ["cdc-lepto"] }
+      ],
+      "prevention": [
+        { "text": "Avoid swimming or wading in water that may be contaminated, especially after floods or heavy rain.", "sources": ["cdc-lepto"] },
+        { "text": "Cover cuts with waterproof dressings and wear waterproof clothing and boots near water or soil that may be contaminated.", "sources": ["cdc-lepto"] }
+      ],
+      "clinicianNote": [
+        { "text": "Treated with antibiotics such as doxycycline or penicillin, ideally started early; severe illness may need intravenous antibiotics.", "sources": ["cdc-lepto"] }
+      ],
+      "links": ["cdc-lepto"]
+    },
+    "A01": {
+      "name": "Typhoid fever",
+      "icd10": "A01",
+      "whatItIs": [
+        { "text": "A life-threatening infection caused by the bacterium Salmonella Typhi, which lives only in humans.", "sources": ["who-typhoid"] }
+      ],
+      "howItSpreads": [
+        { "text": "Usually spread through contaminated food or water.", "sources": ["who-typhoid"] }
+      ],
+      "symptoms": [
+        { "text": "Prolonged high fever, tiredness, headache, nausea, stomach pain, and constipation or diarrhoea; some people get a rash.", "sources": ["who-typhoid"] }
+      ],
+      "dangerSigns": [
+        { "text": "Severe cases can lead to serious complications or death.", "sources": ["who-typhoid"] }
+      ],
+      "prevention": [
+        { "text": "Safe water, adequate sanitation and hygiene among food handlers prevent spread; a typhoid conjugate vaccine is available.", "sources": ["who-typhoid"] },
+        { "text": "Eat thoroughly cooked hot food, boil or disinfect uncertain drinking water, wash hands often, and wash or peel raw produce.", "sources": ["who-typhoid"] }
+      ],
+      "clinicianNote": [
+        { "text": "Infection is confirmed by blood testing. It is treated with antibiotics, but antibiotic resistance is common.", "sources": ["who-typhoid"] },
+        { "text": "People can keep shedding bacteria after symptoms end; a follow-up test is advised to confirm clearance.", "sources": ["who-typhoid"] }
+      ],
+      "links": ["who-typhoid"]
+    },
+    "A09": {
+      "name": "Diarrhoeal disease",
+      "icd10": "A09",
+      "whatItIs": [
+        { "text": "Three or more loose or liquid stools a day (or more often than normal for the person), usually a sign of an intestinal infection.", "sources": ["who-diarrhoea"] }
+      ],
+      "howItSpreads": [
+        { "text": "Bacteria, viruses or parasites spread through contaminated food or drinking water, or from person to person when hygiene is poor.", "sources": ["who-diarrhoea"] }
+      ],
+      "symptoms": [
+        { "text": "Frequent loose stools with loss of body fluids; vomiting can also occur.", "sources": ["who-diarrhoea"] }
+      ],
+      "dangerSigns": [
+        { "text": "The main danger is dehydration: lethargy or unconsciousness, sunken eyes, drinking poorly or being unable to drink, and skin that returns very slowly when pinched are signs of severe dehydration.", "sources": ["who-diarrhoea"] },
+        { "text": "Get care from a health worker for diarrhoea that persists, blood in the stool or any sign of dehydration.", "sources": ["who-diarrhoea"] }
+      ],
+      "prevention": [
+        { "text": "Safe drinking water, improved sanitation, handwashing with soap, good food hygiene, exclusive breastfeeding for the first 6 months and rotavirus vaccination.", "sources": ["who-diarrhoea"] }
+      ],
+      "clinicianNote": [
+        { "text": "Oral rehydration solution replaces lost fluids; zinc supplements for 10 to 14 days shorten episodes; severe dehydration needs intravenous fluids.", "sources": ["who-diarrhoea"] }
+      ],
+      "links": ["who-diarrhoea"]
+    },
+    "J11": {
+      "name": "Influenza",
+      "icd10": "J11.1",
+      "whatItIs": [
+        { "text": "An acute respiratory infection caused by influenza viruses; types A and B cause seasonal epidemics.", "sources": ["who-influenza"] }
+      ],
+      "howItSpreads": [
+        { "text": "Spreads easily through droplets from coughs and sneezes and through contaminated hands; in tropical regions it can occur all year.", "sources": ["who-influenza"] }
+      ],
+      "symptoms": [
+        { "text": "Sudden fever, usually dry cough, headache, muscle and joint pain, severe tiredness, sore throat and runny nose, starting about 2 days (1 to 4 days) after infection.", "sources": ["who-influenza"] },
+        { "text": "Most people recover within a week; the cough can last two weeks or more.", "sources": ["who-influenza"] }
+      ],
+      "dangerSigns": [
+        { "text": "Complications can include pneumonia and sepsis; severe illness is concentrated in pregnant women, children under 5, older adults and people with chronic conditions or weak immunity.", "sources": ["who-influenza"] }
+      ],
+      "prevention": [
+        { "text": "Yearly vaccination is the most effective prevention.", "sources": ["who-influenza"] },
+        { "text": "Wash hands often, cover coughs and sneezes, stay home when ill and avoid close contact with sick people.", "sources": ["who-influenza"] }
+      ],
+      "clinicianNote": [
+        { "text": "Laboratory confirmation (RT-PCR, antigen detection) is needed because other respiratory viruses cause similar illness; rapid tests are less sensitive than RT-PCR.", "sources": ["who-influenza"] },
+        { "text": "Antivirals should start as soon as possible for people with severe illness or at high risk.", "sources": ["who-influenza"] }
+      ],
+      "links": ["who-influenza"]
+    },
+    "generic": {
+      "name": null,
+      "icd10": null,
+      "whatItIs": [
+        { "text": "MediSync has no reviewed fact sheet for this disease code yet. WHO publishes fact sheets on many diseases and health topics.", "sources": ["who-factsheets"] }
+      ],
+      "howItSpreads": [],
+      "symptoms": [],
+      "dangerSigns": [],
+      "prevention": [],
+      "clinicianNote": [],
+      "links": ["who-factsheets"]
+    }
+  },
+  "authorityContact": { "label": "Ministry of Health, Sri Lanka", "url": "https://www.health.gov.lk", "accessed": "2026-11-16" },
+  "notVerifiedLeftOut": [
+    "Sri Lanka notifiable-disease list and notification procedure (form H544, Epidemiology Unit): https://www.epid.gov.lk returned HTTP 500 on 2026-11-16, so no Sri Lanka reporting rule is stated.",
+    "Sri Lanka-specific seasonality, case numbers and local guidance for all five diseases: no Sri Lankan source could be opened.",
+    "A health-authority phone number or hotline: the Ministry of Health home page opened but showed no contact number.",
+    "Typhoid danger signs beyond 'serious complications or death': the WHO typhoid fact sheet does not list specific warning signs.",
+    "A full diarrhoeal-disease symptom list: the WHO fact sheet describes stools, fluid loss and vomiting only.",
+    "Leptospirosis facts from WHO or a Sri Lankan source: none opened; CDC (US) is used instead."
+  ]
+}

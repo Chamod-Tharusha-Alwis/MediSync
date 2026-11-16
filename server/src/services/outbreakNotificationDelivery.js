@@ -197,6 +197,10 @@ async function sendOutbreakAdvisoryEmail(recipients = [], alert = {}, options = 
   if (!Array.isArray(recipients) || recipients.length === 0) {
     return { sentCount: 0, failedCount: 0, errors: [] };
   }
+  // Detailed disease notification email (approval flow and administrator test email only).
+  if (options.detailed === true) {
+    return require('./outbreakDetailedDelivery').sendDetailedOutbreakEmail(recipients, alert, options);
+  }
 
   const { sendOutbreakAlert } = require('../utils/emailService');
   const { buildOutbreakAdvisoryEmail } = require('./outbreakEmailBuilder');

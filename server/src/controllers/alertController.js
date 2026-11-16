@@ -42,7 +42,19 @@ exports.getActiveAlerts = async (req, res) => {
     try {
       growthData = await service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' });
     } catch (_) {}
-    const enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
+    let enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
+    // Previous / actual / projected 72h from verified consultations. Stored snapshots are shown as stored;
+    // alerts created before snapshots existed get a live computation as of their own creation time.
+    try {
+      const projection = require('../services/alertProjection72h');
+      let cases = null;
+      enriched = await Promise.all(enriched.map(async alert => {
+        if (alert.projection72h) return { ...alert, alert72h: projection.alertView(alert) };
+        const asOf = alert.createdAt ? new Date(alert.createdAt) : new Date();
+        if (!cases) cases = (await service.loadCases({ mode: simulation ? 'simulation' : 'real', lookbackDays: 70 })).cases;
+        return { ...alert, alert72h: projection.alertView(alert, projection.computeAlertNumbers(alert, cases, { asOf, lookbackStart: +asOf - 63 * 86400000 })) };
+      }));
+    } catch (_) {}
     const lastScan = await service.getLastScan(simulation ? 'simulation' : 'real');
     res.json({ data: enriched, lastScan });
   } catch (error) {
