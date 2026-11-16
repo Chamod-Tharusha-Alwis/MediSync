@@ -62,7 +62,9 @@ const getSeverityColor = (severity) => {
 
 // includePending: admin dashboard only. Pending (unreviewed) alerts are drawn with a dashed outline and a
 // lighter fill so they cannot be mistaken for approved alerts. The public map keeps the default (approved only).
-const GeographicMap = ({ hospitals = [], alerts = [], includePending = false }) => {
+// zoom: optional initial zoom. The 288 px dashboard card needs 6.5 so southern districts (Matara, Galle,
+// Hambantota) are inside the view; the public map keeps 7.
+const GeographicMap = ({ hospitals = [], alerts = [], includePending = false, zoom: initialZoom = 7 }) => {
   const [geography, setGeography] = useState(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -73,17 +75,20 @@ const GeographicMap = ({ hospitals = [], alerts = [], includePending = false }) 
     return () => controller.abort();
   }, []);
   const center = [7.8731, 80.7718]; // Center of Sri Lanka
-  const zoom = 7;
+  const zoom = initialZoom;
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-lg border border-slate-700/50 relative bg-[#0b1120]">
       <MapContainer
         center={center}
         zoom={zoom}
+        zoomSnap={0.25}
         style={{ height: '100%', width: '100%', backgroundColor: '#0b1120' }}
         zoomControl={false}
       >
-        {geography && <GeoJSON data={geography} style={{ color: '#334155', weight: 1, fillColor: '#1e293b', fillOpacity: 0.5 }} />}
+        {/* The district outline loads after the alert circles and would sit on top of them; interactive={false}
+            lets hover and click reach the alert circles (popups and tooltips). */}
+        {geography && <GeoJSON data={geography} interactive={false} style={{ color: '#334155', weight: 1, fillColor: '#1e293b', fillOpacity: 0.5 }} />}
 
         {/* Render Hospitals as standard markers */}
         {hospitals.map((hospital, index) => {

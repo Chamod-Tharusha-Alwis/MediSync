@@ -687,7 +687,7 @@ const Overview = ({ stats, geo, activeAlerts: allAlerts, loadErrors = [], onRetr
         </h3>
         <p className="text-slate-500 text-xs select-none">Geographic mapping overlay of active health anomalies.</p>
         <div className="h-72 w-full rounded-xl overflow-hidden border border-white/5 bg-slate-950/50">
-          <GeographicMap hospitals={geo?.hospitals || []} alerts={alertList} includePending />
+          <GeographicMap hospitals={geo?.hospitals || []} alerts={alertList} includePending zoom={6.5} />
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 select-none" data-testid="map-legend">
           {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#3b82f6']].map(([label, colour]) => (

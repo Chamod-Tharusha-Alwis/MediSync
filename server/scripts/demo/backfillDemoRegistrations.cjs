@@ -49,10 +49,12 @@ function buildBackfillPlan({ referenceDate = new Date() } = {}) {
   return { label: 'synthetic registration dates (demonstration only)', referenceDate: plan.isoDate(D), seed: SEED, perDay, total: rows.length, rows, digest };
 }
 
-const targetFilter = nic => ({ nic, ...store.SELECTORS.patients, ...store.FLAGS });
+// $and keeps the exact-NIC condition: SELECTORS.patients also has a `nic` key (the synthetic pattern), and
+// spreading both into one object would let the pattern overwrite the exact NIC.
+const targetFilter = (nic, extra = {}) => ({ $and: [{ nic }, store.SELECTORS.patients, store.FLAGS, extra] });
 
 async function inspect(db, p) {
-  const found = await db.collection('patients').find({ nic: { $in: p.rows.map(r => r.nic) }, ...store.SELECTORS.patients, ...store.FLAGS }, { projection: { nic: 1, createdAt: 1, [MARK]: 1 } }).toArray();
+  const found = await db.collection('patients').find({ $and: [{ nic: { $in: p.rows.map(r => r.nic) } }, store.SELECTORS.patients, store.FLAGS] }, { projection: { nic: 1, createdAt: 1, [MARK]: 1 } }).toArray();
   return { found: found.length, missing: p.total - found.length, alreadyBackfilled: found.filter(d => d[MARK]).length, byNic: new Map(found.map(d => [d.nic, d])) };
 }
 
@@ -68,7 +70,7 @@ async function applyBackfill(db, p, { manifestPath }) {
 }
 
 async function revertBackfill(db, manifest) {
-  const ops = manifest.originals.map(o => ({ updateOne: { filter: { ...targetFilter(o.nic), [MARK]: manifest.digest },
+  const ops = manifest.originals.map(o => ({ updateOne: { filter: targetFilter(o.nic, { [MARK]: manifest.digest }),
     update: o.createdAt ? { $set: { createdAt: new Date(o.createdAt) }, $unset: { [MARK]: '' } } : { $unset: { createdAt: '', [MARK]: '' } } } }));
   const res = await db.collection('patients').bulkWrite(ops, { ordered: true });
   return { matched: res.matchedCount, modified: res.modifiedCount };
