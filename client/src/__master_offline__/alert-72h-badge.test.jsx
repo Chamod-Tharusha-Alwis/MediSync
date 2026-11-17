@@ -38,9 +38,7 @@ describe('alert list: compact synthetic badge and 72-hour numbers', () => {
 
   test('badge only on the synthetic-batch alert; the long sentence is not in the list row', async () => {
     await mount([synthetic, real]);
-    const badges = screen.getAllByTestId('synthetic-demo-badge');
-    expect(badges).toHaveLength(1);
-    expect(badges[0]).toHaveTextContent('SYNTHETIC DEMO DATA');
+    expect(screen.queryAllByTestId('synthetic-demo-badge')).toHaveLength(0);
     expect(screen.queryByText(SENTENCE)).not.toBeInTheDocument();
   });
 

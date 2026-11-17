@@ -222,9 +222,15 @@ exports.exportConsultationPdf = async (req, res) => {
     if (typeof patientDetails.decryptFieldsSync === 'function') {
       try { patientDetails.decryptFieldsSync(); } catch (_) {}
     }
-    const doctorDetails = consultation.doctorId && typeof consultation.doctorId === 'object'
+    let doctorDetails = consultation.doctorId && typeof consultation.doctorId === 'object'
       ? consultation.doctorId
       : { fullName: 'Unavailable' };
+    // Resolve the doctor's name and facility from stored records when the reference is not populated.
+    try {
+      const resolved = await require('../utils/clinicalPdfData').resolveClinician(consultation);
+      const base = typeof doctorDetails?.toObject === 'function' ? doctorDetails.toObject() : { ...doctorDetails };
+      doctorDetails = { ...resolved, ...(base.fullName && base.fullName !== 'Unavailable' ? base : {}), hospitalName: base.hospitalName || resolved.hospitalName };
+    } catch (_) {}
 
     let consultationPayload = consultation.toObject ? consultation.toObject() : { ...consultation };
     if (

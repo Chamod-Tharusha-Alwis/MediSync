@@ -26,6 +26,7 @@ import HistoryErrorBoundary from '../../components/common/HistoryErrorBoundary';
 import MedicineSafetyPanel from '../../components/common/MedicineSafetyPanel';
 import { formatLabTestName, formatLabTestStatus, getPrescriptionDrugName } from '../../utils/labTestFormatter';
 import { detectIcdVersion } from '../../utils/icdClassifier';
+import { consultationTitle, consultationDoctor } from '../../utils/historyTitle';
 
 /* ─── Lab test suggestion catalogue ─────────────────────────────────────────── */
 const LAB_TEST_SUGGESTIONS = [
@@ -859,8 +860,13 @@ const NewConsultation = () => {
                                     {item.type === 'consultation' ? <FiActivity /> : <FiFileText />}
                                   </span>
                                   <div>
-                                    <p className="text-white">{item.type === 'consultation' ? 'Consultation' : 'Lab/Prescription'}</p>
-                                    <p className="text-xs text-slate-400 font-normal">{formatSriLankaDate(item.date)} {item.data?.hospitalId?.name ? `• ${item.data.hospitalId.name}` : ''}</p>
+                                    <p className="text-white" data-testid="history-row-title">{item.type === 'consultation' ? consultationTitle(item.data) : 'Lab/Prescription'}</p>
+                                    <p className="text-xs text-slate-400 font-normal">
+                                      {item.type === 'consultation' && <span className="text-slate-500">Consultation</span>}
+                                      {item.type === 'consultation' ? ' · ' : ''}{formatSriLankaDate(item.date)}
+                                      {item.type === 'consultation' && consultationDoctor(item.data) ? ` · ${formatDoctorName(consultationDoctor(item.data))}` : ''}
+                                      {item.data?.hospitalId?.name ? ` · ${item.data.hospitalId.name}` : ''}
+                                    </p>
                                   </div>
                                 </div>
                                 <span className="text-slate-500 group-open:rotate-90 transition-transform">

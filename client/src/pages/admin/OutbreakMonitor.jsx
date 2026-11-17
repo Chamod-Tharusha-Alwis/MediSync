@@ -13,7 +13,7 @@ import { toast } from 'react-toastify';
 import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 import { formatPopulationShare } from '../../utils/populationIncidence';
-import { AlertNumbers72h, AlertDetail72h, SyntheticDemoBadge, isSyntheticSeedAlert, SYNTHETIC_ALERT_SENTENCE } from '../../components/admin/AlertNumbers72h';
+import { AlertNumbers72h, AlertDetail72h, isSyntheticSeedAlert, SYNTHETIC_ALERT_SENTENCE } from '../../components/admin/AlertNumbers72h';
 
 function diseasesMatch(d1, d2) {
   if (!d1 || !d2) return false;
@@ -1036,10 +1036,9 @@ const OutbreakMonitor = () => {
                             <span className={`font-bold ${isCrit && isLive ? 'text-red-300' : 'text-white'}`}>
                             {alert.disease || 'Unknown'}
                             </span>
-                            {isSyntheticSeedAlert(alert) ? (
-                              <div><SyntheticDemoBadge /></div>
-                            ) : (alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
-                              <span className="block text-[11px] text-amber-400 font-semibold tracking-wide uppercase mt-0.5">
+                            {/* Owner request: no demo badge in the list. The disclosure is in Details, the approval preview and the public page footer. */}
+                            {!isSyntheticSeedAlert(alert) && (alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
+                              <span className="block text-xs text-slate-500 mt-0.5">
                                 {alert.syntheticLabel}
                               </span>
                             )}
@@ -1346,9 +1345,9 @@ const OutbreakMonitor = () => {
               )}
 
               {approveModal.isDemonstration && (
-                <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl space-y-1 text-xs text-amber-200">
-                  <span className="block font-semibold uppercase tracking-wide" data-testid="approve-synthetic-sentence">{SYNTHETIC_ALERT_SENTENCE}</span>
-                  <span className="font-bold">⚠ DEMONSTRATION ALERT:</span> {t('outbreak.demonstrationNotice', 'Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.')} ({approveModal.previewCount !== null ? approveModal.previewCount : 1} recipient).
+                <div className="space-y-1 text-xs text-slate-500">
+                  <span className="block" data-testid="approve-synthetic-sentence">{SYNTHETIC_ALERT_SENTENCE}</span>
+                  <span>{t('outbreak.demonstrationNotice', 'Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.')} ({approveModal.previewCount !== null ? approveModal.previewCount : 1} recipient).</span>
                 </div>
               )}
             </div>

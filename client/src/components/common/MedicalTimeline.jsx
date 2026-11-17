@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import LabDetailModal from './LabDetailModal';
 import LabReportDownloadButton from './LabReportDownloadButton';
+import { consultationTitle } from '../../utils/historyTitle';
 import Modal from '../ui/Modal';
 import OtpInput from '../ui/OtpInput';
 import axiosInstance from '../../api/axiosInstance';
@@ -279,7 +280,7 @@ const TimelineItem = ({ event, index, isEven, onOpenLab }) => {
           {/* Title */}
           <h3 className={`text-base font-bold text-white mb-3 relative z-10 ${tc.glowColor} transition-colors`}>
             {isConsultation
-              ? data.symptoms?.join(', ') || 'General Consultation'
+              ? consultationTitle(data)
               : isPrescription
                 ? `Prescription — ${data.medications?.[0]?.name || 'Medication'}`
                 : data.testName || 'Medical Event'}

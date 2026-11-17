@@ -779,6 +779,8 @@ exports.downloadHistoryPdfWithNicGate = async (req, res) => {
       try {
         const rxQuery = Prescription.find({ consultationId: encounterConsultation._id });
         prescriptions = typeof rxQuery?.lean === 'function' ? await rxQuery.lean() : await rxQuery;
+        // .lean() skips the decryption hook; hydrate so medicine names are readable (same as the portal path).
+        prescriptions = require('../utils/clinicalPdfData').decryptLeanRows(Prescription, prescriptions);
       } catch (_) {}
     }
 
@@ -796,8 +798,13 @@ exports.downloadHistoryPdfWithNicGate = async (req, res) => {
 
     let pdfBuffer;
     if (typeof generateConsultationReportPDF === 'function') {
+      let doctorDetails = {};
+      try {
+        doctorDetails = await require('../utils/clinicalPdfData').resolveClinician(encounterConsultation || {}, token.doctorRef);
+      } catch (_) {}
       pdfBuffer = await generateConsultationReportPDF(patient, encounterConsultation || {}, prescriptions, labTests, {
         lang: req.query?.lang || 'en',
+        doctorDetails,
       });
     } else if (typeof generatePatientHistoryPDF === 'function') {
       pdfBuffer = await generatePatientHistoryPDF(patient, encounterConsultation ? [encounterConsultation] : [], prescriptions, {
@@ -994,9 +1001,9 @@ exports.downloadLabReportForVerification = async (req, res) => {
     const statusNorm = String(labTest.status || '').toLowerCase();
     const isCompleted = ['completed', 'report_ready', 'delivered'].includes(statusNorm) || Boolean(labTest.reportFile?.data || labTest.reportFile?.url);
     if (!isCompleted) {
-      return res.status(400).json({
+      return res.status(409).json({
         error: 'LAB_REPORT_NOT_READY',
-        message: 'Laboratory report is still being processed and is not yet available for download.',
+        message: require('../utils/clinicalPdfData').LAB_UNAVAILABLE_MESSAGE,
       });
     }
 

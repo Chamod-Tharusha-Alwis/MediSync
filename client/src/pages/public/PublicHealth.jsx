@@ -723,10 +723,10 @@ export default function PublicHealth() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-indigo-400" /> Statistical trend projection (linear regression with a 95% prediction band). Not a validated epidemic forecast.
+                      <Activity className="w-4 h-4 text-indigo-400" /> {t('outbreak.trendProjectionHeading', 'Trend projection (14 days)')}
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
-                      In-process Ordinary Least Squares (OLS) trend regression with Student's t 95% confidence bounds. Statistical reference only; not a validated epidemic forecast or diagnostic tool.
+                      {t('outbreak.trendProjectionMethod', 'Linear trend with a 95% prediction band.')}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
@@ -808,11 +808,6 @@ export default function PublicHealth() {
                             {alert.severity}
                           </span>
                         </div>
-                        {alert.isDemonstration && (
-                          <p data-testid="public-alert-demonstration-label" className="text-xs font-bold text-red-300 bg-red-500/15 border border-red-500/40 rounded px-2 py-1">
-                            {t('outbreak.demonstrationPublicLabel', 'Demonstration data: generated from synthetic seed records. Not an active public health notice.')}
-                          </p>
-                        )}
                         <p className="text-xs text-slate-300 leading-relaxed">
                           {alert.message}
                         </p>
@@ -1028,6 +1023,9 @@ export default function PublicHealth() {
               </section>
             </div>
           )}
+          <p data-testid="demo-environment-footer" className="mt-10 text-center text-xs text-slate-500">
+            {t('outbreak.demoEnvironmentFooter', 'Demo environment. Sample data used for academic demonstration.')}
+          </p>
         </main>
       </PageTransition>
     </div>

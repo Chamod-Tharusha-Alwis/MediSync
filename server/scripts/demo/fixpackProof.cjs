@@ -197,4 +197,4 @@ if (require.main === module) {
     process.exit(0);
   }).catch(e => { console.error(e.stack); process.exit(1); });
 }
-module.exports = { main };
+module.exports = { main, setup, seed, call };

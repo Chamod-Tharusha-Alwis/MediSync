@@ -227,6 +227,7 @@ export const en = {
     "summaryEmailFailed": "Unable to send summary email right now. Please try again later.",
     "downloadConsultationPdf": "Download Consultation PDF",
     "downloadLabReportPdf": "Download Lab Report PDF",
+    "labResultUnavailable": "Lab result unavailable. It will appear after the laboratory uploads the result.",
     "pdfPasswordNotice": "Encrypted PDF: open with your NIC number (e.g. 199512345678 or 951234567V)."
   },
   "doctor": {
@@ -475,7 +476,10 @@ export const en = {
     "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed",
     "sendTestEmail": "Send me a test email",
     "demonstrationNotice": "Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.",
-    "demonstrationPublicLabel": "Demonstration data: generated from synthetic seed records. Not an active public health notice."
+    "demonstrationPublicLabel": "Demonstration data: generated from synthetic seed records. Not an active public health notice.",
+    "demoEnvironmentFooter": "Demo environment. Sample data used for academic demonstration.",
+    "trendProjectionHeading": "Trend projection (14 days)",
+    "trendProjectionMethod": "Linear trend with a 95% prediction band."
   },
   "alerts": {
     "outbreakAlert": "Epidemiological Outbreak Alert",
