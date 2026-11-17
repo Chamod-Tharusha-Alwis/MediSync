@@ -60,7 +60,40 @@ async function scan(env) {
   return out;
 }
 
-const MODES = { scan };
+// C3: reminder once per pending High/Critical alert; bell notifications; email through the existing controls.
+async function reminder(env) {
+  const seeded = await proof.seed(env.db);
+  process.env.MEDISYNC_TEST_MODE = 'true'; // capture email in memory; never sent
+  process.env.FRONTEND_URL = 'https://medisync.example.invalid';
+  const admins = [{ email: 'admin.one@qa.medisync.local' }, { email: 'admin.two@qa.medisync.local' }]
+    .map(a => ({ _id: new env.mongoose.Types.ObjectId(), ...a, fullName: 'Fixture Admin', password: 'x', role: 'admin', isActive: true }));
+  await env.db.collection('admins').insertMany(admins);
+  process.env.OUTBREAK_DEMO_EMAIL_ALLOWLIST = admins[0].email; // seeded alerts are demonstration alerts
+  const { remindPendingAlerts } = require(path.join(SERVER, 'src', 'services', 'alertReminderService'));
+  const mail = require(path.join(SERVER, 'src', 'utils', 'emailService'));
+  global.__MEDISYNC_CAPTURED_TEST_EMAILS = [];
+  const pendingHighCritical = await env.db.collection('outbreakalerts').countDocuments({ status: 'Pending', severity: { $in: ['High', 'Critical'] } });
+  // The harness stubs notificationService (fixpackProof.cjs); this recorder writes the same Notification documents.
+  const Notification = require(path.join(SERVER, 'src', 'models', 'Notification'));
+  const notifications = { sendNotification: (io, userId, n) => Notification.create({ userId, role: n.role, title: n.title, message: n.message, type: n.type, referenceId: n.referenceId }) };
+  const first = await remindPendingAlerts({}, { notifications });
+  const second = await remindPendingAlerts({}, { notifications });
+  process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED = 'false';
+  const killSwitch = await remindPendingAlerts({ force: true }, { notifications });
+  delete process.env.OUTBREAK_EMAIL_DELIVERY_ENABLED;
+  const captured = mail.__getCapturedTestEmails().map(m => ({ to: m.to, subject: m.subject, text: m.text }));
+  return {
+    label: 'synthetic demonstration data', seeded, pendingHighCritical,
+    first: { alerts: first.alerts, notifications: first.notifications, email: first.email },
+    second: { alerts: second.alerts },
+    killSwitch: { alerts: killSwitch.alerts, email: killSwitch.email },
+    bellNotifications: await env.db.collection('notifications').countDocuments({ type: 'outbreak_alert' }),
+    remindedAlerts: await env.db.collection('outbreakalerts').countDocuments({ reminderSentAt: { $exists: true } }),
+    captured,
+  };
+}
+
+const MODES = { scan, reminder };
 
 async function main(mode) {
   if (!MODES[mode]) throw new Error(`unknown mode ${mode}`);

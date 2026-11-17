@@ -18,7 +18,13 @@ const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;'
 
 function reminderEmail(alerts, { link }) {
   const { diseaseLabel } = require('./publicHealthStats');
-  const rows = alerts.map(a => `${diseaseLabel(a.disease) || a.disease}, ${a.location || a.district || 'district not recorded'}, ${a.severity}`);
+  // One line per disease, district and severity; repeated scans of the same signal are counted, not repeated.
+  const groups = new Map();
+  for (const a of alerts) {
+    const line = `${diseaseLabel(a.disease) || a.disease}, ${a.location || a.district || 'district not recorded'}, ${a.severity}`;
+    groups.set(line, (groups.get(line) || 0) + 1);
+  }
+  const rows = [...groups].map(([line, n]) => (n > 1 ? `${line} (${n} alerts)` : line));
   const subject = `${alerts.length} outbreak alert${alerts.length === 1 ? '' : 's'} need${alerts.length === 1 ? 's' : ''} review`;
   const text = [`${subject}:`, ...rows.map(r => `- ${r}`), '', `Review them in the outbreak monitor: ${link}`, '', 'Pending alerts are statistical signals; nothing is sent to the public until an administrator approves it.'].join('\n');
   const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937;font-size:14px;line-height:1.5">
