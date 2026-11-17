@@ -70,9 +70,9 @@ export function AlertDetail72h({ alert }) {
   return (
     <div className="p-4 bg-slate-950/50 border-t border-white/5 space-y-3 text-xs text-slate-300" data-testid="alert-detail">
       {(isSyntheticSeedAlert(alert) || alert?.syntheticLabel) && (
-        <div className="p-2 rounded-lg border border-amber-500/40 bg-amber-950/30 text-amber-300 font-semibold uppercase tracking-wide" data-testid="alert-detail-synthetic-sentence">
+        <p className="text-xs text-slate-500" data-testid="alert-detail-synthetic-sentence">
           {alert.syntheticLabel || SYNTHETIC_ALERT_SENTENCE}
-        </div>
+        </p>
       )}
       {v ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

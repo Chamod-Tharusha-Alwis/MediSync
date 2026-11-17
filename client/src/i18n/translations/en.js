@@ -475,7 +475,10 @@ export const en = {
     "scanSummary": "Scan complete: {{outbreaks}} outbreaks detected, {{suppressed}} signals suppressed",
     "sendTestEmail": "Send me a test email",
     "demonstrationNotice": "Demonstration alert: Test broadcast will be delivered only to authorized allowlist recipients.",
-    "demonstrationPublicLabel": "Demonstration data: generated from synthetic seed records. Not an active public health notice."
+    "demonstrationPublicLabel": "Demonstration data: generated from synthetic seed records. Not an active public health notice.",
+    "demoEnvironmentFooter": "Demo environment. Sample data used for academic demonstration.",
+    "trendProjectionHeading": "Trend projection (14 days)",
+    "trendProjectionMethod": "Linear trend with a 95% prediction band."
   },
   "alerts": {
     "outbreakAlert": "Epidemiological Outbreak Alert",
