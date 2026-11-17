@@ -49,6 +49,10 @@ const Dispense = () => {
   const [notAvailableFor, setNotAvailableFor] = useState(null); // prescription id with the reason form open
   const [notAvailableReason, setNotAvailableReason] = useState('out_of_stock');
   const [notAvailableNote, setNotAvailableNote] = useState('');
+  // Fix pack 3: medicines released together share one receipt.
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [unavailableHere, setUnavailableHere] = useState(() => new Set());
+  const [selectionRxs, setSelectionRxs] = useState(null); // non-null: the modal releases these together
   const searchGeneration = useRef(0);
   
   // Alternative dispense modal states
@@ -74,6 +78,8 @@ const Dispense = () => {
     setShowConsentModal(false);
     setShowDispenseModal(false);
     setSelectedRx(null);
+    setSelectedIds(new Set());
+    setSelectionRxs(null);
   }, []);
 
   useEffect(() => {
@@ -108,6 +114,8 @@ const Dispense = () => {
       if (Array.isArray(data?.data?.prescriptions)) {
         setPrescriptions(data.data.prescriptions);
         setProgress(data.data.progress && typeof data.data.progress === 'object' ? data.data.progress : {});
+        setUnavailableHere(new Set(Array.isArray(data.data.unavailableHere) ? data.data.unavailableHere.map(String) : []));
+        setSelectedIds(new Set());
         setPatientInfo(data.data.patient);
         setLoadedNic(lookupNic);
         if (data.data.prescriptions.length === 0) toast.info('No pending prescriptions found for this NIC.');
@@ -154,7 +162,9 @@ const Dispense = () => {
     const generation = searchGeneration.current;
     if (generation !== searchGeneration.current) return;
     const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
+    setSelectionRxs(null);
     setDispenseItems(meds.map(m => ({
+      rxId: rx._id,
       prescribed: m.name,
       drugName: m.name,
       dosage: m.dosage || rx.dosage || 'Standard',
@@ -187,7 +197,90 @@ const Dispense = () => {
     setShowDispenseModal(true);
   };
 
+  const isSelectable = rx => !unavailableHere.has(String(rx._id)) && ['pending', 'issued'].includes(rx.status || 'pending');
+  const toggleSelected = rx => setSelectedIds(prev => {
+    const next = new Set(prev);
+    if (next.has(rx._id)) next.delete(rx._id); else next.add(rx._id);
+    return next;
+  });
+
+  const openSelectionModal = (group) => {
+    const rxs = group.prescriptions.filter(rx => selectedIds.has(rx._id) && isSelectable(rx));
+    if (rxs.length === 0) return;
+    if (rxs.length === 1) { openDispenseModal(rxs[0]); return; }
+    const items = rxs.flatMap(rx => {
+      const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays, frequency: rx.frequency }];
+      return meds.map(m => ({
+        rxId: rx._id,
+        prescribed: m.name,
+        drugName: m.name,
+        dosage: m.dosage || rx.dosage || 'Standard',
+        frequency: m.frequency || rx.frequency || 'As directed',
+        duration: m.durationDays ? `${m.durationDays} days` : 'Standard duration',
+        quantity: m.durationDays ? String(Math.max(1, parseInt(m.durationDays, 10))) : '1',
+        unit: 'units'
+      }));
+    });
+    setDispenseItems(items);
+    const meds = new Map();
+    for (const p of group.prescriptions) {
+      for (const m of (p.medications?.length ? p.medications : [{ name: p.drugName, dosage: p.dosage, durationDays: p.durationDays }])) {
+        const key = (m.name || '').trim().toLowerCase();
+        if (key && !meds.has(key)) meds.set(key, { name: m.name, dosage: m.dosage, durationDays: m.durationDays });
+      }
+    }
+    setSafetyPanelMeds(Array.from(meds.values()));
+    // One key per opened checkout: a retry of the same request is replayed, never a second receipt.
+    setCheckoutKey(`sel:${Date.now()}:${rxs.length}:${rxs[0]._id}`.slice(0, 128));
+    setIsAlt(false);
+    setSafetyReviewed(false);
+    setSafetyAck({ acknowledged: false, reason: '' });
+    setAltDetails('');
+    setSelectionRxs(rxs);
+    setSelectedRx(rxs[0]);
+    setShowDispenseModal(true);
+  };
+
+  const confirmSelection = async () => {
+    const byRx = new Map(selectionRxs.map(rx => [rx._id, []]));
+    for (const item of dispenseItems) {
+      const quantityDispensed = Number(item.quantity);
+      if (!Number.isSafeInteger(quantityDispensed) || quantityDispensed <= 0) return toast.error('Enter a positive whole quantity for every medicine.');
+      byRx.get(item.rxId)?.push({ drugName: item.drugName || item.prescribed, unit: item.unit || 'units', dosage: item.dosage || 'Standard', frequency: item.frequency || 'As directed', quantityDispensed });
+    }
+    setDispensing(true);
+    try {
+      const targetNic = selectionRxs[0].patientNic || loadedNic;
+      const patientToken = getPatientToken ? getPatientToken(targetNic) : null;
+      const { data } = await api.post('/pharmacy/dispense', {
+        patientNic: targetNic,
+        selection: selectionRxs.map(rx => ({ prescriptionId: String(rx._id), items: byRx.get(rx._id) })),
+        safetyAcknowledgment: safetyAck,
+      }, { headers: { 'Idempotency-Key': checkoutKey, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
+      const ids = new Set(selectionRxs.map(rx => rx._id));
+      toast.success(`${ids.size} medicines released on one receipt${data?.data?.receiptNumber ? ` (${data.data.receiptNumber})` : ''}.`);
+      const ref = selectionRxs[0].consultationRef;
+      if (ref) {
+        setProgress(prev => {
+          const cur = prev[ref];
+          return cur ? { ...prev, [ref]: { ...cur, dispensed: Math.min(cur.total, cur.dispensed + ids.size) } } : prev;
+        });
+      }
+      setPrescriptions(prev => prev.filter(p => !ids.has(p._id)));
+      setSelectedIds(new Set());
+      setSelectionRxs(null);
+      setShowDispenseModal(false);
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.message;
+      // Whole selection refused (for example the repeat-course rule): the message names the medicine and the date.
+      toast.error(errorMsg || 'Failed to dispense. Nothing was released.');
+    } finally {
+      setDispensing(false);
+    }
+  };
+
   const confirmDispense = async () => {
+    if (selectionRxs) return confirmSelection();
     if (!selectedRx) return;
     if (isAlt && !altDetails.trim()) return toast.error('Please describe the alternative medication dispensed.');
     const items = dispenseItems.map(item => ({
@@ -245,6 +338,8 @@ const Dispense = () => {
       const { data } = await api.post('/pharmacy/dispense', { action: 'not_available', prescriptionId: rx._id || rx.prescriptionId, patientNic: targetNic, reason: notAvailableReason, note: notAvailableNote.trim() }, { headers: patientToken ? { 'x-patient-access': patientToken } : {} });
       toast.success('Marked not available at this pharmacy. It stays open for other pharmacies.');
       setPrescriptions(prev => prev.map(p => (p._id === rx._id ? { ...p, unavailableAt: [...(p.unavailableAt || []), { pharmacyName: data?.data?.pharmacyName, reason: notAvailableReason }] } : p)));
+      setUnavailableHere(prev => new Set([...prev, String(rx._id)]));
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(rx._id); return next; });
       setNotAvailableFor(null); setNotAvailableNote('');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not record this right now.');
@@ -340,6 +435,20 @@ const Dispense = () => {
                     Referred by <span className="text-white font-bold">{formatDoctorName(group.doctorName, 'Unavailable')}</span> &bull; <span className="text-slate-400">{group.hospitalName}</span>
                   </p>
                 </div>
+                {(() => {
+                  const count = group.prescriptions.filter(rx => selectedIds.has(rx._id) && isSelectable(rx)).length;
+                  return (
+                    <button
+                      type="button"
+                      data-testid="dispense-selected"
+                      disabled={count === 0}
+                      onClick={() => openSelectionModal(group)}
+                      className="shrink-0 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-bold text-xs transition-all disabled:opacity-40 inline-flex items-center gap-1.5"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" /> Dispense selected ({count})
+                    </button>
+                  );
+                })()}
                 {progress[group.consultationRef] && (
                   <span data-testid="consultation-progress" className="text-xs font-semibold text-slate-300 shrink-0">
                     {progress[group.consultationRef].dispensed} of {progress[group.consultationRef].total} dispensed
@@ -352,6 +461,7 @@ const Dispense = () => {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-slate-950/40 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
                     <tr>
+                      <th className="pl-5 py-3.5 w-8"><span className="sr-only">Select</span></th>
                       <th className="px-5 py-3.5">{t("pharmacy.drugName", "Medication Name")}</th>
                       <th className="px-5 py-3.5">Prescription ID</th>
                       <th className="px-5 py-3.5">{t("pharmacy.dosageLabel", "Dosage")}</th>
@@ -368,6 +478,17 @@ const Dispense = () => {
                       const rxDisplayId = rx.prescriptionId?.split('-')[1] || rx.prescriptionId || rx._id;
                       return (
                         <tr key={rx._id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="pl-5 py-3.5 align-top">
+                            <input
+                              type="checkbox"
+                              data-testid="select-medicine"
+                              aria-label={`Select ${drugName}`}
+                              checked={selectedIds.has(rx._id) && isSelectable(rx)}
+                              disabled={!isSelectable(rx)}
+                              onChange={() => toggleSelected(rx)}
+                              className="mt-0.5 w-4 h-4 accent-teal-500 disabled:opacity-40"
+                            />
+                          </td>
                           <td className="px-5 py-3.5 font-bold text-white text-sm">
                             <div>{drugName}</div>
                             {rx.safetyOverride?.acknowledged && (
@@ -443,7 +564,7 @@ const Dispense = () => {
           <div className="space-y-5">
             <div className="text-center md:text-left select-none">
               <span className="text-[11px] uppercase font-bold text-slate-500 block">{t("pharmacy.drugName", "Medication Name")}</span>
-              <span className="text-white font-bold text-sm">{selectedRx.medications?.[0]?.name || selectedRx.drugName}</span>
+              <span className="text-white font-bold text-sm">{selectionRxs ? `${selectionRxs.length} medicines released together on one receipt` : (selectedRx.medications?.[0]?.name || selectedRx.drugName)}</span>
             </div>
 
             {selectedRx.safetyOverride?.acknowledged && (
@@ -495,8 +616,8 @@ const Dispense = () => {
               </div>
             ))}
 
-            {/* Alternative Toggle Box */}
-            <label className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10 transition-all select-none">
+            {/* Alternative Toggle Box (single medicine only) */}
+            {!selectionRxs && <label className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10 transition-all select-none">
               <input
                 type="checkbox"
                 checked={isAlt}
@@ -507,7 +628,7 @@ const Dispense = () => {
                 <p className="text-amber-400 font-bold text-xs">{t("pharmacy.brandSubstitute", "Dispense Brand Substitute / Alternative")}</p>
                 <p className="text-slate-500 text-xs mt-1 leading-normal">{t("pharmacy.substituteHelp", "Select if dispensing a generic alternative different from prescription.")}</p>
               </div>
-            </label>
+            </label>}
 
             {isAlt && (
               <div className="flex flex-col gap-1.5">
