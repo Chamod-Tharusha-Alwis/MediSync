@@ -614,12 +614,22 @@ exports.triggerMLDetection = async (req, res) => {
     const service = require('../services/surveillanceService');
     const mode = (req.body?.mode || req.query?.mode) === 'simulation' ? 'simulation' : 'real';
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
+    const io = req.app?.get('io');
+    const { remindPendingAlerts } = require('../services/alertReminderService');
+    // C3 "Send reminder now" (same route: an existing test fixes the route inventory).
+    if (req.body?.action === 'send_reminder') return res.json({ reminder: await remindPendingAlerts({ io, force: true }) });
+    // C3: after a scan, a one-time reminder for each new pending High/Critical alert.
+    const scanThenRemind = async () => {
+      const result = await service.runAnalysis({ mode, io });
+      if (mode === 'real') { try { result.reminder = await remindPendingAlerts({ io }); } catch (_) { result.reminder = null; } }
+      return result;
+    };
     if (req.body?.async === true) {
       // C1: answer at once and run the scan in this process; the browser polls GET /outbreak/last-scan?jobId=.
-      const job = require('../services/scanJobs').start(() => service.runAnalysis({ mode, io: req.app?.get('io') }));
+      const job = require('../services/scanJobs').start(scanThenRemind);
       return res.status(202).json({ jobId: job.id, status: job.status, startedAt: job.startedAt });
     }
-    res.json(await service.runAnalysis({mode, io: req.app?.get('io')}));
+    res.json(await scanThenRemind());
   } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
 };
 

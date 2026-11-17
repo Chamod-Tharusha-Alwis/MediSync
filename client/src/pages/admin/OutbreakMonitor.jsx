@@ -502,6 +502,25 @@ const OutbreakMonitor = () => {
     }
   };
 
+  // C3: send the review reminder (bell + one email to administrators) for pending High/Critical alerts now.
+  const [reminderSending, setReminderSending] = useState(false);
+  const handleSendReminder = async () => {
+    setReminderSending(true);
+    try {
+      const res = await api.post('/admin/outbreak/trigger', { action: 'send_reminder' });
+      const r = res.data?.reminder || {};
+      if (!r.alerts) toast.info('No pending High or Critical alerts need a reminder.');
+      else {
+        toast.success(`Reminder created for ${r.alerts} alert(s); ${r.notifications || 0} administrator notification(s).`);
+        if (r.email) showEmailOutcome({ outcome: r.email.outcome, outcomeText: r.email.text });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not send the reminder.');
+    } finally {
+      setReminderSending(false);
+    }
+  };
+
   const handleSendTestEmail = async () => {
     if (!approveModal.alertId) return;
     setTestEmailSending(true);
@@ -789,6 +808,15 @@ const OutbreakMonitor = () => {
           >
             {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
             {detecting ? 'Scanning Telemetry...' : 'Force System Scan'}
+          </button>
+          <button
+            type="button"
+            data-testid="send-reminder-now"
+            onClick={handleSendReminder}
+            disabled={reminderSending}
+            className="px-4 py-3 border border-slate-600/50 hover:bg-slate-800 text-slate-200 text-xs font-bold rounded-xl transition-all disabled:opacity-40 shrink-0"
+          >
+            {reminderSending ? 'Sending reminder…' : 'Send reminder now'}
           </button>
         </div>
 
