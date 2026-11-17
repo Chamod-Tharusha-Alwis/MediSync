@@ -1482,6 +1482,11 @@ exports.exportLabReportPdf = async (req, res) => {
         return res.status(503).json({ code: 'LAB_REPORT_UNAVAILABLE' });
       }
     } else {
+      // Never generate an empty report: until the laboratory uploads the result there is nothing to export.
+      const { labResultReady, LAB_UNAVAILABLE_MESSAGE } = require('../utils/clinicalPdfData');
+      if (!labResultReady(labTest)) {
+        return res.status(409).json({ code: 'LAB_REPORT_NOT_READY', message: LAB_UNAVAILABLE_MESSAGE });
+      }
       pdfBuffer = await pdfGenerator.generateLabReportPDF(labTest);
     }
 

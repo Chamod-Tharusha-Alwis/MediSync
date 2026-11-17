@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { formatDoctorName } = require('./doctorName');
 const { formatSriLankaDate, formatSriLankaDateTime, TIME_ZONE, ZONE_LABEL } = require('./sriLankaTime');
 const { securePdfBuffer } = require('./pdfSecurity');
+const { readableText, medicationRows, labRows } = require('./clinicalPdfData');
 
 
 function resolvePdfLang(options, fallback = 'en') {
@@ -282,14 +283,14 @@ function drawFooter(page, { now, fontRegular, fontBold, width, scriptNotice }) {
     page.drawText('MediSync Digital Health Platform — Electronic Clinical Record', {
       x: 40, y: 46, size: 8, font: fontBold, color: TEAL,
     });
-    page.drawText(`Generated: ${(now || new Date()).toLocaleString('en-GB')}`, {
+    page.drawText(`Generated: ${formatSriLankaDateTime(now || new Date(), 'en-GB')}`, {
       x: 40, y: 34, size: 7, font: fontRegular, color: LIGHT,
     });
   } else {
     page.drawText('MediSync Digital Health Platform — Electronic Clinical Record', {
       x: 40, y: 54, size: 8, font: fontBold, color: TEAL,
     });
-    page.drawText(`Generated: ${(now || new Date()).toLocaleString('en-GB')}`, {
+    page.drawText(`Generated: ${formatSriLankaDateTime(now || new Date(), 'en-GB')}`, {
       x: 40, y: 40, size: 7, font: fontRegular, color: LIGHT,
     });
   }
@@ -356,6 +357,44 @@ function wrapText(text, font, fontSize, maxWidth) {
   }
   if (currentLine) lines.push(currentLine);
   return lines.length > 0 ? lines : [''];
+}
+
+// ── Shared Helper: wrapped table with page breaks ──────────────────────
+// Every cell wraps inside its column; a row that does not fit moves to a new page and the header repeats.
+const MED_COLUMNS = [
+  { label: 'Medicine', width: 165 }, { label: 'Dose', width: 80 }, { label: 'Frequency', width: 110 },
+  { label: 'Duration', width: 75 }, { label: 'Status', width: 85 },
+];
+const LAB_COLUMNS = [
+  { label: 'Test', width: 150 }, { label: 'Ordered (Sri Lanka time)', width: 120 }, { label: 'Status', width: 75 }, { label: 'Result', width: 170 },
+];
+function drawTable(pdfDoc, state, { columns, rows, fontRegular, fontBold, width, height, now, size = 8.5 }) {
+  const x0 = 40, pad = 4, lineH = size + 3;
+  const total = columns.reduce((n, c) => n + c.width, 0);
+  const newPage = () => {
+    drawFooter(state.page, { now, fontRegular, fontBold, width });
+    state.page = pdfDoc.addPage([595, 842]);
+    drawConfidentialityWatermark(state.page, { width, height, fontBold });
+    state.y = height - 50;
+  };
+  const drawRow = (cells, font, bg, isHeader) => {
+    const wrapped = cells.map((c, i) => wrapText(sanitizeForPDF(c), font, size, columns[i].width - pad * 2));
+    const rowH = Math.max(...wrapped.map(l => l.length)) * lineH + pad * 2;
+    if (state.y - rowH < 100) {
+      newPage();
+      if (!isHeader) drawRow(columns.map(c => c.label), fontBold, BG_LAV, true);
+    }
+    state.page.drawRectangle({ x: x0, y: state.y - rowH, width: total, height: rowH, color: bg, borderColor: BORDER, borderWidth: 0.5 });
+    let x = x0;
+    wrapped.forEach((lines, i) => {
+      lines.forEach((ln, j) => state.page.drawText(ln, { x: x + pad, y: state.y - pad - size - j * lineH + 1.5, size, font, color: DARK }));
+      x += columns[i].width;
+    });
+    state.y -= rowH;
+  };
+  drawRow(columns.map(c => c.label), fontBold, BG_LAV, true);
+  rows.forEach((r, i) => drawRow(r, fontRegular, i % 2 ? ROW_ALT : WHITE, false));
+  return state;
 }
 
 /**
@@ -716,7 +755,7 @@ exports.generateLabReportPDF = async (labTest, patientName = null, options = {})
       console.warn('[PDFGenerator] Patient lookup fallback failed:', err.message);
     }
   }
-  resolvedName = resolvedName || 'Patient';
+  resolvedName = readableText(resolvedName, 'Patient');
 
   // Calculate age if DOB exists
   let age = 'N/A';
@@ -746,8 +785,9 @@ exports.generateLabReportPDF = async (labTest, patientName = null, options = {})
 
   // 4. Draw Header
   const now = new Date();
-  const dateStr = labTest.createdAt ? new Date(labTest.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  const timeStr = labTest.createdAt ? new Date(labTest.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const labWhen = labTest.createdAt ? new Date(labTest.createdAt) : now;
+  const dateStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, day: '2-digit', month: 'long', year: 'numeric' }).format(labWhen);
+  const timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hour12: true }).format(labWhen) + ' (Sri Lanka time)';
   const refId = labTest.reportId || labTest.labTestId || (labTest._id ? String(labTest._id) : 'LAB-RECORD');
 
   let currentY = drawHeader(page, {
@@ -884,7 +924,7 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
 
   const now = new Date();
   const consultDate = consultationData.createdAt ? new Date(consultationData.createdAt) : now;
-  const dateStr = formatSriLankaDate(consultDate, 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const dateStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, day: '2-digit', month: 'long', year: 'numeric' }).format(consultDate); // zone label is on the time line
   const timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hour12: true }).format(consultDate) + ' (Sri Lanka time)';
 
   const consultRef = consultationData.consultationId || consultationData._id
@@ -951,7 +991,7 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
   });
   currentY -= 20;
 
-  const diagnosis = consultationData.diagnosis || 'Clinical evaluation and diagnostic assessment';
+  const diagnosis = readableText(consultationData.diagnosis, 'Clinical evaluation and diagnostic assessment');
   const isIcd11 = consultationData.icdVersion === 'ICD-11' || (/^[1-9][A-Z0-9]{3}/i.test(consultationData.icdCode || '') || /^[A-S][A-Z][0-9]{2}/i.test(consultationData.icdCode || ''));
   const icdVersionLabel = isIcd11 ? 'ICD-11 Reference:' : 'ICD-10 Reference:';
   const icdDefaultDesc = isIcd11 ? 'ICD-11 MMS Coded Entry' : 'ICD-10 Coded Entry';
@@ -1012,16 +1052,9 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
     });
     currentY -= 14;
 
-    rxList.forEach((rx, idx) => {
-      const drugName = rx.drugName || rx.name || 'Prescribed Agent';
-      const dosage = rx.dosage || '';
-      const freq = rx.frequency || '';
-      const dur = rx.duration || (rx.durationDays ? `${rx.durationDays} days` : '');
-      const summary = `${idx + 1}. ${drugName} ${dosage} - ${freq} (${dur})`.trim();
-
-      page.drawText(summary, { x: 52, y: currentY, size: 9, font: fontRegular, color: DARK });
-      currentY -= 16;
-    });
+    const table = drawTable(pdfDoc, { page, y: currentY }, { columns: MED_COLUMNS, rows: medicationRows(rxList), fontRegular, fontBold, width, height, now });
+    page = table.page;
+    currentY = table.y - 8;
     currentY -= 6;
   }
 
@@ -1033,7 +1066,7 @@ exports.generateConsultationSummaryPDF = async (consultationData = {}, patientDe
     currentY = height - 50;
   }
 
-  const notes = consultationData.notes || 'Standard clinical instructions provided to the patient.';
+  const notes = readableText(consultationData.notes, 'Standard clinical instructions provided to the patient.');
   page.drawText('CLINICAL ADVICE & INSTRUCTIONS', {
     x: 40, y: currentY,
     size: 11, font: fontBold, color: PURPLE,
@@ -1137,9 +1170,11 @@ exports.generateConsultationReportPDF = async (
   const resolvedGender = patientDetails.gender || consultationData.patientGender || 'N/A';
 
   // 2. Resolve Doctor Info
-  const doctorDetails = consultationData.doctorId && typeof consultationData.doctorId === 'object'
+  const populatedDoctor = consultationData.doctorId && typeof consultationData.doctorId === 'object' && consultationData.doctorId.fullName
     ? consultationData.doctorId
-    : (options.doctorDetails || {});
+    : null;
+  const doctorDetails = { ...(options.doctorDetails || {}), ...(populatedDoctor || {}),
+    hospitalName: (options.doctorDetails && options.doctorDetails.hospitalName) || (populatedDoctor && populatedDoctor.hospitalName) };
   const rawDoctor = doctorDetails.fullName || doctorDetails.name || consultationData.doctorName || 'Unavailable';
   const doctorName = formatDoctorName(rawDoctor, 'Unavailable');
   const rawSlmc = doctorDetails.slmcNumber || doctorDetails.slmcRegistrationNumber || consultationData.slmcNumber;
@@ -1151,7 +1186,7 @@ exports.generateConsultationReportPDF = async (
 
   const now = new Date();
   const consultDate = consultationData.createdAt ? new Date(consultationData.createdAt) : now;
-  const dateStr = formatSriLankaDate(consultDate, 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const dateStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, day: '2-digit', month: 'long', year: 'numeric' }).format(consultDate); // zone label is on the time line
   const timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hour12: true }).format(consultDate) + ' (Sri Lanka time)';
 
   const consultRef = consultationData.consultationId || consultationData._id
@@ -1219,7 +1254,7 @@ exports.generateConsultationReportPDF = async (
   });
   currentY -= 16;
 
-  const diagnosis = consultationData.diagnosis || 'Clinical evaluation and diagnostic assessment';
+  const diagnosis = readableText(consultationData.diagnosis, 'Clinical evaluation and diagnostic assessment');
   const isIcd11 = consultationData.icdVersion === 'ICD-11' || (/^[1-9][A-Z0-9]{3}/i.test(consultationData.icdCode || '') || /^[A-S][A-Z][0-9]{2}/i.test(consultationData.icdCode || ''));
   const icdVersionLabel = isIcd11 ? 'ICD-11 Reference:' : 'ICD-10 Reference:';
   const icdDefaultDesc = isIcd11 ? 'ICD-11 MMS Coded Entry' : 'ICD-10 Coded Entry';
@@ -1290,17 +1325,9 @@ exports.generateConsultationReportPDF = async (
   currentY -= 12;
 
   if (rxList.length > 0) {
-    rxList.forEach((rx, idx) => {
-      const drugName = rx.drugName || rx.name || 'Prescribed Agent';
-      const dosage = rx.dosage || '';
-      const freq = rx.frequency || '';
-      const dur = rx.duration || (rx.durationDays ? `${rx.durationDays} days` : '');
-      const status = rx.status ? ` [Status: ${rx.status}]` : '';
-      const summary = `${idx + 1}. ${drugName} ${dosage} - ${freq} (${dur})${status}`.trim();
-
-      page.drawText(summary, { x: 52, y: currentY, size: 9, font: fontRegular, color: DARK });
-      currentY -= 14;
-    });
+    const table = drawTable(pdfDoc, { page, y: currentY }, { columns: MED_COLUMNS, rows: medicationRows(rxList), fontRegular, fontBold, width, height, now });
+    page = table.page;
+    currentY = table.y - 16;
   } else {
     page.drawText('No medications prescribed for this consultation.', { x: 52, y: currentY, size: 9, font: fontOblique, color: MID });
     currentY -= 14;
@@ -1330,23 +1357,9 @@ exports.generateConsultationReportPDF = async (
 
   const validLabTests = Array.isArray(labTests) ? labTests : [];
   if (validLabTests.length > 0) {
-    validLabTests.forEach((lab, idx) => {
-      const testName = lab.testName || lab.name || 'Diagnostic Laboratory Test';
-      const category = lab.category ? `(${lab.category})` : '';
-      const status = lab.status ? `[Status: ${lab.status}]` : '';
-      const labDate = lab.createdAt ? `Ordered: ${formatSriLankaDate(new Date(lab.createdAt), 'en-GB')}` : '';
-      const line = `${idx + 1}. ${testName} ${category} ${status} ${labDate}`.trim();
-      page.drawText(line, { x: 52, y: currentY, size: 9, font: fontRegular, color: DARK });
-      currentY -= 14;
-
-      if (lab.results && typeof lab.results === 'string') {
-        const resLines = wrapText(`Findings: ${lab.results}`, fontOblique, 8.5, width - 120);
-        resLines.slice(0, 2).forEach(rl => {
-          page.drawText(rl, { x: 64, y: currentY, size: 8.5, font: fontOblique, color: MID });
-          currentY -= 12;
-        });
-      }
-    });
+    const labTable = drawTable(pdfDoc, { page, y: currentY }, { columns: LAB_COLUMNS, rows: labRows(validLabTests, d => new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(d))), fontRegular, fontBold, width, height, now });
+    page = labTable.page;
+    currentY = labTable.y - 16;
   } else {
     page.drawText('No laboratory tests ordered for this consultation.', { x: 52, y: currentY, size: 9, font: fontOblique, color: MID });
     currentY -= 14;
