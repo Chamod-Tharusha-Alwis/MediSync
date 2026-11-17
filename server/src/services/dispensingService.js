@@ -10,6 +10,9 @@ const Prescription = require('../models/Prescription');
 const Dispensing = require('../models/Dispensing');
 const Patient = require('../models/Patient');
 const { checkAllergyConflict, analyzeMedicationSafety } = require('../utils/ingredientResolver');
+// Plain-language prescriber acknowledgement text (kept inline: this module has a fixed dependency list).
+const FLAG_TEXT = { DRUG_INTERACTION: 'drug interaction', DUPLICATE_THERAPY_ACTIVE_RX: 'duplicate active therapy', UNCONFIGURED_LIMIT: 'no dose limit on file' };
+const describeFindingTypes = codes => [...new Set((codes || []).map(c => FLAG_TEXT[c] || String(c).replace(/_/g, ' ').toLowerCase()))].join('; ') || 'safety advisory';
 
 class DispenseError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
@@ -143,6 +146,12 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     if (!patient || String(patient.nic).trim().toUpperCase() !== nic) fail('PATIENT_NOT_FOUND', 'A matching registered patient record is required for allergy checks.', 404);
     if (String(patient._id) !== consent.patientId) fail('FORBIDDEN', 'Consent is bound to a different patient.', 403);
     if (patient.__enc_allergies) fail('PATIENT_RECORD_UNAVAILABLE', 'Patient allergy data could not be read safely.', 503);
+    // B2: the same active ingredient is not released again while an earlier course is still running.
+    // Loaded only with a live database (the guard queries earlier dispensations).
+    if (rx && !otc && (Prescription.db?.readyState === 1 || Prescription.find?._isMockFunction)) {
+      const active = await require('./repeatDispenseGuard').findActiveCourse({ Prescription, patientId: patient._id, rx, itemNames: items.map(i => i.name), session });
+      if (active) fail(active.code, active.message, 409);
+    }
     const dispensingMeds = [...(await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: rx?._id })), ...items.map(item => item.name)];
     let pharmacistOverride = null;
     const safetyAck = body.safetyAcknowledgment || body.allergyOverride || null;
@@ -152,7 +161,7 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
     } catch (mErr) {
       if (!isPharmAck && !rx?.safetyOverride?.acknowledged) throw mErr;
       const ackReason = (typeof safetyAck?.reason === 'string' && safetyAck.reason.trim()) ||
-        (rx?.safetyOverride?.acknowledged ? `Prescriber acknowledged: ${(rx.safetyOverride.findingTypes || []).join(', ')}` : 'Pharmacist reviewed safety information');
+        (rx?.safetyOverride?.acknowledged ? `Prescriber acknowledged: ${describeFindingTypes(rx.safetyOverride.findingTypes)}` : 'Pharmacist reviewed safety information');
       pharmacistOverride = {
         acknowledged: true,
         acknowledgedAt: new Date(),

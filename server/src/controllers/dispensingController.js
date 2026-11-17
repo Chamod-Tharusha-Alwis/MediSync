@@ -26,6 +26,9 @@ function shouldSendDispenseEmail(patientId, windowMs = 120000) {
 }
 
 const handler = otc => async (req, res) => {
+  // B1: the same consent-protected POST /pharmacy/dispense records "not available at this pharmacy" for one
+  // medicine (no new route: an existing test fixes the route inventory).
+  if (!otc && req.body?.action === 'not_available') return exports.markNotAvailable(req, res);
   try {
     if (req.body?.safetyAcknowledgment !== undefined || (Array.isArray(req.body?.items) && req.body.items.length > 0)) {
       const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
@@ -64,7 +67,11 @@ const handler = otc => async (req, res) => {
       }).catch((err) => {
         console.error('[DispensingController] Audit projection warning:');
       });
-      if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true') {
+      if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true' && !otc) {
+        // B3: one medication update email per dispense action (pharmacy and pharmacist names, never ids).
+        require('../services/medicationUpdateEmail').notifyMedicationUpdate({ prescriptionId: receipt.prescriptionId, pharmacyId: receipt.pharmacyId,
+          pharmacistName: receipt.pharmacistName, pharmacyName: receipt.pharmacyName }).catch(() => {});
+      } else if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true') {
         const nicHash = crypto.createHash('sha256').update(receipt.patientNic).digest('hex');
         Patient.findOne(nicFilter(receipt.patientNic, { plainFields: ['nic'] })).then(patient => {
           if (patient?.email && (!receipt.patientId || String(receipt.patientId) === String(patient._id))) {
@@ -72,8 +79,8 @@ const handler = otc => async (req, res) => {
               console.log('[DISPENSE EMAIL] Throttled duplicate dispense email.');
               return;
             }
-            return require('../services/recipientLanguageService').email({ model: 'Patient', accountId: String(patient._id) }, ({ to, lang }) => emailService.sendDispenseNotificationEmail(to,patient.fullName,'MediSync Pharmacy',
-              String(receipt.staffId),receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),receipt.dispensedAt || receipt.createdAt || new Date(), { lang }));
+            return require('../services/recipientLanguageService').email({ model: 'Patient', accountId: String(patient._id) }, ({ to, lang }) => emailService.sendDispenseNotificationEmail(to,patient.fullName,receipt.pharmacyName || 'MediSync Pharmacy',
+              receipt.pharmacistName || 'Pharmacist',receipt.items.map(i=>`${i.drugName} (Qty: ${i.quantityDispensed} ${i.unit})`).join(', '),receipt.dispensedAt || receipt.createdAt || new Date(), { lang }));
           }
         }).catch(()=>{});
       }
@@ -87,6 +94,27 @@ const handler = otc => async (req, res) => {
   }
 };
 exports.dispense = handler(false);
+
+// B1: mark one medicine "not available at this pharmacy". It stays pending for other pharmacies.
+exports.markNotAvailable = async (req, res) => {
+  const { markNotAvailable, ItemError } = require('../services/pharmacyItemService');
+  try {
+    const out = await markNotAvailable({ user: req.user, prescriptionRef: req.params?.id || req.body?.prescriptionId, patientNic: req.body?.patientNic, reason: req.body?.reason, note: req.body?.note });
+    if (out.changed) {
+      recordClinicalEvent({ actorId: String(req.user.id), actorRole: req.user.role, action: 'PRESCRIPTION_ITEM_NOT_AVAILABLE', resourceType: 'Prescription',
+        resourceId: String(out.prescription._id), patientNic: req.body.patientNic, correlationId: String(out.prescription._id), details: { reason: out.mark.reason } }).catch(() => {});
+      if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true') {
+        require('../services/medicationUpdateEmail').notifyMedicationUpdate({ prescriptionId: out.prescription._id, pharmacyId: out.pharmacy._id,
+          pharmacistName: out.staff.fullName, pharmacyName: out.pharmacy.name }).catch(() => {});
+      }
+    }
+    return res.status(200).json({ message: out.changed ? 'Marked not available at this pharmacy' : 'Already marked at this pharmacy', status: 'pending',
+      data: { prescriptionId: String(out.prescription._id), reason: out.mark.reason, pharmacyName: out.pharmacy.name } });
+  } catch (e) {
+    const known = e instanceof ItemError;
+    return res.status(known ? e.status : 500).json({ error: known ? e.message : 'Could not record this right now.', code: known ? e.code : 'NOT_AVAILABLE_FAILED' });
+  }
+};
 exports.dispenseOTC = handler(true);
 exports.shouldSendDispenseEmail = shouldSendDispenseEmail;
 exports._dispenseEmailDebounce = dispenseEmailDebounce;
