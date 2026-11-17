@@ -455,6 +455,13 @@ export const en = {
     "firstSeen": "First Seen",
     "lastSeen": "Last Seen"
   },
+  "drilldown": {
+    "title": "Top diseases in the last 30 days",
+    "disease": "Disease",
+    "people": "People (verified)",
+    "loading": "Loading…",
+    "unavailable": "District figures are unavailable right now."
+  },
   "outbreak": {
     "surveillanceTitle": "Multi-Disease Outbreak Monitoring",
     "dangerLevel": "Pathogen Danger Level",
