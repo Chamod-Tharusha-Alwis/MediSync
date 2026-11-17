@@ -17,10 +17,8 @@ export function drilldownRows(stats) {
   return { disclosed: true, rows };
 }
 
-export default function DistrictDrilldown({ district }) {
-  const { t } = useTranslation();
+function useDrilldown(district) {
   const [state, setState] = useState({ status: 'idle', data: null });
-
   useEffect(() => {
     if (!district) return undefined;
     const controller = new AbortController();
@@ -30,11 +28,12 @@ export default function DistrictDrilldown({ district }) {
       .catch(() => { if (!controller.signal.aborted) setState({ status: 'error', data: null }); });
     return () => controller.abort();
   }, [district]);
+  return state;
+}
 
-  if (!district) return null;
+function DrilldownBody({ state, t }) {
   return (
-    <section data-testid="district-drilldown" aria-label={t('drilldown.title', 'Top diseases in the last 30 days')} className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 space-y-2">
-      <h3 className="text-sm font-semibold text-slate-100">{district}: {t('drilldown.title', 'Top diseases in the last 30 days')}</h3>
+    <>
       {state.status === 'loading' && <p className="text-xs text-slate-400">{t('drilldown.loading', 'Loading…')}</p>}
       {state.status === 'error' && <p role="status" className="text-xs text-slate-400">{t('drilldown.unavailable', 'District figures are unavailable right now.')}</p>}
       {state.status === 'ok' && !state.data.disclosed && (
@@ -51,13 +50,40 @@ export default function DistrictDrilldown({ district }) {
           <tbody>
             {state.data.rows.map(row => (
               <tr key={row.disease} className="border-t border-slate-800">
-                <td className="py-1">{row.disease}</td>
+                <td className="py-1 break-words">{row.disease}</td>
                 <td className="py-1 text-right" data-testid="drilldown-count">{row.people}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+    </>
+  );
+}
+
+// Fix pack 3: the same figures shown as an expanded row directly under the district's table row.
+export function DistrictDrilldownRow({ district, id, colSpan = 2 }) {
+  const { t } = useTranslation();
+  const state = useDrilldown(district);
+  if (!district) return null;
+  return (
+    <tr id={id} data-testid="district-drilldown-row" className="bg-slate-900/60">
+      <td colSpan={colSpan} className="px-4 pb-3 pt-1">
+        <p className="text-xs font-semibold text-slate-300">{t('drilldown.title', 'Top diseases in the last 30 days')}</p>
+        <DrilldownBody state={state} t={t} />
+      </td>
+    </tr>
+  );
+}
+
+export default function DistrictDrilldown({ district }) {
+  const { t } = useTranslation();
+  const state = useDrilldown(district);
+  if (!district) return null;
+  return (
+    <section data-testid="district-drilldown" aria-label={t('drilldown.title', 'Top diseases in the last 30 days')} className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 space-y-2">
+      <h3 className="text-sm font-semibold text-slate-100">{district}: {t('drilldown.title', 'Top diseases in the last 30 days')}</h3>
+      <DrilldownBody state={state} t={t} />
     </section>
   );
 }
