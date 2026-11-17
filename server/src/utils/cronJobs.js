@@ -221,7 +221,11 @@ const initCronJobs = () => {
   });
   // Manual and scheduled detection share exactly the same eligibility policy.
   schedule('0 2 * * *', async () => {
-    try { await require('../services/surveillanceService').runAnalysis({mode:'real'}); }
+    try {
+      await require('../services/surveillanceService').runAnalysis({mode:'real'});
+      // C3: one-time review reminder for new pending High/Critical alerts (no new scheduler).
+      await require('../services/alertReminderService').remindPendingAlerts({ io: global.io || null }).catch(() => {});
+    }
     catch (_) { console.error('[Cron] Surveillance unavailable; no broadcast performed.'); }
   });
   // Job 6: Session Expiry — mark inactive sessions as expired (every 15 min)

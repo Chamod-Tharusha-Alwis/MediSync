@@ -614,8 +614,34 @@ exports.triggerMLDetection = async (req, res) => {
     const service = require('../services/surveillanceService');
     const mode = (req.body?.mode || req.query?.mode) === 'simulation' ? 'simulation' : 'real';
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
-    res.json(await service.runAnalysis({mode, io: req.app?.get('io')}));
+    const io = req.app?.get('io');
+    const { remindPendingAlerts } = require('../services/alertReminderService');
+    // C3 "Send reminder now" (same route: an existing test fixes the route inventory).
+    if (req.body?.action === 'send_reminder') return res.json({ reminder: await remindPendingAlerts({ io, force: true }) });
+    // C3: after a scan, a one-time reminder for each new pending High/Critical alert.
+    const scanThenRemind = async () => {
+      const result = await service.runAnalysis({ mode, io });
+      if (mode === 'real') { try { result.reminder = await remindPendingAlerts({ io }); } catch (_) { result.reminder = null; } }
+      return result;
+    };
+    if (req.body?.async === true) {
+      // C1: answer at once and run the scan in this process; the browser polls GET /outbreak/last-scan?jobId=.
+      const job = require('../services/scanJobs').start(scanThenRemind);
+      return res.status(202).json({ jobId: job.id, status: job.status, startedAt: job.startedAt });
+    }
+    res.json(await scanThenRemind());
   } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
+};
+
+// C1: status of a background scan started with { async: true }. Served by GET /outbreak/last-scan?jobId=...
+// (no new route: an existing test fixes the route inventory).
+exports.getScanJob = async (req, res) => {
+  const job = require('../services/scanJobs').get(req.params?.jobId || req.query?.jobId);
+  if (!job) return res.status(404).json({ error: 'Scan job not found. The server may have restarted; check "Last scan" for the stored result.' });
+  const body = { jobId: job.id, status: job.status, startedAt: job.startedAt, finishedAt: job.finishedAt, durationMs: job.durationMs };
+  if (job.status === 'done') body.result = job.result;
+  if (job.status === 'failed') body.error = job.error;
+  return res.json(body);
 };
 
 // ─── Outbreak 72h Growth Telemetry ───────────────────────────────────────────
@@ -638,6 +664,7 @@ exports.getOutbreakGrowth = async (req, res) => {
 
 // ─── Outbreak Last Scan Telemetry ─────────────────────────────────────────────
 exports.getLastScan = async (req, res) => {
+  if (req.query?.jobId) return exports.getScanJob(req, res);
   try {
     const service = require('../services/surveillanceService');
     const mode = (req.query?.mode === 'simulation') ? 'simulation' : 'real';
@@ -1038,6 +1065,8 @@ exports.approveAlert = async (req, res) => {
       if (!isDeliveryEnabled) {
         emailDelivery.skipped = true;
         emailDelivery.reason = 'OUTBREAK_EMAIL_DELIVERY_DISABLED';
+        emailDelivery.outcome = 'skipped';
+        emailDelivery.outcomeText = require('../services/emailOutcome').SKIP_TEXT.OUTBREAK_EMAIL_DELIVERY_DISABLED;
       } else {
         emailDelivery.attempted = true;
         try {
@@ -1055,6 +1084,9 @@ exports.approveAlert = async (req, res) => {
             });
             emailDelivery.sentCount = deliveryResult.sentCount || 0;
             emailDelivery.failedCount = deliveryResult.failedCount || 0;
+            const outcome = require('../services/emailOutcome').deliveryOutcome(deliveryResult);
+            emailDelivery.outcome = outcome.outcome; emailDelivery.outcomeText = outcome.text; emailDelivery.providerMessageIds = outcome.providerMessageIds;
+            if (outcome.outcome === 'skipped') { emailDelivery.skipped = true; emailDelivery.reason = outcome.reason; }
           }
         } catch (mailErr) {
           console.error('[Outbreak Delivery] Error dispatching emails (non-fatal):', mailErr.message);
@@ -1191,13 +1223,16 @@ exports.sendTestOutbreakEmail = async (req, res) => {
       });
     } catch (_) {}
 
+    // C2: report what really happened (sent with provider id / skipped with reason / failed with reason).
+    const delivery = require('../services/emailOutcome').deliveryOutcome(result);
     return res.json({
-      success: result.sentCount > 0,
+      success: delivery.outcome === 'sent',
       recipient: adminEmail,
       sentCount: result.sentCount,
       failedCount: result.failedCount,
       subject: result.subject,
-      message: result.sentCount > 0 ? `Test email sent successfully to ${adminEmail}` : 'Test email failed to send.'
+      delivery,
+      message: delivery.text
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Failed to send test email.' });

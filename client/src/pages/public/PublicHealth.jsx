@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
+import DistrictDrilldown from '../../components/public/DistrictDrilldown';
 import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { ALL_DISTRICTS, normalizeDistrictName, OFFICIAL_PROVINCES, DISTRICT_TO_PROVINCE, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
@@ -564,6 +565,7 @@ export default function PublicHealth() {
                         onSelectDistrict={d => setSurveillanceDistrict(d)}
                         t={t}
                       />
+                      <DistrictDrilldown district={surveillanceDistrict === 'all' ? null : surveillanceDistrict} />
                     </div>
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
@@ -988,6 +990,7 @@ export default function PublicHealth() {
                         </tbody>
                       </table>
                     </div>
+                    <DistrictDrilldown district={selectedActivityDistrict || null} />
                     {selectedActivityDistrict && (
                       <p data-testid="selected-district-card" className="rounded-lg border border-slate-500 p-4">
                         {selectedActivityDistrict}: {selectedActivityRow ? number(selectedActivityRow.visitCount) + ' ' + t('activity.visits', 'Visits') : t('activity.notDisclosed', 'Not disclosed (<5)')}

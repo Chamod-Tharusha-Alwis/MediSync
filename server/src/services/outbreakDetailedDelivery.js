@@ -57,7 +57,7 @@ async function sendDetailedOutbreakEmail(recipients = [], alert = {}, options = 
   const emailService = options.emailService || require('../utils/emailService');
   const delivery = require('./outbreakNotificationDelivery');
   const { buildDetailedOutbreakEmail } = require('./outbreakDetailedEmail');
-  const result = { sentCount: 0, failedCount: 0, skippedCount: 0, errors: [], subjects: {}, isDemonstration: false, blockedReason: null };
+  const result = { sentCount: 0, failedCount: 0, skippedCount: 0, errors: [], subjects: {}, isDemonstration: false, blockedReason: null, messageIds: [] };
   const list = (recipients || []).map(r => String(typeof r === 'string' ? r : r?.email || '').trim().toLowerCase()).filter(e => e.includes('@'));
   if (!list.length) return result;
 
@@ -99,6 +99,7 @@ async function sendDetailedOutbreakEmail(recipients = [], alert = {}, options = 
       const accepted = res && res.success !== false ? (res.acceptedCount !== undefined ? res.acceptedCount : emails.length) : 0;
       result.sentCount += accepted; result.failedCount += emails.length - accepted;
       if (!accepted) result.errors.push(res?.errorCode || 'DELIVERY_REJECTED');
+      result.messageIds.push(...(res?.messageIds || []).filter(Boolean));
       console.log(`[OUTBREAK EMAIL] subject="${mail.subject}" messageIds=${(res?.messageIds || []).filter(Boolean).join(',') || 'none'} accepted=${accepted}/${emails.length}`);
     } catch (err) {
       result.failedCount += emails.length; result.errors.push('TRANSPORT_ERROR');

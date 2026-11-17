@@ -29,6 +29,8 @@ const outbreakAlertSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin'
   },
+  // C3: set once when the review reminder (bell + email) for this pending High/Critical alert was sent.
+  reminderSentAt: { type: Date },
   approvedAt: {
     type: Date
   },

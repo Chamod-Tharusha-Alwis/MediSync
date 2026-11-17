@@ -456,6 +456,13 @@ export const si = {
     "firstSeen": "පළමුව ලියාපදිංචි වූයේ",
     "lastSeen": "අවසන් වරට දුටුවේ"
   },
+  "drilldown": {
+    "title": "පසුගිය දින 30 තුළ ප්‍රධාන රෝග",
+    "disease": "රෝගය",
+    "people": "පුද්ගලයින් (තහවුරු කළ)",
+    "loading": "පූරණය වෙමින්…",
+    "unavailable": "දිස්ත්‍රික් සංඛ්‍යා දැනට ලබා ගත නොහැක."
+  },
   "outbreak": {
     "surveillanceTitle": "බහු-රෝග වසංගත අධීක්ෂණය",
     "dangerLevel": "රෝග කාරකයේ අවදානම් මට්ටම",

@@ -45,6 +45,17 @@ const sevConfig = {
 };
 const getSev = (s) => sevConfig[s] || sevConfig.Low;
 
+// C2: show the real outcome of an outbreak email.
+export function showEmailOutcome(delivery) {
+  if (!delivery || !delivery.outcome || !delivery.outcomeText) return;
+  if (delivery.outcome === 'sent') toast.success(delivery.outcomeText, { autoClose: 8000 });
+  else if (delivery.outcome === 'skipped') toast.info(delivery.outcomeText, { autoClose: 10000 });
+  else toast.error(delivery.outcomeText, { autoClose: 10000 });
+}
+
+// C1: interval between scan-status polls (ms).
+export const SCAN_POLL_MS = 2000;
+
 const PulseRing = ({ color = 'bg-red-500' }) => (
   <span className="relative flex h-3 w-3 flex-shrink-0 select-none">
     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${color} opacity-60`} />
@@ -357,7 +368,19 @@ const OutbreakMonitor = () => {
 
     setDetecting(true); setMlResult(null); setError(null);
     try {
-      const res    = await api.post('/admin/outbreak/trigger', {});
+      // C1: the scan runs in the background on the server; poll until it finishes (no long-held request).
+      const started = await api.post('/admin/outbreak/trigger', { async: true });
+      let res = started;
+      if (started.status === 202 && started.data?.jobId) {
+        const deadline = Date.now() + 180000;
+        for (;;) {
+          await new Promise(r => setTimeout(r, SCAN_POLL_MS));
+          const poll = await api.get('/admin/outbreak/last-scan', { params: { jobId: started.data.jobId } });
+          if (poll.data?.status === 'done') { res = { data: poll.data.result || {} }; break; }
+          if (poll.data?.status === 'failed') throw new Error(poll.data.error || 'Surveillance analysis unavailable; no alert was broadcast.');
+          if (Date.now() > deadline) throw new Error('The scan is still running on the server. Check "Last scan" in a minute.');
+        }
+      }
       const result = res.data.data || res.data;
 
       if (result.results && Array.isArray(result.results)) {
@@ -419,6 +442,8 @@ const OutbreakMonitor = () => {
       };
       const res = await api.put(`/admin/outbreak/${approveModal.alertId}/approve`, payload);
       toast.success(res.data.message || 'Alert approved');
+      // C2: the real email result (sent with provider id / skipped with reason / failed with reason).
+      showEmailOutcome(res.data.emailDelivery);
       setAlerts(prev => prev.map(a => a._id === approveModal.alertId
         ? { ...a, status: 'Active', emailScope: approveModal.scope }
         : a
@@ -477,12 +502,32 @@ const OutbreakMonitor = () => {
     }
   };
 
+  // C3: send the review reminder (bell + one email to administrators) for pending High/Critical alerts now.
+  const [reminderSending, setReminderSending] = useState(false);
+  const handleSendReminder = async () => {
+    setReminderSending(true);
+    try {
+      const res = await api.post('/admin/outbreak/trigger', { action: 'send_reminder' });
+      const r = res.data?.reminder || {};
+      if (!r.alerts) toast.info('No pending High or Critical alerts need a reminder.');
+      else {
+        toast.success(`Reminder created for ${r.alerts} alert(s); ${r.notifications || 0} administrator notification(s).`);
+        if (r.email) showEmailOutcome({ outcome: r.email.outcome, outcomeText: r.email.text });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not send the reminder.');
+    } finally {
+      setReminderSending(false);
+    }
+  };
+
   const handleSendTestEmail = async () => {
     if (!approveModal.alertId) return;
     setTestEmailSending(true);
     try {
       const res = await api.post(`/admin/outbreak/${approveModal.alertId}/test-email`);
-      toast.success(res.data.message || `Test email dispatched to ${res.data.recipient || 'your inbox'}`);
+      if (res.data?.delivery) showEmailOutcome({ outcome: res.data.delivery.outcome, outcomeText: res.data.delivery.text });
+      else toast.success(res.data.message || `Test email dispatched to ${res.data.recipient || 'your inbox'}`);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to dispatch test email');
     } finally {
@@ -763,6 +808,15 @@ const OutbreakMonitor = () => {
           >
             {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
             {detecting ? 'Scanning Telemetry...' : 'Force System Scan'}
+          </button>
+          <button
+            type="button"
+            data-testid="send-reminder-now"
+            onClick={handleSendReminder}
+            disabled={reminderSending}
+            className="px-4 py-3 border border-slate-600/50 hover:bg-slate-800 text-slate-200 text-xs font-bold rounded-xl transition-all disabled:opacity-40 shrink-0"
+          >
+            {reminderSending ? 'Sending reminder…' : 'Send reminder now'}
           </button>
         </div>
 
