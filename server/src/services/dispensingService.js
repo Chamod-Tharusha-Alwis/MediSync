@@ -232,4 +232,120 @@ async function dispense({ user, body = {}, prescriptionRef, otc = false, idempot
 
   return outcome;
 }
-module.exports = { dispense, runTransaction, DispenseError, validateItems };
+// Fix pack 3: several medicines of one consultation released TOGETHER at one pharmacy share ONE receipt.
+// Same POST /pharmacy/dispense request (body.selection), one transaction, idempotency key required.
+// Every per-item rule of dispense() applies; if any item fails (already dispensed, repeat course, allergy
+// without acknowledgement, mismatch), the whole selection is refused and nothing is written.
+async function dispenseSelection({ user, body = {}, idempotencyKey, authorization }) {
+  if (!user?.id || !['pharmacist','pharmacy_admin','assistant'].includes(user.role)) fail('FORBIDDEN', 'Authorized pharmacy staff required.', 403);
+  const raw = body.selection;
+  if (!Array.isArray(raw) || raw.length < 2 || raw.length > 20) fail('INVALID_SELECTION', 'Select 2 to 20 medicines to release together.');
+  const selection = raw.map(entry => {
+    const ref = typeof entry?.prescriptionId === 'string' ? entry.prescriptionId.trim() : '';
+    if (!ref) fail('INVALID_PRESCRIPTION', 'Prescription identifier is required for every selected medicine.');
+    return { ref, items: validateItems(entry.items, false) };
+  });
+  if (new Set(selection.map(s => s.ref)).size !== selection.length) fail('INVALID_SELECTION', 'A medicine was selected twice.');
+  if (body.isAlternativeDispensed) fail('ALTERNATIVE_NOT_SUPPORTED', 'Record a substitution with the single-medicine Dispense button.');
+  const nic = typeof body.patientNic === 'string' ? body.patientNic.trim().toUpperCase() : '';
+  if (!nic) fail('INVALID_PATIENT', 'Patient NIC is required.');
+  const key = idempotencyKey || body.idempotencyKey;
+  if (!key) fail('IDEMPOTENCY_KEY_REQUIRED', 'An idempotency key is required to release several medicines together.');
+  if (typeof key !== 'string' || !/^[A-Za-z0-9:_-]{8,128}$/.test(key)) fail('INVALID_IDEMPOTENCY_KEY', 'Invalid idempotency key.');
+  const sortedRefs = selection.map(s => s.ref).sort();
+  const hash = crypto.createHash('sha256').update(JSON.stringify({ staff: String(user.id), nic,
+    selection: [...selection].sort((a, b) => a.ref.localeCompare(b.ref)), notes: body.notes || '' })).digest('hex');
+  return runTransaction(async session => {
+    const consent = await claimPharmacyAuthorization({ user, nic, authorization, session });
+    const staff = await PharmacyStaff.findById(user.id).session(session);
+    if (!staff || staff.isActive !== true || staff.isVerified !== true || staff.mustChangePassword === true || staff.role !== user.role) fail('FORBIDDEN', 'Pharmacy staff account is not eligible.', 403);
+    const pharmacy = await Pharmacy.findById(staff.pharmacyId).session(session);
+    if (!pharmacy || pharmacy.isActive !== true) fail('FORBIDDEN', 'Pharmacy is not active.', 403);
+    if (body.pharmacyId && String(body.pharmacyId) !== String(pharmacy._id)) fail('FORBIDDEN', 'Cannot dispense for another pharmacy.', 403);
+    const receiptId = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(`sel:${pharmacy._id}:${sortedRefs.join(',')}:${key}`).digest('hex').slice(0,24));
+    const prior = await Dispensing.findById(receiptId).session(session).lean();
+    if (prior) {
+      if (prior.idempotencyKey === key && prior.requestHash === hash) return { receipt:prior, replay:true };
+      fail('ALREADY_DISPENSED', 'Checkout already exists or its payload differs.', 400);
+    }
+    const rows = [];
+    for (const entry of selection) {
+      const rx = await Prescription.findOne(mongoose.isObjectIdOrHexString(entry.ref) ? { _id:entry.ref } : { prescriptionId:entry.ref }).session(session);
+      if (!rx) fail('PRESCRIPTION_NOT_FOUND', 'Prescription not found.', 404);
+      const label = rx.drugName || rx.medications?.[0]?.name || 'A selected medicine';
+      if (rx.isOTC) fail('INVALID_SELECTION', 'Over-the-counter records cannot be released here.');
+      if (String(rx.patientNic).trim().toUpperCase() !== nic) fail('PATIENT_MISMATCH', 'Prescription does not belong to this patient.', 403);
+      if (rx.supersededBy || rx.supersededAt) fail('SUPERSEDED', `${label} has been superseded by a newer consultation. Nothing was dispensed.`, 400);
+      if (!['pending','issued'].includes(rx.status)) fail('ALREADY_DISPENSED', `${label} is not eligible for dispensing. Nothing was dispensed.`);
+      if (!rx.expiresAt || rx.expiresAt <= new Date()) fail('PRESCRIPTION_EXPIRED', `${label}: a valid prescription expiry is required. Nothing was dispensed.`);
+      const prescribed = rx.medications?.length ? rx.medications.map(m => normalize(m.name)) : [normalize(rx.drugName)];
+      const requested = [...new Set(entry.items.map(i => normalize(i.name)))].sort();
+      if (JSON.stringify([...new Set(prescribed)].sort()) !== JSON.stringify(requested)) fail('MEDICINE_MISMATCH', 'Dispensed medicines must match the prescription.');
+      rows.push({ rx, items: entry.items, label });
+    }
+    const consultations = new Set(rows.map(r => r.rx.consultationRef || String(r.rx.consultationId || '')));
+    if (consultations.size !== 1 || consultations.has('')) fail('INVALID_SELECTION', 'Only medicines of one consultation can be released together.');
+    if (new Set(rows.map(r => String(r.rx.patientId || ''))).size !== 1) fail('PATIENT_MISMATCH', 'Selected medicines belong to different patient records.', 403);
+    const firstRx = rows[0].rx;
+    const patient = await Patient.findOne(firstRx.patientId ? {_id:firstRx.patientId} : nicFilter(nic, { plainFields: ['nic'] })).session(session);
+    if (!patient || String(patient.nic).trim().toUpperCase() !== nic) fail('PATIENT_NOT_FOUND', 'A matching registered patient record is required for allergy checks.', 404);
+    if (String(patient._id) !== consent.patientId) fail('FORBIDDEN', 'Consent is bound to a different patient.', 403);
+    if (patient.__enc_allergies) fail('PATIENT_RECORD_UNAVAILABLE', 'Patient allergy data could not be read safely.', 503);
+    // Repeat-course rule per item: one blocked item refuses the whole selection (the message names it and the date).
+    if (Prescription.db?.readyState === 1 || Prescription.find?._isMockFunction) {
+      const guard = require('./repeatDispenseGuard');
+      for (const row of rows) {
+        const active = await guard.findActiveCourse({ Prescription, patientId: patient._id, rx: row.rx, itemNames: row.items.map(i => i.name), session });
+        if (active) fail(active.code, `${active.message} Nothing in this selection was dispensed.`, 409);
+      }
+    }
+    const allItems = rows.flatMap(r => r.items);
+    const selectedNames = new Set(rows.map(r => normalize(r.label)));
+    const others = (await currentMedicationNames(patient._id, { session, PrescriptionModel: Prescription, excludeId: firstRx._id }))
+      .filter(name => !selectedNames.has(normalize(name)));
+    const dispensingMeds = [...others, ...allItems.map(item => item.name)];
+    let pharmacistOverride = null;
+    const safetyAck = body.safetyAcknowledgment || body.allergyOverride || null;
+    const isPharmAck = Boolean(safetyAck && (safetyAck.acknowledged === true || safetyAck === true));
+    const ackReason = fallback => (typeof safetyAck?.reason === 'string' && safetyAck.reason.trim()) || fallback;
+    try {
+      assertMedicationResult(analyzeMedicationSafety(dispensingMeds), dispensingMeds.length);
+    } catch (mErr) {
+      if (!isPharmAck && !rows.every(r => r.rx.safetyOverride?.acknowledged)) throw mErr;
+      pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName,
+        reason: ackReason('Pharmacist reviewed safety information'), type: 'medication_conflict' };
+    }
+    const receiptItems = [];
+    for (const row of rows) {
+      for (const item of row.items) {
+        if (checkAllergyConflict(item.name, patient?.allergies).hasConflict) {
+          if (!isPharmAck && !row.rx.safetyOverride?.acknowledged) fail('ALLERGY_CONFLICT', `Recorded patient allergy conflicts with ${item.name}. Nothing was dispensed.`);
+          pharmacistOverride = { acknowledged: true, acknowledgedAt: new Date(), staffId: String(staff._id), pharmacistName: staff.fullName,
+            reason: ackReason('Pharmacist reviewed allergy information'), type: 'allergy_conflict', conflictingItem: item.name };
+        }
+        receiptItems.push({ prescriptionId: row.rx._id, drugName: item.name, dosage: item.dosage || row.rx.dosage || item.unit || 'Standard',
+          unit: item.unit || 'units', quantityDispensed: item.qty, status: 'dispensed' });
+      }
+    }
+    // Race protection per item: each claim is conditional on the item still being pending, inside the transaction.
+    const at = new Date();
+    for (const row of rows) {
+      const claimed = await Prescription.updateOne({ _id:row.rx._id, status:{$in:['pending','issued']}, expiresAt:{$gt:at} },
+        {$set:{status:'dispensed',dispensedAt:at,dispensedBy:pharmacy._id,dispenserStaffId:String(staff._id),dispensedByPharmacist:staff.fullName,
+          pharmacyName:pharmacy.name,isAlternativeDispensed:false,alternativeDetails:''}}, {session});
+      if (claimed.modifiedCount !== 1) fail('ALREADY_DISPENSED', `${row.label} is no longer eligible. Nothing was dispensed.`);
+    }
+    const receiptData = { _id:receiptId, receiptNumber:`REC-${receiptId}`, prescriptionId:firstRx._id, prescriptionIds:rows.map(r => r.rx._id),
+      pharmacyId:pharmacy._id,pharmacyName:pharmacy.name,staffId:staff._id,pharmacistName:staff.fullName,patientNic:nic,notes:body.notes,
+      idempotencyKey:key,requestHash:hash,isAlternativeDispensed:false,alternativeDetails:'',
+      audit:{actorId:String(staff._id),actorRole:user.role||'pharmacist',action:'PRESCRIPTION_DISPENSED',timestamp:new Date()},
+      items:receiptItems };
+    if (pharmacistOverride) receiptData.pharmacistOverride = pharmacistOverride;
+    const receipt = new Dispensing(receiptData);
+    await claimPharmacyAuthorization({ user, nic, authorization, session });
+    await receipt.save({session});
+    return {receipt:receipt.toObject(),replay:false};
+  });
+}
+
+module.exports = { dispense, dispenseSelection, runTransaction, DispenseError, validateItems };

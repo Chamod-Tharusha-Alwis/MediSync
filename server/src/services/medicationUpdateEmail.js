@@ -93,7 +93,7 @@ function buildMedicationUpdateEmail({ lang = 'en', patientName, pharmacyName, ph
 }
 
 /** Collects the consultation's medicines from stored records and sends one email to the patient on record. */
-async function notifyMedicationUpdate({ prescriptionId, pharmacyId, pharmacistName, pharmacyName }, deps = {}) {
+async function notifyMedicationUpdate({ prescriptionId, pharmacyId, pharmacistName, pharmacyName, receiptId }, deps = {}) {
   const Prescription = deps.Prescription || require('../models/Prescription');
   const Dispensing = deps.Dispensing || require('../models/Dispensing');
   const send = deps.send || require('../utils/emailService').sendMail;
@@ -103,13 +103,26 @@ async function notifyMedicationUpdate({ prescriptionId, pharmacyId, pharmacistNa
   const siblings = rx.consultationRef
     ? await Prescription.find({ consultationRef: rx.consultationRef, patientId: rx.patientId, isOTC: { $ne: true }, status: { $ne: 'cancelled' } })
     : [rx];
-  const receipts = await Dispensing.find({ prescriptionId: { $in: siblings.map(s => s._id) } }).lean();
+  const ids = siblings.map(s => s._id);
+  const receipts = await Dispensing.find({ $or: [{ prescriptionId: { $in: ids } }, { prescriptionIds: { $in: ids } }] }).lean();
+  const covers = (r, id) => String(r.prescriptionId) === String(id) || (r.prescriptionIds || []).some(p => String(p) === String(id));
   const released = [], notReleased = [];
-  for (const s of siblings) {
+  // Fix pack 3: one email per receipt. "Released" lists exactly the medicines on this receipt (released together).
+  const thisReceipt = receiptId ? receipts.find(r => String(r._id) === String(receiptId)) : null;
+  if (thisReceipt) {
+    for (const item of thisReceipt.items || []) {
+      released.push({ name: item.drugName || 'Medicine', quantity: item.quantityDispensed ?? '-', unit: item.unit && item.unit !== 'units' ? item.unit : '', at: thisReceipt.dispensedAt });
+    }
+    for (const s of siblings) {
+      if (['dispensed', 'partially_dispensed'].includes(s.status)) continue;
+      notReleased.push({ name: s.drugName || s.medications?.[0]?.name || 'Medicine', notAvailableHere: (s.unavailableAt || []).some(m => String(m.pharmacyId) === String(pharmacyId)) });
+    }
+  }
+  for (const s of thisReceipt ? [] : siblings) {
     const name = s.drugName || s.medications?.[0]?.name || 'Medicine';
     if (['dispensed', 'partially_dispensed'].includes(s.status)) {
-      const rec = receipts.filter(r => String(r.prescriptionId) === String(s._id)).sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt))[0];
-      const item = rec?.items?.[0];
+      const rec = receipts.filter(r => covers(r, s._id)).sort((a, b) => new Date(b.dispensedAt) - new Date(a.dispensedAt))[0];
+      const item = rec?.items?.find(i => i.prescriptionId && String(i.prescriptionId) === String(s._id)) || rec?.items?.[0];
       released.push({ name, quantity: item?.quantityDispensed ?? '-', unit: item?.unit && item.unit !== 'units' ? item.unit : '', at: rec?.dispensedAt || s.dispensedAt });
     } else {
       notReleased.push({ name, notAvailableHere: (s.unavailableAt || []).some(m => String(m.pharmacyId) === String(pharmacyId)) });

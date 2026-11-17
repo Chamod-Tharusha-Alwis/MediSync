@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import PublicNavbar from '../../components/common/PublicNavbar';
 import PageTransition from '../../components/common/PageTransition';
-import DistrictDrilldown from '../../components/public/DistrictDrilldown';
+import DistrictDrilldown, { DistrictDrilldownRow } from '../../components/public/DistrictDrilldown';
 import api from '../../api/axiosInstance';
 import { useTranslation } from '../../i18n/LanguageContext';
 import { ALL_DISTRICTS, normalizeDistrictName, OFFICIAL_PROVINCES, DISTRICT_TO_PROVINCE, PROVINCE_TO_DISTRICTS } from '../../utils/districtAdjacency';
@@ -970,27 +970,34 @@ export default function PublicHealth() {
                         <tbody>
                           {ALL_DISTRICTS.filter(name => activityFilters.district === 'all' || activityFilters.district === name).map(name => {
                             const row = activityData.byDistrict.find(item => item.district === name);
+                            const open = selectedActivityDistrict === name;
+                            const panelId = `district-drilldown-${name.replace(/[^A-Za-z]/g, '')}`;
                             return (
-                              <tr key={name} className="border-t border-slate-700">
-                                <th scope="row" className="p-2 text-left">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedActivityDistrict(name)}
-                                    className="min-h-[44px] max-w-full whitespace-normal break-words px-1 text-blue-200 underline focus-visible:ring-2 focus-visible:ring-blue-300"
-                                  >
-                                    {name}
-                                  </button>
-                                </th>
-                                <td className="p-3 text-right whitespace-normal break-words">
-                                  {row ? number(row.visitCount) : t('activity.notDisclosed', 'Not disclosed (<5)')}
-                                </td>
-                              </tr>
+                              <React.Fragment key={name}>
+                                <tr className="border-t border-slate-700">
+                                  <th scope="row" className="p-2 text-left">
+                                    <button
+                                      type="button"
+                                      aria-expanded={open}
+                                      aria-controls={open ? panelId : undefined}
+                                      onClick={() => setSelectedActivityDistrict(open ? null : name)}
+                                      className="min-h-[44px] max-w-full whitespace-normal break-words px-1 text-blue-200 underline focus-visible:ring-2 focus-visible:ring-blue-300"
+                                    >
+                                      <span aria-hidden="true" className="mr-1 inline-block w-3 no-underline">{open ? '▾' : '▸'}</span>
+                                      {name}
+                                    </button>
+                                  </th>
+                                  <td className="p-3 text-right whitespace-normal break-words">
+                                    {row ? number(row.visitCount) : t('activity.notDisclosed', 'Not disclosed (<5)')}
+                                  </td>
+                                </tr>
+                                {open && <DistrictDrilldownRow district={name} id={panelId} />}
+                              </React.Fragment>
                             );
                           })}
                         </tbody>
                       </table>
                     </div>
-                    <DistrictDrilldown district={selectedActivityDistrict || null} />
                     {selectedActivityDistrict && (
                       <p data-testid="selected-district-card" className="rounded-lg border border-slate-500 p-4">
                         {selectedActivityDistrict}: {selectedActivityRow ? number(selectedActivityRow.visitCount) + ' ' + t('activity.visits', 'Visits') : t('activity.notDisclosed', 'Not disclosed (<5)')}
