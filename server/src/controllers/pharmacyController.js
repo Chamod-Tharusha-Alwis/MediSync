@@ -445,7 +445,12 @@ exports.getPendingPrescriptions = async (req, res) => {
     }
 
     const profile = patientUser ? Object.fromEntries(['_id', 'nic', 'fullName', 'allergies'].filter(key => patientUser[key] !== undefined).map(key => [key, patientUser[key]])) : null;
-    res.json({ data: { prescriptions, patient: profile } });
+    // B1: "2 of 3 dispensed" per consultation (computed from stored prescriptions).
+    let progress = {};
+    try {
+      if (Prescription.db?.readyState === 1) progress = await require('../services/pharmacyItemService').consultationProgress(prescriptions.map(rx => rx.consultationRef));
+    } catch (_) { progress = {}; }
+    res.json({ data: { prescriptions, patient: profile, progress } });
   } catch (error) {
     console.error('getPendingPrescriptions error:');
     res.status(500).json({ error: 'Failed to get prescriptions' });
@@ -453,6 +458,7 @@ exports.getPendingPrescriptions = async (req, res) => {
 };
 
 exports.dispense = require('./dispensingController').dispense;
+exports.markNotAvailable = require('./dispensingController').markNotAvailable;
 
 const { groupDispensingHistoryByReceipt } = require('../services/releaseSummaryService');
 exports.groupDispensingHistoryByReceipt = groupDispensingHistoryByReceipt;

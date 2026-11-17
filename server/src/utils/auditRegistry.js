@@ -141,6 +141,7 @@ const ROUTE_AUDIT_MAP = [
   { routeFile: 'pharmacyRoutes.js', method: 'PUT', path: '/staff/:id/toggle', action: 'TOGGLE_PHARMACY_STAFF' },
   { routeFile: 'pharmacyRoutes.js', method: 'GET', path: '/prescriptions/pending/:nic', action: 'VIEW_PENDING_PRESCRIPTIONS', sensitive: true },
   { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/dispense', action: 'DISPENSE_PRESCRIPTION' },
+  { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/prescriptions/:id/not-available', action: 'PRESCRIPTION_ITEM_NOT_AVAILABLE' },
   { routeFile: 'pharmacyRoutes.js', method: 'POST', path: '/dispense-otc', action: 'DISPENSE_OTC' },
 
   // ── prescriptionRoutes.js ──

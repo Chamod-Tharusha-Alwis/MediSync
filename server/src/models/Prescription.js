@@ -65,6 +65,16 @@ const prescriptionSchema = new mongoose.Schema({
   supersededAt: { type: Date, default: null },
   supersededReason: { type: String, default: null },
   resolvedIngredients: [{ type: String }],
+  // "Not available at this pharmacy" marks. The item stays pending for other pharmacies (never cancelled).
+  unavailableAt: [{
+    pharmacyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pharmacy' },
+    pharmacyName: String,
+    staffId: String,
+    pharmacistName: String,
+    reason: { type: String, enum: ['out_of_stock', 'not_stocked', 'other'] },
+    note: { type: String, default: '' },
+    at: Date,
+  }],
   keyVersion: { type: Number, default: () => global.ACTIVE_KEY_VERSION || 1 }
 }, { timestamps: true });
 

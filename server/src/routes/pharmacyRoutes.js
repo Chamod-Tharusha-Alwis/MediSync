@@ -43,6 +43,7 @@ router.put('/staff/:id/toggle', pharmacyAuth, pharmacyController.toggleStaffStat
 // Prescriptions & dispensing
 router.get('/prescriptions/pending/:nic', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.getPendingPrescriptions);
 router.post('/dispense', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.dispense);
+router.post('/prescriptions/:id/not-available', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.markNotAvailable);
 router.post('/dispense-otc', dispensingAuth, require('../middleware/patientConsent'), pharmacyController.dispenseOTC);
 router.get('/history', pharmacyAuth, pharmacyController.getDispensingHistory);
 router.get('/receipt/:receiptNo', pharmacyAuth, pharmacyController.getReceipt);
