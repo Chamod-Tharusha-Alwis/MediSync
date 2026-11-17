@@ -1038,7 +1038,7 @@ const OutbreakMonitor = () => {
                             </span>
                             {/* Owner request: no demo badge in the list. The disclosure is in Details, the approval preview and the public page footer. */}
                             {!isSyntheticSeedAlert(alert) && (alert.isSimulation || alert.isDemoData || alert.isSimulatedDemo) && alert.syntheticLabel && (
-                              <span className="block text-[11px] text-slate-500 mt-0.5">
+                              <span className="block text-xs text-slate-500 mt-0.5">
                                 {alert.syntheticLabel}
                               </span>
                             )}

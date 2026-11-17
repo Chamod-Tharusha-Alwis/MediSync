@@ -227,6 +227,7 @@ export const si = {
     "summaryEmailFailed": "මේ මොහොතේ සාරාංශ ඊමේල් පණිවිඩය යැවිය නොහැක. කරුණාකර පසුව නැවත උත්සාහ කරන්න.",
     "downloadConsultationPdf": "උපදේශන PDF බාගත කරන්න",
     "downloadLabReportPdf": "පරීක්ෂණ වාර්තා PDF බාගත කරන්න",
+    "labResultUnavailable": "පරීක්ෂණ ප්‍රතිඵලය තවම නොමැත. රසායනාගාරය ප්‍රතිඵලය උඩුගත කළ පසු එය දිස්වේ.",
     "pdfPasswordNotice": "සංකේතනය කළ PDF: ඔබගේ ජාතික හැඳුනුම්පත් අංකය (NIC) මඟින් විවෘත කරන්න."
   },
   "doctor": {

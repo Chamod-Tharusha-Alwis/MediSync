@@ -227,6 +227,7 @@ export const en = {
     "summaryEmailFailed": "Unable to send summary email right now. Please try again later.",
     "downloadConsultationPdf": "Download Consultation PDF",
     "downloadLabReportPdf": "Download Lab Report PDF",
+    "labResultUnavailable": "Lab result unavailable. It will appear after the laboratory uploads the result.",
     "pdfPasswordNotice": "Encrypted PDF: open with your NIC number (e.g. 199512345678 or 951234567V)."
   },
   "doctor": {
