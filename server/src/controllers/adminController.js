@@ -1055,6 +1055,8 @@ exports.approveAlert = async (req, res) => {
       if (!isDeliveryEnabled) {
         emailDelivery.skipped = true;
         emailDelivery.reason = 'OUTBREAK_EMAIL_DELIVERY_DISABLED';
+        emailDelivery.outcome = 'skipped';
+        emailDelivery.outcomeText = require('../services/emailOutcome').SKIP_TEXT.OUTBREAK_EMAIL_DELIVERY_DISABLED;
       } else {
         emailDelivery.attempted = true;
         try {
@@ -1072,6 +1074,9 @@ exports.approveAlert = async (req, res) => {
             });
             emailDelivery.sentCount = deliveryResult.sentCount || 0;
             emailDelivery.failedCount = deliveryResult.failedCount || 0;
+            const outcome = require('../services/emailOutcome').deliveryOutcome(deliveryResult);
+            emailDelivery.outcome = outcome.outcome; emailDelivery.outcomeText = outcome.text; emailDelivery.providerMessageIds = outcome.providerMessageIds;
+            if (outcome.outcome === 'skipped') { emailDelivery.skipped = true; emailDelivery.reason = outcome.reason; }
           }
         } catch (mailErr) {
           console.error('[Outbreak Delivery] Error dispatching emails (non-fatal):', mailErr.message);
@@ -1208,13 +1213,16 @@ exports.sendTestOutbreakEmail = async (req, res) => {
       });
     } catch (_) {}
 
+    // C2: report what really happened (sent with provider id / skipped with reason / failed with reason).
+    const delivery = require('../services/emailOutcome').deliveryOutcome(result);
     return res.json({
-      success: result.sentCount > 0,
+      success: delivery.outcome === 'sent',
       recipient: adminEmail,
       sentCount: result.sentCount,
       failedCount: result.failedCount,
       subject: result.subject,
-      message: result.sentCount > 0 ? `Test email sent successfully to ${adminEmail}` : 'Test email failed to send.'
+      delivery,
+      message: delivery.text
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Failed to send test email.' });

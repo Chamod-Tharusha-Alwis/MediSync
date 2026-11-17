@@ -45,6 +45,14 @@ const sevConfig = {
 };
 const getSev = (s) => sevConfig[s] || sevConfig.Low;
 
+// C2: show the real outcome of an outbreak email.
+export function showEmailOutcome(delivery) {
+  if (!delivery || !delivery.outcome || !delivery.outcomeText) return;
+  if (delivery.outcome === 'sent') toast.success(delivery.outcomeText, { autoClose: 8000 });
+  else if (delivery.outcome === 'skipped') toast.info(delivery.outcomeText, { autoClose: 10000 });
+  else toast.error(delivery.outcomeText, { autoClose: 10000 });
+}
+
 // C1: interval between scan-status polls (ms).
 export const SCAN_POLL_MS = 2000;
 
@@ -434,6 +442,8 @@ const OutbreakMonitor = () => {
       };
       const res = await api.put(`/admin/outbreak/${approveModal.alertId}/approve`, payload);
       toast.success(res.data.message || 'Alert approved');
+      // C2: the real email result (sent with provider id / skipped with reason / failed with reason).
+      showEmailOutcome(res.data.emailDelivery);
       setAlerts(prev => prev.map(a => a._id === approveModal.alertId
         ? { ...a, status: 'Active', emailScope: approveModal.scope }
         : a
@@ -497,7 +507,8 @@ const OutbreakMonitor = () => {
     setTestEmailSending(true);
     try {
       const res = await api.post(`/admin/outbreak/${approveModal.alertId}/test-email`);
-      toast.success(res.data.message || `Test email dispatched to ${res.data.recipient || 'your inbox'}`);
+      if (res.data?.delivery) showEmailOutcome({ outcome: res.data.delivery.outcome, outcomeText: res.data.delivery.text });
+      else toast.success(res.data.message || `Test email dispatched to ${res.data.recipient || 'your inbox'}`);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to dispatch test email');
     } finally {
