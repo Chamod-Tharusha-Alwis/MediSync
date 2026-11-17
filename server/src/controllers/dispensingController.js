@@ -26,6 +26,9 @@ function shouldSendDispenseEmail(patientId, windowMs = 120000) {
 }
 
 const handler = otc => async (req, res) => {
+  // B1: the same consent-protected POST /pharmacy/dispense records "not available at this pharmacy" for one
+  // medicine (no new route: an existing test fixes the route inventory).
+  if (!otc && req.body?.action === 'not_available') return exports.markNotAvailable(req, res);
   try {
     if (req.body?.safetyAcknowledgment !== undefined || (Array.isArray(req.body?.items) && req.body.items.length > 0)) {
       const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
@@ -96,7 +99,7 @@ exports.dispense = handler(false);
 exports.markNotAvailable = async (req, res) => {
   const { markNotAvailable, ItemError } = require('../services/pharmacyItemService');
   try {
-    const out = await markNotAvailable({ user: req.user, prescriptionRef: req.params?.id, patientNic: req.body?.patientNic, reason: req.body?.reason, note: req.body?.note });
+    const out = await markNotAvailable({ user: req.user, prescriptionRef: req.params?.id || req.body?.prescriptionId, patientNic: req.body?.patientNic, reason: req.body?.reason, note: req.body?.note });
     if (out.changed) {
       recordClinicalEvent({ actorId: String(req.user.id), actorRole: req.user.role, action: 'PRESCRIPTION_ITEM_NOT_AVAILABLE', resourceType: 'Prescription',
         resourceId: String(out.prescription._id), patientNic: req.body.patientNic, correlationId: String(out.prescription._id), details: { reason: out.mark.reason } }).catch(() => {});

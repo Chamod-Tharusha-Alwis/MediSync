@@ -242,7 +242,7 @@ const Dispense = () => {
     const targetNic = rx.patientNic || loadedNic;
     const patientToken = getPatientToken ? getPatientToken(targetNic) : null;
     try {
-      const { data } = await api.post(`/pharmacy/prescriptions/${encodeURIComponent(rx._id || rx.prescriptionId)}/not-available`, { patientNic: targetNic, reason: notAvailableReason, note: notAvailableNote.trim() }, { headers: patientToken ? { 'x-patient-access': patientToken } : {} });
+      const { data } = await api.post('/pharmacy/dispense', { action: 'not_available', prescriptionId: rx._id || rx.prescriptionId, patientNic: targetNic, reason: notAvailableReason, note: notAvailableNote.trim() }, { headers: patientToken ? { 'x-patient-access': patientToken } : {} });
       toast.success('Marked not available at this pharmacy. It stays open for other pharmacies.');
       setPrescriptions(prev => prev.map(p => (p._id === rx._id ? { ...p, unavailableAt: [...(p.unavailableAt || []), { pharmacyName: data?.data?.pharmacyName, reason: notAvailableReason }] } : p)));
       setNotAvailableFor(null); setNotAvailableNote('');

@@ -458,7 +458,6 @@ exports.getPendingPrescriptions = async (req, res) => {
 };
 
 exports.dispense = require('./dispensingController').dispense;
-exports.markNotAvailable = require('./dispensingController').markNotAvailable;
 
 const { groupDispensingHistoryByReceipt } = require('../services/releaseSummaryService');
 exports.groupDispensingHistoryByReceipt = groupDispensingHistoryByReceipt;

@@ -57,8 +57,8 @@ test('mark not available sends the reason with the consent grant and keeps the i
   fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
   const [url, body, config] = api.post.mock.calls[0];
-  expect(url).toBe('/pharmacy/prescriptions/a2/not-available');
-  expect(body).toEqual({ patientNic: 'FIX-NIC', reason: 'not_stocked', note: '' });
+  expect(url).toBe('/pharmacy/dispense');
+  expect(body).toEqual({ action: 'not_available', prescriptionId: 'a2', patientNic: 'FIX-NIC', reason: 'not_stocked', note: '' });
   expect(config.headers['x-patient-access']).toBe('fixture-consent-token');
   expect(await screen.findByTestId('not-available-marks')).toHaveTextContent('Not available at: City Fixture Pharmacy');
   expect(screen.getByText('Omeprazole')).toBeInTheDocument();
@@ -67,13 +67,16 @@ test('mark not available sends the reason with the consent grant and keeps the i
 test('a repeat-course refusal shows the server sentence, not "already dispensed"', async () => {
   api.get.mockResolvedValue(listing);
   const message = 'Warfarin was dispensed on 17 Nov at Ayu Arana Care Pharmacy for 5 days. Available again on 22 Nov.';
-  api.post.mockRejectedValue({ response: { status: 409, data: { code: 'REPEAT_COURSE_ACTIVE', error: message } } });
+  api.post.mockImplementation(url => (url === '/pharmacy/dispense'
+    ? Promise.reject({ response: { status: 409, data: { code: 'REPEAT_COURSE_ACTIVE', error: message } } })
+    : Promise.resolve({ data: { warnings: [], findings: [], canProceed: true } })));
   await open();
   fireEvent.click(screen.getAllByRole('button', { name: 'Dispense Medication' })[0]);
   fireEvent.change(await screen.findByLabelText('Quantity dispensed'), { target: { value: '5' } });
-  const confirm = screen.getByRole('button', { name: /Confirm Dispense|Dispense Now/i });
   fireEvent.click(screen.getByTestId('pharmacist-safety-checkbox'));
-  fireEvent.click(confirm);
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith('/prescriptions/check-safety', expect.anything(), expect.anything()));
+  fireEvent.click(await screen.findByRole('button', { name: /Confirm Dispense|Dispense Now/i }));
+  await waitFor(() => expect(api.post.mock.calls.map(c => c[0])).toContain('/pharmacy/dispense'));
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
   expect(toast.error).not.toHaveBeenCalledWith('This prescription has already been dispensed.');
 });
