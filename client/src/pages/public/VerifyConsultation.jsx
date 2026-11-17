@@ -23,6 +23,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
+import { otpErrorMessage, formatWait, REQUEST_TIMEOUT_MS } from '../../utils/otpLock';
 import { toast } from 'react-toastify';
 import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 
@@ -41,6 +42,7 @@ export default function VerifyConsultation() {
   const [otpRequesting, setOtpRequesting] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [verifyError, setVerifyError] = useState('');
   const [attemptsRemaining, setAttemptsRemaining] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -146,7 +148,7 @@ export default function VerifyConsultation() {
     setAttemptsRemaining(null);
 
     try {
-      const res = await api.post(`/verify/${token}/otp/request`);
+      const res = await api.post(`/verify/${token}/otp/request`, undefined, { timeout: REQUEST_TIMEOUT_MS });
       if (res.data.maskedContact) {
         setMaskedContact(res.data.maskedContact);
       }
@@ -159,9 +161,13 @@ export default function VerifyConsultation() {
       const status = err.response?.status;
       const data = err.response?.data;
       if (status === 429) {
-        setCooldown(data?.remainingSeconds || 60);
+        // Never auto-retry: the resend button stays disabled for the server's wait and shows the countdown.
+        const wait = Number(data?.retryAfterSeconds || data?.remainingSeconds) || 60;
+        setCooldown(wait);
+        setVerifyError(`${otpErrorMessage(err, 'Please wait before requesting another code.')} Try again in ${formatWait(wait)}.`);
         toast.info(data?.message || 'Please wait before requesting another code.');
       } else {
+        setVerifyError(otpErrorMessage(err, 'Unable to send verification OTP right now.'));
         toast.error(data?.message || 'Unable to send verification OTP right now.');
       }
     } finally {
@@ -194,8 +200,10 @@ export default function VerifyConsultation() {
     }
 
     setOtpVerifying(true);
+    setVerifyError('');
     try {
-      const res = await api.post(`/verify/${token}/otp/verify`, { otp: cleanOtp });
+      // 20 s timeout: on a sleeping server the request fails and the spinner stops (finally below).
+      const res = await api.post(`/verify/${token}/otp/verify`, { otp: cleanOtp }, { timeout: REQUEST_TIMEOUT_MS });
       if (res.data.success && res.data.clinical) {
         setSessionToken(res.data.sessionToken);
         setClinicalData(res.data.clinical);
@@ -212,6 +220,9 @@ export default function VerifyConsultation() {
       if (status === 429 || data?.error === 'OTP_LOCKED' || data?.attemptsRemaining === 0) {
         setIsLocked(true);
         setAttemptsRemaining(0);
+        const wait = Number(data?.retryAfterSeconds) || 0;
+        if (wait > 0) setCooldown(wait);
+        setVerifyError(otpErrorMessage(err, 'Maximum verification attempts exceeded. Code has been locked.') + (wait > 0 ? ` Try again in ${formatWait(wait)}.` : ''));
         toast.error('Maximum verification attempts exceeded. Code has been locked.');
       } else if (data?.attemptsRemaining !== undefined) {
         setAttemptsRemaining(data.attemptsRemaining);
@@ -219,6 +230,7 @@ export default function VerifyConsultation() {
         setOtp('');
         otpInputRef.current?.focus();
       } else {
+        setVerifyError(otpErrorMessage(err, 'Verification failed. Please try again.'));
         toast.error(data?.message || 'Verification failed. Please try again.');
       }
     } finally {
@@ -495,6 +507,10 @@ export default function VerifyConsultation() {
                       aria-live="polite"
                     />
                   </div>
+
+                  {verifyError && (
+                    <p role="alert" data-testid="otp-inline-error" className="text-xs text-red-300">{verifyError}</p>
+                  )}
 
                   <button
                     type="submit"

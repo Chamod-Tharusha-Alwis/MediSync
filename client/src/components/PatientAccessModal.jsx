@@ -4,6 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, CheckCircle, X, Loader2, RefreshCw } from 'lucide-react';
 import useModalFocus from '../hooks/useModalFocus';
 import api from '../api/axiosInstance';
+import { otpErrorMessage, formatWait, REQUEST_TIMEOUT_MS } from '../utils/otpLock';
+
+// Server-side request locks seen in this tab (patient NIC -> time the lock ends). Reopening the dialog while
+// a lock is active shows the wait instead of sending another request; the server rules are unchanged.
+const accessLocks = new Map();
 
 /**
  * PatientAccessModal — OTP verification for accessing patient records
@@ -31,7 +36,17 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
   callbacks.current = { onSuccess };
   const dialogRef = useModalFocus(true, onClose);
   const expiresAt = useRef(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const { t } = useTranslation();
+
+  // Live countdown for a server lock.
+  useEffect(() => {
+    if (lockedUntil <= Date.now()) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [lockedUntil]);
+  const lockSeconds = Math.max(0, Math.ceil((lockedUntil - now) / 1000));
 
   // Defer the initial send one tick so StrictMode's probe cannot send a second OTP.
   useEffect(() => {
@@ -56,17 +71,30 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
 
   const sendOTP = async (id = generation.current) => {
     if (busy.current) return;
+    const lock = accessLocks.get(patientNic) || 0;
+    if (lock > Date.now()) {
+      // No request while the server lock is active: no 429 flood.
+      setLockedUntil(lock); setNow(Date.now()); setStep('error');
+      setError('Verification requests for this patient are paused.');
+      return;
+    }
     busy.current = true; setLoading(true); setError(''); setStep('sending');
     pending.current = new AbortController();
     try {
-      const res = await api.post('/patient/request-access', { patientNic, requesterName, requesterRole }, { signal: pending.current.signal });
+      const res = await api.post('/patient/request-access', { patientNic, requesterName, requesterRole }, { signal: pending.current.signal, timeout: REQUEST_TIMEOUT_MS });
       if (id !== generation.current) return;
       if (!res.data.sessionId) throw new Error('Missing verification session');
       setSessionId(res.data.sessionId); setOtp(['', '', '', '', '', '']);
       expiresAt.current = Date.now() + 600000; setCountdown(600); setStep('otp');
     } catch (err) {
       if (id !== generation.current) return;
-      setStep('error'); setError('Unable to request verification. Please retry or close this dialog.');
+      const status = err?.response?.status;
+      if (status === 429) {
+        const seconds = Number(err.response.data?.retryAfterSeconds) || 60;
+        const until = Date.now() + seconds * 1000;
+        accessLocks.set(patientNic, until); setLockedUntil(until); setNow(Date.now());
+      }
+      setStep('error'); setError(otpErrorMessage(err, 'Unable to request verification. Please retry or close this dialog.'));
     } finally { if (id === generation.current) { busy.current = false; setLoading(false); } }
   };
 
@@ -90,14 +118,14 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
     busy.current = true; setLoading(true); setError('');
     pending.current = new AbortController();
     try {
-      const res = await api.post('/patient/verify-access', { sessionId, otp: code, patientNic }, { signal: pending.current.signal });
+      const res = await api.post('/patient/verify-access', { sessionId, otp: code, patientNic }, { signal: pending.current.signal, timeout: REQUEST_TIMEOUT_MS });
       if (id !== generation.current) return;
       if (!res.data.accessToken) throw new Error('Missing access grant');
       setStep('success');
       callbacks.current.onSuccess(res.data.accessToken);
     } catch (err) {
       if (id !== generation.current) return;
-      setError('Verification was not accepted. Check the code or request a new one.');
+      setError(otpErrorMessage(err, 'Verification was not accepted. Check the code or request a new one.'));
       setOtp(['', '', '', '', '', '']); inputRefs.current[0]?.focus();
     } finally { if (id === generation.current) { busy.current = false; setLoading(false); } }
   };
@@ -155,7 +183,7 @@ const PatientAccessModal = ({ patientNic, requesterName, requesterRole, onSucces
               </div>
             )}
 
-            {step === 'error' && <div><p role="alert">{error}</p><button type="button" disabled={loading} onClick={() => sendOTP()}>Retry verification request</button></div>}
+            {step === 'error' && <div><p role="alert">{error}</p>{lockSeconds > 0 && <p data-testid="otp-lock-wait" className="text-slate-400 text-sm mt-1">Try again in {formatWait(lockSeconds)}.</p>}<button type="button" disabled={loading || lockSeconds > 0} onClick={() => sendOTP()}>Retry verification request</button></div>}
             {/* Step: OTP Entry */}
             {step === 'otp' && (
               <>

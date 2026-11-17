@@ -1,11 +1,13 @@
 import { formatSriLankaDate } from '../utils/sriLankaTime';
 import React, { useEffect, useState, useCallback } from 'react';
+import { deviceListView } from '../utils/deviceList';
 import { Smartphone, ShieldCheck, ShieldAlert, Trash2, Loader2, Clock, Edit2, Check, X, KeyRound, Lock } from 'lucide-react';
 import api from '../api/axiosInstance';
 import { toast } from 'react-toastify';
 
 const TrustedDevices = ({ userId = null, isAdmin = false }) => {
   const [devices, setDevices] = useState([]);
+  const [showOlderDevices, setShowOlderDevices] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -351,7 +353,7 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {devices.map(device => {
+          {deviceListView(devices, { showOlder: showOlderDevices }).shown.map(device => {
         const isDeviceTrusted = Boolean(device.isTrusted && !device.isRevoked);
         return (
           <div
@@ -475,6 +477,11 @@ const TrustedDevices = ({ userId = null, isAdmin = false }) => {
           </div>
         );
       })}
+          {(showOlderDevices || deviceListView(devices).hiddenCount > 0) && (
+            <button type="button" data-testid="toggle-older-devices" onClick={() => setShowOlderDevices(v => !v)} className="text-xs text-slate-400 hover:text-white underline">
+              {showOlderDevices ? 'Show recent devices only' : `Show older devices (${deviceListView(devices).hiddenCount})`}
+            </button>
+          )}
         </div>
       )}
     </div>
