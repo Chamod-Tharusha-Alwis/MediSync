@@ -27,6 +27,13 @@ function getPharmacyRole() {
   return localStorage.getItem('role') || null;
 }
 
+// Plain sentence for prescriber safety acknowledgement codes (display only).
+const SAFETY_FLAG_TEXT = { DRUG_INTERACTION: 'drug interaction', DUPLICATE_THERAPY_ACTIVE_RX: 'duplicate active therapy', UNCONFIGURED_LIMIT: 'no dose limit on file', ALLERGY_CONFLICT: 'allergy conflict' };
+export const describeSafetyFlags = (codes = []) => {
+  const list = [...new Set((codes || []).map(c => SAFETY_FLAG_TEXT[c] || String(c).replace(/_/g, ' ').toLowerCase()))];
+  return `Prescriber acknowledged: ${list.length ? list.join('; ') : 'safety advisory'}`;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB: Dispense Medication
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,6 +45,10 @@ const Dispense = () => {
   const [loadedNic, setLoadedNic] = useState('');
   const [loading, setLoading] = useState(false);
   const [dispensing, setDispensing] = useState(false);
+  const [progress, setProgress] = useState({});
+  const [notAvailableFor, setNotAvailableFor] = useState(null); // prescription id with the reason form open
+  const [notAvailableReason, setNotAvailableReason] = useState('out_of_stock');
+  const [notAvailableNote, setNotAvailableNote] = useState('');
   const searchGeneration = useRef(0);
   
   // Alternative dispense modal states
@@ -96,6 +107,7 @@ const Dispense = () => {
       if (generation !== searchGeneration.current) return;
       if (Array.isArray(data?.data?.prescriptions)) {
         setPrescriptions(data.data.prescriptions);
+        setProgress(data.data.progress && typeof data.data.progress === 'object' ? data.data.progress : {});
         setPatientInfo(data.data.patient);
         setLoadedNic(lookupNic);
         if (data.data.prescriptions.length === 0) toast.info('No pending prescriptions found for this NIC.');
@@ -201,12 +213,21 @@ const Dispense = () => {
         alternativeDetails: isAlt ? altDetails.trim() : undefined,
       }, { headers: { 'Idempotency-Key': checkoutKey, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
       toast.success('Prescription dispensing recorded.');
+      if (selectedRx.consultationRef) {
+        setProgress(prev => {
+          const cur = prev[selectedRx.consultationRef];
+          return cur ? { ...prev, [selectedRx.consultationRef]: { ...cur, dispensed: Math.min(cur.total, cur.dispensed + 1) } } : prev;
+        });
+      }
       setPrescriptions(prev => prev.filter(p => (p.prescriptionId || p._id) !== (selectedRx.prescriptionId || selectedRx._id)));
       setShowDispenseModal(false);
     } catch (err) {
       const status = err.response?.status;
       const errorMsg = err.response?.data?.error || err.response?.data?.message;
-      if (status === 409 || err.response?.data?.code === 'ALREADY_DISPENSED' || /already|eligible/i.test(errorMsg || '')) {
+      if (err.response?.data?.code === 'REPEAT_COURSE_ACTIVE') {
+        // Server rule: the earlier course of the same ingredient is still running (message has the dates).
+        toast.error(errorMsg);
+      } else if (status === 409 || err.response?.data?.code === 'ALREADY_DISPENSED' || /already|eligible/i.test(errorMsg || '')) {
         toast.error('This prescription has already been dispensed.');
       } else {
         toast.error(errorMsg || 'Failed to dispense');
@@ -216,41 +237,17 @@ const Dispense = () => {
     }
   };
 
-  const handleBulkDispense = async (group) => {
-    const patientToken = getPatientToken ? getPatientToken(loadedNic) : null;
-    setDispensing(true);
-    let successCount = 0;
+  // B1: one medicine at a time. "Not available at this pharmacy" keeps the item pending for other pharmacies.
+  const submitNotAvailable = async (rx) => {
+    const targetNic = rx.patientNic || loadedNic;
+    const patientToken = getPatientToken ? getPatientToken(targetNic) : null;
     try {
-      for (const rx of group.prescriptions) {
-        const meds = rx.medications?.length ? rx.medications : [{ name: rx.drugName, dosage: rx.dosage, durationDays: rx.durationDays }];
-        const items = meds.map(m => ({
-          drugName: m.name,
-          dosage: m.dosage || rx.dosage || 'Standard',
-          unit: 'units',
-          quantityDispensed: m.durationDays ? Math.max(1, parseInt(m.durationDays, 10)) : 1
-        }));
-        const key = `bulk:rx:${rx._id || rx.prescriptionId}:${Date.now()}`;
-        await api.post('/pharmacy/dispense', {
-          prescriptionId: rx._id || rx.prescriptionId,
-          patientNic: loadedNic,
-          items,
-          isAlternativeDispensed: false,
-          notes: `Consultation bulk dispense ${group.consultationRef}`
-        }, { headers: { 'Idempotency-Key': key, ...(patientToken ? { 'x-patient-access': patientToken } : {}) } });
-        successCount++;
-      }
-      toast.success(`Successfully dispensed ${successCount} prescription order(s) for consultation ${group.consultationRef}.`);
-      setPrescriptions(prev => prev.filter(p => !group.prescriptions.some(grx => (grx._id || grx.prescriptionId) === (p._id || p.prescriptionId))));
+      const { data } = await api.post(`/pharmacy/prescriptions/${encodeURIComponent(rx._id || rx.prescriptionId)}/not-available`, { patientNic: targetNic, reason: notAvailableReason, note: notAvailableNote.trim() }, { headers: patientToken ? { 'x-patient-access': patientToken } : {} });
+      toast.success('Marked not available at this pharmacy. It stays open for other pharmacies.');
+      setPrescriptions(prev => prev.map(p => (p._id === rx._id ? { ...p, unavailableAt: [...(p.unavailableAt || []), { pharmacyName: data?.data?.pharmacyName, reason: notAvailableReason }] } : p)));
+      setNotAvailableFor(null); setNotAvailableNote('');
     } catch (err) {
-      const status = err.response?.status;
-      const errorMsg = err.response?.data?.error || err.response?.data?.message;
-      if (status === 409 || err.response?.data?.code === 'ALREADY_DISPENSED' || /already|eligible/i.test(errorMsg || '')) {
-        toast.error('This prescription has already been dispensed.');
-      } else {
-        toast.error(errorMsg || `Failed during bulk dispense (dispensed ${successCount}).`);
-      }
-    } finally {
-      setDispensing(false);
+      toast.error(err.response?.data?.error || 'Could not record this right now.');
     }
   };
 
@@ -343,14 +340,11 @@ const Dispense = () => {
                     Referred by <span className="text-white font-bold">{formatDoctorName(group.doctorName, 'Unavailable')}</span> &bull; <span className="text-slate-400">{group.hospitalName}</span>
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={dispensing}
-                  onClick={() => handleBulkDispense(group)}
-                  className="px-4 py-2 bg-emerald-600/15 border border-emerald-500/30 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
-                >
-                  <CheckCircle className="w-4 h-4" /> Dispense Consultation Order
-                </button>
+                {progress[group.consultationRef] && (
+                  <span data-testid="consultation-progress" className="text-xs font-semibold text-slate-300 shrink-0">
+                    {progress[group.consultationRef].dispensed} of {progress[group.consultationRef].total} dispensed
+                  </span>
+                )}
               </div>
 
               {/* Medicines Table */}
@@ -379,7 +373,7 @@ const Dispense = () => {
                             {rx.safetyOverride?.acknowledged && (
                               <div data-testid="prescriber-override-badge" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] uppercase tracking-wider font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300">
                                 <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                                <span>Prescriber acknowledged safety warnings ({(rx.safetyOverride.findingTypes || []).join(', ') || 'advisory'})</span>
+                                <span>{describeSafetyFlags(rx.safetyOverride.findingTypes)}</span>
                               </div>
                             )}
                           </td>
@@ -395,7 +389,30 @@ const Dispense = () => {
                           <td className="px-5 py-3.5 text-slate-300 font-medium">
                             {durationDays ? `${durationDays} ${t('activity.days', 'days')}` : '—'}
                           </td>
-                          <td className="px-5 py-3.5 text-right">
+                          <td className="px-5 py-3.5 text-right space-y-2">
+                            {(rx.unavailableAt || []).length > 0 && (
+                              <div data-testid="not-available-marks" className="text-xs text-slate-400">
+                                Not available at: {(rx.unavailableAt || []).map(m => m.pharmacyName || 'a pharmacy').join(', ')}
+                              </div>
+                            )}
+                            {notAvailableFor === rx._id ? (
+                              <div className="inline-flex flex-wrap items-center gap-2 justify-end">
+                                <select aria-label="Reason" value={notAvailableReason} onChange={e => setNotAvailableReason(e.target.value)} className="bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-xs">
+                                  <option value="out_of_stock">Out of stock</option>
+                                  <option value="not_stocked">Not stocked here</option>
+                                  <option value="other">Other</option>
+                                </select>
+                                {notAvailableReason === 'other' && (
+                                  <input aria-label="Note" value={notAvailableNote} onChange={e => setNotAvailableNote(e.target.value)} maxLength={200} placeholder="Short note" className="bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-xs" />
+                                )}
+                                <button type="button" onClick={() => submitNotAvailable(rx)} className="px-3 py-1.5 rounded-lg border border-slate-500/40 text-slate-200 text-xs font-bold">Confirm</button>
+                                <button type="button" onClick={() => setNotAvailableFor(null)} className="px-3 py-1.5 rounded-lg text-slate-400 text-xs">Cancel</button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => { setNotAvailableFor(rx._id); setNotAvailableReason('out_of_stock'); setNotAvailableNote(''); }} className="mr-2 px-3 py-1.5 border border-slate-600/40 hover:bg-slate-700 text-slate-300 rounded-lg font-bold text-xs transition-all">
+                                Mark not available
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => openDispenseModal(rx)}
