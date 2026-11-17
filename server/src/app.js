@@ -204,7 +204,6 @@ async function startServer() {
   app.set('trust proxy', 1);
   const httpServer = http.createServer(app);
   lifecycle?.bind({ httpServer });
-  if (lifecycle) app.use((req,res,next) => lifecycle.stopping ? res.status(503).json({error:'Service shutting down'}) : next());
 
   // Socket.IO – real-time outbreak alerts & broadcasts
   const io = process.env.MEDISYNC_QA_BROWSER_RUN === 'true' ? global.__MEDISYNC_QA_BROWSER_BOOTSTRAP.socket : qaMode ? {
@@ -243,6 +242,8 @@ async function startServer() {
       credentials: true,
     })
   );
+  // After CORS, so this 503 carries the CORS headers and the browser can read it (it used to run first).
+  if (lifecycle) app.use((req,res,next) => lifecycle.stopping ? res.status(503).json({error:'Service shutting down'}) : next());
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 

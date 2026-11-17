@@ -45,6 +45,9 @@ const sevConfig = {
 };
 const getSev = (s) => sevConfig[s] || sevConfig.Low;
 
+// C1: interval between scan-status polls (ms).
+export const SCAN_POLL_MS = 2000;
+
 const PulseRing = ({ color = 'bg-red-500' }) => (
   <span className="relative flex h-3 w-3 flex-shrink-0 select-none">
     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${color} opacity-60`} />
@@ -357,7 +360,19 @@ const OutbreakMonitor = () => {
 
     setDetecting(true); setMlResult(null); setError(null);
     try {
-      const res    = await api.post('/admin/outbreak/trigger', {});
+      // C1: the scan runs in the background on the server; poll until it finishes (no long-held request).
+      const started = await api.post('/admin/outbreak/trigger', { async: true });
+      let res = started;
+      if (started.status === 202 && started.data?.jobId) {
+        const deadline = Date.now() + 180000;
+        for (;;) {
+          await new Promise(r => setTimeout(r, SCAN_POLL_MS));
+          const poll = await api.get('/admin/outbreak/last-scan', { params: { jobId: started.data.jobId } });
+          if (poll.data?.status === 'done') { res = { data: poll.data.result || {} }; break; }
+          if (poll.data?.status === 'failed') throw new Error(poll.data.error || 'Surveillance analysis unavailable; no alert was broadcast.');
+          if (Date.now() > deadline) throw new Error('The scan is still running on the server. Check "Last scan" in a minute.');
+        }
+      }
       const result = res.data.data || res.data;
 
       if (result.results && Array.isArray(result.results)) {

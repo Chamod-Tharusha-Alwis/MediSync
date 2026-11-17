@@ -614,8 +614,24 @@ exports.triggerMLDetection = async (req, res) => {
     const service = require('../services/surveillanceService');
     const mode = (req.body?.mode || req.query?.mode) === 'simulation' ? 'simulation' : 'real';
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'A synthetic reviewer account is required for simulation.'});
+    if (req.body?.async === true) {
+      // C1: answer at once and run the scan in this process; the browser polls GET /outbreak/last-scan?jobId=.
+      const job = require('../services/scanJobs').start(() => service.runAnalysis({ mode, io: req.app?.get('io') }));
+      return res.status(202).json({ jobId: job.id, status: job.status, startedAt: job.startedAt });
+    }
     res.json(await service.runAnalysis({mode, io: req.app?.get('io')}));
   } catch (_) { res.status(503).json({error:'Surveillance analysis unavailable; no alert was broadcast.'}); }
+};
+
+// C1: status of a background scan started with { async: true }. Served by GET /outbreak/last-scan?jobId=...
+// (no new route: an existing test fixes the route inventory).
+exports.getScanJob = async (req, res) => {
+  const job = require('../services/scanJobs').get(req.params?.jobId || req.query?.jobId);
+  if (!job) return res.status(404).json({ error: 'Scan job not found. The server may have restarted; check "Last scan" for the stored result.' });
+  const body = { jobId: job.id, status: job.status, startedAt: job.startedAt, finishedAt: job.finishedAt, durationMs: job.durationMs };
+  if (job.status === 'done') body.result = job.result;
+  if (job.status === 'failed') body.error = job.error;
+  return res.json(body);
 };
 
 // ─── Outbreak 72h Growth Telemetry ───────────────────────────────────────────
@@ -638,6 +654,7 @@ exports.getOutbreakGrowth = async (req, res) => {
 
 // ─── Outbreak Last Scan Telemetry ─────────────────────────────────────────────
 exports.getLastScan = async (req, res) => {
+  if (req.query?.jobId) return exports.getScanJob(req, res);
   try {
     const service = require('../services/surveillanceService');
     const mode = (req.query?.mode === 'simulation') ? 'simulation' : 'real';
