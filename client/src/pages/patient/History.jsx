@@ -19,6 +19,7 @@ import Modal from '../../components/ui/Modal';
 
 import LabDetailModal from '../../components/common/LabDetailModal';
 import LabReportDownloadButton from '../../components/common/LabReportDownloadButton';
+import { consultationTitle } from '../../utils/historyTitle';
 import { formatDoctorName } from '../../utils/doctorName';
 import { formatLabTestName, formatLabTestSummary } from '../../utils/labTestFormatter';
 import { isPdfExportClientEnabled, downloadClinicalPdf } from '../../utils/pdfDownload';
@@ -285,7 +286,7 @@ const HistoryCard = ({ event, onRate }) => {
     ? 'Direct Pharmacy Dispensation'
     : rawType === 'lab' ? formatLabTestName(labTests[0])
       : rawType === 'prescription' ? (details.drugName || details.medications?.[0]?.name || t('liveQa.prescription'))
-      : (details.diagnosis || 'Medical Consultation');
+      : consultationTitle(details);
 
   return (
     <motion.div variants={cardVariants} className="relative pl-14">

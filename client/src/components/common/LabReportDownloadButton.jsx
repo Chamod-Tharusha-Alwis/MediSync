@@ -3,6 +3,13 @@ import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { isPdfExportClientEnabled, downloadClinicalPdf } from '../../utils/pdfDownload';
 
+const READY_STATUSES = ['completed', 'report_ready', 'delivered'];
+export function isLabResultReady(test) {
+  if (!test || typeof test !== 'object') return false;
+  const status = String(test.labStatus || test.status || '').toLowerCase();
+  return READY_STATUSES.includes(status) || Boolean(test.reportUploadedAt || test.reportPath);
+}
+
 const LabReportDownloadButton = ({ labTests = [], onSelectTest, enabled }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
@@ -29,14 +36,24 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest, enabled }) => {
     );
   }
 
+  // A report can be downloaded only after the laboratory uploads the result (the server returns 409 otherwise).
+  const readyTests = labTests.filter(isLabResultReady);
+  if (readyTests.length === 0) {
+    return (
+      <p data-testid="lab-result-unavailable" className="text-xs text-slate-400">
+        {t('patient.labResultUnavailable', 'Lab result unavailable. It will appear after the laboratory uploads the result.')}
+      </p>
+    );
+  }
+
   const handleClick = async (e) => {
     e.stopPropagation();
     if (downloading) return;
-    if (labTests.length > 1 && typeof onSelectTest === 'function') {
-      onSelectTest(labTests[0]);
+    if (readyTests.length > 1 && typeof onSelectTest === 'function') {
+      onSelectTest(readyTests[0]);
       return;
     }
-    const first = labTests[0];
+    const first = readyTests[0];
     const reportId = typeof first === 'string' ? first : (first?.reportId || first?.labTestId || first?._id);
     if (!reportId) return;
     setDownloading(true);
@@ -57,7 +74,7 @@ const LabReportDownloadButton = ({ labTests = [], onSelectTest, enabled }) => {
       >
         <Download className="w-3.5 h-3.5 text-purple-400" />
         {downloading ? t('patient.generatingPdf', 'Generating PDF…') : t('patient.downloadLabReportPdf', 'Download Lab Report PDF')}
-        {labTests.length > 1 ? ` (${labTests.length})` : ''}
+        {readyTests.length > 1 ? ` (${readyTests.length})` : ''}
       </button>
       <span className="text-xs text-slate-400 flex items-center gap-1">
         🔒 {t('patient.pdfPasswordNotice', 'Encrypted PDF: open with your NIC number.')}
