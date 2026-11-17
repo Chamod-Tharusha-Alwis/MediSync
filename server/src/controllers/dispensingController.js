@@ -1,5 +1,5 @@
 const { nicFilter, writeNicFields } = require('../security/nicPersistence');
-const { dispense, DispenseError } = require('../services/dispensingService');
+const { dispense, dispenseSelection, DispenseError } = require('../services/dispensingService');
 const { recordClinicalEvent } = require('../services/clinicalAuditService');
 const AuditLog = require('../models/AuditLog');
 const Patient = require('../models/Patient');
@@ -29,10 +29,13 @@ const handler = otc => async (req, res) => {
   // B1: the same consent-protected POST /pharmacy/dispense records "not available at this pharmacy" for one
   // medicine (no new route: an existing test fixes the route inventory).
   if (!otc && req.body?.action === 'not_available') return exports.markNotAvailable(req, res);
+  // Fix pack 3: several medicines of one consultation released together share one receipt (body.selection).
+  const isSelection = !otc && Array.isArray(req.body?.selection);
   try {
-    if (req.body?.safetyAcknowledgment !== undefined || (Array.isArray(req.body?.items) && req.body.items.length > 0)) {
+    const selectionItems = isSelection ? req.body.selection.flatMap(entry => (Array.isArray(entry?.items) ? entry.items : [])) : [];
+    if (req.body?.safetyAcknowledgment !== undefined || (Array.isArray(req.body?.items) && req.body.items.length > 0) || selectionItems.length > 0) {
       const { evaluateMedicineSafety } = require('../utils/medicineSafetyEngine');
-      const medItems = req.body.items || [];
+      const medItems = isSelection ? selectionItems : (req.body.items || []);
       const safetyResult = await evaluateMedicineSafety({
         medications: medItems.map(i => ({ drugName: i.drugName || i.name, dosage: i.dosage, durationDays: i.durationDays, frequency: i.frequency })),
         patientId: req.body.patientId,
@@ -49,9 +52,11 @@ const handler = otc => async (req, res) => {
         });
       }
     }
-    const {receipt,replay} = await dispense({user:req.user,body:req.body,otc,prescriptionRef:req.params?.id,
-      idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true,
-      authorization:{ consentToken: req.headers['x-patient-access'] || req.headers['x-patient-access-token'], sessionId: req.session?._id }});
+    const authorization = { consentToken: req.headers['x-patient-access'] || req.headers['x-patient-access-token'], sessionId: req.session?._id };
+    const {receipt,replay} = isSelection
+      ? await dispenseSelection({ user:req.user, body:req.body, idempotencyKey:req.headers['idempotency-key'], authorization })
+      : await dispense({user:req.user,body:req.body,otc,prescriptionRef:req.params?.id,
+        idempotencyKey:req.headers['idempotency-key'], skipAuditProjection:true, authorization});
     // Capped audit collections cannot participate in the dispensing transaction.
     // The receipt's durable audit event is authoritative; this is an extra projection.
     if (!replay) {
@@ -68,9 +73,9 @@ const handler = otc => async (req, res) => {
         console.error('[DispensingController] Audit projection warning:');
       });
       if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true' && !otc) {
-        // B3: one medication update email per dispense action (pharmacy and pharmacist names, never ids).
+        // B3 / fix pack 3: one medication update email per receipt (pharmacy and pharmacist names, never ids).
         require('../services/medicationUpdateEmail').notifyMedicationUpdate({ prescriptionId: receipt.prescriptionId, pharmacyId: receipt.pharmacyId,
-          pharmacistName: receipt.pharmacistName, pharmacyName: receipt.pharmacyName }).catch(() => {});
+          pharmacistName: receipt.pharmacistName, pharmacyName: receipt.pharmacyName, receiptId: receipt._id }).catch(() => {});
       } else if (process.env.NODE_ENV === 'production' && process.env.MEDISYNC_TEST_MODE !== 'true') {
         const nicHash = crypto.createHash('sha256').update(receipt.patientNic).digest('hex');
         Patient.findOne(nicFilter(receipt.patientNic, { plainFields: ['nic'] })).then(patient => {
@@ -86,7 +91,8 @@ const handler = otc => async (req, res) => {
       }
     }
     return res.status(replay?200:201).json({message:'Dispensed successfully',replayed:replay,
-      data:{receiptNumber:receipt.receiptNumber,prescriptionId:receipt.prescriptionId,medicationCount:receipt.items.length}});
+      data:{receiptNumber:receipt.receiptNumber,prescriptionId:receipt.prescriptionId,medicationCount:receipt.items.length,
+        ...(isSelection ? { prescriptionIds:(receipt.prescriptionIds || []).map(String) } : {})}});
   } catch (e) {
     const known = e instanceof DispenseError || e instanceof require('../services/clinicalErrors').ClinicalCommandError;
     return res.status(known?e.status:503).json({error:known?e.message:'Dispensing could not be completed safely.',

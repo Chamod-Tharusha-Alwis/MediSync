@@ -6,6 +6,8 @@ const dispensingSchema = new mongoose.Schema({
     ref: 'Prescription',
     required: true
   },
+  // Fix pack 3: a receipt for medicines released together lists every prescription it covers.
+  prescriptionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Prescription' }],
   pharmacyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Pharmacy',
@@ -25,6 +27,7 @@ const dispensingSchema = new mongoose.Schema({
   isAlternativeDispensed: { type: Boolean, default: false },
   alternativeDetails: { type: String, default: '' },
   items: [{
+    prescriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Prescription' },
     unit: String,
     drugName: {
       type: String,

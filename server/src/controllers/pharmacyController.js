@@ -450,7 +450,15 @@ exports.getPendingPrescriptions = async (req, res) => {
     try {
       if (Prescription.db?.readyState === 1) progress = await require('../services/pharmacyItemService').consultationProgress(prescriptions.map(rx => rx.consultationRef));
     } catch (_) { progress = {}; }
-    res.json({ data: { prescriptions, patient: profile, progress } });
+    // Fix pack 3: medicines this pharmacy marked "not available" cannot be selected for a joint release.
+    let unavailableHere = [];
+    try {
+      if (Prescription.db?.readyState === 1 && req.user?.id) {
+        const me = await PharmacyStaff.findById(req.user.id).select('pharmacyId').lean();
+        if (me?.pharmacyId) unavailableHere = prescriptions.filter(rx => (rx.unavailableAt || []).some(m => String(m.pharmacyId) === String(me.pharmacyId))).map(rx => String(rx._id));
+      }
+    } catch (_) { unavailableHere = []; }
+    res.json({ data: { prescriptions, patient: profile, progress, unavailableHere } });
   } catch (error) {
     console.error('getPendingPrescriptions error:');
     res.status(500).json({ error: 'Failed to get prescriptions' });
