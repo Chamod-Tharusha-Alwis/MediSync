@@ -30,10 +30,23 @@ _audit_report/
 .github/context-mode/
 %SystemDrive%/
 
-# Build outputs
+# Build outputs and test caches
 dist/
 build/
 client/build/
+coverage/
+.pytest_cache/
+
+# Editor/backup leftovers and Office lock files
+*.tmp
+*.bak
+*.orig
+~$*
+
+# Final clean-up outputs (local only): the Drive dataset package and the clean-up scan report
+release-package/
+cleanup-report/
+report-evidence/node_modules/
 
 # Log files
 *.log
