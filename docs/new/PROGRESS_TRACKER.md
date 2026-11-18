@@ -79,3 +79,5 @@ Expected dry-run: `wouldInsert: 0` and `existingOwned` totalling 12,907.
 |------|-------|
 | 7 Nov 2026 | Seed written to prod (12,907). M0-M3 passed. M4 started. Paused for campus. |
 | 7 Nov 2026 | M0 baseline reconciliation complete: DEC-001 corrected with exact commit paths, 15/15 protected pins verified, full offline gate (3,444 passed, 0 failed), client build (117 modules) verified, outbreak detector S1-S8 verified. M4 WP5 uncommitted work preserved. |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

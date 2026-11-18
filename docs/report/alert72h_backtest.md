@@ -16,3 +16,5 @@ Method `alert72h-naive-empirical-v1` (server/src/services/alertProjection72h.js,
 - Origins with fewer than 8 past changes show "not enough history" and no range, exactly as on the admin screen.
 
 Synthetic plan digest b5401e1e861902b7... (125 series). Offline: no database, no network.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

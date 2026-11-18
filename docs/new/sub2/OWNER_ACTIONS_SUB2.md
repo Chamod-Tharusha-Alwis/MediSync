@@ -1,7 +1,7 @@
 # MediSync Sub-Project 2 — Owner Operational Actions & Infrastructure Runbook
 
 > [!NOTE]
-> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
+> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](../../archive/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
 
 Date: November 8, 2026  
 Status: RELEASE CANDIDATE SUB2  
@@ -98,3 +98,5 @@ Before executing the demo batch removal:
    node scripts/remove_demo_batch.js --db medisync_prod --confirm-delete
    Remove-Item Env:\APPROVE_DEMO_OUTBREAK_REMOVAL -ErrorAction SilentlyContinue
    ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -108,3 +108,5 @@ Promise.all(routes.map(r => new Promise((resolve) => {
    - Render API Gateway
    - ML Engine service
 4. Verify legacy ML alerts submenu has been cleanly excised.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

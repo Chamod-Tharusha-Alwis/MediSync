@@ -198,3 +198,5 @@ anything about real outbreaks, because the data are synthetic.
   may differ slightly.
 - The offline proof used the local ML engine with a fresh temporary database. The production engine's
   disease danger levels decide the heuristic path.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -71,3 +71,5 @@ This document outlines the defensive security hardening applied to the MediSync 
 ## 13. Express 5 Query Sanitization Hardening
 - **Read-Only Request Object Compatibility:** Express 5 treats `req.query` as a read-only getter property, causing standard NoSQL injection sanitizers (which attempt to reassign `req.query = cleanQuery`) to crash with runtime `TypeError` exceptions.
 - **In-Place Recursive Mutation:** Implemented custom `sanitizeInPlace` middleware that recursively traverses and sanitizes object properties in-place without violating Express 5 object immutability rules.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

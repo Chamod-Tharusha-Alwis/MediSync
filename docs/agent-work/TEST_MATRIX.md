@@ -865,3 +865,5 @@ Machine snapshot: `docs/temp/CODEX_TEST_MATRIX_20261105T132349Z.json`; fingerpri
 | API-129ff4144da9 | API | shared | PUT /api/users/profile | userController.updateProfile | W-low | server/src/routes/userRoutes.js:8 | NOT VERIFIED | Authentication/role scope must be reviewed in controller/middleware |
 
 Historical inventories retained. Current bindings include medication-response validation; no live clinical acceptance inferred.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

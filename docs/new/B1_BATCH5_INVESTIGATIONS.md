@@ -173,3 +173,5 @@ Change line 307 to:
 - **Production (`NODE_ENV === 'production'`):** Enforces 10 requests per 15 minutes. Not skipped.
 - **Development / Staging / Demo (`NODE_ENV !== 'production' && NODE_ENV !== 'test'`):** Enforces 100 requests per 15 minutes. Not skipped.
 - **Automated Tests (`NODE_ENV === 'test'`):** Skipped to prevent rapid test runner requests from triggering 429 errors.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -17,7 +17,7 @@ graph TD
 ## 1. Core Architectural Components
 
 ### 1.1 Web Client (`client/`)
-- **Technology**: React 18, React Router v6, Tailwind CSS, Framer Motion.
+- **Technology**: React 19, React Router 7, Tailwind CSS, Framer Motion.
 - **Hosting**: Vercel (`https://medisync.chamodtharusha.com.lk`).
 - **Features**:
   - Role-specific portals: Patient, Doctor, Pharmacy Staff, Hospital Staff, Administrator.
@@ -128,7 +128,7 @@ The PDF export subsystem (`server/src/utils/pdfGenerator.js`) generates verifiab
 
 MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. The suite operates entirely offline, using in-memory databases and loopback mock adapters:
 
-- **Backend Jest Suite**: 2,639 tests across 124 suites.
+- **Offline gate (all profiles, 2026-11-18)**: 3,812 tests passed, 0 failed (`MEDISYNC_OFFLINE_CI=true node scripts/run_offline_tests.js`).
 - **Client React Suite**: 661 tests across 76 suites.
 - **Email & PDF Harness**: 31 tests across 2 suites.
 - **ML Scoring & Flask Models**: 78 tests (40 scoring + 31 Flask API + 7 tiered matcher).
@@ -142,9 +142,11 @@ MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. Th
 - **Master Documentation Index**: [`docs/report/INDEX.md`](docs/report/INDEX.md)
 - **Technical Report (Full Thesis)**: [`docs/report/TECHNICAL_REPORT.md`](docs/report/TECHNICAL_REPORT.md)
 - **Data Model & Cryptography Schema**: [`docs/report/DATA_MODEL.md`](docs/report/DATA_MODEL.md)
-- **REST API Reference (191 Endpoints)**: [`docs/report/API_REFERENCE.md`](docs/report/API_REFERENCE.md)
+- **REST API Reference (written when there were 191 endpoints; there are 228 API routes on 2026-11-18)**: [`docs/report/API_REFERENCE.md`](docs/report/API_REFERENCE.md)
 - **Project Structure (67 Folders)**: [`docs/report/PROJECT_STRUCTURE.md`](docs/report/PROJECT_STRUCTURE.md)
 - **Complete File Guide (1,129 Files)**: [`docs/report/FILE_GUIDE.md`](docs/report/FILE_GUIDE.md)
 - **Quality & Security Scan**: [`docs/report/QUALITY_SCAN.md`](docs/report/QUALITY_SCAN.md)
 - **Architectural Diagrams (D01–D09)**: [`docs/report/diagrams/`](docs/report/diagrams/)
 - **Publication Figures (F01–F14)**: [`docs/report/figures/FIGURES.md`](docs/report/figures/FIGURES.md)
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

@@ -123,3 +123,5 @@ Fill in your authorized live credentials before starting the demonstration:
 - [ ] Outbreak alerts approved and visible on `/public-health`.
 - [ ] Demonstration alert broadcast confined to allowlist.
 - [ ] Protected file ledger remains 15/15 byte-exact.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

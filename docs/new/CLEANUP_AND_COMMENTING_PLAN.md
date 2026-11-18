@@ -177,3 +177,5 @@ Exceptions: test files and scripts are allowed to log.
 The 15 files in `docs/release/PROTECTED_HASHES.json` must not be modified.
 If a file needs a change (e.g. to remove a dead feature), stop and ask the operator first.
 Verify hashes before every push.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

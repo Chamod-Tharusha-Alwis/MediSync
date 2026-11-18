@@ -53,3 +53,5 @@ Proceed directly to **Phase 9: Release Readiness & Final Status**:
 3. Merge `final/p8-final-reconcile` into `main`.
 4. Author `docs/final/FINAL_STATUS.md` and complete `docs/final/PROGRESS.md`.
 5. Tag capstone release `v1.0.0-capstone`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

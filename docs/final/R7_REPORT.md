@@ -51,3 +51,5 @@
 - Asserted zero occurrences in `icd10` reference data matching ICD-11 syntax.
 - Asserted all curated WHO ICD-11 core catalog codes are identified as ICD-11.
 - Offline regression suite verified 0 failures.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

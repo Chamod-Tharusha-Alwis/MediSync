@@ -95,3 +95,5 @@ check is authorized here.
 The separate 5-in-15 password-lockout candidate remains inactive and gated;
 `docs/temp/CODEX_PASSWORD_LOCKOUT_REVIEW_HANDOFF_20261105T142334Z.md` in `d611b41`.
 No live email budget is granted. Clinical production remains NO-GO.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

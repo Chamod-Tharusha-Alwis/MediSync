@@ -194,3 +194,5 @@ If an unexpected error occurs during deletion:
 1. `remove_demo_batch.js` aborts immediately upon connection or query failure.
 2. MongoDB document deletes are atomic per document; records outside the explicit `$and` query filter are never touched.
 3. If necessary, re-run `node scripts/seed-platform-data.js --dry-run --db medisync_prod` to verify baseline integrity.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

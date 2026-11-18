@@ -25,3 +25,5 @@
 2. Clinical ambiguity analysis for candidates with high token overlap (score $\ge 0.70$).
 3. Process memory benchmarking via `psutil` within the Python virtual environment.
 4. Verification against full offline test suite and quality gates.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

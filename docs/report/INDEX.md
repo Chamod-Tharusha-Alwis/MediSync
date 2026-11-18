@@ -2,7 +2,7 @@
 
 **Repository Branch**: `feat/sub5-submission-pack`  
 **Submission Deadline**: 20 November 2026  
-**Baseline Quality Gate**: 3,777 Tests Passed / 0 Failed | 15/15 Protected Ledger Pins Locked  
+**Baseline Quality Gate**: 3,777 Tests Passed / 0 Failed | 15/15 Protected Ledger Pins Locked (at the time this index was written). Re-run on 2026-11-18 at main `f5337833`: 3,812 passed, 0 failed, 15/15. The top-level index of all docs is [`../INDEX.md`](../INDEX.md).  
 
 This directory serves as the unified submission and defense kit for the MediSync undergraduate software engineering capstone. Every document, figure, dataset, and architectural diagram is indexed below with its relative path and purpose.
 
@@ -95,3 +95,5 @@ This directory serves as the unified submission and defense kit for the MediSync
 - [`PROGRESS_SUB5.md`](./PROGRESS_SUB5.md): Phase-by-phase execution tracking, task commitments, and gate results.
 - [`DECISIONS_SUB5.md`](./DECISIONS_SUB5.md): Autonomous engineering and architectural decisions ledger.
 - `MORNING_REPORT.md`: Final morning handover report and prioritized owner checklist (Phase S8).
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

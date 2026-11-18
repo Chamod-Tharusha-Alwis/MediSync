@@ -1,5 +1,7 @@
 # MediSync Tracked File Inventory & Architectural Guide
 
+> **History (2026-11-18):** this 129 KB guide was generated for an earlier tree of 1,129 files and is kept for reference. The current short guide is [`../FILE_GUIDE.md`](../FILE_GUIDE.md).
+
 > **Total Tracked Files**: 1,129  
 > **Protected Ledger Files**: 15 (pinned via SHA-256 in `docs/release/PROTECTED_HASHES.json`)  
 > **Classification Criteria**: Runtime production code, dev-only tooling, automated test suites, reference data catalogs, and one-off phase receipts.
@@ -1067,3 +1069,5 @@
 | Directory / Pattern | File Count | Type | Purpose | Role |
 |---|:---:|:---:|---|:---:|
 | `docs/temp/*.json`, `*.cjs` | 125 | JSON / CJS | Historical offline test receipts, gate execution runs, and patch logs | one-off / receipt |
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

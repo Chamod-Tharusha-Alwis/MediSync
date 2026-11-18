@@ -98,3 +98,5 @@ No authenticated retest was run under V2. ML live SHA is NOT VERIFIED because it
 | 2026-11-05T09:26:07.203Z | c5d21f1 / c5d21f1 | admin | P1 one login/logout; dashboard/status | Protocol PASS; both200/unavailable/bad_response;60004ms;0console/blocked/banner | docs/temp/CODEX_Q1_SESSION_admin_1793870338924.json | 7operator-confirmed |
 
 | 2026-11-05T10:42:12.864Z | e163f40/e163f40 | admin,EN,1440x1000 | P2one login200/logout200;exactly1MLGET200/available | PASS:0console/page/blocked/banner;no repeat | docs/temp/CODEX_Q1_SESSION_admin_1793874642106.json | 8operator-confirmed |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

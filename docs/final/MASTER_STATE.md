@@ -37,3 +37,5 @@
 | 14 | **LIVE-QA-REPAIR** | Source candidate for the eight reported blockers. See [repair report](LIVE_QA_FIX_REPORT.md) and [operator steps](LIVE_QA_OWNER_RUNBOOK.md). | `5397953` plus local candidate | **RELEASE HELD** |
 
 Current work is the uncommitted live QA repair candidate based on `5397953`. The production synthetic-account guard prevents B8 from closing through an account-flag repair. The live OTC incident and reported historical records require scoped operator evidence. The final local gate passed 3,667 checks with 15/15 protected files intact. The isolated build passed with warnings. The release remains held at the owner and live verification steps in the repair report.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

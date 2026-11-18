@@ -170,3 +170,5 @@ Because 95.3% of records have `category: "other"`, the `category` field alone ca
 - **Protected File Risk:** **Zero.** Neither `ml-engine/app.py`, `server/src/controllers/doctorController.js`, nor `server/reference-data/drugs_clean.json` is modified.
 - **Contract Regression Risk:** Low. Keeping `dupEntry` in `server/src/utils/ingredientResolver.js` for distinct products (`Panadol` vs `Calpol`) while skipping identical drug names (`medA.originalName === medB.originalName`) and deduplicating display in `NewConsultation.jsx` preserves all existing backend contract tests in `websiteClinicalContracts.test.js`.
 - **Rollback:** Revert edits in `server/src/controllers/drugController.js`, `server/src/utils/ingredientResolver.js`, `client/src/components/DrugSearchInput.jsx`, and `client/src/pages/doctor/NewConsultation.jsx`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

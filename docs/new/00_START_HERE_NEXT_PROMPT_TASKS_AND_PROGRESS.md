@@ -400,3 +400,5 @@ See `docs/agent-work/BLOCKERS.md`. Key items as of this writing:
 
 Other inherited TODO rows and historical blocker statements above are not newly
 verified facts; apply the current reconciliation first. No old tracker was moved.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

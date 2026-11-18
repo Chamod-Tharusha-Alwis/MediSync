@@ -67,3 +67,5 @@ Task R2 addresses the observation that the live ML engine functions correctly bu
 - **New Approved SHA-256**: `3b51e3fde149146d85ca2f15668ddb35963ebc8d700f89720c068536b5bb25de`
 - **Line Endings**: Verbatim CRLF preserved (`.gitattributes -text` enforced).
 - **Log Entry**: Recorded in `docs/final/LEDGER_CHANGELOG.md` and updated in `docs/release/PROTECTED_HASHES.json`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -143,3 +143,5 @@ To prevent confusing the 41 curated symptom reference models with total platform
   - **Tile Value**: `41 / 71,704`
   - **Subtext Coverage Statement**: `"Symptom reference profiles: 41 of 71,704 conditions; any ICD code can be selected manually"`
   - **Trilingual Parity**: Maintained across English, Sinhala, and Tamil localization dictionaries.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

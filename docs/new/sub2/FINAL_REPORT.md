@@ -131,3 +131,5 @@ To prevent cold starts (>60s) during demonstrations:
 1. Open [UptimeRobot](https://uptimerobot.com) or [Cron-Job.org](https://cron-job.org).
 2. Create an HTTP GET monitor for: `https://medisync-ml.onrender.com/health`
 3. Set interval to **every 10 minutes** (Render sleeps at 15 minutes of inactivity).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

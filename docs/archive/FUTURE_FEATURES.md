@@ -14,3 +14,5 @@ These items are deferred work, not claims of completed live verification.
 1. **Consolidate duplicate notification instances**: Resolved (commit `e246778`) via shared `NotificationProvider` at AppShell root, unified polling, and managed socket lifecycle.
 2. **Avoid admin socket initialization without a usable token**: Resolved (commits `b99e54b`, `64e92e6`) via client-side token presence guard preventing unauthenticated socket connection attempts.
 3. **Diagnose native WebSocket startup/closure warning**: Resolved (commit `fd39fce`) via safe socket disconnect pattern awaiting handshake resolution before socket.close().
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

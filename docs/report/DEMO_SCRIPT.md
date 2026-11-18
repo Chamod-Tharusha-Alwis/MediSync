@@ -202,3 +202,5 @@ curl.exe -i -m 60 https://medisync-ml.onrender.com/health
      - Output confirms: `15/15 Protected Files Intact`.
 - **Concluding Viva Statement**:
   > *"MediSync demonstrates that clinical utility, epidemiological intelligence, and strict data protection can coexist seamlessly on modern web architecture."*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

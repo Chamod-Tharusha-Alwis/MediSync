@@ -90,3 +90,5 @@ Written by `ml-engine/evaluation/study/write_cards.py` from `ml-engine/evaluatio
 | Nature | Public aggregate dengue case counts compiled by the OpenDengue project (LSHTM). Sri Lanka rows come from Ministry of Health reports. These are national counts, not MediSync consultations. |
 | Known biases | National totals only for Sri Lanka; reporting completeness varies by year; 2018 missing; week-end gaps interpolated by the study rule. |
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

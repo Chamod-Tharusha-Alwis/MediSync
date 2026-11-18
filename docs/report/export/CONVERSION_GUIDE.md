@@ -78,3 +78,5 @@ pandoc docs/report/TECHNICAL_REPORT.md -o docs/report/export/MediSync_Technical_
 - [ ] 15/15 Protected ledger hashes match Appendix B.
 - [ ] Table of contents page numbers refreshed.
 - [ ] Output PDF file size verified (recommended: under 25 MB).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

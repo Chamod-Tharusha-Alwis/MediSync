@@ -144,3 +144,5 @@ P11-A privacy fixes -> P11-B lab upload and status -> P11-C OTC atomic error -> 
 
 ## 6. Final response format
 Overall verified progress, table from `PROGRESS.md`, findings F1 to F12 each marked FIXED / PARTIAL / BLOCKED-OWNER with evidence pointers, PR list, final commit hash, test counts, email count used, open owner actions.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

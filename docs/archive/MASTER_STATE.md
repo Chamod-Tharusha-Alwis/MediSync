@@ -178,7 +178,7 @@ The older checkpoints below are preserved as history and do not supersede this c
 ---
 
 ## 3. Open Bugs
-See [`BUGS.md`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/BUGS.md) for full bug details.
+See [`BUGS.md`](BUGS.md) for full bug details.
 - `BUG-A1`: RESOLVED in commit `7cc6947`, verified live.
 - `BUG-A2`: RESOLVED in commit `88b07a4`, verified live.
 - `BUG-A3`: RESOLVED in commit `fd39fce`, verified live.
@@ -336,3 +336,5 @@ Mainfdbd40f:3,211offlinePASS/0FAIL/0SKIP,15pins;bothCIgreen;backend200ready/exac
 The shared application is on fdbd40f with 3,211 offline PASS, both CI workflows green, exact backend/Vercel readiness and all 15 protected expectations intact. Read docs/temp/CODEX_PHASE2_OFFLINE_STATUS_20261105T142334Z.md for the finished changes and remaining gaps.
 
 The selected five-failure/fifteen-minute policy remains inactive. Its exact nine-file integrated package and activation scope are described in docs/temp/CODEX_PASSWORD_LOCKOUT_REVIEW_HANDOFF_20261105T142334Z.md. Candidate backend: 2,498 PASS (one private proof excluded); lifecycle: 40 PASS. These are separate from the deployed baseline. No further live login or email is approved. Last operator-confirmed provider total: 8/25.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

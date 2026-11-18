@@ -124,3 +124,5 @@
 - **NOT Verified LIVE**: Live production database updates, demo batch purging, and Render variable activation (reserved for owner per `OWNER_ACTIONS_SUB3.md`).
 
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -110,3 +110,5 @@ Actual post-update evidence in `scratch/gate3-ml-verification-20261026_234200/`:
 ### Release interpretation
 
 Neither this audit nor the smoke checklist authorizes deployment or clinical use. Current registry findings require documented release-risk disposition. No claim that all 14 real E2E groups passed follows from offline CI; historical accepted backend progress remains 2/14 unless newer genuine receipts are independently accepted.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

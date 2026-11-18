@@ -176,3 +176,5 @@ lacks either flag. Afterwards it re-counts every collection it touched.
 - The scenarios were written to show both outcomes. Their results say nothing about real outbreaks.
 - District shares are outpatient weights, not dengue incidence.
 - The background is gamma-Poisson noise with a weekday pattern. It is not a fitted model.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

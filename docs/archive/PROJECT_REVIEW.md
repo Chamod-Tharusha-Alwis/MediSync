@@ -338,7 +338,7 @@ The lab module has 24 automated integration tests covering:
 
 ### 7.2 E2E Testing (Playwright Frontend & Backend Integration)
 
-An automated, serial E2E test suite consisting of 18 comprehensive tests has been created at [medisync-live.spec.js](file:///c:/Users/chamo/Desktop/Final%20project/medisync/client/tests/medisync-live.spec.js) to validate frontend user interfaces and complete backend integration under real browser behaviors.
+An automated, serial E2E test suite consisting of 18 comprehensive tests has been created at [medisync-live.spec.js](../../client/tests/medisync-live.spec.js) to validate frontend user interfaces and complete backend integration under real browser behaviors.
 
 #### E2E Refactoring & Stability Outcomes
 To eliminate random timeouts, race conditions, and selector fragility, the entire E2E test suite has been refactored for **100% stable sequential execution in serial mode**:
@@ -551,3 +551,5 @@ RESULT : SUCCESS — The Weighted Risk & Anomaly System operates perfectly accor
 ================================================================================
 ```
 *(Verification Note: Proves long dosage strings at x=205.0 wrap cleanly to subsequent vertical y-coordinates without bleeding into Frequency at x=375.0 or Duration at x=475.0.)*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

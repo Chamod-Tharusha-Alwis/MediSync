@@ -85,3 +85,5 @@ To assess how the anomaly detector behaves on non-synthetic data, a zero-shot ba
 
 ---
 *Report generated automatically by `ml-engine/evaluation/generate_evaluation_charts.py` with seed 42.*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

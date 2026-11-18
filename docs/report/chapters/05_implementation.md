@@ -87,3 +87,5 @@ Implemented in `server/src/services/outbreakDetector.js` and `server/src/service
 ## 5.10 Administrative Tools & Immutable Audit Logging
 - **Audit Logging**: Implemented via `server/src/models/AuditLog.js`. Records capture `action`, `actorId`, `actorRole`, `targetEntity`, `ipAddress`, `userAgent`, and `timestamp`.
 - **Append-Only Immutability**: The Mongoose schema explicitly suppresses update and delete operations on the `AuditLog` collection, ensuring tamper-evidence against administrative tampering.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -582,3 +582,5 @@ Covered fully in `SECURITY_AUDIT_STATIC.md`.
 ## U26 — C5 coverage document
 
 Covered fully in `C5_COVERAGE.md`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

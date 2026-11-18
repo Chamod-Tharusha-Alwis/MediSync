@@ -140,3 +140,5 @@ Per-route ownership checks (patient owns record / consent token present) need a 
 ## 5. What this audit does not claim
 
 No live behaviour was tested. No CVE status is known. "No finding" for an area means "not inspected in this pass", not "secure".
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

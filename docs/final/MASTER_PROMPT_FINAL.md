@@ -260,3 +260,5 @@ Phase 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9. After each task update `MA
 
 ## Final response format (after Phase 9)
 Reply with: overall verified progress %, table from `PROGRESS.md`, list of PRs merged, final commit hash, open items in `OWNER_ACTIONS.md`, and any FAIL left in `LIVE_TEST_LOG.md`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

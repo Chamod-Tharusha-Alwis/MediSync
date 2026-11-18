@@ -52,3 +52,5 @@ Every commit on `main` after `ae13248` (Merge PR #43), from `git log --oneline -
 15. `d384dcc` - `chore(hygiene): retire OTP live runners, untrack docs/temp, scrub owner emails, fix lint (Task 6)`
 16. `eb8da44` - `docs(security): document AES-256-CBC field encryption limits and a GCM migration plan (Task 7)`
 17. `88beef8` - `Merge pull request #44 from Chamod-Tharusha-Alwis/release/final-master-nov13`
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -132,3 +132,5 @@ The controls that already exist stay in force:
 - **The new server tests are not yet in the offline gate.** The gate runs a fixed list of server test
   files, and adding them would mean editing a gate config file. They are run separately; the client
   test is picked up by the gate automatically.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

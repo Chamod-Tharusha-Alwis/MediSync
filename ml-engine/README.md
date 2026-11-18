@@ -16,3 +16,5 @@ Create a `.env` file with the following variable names (do NOT include actual se
 1. Navigate to the `ml-engine` directory.
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run the Flask server: `python app.py`
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

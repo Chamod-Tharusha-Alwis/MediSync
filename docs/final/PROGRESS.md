@@ -34,3 +34,5 @@ Updated through **PHASE 9: Release Readiness & Honest Final Status** (`v1.0.0-ca
 - **Average Implementation & Verification Score**: **92.5%** (up from 90.2% in Phase 7)
 - **Offline Quality Gate**: 3,465 passed / 0 failed (207 suites) | Client build exit 0 | Links 96/96 OK | Live Production Audit 20/20 PASS
 - **Protected Ledger**: 15 / 15 files locked (`docs/release/PROTECTED_HASHES.json`)
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

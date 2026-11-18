@@ -103,3 +103,5 @@ for the old code: history still shows their items, and `prescriptionId` points a
   same ingredient inside ONE selection are not compared with each other.
 - **Unrelated failing test:** `server/tests/pharmacyInventoryRemediation.test.js` (the retired stock feature)
   fails to load on `main` as well. It is not in the gate.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

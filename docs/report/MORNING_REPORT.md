@@ -68,7 +68,7 @@ Key achievements delivered:
 | **Resource Benchmarks** | [`docs/report/data/ml_resource_measurements.json`](./data/ml_resource_measurements.json) | Real OS process RSS (196.82 MB) and latency (0.77 ms) |
 | **Sanity Test Cases** | [`docs/report/data/sanity_symptom_results.json`](./data/sanity_symptom_results.json) | 15 clinical symptom query test outputs (`SC-01` to `SC-15`) |
 | **Inventory Dataset** | [`docs/report/data/project_inventory.json`](./data/project_inventory.json) | Full JSON dump of 1,129 tracked repository files |
-| **Master Owner Checklist**| [`docs/OWNER_CHECKLIST_FINAL.md`](../OWNER_CHECKLIST_FINAL.md) | Single authoritative runbook for production scripts |
+| **Master Owner Checklist**| [`docs/OWNER_CHECKLIST_FINAL.md`](../archive/OWNER_CHECKLIST_FINAL.md) | Single authoritative runbook for production scripts |
 
 ---
 
@@ -159,3 +159,5 @@ Follow `docs/OWNER_CHECKLIST_FINAL.md` for exact steps:
       $env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
       node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
       ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

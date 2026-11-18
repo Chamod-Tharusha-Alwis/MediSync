@@ -66,3 +66,5 @@ The isolated CRA production build exited 0 and emitted `index.html`. It used the
 Earlier gate attempts exposed the old UI test expectations, the overly broad curated drug fallback, and the five-minute limit for serial backend batches. The final candidate narrows the fallback to the confirmed reference and retains the regression coverage. The backend timeout is now ten minutes. A separate CLI run without a URI exited 1 for each of the verify, stock and mint commands, with a fixed sanitized category and no connection.
 
 The candidate is uncommitted. HEAD is `5397953`. CI, deployment, and live checks are pending because the clinical release scope still includes B8 and the unresolved live checks noted above.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

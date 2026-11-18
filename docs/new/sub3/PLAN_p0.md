@@ -34,3 +34,5 @@
 3. `npm --prefix server test server/tests/phase3GroupingAndDispensingSeeder.test.js`
 4. `node scripts/run_offline_tests.js` (3,450+ tests passing, 0 failed, 15/15 protected files accounted for)
 5. `npm --prefix client run build` (exit code 0)
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

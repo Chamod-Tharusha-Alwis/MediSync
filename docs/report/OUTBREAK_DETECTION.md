@@ -1,5 +1,7 @@
 # MediSync Outbreak Detection Architecture & Universal ICD Coverage Report
 
+> Updated 2026-11-18: the authoritative, line-referenced description of the detector, the 72-hour projection, approval and email controls is [`../OUTBREAK_DETECTION.md`](../OUTBREAK_DETECTION.md). This file keeps the coverage proof and the scalability benchmark. The persistence rule below was corrected from `Z >= 2.0` to the strict `Z > 2.0` used by the code (`surveillanceService.js:483`).
+
 **Date**: 13 November 2026  
 **Document**: `docs/report/OUTBREAK_DETECTION.md`  
 **Test Suite**: `server/tests/universalIcdOutbreakCoverage.test.js`  
@@ -43,8 +45,8 @@ Outbreak detection operates on **confirmed clinical diagnoses**, not keyword sym
   ├── Group by: `${district}|${diseaseId}` (NO 41-PROFILE FILTER)
   ├── Partition: 56-Day Historical Baseline vs Active 7-Day Window
   ├── Gate 1 (Floor): Total window cases N >= 5
-  ├── Gate 2 (Persistence): Max consecutive days with daily Z >= 2.0 must be >= 2 days
-  └── Severity Assignment: Critical (Z >= 4.0), High (Z >= 3.0), Warning (Z >= 2.0)
+  ├── Gate 2 (Persistence): Max consecutive days with daily Z > 2.0 (strict) must be >= 2 days
+  └── Severity Assignment: Critical (Z >= 4.0), High/Alert (Z >= 3.0), Moderate/Watch (Z >= 2.0, after the strict Z > 2.0 persistence gate)
            │
            ▼
 [Admin Review Queue in OutbreakMonitor.jsx]
@@ -106,7 +108,7 @@ In `server/src/services/surveillanceService.js` (lines 366–389), consultations
 For each `${district}|${diseaseId}` pair:
 1. **Gate 1 — Case Count Floor (`N >= 5`)**:
    Clusters with fewer than 5 verified cases in the active 7-day window are suppressed with `reason: 'CASE_FLOOR_NOT_MET'` to prevent statistical noise or isolated single-family exposures from triggering public health alarms.
-2. **Gate 2 — Persistence Check (`consecutiveDays >= 2 with Z >= 2.0`)**:
+2. **Gate 2 — Persistence Check (`consecutiveDays >= 2 with Z > 2.0`, strict)**:
    Computes mean $\mu$ and standard deviation $\sigma$ across the prior 56-day baseline:
    $$Z_t = \frac{C_t - \mu}{\sigma}$$
    (where $\sigma = \max(0.5, \sqrt{\mu})$ if $\sigma < 0.5$).
@@ -202,3 +204,5 @@ When asked about disease coverage and scalability during the defense, cite the f
    *"We verified this empirically with an automated property test sampling 335 diseases across all 21 ICD-10 chapters plus ICD-11. True outbreak spikes were flagged in 100.0% of cases, while non-outbreak baselines, single-day spikes, and low-count clusters were suppressed with a 0.0% false alert rate."*
 4. **National Performance**:
    *"A complete scan across 100,000 historical clinical consultations executes in 87.8 milliseconds in a single pass."*
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

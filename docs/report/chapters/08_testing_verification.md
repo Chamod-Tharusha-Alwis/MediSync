@@ -74,3 +74,5 @@ In compliance with project ethical guidelines, verification status is strictly s
 | **Atlas Production Cloud Queries** | NOT VERIFIED LIVE | Production database queries reserved for system owner |
 | **Render Cloud Free Hosting Live Status**| NOT VERIFIED LIVE | Cold start ~50s accepted; subject to sleep-cycle latency |
 | **Formal Clinical Efficacy & Safety** | NOT VERIFIED | System carries `clinicalValidation: not_established` |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

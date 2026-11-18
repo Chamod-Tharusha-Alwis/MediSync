@@ -134,3 +134,5 @@ Network Mode: Public HTTPS GET (zero authentication, zero side-effects; verified
 | **Platform Master Plan Matrix** | P3 | Complete audit of master plan items 5A through 5H documented in `docs/new/sub3/PHASE_STATUS.md` | Cross-phase documentation audit | COMPLETE |
 | **Owner Production Runbook** | P4 | Step-by-step commands for Atlas whitelisting, sample seeding, demo cleanup, and ML cold-start explanation in `docs/new/sub3/OWNER_ACTIONS_SUB3.md` | Review & validation against production scripts | READY FOR OWNER |
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

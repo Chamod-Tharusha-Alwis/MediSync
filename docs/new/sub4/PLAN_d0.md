@@ -32,3 +32,5 @@
    - Rewrite `docs/new/sub3/PHASE_STATUS.md` with verifiable status (DONE / PARTIAL / NOT VERIFIED) and precise offline evidence.
 8. **Owner Storage Auto-Provision Guidance**:
    - Document in `OWNER_ACTIONS_SUB3.md` and `docs/new/sub4/OWNER_ACTIONS_SUB4.md` that once `verificationtokens` exists on Atlas, `MEDISYNC_AUTO_PROVISION_STORAGE` should be removed so boot guards fail closed against future unexpected schema drift.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

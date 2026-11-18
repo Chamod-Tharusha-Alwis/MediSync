@@ -40,3 +40,5 @@ System design aligns with the core principles of the **Sri Lanka Personal Data P
 - **Data Minimization**: Only clinically requisite parameters are captured.
 - **Storage Limitation**: Temporary OTPs, verification codes, and clinical command tokens utilize automatic database TTL index expiration.
 - **Integrity and Confidentiality**: Strong authenticated encryption at rest (AES-256-GCM) with blind indexing prevents plaintext exposure even in the event of database exfiltration.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

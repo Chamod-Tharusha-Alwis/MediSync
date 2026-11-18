@@ -217,3 +217,5 @@ To ensure total platform resilience when encountering orphan references, null-sa
 
 
 The reviewed maintenance commands and their expected sanitized output are listed in the [owner runbook](LIVE_QA_OWNER_RUNBOOK.md). Stock append and verification mint both default to dry-run. The separate `seed-viva-data.js --verify` entry point checks manifest-owned counts. There is no account-flag repair command because the seed already sets the normal flags and production denies its synthetic marker by design.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

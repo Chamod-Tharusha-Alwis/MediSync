@@ -1,5 +1,7 @@
 # MediSync Project Structure & Directory Guide
 
+> **History (2026-11-18):** some counts and versions below are from 9 Nov (for example React 18 and 2,635 tests). The current structure is [`../PROJECT_STRUCTURE.md`](../PROJECT_STRUCTURE.md); React is 19 and the gate passed 3,812 tests on 18 Nov.
+
 This document provides an annotated hierarchical tree of all tracked directories in the MediSync repository, with the single-line architectural purpose of each directory.
 
 ```
@@ -77,3 +79,5 @@ medisync/
     └── tests/                       # Backend offline Jest test suites (123 suites, 2,635 tests)
         └── helpers/                 # Test harnesses, in-memory MongoDB replica set runners, mock factories
 ```
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

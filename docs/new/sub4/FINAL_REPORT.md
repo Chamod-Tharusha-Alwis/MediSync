@@ -127,3 +127,5 @@ Static ML AST Scoring:       40/40 checks passed
 Trilingual Parity:           813 / 813 keys matching across EN, SI, TA
 ========================================================================
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

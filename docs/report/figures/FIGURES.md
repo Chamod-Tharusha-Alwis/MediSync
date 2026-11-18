@@ -49,3 +49,5 @@ f12_statistical_projection_bands.png -> SHA-256 Verified
 f13_verification_test_pyramid.png    -> SHA-256 Verified
 f14_trilingual_key_parity.png        -> SHA-256 Verified
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

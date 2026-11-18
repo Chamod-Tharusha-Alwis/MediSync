@@ -73,3 +73,5 @@ await db.collection('outbreakalerts').deleteMany({
 });
 ```
 This guarantees zero unintended impact on real or historical epidemiological records.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

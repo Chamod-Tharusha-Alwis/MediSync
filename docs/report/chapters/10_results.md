@@ -77,3 +77,5 @@ Automated dictionary parsing across `client/src/i18n/translations/` confirmed:
 - **Sinhala (si) Completeness**: 835 / 835 (100.0%)
 - **Tamil (ta) Completeness**: 835 / 835 (100.0%)
 - **Key Discrepancies**: 0 missing keys (Figure **F14**).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

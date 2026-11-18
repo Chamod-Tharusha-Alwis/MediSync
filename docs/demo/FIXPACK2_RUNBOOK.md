@@ -58,3 +58,5 @@ outbreak detector, the ML engine, or the OTP rules (5 attempts, 15 min lock, 60 
 
 Revert the merge commit on `main` through a pull request. No data migration is involved, so nothing in
 the database needs undoing for PR A.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

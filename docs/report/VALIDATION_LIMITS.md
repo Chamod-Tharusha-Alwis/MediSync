@@ -25,3 +25,5 @@ MediSync's analytical components (symptom suggestions, the medicine interaction 
 2. Obtain ethics approval for a study with real, consented patient data.
 3. Have clinicians review outputs against real cases, prospectively.
 4. Obtain a regulatory assessment.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

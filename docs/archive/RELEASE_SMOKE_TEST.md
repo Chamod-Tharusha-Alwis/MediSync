@@ -50,3 +50,5 @@ Real deliverable, operator-controlled addresses and an independently verified se
 ## Stop and rollback
 
 Stop on unauthorized access, real data exposure, duplicate mutations, schema/admission failures or source/deployment mismatch. Suspend the Render services and select the previously verified Vercel deployment as described in the operator runbook. Do not assume old Render code is a safe rollback or promise an unmeasured recovery time. Do not drop/restore a database or deactivate/delete accounts without the separately reviewed scope. Preserve evidence first; never touch `test` during rollback.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

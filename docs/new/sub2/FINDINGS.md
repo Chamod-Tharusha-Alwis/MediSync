@@ -178,3 +178,5 @@ The text `"SYNTHETIC EPIDEMIOLOGICAL SIMULATION — FOR SYSTEM TESTING ONLY"` is
 - For genuine clinical alerts: `isSimulatedDemo` and `syntheticLabel` are undefined/null, so no synthetic label is ever rendered.
 - For simulation records: Keep rendering `alert.syntheticLabel` only when `alert.isSimulatedDemo === true` (or `alert.isSimulation === true`).
 - The regulatory badge `clinicalValidation: not_established` remains permanent and untouched on all surveillance and diagnosis views.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

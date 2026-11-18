@@ -56,3 +56,5 @@ Legend: TODO / IN-PROGRESS / DONE / BLOCKED (reason)
 - [x] DONE 7.1 ARCHITECTURE/README/runbook corrections + prototype-mode note
 - [x] DONE 7.2 acceptance matrix regenerated honestly + protected ledger reconciled
 - [x] DONE 7.3 full gate, push, compare link, OWNER_ACTIONS live-test checklist
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

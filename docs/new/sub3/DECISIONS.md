@@ -43,3 +43,5 @@
   3. In accordance with safety instructions, the primary access control is enforced via the server-side NIC verification gate (`POST /api/verify/:token/history-pdf`). An attacker with a token URL cannot access patient history without the patient's exact National Identity Card number, validated via constant-time comparison against decrypted identity records with IP rate-limiting.
   4. The generated PDF is streamed over TLS directly to the authenticated requester.
 - **Date**: 2026-11-08
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

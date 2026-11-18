@@ -155,3 +155,5 @@ I can't confirm either without Vercel access.
 3. Render → service → **Events**: "Deploy live" shows the commit the API is running. The API has no
    visible commit label.
 4. Compare with `git log --oneline -3 origin/main`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

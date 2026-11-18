@@ -117,3 +117,5 @@ The inference engine in `ml-engine/app.py` implements a tiered dual-corpus archi
    - No clinical trial or patient cohort validation has been conducted (`clinicalValidation: not_established`).
    - The knowledge base reflects US outpatient ambulatory frequencies (CDC NAMCS) and may not reflect regional disease presentation variations in Sri Lanka.
    - Rare tropical diseases missing from both tiers require manual clinician entry using the 71,704 ICD catalog.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

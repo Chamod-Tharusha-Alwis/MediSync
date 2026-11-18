@@ -47,3 +47,5 @@ This document maps all architectural, clinical, and data requirements across Pha
   - Gzip bundle size: **214.59 kB**
 - **Protected File Ledger**: `docs/release/PROTECTED_HASHES.json`
   - Accounts for: **15/15 files valid**
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

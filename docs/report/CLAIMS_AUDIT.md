@@ -105,3 +105,5 @@ eleaseSummaryService.js and dispensingService.js; atomic status progression; dou
 | **R6** | **Prescription Supersession** | Overlapping or repeated medications remained pending in pharmacy queues indefinitely. | Engineered `prescriptionLifecycle.js`; atomic supersession on new issuance; dynamic active state calculation (`active`, `expired`, `superseded`, `cancelled`); non-dispensable queue hygiene. | **VERIFIED TRUE** |
 | **R7** | **ICD Classification Alignment** | ICD-11 concepts (`6A70`) erroneously badged as US ICD-10-CM. | Engineered `icdClassifier.js`; true purple `ICD-11` badge for Chapter 1–26 syntax; cyan `ICD-10` badge for 3-character root codes. | **VERIFIED TRUE** |
 | **R8** | **Capstone Reconciliation** | Discrepancies in test counts (3,465 vs 3,595) and UI keys (835 vs 839). | Complete reconciliation across matrices, demo scripts, slides, data models, and documentation. 15/15 protected ledger locked; tag `v1.1.0-capstone`. | **VERIFIED TRUE** |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

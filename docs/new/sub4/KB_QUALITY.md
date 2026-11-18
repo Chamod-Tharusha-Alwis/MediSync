@@ -93,3 +93,5 @@ The following 11 priority conditions are designated national surveillance priori
 ### 4.2 Missing Conditions -> `pending_owner_data`
 - For priority conditions not covered by Tier 1 or filtered KB (Leptospirosis, Chikungunya, Cholera, Dysentery, Measles), they are recorded in `docs/new/sub4/OWNER_ACTIONS_SUB4.md` as `pending_owner_data`.
 - Recommended sources: Ministry of Health Sri Lanka, Epidemiology Unit case definitions, WHO Surveillance Standards. No symptoms or codes are invented.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

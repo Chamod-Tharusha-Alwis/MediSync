@@ -51,3 +51,5 @@
 - Execute `node scripts/run_offline_tests.js` -> 3,454/3,454 pass, 0 fail.
 - Execute `npm --prefix client run build` -> exit 0.
 - Update `PROGRESS.md`, commit, and push `feat/sub3-p4`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

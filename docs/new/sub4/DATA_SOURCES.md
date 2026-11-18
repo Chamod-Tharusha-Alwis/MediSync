@@ -39,7 +39,7 @@
 - **Total symptom edges**: 9,162 edges.
 - **Probability Column Verification**: Verified present across repeating table offsets (columns 7, 32, 58, 83, 107, 132, 157) representing $P(\text{symptom} \mid \text{condition})$ in percent ($1.0\% \le p \le 100.0\%$).
 - **Distribution**: Mean $28.93\%$, with $22.03\%$ of edges falling into the $<10\%$ noise band.
-- **Curation Threshold**: Filtered at $P \ge 15.0\%$, requiring $N_{\text{surviving}} \ge 3$ symptoms per condition (see [KB_QUALITY.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/new/sub4/KB_QUALITY.md)).
+- **Curation Threshold**: Filtered at $P \ge 15.0\%$, requiring $N_{\text{surviving}} \ge 3$ symptoms per condition (see [KB_QUALITY.md](KB_QUALITY.md)).
 
 ---
 
@@ -64,3 +64,5 @@ ml-engine/data/disease_symptom_kb.v1.json (Active filtered KB)
 ml-engine/data/unmapped_diseases.v1.json (Separated unmapped conditions)
 ml-engine/data_pipeline/mapping_review.csv (Audit ledger of all 801 decisions)
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

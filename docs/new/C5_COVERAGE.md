@@ -87,3 +87,5 @@ Copy this table into `SEED_DATA_PLAN.md` decisions when approved.
 | Soap excluded after U2 fix | NOT VERIFIED (fix not implemented) |
 
 Earlier reports (MASTER_STATE, 4 Nov) quoted the same local numbers (3,000 / 191,541 / 71,704 / 41) and one live `/health` showing 71,704 ICD concepts; that live observation is historical and was not repeated here.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

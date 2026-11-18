@@ -147,3 +147,5 @@ To guarantee smooth UI performance (sub-16ms frame rendering) while providing ac
    * **Debounce Timer:** When a doctor types in the diagnosis search box, input events are debounced by **300ms** to prevent flooding the backend with network requests on every keystroke.
    * **Virtualization & Capping:** The UI dropdown only renders a maximum of **20–50 suggestions** at any given time.
    * **Instant Local Fallback:** For empty queries (`q=""`), the dropdown instantly shows a pre-loaded list of the top **15 most common local Sri Lankan diseases** (from `symptom_map.json`), ensuring instantaneous access for routine consultations while seamlessly searching the global 71,700+ database on demand.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

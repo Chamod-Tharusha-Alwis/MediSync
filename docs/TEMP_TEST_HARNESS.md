@@ -40,3 +40,5 @@ This document inventories all temporary test aids, flags, and bypasses introduce
   5. Cleaned `server/tests/jwt-patient-nic-removal-s1.test.js`.
   6. Verified zero references to `testOtpHarness` or `TEST_OTP` in `server/src/`.
   7. Committed on `chore/remove-test-otp` and pushed to remote (left unmerged pending live verification).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

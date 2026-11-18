@@ -25,3 +25,5 @@
 
 *Note on 3,477 vs 3,479*: PR #18 (`chore/remove-test-otp`) merged into `main` at `b74ca6f`, replacing 6-test `testOtpHarnessOffline.test.js` with 4-test `testOtpRemovalOffline.test.js` (-2 net tests).
 *Note on 3,418 vs 3,477*: 4 untracked local recovery test files (-65 tests) from the pre-Phase-1 backup were stashed in `stash@{0}` during Step 0 sync, and `tempDirsOutsideRepo.test.js` (+6 tests) was added in Task 1.7 (`3,477 - 65 + 6 = 3,418`).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -33,3 +33,5 @@ Task R3 eliminates operational email noise and provider quota exhaustion:
 - Unit test suite: `server/tests/emailNoiseReduction.test.js` (6 passing tests).
 - Offline test runner whitelist: registered in `server/clinical.offline.jest.cjs`.
 - PII / Secret Audit: Zero PII logged; only counters, status codes, and non-sensitive identifiers.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -141,3 +141,5 @@ The following actions are strictly restricted to the repository owner and must n
    - Conduct authenticated role checks (Patient, Doctor, Pharmacy, Hospital, Admin).
    - Maintain rate limit discipline: maximum 50 OTP/auth dispatches per day.
    - Never perform blind retries upon authentication failure; check server logs immediately.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

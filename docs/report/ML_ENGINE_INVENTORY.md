@@ -58,3 +58,5 @@ This inventory establishes the truthful architectural status of all analytical, 
 - Git commit hash: Recorded in `docs/report/results_ml_eval.json`.
 - All figures generated at 200 dpi in `docs/report/figures/ml/`.
 - No lingering references to "Random Forest", "SVM", or "ANN" exist in user-facing UI or clinical documentation.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

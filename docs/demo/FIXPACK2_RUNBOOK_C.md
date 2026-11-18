@@ -126,3 +126,5 @@ updates the same alerts.
 
 Revert the merge commit through a pull request. `reminderSentAt` values that were already written are
 ignored by the old code.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

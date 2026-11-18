@@ -60,3 +60,5 @@ For the dissertation, state it as: "AES-256-CBC field encryption with per-value 
 - the HKDF key is 32 raw bytes
 
 **Rollback:** keep the dual reader and the old key versions until the migration has been verified. Pointing writes back at version 1 restores the old behaviour, and documents already at version 2 still read through the dispatcher.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

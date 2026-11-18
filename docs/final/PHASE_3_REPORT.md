@@ -125,3 +125,5 @@ With Phase 3 complete and verified:
 1. Merge `final/p3-release-data` into `main`.
 2. Update `docs/final/MASTER_STATE.md` and `docs/final/PROGRESS.md`.
 3. Advance to **PHASE 4: Clinical Safety Gaps** (author `PHASE_4_PLAN.md`, deterministic emergency red-flag advisory on doctor consultation screen, verify sanity cases SC-03, SC-05, SC-09, SC-10).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

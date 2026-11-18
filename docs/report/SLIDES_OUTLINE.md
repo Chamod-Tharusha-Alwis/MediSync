@@ -241,3 +241,5 @@ This outline provides the slide structure, visual layout recommendations, and de
 - **Repository**: `feat/sub5-submission-pack`
 - **Speaker Notes**:
   > *"Thank you for your time and attention. I am now delighted to present a live demonstration of the system and answer your questions."*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

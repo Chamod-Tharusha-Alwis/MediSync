@@ -61,3 +61,5 @@ Develop localized clinical NLP models capable of parsing unstructured, trilingua
 Subject the diagnostic decision support assistant and medicine safety engine to formal multi-center prospective observational trials across Sri Lankan provincial general hospitals to establish real-world sensitivity, specificity, and clinician acceptance metrics under ethical committee oversight.
 
 The remaining Codex review findings include F10 “production storage verification may execute DDL during startup” and F11 “production cluster selection is broad, not an exact existing-cluster pin.” QR history export requires an OTP-issued view session and is scoped to the linked encounter. The patient consultation PDF button also checks the frontend build flag `REACT_APP_PDF_EXPORT_ENABLED`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

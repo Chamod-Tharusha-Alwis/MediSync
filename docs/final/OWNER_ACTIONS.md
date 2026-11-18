@@ -58,3 +58,5 @@
 - **PDF frontend.** The current consultation PDF control checks `REACT_APP_PDF_EXPORT_ENABLED` at build time. Vercel must rebuild for a flag change to take effect. Review the RC4 and password limitation before enabling the client control.
 - **Data procedures.** Review the stock and verification-link steps in [the owner runbook](LIVE_QA_OWNER_RUNBOOK.md). Apply only a dry-run plan that matches the reviewed batch.
 - **Language review.** Review the new Sinhala and Tamil translations on narrow screens and confirm regional clinical terms.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

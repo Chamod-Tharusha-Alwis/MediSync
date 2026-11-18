@@ -92,3 +92,5 @@
 - Each unique warning is deduplicated so it appears exactly once.
 - The engine guarantees it never emits "no interactions" when an interaction exists.
 - Fully verified by `server/tests/safetyPanelConsistency.test.js` (3 passing tests).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -110,3 +110,5 @@ All five core application roles maintain verified offline isolation and operatio
 - **NOT Verified LIVE**:
   - Live Atlas collection mutations (deferred to owner execution via exact runbooks).
   - Live third-party email delivery via Resend/Brevo (tested with in-memory test mocks).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

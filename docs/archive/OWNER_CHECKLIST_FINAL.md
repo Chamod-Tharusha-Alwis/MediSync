@@ -116,3 +116,5 @@
   - Open `server/src/data/districtPopulation2024.json` and `client/src/data/districtPopulation2024.json`.
   - Update `population` count for each district, set `source` to `"Department of Census and Statistics Sri Lanka, Census of Population and Housing 2024, Table 2"`, set `status` to `"verified"`, and update `retrievedAt`.
   - Commit and deploy: the public health map will automatically calculate real population-normalized incidence per 100k.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

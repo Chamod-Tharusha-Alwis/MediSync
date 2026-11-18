@@ -79,3 +79,5 @@ This checklist defines the complete set of required UI screenshots for inclusion
 |---|---|---|---|---|
 | **SS-24** | `ss24_security_audit_logs.png` | Desktop (1920x1080) | `/admin/dashboard/sessions` | Session & security audit monitor: Actor ID, Role, Action, IP Address, Timestamp. |
 | **SS-25** | `ss25_user_management.png` | Desktop (1920x1080) | `/admin/dashboard/users` | Platform account management: role assignments, status toggling, facility affiliation. |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

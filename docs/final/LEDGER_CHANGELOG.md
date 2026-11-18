@@ -14,3 +14,5 @@ This changelog records all controlled and authorized modifications to the 15 cry
 - **Line Endings**: Historical CRLF preserved verbatim (`.gitattributes -text` enforced)
 - **Reason**: Added structured stdout startup logging (`[ML-STARTUP]`), per-request non-PII latency/tier telemetry (`[ML]`), and `/metrics` counter endpoint exposing Prometheus text and JSON metrics.
 - **Verification**: Verified via `node scripts/run_offline_tests.js` (15/15 protected files accounted for, all 3,559 offline tests pass).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

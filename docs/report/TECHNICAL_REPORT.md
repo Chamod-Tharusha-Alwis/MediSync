@@ -394,7 +394,7 @@ In strict adherence to regulatory boundaries, every response emitted by the ML m
 ```json
 "clinicalValidation": "not_established"
 ```
-Furthermore, the client user interface renders prominent amber advisory banners accompanying all differential outputs, reminding clinicians that predictions represent statistical pattern matching against synthetic training distributions rather than clinically validated diagnoses.
+Furthermore, the client user interface renders prominent amber advisory banners accompanying all differential outputs, reminding clinicians that predictions represent statistical pattern matching against synthetic training distributions rather than validated diagnoses.
 
 ---
 
@@ -993,3 +993,5 @@ The following items are reserved for institutional customization by the student 
 - `[OWNER: Insert Official Ministry of Health Annual Health Bulletin Citations]`
 - `[OWNER: Insert High-Resolution Screenshots of Live UI Views from SCREENSHOT_CHECKLIST.md]`
 - `[OWNER: Locate BNF Section Citations in docs/report/MEDICINE_LIMITS_VERIFICATION.md]`
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

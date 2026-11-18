@@ -54,3 +54,5 @@ All findings are classified into 4 standardized severity tiers:
    - Pharmacy Dashboard: displays visible amber badge *"Prescriber acknowledged safety warnings (<types>)"*.
    - Verification Portal (`/verify/:token`): shows *"Safety warnings acknowledged by prescriber (<types>)"*.
    - Duplicate dispensing remains an uncompromised integrity hard stop (`ALREADY_DISPENSED`).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

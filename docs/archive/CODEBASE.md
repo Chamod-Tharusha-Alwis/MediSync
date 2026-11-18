@@ -524,3 +524,5 @@ RESULT : SUCCESS — The Weighted Risk & Anomaly System operates perfectly accor
 ================================================================================
 ```
 *(Verification Note: Proves long dosage strings at x=205.0 wrap cleanly to subsequent vertical y-coordinates without bleeding into Frequency at x=375.0 or Duration at x=475.0.)*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

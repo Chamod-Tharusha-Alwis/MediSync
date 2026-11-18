@@ -99,3 +99,5 @@
 - **Trilingual Localization**: Added forecast titles, confidence interval badges, and degradation messages to `en.js`, `si.js`, and `ta.js`.
 - **Offline & Build Verification**: Added `server/tests/outbreakForecasting.test.js` (5/5 passed) and `client/src/__master_offline__/outbreak-forecast.test.jsx` (3/3 passed). Full offline suite: 2,341 passed (0 failed). Production build compiled cleanly with 0 errors.
 - **Live Verification**: 8/8 gates passed on production in `scripts/verify_c2_flow_live.cjs` (`docs/live_c2_verification_log.json`). Live Vercel chunk `main.1532b63a.js` and Render backend `/api/public/health-stats` verified in production.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

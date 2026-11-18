@@ -1,7 +1,7 @@
 # Sub-Project 1 — Owner Actions
 
 > [!NOTE]
-> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
+> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](../../archive/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
 
 Only the owner performs these actions. The agent never executes destructive local cleanups, production mutations, or Render environment changes.
 
@@ -234,3 +234,5 @@ Open an Incognito / Private browser window and visit:
 3. As Patient, click **"Download Lab PDF"** on a lab report.
    - [ ] Filename is sanitized (e.g., `lab_report_LAB-12345.pdf`).
    - [ ] Results and reference ranges render clearly.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).
