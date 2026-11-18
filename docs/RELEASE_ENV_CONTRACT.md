@@ -1,5 +1,7 @@
 # MediSync Production Release Environment Contract (Names Only)
 
+> Updated 2026-11-18: the full list of variable names read by the code is in [`ENVIRONMENT.md`](ENVIRONMENT.md). This contract keeps the production checks per variable.
+
 > **SAFETY MANDATE**:
 > This document lists variable **NAMES ONLY**. Never insert, quote, or commit actual secrets, passwords, tokens, or private connection strings into this file or repository.
 
@@ -40,7 +42,7 @@ For this selected operator-key mode, use **ENCRYPTION_KEYS**, not `ENCRYPTION_KE
 ### D. Networking, CORS & Upstream Services
 | Variable Name | Required | Specification / Verification Source |
 |---|---|---|
-| `CLIENT_URL` | **Yes** | Exact HTTPS origin of the frontend (e.g. `https://medisync.chamodtharusha.com.lk` or `https://medisync-production.vercel.app`). Must NOT have trailing slash, wildcards, or paths. Validated by `clientOriginPolicy.js`. |
+| `CLIENT_URL` | **Yes** | Exact HTTPS origin of the frontend (the live client is `https://medisync.chamodtharusha.com.lk`; `medisync-production.vercel.app` returned 404 on 2026-11-18). Must NOT have trailing slash, wildcards, or paths. Validated by `clientOriginPolicy.js`. |
 | `CORS_ORIGIN` | **No — unused** | UNUSED by server runtime and preflight. Actual CORS reads `CLIENT_URL` through `clientOriginPolicy.js:4-7`; do not rely on this variable to change the allowed origin. |
 | `ML_ENGINE_URL` | **Yes** | Exact primary ML URL: `https://medisync-ml.onrender.com`, service **MediSync-ML**. Health URL: `https://medisync-ml.onrender.com/health`. |
 | `COOKIE_DOMAIN` | Optional | Hostname for cookie domain attribute (leave unset for default host-only cookies). |

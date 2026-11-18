@@ -42,7 +42,7 @@ Written by `ml-engine/evaluation/study/write_cards.py` from the results files. C
 | Field | Content |
 |---|---|
 | Intended use | Show a descriptive short-range trend line on the surveillance dashboard, labelled as not a validated forecast. |
-| Evaluation data | OpenDengue Sri Lanka weekly counts, 130 rolling origins, horizons 1, 2, 4 weeks (one week fed as one day). |
+| Evaluation data | OpenDengue Sri Lanka weekly counts, 130 rolling origins (125 scored at 1 week, 126 at 2 and 4 weeks), horizons 1, 2, 4 weeks (one week fed as one day). |
 | Metrics | MAE at 1 week 434.2 cases (MASE 1.210) against naive 212.1, ETS 212.1, SARIMA 221.0, Prophet 487.5. At 4 weeks: projection 790.1, naive 504.2, ETS 436.7. |
 | Known failures | Worse than repeating the last value at every horizon; the earlier V4 check found its 95% band covered only 52.3% of targets at 4 weeks. |
 | Limits | Single national series; a linear trend cannot represent seasonality or epidemic growth. |

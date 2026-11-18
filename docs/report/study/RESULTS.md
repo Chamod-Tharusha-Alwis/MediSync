@@ -62,7 +62,7 @@
 
 ## 2. Plain-language reading
 
-**Phase A (forecasting).** On 130 rolling origins the best 1-week forecaster was ets (MAE 212.1 cases). The production projection had MAE 434.2 at 1 week and 790.1 at 4 weeks, worse than the naive forecast (212.1 and 504.2). Prophet was worse than SARIMA at 1 and 2 weeks (DM p = 0.0000 and 0.0000) and not distinguishable from the production projection at any horizon (DM p = 0.4715 at 1 week). SARIMA order chosen by AIC on the first 156 weeks: (1, 1, 2) x (1, 0, 0, 52). Multi-step forecasts from overlapping windows are serially dependent; about 130 origins; absolute errors are heavy-tailed; a single national series. The Diebold-Mariano test assumes a stationary loss differential, which the 2017 epidemic breaks. Treat both the test and the block-bootstrap interval as rough.
+**Phase A (forecasting).** On 130 rolling origins (125 scored at 1 week and 126 at 2 and 4 weeks: forecasts whose target week was interpolated are not scored, `forecast_benchmark.py:131-132`) the best 1-week forecaster was ets (MAE 212.1 cases). The production projection had MAE 434.2 at 1 week and 790.1 at 4 weeks, worse than the naive forecast (212.1 and 504.2). Prophet was worse than SARIMA at 1 and 2 weeks (DM p = 0.0000 and 0.0000) and not distinguishable from the production projection at any horizon (DM p = 0.4715 at 1 week). SARIMA order chosen by AIC on the first 156 weeks: (1, 1, 2) x (1, 0, 0, 52). Multi-step forecasts from overlapping windows are serially dependent; about 130 origins; absolute errors are heavy-tailed; a single national series. The Diebold-Mariano test assumes a stationary loss differential, which the 2017 epidemic breaks. Treat both the test and the block-bootstrap interval as rough.
 
 **Phase B (detector).** National weekly counts, one week fed as one detector day, are a proxy for the production detector, which runs on daily consultation episodes per district. This tests the rule, not the platform. The re-implemented rule matched the real function on all 344 evaluable weeks (0 mismatches). At the production setting (z = 2.0 with persistence) the rule flagged 70.0% of strict epidemic weeks with a false-alarm rate of 14.3% (F1 0.551); under the moderate definition it found 1 of 2 outbreak periods. Lowering z raises recall and false alarms together; removing persistence adds false alarms. A fixed 95th-percentile count threshold reached F1 0.790 (strict) and 0.828 (moderate) on the same weeks, higher than any z setting, because this proxy series has strong seasonality that a short baseline window mistakes for outbreaks.
 
@@ -93,7 +93,7 @@ Top permutation-importance features for logisticRegressionAllFields (4912 valida
 ## 4. Limitations
 
 - No real patients, no clinician review, no ethics approval, no prospective study, no regulatory assessment.
-- Phase A: one country, one disease, 130 overlapping origins; the 2017 epidemic dominates the errors; SARIMA order was selected once.
+- Phase A: one country, one disease, 130 overlapping origins (125/126 scored per horizon); the 2017 epidemic dominates the errors; SARIMA order was selected once.
 - Phase B: national weekly counts stand in for daily district episodes; the reference outbreak definitions are statistical rules written for this study.
 - Phase C: DDXPlus is synthetic; samples are capped per class (train 3000, validation 600, test 2000 rows); the production engine has profiles for only 11 of 49 pathologies; template sharing between synthetic patients makes bootstrap intervals too narrow.
 - Phase E: the existing jest integrity test was not extended, because the hard rules forbid editing tests and limit the diff to the study folders; `check_results.py` performs the equivalent check inside `run_study.py` instead.
@@ -110,4 +110,6 @@ Top permutation-importance features for logisticRegressionAllFields (4912 valida
 ml-engine/.venv/Scripts/python.exe ml-engine/evaluation/study/run_study.py --offline
 ```
 Library versions: Python 3.14.6, numpy 2.5.1, pandas 3.0.3, scipy 1.18.0, scikit-learn 1.9.0, statsmodels not installed, prophet not installed, cmdstanpy not installed, matplotlib not installed. The command prints the SHA-256 of every CSV and PNG; two consecutive runs must match.
+
+Note added 2026-11-18: the library line above was recorded by the system Python that ran Phase C. Phases A and B ran in the project venv, which on 2026-11-18 has statsmodels 0.15.0, prophet 1.5.0, cmdstanpy 1.3.0 and matplotlib 3.11.2 (the same versions `PROTOCOL.md` lists). `ml-engine/requirements.txt` pins older versions (statsmodels 0.14.6, prophet 1.3.0); the study was not run with those.
 

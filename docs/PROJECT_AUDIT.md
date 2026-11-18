@@ -1,5 +1,7 @@
 # MediSync Comprehensive Project & Architecture Audit
 
+> **Corrections, 2026-11-18.** This audit was written on 28 Oct 2026. Two statements were wrong and are corrected below: the client domain and the claim of Joi validation. Other counts in it (tests, routes) describe 28 Oct. For current facts see [`INDEX.md`](INDEX.md) and the root README.
+
 **Target System:** MediSync Clinical & Surveillance Platform  
 **Architecture:** Node/Express Backend + React SPA Frontend + Python/Flask ML Engine + MongoDB Atlas (M0) + Upstash Redis  
 **Hosting Platforms:** Render (Backend & ML Engine) + Vercel (Frontend)  
@@ -260,7 +262,7 @@ medisync/
   - Versioned Key Support: Keys stored as `{"1": "<hex>", "2": "<hex>"}` with active key pointer.
 - **Input Sanitization & Injection Prevention:**
   - Custom in-place sanitizer in `server/src/app.js:264-298` strips MongoDB operators (`$` prefix) and dot-notation paths (`.`) across `req.body`, `req.query`, and `req.params`.
-  - Object schema validation via Joi (`server/src/middleware/validateRequest.js`).
+  - Input validation is hand-written in middleware, controllers, services and Mongoose schemas. (Corrected 2026-11-18: this audit originally said "Joi (`server/src/middleware/validateRequest.js`)"; that file does not exist and `joi` is declared but never imported.)
 - **Network & Header Security:**
   - Helmet configured with standard security headers.
   - CORS strictly bound to `clientOrigin()` derived from `CLIENT_URL` (requires HTTPS in production).
@@ -289,7 +291,7 @@ medisync/
   - Requires `rediss://` URL format with explicit password and TLS enabled.
   - `redisConnectionPolicy.js` rejects plain `redis://` connections to remote hosts in production.
 - **Inter-Service CORS Configuration:**
-  - Backend `CLIENT_URL` must match Vercel production domain (`https://medisync.chamodtharusha.com.lk` or `https://medi-sync.vercel.app`).
+  - Backend `CLIENT_URL` must match Vercel production domain (`https://medisync.chamodtharusha.com.lk`; note added 2026-11-18: `medi-sync.vercel.app` serves a different application).
   - ML Engine `CLIENT_URL` must match Vercel production domain.
   - Backend `ML_ENGINE_URL` must match Render ML endpoint (`https://medisync-ml.onrender.com`).
 

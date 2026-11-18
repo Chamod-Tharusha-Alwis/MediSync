@@ -394,7 +394,7 @@ In strict adherence to regulatory boundaries, every response emitted by the ML m
 ```json
 "clinicalValidation": "not_established"
 ```
-Furthermore, the client user interface renders prominent amber advisory banners accompanying all differential outputs, reminding clinicians that predictions represent statistical pattern matching against synthetic training distributions rather than clinically validated diagnoses.
+Furthermore, the client user interface renders prominent amber advisory banners accompanying all differential outputs, reminding clinicians that predictions represent statistical pattern matching against synthetic training distributions rather than validated diagnoses.
 
 ---
 
