@@ -63,3 +63,5 @@ Task R1 resolves audit log coverage across the entire MediSync platform. Prior t
    - `npm --prefix client run build`: PASS with exit code 0.
 4. Protected Ledger:
    - All 15 files in `docs/release/PROTECTED_HASHES.json` remain 15/15 byte-exact.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

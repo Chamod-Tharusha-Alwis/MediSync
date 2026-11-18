@@ -127,3 +127,5 @@ To satisfy security audit finding F06, `AuditLog` records persist structured ope
 - **Direct Controller Audit Instrumentation**: Public and unauthenticated verification endpoints (`/api/verify/:token`, `otp/request`, `otp/verify`, `revoke`) write structured metadata into `details` with actorRole `anonymous` and zero PII.
 - **Verification**: Verified via `server/tests/securityRemediationF01toF09.test.js` and `server/tests/auditCoverage.test.js`.
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

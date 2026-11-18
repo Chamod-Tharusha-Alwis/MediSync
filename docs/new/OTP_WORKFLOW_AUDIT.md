@@ -161,3 +161,5 @@ Root causes of U6 (429) and U7 (403) verified in codebase. Email quota accountin
 | **U7**: Pharmacy pending 403 | Client probe-first architecture in `Dashboard.jsx:87-90` dispatches unauthenticated GET before opening consent modal | Check `patientToken` upfront; if absent, open `PatientAccessModal` directly without failing HTTP 403 request | S |
 | **All OTP UIs**: No visible countdown | UI buttons do not reflect backend Redis 60s cooldown | Add `{n}s` countdown after send, disable button during cooldown | S |
 | **All OTP UIs**: 429 message unclear | Generic error toast shown instead of server retry advice | Display "Too many requests. Please wait {retryAfterSeconds} seconds" | S |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

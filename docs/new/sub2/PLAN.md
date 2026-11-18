@@ -30,3 +30,5 @@ Branch: `fix/post-merge-sub2` (base `main` @ `da438aa`).
    - Verify 15 protected file hashes.
    - Author `docs/new/sub2/FINAL_REPORT.md`.
    - Push branch and output GitHub compare link.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -238,3 +238,5 @@ Outbreak alert creation uses an idempotent query check: before creating a `Pendi
 ### Q36: What was your specific contribution to this project?
 **Answer**:  
 `[OWNER: Insert your personal role, e.g., lead architectural design, implementing the zero-trust field encryption pipeline, engineering the dual-tier ML microservice and sparse retrieval engine, developing the three-tier outbreak surveillance system, and constructing the automated verification suite.]`
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

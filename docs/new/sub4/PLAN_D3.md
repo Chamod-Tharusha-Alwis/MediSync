@@ -32,3 +32,5 @@ Implement a tiered symptom-to-disease matcher in `ml-engine/app.py`:
    - Run `node scripts/run_offline_tests.js`.
    - Run `npm --prefix client run build`.
    - Verify 15/15 protected files ledger.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

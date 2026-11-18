@@ -279,3 +279,5 @@ node scripts/run_offline_tests.js
 # 7. Push branch to remote
 git push origin stage-b1/fixes
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -74,3 +74,5 @@
 - **Test Suite**: `server/tests/prescriptionSupersession.test.js` (13 tests passed / 0 failed).
 - **Trilingual Parity**: `en.js`, `si.js`, and `ta.js` updated with exact parity (839 keys each).
 - **Test suite registration**: added to `server/clinical.offline.jest.cjs`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

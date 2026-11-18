@@ -993,3 +993,5 @@ The following items are reserved for institutional customization by the student 
 - `[OWNER: Insert Official Ministry of Health Annual Health Bulletin Citations]`
 - `[OWNER: Insert High-Resolution Screenshots of Live UI Views from SCREENSHOT_CHECKLIST.md]`
 - `[OWNER: Locate BNF Section Citations in docs/report/MEDICINE_LIMITS_VERIFICATION.md]`
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

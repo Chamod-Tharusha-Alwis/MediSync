@@ -176,3 +176,5 @@ The MediSync platform underwent a comprehensive security audit identifying 16 Cr
 | **SEC-2026-10** | Express 5 NoSQL Sanitization Bypass / Crash | Implemented custom `sanitizeInPlace` recursive mutation middleware for Express 5 read-only `req.query` compatibility. | ✅ Resolved & Verified |
 | **SEC-2026-11** | Stale JWT Token Storage in Browser | Enforced in-memory `PatientAccessContext.jsx` for all doctor-patient sessions; localStorage and sessionStorage verified empty. | ✅ Resolved & Verified |
 | **SEC-2026-12** | False Positive Alert Flood in Outbreak Engine | Enforced >10 absolute case volume guardrail in `calculate_outbreak_metrics`, preventing statistical noise alarms. | ✅ Resolved & Verified |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

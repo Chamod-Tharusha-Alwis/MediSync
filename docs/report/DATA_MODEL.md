@@ -196,3 +196,5 @@ Append-only immutable record of sensitive security, authentication, and clinical
       ▼
  [ Dispensing ] ══════(N:1)═════> [ Pharmacy ] <════(1:N)═════ [ PharmacyStaff ]
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

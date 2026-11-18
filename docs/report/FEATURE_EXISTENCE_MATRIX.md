@@ -88,3 +88,5 @@
 
 8. **`DATA_MODEL.md`**:
    - Reconciled `VerificationToken` schema table to exact code fields: `tokenHash`, `patientRef`, `doctorRef`, `consultationRef`, `useCount`, `lastUsedAt`, `revokedAt`, `revokedBy`, `revocationReason`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

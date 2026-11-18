@@ -79,3 +79,5 @@ git commit -m "fix(security): stop logging login notification details (S4)"
 git add docs/new/B1_BATCH5_INVESTIGATIONS.md docs/new/B1_INVENTORY_REMOVAL_PLAN.md docs/new/B1_BATCH5_REPORT.md docs/new/00_START_HERE_NEXT_PROMPT_TASKS_AND_PROGRESS.md docs/new/TRACKER_RECONCILIATION.md
 git commit -m "docs(stage-b1): record Batch 5 investigations, inventory plan, and execution report"
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

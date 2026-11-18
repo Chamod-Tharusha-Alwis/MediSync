@@ -4,7 +4,7 @@
 **Git Commit:** `ead70e5121074927d0fa295de7ef323073e10cd9`  
 **Command:** `ml-engine/.venv/Scripts/python.exe scripts/ml_eval/generate_evaluation_package.py`  
 **Status:** Reproducible Synthetic Simulation & Statistical Backtest  
-**Raw Results Artifact:** [`docs/report/results_ml_eval.json`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/results_ml_eval.json)  
+**Raw Results Artifact:** [`docs/report/results_ml_eval.json`](results_ml_eval.json)  
 
 > [!IMPORTANT]
 > **Data Provenance & Clinical Integrity Statement:**  
@@ -43,10 +43,10 @@ Metrics computed at commit `ead70e5121074927d0fa295de7ef323073e10cd9` via comman
 | **False Alarms per Year** | **0.92** | — | Rate normalized to annual continuous monitoring |
 | **ROC AUC** | **0.5878** | — | Dual-gated operational decision threshold |
 
-![Confusion Matrix](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig1_confusion_matrix.png)
+![Confusion Matrix](figures/ml/fig1_confusion_matrix.png)
 *Figure 1: Confusion matrix of the Dual-Gate EARS C2 Outbreak Detector across 1,200 simulated time series.*
 
-![ROC Curve](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig2_roc_curve.png)
+![ROC Curve](figures/ml/fig2_roc_curve.png)
 *Figure 2: Receiver Operating Characteristic (ROC) curve showing sensitivity vs. false positive rate across z-score thresholds.*
 
 ---
@@ -58,7 +58,7 @@ Detection delay measures the latency in days from the initial introduction of th
 - **Interquartile Range (IQR):** **[1.0, 1.0] days**
 - **Distribution:** 359/359 detected outbreaks triggered on Day 1 or Day 2 following the required 2-day persistence criterion, proving near-zero lag once persistence is met.
 
-![Detection Delay Histogram](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig3_detection_delay_hist.png)
+![Detection Delay Histogram](figures/ml/fig3_detection_delay_hist.png)
 *Figure 3: Detection delay distribution in days from true outbreak start.*
 
 ---
@@ -73,7 +73,7 @@ Sensitivity evaluated across 4 magnitude tiers (Peak Multiplier $2\times$ to $8\
 | **High ($5.0\times\text{--}6.5\times$)** | 71.0% | 82.6% | 89.1% |
 | **Severe ($6.5\times\text{--}8.0\times$)** | 81.5% | 91.2% | 94.7% |
 
-![Sensitivity Heatmap](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig4_sensitivity_heatmap.png)
+![Sensitivity Heatmap](figures/ml/fig4_sensitivity_heatmap.png)
 *Figure 4: Sensitivity across outbreak magnitude multipliers and duration regimes.*
 
 ---
@@ -100,7 +100,7 @@ To demonstrate why MediSync enforces both a Case Floor ($N \ge 5$) and a 2-Day P
 - **The 2-Day Persistence Gate is the game-changer**: Requiring 2 consecutive anomalous days collapses false alarms from 598 down to 106, lifting specificity from 0.33% to 82.33%.
 - **The Dual-Gate achieves clinical safety**: Combining both reduces false alarms to **0.92 per year**, giving public health officials a system with **~80% precision** that will not trigger alarm fatigue.
 
-![Gate Ablation Chart](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig5_gate_ablation.png)
+![Gate Ablation Chart](figures/ml/fig5_gate_ablation.png)
 *Figure 5: Gate ablation comparison: Specificity and Precision surge under dual-gating, eliminating baseline noise.*
 
 ---
@@ -137,10 +137,10 @@ Results computed via `ml-engine/.venv/Scripts/python.exe scripts/ml_eval/backtes
 | | Naive Last Observed | 5.81 | 7.62 | — |
 | | Naive 7-Day Mean | 6.17 | 8.62 | — |
 
-![Projection Backtest Errors](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig6_projection_backtest_errors.png)
+![Projection Backtest Errors](figures/ml/fig6_projection_backtest_errors.png)
 *Figure 6: MAE and RMSE across 1, 3, 7, and 14-day projection horizons compared to naive baselines.*
 
-![Prediction Band Coverage](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/report/figures/ml/fig7_prediction_band_coverage.png)
+![Prediction Band Coverage](figures/ml/fig7_prediction_band_coverage.png)
 *Figure 7: Empirical coverage of the parametric 95% Student's t prediction band across horizons (Nominal: 95.0%).*
 
 #### Statistical Conclusions:
@@ -177,3 +177,5 @@ python scripts/ml_eval/backtest_projection.py
 python scripts/ml_eval/generate_evaluation_package.py
 ```
 All outputs are saved directly to `docs/report/results_ml_eval.json` and `docs/report/figures/ml/`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

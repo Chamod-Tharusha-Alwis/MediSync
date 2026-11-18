@@ -88,3 +88,5 @@ Columns are defined on the training sample only; values unseen in training are i
 ## Phase E: reproducibility and integrity
 
 `run_study.py` runs fetch, A, B, C, D, `RESULTS.md` and `check_results.py`. Two consecutive runs must give byte-identical CSVs (SHA-256 printed). `check_results.py` fails the run if any number in `RESULTS.md` is absent from the results files, or if a forbidden phrase appears in any study output. The existing jest integrity test is **not** edited, because the hard rules forbid editing tests and limit the diff to the study folders; this is reported as a limitation.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

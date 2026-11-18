@@ -35,3 +35,5 @@ Runs:
 ### 4. Build & Verification Scripts
 - `scripts/buildClinical.cjs`: Production client packaging script asserting 0 demo imports and clinical profile enforcement.
 - `scripts/verifyMlStatusContractOffline.cjs`: Validates ML Engine status payload contract and regulatory claims.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

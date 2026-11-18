@@ -84,3 +84,5 @@
    - Zero PII in audit logs.
 2. Full offline gate `node scripts/run_offline_tests.js`.
 3. Client production build `npm --prefix client run build`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

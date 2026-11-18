@@ -145,3 +145,5 @@ An additional offline check found that the inherited `TEMP_ACCOUNT_PASSWORD` dif
 Provider usage reported before this pass was 16 emails today. No successful email-send response or consent request was observed. The conservative testing budget reserves one slot for the login attempt: **17/30**, while the last provider-confirmed total remains **16**. Reconfirm the provider total before any pharmacy dispense approval; the reserved slot is not evidence of delivery. Pharmacy dispensing and cleanup were not attempted.
 
 Current-source local offline regression: **2,254 passed, 0 failed, 0 skipped**, exit 0. The isolated production build exited 0. All **15/15** protected files matched the current ledger. These offline results do not establish live clinical acceptance.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

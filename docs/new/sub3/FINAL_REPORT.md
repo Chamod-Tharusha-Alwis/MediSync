@@ -85,3 +85,5 @@ Sub-Project 3 focused on platform stability, clinical safety validation, cryptog
 | **Verification Tokens Collection** | Model, service, hashing, and routes verified | Set `MEDISYNC_VERIFICATION_TOKENS_APPROVED=true` in Render env vars | `docs/new/sub3/OWNER_ACTIONS_SUB3.md` §4 |
 | **ML Engine Health** | Python inference and Flask endpoints verified | Verified live response (~435ms); cold start explained (50s on Render Free plan) | `docs/new/sub3/OWNER_ACTIONS_SUB3.md` §5 |
 | **Production Merge** | All branches tested and pushed | Open & merge PR from `feat/sub3-p4` into `main` | `docs/new/sub3/OWNER_ACTIONS_SUB3.md` §6 |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

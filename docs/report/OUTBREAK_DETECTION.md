@@ -204,3 +204,5 @@ When asked about disease coverage and scalability during the defense, cite the f
    *"We verified this empirically with an automated property test sampling 335 diseases across all 21 ICD-10 chapters plus ICD-11. True outbreak spikes were flagged in 100.0% of cases, while non-outbreak baselines, single-day spikes, and low-count clusters were suppressed with a 0.0% false alert rate."*
 4. **National Performance**:
    *"A complete scan across 100,000 historical clinical consultations executes in 87.8 milliseconds in a single pass."*
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

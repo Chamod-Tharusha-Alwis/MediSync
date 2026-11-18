@@ -67,3 +67,5 @@ To protect production integrity, autonomous engineering agents operate in read-o
   ```bash
   node scripts/previewSyntheticOutbreakScenarios.js --scenario S1 --preview
   ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

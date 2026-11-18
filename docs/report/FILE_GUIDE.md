@@ -1069,3 +1069,5 @@
 | Directory / Pattern | File Count | Type | Purpose | Role |
 |---|:---:|:---:|---|:---:|
 | `docs/temp/*.json`, `*.cjs` | 125 | JSON / CJS | Historical offline test receipts, gate execution runs, and patch logs | one-off / receipt |
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

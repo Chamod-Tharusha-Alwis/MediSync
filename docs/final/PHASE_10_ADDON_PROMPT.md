@@ -72,3 +72,5 @@ The doctor screen showed "Single episode depressive disorder, ICD-10 `6A70`". `6
 2. Offline gate (`node scripts/run_offline_tests.js`) with the real new count, client build, protected ledger 15/15 (hash check on a clean checkout), link check, CI green on `main`, Render `/health` on the final commit, live smoke of the five roles and the verify page.
 3. Re-tag the release `v1.1.0-capstone` on the final `main` commit (do not move `v1.0.0-capstone`).
 4. Final response: tasks A to E status, coverage numbers, PR list, final commit, open owner actions, any known issues.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

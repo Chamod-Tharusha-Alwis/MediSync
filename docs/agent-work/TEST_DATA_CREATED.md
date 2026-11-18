@@ -19,3 +19,5 @@ No records have been created under V2. There is no currently authorized W phase 
 | V2-P0 | Not applicable | None | None | 0 | None |
 
 Never put personal identifiers or credentials in this register. Earlier phase manifests stay in their private locations; they are not copied or deleted. Future records require named approval, a QA-date/phase marker and an internal reference. The agent never deletes test data.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

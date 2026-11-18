@@ -42,7 +42,7 @@ The following table details the bugs, performance bottlenecks, and security leak
 
 ## E2E Playwright Security & Integration Testing Validations
 
-To ensure all security patches, access guards, and pharmacy billing/dispensing rules remain operational, an enterprise E2E integration test suite has been established at [medisync-live.spec.js](file:///c:/Users/chamo/Desktop/Final%20project/medisync/client/tests/medisync-live.spec.js). The test suite has been refactored for 100% stable sequential execution in serial mode by incorporating try-catch workspace selectors, wrapping API calls in `Promise.all` alongside network response expectations, and resolving selector mismatch points. 
+To ensure all security patches, access guards, and pharmacy billing/dispensing rules remain operational, an enterprise E2E integration test suite has been established at [medisync-live.spec.js](../../client/tests/medisync-live.spec.js). The test suite has been refactored for 100% stable sequential execution in serial mode by incorporating try-catch workspace selectors, wrapping API calls in `Promise.all` alongside network response expectations, and resolving selector mismatch points. 
 
 This test suite is executed automatically in the GitHub Actions CI/CD pipeline (`.github/workflows/playwright.yml`) on every push to the `main` branch, spinning up MongoDB and Redis container services alongside a HashiCorp Vault instance to guarantee code health and security standard enforcement before code merges.
 
@@ -85,3 +85,5 @@ The test suite performs automated checks on:
 - **Severity:** High (Surveillance Classification Error)
 - **Root Cause:** The `get_disease_danger_level` helper function attempted to open `sqlite3.connect(DB_PATH)`. However, the module database variable was defined in lowercase as `db_path`. This caused a `NameError` whenever a disease (such as *Cholera* or *Tuberculosis*) was not found in the local in-memory `symptom_map.json` cache, causing the SQLite lookup to fail silently and return a fallback `'Medium'` danger level instead of `'High'`.
 - **Resolution:** Replaced `DB_PATH` with `db_path` and added a prioritized `LIKE` wildcard search (`ORDER BY CASE WHEN base_danger_level = 'High' THEN 1 ...`), ensuring that any global WHO ICD-10 diagnostic code matching a clinical query correctly resolves to its proper danger tier.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

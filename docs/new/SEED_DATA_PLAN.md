@@ -210,3 +210,5 @@ Operator must confirm:
 - [ ] Volumes are acceptable
 - [ ] Batch ID `SEED_2026_11_A` is correct
 - [ ] `APPROVE SEED` typed in chat
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

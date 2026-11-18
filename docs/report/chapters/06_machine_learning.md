@@ -123,3 +123,5 @@ The outbreak detection engine (`server/src/services/surveillanceService.js:130-2
   - **Detector ROC AUC**: **0.6667** across S1–S8 operating curve (Figure **F10**).
 - Figure **F11** documents cross-chapter dynamic surveillance across 12 distinct diseases confirming zero disease whitelists.
 - Figure **F12** illustrates 14-day statistical projection curves with 95% Student's t prediction bounds ($df = 12$).
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

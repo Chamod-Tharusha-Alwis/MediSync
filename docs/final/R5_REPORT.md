@@ -30,3 +30,5 @@ Task R5 establishes honest, transparent documentation of medication coverage and
 - Whitelist registration: registered in `server/clinical.offline.jest.cjs`.
 - Offline test runner: 3,575 passed / 0 failed across 222 suites.
 - Client build: exit code 0.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

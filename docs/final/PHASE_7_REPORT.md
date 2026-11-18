@@ -57,3 +57,5 @@ Evidence files for all 20 tests are archived in `docs/final/evidence/` with zero
 - **Protected Ledger**: 15 / 15 files locked (`docs/release/PROTECTED_HASHES.json`).
 - **Client Production Build**: Exit code 0 (`npm --prefix client run build`).
 - **Report Links Integrity**: 96 / 96 relative links valid (100% OK).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

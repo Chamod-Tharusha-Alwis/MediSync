@@ -113,3 +113,5 @@ Library versions: Python 3.14.6, numpy 2.5.1, pandas 3.0.3, scipy 1.18.0, scikit
 
 Note added 2026-11-18: the library line above was recorded by the system Python that ran Phase C. Phases A and B ran in the project venv, which on 2026-11-18 has statsmodels 0.15.0, prophet 1.5.0, cmdstanpy 1.3.0 and matplotlib 3.11.2 (the same versions `PROTOCOL.md` lists). `ml-engine/requirements.txt` pins older versions (statsmodels 0.14.6, prophet 1.3.0); the study was not run with those.
 
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

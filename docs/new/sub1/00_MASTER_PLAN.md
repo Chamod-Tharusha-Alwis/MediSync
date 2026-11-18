@@ -137,3 +137,5 @@ Side effect to note: Province/Island aggregation will usually cross the N >= 5 f
 ## 8. Corrections found while planning (to fix in Phase 7, flagged now)
 
 - `docs/new/FINAL_ACCEPTANCE_MATRIX.md` (written in M5) lists protected files that are **not** in the real ledger (e.g. `operatorKeyPolicy.js`, `productionAtlasPolicy.js`, `qaConnectionAdmission.js`, `operatorDatabaseMode.js`, seed scripts) and omits real entries (`lab.test.js`, `universityDemoSeedVerify.test.js`, `ir04-isolated-five-role-e2e.spec.js`, `dbGuard.js`, `Consultation.js`, `Patient.js`, `versionedEncryption.js`). It also marks viewport and localization checks PASS although only HTTP 200 status was verified. Both will be corrected in 7.2.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

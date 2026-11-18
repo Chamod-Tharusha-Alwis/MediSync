@@ -159,3 +159,5 @@
 
 - `GET /api/pharmacy/inventory` is **DECOMMISSIONED** (returns 410 Gone with `INVENTORY_MANAGEMENT_DECOMMISSIONED`). MediSync does not do inventory/stock management; pharmacists verify and dispense directly against verified prescriptions.
 - `GET /api/public/outbreak-alerts` returns allowlisted fields from approved, active, real OutbreakAlert records. District case counts never create advisory entries. `GET /api/admin/outbreak/alerts` exposes current real pending and active records under verified admin authorization. Simulation remains separate.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

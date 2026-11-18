@@ -130,3 +130,5 @@ Format: ID — decision — alternatives — reason.
      - Specified exact order of operations: public read-only verification first (no auth), followed by single-login role checks (Patient, Doctor, Pharmacy, Admin), consultation summary email resend check, and PDF export check (after setting `PDF_EXPORT_ENABLED=true` on Render).
   5. **Final Quality Gate**: Full offline gate passed: **3,445 PASS / 0 FAIL** (`sourceFrozen: true`, `protectedAccountedFor: 15`). Client build passed (exit code 0, 119 modules).
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

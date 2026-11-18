@@ -275,3 +275,5 @@ Push to `origin stage-b1/fixes` **ONLY AFTER**:
 Suggested operator command:
 > `APPROVE B1: U2 U18`  
 Followed by the password lockout review decision (`APPROVE LOCKOUT`), and then moving to Stage B2 planning for U9–U16 (medication inventory removal and pharmacy redesigns).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

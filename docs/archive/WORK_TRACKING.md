@@ -136,3 +136,5 @@ _Updated: 2026-11-04. Agent: single-agent (Orchestrator). Repo HEAD: `86d5876`. 
 ---
 
 _This file is git-tracked. Update after each task._
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

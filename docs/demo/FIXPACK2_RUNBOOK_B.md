@@ -57,3 +57,5 @@ allowlist and daily cap.
 
 Revert the merge commit through a pull request. `unavailableAt` entries already written are ignored by the
 old code and can stay.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -37,3 +37,5 @@ The following near-duplicate brand pairs and orthographic variants were detected
 - Parity: `server/reference-data/drugs_clean.json` and `ml-engine/data/drugs_clean.json` match byte-for-byte.
 - Manifest: verified SHA-256 and byte size integrity in `manifest.json`.
 - Client build: exit code 0.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

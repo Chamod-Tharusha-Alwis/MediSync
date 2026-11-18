@@ -14,3 +14,5 @@ This technical report documents the complete architectural specification, securi
 > [!IMPORTANT]
 > **Regulatory and Clinical Disclaimer**:  
 > MediSync is an academic university engineering prototype evaluated strictly on synthetic datasets and self-consistency protocols. All machine learning inference payloads and epidemiological anomaly signals carry the immutable system tag `clinicalValidation: not_established`. The system is not licensed, certified, or intended for autonomous medical diagnosis, clinical decision-making, or primary disease surveillance without human medical practitioner validation.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -678,3 +678,5 @@ This creates an active `isSuperAdmin: true` admin account. Required before live 
 ---
 
 *Audit and remediation completed 28 October 2026. All remaining items are operational (env configuration, database provisioning, admin seeding) and require operator access to Render, Vercel, and MongoDB Atlas dashboards.*
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

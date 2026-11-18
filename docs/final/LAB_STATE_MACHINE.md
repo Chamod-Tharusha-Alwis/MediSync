@@ -89,3 +89,5 @@ All portal surfaces (Hospital Work Queue, Doctor Ordered Tests, Patient Medical 
    - Accurately renders Teal badge for `report_ready`, Indigo badge for `sample_collected`, Purple badge for `processing`, and Amber badge for `pending`.
 3. **Reactive Re-fetch Trigger**:
    - Hospital work queue (`LabWorkQueue`) subscribes to `refreshTrigger` from modal upload completions and status updates, immediately re-evaluating tabs without requiring browser refresh.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

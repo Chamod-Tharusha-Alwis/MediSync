@@ -58,3 +58,5 @@
 - **Failed**: 0 (0%)
 - **Live Email Budget Used**: 0 / 60
 - **Evidence Files Stored**: 20 files in `docs/final/evidence/`
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

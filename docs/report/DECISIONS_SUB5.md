@@ -28,3 +28,5 @@ This document tracks autonomous engineering, architectural, and data integrity d
   - Knowledge base counts grounded in `disease_symptom_kb.v1.json`: 801 raw conditions $\rightarrow$ 136 quarantined $\rightarrow$ 665 active filtered $\rightarrow$ 174 mapped, 491 unmapped. Edge filter $P \ge 15.0\%$, minimum 3 surviving symptoms.
   - Production backend URL set to `https://medisync-wabc.onrender.com`.
   - Demo batch identified as `DEMO_OUTBREAK_2026_V1`; protected production seed identified as `SEED_2026_11_A`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

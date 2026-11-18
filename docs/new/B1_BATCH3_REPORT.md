@@ -176,3 +176,5 @@ node scripts/run_offline_tests.js
 - **To unblock U7:** `APPROVE U7 FULL TEST FILE UPDATE: client/src/__master_offline__/pharmacy-consent-flow.test.jsx` (authorizing the helper `query()` in `pharmacy-consent-flow.test.jsx` to grant consent or pre-seed a consent token for the 9 non-probe tests, while updating Tests 4 & 5 to test their 403/stale-request scenarios with an active consent token).
 - **To implement U2 (based on `docs/new/B1_U2_INVESTIGATION.md`):** `APPROVE B1: U2` (filtering non-prescribable soap/wash/shampoo/bar items at the drug search/resolver layer while keeping raw `drugs_clean.json` intact, and deduplicating self-comparison/same-ingredient alerts in `ingredientResolver.js` and `NewConsultation.jsx`).
 - **To apply the verified password-lockout patch:** `APPROVE LOCKOUT PATCH APPLY` (`git apply docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.patch`).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

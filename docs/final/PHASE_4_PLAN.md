@@ -145,3 +145,5 @@ The 4 recognized sanity cases from `scripts/verify_sanity_symptom_cases.py` are 
 6. Update documentation: `06_machine_learning.md`, `11_limitations_future_work.md`, `ML_DESIGN_PARAMETERS.md`, `OWNER_ACTIONS.md`.
 7. Run all quality gates (`run_offline_tests.js`, client build, link checker, ledger 15/15).
 8. Author `PHASE_4_REPORT.md`, commit, push `final/p4-clinical-safety`, merge into `main`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

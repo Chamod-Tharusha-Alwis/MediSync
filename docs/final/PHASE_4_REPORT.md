@@ -91,3 +91,5 @@ Evaluated against the 15 sanity cases documented in `docs/report/ML_DESIGN_PARAM
 | `docs/report/chapters/06_machine_learning.md` | Modified | Documented Section 6.2.4 deterministic emergency red-flag screen. |
 | `docs/report/chapters/11_limitations_future_work.md` | Modified | Updated Section 11.1.7 reflecting advisory presence and clinical limits. |
 | `docs/report/TECHNICAL_REPORT.md` | Modified | Synced Section 11.1.7 with updated limitation descriptions. |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

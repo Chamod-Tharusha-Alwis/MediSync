@@ -142,3 +142,5 @@ asserted by `app-recovery-states.test.jsx:47` and
 those assertions without the requested review. Phase 4 starts only after the
 hotfix is live/green. Security-alert triage needs scoped read access or sanitized
 rule/severity/path evidence. No new clinical group acceptance; historical 2/14.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

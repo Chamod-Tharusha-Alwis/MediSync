@@ -72,3 +72,5 @@ The 15 protected files in `docs/release/PROTECTED_HASHES.json` remain untouched 
 
 ## 5. Next Steps
 Merge `final/p2-otp-verify-page` into `main`, update `MASTER_STATE.md` and `PROGRESS.md`, and advance to **PHASE 3: Medicine Release Data Integrity**.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

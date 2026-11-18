@@ -24,3 +24,5 @@ So the lock should be described as a **casual-access deterrent**, not as encrypt
 - An AES-256 (`/V 5 /R 6`) capable PDF encryption tool (for example qpdf invoked server-side), which means a new dependency or binary.
 - A password that is **not** derived from an identifier: a random one-time password delivered through a separate channel (for example the existing OTP email), or no password plus authenticated download only.
 - Tests asserting `/V 5 /R 6` and AESV3 in the output.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

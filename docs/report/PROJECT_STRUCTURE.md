@@ -79,3 +79,5 @@ medisync/
     └── tests/                       # Backend offline Jest test suites (123 suites, 2,635 tests)
         └── helpers/                 # Test harnesses, in-memory MongoDB replica set runners, mock factories
 ```
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

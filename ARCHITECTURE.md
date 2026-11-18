@@ -148,3 +148,5 @@ MediSync enforces automated quality gates via `scripts/run_offline_tests.js`. Th
 - **Quality & Security Scan**: [`docs/report/QUALITY_SCAN.md`](docs/report/QUALITY_SCAN.md)
 - **Architectural Diagrams (D01–D09)**: [`docs/report/diagrams/`](docs/report/diagrams/)
 - **Publication Figures (F01–F14)**: [`docs/report/figures/FIGURES.md`](docs/report/figures/FIGURES.md)
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

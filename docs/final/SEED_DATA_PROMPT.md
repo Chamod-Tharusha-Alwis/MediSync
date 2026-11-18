@@ -64,3 +64,5 @@ Usage: attach to the agent (full access) and send **continue**. Same autonomous 
 
 ## 4. Final response format
 Counts seeded per collection, scenario results (S-A to S-D alerted or not), commands for dry-run, seed and rollback, demo account list (usernames only), open owner actions, any known issues.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

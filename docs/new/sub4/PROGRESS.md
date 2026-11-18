@@ -244,3 +244,5 @@
      - Protected file ledger (`docs/release/PROTECTED_HASHES.json`): **15/15 accounted for and valid**.
 
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

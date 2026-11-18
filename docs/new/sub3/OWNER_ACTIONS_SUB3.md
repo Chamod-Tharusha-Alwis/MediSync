@@ -1,7 +1,7 @@
 # MediSync — Owner Production Actions & Runbook (Sub-Project 3)
 
 > [!NOTE]
-> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/docs/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
+> **SUPERSEDED**: This document is superseded by the consolidated master checklist in [docs/OWNER_CHECKLIST_FINAL.md](../../archive/OWNER_CHECKLIST_FINAL.md). Retained for historical audit purposes only.
 
 This document contains instructions and exact copy-pasteable commands for the repository owner to execute in production environments (`medisync_prod`, Render, MongoDB Atlas). The automated AI agent operates strictly in offline/in-memory mode and never writes to or alters production infrastructure.
 
@@ -143,3 +143,5 @@ In the UptimeRobot monitor settings for `medisync-ml.onrender.com/health`:
    - **Compare branch**: `feat/sub3-p4`
 3. Review the CI check results (offline gate & client build).
 4. Merge the pull request. Vercel (frontend) and Render (backend) will trigger automatic deployment.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

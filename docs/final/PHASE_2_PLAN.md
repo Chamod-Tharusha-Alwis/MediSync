@@ -270,3 +270,5 @@ Scanning the QR code on a MediSync Consultation Summary PDF opens a lightweight,
 2. **Key Parity & UI Tests**:
    - Parity test verifies `en`, `si`, and `ta` dictionaries have exact identical keys.
    - Frontend component test validates render states and mobile layout.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

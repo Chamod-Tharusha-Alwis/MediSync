@@ -267,3 +267,5 @@ exact read/write scope. No such execution is authorized now. Current public
 code requests recorded visits and renders confirmed cases, outbreaks and
 forecasts unavailable (`client/src/pages/public/PublicHealth.jsx:42,81`);
 the Tab 1, forecast and role-view changes above are design proposals only.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

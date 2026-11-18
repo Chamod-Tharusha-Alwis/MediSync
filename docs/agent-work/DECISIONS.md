@@ -30,3 +30,5 @@ Current ordered offline item: replace unsupported percentage/count-only translat
 ## 2026-11-05T13:49:56.184Z — selected password-attempt policy
 
 Operatorselected5failedpasswords/15minutesforreview. Preparedexactcandidateusingauthoritativeaccount/modelidentityandexistingRedisadmission; successdoesnotresetthewindow; fifthfailure429,storefailure503. CandidateisNOTAPPLIEDoractive. Selectiondidnotauthorizesourceactivationorlivechecks. PreserveexistingIP/OTPcontrolsandall15pins.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

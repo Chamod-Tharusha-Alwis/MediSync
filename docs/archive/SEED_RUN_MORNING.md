@@ -142,3 +142,5 @@ Expected output: `existingOwned` matches 12,907 records; `wouldInsert: 0`.
   - Batch Namespace: 100% of seeded records tagged with `syntheticSeedBatch: 'SEED_2026_11_A'` and `isSynthetic: true`.
   - Cryptographic Field Decryption: Verified 5 seeded Patients and 5 seeded Consultations. All encrypted fields (`fullName`, `contactInfo`, `allergies`, `patientNic`, `diagnosis`, `notes`) decrypt successfully. Status: **PASS**.
   - Secrets & Credentials Compliance: Zero credentials, connection strings, private keys, or passwords logged, committed, or retained in plaintext.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

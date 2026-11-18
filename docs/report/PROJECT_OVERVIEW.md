@@ -101,3 +101,5 @@ MediSync solves these issues by:
 ## 5. Important Disclaimers
 1. **Academic University Prototype**: MediSync is a software engineering research project created for university evaluation. It uses synthetic test patient data.
 2. **Not Certified for Autonomous Medical Use**: The machine learning triage assistant and outbreak tools are designed to assist qualified medical staff. Every ML response carries the notice: `clinicalValidation: not_established`. It does not replace the diagnosis of a certified physician.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

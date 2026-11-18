@@ -34,3 +34,5 @@
 2. **Clinical Guard Rails**:
    - The safety engine (`server/src/services/medicineSafetyService.js`) enforces these boundaries as conservative prototype bounds during prescription authoring, returning warnings to clinicians when prescribed quantities exceed these thresholds.
    - All prescription warning dialogs and documentation explicitly note that dosage limits constitute reference thresholds requiring clinician judgment (`clinicalValidation: not_established`).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

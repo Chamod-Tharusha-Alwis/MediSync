@@ -194,3 +194,5 @@ Step 6: U16 Real Admin Health Checks
 Step 7: Final Inventory Cleanup & Ledger Re-Pin (Coordinated with Operator)
   └── Update ir04BackendIntegration.test.js & PROTECTED_HASHES.json.
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -85,3 +85,5 @@
 
 - **Decision**:
   U18 is fully resolved. Production client code is clean, resilient, and builds with zero warnings.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

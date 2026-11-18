@@ -63,3 +63,5 @@ Features:
 - Acknowledgment checkbox: `"I acknowledge these warnings and confirm this prescription is clinically indicated"`.
 - Clinical Reason text input: Required when warnings exist before submission is enabled.
 - 100% Trilingual Parity in English (`en`), Sinhala (`si`), and Tamil (`ta`).
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -194,3 +194,5 @@ improvement. Findings from reading source code and the live page list in V3.
 10. U5 — Hospital button raw text
 11. U16 — Admin health checks
 12. U19/U22/U23 — Capitalization, tiny text, undefined classes (small but visible)
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

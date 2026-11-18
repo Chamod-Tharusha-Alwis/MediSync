@@ -24,3 +24,5 @@ Format: `ID | Symptom | Cause | Fix | Commit | Live-Verified`
 | BUG-PUBLIC-HEALTH-CURRENT-TOTAL | Operator reported about 10,180; takeover reads initially returned 503 and later 200 with zero cases/districts/diseases, demo flag true | NOT VERIFIED; API aggregates cannot establish production SQLite row inventory or explain lifecycle changes | Preserve evidence; obtain existing-service read-only inventory; no reseed, ingest, cache clear or reset | Not applied | No repair acceptance |
 
 | BUG-EMAIL-TIMEZONE-P1 | P1: unlabelled host-local email/UI time | Host-local formatting | Explicit Asia/Colombo display, visible zone, UTC storage unchanged, fixed-instant/rollover tests | a4952b5 | Yes: one received alert confirmed; offline templates/UI tests pass; private-page visual coverage limited |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

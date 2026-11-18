@@ -134,3 +134,5 @@ When testing production startup against Render deployment configurations:
    If Render does not connect to an active HashiCorp Vault server with `VAULT_TOKEN`, `initializeVault()` calls `process.exit(1)` immediately.
 2. **Second Blocker (Gate 9 — Storage Pre-requisite Verification)**:
    `verifyProductionStorage()` strictly verifies all 29 collections and indexes against `test`. If collections are missing, boot halts.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

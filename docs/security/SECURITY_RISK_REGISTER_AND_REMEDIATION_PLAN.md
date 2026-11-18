@@ -74,3 +74,5 @@ Prior to production deployment (`p7hjket.mongodb.net`), the designated Risk Owne
 ```text
 I, as the designated Data Protection Officer / Security Lead for MediSync, acknowledge the open status of SEC-01 (Unkeyed SHA-256 Blind Index) and SEC-02 (AES-CBC Field Integrity). Based on the documented defense-in-depth compensating controls, network isolation, and the approved v1.1 Keyed-HMAC Migration Specification, I approve proceeding with production release readiness under accepted risk.
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

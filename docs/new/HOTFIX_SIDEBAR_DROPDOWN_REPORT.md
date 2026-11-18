@@ -149,3 +149,5 @@ git diff --cached --stat
 # 4. Commit the hotfix
 git commit -m "fix(ui): keep sidebar notification dropdown inside the viewport"
 ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -110,3 +110,5 @@ flowchart TD
   2. Database user permissions are least-privilege (`readWrite` only, no dump or backup export privileges for app users).
   3. Plaintext NICs remain strongly encrypted via AES-256 envelope encryption.
 - **Decision:** Formally accepted as a low-to-medium residual risk for candidate v1.0.0-rc1, with the migration architecture scheduled for implementation in v1.1 upon opening `doctorController.js` for post-1.0 maintenance.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -81,3 +81,5 @@ MediSync supports six authenticated operational roles and an unauthenticated pub
 ### 3.3.5 Verification and Maintainability (NFR-MAINT)
 - **NFR-MAINT-01 (Offline Test Suite)**: The entire automated test suite (3,777 tests) shall execute cleanly offline in less than 180 seconds without external network dependencies.
 - **NFR-MAINT-02 (Protected Integrity)**: Critical security and calculation files (15 files) shall be locked via SHA-256 hashes in a monitored release ledger.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

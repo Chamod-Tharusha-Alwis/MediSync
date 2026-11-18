@@ -3,7 +3,7 @@
 **Audit Date:** 13 November 2026  
 **Auditor:** Principal Release Engineering  
 **Scope:** Client application (`client/src`), Server backend (`server/src`), ML service (`ml-engine`), Data scripts (`scripts/`), and Documentation (`docs/`).  
-**Automated Verification Suite:** [`server/tests/hardcodedMetricAudit.test.js`](file:///c:/Users/chamo/OneDrive/Desktop/Final%20project/medisync/server/tests/hardcodedMetricAudit.test.js) (5/5 PASS).
+**Automated Verification Suite:** [`server/tests/hardcodedMetricAudit.test.js`](../../server/tests/hardcodedMetricAudit.test.js) (5/5 PASS).
 
 ---
 
@@ -109,3 +109,5 @@ To prevent future introduction of hardcoded metrics or fake statistics into clie
   3. Verifies that `client/src/data/districtPopulation2024.json` and `server/src/data/districtPopulation2024.json` are byte-identical and match the 25 DCS census districts.
   4. Verifies 71,704 ICD-10 leaf concepts and 3,000 entries in `drugs_clean.json`.
   5. Uses tracked data only, because `medicines.csv` is gitignored and absent in CI. It checks that `drugs_clean.json` has 3,000 entries, that no file under `server/src` references `medicines.csv`, and that no Markdown doc in `docs/final`, `docs/report` or `docs/new` presents the 23,939-row retail CSV (which is not used by the server) as approved medicines or as the server catalogue. A doc line that mentions the CSV alongside such a claim must also carry a disclaimer.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

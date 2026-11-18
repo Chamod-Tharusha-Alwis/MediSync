@@ -50,3 +50,5 @@ Action logged in `OWNER_ACTIONS.md` (OA-11): Clinical formulary committee to rev
 - **Prefix Resolution**: Autocomplete input uses substring and prefix matching (`starts_with` priority), allowing stems like `Citalopr` to immediately recommend `Citalopram` without silent auto-substitution.
 - **Clinician Override**: Free-text medication entry is permitted under the Doctor Override flow (Task A). When an unresolved generic is prescribed, MediSync explicitly surfaces:
   > *"Automated interaction checking is incomplete for \"<drug>\" (unresolved ingredient(s): <list>). Clinical assessment required."*
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

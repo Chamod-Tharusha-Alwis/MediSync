@@ -48,3 +48,5 @@ Written by `ml-engine/evaluation/study/write_cards.py` from the results files. C
 | Limits | Single national series; a linear trend cannot represent seasonality or epidemic growth. |
 | Must not be used for | diagnosis, triage decisions, or any use with real patients without clinical validation, ethics approval and regulatory assessment, none of which exists; not a forecast for planning or resource allocation. |
 
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

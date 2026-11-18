@@ -29,3 +29,5 @@
 - Git-history pattern findings need private review; no assertion that history is free of secrets and no history rewrite.
 - Real production boot, authenticated five-role browser/persistence smoke tests and backup/restore remain unverified. No migration, seed or production data access was performed.
 - This entry describes a candidate, not proof of production deployment or full clinical security qualification.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

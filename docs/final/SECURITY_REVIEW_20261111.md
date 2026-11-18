@@ -178,3 +178,5 @@ No fix was applied. Live behavior, deployed SHA, production settings, data condi
 
 The final status also showed concurrent modifications to docs/final/FINAL_STATUS.md and docs/final/MASTER_STATE.md. These were not edited by this review. The staged index was empty. All four pre-existing/concurrently modified paths were preserved. The report is under the repository's ignored docs/temp area, so it is not listed by ordinary git status.
 
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

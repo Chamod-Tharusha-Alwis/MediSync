@@ -181,3 +181,5 @@ Before typing `APPROVE DELETE-DEMO`, operator should see:
 - [ ] Confirmation that new seeded data (Stage C) is live and verified
 - [ ] Confirmation that public health views show seeded data, not demo data
 - [ ] ML SQLite plan (clear or allow restart)
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

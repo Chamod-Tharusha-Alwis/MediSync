@@ -67,3 +67,5 @@ The following external infrastructure actions require manual execution by the pl
 - **OA-03**: Execute pre-viva database backup (`mongodump`).
 - **OA-06**: Rotate Redis instance authentication tokens.
 - **OA-07**: Change shared demo credentials to independent passwords following academic evaluations.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

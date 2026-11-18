@@ -465,3 +465,5 @@ The earlier delayed-exit warning is Jest's one-second asynchronous-cleanup diagn
 Historical client audit: 54 findings (3 critical,31 high,10 moderate,10 low), exit 1. Historical ML installed-image audit: 59 packages, zero known advisories, 19 tests passed; no new Docker/image audit here. Live Atlas/Redis, hosted settings/health, real transactions/providers/recovery and current-source five-role E2E remain unverified. Historical real backend acceptance remains 2/14; clinical production NO-GO.
 
 STOP before database access, merge or deployment. This runbook grants none of those operations; source commit/push approval is a separate scope.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

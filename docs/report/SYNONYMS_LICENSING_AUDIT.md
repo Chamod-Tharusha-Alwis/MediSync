@@ -56,3 +56,5 @@
 | **whooping cough** | `A37.90` | Whooping cough, unspecified species without pneumonia | Pertussis (see also Whooping cough) (`A37.90`) | `C0043166` | `owner_must_check` | Active KB mapped |
 | **scarlet fever** | `A38.9` | Scarlet fever, uncomplicated | Scarlet fever (`A38.9`) | `C0036324` | `owner_must_check` | Active KB mapped |
 | **tetanus** | `A35` | Other tetanus | Tetanus (`A35`) | `C0039614` | `owner_must_check` | Active KB mapped |
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

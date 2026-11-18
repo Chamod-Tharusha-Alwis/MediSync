@@ -35,3 +35,5 @@ MediSync was initiated as an undergraduate software engineering capstone project
 
 > [!NOTE]
 > Literature citations, historical epidemiological survey figures from the MOH Epidemiology Unit, and national census statistics are marked for final review in `[OWNER: Insert official MOH Annual Health Bulletin 2023 / Census 2024 citations]`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

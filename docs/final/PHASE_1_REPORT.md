@@ -66,3 +66,5 @@ All remaining matches for the scanned terms in `docs/report/` were audited and c
 
 ## 5. Next Steps
 Merge `final/p1-docs-sweep` into `main`, update `MASTER_STATE.md` and `PROGRESS.md`, and advance to **PHASE 2: OTP-Gated QR Verification Page**.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

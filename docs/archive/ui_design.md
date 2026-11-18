@@ -122,3 +122,5 @@ The recent backend security hardening (which included strict HMAC timing-safe va
 - **Metadata Cards:** Boxed label:value containers with subtle gray borders (`#E5E7EB`) for patient demographics, doctor license numbers, and hospital affiliations.
 - **Table Layout & Shading:** Alternating row shading (`#F5F7FA` and `#FFFFFF`) for scannability. Dynamic word wrapping (`wrapText`) widens the Dosage column to 165pt and automatically scales row heights, preventing text bleed across adjacent columns.
 - **Status Watermarking:** Document background features a centered 45-degree translucent watermark overlay (`DISPENSED` in red `#EF4444` or `COMPLETED` in teal `#0D9488`) to clearly communicate clinical prescription status at a glance.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

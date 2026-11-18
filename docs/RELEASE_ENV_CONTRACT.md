@@ -110,3 +110,5 @@ Render publishes shared outbound CIDR ranges per region, visible at the existing
    - SCRAM-SHA-256 database authentication with dedicated user credentials restricted to `readWrite@medisync_prod`.
    - Database namespace isolation (`medisync_prod` is separate from the operational `test` database); this is not a claim of physical cluster isolation.
    - Rate limiting on API gateway and strict input validation.
+
+Last verified: 2026-11-18 at commit f5337833. The corrections dated 2026-11-18 in this file were checked against the code; the rest is a dated record.

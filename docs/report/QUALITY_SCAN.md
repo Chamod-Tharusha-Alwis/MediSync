@@ -108,3 +108,5 @@ All 1,129 tracked files were scanned against high-entropy patterns:
   - CMS ICD-10-CM 2024 Index: US Public Domain (17 U.S.C. § 105).
   - SymCAT pipeline: MIT Licensed.
   - UMLS CUIs: Retained strictly as non-proprietary reference identifiers.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

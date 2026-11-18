@@ -59,3 +59,5 @@ P1-AUTH-ACCOUNT-LOCKOUT: real wrong-password handler probes20×401perentrypointw
 ## 2026-11-05T14:20:44.862Z — integrated policy review ready, activation held
 
 P1-AUTH-ACCOUNT-LOCKOUT remainsinactive. Nine-filecandidateincludescompaniontestharness/registrychangesandqualifies2498backendPASS(1privateproofexcluded)+40lifecyclePASS+25fencedcases: docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.md. ActualRedisdistribution/TTL/latencyandlivecompatibilityNOTVERIFIED. No proposedcodehasreachedsharedruntime. OtherdistributedIP/APIvalidation/C7allform/nativeLighthousegapsremainopen.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

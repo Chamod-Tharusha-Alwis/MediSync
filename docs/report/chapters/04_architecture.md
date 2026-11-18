@@ -100,3 +100,5 @@ The architectural diagrams supporting this chapter are preserved in the reposito
 - **D07**: Authentication & Session Flow (`docs/report/diagrams/d07_auth_otp_session_flow.mmd`)
 - **D08**: Medicine Safety Decision Flow (`docs/report/diagrams/d08_medicine_safety_decision_flow.mmd`)
 - **D09**: Entity-Relationship Diagram (`docs/report/diagrams/d09_entity_relationship_diagram.mmd`)
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

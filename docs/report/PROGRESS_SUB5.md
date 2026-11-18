@@ -189,3 +189,5 @@ pm --prefix client run build)**:
   - Re-assembled `TECHNICAL_REPORT.md` (14 chapters, 92,350 chars).
   - Re-generated all 14 publication figures (F01–F14).
   - Validated 100% of relative links (96 links across 37 markdown files) with `scripts/check_report_links.py`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

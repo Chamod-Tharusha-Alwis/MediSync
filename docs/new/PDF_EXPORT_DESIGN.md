@@ -179,3 +179,5 @@ Write in `OPERATOR_ACTIONS.md`:
 2. Upload font files to `server/fonts/` on the Render instance (or add to the repo
    if the license allows — OFL does allow redistribution).
 3. Type `APPROVE PDF-DESIGN` to unblock implementation.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

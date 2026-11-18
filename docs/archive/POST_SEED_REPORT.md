@@ -216,3 +216,5 @@ Live HTTP GET probes were executed against the public frontend (`https://medisyn
 ## 9. Conclusion & Sign-Off
 
 All Milestone 0 (R1) post-seed verification requirements are satisfied in full. Production database `medisync_prod` is verified clean, idempotent, and intact. The team is authorized to commit and push branch `chore/post-seed-verification` and proceed to Milestone 1 and Stage B2 to G on branch `feat/final-stage-b2-to-g`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

@@ -138,3 +138,5 @@ Single-agent C/D/QA. Actual ErrorBoundary inside LanguageProvider stays English 
 ## 2026-11-05T09:16:43.410Z — P2-I/C7 route recovery offline gate
 
 3078PASS/0FAIL/0SKIP,sourceFrozen/15pins; client547PASS; new7behavior checks; buildexit0 (scratch/CODEX_V2_P2_BUILD_1793870050856). Red2locale failures preserved.739matching nonempty dictionary keys. Source: localized route error title/body/reload; existing interrupted-save warning and sanitized operational logging preserved. No auth/API/clinical/hold change. Matrix source bindings refreshed; no old PASS inferred. Evidence docs/temp/CODEX_V2_ROUTE_RECOVERY_LOCALE_20261105T091643Z.md and docs/temp/CODEX_V2_ROUTE_RECOVERY_LOCALE_20261105T091643Z.json. No P1 approval received; no new login/email. Push/deploy and anonymous navigation evidence follow this checkpoint; native language/private layout not verified.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

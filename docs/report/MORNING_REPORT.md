@@ -159,3 +159,5 @@ Follow `docs/OWNER_CHECKLIST_FINAL.md` for exact steps:
       $env:APPROVE_DEMO_OUTBREAK_REMOVAL="true"
       node scripts/remove_demo_batch.js --db medisync_prod --confirm-demo-removal DEMO_OUTBREAK_2026_V1
       ```
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

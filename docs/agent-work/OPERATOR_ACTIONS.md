@@ -54,3 +54,5 @@ Review docs/temp/CODEX_PASSWORD_ATTEMPTS_INTEGRATED_REVIEW_20261105T141533Z.md a
 The shared application is on fdbd40f with 3,211 offline PASS, both CI workflows green, exact backend/Vercel readiness and all 15 protected expectations intact. Read docs/temp/CODEX_PHASE2_OFFLINE_STATUS_20261105T142334Z.md for the finished changes and remaining gaps.
 
 The selected five-failure/fifteen-minute policy remains inactive. Its exact nine-file integrated package and activation scope are described in docs/temp/CODEX_PASSWORD_LOCKOUT_REVIEW_HANDOFF_20261105T142334Z.md. Candidate backend: 2,498 PASS (one private proof excluded); lifecycle: 40 PASS. These are separate from the deployed baseline. No further live login or email is approved. Last operator-confirmed provider total: 8/25.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).

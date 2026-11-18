@@ -95,3 +95,5 @@ Honesty and transparency are paramount in academic engineering evaluation. Follo
    - Master cryptographic keys reside in runtime environment variables (`ENCRYPTION_KEY`). Cloud deployment operates on Render Free and MongoDB Atlas M0 tiers, lacking hardware security module (HSM) key isolation, enterprise DDoS shielding, and automated point-in-time recovery (PITR).
 
 The remaining Codex review findings include F10 “production storage verification may execute DDL during startup” and F11 “production cluster selection is broad, not an exact existing-cluster pin.” QR history export requires an OTP-issued view session and is scoped to the linked encounter. The patient consultation PDF button also checks the frontend build flag `REACT_APP_PDF_EXPORT_ENABLED`.
+
+Last verified: 2026-11-18 at commit f5337833. Location and internal links only; the content is a dated record and was not re-checked against the code (current documents are listed in docs/INDEX.md).
