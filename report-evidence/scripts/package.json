@@ -1,0 +1,8 @@
+{
+  "name": "medisync-report-evidence-scripts",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "highlight.js": "^11.11.1"
+  }
+}

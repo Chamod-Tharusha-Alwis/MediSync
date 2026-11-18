@@ -1,0 +1,117 @@
+{
+ "started": "2026-11-18T07:48:27.014Z",
+ "finished": "2026-11-18T07:48:56.500Z",
+ "warmUpRequestPerEndpoint": "excluded",
+ "results": [
+  {
+   "name": "server health",
+   "url": "https://medisync-wabc.onrender.com/api/health",
+   "n": 10,
+   "statuses": [
+    200
+   ],
+   "medianMs": 289.8,
+   "maxMs": 424.7,
+   "allMs": [
+    297.7,
+    291.6,
+    292.3,
+    283,
+    288.9,
+    271.8,
+    289,
+    290.7,
+    262.8,
+    424.7
+   ]
+  },
+  {
+   "name": "ML service health",
+   "url": "https://medisync-ml.onrender.com/health",
+   "n": 10,
+   "statuses": [
+    200
+   ],
+   "medianMs": 287.5,
+   "maxMs": 751.2,
+   "allMs": [
+    751.2,
+    299.4,
+    290.3,
+    256.5,
+    284.7,
+    292,
+    300,
+    277.7,
+    257.3,
+    280.5
+   ]
+  },
+  {
+   "name": "public list: /api/public/hospitals",
+   "url": "https://medisync-wabc.onrender.com/api/public/hospitals",
+   "n": 10,
+   "statuses": [
+    200
+   ],
+   "medianMs": 520.2,
+   "maxMs": 1012.4,
+   "allMs": [
+    525.5,
+    524.3,
+    523.6,
+    528.2,
+    499.3,
+    514.7,
+    516.8,
+    1012.4,
+    509,
+    498.7
+   ]
+  },
+  {
+   "name": "public outbreak dashboard: /api/public/outbreak-alerts",
+   "url": "https://medisync-wabc.onrender.com/api/public/outbreak-alerts",
+   "n": 10,
+   "statuses": [
+    200
+   ],
+   "medianMs": 747.3,
+   "maxMs": 765.1,
+   "allMs": [
+    745.5,
+    736.1,
+    754.9,
+    738.9,
+    744.7,
+    748.9,
+    751.8,
+    746.1,
+    748.5,
+    765.1
+   ]
+  },
+  {
+   "name": "public dashboard data: /api/public/health-stats",
+   "url": "https://medisync-wabc.onrender.com/api/public/health-stats",
+   "n": 10,
+   "statuses": [
+    200
+   ],
+   "medianMs": 449.4,
+   "maxMs": 467.9,
+   "allMs": [
+    467.9,
+    445,
+    465.8,
+    451.6,
+    432.6,
+    457.2,
+    446.9,
+    465.3,
+    445.2,
+    447.1
+   ]
+  }
+ ]
+}

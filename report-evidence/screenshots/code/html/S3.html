@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><style>pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub
+  Description: Light theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-light
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #24292e;
+  background: #ffffff
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #d73a49
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #6f42c1
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #005cc5
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #032f62
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #e36209
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #6a737d
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #22863a
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #24292e
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #005cc5;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #735c0f
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #24292e;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #24292e;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #22863a;
+  background-color: #f0fff4
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #b31d28;
+  background-color: #ffeef0
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+body{margin:0;background:#fff;font-family:Consolas,"Courier New",monospace}
+#card{display:inline-block;min-width:900px;max-width:1360px;border:1px solid #d0d7de;border-radius:6px;margin:16px;overflow:hidden}
+.title{background:#24292f;color:#fff;font:600 15px Arial,sans-serif;padding:10px 14px}
+.cap{background:#f6f8fa;border-top:1px solid #d0d7de;border-bottom:1px solid #d0d7de;color:#57606a;font:13px Arial,sans-serif;padding:6px 14px}
+table{border-collapse:collapse;font-size:14px;line-height:1.45}
+td.ln{color:#8c959f;text-align:right;padding:0 10px 0 14px;user-select:none;vertical-align:top;min-width:36px}
+td.code{white-space:pre-wrap;word-break:break-word;padding:0 14px 0 4px;color:#24292f}
+</style></head><body><div id="card"><div class="title">S3 · Trend projection with a prediction interval (OLS, client side)</div><div class="cap">client/src/utils/outbreakForecasting.js &nbsp;·&nbsp; lines 301-302, 305-316, 384, 392-397</div><table><tr><td class="ln">301</td><td class="code">  <span class="hljs-keyword">const</span> slope = den === <span class="hljs-number">0</span> ? <span class="hljs-number">0</span> : num / den;</td></tr><tr><td class="ln">302</td><td class="code">  <span class="hljs-keyword">const</span> intercept = yMean - slope * xMean;</td></tr><tr><td class="ln"></td><td class="code"><span class="hljs-comment">// ...</span></td></tr><tr><td class="ln">305</td><td class="code">  <span class="hljs-keyword">let</span> ssRes = <span class="hljs-number">0</span>;</td></tr><tr><td class="ln">306</td><td class="code">  <span class="hljs-keyword">let</span> ssTot = <span class="hljs-number">0</span>;</td></tr><tr><td class="ln">307</td><td class="code">  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> i = <span class="hljs-number">0</span>; i &lt; n; i++) {</td></tr><tr><td class="ln">308</td><td class="code">    <span class="hljs-keyword">const</span> yHat = slope * x[i] + intercept;</td></tr><tr><td class="ln">309</td><td class="code">    ssRes += (y[i] - yHat) * (y[i] - yHat);</td></tr><tr><td class="ln">310</td><td class="code">    ssTot += (y[i] - yMean) * (y[i] - yMean);</td></tr><tr><td class="ln">311</td><td class="code">  }</td></tr><tr><td class="ln">312</td><td class="code">  <span class="hljs-keyword">const</span> df = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(<span class="hljs-number">1</span>, n - <span class="hljs-number">2</span>);</td></tr><tr><td class="ln">313</td><td class="code">  <span class="hljs-keyword">const</span> se = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">sqrt</span>(ssRes / df);</td></tr><tr><td class="ln">314</td><td class="code">  <span class="hljs-keyword">const</span> rSquared = ssTot === <span class="hljs-number">0</span> ? <span class="hljs-number">1</span> : <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span> - ssRes / ssTot);</td></tr><tr><td class="ln">315</td><td class="code">&nbsp;</td></tr><tr><td class="ln">316</td><td class="code">  <span class="hljs-keyword">const</span> tCrit = <span class="hljs-title function_">getTCrit</span>(df, confidenceLevel);</td></tr><tr><td class="ln"></td><td class="code"><span class="hljs-comment">// ...</span></td></tr><tr><td class="ln">384</td><td class="code">      <span class="hljs-keyword">let</span> rawPredicted = slope * futureX + intercept;</td></tr><tr><td class="ln"></td><td class="code"><span class="hljs-comment">// ...</span></td></tr><tr><td class="ln">392</td><td class="code">      predicted = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">round</span>(rawPredicted));</td></tr><tr><td class="ln">393</td><td class="code">      <span class="hljs-keyword">const</span> sePred = se * <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">sqrt</span>(<span class="hljs-number">1</span> + <span class="hljs-number">1</span> / n + (den === <span class="hljs-number">0</span> ? <span class="hljs-number">0</span> : <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">pow</span>(futureX - xMean, <span class="hljs-number">2</span>) / den));</td></tr><tr><td class="ln">394</td><td class="code">      <span class="hljs-keyword">const</span> margin = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">round</span>(tCrit * sePred);</td></tr><tr><td class="ln">395</td><td class="code">&nbsp;</td></tr><tr><td class="ln">396</td><td class="code">      lower = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">min</span>(predicted, <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">round</span>(rawPredicted - margin)));</td></tr><tr><td class="ln">397</td><td class="code">      upper = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(predicted, <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">round</span>(rawPredicted + margin));</td></tr></table></div></body></html>

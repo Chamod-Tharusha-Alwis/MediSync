@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><style>pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub
+  Description: Light theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-light
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #24292e;
+  background: #ffffff
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #d73a49
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #6f42c1
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #005cc5
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #032f62
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #e36209
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #6a737d
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #22863a
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #24292e
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #005cc5;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #735c0f
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #24292e;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #24292e;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #22863a;
+  background-color: #f0fff4
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #b31d28;
+  background-color: #ffeef0
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+body{margin:0;background:#fff;font-family:Consolas,"Courier New",monospace}
+#card{display:inline-block;min-width:900px;max-width:1360px;border:1px solid #d0d7de;border-radius:6px;margin:16px;overflow:hidden}
+.title{background:#24292f;color:#fff;font:600 15px Arial,sans-serif;padding:10px 14px}
+.cap{background:#f6f8fa;border-top:1px solid #d0d7de;border-bottom:1px solid #d0d7de;color:#57606a;font:13px Arial,sans-serif;padding:6px 14px}
+table{border-collapse:collapse;font-size:14px;line-height:1.45}
+td.ln{color:#8c959f;text-align:right;padding:0 10px 0 14px;user-select:none;vertical-align:top;min-width:36px}
+td.code{white-space:pre-wrap;word-break:break-word;padding:0 14px 0 4px;color:#24292f}
+</style></head><body><div id="card"><div class="title">S8 · Data validation: prescription duration rule and the route that uses it</div><div class="cap">server/src/utils/prescriptionDuration.js &nbsp;·&nbsp; lines 3-8, 13-21</div><table><tr><td class="ln">3</td><td class="code"><span class="hljs-keyword">class</span> <span class="hljs-title class_">DurationError</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">Error</span> {</td></tr><tr><td class="ln">4</td><td class="code">  <span class="hljs-title function_">constructor</span>(<span class="hljs-params"></span>) { <span class="hljs-variable language_">super</span>(<span class="hljs-string">&#x27;Each medicine requires durationDays as a positive whole number; legacy duration is unsupported.&#x27;</span>); <span class="hljs-variable language_">this</span>.<span class="hljs-property">code</span>=<span class="hljs-string">&#x27;INVALID_DURATION&#x27;</span>; }</td></tr><tr><td class="ln">5</td><td class="code">}</td></tr><tr><td class="ln">6</td><td class="code"><span class="hljs-keyword">function</span> <span class="hljs-title function_">prescriptionTiming</span>(<span class="hljs-params">medicine, issuedAt = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>()</span>) {</td></tr><tr><td class="ln">7</td><td class="code">  <span class="hljs-keyword">if</span> (!medicine || <span class="hljs-keyword">typeof</span> medicine !== <span class="hljs-string">&#x27;object&#x27;</span> || <span class="hljs-title class_">Array</span>.<span class="hljs-title function_">isArray</span>(medicine) || <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">hasOwn</span>(medicine,<span class="hljs-string">&#x27;duration&#x27;</span>) ||</td></tr><tr><td class="ln">8</td><td class="code">      <span class="hljs-keyword">typeof</span> medicine.<span class="hljs-property">durationDays</span> !== <span class="hljs-string">&#x27;number&#x27;</span> || !<span class="hljs-title class_">Number</span>.<span class="hljs-title function_">isSafeInteger</span>(medicine.<span class="hljs-property">durationDays</span>) || medicine.<span class="hljs-property">durationDays</span> &lt;= <span class="hljs-number">0</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DurationError</span>();</td></tr><tr><td class="ln"></td><td class="code"><span class="hljs-comment">// ...</span></td></tr><tr><td class="ln">13</td><td class="code"><span class="hljs-keyword">function</span> <span class="hljs-title function_">validateMedicines</span>(<span class="hljs-params">medicines, issuedAt = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>()</span>) {</td></tr><tr><td class="ln">14</td><td class="code">  <span class="hljs-keyword">if</span> (!<span class="hljs-title class_">Array</span>.<span class="hljs-title function_">isArray</span>(medicines)) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DurationError</span>();</td></tr><tr><td class="ln">15</td><td class="code">  <span class="hljs-keyword">return</span> medicines.<span class="hljs-title function_">map</span>(<span class="hljs-function"><span class="hljs-params">medicine</span> =&gt;</span> <span class="hljs-title function_">prescriptionTiming</span>(medicine, issuedAt));</td></tr><tr><td class="ln">16</td><td class="code">}</td></tr><tr><td class="ln">17</td><td class="code"><span class="hljs-keyword">const</span> <span class="hljs-title function_">validateRoute</span> = list =&gt; <span class="hljs-function">(<span class="hljs-params">req,res,next</span>) =&gt;</span> {</td></tr><tr><td class="ln">18</td><td class="code">  <span class="hljs-keyword">try</span> { list ? <span class="hljs-title function_">validateMedicines</span>(req.<span class="hljs-property">body</span>?.<span class="hljs-property">prescriptions</span> === <span class="hljs-literal">undefined</span> ? [] : req.<span class="hljs-property">body</span>.<span class="hljs-property">prescriptions</span>) : <span class="hljs-title function_">prescriptionTiming</span>(req.<span class="hljs-property">body</span>); <span class="hljs-title function_">next</span>(); }</td></tr><tr><td class="ln">19</td><td class="code">  <span class="hljs-keyword">catch</span> (_) { <span class="hljs-keyword">return</span> res.<span class="hljs-title function_">status</span>(<span class="hljs-number">400</span>).<span class="hljs-title function_">json</span>({<span class="hljs-attr">error</span>:<span class="hljs-string">&#x27;INVALID_DURATION&#x27;</span>,<span class="hljs-attr">message</span>:<span class="hljs-keyword">new</span> <span class="hljs-title class_">DurationError</span>().<span class="hljs-property">message</span>}); }</td></tr><tr><td class="ln">20</td><td class="code">};</td></tr><tr><td class="ln">21</td><td class="code"><span class="hljs-variable language_">module</span>.<span class="hljs-property">exports</span>={<span class="hljs-title class_">DurationError</span>,prescriptionTiming,validateMedicines,<span class="hljs-attr">validateConsultationDuration</span>:<span class="hljs-title function_">validateRoute</span>(<span class="hljs-literal">true</span>),<span class="hljs-attr">validateStandaloneDuration</span>:<span class="hljs-title function_">validateRoute</span>(<span class="hljs-literal">false</span>)};</td></tr></table><div class="cap">server/src/routes/doctorRoutes.js &nbsp;·&nbsp; lines 11</div><table><tr><td class="ln">11</td><td class="code">router.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x27;/consultation&#x27;</span>, validateConsultationDuration, <span class="hljs-title function_">protect</span>([<span class="hljs-string">&#x27;doctor&#x27;</span>]), <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;../middleware/clinicalWriteAuthorization&#x27;</span>), doctorController.<span class="hljs-property">createConsultation</span>);</td></tr></table></div></body></html>
