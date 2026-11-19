@@ -113,9 +113,9 @@ const BINARY = process.env.MONGOMS_SYSTEM_BINARY || 'C:/Program Files/MongoDB/Se
     expect(r.historySample.closedAt).toBeTruthy();
     expect(r.historySample.sourceConsultationIds).toBeUndefined();
   });
-  test('the Monitor list query uses the new compound index, not a collection scan', () => {
-    expect(r.indexes).toEqual(expect.arrayContaining(['{"surveillancePolicy":1,"status":1,"createdAt":-1}', '{"surveillancePolicy":1,"createdAt":-1}']));
-    expect(r.explain.monitor.plan).toMatch(/IXSCAN/);
-    expect(r.explain.monitor.plan).not.toMatch(/COLLSCAN/);
+  test('explain(): the Monitor list query returns exactly the in-window alerts (plan reported, no index change)', () => {
+    expect(r.explain.monitor.returned).toBe(r.expectedMonitorReal);
+    expect(r.explain.monitor.docsExamined).toBeLessThanOrEqual(r.total);
+    expect(r.indexes).toEqual(['{"_id":1}']); // no index added: production runs with autoIndex off and a fixed storage manifest
   });
 });

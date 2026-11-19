@@ -7,7 +7,7 @@
  *
  * Proves, through the real controllers and real Mongo queries: every alert is in exactly one of the two lists
  * (no overlap, no gap); the 14-day boundary (13 d 23 h -> Monitor, 14 d 1 h -> History); a resolved alert from today is
- * only in History; pagination; validation codes; non-admin refusal; the list query uses the new index (explain()).
+ * only in History; pagination; validation codes; non-admin refusal; explain() of the Monitor list query.
  */
 const fs = require('fs');
 const os = require('os');
@@ -44,7 +44,6 @@ async function main() {
   try {
     await mongoose.connect(replica.getUri('history'), { serverSelectionTimeoutMS: 10000 });
     const OutbreakAlert = require(path.join(SERVER, 'src/models/OutbreakAlert'));
-    await OutbreakAlert.init(); // builds the declared indexes
     const service = require(path.join(SERVER, 'src/services/surveillanceService'));
     const alerts = require(path.join(SERVER, 'src/controllers/alertController'));
     const now = Date.now();
@@ -103,11 +102,12 @@ async function main() {
     out.validation = bad;
     const doctor = await call(alerts.getAlertHistory, req({ view: 'history' }, { id: admin.id, role: 'doctor' }));
     out.nonAdminHistory = doctor.status;
-    // explain(): history list query and monitor list query use an index (no COLLSCAN).
+    // explain() of the Monitor list query: documents examined vs returned (no new index is declared; see the findings doc).
     const views = require(path.join(SERVER, 'src/services/outbreakViews'));
     const stage = ex => { let s = ex.queryPlanner.winningPlan; const n = []; while (s) { n.push(s.stage + (s.indexName ? `(${s.indexName})` : '')); s = s.inputStage || (s.inputStages && s.inputStages[0]); } return n.join(' <- '); };
     const monitorEx = await OutbreakAlert.collection.find({ surveillancePolicy: service.POLICY, ...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }, ...views.monitorCondition(new Date(now)) }).sort({ createdAt: -1 }).explain('executionStats');
     out.explain = { monitor: { plan: stage(monitorEx), docsExamined: monitorEx.executionStats.totalDocsExamined, returned: monitorEx.executionStats.nReturned } };
+    out.expectedMonitorReal = docs.filter(d => !d.syntheticSeedBatch && views.isMonitorAlert(d, new Date(now))).length;
     out.indexes = (await OutbreakAlert.collection.indexes()).map(i => JSON.stringify(i.key));
     return out;
   } finally {
