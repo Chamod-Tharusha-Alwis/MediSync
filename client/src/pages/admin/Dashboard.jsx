@@ -1,13 +1,13 @@
 import { formatSriLankaDateTime, formatSriLankaDate } from '../../utils/sriLankaTime';
 import LanguagePreferenceCard from '../../components/common/LanguagePreferenceCard';
 import ChangePasswordCard from '../../components/common/ChangePasswordCard';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   LayoutDashboard, Users, Building2, ClipboardList, ShieldAlert,
   ActivitySquare, MapPin, Radio, ScrollText, Activity, TrendingUp,
-  Settings, Loader2, Monitor, Server, Database, ShieldCheck, Mail, Smartphone
+  Settings, Loader2, Monitor, Server, Database, ShieldCheck, Mail, Smartphone, Archive
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { safeDisconnectSocket } from '../../utils/safeSocketDisconnect';
@@ -23,6 +23,8 @@ import { getLocalizedMessage, formatFriendlyDisease } from '../../utils/localize
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
+// Loaded on demand like the other role pages (React.lazy): the history table is not needed on first paint.
+const OutbreakHistory = React.lazy(() => import('./OutbreakHistory'));
 import Broadcast from './Broadcast';
 import SessionMonitor from './SessionMonitor';
 import BanManagement from './BanManagement';
@@ -790,6 +792,7 @@ const AdminSettingsPage = () => {
 };
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [geo, setGeo] = useState(null);
   const [activeAlerts, setActiveAlerts] = useState([]);
@@ -936,6 +939,7 @@ const AdminDashboard = () => {
     { label: 'Analytics', path: '/admin/dashboard/analytics', icon: TrendingUp },
     { label: 'Users', path: '/admin/dashboard/users', icon: Users },
     { label: 'Outbreak Monitor', path: '/admin/dashboard/outbreak', icon: Activity },
+    { label: t('outbreakHistory.title', 'Outbreak History'), path: '/admin/dashboard/outbreak-history', icon: Archive },
     { label: 'Broadcast', path: '/admin/dashboard/broadcast', icon: Radio },
     { label: 'Session Monitor', path: '/admin/dashboard/sessions', icon: Monitor },
     { label: 'Ban Management', path: '/admin/dashboard/bans', icon: ShieldAlert },
@@ -965,6 +969,7 @@ const AdminDashboard = () => {
               <Route path="/dashboard/identity" element={<Navigate to="/admin/dashboard/users" replace />} />
               <Route path="/dashboard/alerts" element={<Navigate to="/admin/dashboard/outbreak" replace />} />
               <Route path="/dashboard/outbreak" element={<OutbreakMonitor />} />
+              <Route path="/dashboard/outbreak-history" element={<Suspense fallback={<div className="p-6 text-sm text-slate-400" aria-busy="true">{t('outbreakHistory.loading', 'Loading…')}</div>}><OutbreakHistory /></Suspense>} />
               <Route path="/dashboard/broadcast" element={<Broadcast />} />
               <Route path="/dashboard/sessions" element={<SessionMonitor />} />
               <Route path="/dashboard/sessions/:userId" element={<UserAuditProfile />} />

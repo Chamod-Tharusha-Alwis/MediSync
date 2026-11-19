@@ -655,7 +655,9 @@ exports.getOutbreakGrowth = async (req, res) => {
     if (mode === 'simulation' && !await service.canReviewSimulation(req.user)) {
       return res.status(403).json({ error: 'A synthetic reviewer account is required for simulation.' });
     }
-    const data = await service.calculateGrowthMetrics({ windowHours, mode });
+    // Shares an in-flight computation with a concurrent /admin/outbreak/alerts request (no caching after it settles).
+    const coalesce = require('./alertController')._coalesce;
+    const data = await coalesce(`growth:${windowHours}:${mode}`, () => service.calculateGrowthMetrics({ windowHours, mode }));
     res.json({ success: true, ...data });
   } catch (err) {
     res.status(500).json({ error: 'Failed to compute outbreak growth metrics' });

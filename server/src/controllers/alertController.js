@@ -9,6 +9,17 @@ const DEMONSTRATION_LABEL = 'Demonstration alert generated from synthetic seed d
 function labelDemonstrationAlert(alert) {
   return { ...alert, isDemoData: true, isDemonstration: true, syntheticLabel: alert.syntheticLabel || DEMONSTRATION_LABEL };
 }
+// Identical computations requested at the same moment (the admin shell and the monitor both load alerts, and the
+// monitor also loads growth) share one in-flight promise. Nothing is kept after it settles, so data is never stale.
+const inFlight = new Map();
+function coalesce(key, fn) {
+  if (inFlight.has(key)) return inFlight.get(key);
+  const p = Promise.resolve().then(fn);
+  inFlight.set(key, p);
+  p.then(() => inFlight.delete(key), () => inFlight.delete(key));
+  return p;
+}
+exports._coalesce = coalesce;
 function mergeAlerts(primary = [], extra = []) {
   const seen = new Set((primary || []).map(a => String(a._id)));
   return [...(primary || []), ...(extra || []).filter(a => !seen.has(String(a._id)))];
@@ -30,14 +41,22 @@ exports.getActiveAlerts = async (req, res) => {
     if(simulation && !await service.canReviewSimulation(req.user)) return res.status(403).json({error:'Synthetic reviewer required.'});
     // Clinical public delivery remains gated; reviewers see only verified signals.
     if(!reviewer)return res.json({data:[]});
-    const statusFilter = { $in: ['Active', 'Pending'] };
+    const views = require('../services/outbreakViews');
+    if (req.query?.view === 'history') return exports.getAlertHistory(req, res);
+    // Monitor: Pending or Active alerts created in the last 14 days (shared rule in services/outbreakViews.js).
+    const now = new Date();
+    let paging;
+    try { paging = views.parsePaging(req.query || {}); }
+    catch (e) { if (e instanceof views.ViewQueryError) return res.status(400).json({ error: e.message, code: e.code }); throw e; }
+    const monitorWindow = views.monitorCondition(now);
+    const statusFilter = monitorWindow.status;
     // Growth metrics and the last scan do not depend on the alert list: start them now so the round trips overlap.
     // Mongoose queries run only when awaited; Promise.resolve(query) starts each one immediately.
-    const growthPromise = Promise.resolve().then(() => service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' })).catch(() => null);
+    const growthPromise = coalesce(`growth:72:${simulation ? 'simulation' : 'real'}`, () => service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' })).catch(() => null);
     const lastScanPromise = Promise.resolve().then(() => service.getLastScan(simulation ? 'simulation' : 'real'));
     lastScanPromise.catch(() => {}); // a rejection is still raised where it is awaited below
-    let alerts = Promise.resolve(OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter}).select('-sourceConsultationIds').sort({createdAt:-1}).lean());
-    const demoPromise = simulation ? null : Promise.resolve(OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean());
+    let alerts = Promise.resolve(OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter,createdAt:monitorWindow.createdAt}).select('-sourceConsultationIds').sort({createdAt:-1}).lean());
+    const demoPromise = simulation ? null : Promise.resolve(OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter, createdAt: monitorWindow.createdAt }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean());
     if (demoPromise) demoPromise.catch(() => {});
     alerts = await alerts;
     if (!simulation) {
@@ -46,6 +65,10 @@ exports.getActiveAlerts = async (req, res) => {
       const demo = await demoPromise;
       alerts = mergeAlerts(alerts, (demo || []).map(labelDemonstrationAlert));
     }
+    // Newest first across both lists, then one page (default 20). Only the page is enriched with 72-hour numbers.
+    alerts = (alerts || []).sort((x, y) => +new Date(y.createdAt || 0) - +new Date(x.createdAt || 0));
+    const total = alerts.length;
+    alerts = alerts.slice(paging.skip, paging.skip + paging.limit);
     const growthData = await growthPromise;
     let enriched = (alerts || []).map(alert => service.enrichAlertWith72h(alert, growthData));
     // Previous / actual / projected 72h from verified consultations. Stored snapshots are shown as stored;
@@ -56,14 +79,50 @@ exports.getActiveAlerts = async (req, res) => {
       enriched = await Promise.all(enriched.map(async alert => {
         if (alert.projection72h) return { ...alert, alert72h: projection.alertView(alert) };
         const asOf = alert.createdAt ? new Date(alert.createdAt) : new Date();
-        if (!cases) cases = (await service.loadCases({ mode: simulation ? 'simulation' : 'real', lookbackDays: 70 })).cases;
+        if (!cases) cases = (await coalesce(`cases:70:${simulation ? 'simulation' : 'real'}`, () => service.loadCases({ mode: simulation ? 'simulation' : 'real', lookbackDays: 70 }))).cases;
         return { ...alert, alert72h: projection.alertView(alert, projection.computeAlertNumbers(alert, cases, { asOf, lookbackStart: +asOf - 63 * 86400000 })) };
       }));
     } catch (_) {}
     const lastScan = await lastScanPromise;
-    res.json({ data: enriched, lastScan });
+    res.json({ data: enriched, lastScan, pagination: { page: paging.page, limit: paging.limit, total, pages: Math.max(1, Math.ceil(total / paging.limit)) },
+      window: { monitorDays: views.MONITOR_WINDOW_DAYS, cutoff: views.monitorCutoff(now).toISOString() } });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
+  }
+};
+
+// Outbreak History (admin only): GET /api/admin/outbreak/alerts?view=history&page=&limit=&disease=&district=&status=&from=&to=
+// Served by the existing admin-only alerts route (server/tests/testMatrixInventory.test.js pins the API at 228 routes).
+// History = every alert NOT on the Monitor (resolved/dismissed, or older than 14 days). Read-only; nothing is changed.
+// 72-hour figures are the stored snapshot only; when none was stored the client says "not available" (never invented).
+exports.getAlertHistory = async (req, res) => {
+  try {
+    if (!['admin', 'super_admin', 'superadmin'].includes(req.user?.role)) return res.status(403).json({ error: 'Administrator review required.', code: 'FORBIDDEN' });
+    const service = require('../services/surveillanceService');
+    const views = require('../services/outbreakViews');
+    let q;
+    try { q = views.parseHistoryQuery(req.query || {}, { districts: service.DISTRICTS }); }
+    catch (e) { if (e instanceof views.ViewQueryError) return res.status(400).json({ error: e.message, code: e.code }); throw e; }
+    const now = new Date();
+    const provenance = { $or: [{ ...service.realAlertFilter(), syntheticSeedBatch: { $exists: false } }, { isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH }] };
+    const filter = { $and: [{ surveillancePolicy: service.POLICY }, provenance, views.historyCondition(now), views.historyFilterFragment(q)] };
+    const fields = 'disease location district severity status feedbackStatus affectedCount caseCount createdAt updatedAt approvedAt projection72h isDemoData isSynthetic syntheticSeedBatch syntheticLabel';
+    const [rows, total] = await Promise.all([
+      OutbreakAlert.find(filter).select(fields).sort({ createdAt: -1, _id: -1 }).skip(q.skip).limit(q.limit).lean(),
+      OutbreakAlert.countDocuments(filter),
+    ]);
+    const projection = require('../services/alertProjection72h');
+    const data = rows.map(alert => {
+      const out = alert.syntheticSeedBatch === service.VIVA_DEMO_SEED_BATCH ? labelDemonstrationAlert(alert) : { ...alert };
+      out.alert72h = alert.projection72h ? projection.alertView(alert) : null;
+      out.closedAt = ['Resolved', 'Dismissed'].includes(alert.status) ? alert.updatedAt || null : null;
+      out.historyReason = ['Resolved', 'Dismissed'].includes(alert.status) ? 'closed' : 'older_than_14_days';
+      return out;
+    });
+    res.json({ data, pagination: { page: q.page, limit: q.limit, total, pages: Math.max(1, Math.ceil(total / q.limit)) },
+      window: { monitorDays: views.MONITOR_WINDOW_DAYS, cutoff: views.monitorCutoff(now).toISOString() } });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch outbreak history', code: 'HISTORY_UNAVAILABLE' });
   }
 };
 
