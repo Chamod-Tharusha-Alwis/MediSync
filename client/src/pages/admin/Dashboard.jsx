@@ -23,8 +23,6 @@ import { getLocalizedMessage, formatFriendlyDisease } from '../../utils/localize
 
 // Import admin pages
 import OutbreakMonitor from './OutbreakMonitor';
-// Loaded on demand like the other role pages (React.lazy): the history table is not needed on first paint.
-const OutbreakHistory = React.lazy(() => import('./OutbreakHistory'));
 import Broadcast from './Broadcast';
 import SessionMonitor from './SessionMonitor';
 import BanManagement from './BanManagement';
@@ -33,6 +31,9 @@ import ManageAdmins from './ManageAdmins';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SupportTicketsRoster from './SupportTicketsRoster';
 import UserAuditProfile from './UserAuditProfile';
+
+// Loaded on demand like the other role pages (React.lazy): the history table is not needed on first paint.
+const OutbreakHistory = React.lazy(() => import('./OutbreakHistory'));
 
 const timeAgo = (dateString) => {
   if (!dateString) return '';
