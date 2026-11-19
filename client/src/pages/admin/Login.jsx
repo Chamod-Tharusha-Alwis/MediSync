@@ -1,6 +1,7 @@
 import { useTranslation } from '../../i18n/LanguageContext';
 import useSubmissionLock from '../../hooks/useSubmissionLock';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { wakeServices } from '../../utils/wakeServices';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ShieldAlert, Loader2 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
@@ -11,6 +12,8 @@ import LoginOtpStep from '../../components/common/LoginOtpStep';
 import PasswordInput from '../../components/common/PasswordInput';
 
 const AdminLogin = () => {
+  // Start waking the free-tier API (and the ML service, when configured) while the administrator signs in.
+  useEffect(() => { wakeServices(); }, []);
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

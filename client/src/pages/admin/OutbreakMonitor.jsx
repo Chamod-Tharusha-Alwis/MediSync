@@ -257,6 +257,14 @@ const OutbreakMonitor = () => {
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [surveillanceLevel, setSurveillanceLevel] = useState('district'); // 'district' | 'province' | 'island'
   const [growthData, setGrowthData] = useState(null);
+  const [growthLoading, setGrowthLoading] = useState(true);
+  const [alertPaging, setAlertPaging] = useState(null); // { page, limit, total, pages } from the server (default 20 per page)
+  const loadAlertPage = async (page) => {
+    try {
+      const res = await api.get(`/admin/outbreak/alerts?page=${encodeURIComponent(page)}`);
+      if (Array.isArray(res.data?.data)) { setAlerts(res.data.data); setAlertPaging(res.data.pagination || null); setAlertsError(false); }
+    } catch (_) { setAlertsError(true); }
+  };
   const [growthView, setGrowthView] = useState('district'); // 'district' | 'island'
   const [lastScan,   setLastScan]   = useState(null);
   const [suppressedOpen, setSuppressedOpen] = useState(false);
@@ -309,26 +317,31 @@ const OutbreakMonitor = () => {
       // The ML status probe can take ~20 s while the ML engine wakes up (measured offline). The alert list
       // no longer waits for it: alerts render as soon as they arrive and the status card updates later.
       const statusPromise = api.get('/admin/ml-status').then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
-      const [a, g, sc] = await Promise.allSettled([
-        api.get('/admin/outbreak/alerts'),
-        api.get('/admin/outbreak/growth?window=72h'),
-        api.get('/admin/outbreak/last-scan'),
-      ]);
+      const settle = p => p.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+      // Same three requests, started together. The alert table renders as soon as the alert list arrives; the 72-hour
+      // growth table, district tiers and last-scan line fill in when their own requests finish.
+      const alertsPromise = settle(api.get('/admin/outbreak/alerts'));
+      const growthPromise = settle(api.get('/admin/outbreak/growth?window=72h'));
+      const scanPromise = settle(api.get('/admin/outbreak/last-scan'));
+      const a = await alertsPromise;
       if (!mounted) return;
       setAlertsError(a.status !== 'fulfilled');
       if (a.status === 'fulfilled' && Array.isArray(a.value?.data?.data)) {
         setAlerts(a.value.data.data);
+        setAlertPaging(a.value.data.pagination || null);
         setAlertsLoaded(true);
       }
-      if (a.status === 'fulfilled' && a.value?.data?.lastScan) {
-        setLastScan(a.value.data.lastScan);
-      } else if (sc.status === 'fulfilled' && sc.value?.data?.lastScan) {
+      if (a.status === 'fulfilled' && a.value?.data?.lastScan) setLastScan(a.value.data.lastScan);
+      setLoading(false);
+      const [g, sc] = await Promise.all([growthPromise, scanPromise]);
+      if (!mounted) return;
+      if (!(a.status === 'fulfilled' && a.value?.data?.lastScan) && sc.status === 'fulfilled' && sc.value?.data?.lastScan) {
         setLastScan(sc.value.data.lastScan);
       }
       if (g.status === 'fulfilled' && g.value?.data?.districts) {
         setGrowthData(g.value.data);
       }
-      setLoading(false);
+      setGrowthLoading(false);
 
       const s = await statusPromise;
       if (!mounted) return;
@@ -1005,6 +1018,10 @@ const OutbreakMonitor = () => {
               * Verified MediSync cases (lower bound; only consultations recorded in MediSync are counted). Department of Census and Statistics (Census 2012).
             </div>
           </div>
+        ) : growthLoading ? (
+          <div className="p-4 space-y-2" data-testid="growth-loading" aria-busy="true">
+            {[0, 1, 2].map(i => <div key={i} className="h-4 rounded bg-slate-800/70 animate-pulse" />)}
+          </div>
         ) : (
           <div className="p-6 text-center text-slate-500 text-xs">
             No active or pending outbreak alerts found in current 72-hour growth telemetry.
@@ -1227,6 +1244,19 @@ const OutbreakMonitor = () => {
                 })}
               </tbody>
             </table>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-white/5 text-xs text-slate-400" data-testid="monitor-paging">
+              <span>
+                {t('outbreakHistory.monitorScope', 'Pending and active alerts from the last 14 days. Closed or older alerts are in')}{' '}
+                <a href="/admin/dashboard/outbreak-history" className="underline text-sky-300">{t('outbreakHistory.title', 'Outbreak History')}</a>.
+              </span>
+              {alertPaging && alertPaging.pages > 1 && (
+                <span className="inline-flex items-center gap-2">
+                  <button type="button" className="px-2 py-1 rounded border border-white/10 disabled:opacity-40" disabled={alertPaging.page <= 1} onClick={() => loadAlertPage(alertPaging.page - 1)}>{t('outbreakHistory.previous', 'Previous')}</button>
+                  <span>{t('outbreakHistory.pageOf', 'Page {page} of {pages}').replace('{page}', alertPaging.page).replace('{pages}', alertPaging.pages)}</span>
+                  <button type="button" className="px-2 py-1 rounded border border-white/10 disabled:opacity-40" disabled={alertPaging.page >= alertPaging.pages} onClick={() => loadAlertPage(alertPaging.page + 1)}>{t('outbreakHistory.next', 'Next')}</button>
+                </span>
+              )}
+            </div>
           </div>
         ) : (
           <div className="p-12 text-center text-slate-500 select-none">

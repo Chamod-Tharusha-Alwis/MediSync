@@ -923,5 +923,42 @@ export const en = {
     "noSearchResults": "No matching diseases found.",
     "newCluster": "new",
     "honestyFootnote": "Metrics reflect verified MediSync clinical cases only (lower bound)."
+  },
+  "outbreakHistory": {
+    "title": "Outbreak History",
+    "subtitle": "Alerts that were resolved or dismissed, and any alert older than 14 days. Read-only; nothing is deleted.",
+    "filters": "Filters",
+    "disease": "Disease (ICD code)",
+    "district": "District",
+    "all": "All",
+    "statusLabel": "Final status",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply filters",
+    "clear": "Clear",
+    "error": "Outbreak history could not be loaded.",
+    "retry": "Retry",
+    "empty": "No past outbreaks yet",
+    "colDisease": "Disease vector",
+    "colLocation": "Location",
+    "col72h": "Previous / actual / projected 72 h",
+    "colSeverity": "Severity",
+    "colStatus": "Final status",
+    "colClosed": "Closed (last update)",
+    "colTimestamp": "Detected",
+    "no72h": "Not available (no 72-hour snapshot was stored)",
+    "aged": "Older than 14 days",
+    "total": "{total} alerts",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}",
+    "loading": "Loading…",
+    "monitorScope": "Pending and active alerts from the last 14 days. Closed or older alerts are in",
+    "status": {
+      "Resolved": "Resolved",
+      "Dismissed": "Dismissed",
+      "Pending": "Pending",
+      "Active": "Active"
+    }
   }
 };
