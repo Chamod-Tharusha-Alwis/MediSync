@@ -759,6 +759,7 @@ function enrichAlertWith72h(alert, growthData) {
 
 module.exports = {
   POLICY,
+  DISTRICTS,
   VIVA_DEMO_SEED_BATCH,
   DEMONSTRATION_ALERT_LABEL,
   alertProvenance,

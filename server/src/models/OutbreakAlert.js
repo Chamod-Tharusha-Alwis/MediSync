@@ -89,6 +89,11 @@ const outbreakAlertSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+// Outbreak Monitor / History list queries: filter on policy + status, newest first (createdAt). The index is built
+// by MongoDB on the first deploy (Mongoose autoIndex); existing alert documents are not modified.
+outbreakAlertSchema.index({ surveillancePolicy: 1, status: 1, createdAt: -1 });
+outbreakAlertSchema.index({ surveillancePolicy: 1, createdAt: -1 });
+
 outbreakAlertSchema.post('save', async function(doc) {
   try {
     const { notifyOutbreakAlert } = require('../services/notificationService');
