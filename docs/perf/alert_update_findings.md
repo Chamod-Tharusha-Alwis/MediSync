@@ -70,8 +70,8 @@ Monitor, and because its alert is still active, later scans update that hidden a
 seen only in History. A middle way is to keep a still-updating active alert on the Monitor. Not switched; your decision.
 
 ## 7. Points that need your decision
-1. **Approval email numbers.** `outbreakDetailedDelivery.numbersForAlert` uses the first snapshot and the creation date. For an updated alert the Monitor shows the newest
-   72-hour figures, but the approval email still shows those of the first detection. The email code was **not** changed (rule 3).
+1. **Approval email numbers. Decided by the owner on 2026-11-25: use the newest.** `outbreakDetailedDelivery.numbersForAlert` now uses `latest72h` and its date for an updated alert, so
+   the email and the Monitor agree. An alert that was never updated is unchanged. The "Alert date" line is still the first detection. Who receives an email, and when, is unchanged.
 2. **Review reminder.** The existing reminder is separate from the scan. A pending alert that rises from Moderate to High gets its first review reminder (bell
    and email to administrators) after the scan, **in addition to** the one escalation notification. A pending High alert that never had a reminder can
    also get it after a same-severity scan. Both are existing behaviour; not changed.
