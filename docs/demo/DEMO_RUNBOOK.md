@@ -95,8 +95,8 @@ offline proof showed that the engine adds a Hambantota typhoid alert (Section 4)
 
 6. Check the district map: all 25 districts should show activity, with Colombo and Gampaha the
    busiest.
-7. The scheduled scan (`server/src/utils/cronJobs.js`) may also run and create the same alerts. That
-   is expected.
+7. The scheduled scan (`server/src/utils/cronJobs.js`) may also run. It creates the alerts, or
+   updates the active ones if they already exist. That is expected.
 
 ## 3. The two-minute viva demo (Wednesday 18 Nov)
 

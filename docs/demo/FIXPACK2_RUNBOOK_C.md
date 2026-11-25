@@ -37,8 +37,8 @@ No new API routes were added: `server/tests/testMatrixInventory.test.js:46` fixe
 
 **Could a failed trigger still have completed?** Yes. Node does not stop a scan when the browser gives up,
 so a trigger that showed the CORS error may still have created or updated alerts. Check the alert list
-and "Last scan" before triggering again. Re-running is safe: alert ids are deterministic, so a repeat scan
-updates the same alerts.
+and "Last scan" before triggering again. Re-running is safe: a repeat scan with the
+same data changes nothing, and with new cases it updates the active alert (`docs/perf/alert_update_findings.md`).
 
 ## C2: test email accepted but not received
 

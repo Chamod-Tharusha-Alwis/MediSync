@@ -227,7 +227,7 @@ MediSync's server catalogue is the clinical formulary below. It does not hold 20
 
 ### Q34: What prevents duplicate alerts during automated outbreak scans?
 **Answer**:  
-Outbreak alert creation uses an idempotent query check: before creating a `Pending` alert for a disease in a district, the surveillance service queries for any existing alert for that disease and district in `Pending` or `Active` status created within the current epidemiological window. If an alert already exists, the engine logs `ALERT_ALREADY_EXISTS` and skips duplicate insertion.
+A scan looks for an active alert (`Pending` or `Active`) with the same disease and district. If one exists it is **updated** (counts, severity, last-updated time and a history entry); identical data changes nothing. Otherwise one alert is created. Two scans at the same moment cannot create two, because the new alert's ID is computed from the disease, the district and its closed alerts, and `_id` is unique. A resolved or dismissed alert is never changed; a new one is created only when a new case has arrived. The detector rule itself did not change (`server/src/services/alertUpsert.js`, `docs/perf/alert_update_findings.md`).
 
 ### Q35: If given a budget to deploy MediSync in a Sri Lankan district tomorrow, what are the top 3 blockers?
 **Answer**:  
