@@ -1,0 +1,10 @@
+2026-11-25 12:38:47 +0530
+COMMAND: CI=true npm run build (in client/)
+
+> client@0.1.0 build
+> node scripts/buildClinical.cjs
+
+{"entry":"src/index.js","application":"src/App.js","modules":135,"demoImported":false,"profile":"clinical-production"}
+Creating an optimized production build...
+EXIT=0
+Compiled successfully.
