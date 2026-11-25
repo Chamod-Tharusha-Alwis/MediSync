@@ -3,11 +3,13 @@
 **Status on 2026-11-25: NO seeding run has been made on any real database.** Only the in-memory proof was run
 (`seeding_proof_console.txt`, `seeding_proof_result.json`). `RUN_<n>.md` will be written after each run you approve.
 
-## Decision needed before Run 1 (conflict in the requirements)
+## Decision on the requirements conflict
 The detector and the public statistics read cases **only** from the `consultations` collection. There is no separate
-case-count collection. So "do not touch consultations" and "the Monitor shows planted outbreaks" cannot both hold.
-- The tool never changes or deletes an existing consultation. It would **insert new, labelled synthetic** rows.
-- It refuses to write unless `--allow-synthetic-consultations` is given. If you do not accept this, do not run it.
+case-count collection, so "do not touch consultations" and "the Monitor shows planted outbreaks" could not both hold.
+**Owner decision, 2026-11-25: inserting new, labelled synthetic rows is allowed.** This is not an approval of any run:
+each write still waits for the owner's approval after its dry run.
+- The tool never changes or deletes an existing consultation. It **inserts new, labelled synthetic** rows.
+- It refuses to write unless `--allow-synthetic-consultations` is given.
 - The new rows contain no name, NIC, diagnosis text, notes, doctor, hospital or encrypted field.
 
 ## What you must know
