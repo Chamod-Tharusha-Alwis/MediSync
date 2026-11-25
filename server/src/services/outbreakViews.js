@@ -2,7 +2,8 @@
 /**
  * Outbreak Monitor vs Outbreak History: ONE shared rule, so the two pages can never overlap or leave a gap.
  *
- *   Monitor  = status is Pending or Active  AND  createdAt >= now - 14 days
+ *   Monitor  = status is Pending or Active  AND  first detected >= now - 14 days
+ *              (firstDetectedAt; createdAt for alerts saved before that field existed)
  *   History  = NOT Monitor   (Resolved or Dismissed at any age, or any alert older than 14 days, or missing data)
  *
  * The cut-off is an instant (now minus 14 x 24 hours). Instants have no time zone, so the result is the same in Sri
@@ -18,20 +19,29 @@ const MAX_PAGE = 10000;
 
 const monitorCutoff = (now = new Date()) => new Date(+new Date(now) - MONITOR_WINDOW_DAYS * DAY_MS);
 
-/** Mongo condition for alerts that belong on the Monitor. */
-function monitorCondition(now = new Date()) {
-  return { status: { $in: [...MONITOR_STATUSES] }, createdAt: { $gte: monitorCutoff(now) } };
+/**
+ * Mongo condition for alerts that belong on the Monitor. { detectedAt: true } uses firstDetectedAt with createdAt as the
+ * fallback (what the pages use); without it the condition is on createdAt only. Same cut-off in both forms.
+ */
+function monitorCondition(now = new Date(), { detectedAt = false } = {}) {
+  const status = { $in: [...MONITOR_STATUSES] }, recent = { $gte: monitorCutoff(now) };
+  if (!detectedAt) return { status, createdAt: recent };
+  return { status, $or: [{ firstDetectedAt: recent }, { firstDetectedAt: null, createdAt: recent }] };
 }
 
 /** Mongo condition for History: the exact complement of the Monitor condition. */
-function historyCondition(now = new Date()) {
-  return { $nor: [monitorCondition(now)] };
+function historyCondition(now = new Date(), options) {
+  return { $nor: [monitorCondition(now, options)] };
 }
+
+/** When an alert was first detected: firstDetectedAt, or createdAt for older alerts. */
+const firstDetected = alert => (alert && (alert.firstDetectedAt || alert.createdAt)) || null;
 
 /** Same rule in plain JavaScript (used by tests and for labelling). */
 function isMonitorAlert(alert, now = new Date()) {
-  const created = alert && alert.createdAt ? +new Date(alert.createdAt) : NaN;
-  return Boolean(alert) && MONITOR_STATUSES.includes(alert.status) && Number.isFinite(created) && created >= +monitorCutoff(now);
+  const first = firstDetected(alert);
+  const detected = first ? +new Date(first) : NaN;
+  return Boolean(alert) && MONITOR_STATUSES.includes(alert.status) && Number.isFinite(detected) && detected >= +monitorCutoff(now);
 }
 
 class ViewQueryError extends Error {
@@ -103,6 +113,6 @@ function historyFilterFragment({ filters = {}, from = null, to = null } = {}) {
 
 module.exports = {
   MONITOR_WINDOW_DAYS, MONITOR_STATUSES, ALL_STATUSES, DEFAULT_LIMIT, MAX_LIMIT,
-  monitorCutoff, monitorCondition, historyCondition, isMonitorAlert,
+  monitorCutoff, monitorCondition, historyCondition, isMonitorAlert, firstDetected,
   parsePaging, parseHistoryQuery, historyFilterFragment, ViewQueryError,
 };

@@ -163,5 +163,14 @@ function alertView(alert, liveNumbers) {
   };
 }
 
-module.exports = { DAY, H72, MIN_HISTORY_WINDOWS, QUANTILES, METHOD, METHOD_VERSION, CAVEAT, HELP_TEXT, DATA_NOTE,
+/**
+ * Figures for an alert that a later scan may have updated: the newest stored figures, plus the first snapshot (and its
+ * checked outcome) when it is a different one. The outcome always belongs to the first snapshot.
+ */
+function alertViews(alert) {
+  if (!alert.latest72h) return { alert72h: alertView(alert) };
+  return { alert72h: alertView({ projection72h: alert.latest72h }), ...(alert.projection72h ? { alert72hFirst: alertView(alert) } : {}) };
+}
+
+module.exports = { alertViews, DAY, H72, MIN_HISTORY_WINDOWS, QUANTILES, METHOD, METHOD_VERSION, CAVEAT, HELP_TEXT, DATA_NOTE,
   quantile, projectFromPeriods, computeAlertNumbers, populationFigures, buildSnapshot, outcomeFor, recordSnapshotsAndOutcomes, alertView };
