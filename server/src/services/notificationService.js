@@ -57,9 +57,11 @@ async function getUnreadCount(userId) {
  * @param {Object} alert - The OutbreakAlert document or object
  * @param {Object} [opts]
  * @param {import('socket.io').Server} [opts.io] - Optional Socket.io instance
+ * @param {{key:string,from:string,to:string}} [opts.escalation] - A scan raised the severity of an existing alert: one extra
+ *   notification, stored under its own reference so that the "already notified" check does not hide it
  * @returns {Promise<{ createdCount: number, recipientsCount: number, alertId: string }>}
  */
-async function notifyOutbreakAlert(alert, { io } = {}) {
+async function notifyOutbreakAlert(alert, { io, escalation = null } = {}) {
   if (!alert) return { createdCount: 0, recipientsCount: 0, alertId: null };
 
   const alertId = alert._id ? String(alert._id) : (alert.id ? String(alert.id) : null);
@@ -67,6 +69,7 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
   const location = alert.location || alert.district || 'Nationwide';
   const severity = alert.severity || 'Moderate';
   const isSimulation = Boolean(alert.isSimulation);
+  const referenceId = alertId && escalation ? `${alertId}:${escalation.key}` : alertId;
 
   let Doctor, Hospital, Admin;
   try { Doctor = require('../models/Doctor'); } catch (_) {}
@@ -94,7 +97,7 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
     try {
       const existing = await Notification.find({
         type: 'outbreak_alert',
-        referenceId: alertId
+        referenceId
       }, { userId: 1 }).lean();
       if (Array.isArray(existing)) {
         existingUserIds = new Set(existing.map(e => String(e.userId)));
@@ -103,7 +106,7 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
   }
 
   const titlePrefix = isSimulation ? '[SIMULATION] ' : '';
-  const title = `${titlePrefix}Outbreak Alert: ${disease} (${location})`;
+  const title = `${titlePrefix}Outbreak Alert: ${disease} (${location})${escalation ? ` - severity raised: ${escalation.from} to ${escalation.to}` : ''}`;
 
   // Plain language trilingual alert message (U20)
   const getTrilingualPlainMessage = (role) => {
@@ -132,7 +135,7 @@ async function notifyOutbreakAlert(alert, { io } = {}) {
         ? alert.message
         : getTrilingualPlainMessage(r.role),
       type: 'outbreak_alert',
-      referenceId: alertId,
+      referenceId,
       actionLink: r.actionLink,
       read: false,
       createdAt: new Date()

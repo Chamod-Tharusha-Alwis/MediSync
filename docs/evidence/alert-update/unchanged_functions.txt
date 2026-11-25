@@ -1,0 +1,16 @@
+2026-11-25 12:41:01 +0530
+Detector, severity cut-off and projection functions compared with origin/main (f52570c):
+server/src/services/surveillanceService.js evaluateOutbreakCriteria: identical to main
+server/src/services/surveillanceService.js getSeverityFromZ: identical to main
+server/src/services/surveillanceService.js getColomboMidnight: identical to main
+server/src/services/surveillanceService.js selectCases: identical to main
+server/src/services/surveillanceService.js loadCases: identical to main
+server/src/services/surveillanceService.js computeGrowthFromCases: identical to main
+server/src/services/surveillanceService.js alertProvenance: identical to main
+server/src/services/alertProjection72h.js quantile: identical to main
+server/src/services/alertProjection72h.js projectFromPeriods: identical to main
+server/src/services/alertProjection72h.js computeAlertNumbers: identical to main
+server/src/services/alertProjection72h.js buildSnapshot: identical to main
+server/src/services/alertProjection72h.js outcomeFor: identical to main
+server/src/services/alertProjection72h.js recordSnapshotsAndOutcomes: identical to main
+server/src/services/alertProjection72h.js alertView: identical to main

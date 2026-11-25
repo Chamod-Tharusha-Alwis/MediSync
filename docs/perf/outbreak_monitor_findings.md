@@ -146,3 +146,6 @@ the alert collection is small enough that the change below already removes its c
 3. Repeat once warm.
 
 Last verified: 2026-11-19 at commit eabf4d4.
+
+Update (branch `feat/alert-update-on-scan`, 2026-11-25): the 14-day rule now uses `firstDetectedAt`, with `createdAt` as the fallback, and a scan updates an
+active alert instead of adding another. See `docs/perf/alert_update_findings.md`.

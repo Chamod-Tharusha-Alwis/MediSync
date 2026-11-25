@@ -84,7 +84,16 @@ const outbreakAlertSchema = new mongoose.Schema({
   publicAuthorityNotice: {
     type: String,
     default: null
-  }
+  },
+  // Written by the scan (services/alertUpsert.js). No defaults: alerts saved before these fields existed keep working,
+  // with createdAt standing in for firstDetectedAt.
+  alertLevel: { type: String },
+  firstDetectedAt: { type: Date },
+  lastUpdatedAt: { type: Date },
+  updateCount: { type: Number },
+  updateHistory: { type: [mongoose.Schema.Types.Mixed], default: undefined },
+  latest72h: { type: mongoose.Schema.Types.Mixed },
+  lastMeasured: { type: mongoose.Schema.Types.Mixed }
 }, { 
   timestamps: true 
 });

@@ -1,0 +1,30 @@
+2026-11-25 12:41:02 +0530
+COMMAND (in server/): npx jest --rootDir . --verbose tests/alertUpdateOnScan.test.js tests/outbreakHistory.test.js tests/seedDemoTopup.test.js
+  console.log
+    [EMAIL SERVICE INIT] Primary: Resend HTTPS:443 (Key Present: false) | Backup: Brevo HTTPS:443 (Enabled: true, Configured: false, DailyCap: 300)
+
+      at Object.log (src/utils/emailService.js:294:9)
+
+Test Suites: 3 passed, 3 total
+Tests:       62 passed, 62 total
+Snapshots:   0 total
+Time:        12.644 s, estimated 17 s
+Ran all test suites matching tests/alertUpdateOnScan.test.js|tests/outbreakHistory.test.js|tests/seedDemoTopup.test.js.
+COMMAND (in client/): npx jest -c master.offline.jest.cjs --verbose src/__master_offline__/alert-updates.test.jsx
+PASS src/__master_offline__/alert-updates.test.jsx
+  √ last updated: Sri Lanka time, number of updates, and the added cases of the latest update (23 ms)
+  √ no "+X" when the count did not rise or is unknown; singular label for one update (4 ms)
+  √ an old alert without the new fields shows createdAt as first detected and a dash for the rest (1 ms)
+  √ timeline: newest first, before and after, who started it, projection label, first detection last (5 ms)
+  √ timeline: lower window note, scheduled scan, dashes for missing values (2 ms)
+  √ timeline empty state (1 ms)
+  √ History: both columns, details open the timeline; old rows still render (62 ms)
+  √ History: error and empty states are unchanged (43 ms)
+  √ Monitor: both columns, the updated label and the timeline in Details (65 ms)
+  √ labels exist in English, Sinhala and Tamil with the same keys and placeholders (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        1.346 s
+Ran all test suites matching /src\\__master_offline__\\alert-updates.test.jsx/i.

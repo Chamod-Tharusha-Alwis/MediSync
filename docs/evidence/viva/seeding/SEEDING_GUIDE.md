@@ -14,7 +14,8 @@ case-count collection. So "do not touch consultations" and "the Monitor shows pl
 1. **The public statistics and activity pages will not change.** `publicHealthStats.js` and `publicConsultationActivity.js` exclude synthetic
    rows by design (the proof confirmed the output was identical). On the public page, only an alert that an administrator
    **approves** appears, labelled as a demonstration. So there is nothing to refresh for those pages; `--flush-cache` exists anyway.
-2. **Every run can add new Pending alerts for the same outbreak.** The alert ID is a hash of all source rows in the 63-day
+2. *(True for the code deployed on 2026-11-25. Once `feat/alert-update-on-scan` is merged and deployed, a later scan updates the active alert
+   instead; duplicates made before that stay until you resolve them.)* **Every run can add new Pending alerts for the same outbreak.** The alert ID is a hash of all source rows in the 63-day
    bucket, so after new cases arrive the next scan creates a new alert and the old one stays Pending. Earlier notes that say
    "a repeated scan updates the same alert" are true only when no new case arrived. Resolve the older ones before the viva.
 3. **A real scan notifies users in the app.** The tool does not scan. It prints a read-only preview with the real rule. To create

@@ -1,0 +1,17 @@
+2026-11-25 12:41:01 +0530
+docs/release/PROTECTED_HASHES.json against the worktree (SHA-256) and main (git blob)
+server/src/middleware/auth.js 92e99e0afded8de0 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/src/controllers/doctorController.js 919129116095dc83 ledger match: ['as on disk'] | git blob main == HEAD: True
+ml-engine/app.py 3b51e3fde149146d ledger match: ['as on disk'] | git blob main == HEAD: True
+ml-engine/evaluate_symptom_model.py 6999cf2984b341b7 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+client/src/components/SymptomTagInput.jsx 1a9fce8726f9cc8a ledger match: ['as on disk', 'CRLF'] | git blob main == HEAD: True
+server/tests/ir04BackendIntegration.test.js e40d7c7bf993d3cd ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/tests/patientProfileOwnedIntegration.test.js 7335e2a5190d740d ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/tests/prescriptionDurationOwnedIntegration.test.js 562ba59f307e2081 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/tests/lab.test.js 227e2faf5424e53f ledger match: ['as on disk', 'CRLF'] | git blob main == HEAD: True
+server/tests/universityDemoSeedVerify.test.js fc472f5707f96b25 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+client/tests/ir04-isolated-five-role-e2e.spec.js 496dbcc2337f2cc4 ledger match: ['as on disk'] | git blob main == HEAD: True
+server/src/config/dbGuard.js 1b62d44cd4e11c26 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/src/models/Consultation.js 3538ea856a26def8 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/src/models/Patient.js 14b60b7c198df9f9 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True
+server/src/utils/versionedEncryption.js 5dd15b2e05c12490 ledger match: ['as on disk', 'LF'] | git blob main == HEAD: True

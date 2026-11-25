@@ -77,7 +77,7 @@ async function loadCases(options) {
   } }).toArray();
   return selectCases(docs, {...options,now,lookbackDays});
 }
-async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
+async function runAnalysis({mode='real', now=new Date(), io=null, actor=null} = {}) {
   if (!['real','simulation'].includes(mode)) throw new Error('Invalid surveillance mode');
   const selection = await loadCases({mode,now,lookbackDays:63});
   const criteriaResults = evaluateOutbreakCriteria({ cases: selection.cases, now, baselineDays: 56, level: 'district' });
@@ -106,69 +106,55 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
   const OutbreakAlert=require('../models/OutbreakAlert');
   const alertMap = new Map();
 
+  // Saving: an active alert for the same disease and district is updated, otherwise one is created (services/alertUpsert.js).
+  // Notifications: a new alert as before; an updated alert only when its severity rises; nothing otherwise.
+  const alertUpsert = require('./alertUpsert');
+  const projection72h = require('./alertProjection72h');
+  const triggeredBy = actor ? 'admin_manual' : io ? 'service' : 'scheduled'; // who asked for this scan (alert history and audit)
+  summary.saved = { created: 0, updated: 0, unchanged: 0, closed: 0 };
+  const newAlertIds = new Set();
+  const saveSignal = async (signalData, provenance) => {
+    const snapshot72h = projection72h.buildSnapshot({ disease: signalData.disease, location: signalData.location }, selection.cases, { asOf: now, lookbackStart: +now - 63 * DAY });
+    delete snapshot72h.alertId;
+    const signal = { ...signalData, surveillancePolicy: POLICY, mode, isSimulation: provenance.isSimulation, flags: demoFlags(provenance), snapshot72h, triggeredBy, actor };
+    const outcome = await alertUpsert.saveScanAlert(OutbreakAlert, signal);
+    summary.saved[outcome.action]++;
+    const alertData = { disease: signal.disease, location: signal.location, district: signal.location, affectedCount: signal.caseCount, caseCount: signal.caseCount,
+      severity: signal.severity, status: outcome.alert.status, surveillancePolicy: POLICY, sourceConsultationIds: signal.sourceConsultationIds, ...provenance, message: signal.message };
+    const options = { io };
+    if (outcome.action === 'created') newAlertIds.add(String(outcome.alert._id));
+    if (outcome.action === 'updated') {
+      await alertUpsert.auditUpdate(outcome, signal);
+      if (outcome.escalated) options.escalation = { key: `update-${outcome.alert.updateCount}`, from: outcome.before.severity, to: outcome.after.severity };
+    }
+    const notify = async () => {
+      if (outcome.action !== 'created' && !options.escalation) return;
+      try {
+        const { notifyOutbreakAlert } = require('./notificationService');
+        await notifyOutbreakAlert({ _id: outcome.alert._id, ...alertData }, options);
+      } catch (_) {}
+    };
+    return { outcome, notify };
+  };
+
   // 1. Process statistical criteria signals (Stage D outbreak detector: Gate 1 floor + Gate 2 persistence)
   for (const cr of criteriaResults || []) {
     const b = buckets.get(`${cr.district}|${cr.disease}`);
     if (cr.triggered) {
       const ids = b ? [...b.sourceConsultationIds].sort() : [];
-      const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,cr.district,cr.disease,ids])).digest('hex').slice(0,24));
       const provenance = alertProvenance(mode, b);
-      const alertData = {
-        disease: cr.disease,
-        location: cr.district,
-        district: cr.district,
-        affectedCount: cr.count,
-        caseCount: cr.count,
-        severity: cr.severity,
-        status: 'Pending',
-        surveillancePolicy: POLICY,
-        sourceConsultationIds: ids,
-        ...provenance,
-        message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`,
-        maxZ: cr.maxZ,
-        consecutiveDays: cr.maxConsecutiveDays,
-        dailyCounts: cr.dailyCounts
-      };
-      await OutbreakAlert.updateOne(
-        { _id },
-        {
-          $setOnInsert: {
-            status: 'Pending',
-            surveillancePolicy: POLICY,
-            sourceConsultationIds: ids,
-            isSimulation: provenance.isSimulation,
-          },
-          $set: {
-            // Demonstration provenance is re-asserted on every scan so alerts created before
-            // this fix pick up their labels on the next run. isSimulation is fixed by the id.
-            ...demoFlags(provenance),
-            disease: cr.disease,
-            location: cr.district,
-            district: cr.district,
-            affectedCount: cr.count,
-            caseCount: cr.count,
-            severity: cr.severity,
-            alertLevel: cr.alertLevel,
-            maxZ: cr.maxZ,
-            consecutiveDays: cr.maxConsecutiveDays,
-            dailyCounts: cr.dailyCounts,
-            message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`
-          }
-        },
-        { upsert: true }
-      );
-      let alertDoc = null;
-      try {
-        const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
-        alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
-      } catch (_) {}
+      const { outcome, notify } = await saveSignal({
+        disease: cr.disease, location: cr.district, caseCount: cr.count, severity: cr.severity, alertLevel: cr.alertLevel, sourceConsultationIds: ids, source: 'statistical_rule',
+        message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal (${cr.alertLevel} - max z=${cr.maxZ}, ${cr.maxConsecutiveDays} consecutive days). Requires administrator approval.`
+      }, provenance);
       const baseline7d = cr.baseline7d ?? (cr.baseline ? cr.baseline * 7 : 0);
       const devPct = typeof cr.deviationPct === 'number' && Number.isFinite(cr.deviationPct)
         ? cr.deviationPct
         : (baseline7d > 0 ? Math.round(((cr.count - baseline7d) / baseline7d) * 100) : (cr.count > 0 ? 100 : 0));
 
       const item = {
-        alertId: String(_id),
+        alertId: String(outcome.alert._id),
+        scanAction: outcome.action,
         district: cr.district,
         disease: cr.disease,
         anomaly: true,
@@ -184,7 +170,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
         maxZ: cr.maxZ,
         deviationPct: devPct,
         spike_percentage: devPct,
-        status: alertDoc ? alertDoc.status : 'Pending',
+        status: outcome.alert.status || 'Pending',
         ...provenance,
         sourceConsultationIds: ids,
         consecutiveDays: cr.maxConsecutiveDays,
@@ -193,11 +179,7 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
       const enrichedItem = enrichAlertWith72h(item, growthMetrics);
       alertMap.set(`${cr.district}|${cr.disease}`, enrichedItem);
       summary.results.push(enrichedItem);
-
-      try {
-        const { notifyOutbreakAlert } = require('./notificationService');
-        await notifyOutbreakAlert({ _id, ...alertData }, { io });
-      } catch (_) {}
+      await notify();
     } else {
       summary.suppressed.push({
         district: cr.district,
@@ -216,76 +198,35 @@ async function runAnalysis({mode='real', now=new Date(), io=null} = {}) {
     const key = `${r.district}|${r.disease}`;
     const b = buckets.get(key);
     if (!b || r.anomaly !== true || alertMap.has(key)) continue;
-    const ids = [...b.sourceConsultationIds].sort();
-    const _id = new mongoose.Types.ObjectId(crypto.createHash('sha256').update(JSON.stringify([POLICY,mode,b.district,b.disease,ids])).digest('hex').slice(0,24));
     const sev = ({low:'Low',medium:'Moderate',high:'High',critical:'Critical'})[String(r.severity || r.risk_level).toLowerCase()] || 'Moderate';
     const provenance = alertProvenance(mode, b);
-    const alertData = {
-      disease: b.disease,
-      location: b.district,
-      district: b.district,
-      affectedCount: b.last_7_days_count,
-      caseCount: b.last_7_days_count,
-      severity: sev,
-      status: 'Pending',
-      surveillancePolicy: POLICY,
-      sourceConsultationIds: ids,
-      ...provenance,
+    const { outcome, notify } = await saveSignal({
+      disease: b.disease, location: b.district, caseCount: b.last_7_days_count, severity: sev, sourceConsultationIds: [...b.sourceConsultationIds].sort(), source: 'ml_model',
       message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
-    };
-    await OutbreakAlert.updateOne(
-      { _id },
-      {
-        $setOnInsert: {
-          status: 'Pending',
-          surveillancePolicy: POLICY,
-          sourceConsultationIds: ids,
-          isSimulation: provenance.isSimulation,
-        },
-        $set: {
-          ...demoFlags(provenance),
-          disease: b.disease,
-          location: b.district,
-          district: b.district,
-          affectedCount: b.last_7_days_count,
-          caseCount: b.last_7_days_count,
-          severity: sev,
-          message: `${mode === 'simulation' ? '[SIMULATION] ' : ''}Unreviewed statistical signal. Not a confirmed outbreak.`
-        }
-      },
-      { upsert: true }
-    );
-    let alertDoc = null;
-    try {
-      const query = typeof OutbreakAlert.findById === 'function' ? OutbreakAlert.findById(_id) : null;
-      alertDoc = typeof query?.lean === 'function' ? await query.lean() : (query ? await query : null);
-    } catch (_) {}
+    }, provenance);
     const item = {
       ...r,
-      alertId: String(_id),
-      status: alertDoc ? alertDoc.status : 'Pending',
+      alertId: String(outcome.alert._id),
+      scanAction: outcome.action,
+      status: outcome.alert.status || 'Pending',
       severity: sev,
       ...provenance
     };
     const enrichedItem = enrichAlertWith72h(item, growthMetrics);
     alertMap.set(key, enrichedItem);
     summary.results.push(enrichedItem);
-
-    try {
-      const { notifyOutbreakAlert } = require('./notificationService');
-      await notifyOutbreakAlert({ _id, ...alertData }, { io });
-    } catch (_) {}
+    await notify();
   }
 
   summary.outbreaksDetected = alertMap.size;
   summary.signalsSuppressed = summary.suppressed?.length || 0;
 
-  // 72-hour projection snapshot (write-once) for alerts raised by this scan, and the actual next-72h outcome
+  // 72-hour projection snapshot (write-once) for NEW alerts raised by this scan (an update stores latest72h instead), and the actual next-72h outcome
   // for earlier snapshots whose period this scan now covers. Does not affect detection; failures are ignored.
   try {
     const collection = OutbreakAlert && OutbreakAlert.collection;
     if (collection && typeof collection.updateOne === 'function' && typeof collection.find === 'function') {
-      summary.projection72h = await require('./alertProjection72h').recordSnapshotsAndOutcomes(collection, summary.results, selection.cases, { asOf: now, lookbackStart: +now - 63 * DAY, now: new Date() });
+      summary.projection72h = await require('./alertProjection72h').recordSnapshotsAndOutcomes(collection, summary.results.filter(r => newAlertIds.has(r.alertId)), selection.cases, { asOf: now, lookbackStart: +now - 63 * DAY, now: new Date() });
     }
   } catch (_) {}
 

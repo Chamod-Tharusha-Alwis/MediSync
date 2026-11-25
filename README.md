@@ -35,7 +35,7 @@ MediSync is a secure, full-stack healthcare platform featuring a zero-trust arch
 - **Document Export Guide (DOCX/PDF)**: [`docs/report/export/CONVERSION_GUIDE.md`](docs/report/export/CONVERSION_GUIDE.md)
 
 ## Admin portal: Outbreak Monitor and Outbreak History
-- **Outbreak Monitor** (`/admin/dashboard/outbreak`): alerts that need action, meaning status Pending or Active **and** created in the last **14 days**. Newest first, 20 per page.
+- **Outbreak Monitor** (`/admin/dashboard/outbreak`): alerts that need action, meaning status Pending or Active **and** first detected in the last **14 days**. Newest first, 20 per page.
 - **Outbreak History** (`/admin/dashboard/outbreak-history`): everything else. That is every Resolved or Dismissed alert, and any alert older than 14 days whatever its status. It is read-only, with filters (disease, district, status, date range) and pages. 72-hour figures are shown only when a snapshot was stored, labelled "projection, not a forecast".
 - **The rule:** one shared rule (`server/src/services/outbreakViews.js`) decides both lists, so an alert is always in exactly one of them. Nothing is deleted or changed; it is a filter.
 - **API:** `GET /api/admin/outbreak/alerts?page=&limit=` (Monitor) and `GET /api/admin/outbreak/alerts?view=history&page=&limit=&disease=&district=&status=&from=&to=` (History). Both are admin-only. Invalid parameters return 400 with a code.

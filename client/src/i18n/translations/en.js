@@ -924,6 +924,27 @@ export const en = {
     "newCluster": "new",
     "honestyFootnote": "Metrics reflect verified MediSync clinical cases only (lower bound)."
   },
+  "alertUpdates": {
+    "firstDetected": "First detected",
+    "lastUpdated": "Last updated",
+    "updatedOnce": "Updated 1 time",
+    "updatedTimes": "Updated {n} times",
+    "added": "+{n} cases since last scan",
+    "details": "Details",
+    "hideDetails": "Hide details",
+    "timeline": "Update history",
+    "none": "No updates since first detection.",
+    "cases": "Cases in 7 days",
+    "severity": "Severity",
+    "actual72h": "Actual last 72 hours",
+    "projected72h": "Projected next 72 hours",
+    "caveat": "projection, not a forecast",
+    "outcome": "Actual next 72 hours",
+    "byAdmin": "Scan started by an administrator",
+    "byScheduled": "Scheduled scan",
+    "byService": "Scan requested by a service",
+    "lower": "The 7-day window result was lower; the displayed count was kept at {n}."
+  },
   "outbreakHistory": {
     "title": "Outbreak History",
     "subtitle": "Alerts that were resolved or dismissed, and any alert older than 14 days. Read-only; nothing is deleted.",

@@ -620,7 +620,7 @@ exports.triggerMLDetection = async (req, res) => {
     if (req.body?.action === 'send_reminder') return res.json({ reminder: await remindPendingAlerts({ io, force: true }) });
     // C3: after a scan, a one-time reminder for each new pending High/Critical alert.
     const scanThenRemind = async () => {
-      const result = await service.runAnalysis({ mode, io });
+      const result = await service.runAnalysis({ mode, io, actor: req.user ? { id: req.user.id || req.user._id, role: req.user.role } : null });
       if (mode === 'real') { try { result.reminder = await remindPendingAlerts({ io }); } catch (_) { result.reminder = null; } }
       return result;
     };

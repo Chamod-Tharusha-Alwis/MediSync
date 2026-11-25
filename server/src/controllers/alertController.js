@@ -43,20 +43,19 @@ exports.getActiveAlerts = async (req, res) => {
     if(!reviewer)return res.json({data:[]});
     const views = require('../services/outbreakViews');
     if (req.query?.view === 'history') return exports.getAlertHistory(req, res);
-    // Monitor: Pending or Active alerts created in the last 14 days (shared rule in services/outbreakViews.js).
+    // Monitor: Pending or Active alerts first detected in the last 14 days (shared rule in services/outbreakViews.js).
     const now = new Date();
     let paging;
     try { paging = views.parsePaging(req.query || {}); }
     catch (e) { if (e instanceof views.ViewQueryError) return res.status(400).json({ error: e.message, code: e.code }); throw e; }
-    const monitorWindow = views.monitorCondition(now);
-    const statusFilter = monitorWindow.status;
+    const monitorWindow = { $and: [views.monitorCondition(now, { detectedAt: true })] };
     // Growth metrics and the last scan do not depend on the alert list: start them now so the round trips overlap.
     // Mongoose queries run only when awaited; Promise.resolve(query) starts each one immediately.
     const growthPromise = coalesce(`growth:72:${simulation ? 'simulation' : 'real'}`, () => service.calculateGrowthMetrics({ windowHours: 72, mode: simulation ? 'simulation' : 'real' })).catch(() => null);
     const lastScanPromise = Promise.resolve().then(() => service.getLastScan(simulation ? 'simulation' : 'real'));
     lastScanPromise.catch(() => {}); // a rejection is still raised where it is awaited below
-    let alerts = Promise.resolve(OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),status:statusFilter,createdAt:monitorWindow.createdAt}).select('-sourceConsultationIds').sort({createdAt:-1}).lean());
-    const demoPromise = simulation ? null : Promise.resolve(OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, status: statusFilter, createdAt: monitorWindow.createdAt }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean());
+    let alerts = Promise.resolve(OutbreakAlert.find({surveillancePolicy:service.POLICY,...(simulation ? { isSimulation: true } : {...service.realAlertFilter(), syntheticSeedBatch: { $exists: false }}),...monitorWindow}).select('-sourceConsultationIds').sort({createdAt:-1}).lean());
+    const demoPromise = simulation ? null : Promise.resolve(OutbreakAlert.find({ surveillancePolicy: service.POLICY, isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH, ...monitorWindow }).select('-sourceConsultationIds').sort({ createdAt: -1 }).lean());
     if (demoPromise) demoPromise.catch(() => {});
     alerts = await alerts;
     if (!simulation) {
@@ -77,7 +76,7 @@ exports.getActiveAlerts = async (req, res) => {
       const projection = require('../services/alertProjection72h');
       let cases = null;
       enriched = await Promise.all(enriched.map(async alert => {
-        if (alert.projection72h) return { ...alert, alert72h: projection.alertView(alert) };
+        if (alert.latest72h || alert.projection72h) return { ...alert, ...projection.alertViews(alert) };
         const asOf = alert.createdAt ? new Date(alert.createdAt) : new Date();
         if (!cases) cases = (await coalesce(`cases:70:${simulation ? 'simulation' : 'real'}`, () => service.loadCases({ mode: simulation ? 'simulation' : 'real', lookbackDays: 70 }))).cases;
         return { ...alert, alert72h: projection.alertView(alert, projection.computeAlertNumbers(alert, cases, { asOf, lookbackStart: +asOf - 63 * 86400000 })) };
@@ -105,8 +104,8 @@ exports.getAlertHistory = async (req, res) => {
     catch (e) { if (e instanceof views.ViewQueryError) return res.status(400).json({ error: e.message, code: e.code }); throw e; }
     const now = new Date();
     const provenance = { $or: [{ ...service.realAlertFilter(), syntheticSeedBatch: { $exists: false } }, { isSimulation: false, syntheticSeedBatch: service.VIVA_DEMO_SEED_BATCH }] };
-    const filter = { $and: [{ surveillancePolicy: service.POLICY }, provenance, views.historyCondition(now), views.historyFilterFragment(q)] };
-    const fields = 'disease location district severity status feedbackStatus affectedCount caseCount createdAt updatedAt approvedAt projection72h isDemoData isSynthetic syntheticSeedBatch syntheticLabel';
+    const filter = { $and: [{ surveillancePolicy: service.POLICY }, provenance, views.historyCondition(now, { detectedAt: true }), views.historyFilterFragment(q)] };
+    const fields = 'disease location district severity status feedbackStatus affectedCount caseCount createdAt updatedAt approvedAt firstDetectedAt lastUpdatedAt updateCount updateHistory latest72h projection72h projection72hOutcome isDemoData isSynthetic syntheticSeedBatch syntheticLabel';
     const [rows, total] = await Promise.all([
       OutbreakAlert.find(filter).select(fields).sort({ createdAt: -1, _id: -1 }).skip(q.skip).limit(q.limit).lean(),
       OutbreakAlert.countDocuments(filter),
@@ -114,7 +113,8 @@ exports.getAlertHistory = async (req, res) => {
     const projection = require('../services/alertProjection72h');
     const data = rows.map(alert => {
       const out = alert.syntheticSeedBatch === service.VIVA_DEMO_SEED_BATCH ? labelDemonstrationAlert(alert) : { ...alert };
-      out.alert72h = alert.projection72h ? projection.alertView(alert) : null;
+      out.alert72h = null;
+      if (alert.latest72h || alert.projection72h) Object.assign(out, projection.alertViews(alert));
       out.closedAt = ['Resolved', 'Dismissed'].includes(alert.status) ? alert.updatedAt || null : null;
       out.historyReason = ['Resolved', 'Dismissed'].includes(alert.status) ? 'closed' : 'older_than_14_days';
       return out;
