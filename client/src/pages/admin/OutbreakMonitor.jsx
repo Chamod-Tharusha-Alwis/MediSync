@@ -14,6 +14,7 @@ import PageTransition from '../../components/common/PageTransition';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 import { formatPopulationShare } from '../../utils/populationIncidence';
 import { AlertNumbers72h, AlertDetail72h, isSyntheticSeedAlert, SYNTHETIC_ALERT_SENTENCE } from '../../components/admin/AlertNumbers72h';
+import { AlertTimeline, LastUpdatedCell, firstDetectedText } from '../../components/admin/AlertUpdates';
 
 function diseasesMatch(d1, d2) {
   if (!d1 || !d2) return false;
@@ -1087,7 +1088,8 @@ const OutbreakMonitor = () => {
                   <th className="px-6 py-4">Verified Cases (72h)</th>
                   <th className="px-6 py-4">Severity</th>
                   <th className="px-6 py-4">Audit Verification</th>
-                  <th className="px-6 py-4 text-right">Timestamp</th>
+                  <th className="px-6 py-4 text-right">{t('alertUpdates.firstDetected', 'First detected')}</th>
+                  <th className="px-6 py-4 text-right">{t('alertUpdates.lastUpdated', 'Last updated')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm text-slate-200">
@@ -1231,12 +1233,15 @@ const OutbreakMonitor = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right select-none">
-                        {alert.createdAt ? formatSriLankaDateTime(alert.createdAt) : 'N/A'}
+                        {firstDetectedText(alert)}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 font-mono text-xs text-right select-none">
+                        <LastUpdatedCell alert={alert} />
                       </td>
                     </tr>
                     {expandedAlertId === alert._id && (
                       <tr>
-                        <td colSpan={6} className="p-0"><AlertDetail72h alert={alert} /></td>
+                        <td colSpan={7} className="p-0"><AlertDetail72h alert={alert} /><AlertTimeline alert={alert} /></td>
                       </tr>
                     )}
                     </React.Fragment>

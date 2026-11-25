@@ -5,6 +5,7 @@ import { formatSriLankaDateTime } from '../../utils/sriLankaTime';
 import { formatDistrictName } from '../../utils/districtAdjacency';
 import { formatFriendlyDisease } from '../../utils/localizedMessage';
 import { AlertNumbers72h } from '../../components/admin/AlertNumbers72h';
+import { AlertTimeline, LastUpdatedCell, firstDetectedText } from '../../components/admin/AlertUpdates';
 
 // Outbreak History: read-only list of alerts that left the Outbreak Monitor (resolved or dismissed, or older than
 // 14 days). Served by GET /admin/outbreak/alerts?view=history; the 14-day rule lives in server/src/services/outbreakViews.js.
@@ -25,6 +26,7 @@ export default function OutbreakHistory() {
   const [draft, setDraft] = useState(EMPTY);
   const [filters, setFilters] = useState(EMPTY);
   const [page, setPage] = useState(1);
+  const [openId, setOpenId] = useState(null);
   const [state, setState] = useState({ status: 'loading', rows: [], paging: null, error: null });
 
   const load = useCallback(async () => {
@@ -111,13 +113,20 @@ export default function OutbreakHistory() {
                   <th className="px-4 py-3">{t('outbreakHistory.colSeverity', 'Severity')}</th>
                   <th className="px-4 py-3">{t('outbreakHistory.colStatus', 'Final status')}</th>
                   <th className="px-4 py-3">{t('outbreakHistory.colClosed', 'Closed (last update)')}</th>
-                  <th className="px-4 py-3 text-right">{t('outbreakHistory.colTimestamp', 'Detected')}</th>
+                  <th className="px-4 py-3 text-right">{t('alertUpdates.firstDetected', 'First detected')}</th>
+                  <th className="px-4 py-3 text-right">{t('alertUpdates.lastUpdated', 'Last updated')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-200" data-testid="history-rows">
                 {state.rows.map(alert => (
-                  <tr key={alert._id}>
-                    <td className="px-4 py-3 font-semibold">{formatFriendlyDisease ? formatFriendlyDisease(alert.disease) || alert.disease : alert.disease}</td>
+                  <React.Fragment key={alert._id}>
+                  <tr>
+                    <td className="px-4 py-3 font-semibold">
+                      {formatFriendlyDisease ? formatFriendlyDisease(alert.disease) || alert.disease : alert.disease}
+                      <button type="button" aria-expanded={openId === alert._id} onClick={() => setOpenId(id => (id === alert._id ? null : alert._id))} className="block mt-1 text-xs font-normal text-sky-400 hover:underline">
+                        {openId === alert._id ? t('alertUpdates.hideDetails', 'Hide details') : t('alertUpdates.details', 'Details')}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">{formatDistrictName(alert.location || alert.district) || alert.location || alert.district || '—'}</td>
                     <td className="px-4 py-3">
                       {alert.alert72h ? <AlertNumbers72h view={alert.alert72h} /> : <span className="text-xs text-slate-500">{t('outbreakHistory.no72h', 'Not available (no 72-hour snapshot was stored)')}</span>}
@@ -128,8 +137,11 @@ export default function OutbreakHistory() {
                       {alert.historyReason === 'older_than_14_days' && <div className="text-xs text-slate-500">{t('outbreakHistory.aged', 'Older than 14 days')}</div>}
                     </td>
                     <td className="px-4 py-3">{alert.closedAt ? formatSriLankaDateTime(alert.closedAt) : '—'}</td>
-                    <td className="px-4 py-3 text-right">{alert.createdAt ? formatSriLankaDateTime(alert.createdAt) : '—'}</td>
+                    <td className="px-4 py-3 text-right">{firstDetectedText(alert)}</td>
+                    <td className="px-4 py-3 text-right text-xs"><LastUpdatedCell alert={alert} /></td>
                   </tr>
+                  {openId === alert._id && <tr><td colSpan={8} className="p-0"><AlertTimeline alert={alert} /></td></tr>}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
