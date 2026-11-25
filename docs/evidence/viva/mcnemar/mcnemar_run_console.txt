@@ -1,0 +1,16 @@
+2026-11-25 11:14:07 +0530
+COMMAND: ml-engine/.venv/Scripts/python.exe ml-engine/evaluation/mcnemar_detector_vs_threshold.py
+Report figures reproduced exactly (counts and percentages).
+primary_R1_strict | detector {'tp': 35, 'fn': 15, 'fp': 42, 'tn': 252, 'sensitivityPct': 70.0, 'specificityPct': 85.7, 'precisionPct': 45.5, 'accuracyPct': 83.4} | threshold {'tp': 49, 'fn': 1, 'fp': 25, 'tn': 269, 'sensitivityPct': 98.0, 'specificityPct': 91.5, 'precisionPct': 66.2, 'accuracyPct': 92.4}
+  allWeeks: n=344 b=10 c=41 exact p=1.47377e-05
+  outbreakWeeksOnly_sensitivity: n=50 b=0 c=14 exact p=0.00012207
+  nonOutbreakWeeksOnly_specificity: n=294 b=10 c=27 exact p=0.00763208
+  accuracy difference (detector - threshold) block bootstrap: {'detectorMinusThreshold': -0.090116, 'ci95': [-0.162791, -0.002907], 'blockWeeks': 13, 'resamples': 2000, 'seed': 20261116}
+secondary_R2_moderate | detector {'tp': 35, 'fn': 19, 'fp': 42, 'tn': 248, 'sensitivityPct': 64.8, 'specificityPct': 85.5, 'precisionPct': 45.5, 'accuracyPct': 82.3} | threshold {'tp': 53, 'fn': 1, 'fp': 21, 'tn': 269, 'sensitivityPct': 98.1, 'specificityPct': 92.8, 'precisionPct': 71.6, 'accuracyPct': 93.6}
+  allWeeks: n=344 b=6 c=45 exact p=1.83236e-08
+  outbreakWeeksOnly_sensitivity: n=54 b=0 c=18 exact p=7.62939e-06
+  nonOutbreakWeeksOnly_specificity: n=290 b=6 c=27 exact p=0.000324063
+  accuracy difference (detector - threshold) block bootstrap: {'detectorMinusThreshold': -0.113372, 'ci95': [-0.180233, -0.037791], 'blockWeeks': 13, 'resamples': 2000, 'seed': 20261116}
+written docs\evidence\viva\mcnemar\mcnemar_detector_vs_threshold.json
+EXIT=0
+2026-11-25 11:14:10 +0530

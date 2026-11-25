@@ -1,0 +1,29 @@
+2026-11-25 11:15:14 +0530
+COMMAND: ml-engine/.venv/Scripts/python.exe ml-engine/evaluation/forecast_paired_tests.py
+Published MAE, RMSE and origin counts (18 rows) and the 3 published Diebold-Mariano statistics reproduced.
+h1 n = 125 (MAE, RMSE): {'naive': (212.1, 389.5), 'seasonalNaive': (831.3, 1486.3), 'productionProjection': (434.2, 834.7), 'ets': (212.1, 371.1), 'sarima': (221.0, 432.9), 'prophet': (487.5, 768.9)}
+h2 n = 126 (MAE, RMSE): {'naive': (304.6, 621.5), 'seasonalNaive': (864.0, 1540.4), 'productionProjection': (562.5, 1064.8), 'ets': (309.1, 606.5), 'sarima': (305.8, 656.5), 'prophet': (591.0, 1013.1)}
+h4 n = 126 (MAE, RMSE): {'naive': (504.2, 1056.4), 'seasonalNaive': (862.8, 1540.3), 'productionProjection': (790.1, 1514.1), 'ets': (436.7, 871.7), 'sarima': (498.2, 1055.8), 'prophet': (674.2, 1202.7)}
+h1 prophet vs sarima: mean diff 266.49, origins better 33 vs 92 | Wilcoxon p=8.94e-11 (Holm 1.7e-09, sign-flip 5e-05) | DM p=1.15e-08 (Holm 2.31e-07)
+h1 prophet vs naive: mean diff 275.31, origins better 36 vs 89 | Wilcoxon p=9.7e-10 (Holm 1.65e-08, sign-flip 5e-05) | DM p=2.12e-08 (Holm 4.03e-07)
+h1 prophet vs seasonalNaive: mean diff -343.84, origins better 92 vs 33 | Wilcoxon p=3.29e-10 (Holm 5.93e-09, sign-flip 5e-05) | DM p=1.66e-06 (Holm 2.83e-05)
+h1 sarima vs naive: mean diff 8.83, origins better 74 vs 51 | Wilcoxon p=0.105 (Holm 0.421, sign-flip 0.106) | DM p=0.606 (Holm 1)
+h1 sarima vs seasonalNaive: mean diff -610.32, origins better 111 vs 14 | Wilcoxon p=5.51e-18 (Holm 1.16e-16, sign-flip 5e-05) | DM p=4.2e-11 (Holm 8.81e-10)
+h1 productionProjection vs naive: mean diff 222.1, origins better 32 vs 93 | Wilcoxon p=5.76e-09 (Holm 8.06e-08, sign-flip 5e-05) | DM p=7.39e-06 (Holm 0.000118)
+h1 productionProjection vs seasonalNaive: mean diff -397.06, origins better 83 vs 42 | Wilcoxon p=2.36e-06 (Holm 1.89e-05, sign-flip 5e-05) | DM p=8.7e-05 (Holm 0.00104)
+h2 prophet vs sarima: mean diff 285.15, origins better 41 vs 85 | Wilcoxon p=1.52e-08 (Holm 1.82e-07, sign-flip 5e-05) | DM p=3.42e-05 (Holm 0.000513)
+h2 prophet vs naive: mean diff 286.39, origins better 41 vs 85 | Wilcoxon p=1.08e-08 (Holm 1.4e-07, sign-flip 5e-05) | DM p=4.07e-05 (Holm 0.000569)
+h2 prophet vs seasonalNaive: mean diff -273.05, origins better 93 vs 33 | Wilcoxon p=3.9e-09 (Holm 5.85e-08, sign-flip 5e-05) | DM p=0.000343 (Holm 0.00378)
+h2 sarima vs naive: mean diff 1.24, origins better 76 vs 50 | Wilcoxon p=0.149 (Holm 0.447, sign-flip 0.15) | DM p=0.951 (Holm 1)
+h2 sarima vs seasonalNaive: mean diff -558.2, origins better 107 vs 19 | Wilcoxon p=4.33e-17 (Holm 8.66e-16, sign-flip 5e-05) | DM p=5.41e-07 (Holm 9.73e-06)
+h2 productionProjection vs naive: mean diff 257.97, origins better 33 vs 93 | Wilcoxon p=1.55e-08 (Holm 1.82e-07, sign-flip 5e-05) | DM p=4.92e-05 (Holm 0.000639)
+h2 productionProjection vs seasonalNaive: mean diff -301.48, origins better 82 vs 43 | Wilcoxon p=0.000103 (Holm 0.000722, sign-flip 5e-05) | DM p=0.0145 (Holm 0.116)
+h4 prophet vs sarima: mean diff 175.97, origins better 52 vs 74 | Wilcoxon p=0.000933 (Holm 0.0056, sign-flip 0.0008) | DM p=0.138 (Holm 0.827)
+h4 prophet vs naive: mean diff 170.01, origins better 51 vs 75 | Wilcoxon p=0.00112 (Holm 0.0056, sign-flip 0.0015) | DM p=0.14 (Holm 0.827)
+h4 prophet vs seasonalNaive: mean diff -188.59, origins better 89 vs 37 | Wilcoxon p=6.19e-07 (Holm 5.57e-06, sign-flip 5e-05) | DM p=0.0274 (Holm 0.192)
+h4 sarima vs naive: mean diff -5.95, origins better 69 vs 57 | Wilcoxon p=0.295 (Holm 0.447, sign-flip 0.296) | DM p=0.86 (Holm 1)
+h4 sarima vs seasonalNaive: mean diff -364.56, origins better 95 vs 31 | Wilcoxon p=5.24e-08 (Holm 5.24e-07, sign-flip 5e-05) | DM p=0.00668 (Holm 0.0602)
+h4 productionProjection vs naive: mean diff 285.87, origins better 29 vs 97 | Wilcoxon p=2.59e-09 (Holm 4.15e-08, sign-flip 5e-05) | DM p=0.000832 (Holm 0.00832)
+h4 productionProjection vs seasonalNaive: mean diff -72.73, origins better 64 vs 62 | Wilcoxon p=0.2 (Holm 0.447, sign-flip 0.201) | DM p=0.679 (Holm 1)
+written docs/evidence/viva/forecast/forecast_paired_tests.json
+EXIT=0

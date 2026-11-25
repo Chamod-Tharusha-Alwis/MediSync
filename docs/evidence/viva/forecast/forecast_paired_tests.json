@@ -1,0 +1,626 @@
+{
+ "title": "Paired tests on saved rolling-origin forecasts (real OpenDengue Sri Lanka weekly counts)",
+ "generatedAtUtc": "2026-11-25T05:45:14.418029+00:00",
+ "command": "ml-engine/.venv/Scripts/python.exe ml-engine/evaluation/forecast_paired_tests.py",
+ "python": "3.14.6",
+ "numpy": "2.5.4",
+ "input": {
+  "file": "docs/report/study/forecast_predictions.csv",
+  "sha256": "30134d71c432b0736ffc2770a668b25ee22562313403e75fcdf5c938335dad91",
+  "producedBy": "ml-engine/evaluation/study/forecast_benchmark.py, 2026-11-16; not refitted today"
+ },
+ "publishedMetricsReproduced": true,
+ "signFlips": 20000,
+ "seed": 20261125,
+ "errors": {
+  "h1": {
+   "naive": {
+    "origins": 125,
+    "mae": 212.1,
+    "rmse": 389.5
+   },
+   "seasonalNaive": {
+    "origins": 125,
+    "mae": 831.3,
+    "rmse": 1486.3
+   },
+   "productionProjection": {
+    "origins": 125,
+    "mae": 434.2,
+    "rmse": 834.7
+   },
+   "ets": {
+    "origins": 125,
+    "mae": 212.1,
+    "rmse": 371.1
+   },
+   "sarima": {
+    "origins": 125,
+    "mae": 221.0,
+    "rmse": 432.9
+   },
+   "prophet": {
+    "origins": 125,
+    "mae": 487.5,
+    "rmse": 768.9
+   }
+  },
+  "h2": {
+   "naive": {
+    "origins": 126,
+    "mae": 304.6,
+    "rmse": 621.5
+   },
+   "seasonalNaive": {
+    "origins": 126,
+    "mae": 864.0,
+    "rmse": 1540.4
+   },
+   "productionProjection": {
+    "origins": 126,
+    "mae": 562.5,
+    "rmse": 1064.8
+   },
+   "ets": {
+    "origins": 126,
+    "mae": 309.1,
+    "rmse": 606.5
+   },
+   "sarima": {
+    "origins": 126,
+    "mae": 305.8,
+    "rmse": 656.5
+   },
+   "prophet": {
+    "origins": 126,
+    "mae": 591.0,
+    "rmse": 1013.1
+   }
+  },
+  "h4": {
+   "naive": {
+    "origins": 126,
+    "mae": 504.2,
+    "rmse": 1056.4
+   },
+   "seasonalNaive": {
+    "origins": 126,
+    "mae": 862.8,
+    "rmse": 1540.3
+   },
+   "productionProjection": {
+    "origins": 126,
+    "mae": 790.1,
+    "rmse": 1514.1
+   },
+   "ets": {
+    "origins": 126,
+    "mae": 436.7,
+    "rmse": 871.7
+   },
+   "sarima": {
+    "origins": 126,
+    "mae": 498.2,
+    "rmse": 1055.8
+   },
+   "prophet": {
+    "origins": 126,
+    "mae": 674.2,
+    "rmse": 1202.7
+   }
+  }
+ },
+ "comparisons": [
+  {
+   "horizonWeeks": 1,
+   "first": "prophet",
+   "second": "sarima",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": 266.49,
+   "medianAbsErrorDifference": 131.3,
+   "firstBetterOrigins": 33,
+   "secondBetterOrigins": 92,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 6569.0,
+    "z": 6.4838,
+    "p": 8.942088838706924e-11,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.6989968793543154e-09
+   },
+   "dieboldMariano": {
+    "statistic": 5.7063,
+    "p": 1.1545390222107995e-08,
+    "pHolm21": 2.309078044421599e-07
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "prophet",
+   "second": "naive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": 275.31,
+   "medianAbsErrorDifference": 135.1,
+   "firstBetterOrigins": 36,
+   "secondBetterOrigins": 89,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 6419.0,
+    "z": 6.1142,
+    "p": 9.701581775947822e-10,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.6492689019111298e-08
+   },
+   "dieboldMariano": {
+    "statistic": 5.6019,
+    "p": 2.120234673057726e-08,
+    "pHolm21": 4.0284458788096794e-07
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "prophet",
+   "second": "seasonalNaive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": -343.84,
+   "medianAbsErrorDifference": -164.35,
+   "firstBetterOrigins": 92,
+   "secondBetterOrigins": 33,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 1387.0,
+    "z": -6.2843,
+    "p": 3.294293084505756e-10,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 5.92972755211036e-09
+   },
+   "dieboldMariano": {
+    "statistic": -4.7904,
+    "p": 1.6647689960948591e-06,
+    "pHolm21": 2.8301072933612605e-05
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "sarima",
+   "second": "naive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": 8.83,
+   "medianAbsErrorDifference": -10.15,
+   "firstBetterOrigins": 74,
+   "secondBetterOrigins": 51,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 3280.0,
+    "z": -1.62,
+    "p": 0.10522488620316466,
+    "pSignFlip": 0.10589470526473677,
+    "pHolm21": 0.4208995448126586
+   },
+   "dieboldMariano": {
+    "statistic": 0.516,
+    "p": 0.6058614527018058,
+    "pHolm21": 1.0
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "sarima",
+   "second": "seasonalNaive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": -610.32,
+   "medianAbsErrorDifference": -297.32,
+   "firstBetterOrigins": 111,
+   "secondBetterOrigins": 14,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 430.0,
+    "z": -8.6422,
+    "p": 5.512304312665076e-18,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.157583905659666e-16
+   },
+   "dieboldMariano": {
+    "statistic": -6.597,
+    "p": 4.195067066407758e-11,
+    "pHolm21": 8.809640839456292e-10
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "productionProjection",
+   "second": "naive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": 222.1,
+   "medianAbsErrorDifference": 86.0,
+   "firstBetterOrigins": 32,
+   "secondBetterOrigins": 93,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 6301.0,
+    "z": 5.8236,
+    "p": 5.759653211705571e-09,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 8.063514496387799e-08
+   },
+   "dieboldMariano": {
+    "statistic": 4.4823,
+    "p": 7.385850122581941e-06,
+    "pHolm21": 0.00011817360196131106
+   }
+  },
+  {
+   "horizonWeeks": 1,
+   "first": "productionProjection",
+   "second": "seasonalNaive",
+   "n": 125,
+   "meanAbsErrorDifference_firstMinusSecond": -397.06,
+   "medianAbsErrorDifference": -147.0,
+   "firstBetterOrigins": 83,
+   "secondBetterOrigins": 42,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 0,
+    "wPlus": 2022.0,
+    "z": -4.7197,
+    "p": 2.3621725461327226e-06,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.889738036906178e-05
+   },
+   "dieboldMariano": {
+    "statistic": -3.9244,
+    "p": 8.695936939398874e-05,
+    "pHolm21": 0.0010435124327278647
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "prophet",
+   "second": "sarima",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 285.15,
+   "medianAbsErrorDifference": 106.44,
+   "firstBetterOrigins": 41,
+   "secondBetterOrigins": 85,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 6325.0,
+    "z": 5.6596,
+    "p": 1.5170271972503e-08,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.8204326367003603e-07
+   },
+   "dieboldMariano": {
+    "statistic": 4.1435,
+    "p": 3.4203983976727264e-05,
+    "pHolm21": 0.000513059759650909
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "prophet",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 286.39,
+   "medianAbsErrorDifference": 151.96,
+   "firstBetterOrigins": 41,
+   "secondBetterOrigins": 85,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 6349.0,
+    "z": 5.7181,
+    "p": 1.0774640208544635e-08,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.4007032271108025e-07
+   },
+   "dieboldMariano": {
+    "statistic": 4.1037,
+    "p": 4.066388608849573e-05,
+    "pHolm21": 0.0005692944052389402
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "prophet",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -273.05,
+   "medianAbsErrorDifference": -177.93,
+   "firstBetterOrigins": 93,
+   "secondBetterOrigins": 33,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 1582.0,
+    "z": -5.8885,
+    "p": 3.897280700455447e-09,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 5.84592105068317e-08
+   },
+   "dieboldMariano": {
+    "statistic": -3.5802,
+    "p": 0.00034337687608200815,
+    "pHolm21": 0.0037771456369020896
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "sarima",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 1.24,
+   "medianAbsErrorDifference": -13.84,
+   "firstBetterOrigins": 76,
+   "secondBetterOrigins": 50,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 3408.0,
+    "z": -1.4426,
+    "p": 0.14913257101616958,
+    "pSignFlip": 0.15034248287585622,
+    "pHolm21": 0.4473977130485087
+   },
+   "dieboldMariano": {
+    "statistic": 0.0616,
+    "p": 0.9508933790578715,
+    "pHolm21": 1.0
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "sarima",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -558.2,
+   "medianAbsErrorDifference": -282.6,
+   "firstBetterOrigins": 107,
+   "secondBetterOrigins": 19,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 549.0,
+    "z": -8.4036,
+    "p": 4.329434831780551e-17,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 8.658869663561102e-16
+   },
+   "dieboldMariano": {
+    "statistic": -5.0113,
+    "p": 5.406485906409008e-07,
+    "pHolm21": 9.731674631536215e-06
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "productionProjection",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 257.97,
+   "medianAbsErrorDifference": 88.0,
+   "firstBetterOrigins": 33,
+   "secondBetterOrigins": 93,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 6323.5,
+    "z": 5.656,
+    "p": 1.5494185234501977e-08,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 1.8204326367003603e-07
+   },
+   "dieboldMariano": {
+    "statistic": 4.0595,
+    "p": 4.918748310200464e-05,
+    "pHolm21": 0.0006394372803260603
+   }
+  },
+  {
+   "horizonWeeks": 2,
+   "first": "productionProjection",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -301.48,
+   "medianAbsErrorDifference": -146.5,
+   "firstBetterOrigins": 82,
+   "secondBetterOrigins": 43,
+   "wilcoxon": {
+    "nNonZero": 125,
+    "zeroDifferences": 1,
+    "wPlus": 2361.5,
+    "z": -3.8832,
+    "p": 0.00010310616387585031,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 0.0007217431471309521
+   },
+   "dieboldMariano": {
+    "statistic": -2.4445,
+    "p": 0.01450580957061613,
+    "pHolm21": 0.11604647656492904
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "prophet",
+   "second": "sarima",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 175.97,
+   "medianAbsErrorDifference": 61.02,
+   "firstBetterOrigins": 52,
+   "secondBetterOrigins": 74,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 5360.0,
+    "z": 3.3101,
+    "p": 0.0009327197906842981,
+    "pSignFlip": 0.0007999600019999,
+    "pHolm21": 0.005596318744105789
+   },
+   "dieboldMariano": {
+    "statistic": 1.4841,
+    "p": 0.13779144036698357,
+    "pHolm21": 0.8267486422019015
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "prophet",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 170.01,
+   "medianAbsErrorDifference": 87.03,
+   "firstBetterOrigins": 51,
+   "secondBetterOrigins": 75,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 5339.0,
+    "z": 3.2589,
+    "p": 0.0011182861207702669,
+    "pSignFlip": 0.0014999250037498126,
+    "pHolm21": 0.005596318744105789
+   },
+   "dieboldMariano": {
+    "statistic": 1.4763,
+    "p": 0.13985956480679992,
+    "pHolm21": 0.8267486422019015
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "prophet",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -188.59,
+   "medianAbsErrorDifference": -138.87,
+   "firstBetterOrigins": 89,
+   "secondBetterOrigins": 37,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 1953.0,
+    "z": -4.9852,
+    "p": 6.189940050913017e-07,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 5.570946045821715e-06
+   },
+   "dieboldMariano": {
+    "statistic": -2.2054,
+    "p": 0.027425760602546468,
+    "pHolm21": 0.19198032421782527
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "sarima",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -5.95,
+   "medianAbsErrorDifference": -5.05,
+   "firstBetterOrigins": 69,
+   "secondBetterOrigins": 57,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 3570.0,
+    "z": -1.0482,
+    "p": 0.2945606705018351,
+    "pSignFlip": 0.29563521823908806,
+    "pHolm21": 0.4473977130485087
+   },
+   "dieboldMariano": {
+    "statistic": -0.177,
+    "p": 0.8595423456621406,
+    "pHolm21": 1.0
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "sarima",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -364.56,
+   "medianAbsErrorDifference": -211.98,
+   "firstBetterOrigins": 95,
+   "secondBetterOrigins": 31,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 1765.0,
+    "z": -5.4429,
+    "p": 5.2410684459262836e-08,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 5.241068445926283e-07
+   },
+   "dieboldMariano": {
+    "statistic": -2.7122,
+    "p": 0.006684665910471999,
+    "pHolm21": 0.06016199319424799
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "productionProjection",
+   "second": "naive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": 285.87,
+   "medianAbsErrorDifference": 121.0,
+   "firstBetterOrigins": 29,
+   "secondBetterOrigins": 97,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 6446.5,
+    "z": 5.9555,
+    "p": 2.593165822386165e-09,
+    "pSignFlip": 4.999750012499375e-05,
+    "pHolm21": 4.149065315817864e-08
+   },
+   "dieboldMariano": {
+    "statistic": 3.342,
+    "p": 0.0008318810050089898,
+    "pHolm21": 0.008318810050089897
+   }
+  },
+  {
+   "horizonWeeks": 4,
+   "first": "productionProjection",
+   "second": "seasonalNaive",
+   "n": 126,
+   "meanAbsErrorDifference_firstMinusSecond": -72.73,
+   "medianAbsErrorDifference": -17.5,
+   "firstBetterOrigins": 64,
+   "secondBetterOrigins": 62,
+   "wilcoxon": {
+    "nNonZero": 126,
+    "zeroDifferences": 0,
+    "wPlus": 3474.5,
+    "z": -1.2807,
+    "p": 0.20030062155508857,
+    "pSignFlip": 0.20128993550322483,
+    "pHolm21": 0.4473977130485087
+   },
+   "dieboldMariano": {
+    "statistic": -0.4138,
+    "p": 0.6789952615902299,
+    "pHolm21": 1.0
+   }
+  }
+ ],
+ "limits": [
+  "Overlapping forecast origins are serially dependent: the Wilcoxon test assumes independent pairs, so its p-values are too small. Diebold-Mariano allows only for short (h-1) dependence and assumes a stationary loss difference, which the 2017 epidemic breaks.",
+  "Wilcoxon compares ranked paired differences, Diebold-Mariano the mean difference; they can disagree.",
+  "One disease, one national series. Only SARIMA was evaluated; a plain non-seasonal ARIMA was not a separate model.",
+  "Holm correction is over all 21 comparisons per test.",
+  "clinicalValidation: not_established"
+ ]
+}

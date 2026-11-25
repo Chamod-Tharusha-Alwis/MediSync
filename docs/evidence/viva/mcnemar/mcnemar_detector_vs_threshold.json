@@ -1,0 +1,5040 @@
+{
+ "title": "McNemar: MediSync outbreak rule vs fixed 95th-percentile threshold",
+ "generatedAtUtc": "2026-11-25T05:44:09.813027+00:00",
+ "command": "ml-engine/.venv/Scripts/python.exe ml-engine/evaluation/mcnemar_detector_vs_threshold.py",
+ "git": {
+  "commit": "fd71d33d25bf3defbb79129f4dc1a3060e945229",
+  "branch": "chore/viva-evidence",
+  "engineOrEvaluationCodeModified": false
+ },
+ "environment": {
+  "python": "3.14.6",
+  "numpy": "2.5.4",
+  "pValueMethod": "exact binomial in integer arithmetic (SciPy/statsmodels blocked by Windows Application Control on this machine)"
+ },
+ "dataset": {
+  "name": "OpenDengue national extract V1.3.1",
+  "sha256": "c588335f25f2202e4f87d271381f385c76ffd4dcb68348f40c2a6fcab8889d4e",
+  "note": "One national weekly count is fed as one detector day: a proxy for the production daily district detector."
+ },
+ "thresholdValue": 1370.3,
+ "thresholdSource": "95th percentile of the 62 weeks before the first evaluated week (out of sample)",
+ "reportFiguresReproduced": true,
+ "reportedFigures": {
+  "detector": {
+   "tp": 35,
+   "fn": 15,
+   "fp": 42,
+   "tn": 252,
+   "sensitivityPct": 70.0,
+   "specificityPct": 85.7,
+   "precisionPct": 45.5
+  },
+  "threshold": {
+   "tp": 49,
+   "fn": 1,
+   "fp": 25,
+   "tn": 269,
+   "sensitivityPct": 98.0,
+   "specificityPct": 91.5
+  }
+ },
+ "primary_R1_strict": {
+  "rule": {
+   "thresholdSd": 2,
+   "seasonalWindowWeeks": 2,
+   "minConsecutiveWeeks": 2
+  },
+  "weeks": 344,
+  "outbreakWeeks": 50,
+  "nonOutbreakWeeks": 294,
+  "outbreakPeriods": [
+   {
+    "start": "2017-01-08",
+    "end": "2017-12-10"
+   }
+  ],
+  "detector": {
+   "tp": 35,
+   "fn": 15,
+   "fp": 42,
+   "tn": 252,
+   "sensitivityPct": 70.0,
+   "specificityPct": 85.7,
+   "precisionPct": 45.5,
+   "accuracyPct": 83.4
+  },
+  "threshold": {
+   "tp": 49,
+   "fn": 1,
+   "fp": 25,
+   "tn": 269,
+   "sensitivityPct": 98.0,
+   "specificityPct": 91.5,
+   "precisionPct": 66.2,
+   "accuracyPct": 92.4
+  },
+  "mcnemar": {
+   "allWeeks": {
+    "weeks": 344,
+    "bothCorrect": 277,
+    "b_detectorCorrect_thresholdWrong": 10,
+    "c_detectorWrong_thresholdCorrect": 41,
+    "bothWrong": 16,
+    "discordant": 51,
+    "mcnemarExactP": 1.4737715885004832e-05,
+    "detectorCorrect": 287,
+    "thresholdCorrect": 318,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.090116
+   },
+   "outbreakWeeksOnly_sensitivity": {
+    "weeks": 50,
+    "bothCorrect": 35,
+    "b_detectorCorrect_thresholdWrong": 0,
+    "c_detectorWrong_thresholdCorrect": 14,
+    "bothWrong": 1,
+    "discordant": 14,
+    "mcnemarExactP": 0.0001220703125,
+    "detectorCorrect": 35,
+    "thresholdCorrect": 49,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.28
+   },
+   "nonOutbreakWeeksOnly_specificity": {
+    "weeks": 294,
+    "bothCorrect": 242,
+    "b_detectorCorrect_thresholdWrong": 10,
+    "c_detectorWrong_thresholdCorrect": 27,
+    "bothWrong": 15,
+    "discordant": 37,
+    "mcnemarExactP": 0.007632078602910042,
+    "detectorCorrect": 252,
+    "thresholdCorrect": 269,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.057823
+   }
+  },
+  "accuracyDifferenceBlockBootstrapCi95": {
+   "detectorMinusThreshold": -0.090116,
+   "ci95": [
+    -0.162791,
+    -0.002907
+   ],
+   "blockWeeks": 13,
+   "resamples": 2000,
+   "seed": 20261116
+  },
+  "perWeek": [
+   {
+    "week": "2011-03-13",
+    "count": 230,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-03-20",
+    "count": 314,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-03-27",
+    "count": 346,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-03",
+    "count": 281,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-10",
+    "count": 178,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-17",
+    "count": 459,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-24",
+    "count": 507,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-01",
+    "count": 498,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-08",
+    "count": 480,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-15",
+    "count": 340,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-22",
+    "count": 649,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-29",
+    "count": 763,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-05",
+    "count": 955,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-12",
+    "count": 869,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-19",
+    "count": 884,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-26",
+    "count": 1126,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-03",
+    "count": 1034,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-10",
+    "count": 740,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-17",
+    "count": 1039,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-24",
+    "count": 878,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-31",
+    "count": 640,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-07",
+    "count": 493,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-14",
+    "count": 439,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-21",
+    "count": 534,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-28",
+    "count": 428,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-04",
+    "count": 521,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-11",
+    "count": 534,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-18",
+    "count": 508,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-25",
+    "count": 454,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-02",
+    "count": 461,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-09",
+    "count": 482,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-16",
+    "count": 592,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-23",
+    "count": 592,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-30",
+    "count": 654,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-06",
+    "count": 403,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-13",
+    "count": 524,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-20",
+    "count": 622,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-27",
+    "count": 944,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-04",
+    "count": 806,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-11",
+    "count": 869,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-18",
+    "count": 985,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-01",
+    "count": 867,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-08",
+    "count": 1065,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-15",
+    "count": 1081,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-22",
+    "count": 973,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-29",
+    "count": 1028,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-05",
+    "count": 724,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-12",
+    "count": 760,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-19",
+    "count": 633,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-26",
+    "count": 652,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-04",
+    "count": 464,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-11",
+    "count": 516,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-18",
+    "count": 511,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-25",
+    "count": 485,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-01",
+    "count": 464,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-08",
+    "count": 323,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-15",
+    "count": 637,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-22",
+    "count": 604,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-29",
+    "count": 538,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-06",
+    "count": 515,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-13",
+    "count": 686,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-20",
+    "count": 811,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-27",
+    "count": 920,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-03",
+    "count": 1088,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-10",
+    "count": 1403,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2012-06-17",
+    "count": 1297,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-24",
+    "count": 1247,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-01",
+    "count": 1273,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-08",
+    "count": 1317,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-15",
+    "count": 1191,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-22",
+    "count": 1412,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2012-07-29",
+    "count": 1080,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-05",
+    "count": 1253,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-12",
+    "count": 1271,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-19",
+    "count": 1011,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-26",
+    "count": 651,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-02",
+    "count": 831,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-09",
+    "count": 684,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-16",
+    "count": 650,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-23",
+    "count": 692,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-30",
+    "count": 685,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-07",
+    "count": 818,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-14",
+    "count": 880,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-21",
+    "count": 798,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-28",
+    "count": 786,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-04",
+    "count": 878,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-11",
+    "count": 734,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-18",
+    "count": 807,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-25",
+    "count": 829,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-02",
+    "count": 1014,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-09",
+    "count": 1008,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-16",
+    "count": 938,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-06",
+    "count": 860,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-13",
+    "count": 886,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-20",
+    "count": 839,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-27",
+    "count": 818,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-03",
+    "count": 813,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-10",
+    "count": 754,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-17",
+    "count": 871,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-24",
+    "count": 677,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-03",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-10",
+    "count": 542,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-17",
+    "count": 627,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-24",
+    "count": 407,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-31",
+    "count": 619,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-07",
+    "count": 519,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-14",
+    "count": 449,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-21",
+    "count": 522,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-28",
+    "count": 564,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-05",
+    "count": 605,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-12",
+    "count": 517,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-19",
+    "count": 428,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-26",
+    "count": 500,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-02",
+    "count": 589,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-09",
+    "count": 597,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-16",
+    "count": 607,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-23",
+    "count": 634,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-30",
+    "count": 719,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-07",
+    "count": 720,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-14",
+    "count": 723,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-21",
+    "count": 762,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-28",
+    "count": 825,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-04",
+    "count": 645,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-11",
+    "count": 713,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-18",
+    "count": 584,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-25",
+    "count": 515,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-01",
+    "count": 594,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-08",
+    "count": 497,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-15",
+    "count": 390,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-22",
+    "count": 431,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-29",
+    "count": 384,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-06",
+    "count": 398,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-13",
+    "count": 326,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-20",
+    "count": 526,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-27",
+    "count": 378,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-03",
+    "count": 497,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-10",
+    "count": 469,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-17",
+    "count": 653,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-24",
+    "count": 614,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-01",
+    "count": 713,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-08",
+    "count": 686,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-15",
+    "count": 702,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-05",
+    "count": 840,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-12",
+    "count": 688,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-19",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-26",
+    "count": 579,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-02",
+    "count": 510,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-09",
+    "count": 498,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-16",
+    "count": 591,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-23",
+    "count": 412,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-02",
+    "count": 473,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-09",
+    "count": 372,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-16",
+    "count": 450,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-23",
+    "count": 353,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-30",
+    "count": 367,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-06",
+    "count": 400,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-13",
+    "count": 209,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-20",
+    "count": 706,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-27",
+    "count": 568,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-04",
+    "count": 579,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-11",
+    "count": 527,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-18",
+    "count": 1047,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-25",
+    "count": 1571,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-01",
+    "count": 1480,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-08",
+    "count": 1633,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-15",
+    "count": 1915,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-22",
+    "count": 1708,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-29",
+    "count": 1525,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-07-06",
+    "count": 1554,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-07-13",
+    "count": 1340,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-07-20",
+    "count": 1302,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-07-27",
+    "count": 868,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-03",
+    "count": 936,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-10",
+    "count": 794,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-17",
+    "count": 784,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-24",
+    "count": 640,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-31",
+    "count": 574,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-07",
+    "count": 620,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-14",
+    "count": 705,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-21",
+    "count": 741,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-28",
+    "count": 735,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-05",
+    "count": 715,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-12",
+    "count": 893,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-19",
+    "count": 862,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-26",
+    "count": 1092,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-11-02",
+    "count": 1059,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-11-09",
+    "count": 1435,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-16",
+    "count": 1449,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-23",
+    "count": 1509,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-30",
+    "count": 1464,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-12-07",
+    "count": 1333,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-12-14",
+    "count": 1388,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2015-01-11",
+    "count": 1078,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-01-18",
+    "count": 1220,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-01-25",
+    "count": 1562,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2015-02-01",
+    "count": 1226,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-08",
+    "count": 931,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-15",
+    "count": 1230,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-22",
+    "count": 799,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-01",
+    "count": 771,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-08",
+    "count": 517,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-15",
+    "count": 557,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-22",
+    "count": 471,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-29",
+    "count": 417,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-05",
+    "count": 351,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-12",
+    "count": 336,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-19",
+    "count": 197,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-26",
+    "count": 409,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-03",
+    "count": 297,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-10",
+    "count": 338,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-17",
+    "count": 307,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-24",
+    "count": 371,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-31",
+    "count": 312,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-07",
+    "count": 312,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-14",
+    "count": 386,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-21",
+    "count": 387,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-28",
+    "count": 392,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-05",
+    "count": 294,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-12",
+    "count": 438,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-19",
+    "count": 434,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-26",
+    "count": 489,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-02",
+    "count": 470,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-09",
+    "count": 458,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-16",
+    "count": 420,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-23",
+    "count": 337,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-30",
+    "count": 389,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-06",
+    "count": 306,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-13",
+    "count": 289,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-20",
+    "count": 232,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-27",
+    "count": 272,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-04",
+    "count": 283,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-11",
+    "count": 327,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-18",
+    "count": 408,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-25",
+    "count": 490,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-01",
+    "count": 558,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-08",
+    "count": 612,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-15",
+    "count": 567,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-22",
+    "count": 772,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-29",
+    "count": 811,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-06",
+    "count": 954,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-13",
+    "count": 907,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-20",
+    "count": 1011,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-03",
+    "count": 1163,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-10",
+    "count": 1253,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-17",
+    "count": 1274,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-24",
+    "count": 1563,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2016-01-31",
+    "count": 1441,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-02-07",
+    "count": 1114,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-14",
+    "count": 1352,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-21",
+    "count": 1078,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-28",
+    "count": 895,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-06",
+    "count": 823,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-13",
+    "count": 635,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-20",
+    "count": 745,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-27",
+    "count": 493,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-03",
+    "count": 692,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-10",
+    "count": 600,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-17",
+    "count": 294,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-24",
+    "count": 573,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-01",
+    "count": 673,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-08",
+    "count": 575,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-15",
+    "count": 577,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-22",
+    "count": 611,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-29",
+    "count": 659,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-05",
+    "count": 861,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-12",
+    "count": 1055,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-19",
+    "count": 1078,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-26",
+    "count": 1737,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-03",
+    "count": 1990,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-10",
+    "count": 1943,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-17",
+    "count": 2503,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-24",
+    "count": 2291,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-31",
+    "count": 1988,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-08-07",
+    "count": 1563,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-08-14",
+    "count": 1329,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-08-21",
+    "count": 1037,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-08-28",
+    "count": 944,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-04",
+    "count": 814,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-11",
+    "count": 835,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-18",
+    "count": 620,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-25",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-02",
+    "count": 618,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-09",
+    "count": 656,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-16",
+    "count": 601,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-23",
+    "count": 449,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-30",
+    "count": 479,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-06",
+    "count": 530,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-13",
+    "count": 483,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-20",
+    "count": 494,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-27",
+    "count": 750,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-04",
+    "count": 763,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-11",
+    "count": 1326,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-18",
+    "count": 1392,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-08",
+    "count": 2426,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-15",
+    "count": 2841,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-22",
+    "count": 2558,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-29",
+    "count": 2358,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-05",
+    "count": 2063,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-12",
+    "count": 2278,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-19",
+    "count": 1801,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-26",
+    "count": 2403,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-05",
+    "count": 2684,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-12",
+    "count": 2557,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-19",
+    "count": 2931,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-26",
+    "count": 2892,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-02",
+    "count": 2946,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-09",
+    "count": 1973,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-16",
+    "count": 4043,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-23",
+    "count": 3558,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-30",
+    "count": 3867,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-07",
+    "count": 3225,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-14",
+    "count": 4681,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-21",
+    "count": 4233,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-28",
+    "count": 4221,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-04",
+    "count": 4432,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-11",
+    "count": 4688,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-18",
+    "count": 6331,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-25",
+    "count": 5665,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-02",
+    "count": 9650,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-09",
+    "count": 9576,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-16",
+    "count": 10192,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-23",
+    "count": 9890,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-30",
+    "count": 7659,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-06",
+    "count": 5677,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-13",
+    "count": 4864,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-20",
+    "count": 3174,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-27",
+    "count": 2363,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-03",
+    "count": 1848,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-10",
+    "count": 1812,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-17",
+    "count": 1484,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-24",
+    "count": 1328,
+    "truth": true,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2017-10-01",
+    "count": 1400,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-08",
+    "count": 1611,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-15",
+    "count": 1417,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-22",
+    "count": 1788,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-29",
+    "count": 1697,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-05",
+    "count": 2042,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-12",
+    "count": 1850,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-19",
+    "count": 2101,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-26",
+    "count": 1865,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-03",
+    "count": 2335,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-10",
+    "count": 1849,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-17",
+    "count": 1113,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2017-12-31",
+    "count": 2032,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   }
+  ]
+ },
+ "secondary_R2_moderate": {
+  "rule": {
+   "thresholdSd": 1,
+   "seasonalWindowWeeks": 2,
+   "minConsecutiveWeeks": 2
+  },
+  "weeks": 344,
+  "outbreakWeeks": 54,
+  "nonOutbreakWeeks": 290,
+  "outbreakPeriods": [
+   {
+    "start": "2014-11-09",
+    "end": "2014-11-30"
+   },
+   {
+    "start": "2017-01-08",
+    "end": "2017-12-10"
+   }
+  ],
+  "detector": {
+   "tp": 35,
+   "fn": 19,
+   "fp": 42,
+   "tn": 248,
+   "sensitivityPct": 64.8,
+   "specificityPct": 85.5,
+   "precisionPct": 45.5,
+   "accuracyPct": 82.3
+  },
+  "threshold": {
+   "tp": 53,
+   "fn": 1,
+   "fp": 21,
+   "tn": 269,
+   "sensitivityPct": 98.1,
+   "specificityPct": 92.8,
+   "precisionPct": 71.6,
+   "accuracyPct": 93.6
+  },
+  "mcnemar": {
+   "allWeeks": {
+    "weeks": 344,
+    "bothCorrect": 277,
+    "b_detectorCorrect_thresholdWrong": 6,
+    "c_detectorWrong_thresholdCorrect": 45,
+    "bothWrong": 16,
+    "discordant": 51,
+    "mcnemarExactP": 1.8323628836469652e-08,
+    "detectorCorrect": 283,
+    "thresholdCorrect": 322,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.113372
+   },
+   "outbreakWeeksOnly_sensitivity": {
+    "weeks": 54,
+    "bothCorrect": 35,
+    "b_detectorCorrect_thresholdWrong": 0,
+    "c_detectorWrong_thresholdCorrect": 18,
+    "bothWrong": 1,
+    "discordant": 18,
+    "mcnemarExactP": 7.62939453125e-06,
+    "detectorCorrect": 35,
+    "thresholdCorrect": 53,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.333333
+   },
+   "nonOutbreakWeeksOnly_specificity": {
+    "weeks": 290,
+    "bothCorrect": 242,
+    "b_detectorCorrect_thresholdWrong": 6,
+    "c_detectorWrong_thresholdCorrect": 27,
+    "bothWrong": 15,
+    "discordant": 33,
+    "mcnemarExactP": 0.0003240634687244892,
+    "detectorCorrect": 248,
+    "thresholdCorrect": 269,
+    "differenceInProportionCorrect_detectorMinusThreshold": -0.072414
+   }
+  },
+  "accuracyDifferenceBlockBootstrapCi95": {
+   "detectorMinusThreshold": -0.113372,
+   "ci95": [
+    -0.180233,
+    -0.037791
+   ],
+   "blockWeeks": 13,
+   "resamples": 2000,
+   "seed": 20261116
+  },
+  "perWeek": [
+   {
+    "week": "2011-03-13",
+    "count": 230,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-03-20",
+    "count": 314,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-03-27",
+    "count": 346,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-03",
+    "count": 281,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-10",
+    "count": 178,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-17",
+    "count": 459,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-04-24",
+    "count": 507,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-01",
+    "count": 498,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-08",
+    "count": 480,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-15",
+    "count": 340,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-22",
+    "count": 649,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-05-29",
+    "count": 763,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-05",
+    "count": 955,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-12",
+    "count": 869,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-19",
+    "count": 884,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-06-26",
+    "count": 1126,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-03",
+    "count": 1034,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-10",
+    "count": 740,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-17",
+    "count": 1039,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-24",
+    "count": 878,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-07-31",
+    "count": 640,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-07",
+    "count": 493,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-14",
+    "count": 439,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-21",
+    "count": 534,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-08-28",
+    "count": 428,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-04",
+    "count": 521,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-11",
+    "count": 534,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-18",
+    "count": 508,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-09-25",
+    "count": 454,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-02",
+    "count": 461,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-09",
+    "count": 482,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-16",
+    "count": 592,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-23",
+    "count": 592,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-10-30",
+    "count": 654,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-06",
+    "count": 403,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-13",
+    "count": 524,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-20",
+    "count": 622,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-11-27",
+    "count": 944,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-04",
+    "count": 806,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-11",
+    "count": 869,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2011-12-18",
+    "count": 985,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-01",
+    "count": 867,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-08",
+    "count": 1065,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-15",
+    "count": 1081,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-22",
+    "count": 973,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-01-29",
+    "count": 1028,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-05",
+    "count": 724,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-12",
+    "count": 760,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-19",
+    "count": 633,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-02-26",
+    "count": 652,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-04",
+    "count": 464,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-11",
+    "count": 516,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-18",
+    "count": 511,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-03-25",
+    "count": 485,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-01",
+    "count": 464,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-08",
+    "count": 323,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-15",
+    "count": 637,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-22",
+    "count": 604,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-04-29",
+    "count": 538,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-06",
+    "count": 515,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-13",
+    "count": 686,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-20",
+    "count": 811,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-05-27",
+    "count": 920,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-03",
+    "count": 1088,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-10",
+    "count": 1403,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2012-06-17",
+    "count": 1297,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-06-24",
+    "count": 1247,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-01",
+    "count": 1273,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-08",
+    "count": 1317,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-15",
+    "count": 1191,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-07-22",
+    "count": 1412,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2012-07-29",
+    "count": 1080,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-05",
+    "count": 1253,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-12",
+    "count": 1271,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-19",
+    "count": 1011,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-08-26",
+    "count": 651,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-02",
+    "count": 831,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-09",
+    "count": 684,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-16",
+    "count": 650,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-23",
+    "count": 692,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-09-30",
+    "count": 685,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-07",
+    "count": 818,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-14",
+    "count": 880,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-21",
+    "count": 798,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-10-28",
+    "count": 786,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-04",
+    "count": 878,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-11",
+    "count": 734,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-18",
+    "count": 807,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-11-25",
+    "count": 829,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-02",
+    "count": 1014,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-09",
+    "count": 1008,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2012-12-16",
+    "count": 938,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-06",
+    "count": 860,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-13",
+    "count": 886,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-20",
+    "count": 839,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-01-27",
+    "count": 818,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-03",
+    "count": 813,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-10",
+    "count": 754,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-17",
+    "count": 871,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-02-24",
+    "count": 677,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-03",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-10",
+    "count": 542,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-17",
+    "count": 627,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-24",
+    "count": 407,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-03-31",
+    "count": 619,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-07",
+    "count": 519,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-14",
+    "count": 449,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-21",
+    "count": 522,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-04-28",
+    "count": 564,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-05",
+    "count": 605,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-12",
+    "count": 517,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-19",
+    "count": 428,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-05-26",
+    "count": 500,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-02",
+    "count": 589,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-09",
+    "count": 597,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-16",
+    "count": 607,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-23",
+    "count": 634,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-06-30",
+    "count": 719,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-07",
+    "count": 720,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-14",
+    "count": 723,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-21",
+    "count": 762,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-07-28",
+    "count": 825,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-04",
+    "count": 645,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-11",
+    "count": 713,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-18",
+    "count": 584,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-08-25",
+    "count": 515,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-01",
+    "count": 594,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-08",
+    "count": 497,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-15",
+    "count": 390,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-22",
+    "count": 431,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-09-29",
+    "count": 384,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-06",
+    "count": 398,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-13",
+    "count": 326,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-20",
+    "count": 526,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-10-27",
+    "count": 378,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-03",
+    "count": 497,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-10",
+    "count": 469,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-17",
+    "count": 653,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-11-24",
+    "count": 614,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-01",
+    "count": 713,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-08",
+    "count": 686,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2013-12-15",
+    "count": 702,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-05",
+    "count": 840,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-12",
+    "count": 688,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-19",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-01-26",
+    "count": 579,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-02",
+    "count": 510,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-09",
+    "count": 498,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-16",
+    "count": 591,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-02-23",
+    "count": 412,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-02",
+    "count": 473,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-09",
+    "count": 372,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-16",
+    "count": 450,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-23",
+    "count": 353,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-03-30",
+    "count": 367,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-06",
+    "count": 400,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-13",
+    "count": 209,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-20",
+    "count": 706,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-04-27",
+    "count": 568,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-04",
+    "count": 579,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-11",
+    "count": 527,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-18",
+    "count": 1047,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-05-25",
+    "count": 1571,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-01",
+    "count": 1480,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-08",
+    "count": 1633,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-15",
+    "count": 1915,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-22",
+    "count": 1708,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-06-29",
+    "count": 1525,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-07-06",
+    "count": 1554,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2014-07-13",
+    "count": 1340,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-07-20",
+    "count": 1302,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-07-27",
+    "count": 868,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-03",
+    "count": 936,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-10",
+    "count": 794,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-17",
+    "count": 784,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-24",
+    "count": 640,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-08-31",
+    "count": 574,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-07",
+    "count": 620,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-14",
+    "count": 705,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-21",
+    "count": 741,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-09-28",
+    "count": 735,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-05",
+    "count": 715,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-12",
+    "count": 893,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-19",
+    "count": 862,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-10-26",
+    "count": 1092,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-11-02",
+    "count": 1059,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-11-09",
+    "count": 1435,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-16",
+    "count": 1449,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-23",
+    "count": 1509,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-11-30",
+    "count": 1464,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2014-12-07",
+    "count": 1333,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2014-12-14",
+    "count": 1388,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2015-01-11",
+    "count": 1078,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-01-18",
+    "count": 1220,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-01-25",
+    "count": 1562,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2015-02-01",
+    "count": 1226,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-08",
+    "count": 931,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-15",
+    "count": 1230,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-02-22",
+    "count": 799,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-01",
+    "count": 771,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-08",
+    "count": 517,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-15",
+    "count": 557,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-22",
+    "count": 471,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-03-29",
+    "count": 417,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-05",
+    "count": 351,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-12",
+    "count": 336,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-19",
+    "count": 197,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-04-26",
+    "count": 409,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-03",
+    "count": 297,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-10",
+    "count": 338,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-17",
+    "count": 307,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-24",
+    "count": 371,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-05-31",
+    "count": 312,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-07",
+    "count": 312,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-14",
+    "count": 386,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-21",
+    "count": 387,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-06-28",
+    "count": 392,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-05",
+    "count": 294,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-12",
+    "count": 438,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-19",
+    "count": 434,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-07-26",
+    "count": 489,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-02",
+    "count": 470,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-09",
+    "count": 458,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-16",
+    "count": 420,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-23",
+    "count": 337,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-08-30",
+    "count": 389,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-06",
+    "count": 306,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-13",
+    "count": 289,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-20",
+    "count": 232,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-09-27",
+    "count": 272,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-04",
+    "count": 283,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-11",
+    "count": 327,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-18",
+    "count": 408,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-10-25",
+    "count": 490,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-01",
+    "count": 558,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-08",
+    "count": 612,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-15",
+    "count": 567,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-22",
+    "count": 772,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-11-29",
+    "count": 811,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-06",
+    "count": 954,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-13",
+    "count": 907,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2015-12-20",
+    "count": 1011,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-03",
+    "count": 1163,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-10",
+    "count": 1253,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-17",
+    "count": 1274,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-01-24",
+    "count": 1563,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2016-01-31",
+    "count": 1441,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-02-07",
+    "count": 1114,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-14",
+    "count": 1352,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-21",
+    "count": 1078,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-02-28",
+    "count": 895,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-06",
+    "count": 823,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-13",
+    "count": 635,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-20",
+    "count": 745,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-03-27",
+    "count": 493,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-03",
+    "count": 692,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-10",
+    "count": 600,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-17",
+    "count": 294,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-04-24",
+    "count": 573,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-01",
+    "count": 673,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-08",
+    "count": 575,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-15",
+    "count": 577,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-22",
+    "count": 611,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-05-29",
+    "count": 659,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-05",
+    "count": 861,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-12",
+    "count": 1055,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-19",
+    "count": 1078,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-06-26",
+    "count": 1737,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-03",
+    "count": 1990,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-10",
+    "count": 1943,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-17",
+    "count": 2503,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-24",
+    "count": 2291,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-07-31",
+    "count": 1988,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-08-07",
+    "count": 1563,
+    "truth": false,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2016-08-14",
+    "count": 1329,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-08-21",
+    "count": 1037,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-08-28",
+    "count": 944,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-04",
+    "count": 814,
+    "truth": false,
+    "detector": true,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-11",
+    "count": 835,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-18",
+    "count": 620,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-09-25",
+    "count": 742,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-02",
+    "count": 618,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-09",
+    "count": 656,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-16",
+    "count": 601,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-23",
+    "count": 449,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-10-30",
+    "count": 479,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-06",
+    "count": 530,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-13",
+    "count": 483,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-20",
+    "count": 494,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-11-27",
+    "count": 750,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-04",
+    "count": 763,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-11",
+    "count": 1326,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2016-12-18",
+    "count": 1392,
+    "truth": false,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-08",
+    "count": 2426,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-15",
+    "count": 2841,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-22",
+    "count": 2558,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-01-29",
+    "count": 2358,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-05",
+    "count": 2063,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-12",
+    "count": 2278,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-19",
+    "count": 1801,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-02-26",
+    "count": 2403,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-05",
+    "count": 2684,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-12",
+    "count": 2557,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-19",
+    "count": 2931,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-03-26",
+    "count": 2892,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-02",
+    "count": 2946,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-09",
+    "count": 1973,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-16",
+    "count": 4043,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-23",
+    "count": 3558,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-04-30",
+    "count": 3867,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-07",
+    "count": 3225,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-14",
+    "count": 4681,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-21",
+    "count": 4233,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-05-28",
+    "count": 4221,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-04",
+    "count": 4432,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-11",
+    "count": 4688,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-18",
+    "count": 6331,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-06-25",
+    "count": 5665,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-02",
+    "count": 9650,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-09",
+    "count": 9576,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-16",
+    "count": 10192,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-23",
+    "count": 9890,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-07-30",
+    "count": 7659,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-06",
+    "count": 5677,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-13",
+    "count": 4864,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-20",
+    "count": 3174,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-08-27",
+    "count": 2363,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-03",
+    "count": 1848,
+    "truth": true,
+    "detector": true,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-10",
+    "count": 1812,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-17",
+    "count": 1484,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-09-24",
+    "count": 1328,
+    "truth": true,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2017-10-01",
+    "count": 1400,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-08",
+    "count": 1611,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-15",
+    "count": 1417,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-22",
+    "count": 1788,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-10-29",
+    "count": 1697,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-05",
+    "count": 2042,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-12",
+    "count": 1850,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-19",
+    "count": 2101,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-11-26",
+    "count": 1865,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-03",
+    "count": 2335,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-10",
+    "count": 1849,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   },
+   {
+    "week": "2017-12-17",
+    "count": 1113,
+    "truth": false,
+    "detector": false,
+    "threshold": false
+   },
+   {
+    "week": "2017-12-31",
+    "count": 2032,
+    "truth": true,
+    "detector": false,
+    "threshold": true
+   }
+  ]
+ },
+ "limits": [
+  "Exact McNemar assumes independent weeks. These weeks are serially dependent and 49 of the 50 strict outbreak weeks belong to one epidemic (2017), so the p-values overstate the evidence.",
+  "One disease, one country, national weekly totals: this tests the rule on a proxy series, not the live platform.",
+  "Non-significance on a subset is not evidence that the two methods are equivalent.",
+  "clinicalValidation: not_established"
+ ]
+}
