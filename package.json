@@ -9,6 +9,7 @@
     "qa:dev": "node scripts/runDemoQa.cjs",
     "qa:demo": "node scripts/runDemoQa.cjs",
     "qa:production": "node scripts/runProductionQa.cjs",
+    "seed:demo": "node server/scripts/demo/seedDemoTopup.cjs",
     "test:offline": "node scripts/run_offline_tests.js",
     "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",

@@ -1,0 +1,4 @@
+2026-11-25 11:30:22 +0530
+COMMAND: 12 x GET http://127.0.0.1:5300/api/auth/me (auth limiter: 10 per 15 min in NODE_ENV=production, not relaxed) then 65 x GET /api/public/doctors (60 per minute)
+auth: 404 404 404 404 404 404 404 429 429 429 429 429 
+public:      46 200      19 429 

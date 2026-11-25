@@ -1,0 +1,331 @@
+{
+ "label": "in-memory database, synthetic data only",
+ "mongod": "8.3.4",
+ "dryRun": {
+  "mode": "dry-run",
+  "planned": {
+   "consultations": 747,
+   "historyAlerts": 3,
+   "estimatedMB": 0.8365516662597656,
+   "skippedExistingCombos": 2872
+  },
+  "dates": [
+   "2026-11-17",
+   "2026-11-18",
+   "2026-11-19",
+   "2026-11-20",
+   "2026-11-21",
+   "2026-11-22",
+   "2026-11-23",
+   "2026-11-24"
+  ],
+  "unchanged": true
+ },
+ "refusedWithoutOptIn": {
+  "error": "REFUSED: the detector reads cases only from the consultations collection, so this run would INSERT labelled synthetic consultations. Add --allow-synthetic-consultations if you accept that.",
+  "unchanged": true
+ },
+ "sizeGuard": {
+  "error": "REFUSED: size would reach 31.8 MB, above the 1 MB limit",
+  "unchanged": true
+ },
+ "backupInRepo": {
+  "error": "BACKUP_DIR_MUST_BE_OUTSIDE_THE_REPOSITORY",
+  "unchanged": true
+ },
+ "repeat": {
+  "consultations": 0,
+  "historyAlerts": 0
+ },
+ "restore": {
+  "exit": 0,
+  "consultations": 30033,
+  "expected": 30033
+ },
+ "runs": [
+  {
+   "batch": "run1",
+   "today": "2026-11-25",
+   "inserted": {
+    "consultations": 747,
+    "historyAlerts": 3
+   },
+   "addedToDb": 747,
+   "dates": [
+    "2026-11-17",
+    "2026-11-18",
+    "2026-11-19",
+    "2026-11-20",
+    "2026-11-21",
+    "2026-11-22",
+    "2026-11-23",
+    "2026-11-24"
+   ],
+   "bySeverity": {
+    "High": 2,
+    "Critical": 2,
+    "Moderate": 1
+   },
+   "byLevel": {
+    "Alert": 2,
+    "Critical": 2,
+    "Watch": 1
+   },
+   "signals": [
+    "Jaffna ICD10:A90 Alert/High",
+    "Jaffna ICD10:A09 Critical/Critical",
+    "Matara ICD10:A90 Critical/Critical",
+    "Hambantota ICD10:A279 Watch/Moderate",
+    "Polonnaruwa ICD10:A279 Alert/High"
+   ],
+   "episodes": [
+    {
+     "id": "TOPUP-1",
+     "disease": "dengue",
+     "district": "Matara",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-2",
+     "disease": "leptospirosis",
+     "district": "Polonnaruwa",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-3",
+     "disease": "diarrhoeal",
+     "district": "Jaffna",
+     "start": "2026-11-21"
+    }
+   ],
+   "sizeMB": [
+    31,
+    31.54
+   ]
+  },
+  {
+   "batch": "run2",
+   "today": "2026-11-26",
+   "inserted": {
+    "consultations": 110,
+    "historyAlerts": 0
+   },
+   "addedToDb": 110,
+   "dates": [
+    "2026-11-25"
+   ],
+   "bySeverity": {
+    "Moderate": 2,
+    "Critical": 2,
+    "High": 1
+   },
+   "byLevel": {
+    "Watch": 2,
+    "Critical": 2,
+    "Alert": 1
+   },
+   "signals": [
+    "Jaffna ICD10:A90 Watch/Moderate",
+    "Jaffna ICD10:A09 Critical/Critical",
+    "Matara ICD10:A90 Critical/Critical",
+    "Hambantota ICD10:A279 Watch/Moderate",
+    "Polonnaruwa ICD10:A279 Alert/High"
+   ],
+   "episodes": [
+    {
+     "id": "TOPUP-1",
+     "disease": "dengue",
+     "district": "Matara",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-2",
+     "disease": "leptospirosis",
+     "district": "Polonnaruwa",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-3",
+     "disease": "diarrhoeal",
+     "district": "Jaffna",
+     "start": "2026-11-21"
+    }
+   ],
+   "sizeMB": [
+    35.17,
+    35.25
+   ]
+  },
+  {
+   "batch": "run3",
+   "today": "2026-11-27",
+   "inserted": {
+    "consultations": 108,
+    "historyAlerts": 0
+   },
+   "addedToDb": 108,
+   "dates": [
+    "2026-11-26"
+   ],
+   "bySeverity": {
+    "Moderate": 4,
+    "Critical": 2,
+    "High": 1
+   },
+   "byLevel": {
+    "Watch": 4,
+    "Critical": 2,
+    "Alert": 1
+   },
+   "signals": [
+    "Jaffna ICD10:A90 Watch/Moderate",
+    "Jaffna ICD10:A09 Critical/Critical",
+    "Colombo ICD10:J111 Watch/Moderate",
+    "Matara ICD10:A90 Critical/Critical",
+    "Badulla ICD10:A09 Watch/Moderate",
+    "Hambantota ICD10:A279 Watch/Moderate",
+    "Polonnaruwa ICD10:A279 Alert/High"
+   ],
+   "episodes": [
+    {
+     "id": "TOPUP-1",
+     "disease": "dengue",
+     "district": "Matara",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-2",
+     "disease": "leptospirosis",
+     "district": "Polonnaruwa",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-3",
+     "disease": "diarrhoeal",
+     "district": "Jaffna",
+     "start": "2026-11-21"
+    }
+   ],
+   "sizeMB": [
+    35.25,
+    35.32
+   ]
+  },
+  {
+   "batch": "run5",
+   "today": "2026-11-28",
+   "inserted": {
+    "consultations": 96,
+    "historyAlerts": 0
+   },
+   "addedToDb": 96,
+   "dates": [
+    "2026-11-27"
+   ],
+   "bySeverity": {
+    "Moderate": 3,
+    "Critical": 2,
+    "High": 1
+   },
+   "byLevel": {
+    "Watch": 3,
+    "Critical": 2,
+    "Alert": 1
+   },
+   "signals": [
+    "Badulla ICD10:A09 Watch/Moderate",
+    "Hambantota ICD10:A279 Watch/Moderate",
+    "Jaffna ICD10:A09 Critical/Critical",
+    "Polonnaruwa ICD10:A279 Alert/High",
+    "Matara ICD10:A90 Critical/Critical",
+    "Matara ICD10:A279 Watch/Moderate"
+   ],
+   "episodes": [
+    {
+     "id": "TOPUP-1",
+     "disease": "dengue",
+     "district": "Matara",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-2",
+     "disease": "leptospirosis",
+     "district": "Polonnaruwa",
+     "start": "2026-11-21"
+    },
+    {
+     "id": "TOPUP-3",
+     "disease": "diarrhoeal",
+     "district": "Jaffna",
+     "start": "2026-11-21"
+    }
+   ],
+   "sizeMB": [
+    35.32,
+    35.39
+   ]
+  }
+ ],
+ "labels": {
+  "rows": 1061,
+  "allLabelled": true,
+  "noPersonalFields": true,
+  "uniqueIds": true
+ },
+ "noDuplicateCombos": {
+  "combosInTwoBatches": 0,
+  "combosAlsoInOldData": 0
+ },
+ "publicStatistics": {
+  "unchanged": true,
+  "sample": "[{\"totalCases\":0,\"verifiedCases\":0,\"awaitingReviewCount\":1,\"state\":\"awaiting_review\",\"byDistrict\":[],\"byDisease\":[],\"trend\":[{\"date\":\"2026-10-30\",\"count\":0},{\"d"
+ },
+ "scan": {
+  "pendingAlerts": [
+   "Badulla ICD10:A09 Moderate",
+   "Hambantota ICD10:A279 Moderate",
+   "Jaffna ICD10:A09 Critical",
+   "Matara ICD10:A279 Moderate",
+   "Matara ICD10:A90 Critical",
+   "Polonnaruwa ICD10:A279 High"
+  ],
+  "allDemoLabelled": true
+ },
+ "pages": {
+  "monitor": {
+   "status": 200,
+   "rows": 6
+  },
+  "history": {
+   "status": 200,
+   "rows": [
+    "Batticaloa Dismissed",
+    "Kalutara Resolved",
+    "Trincomalee Resolved"
+   ]
+  }
+ },
+ "rollbackDry": {
+  "found": {
+   "consultations": 747,
+   "historyAlerts": 3
+  },
+  "unchanged": true
+ },
+ "rollback": {
+  "removed": {
+   "consultations": 747,
+   "historyAlerts": 3
+  },
+  "linkedAlerts": 6,
+  "left": 0,
+  "otherBatches": 314,
+  "dropped": 747
+ },
+ "afterAllRollbacks": {
+  "consultations": 30033,
+  "start": 30033,
+  "untouched": true
+ },
+ "configLeft": false
+}
