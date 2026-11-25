@@ -1,0 +1,7 @@
+2026-11-25 11:41:46 +0530
+COMMAND: npx jest --rootDir . tests/seedDemoTopup.test.js tests/clientSecurityHeaders.test.js (in server/)
+Test Suites: 2 passed, 2 total
+Tests:       12 passed, 12 total
+Snapshots:   0 total
+Time:        13.109 s
+Ran all test suites matching tests/seedDemoTopup.test.js|tests/clientSecurityHeaders.test.js.
