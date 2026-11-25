@@ -1,0 +1,208 @@
+2026-11-25 11:38:20 +0530
+COMMAND: node server/scripts/demo/seedTopupProof.cjs   (in-memory MongoDB; "today" is simulated with --today, local only; no real database was contacted)
+
+$ npm run seed:demo -- --batch=run1 --dry-run --today=2026-11-25   # dry run
+  seed:demo batch=run1 SEED DRY RUN | target local database "topup" | 2026-11-25T06:08:25.062Z | today 2026-11-25 Asia/Colombo
+  Size before: data 30.94 MB + indexes 0.06 MB = 31.00 MB (6.1 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 747 synthetic consultations on 8 date(s), 3 history example alert(s); estimated 0.84 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+    2026-11-17: 109
+    2026-11-18: 89
+    2026-11-19: 95
+    2026-11-20: 93
+    2026-11-21: 82
+    2026-11-22: 54
+    2026-11-23: 116
+    2026-11-24: 109
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  DRY RUN: nothing written. Add --write --allow-synthetic-consultations to write.
+
+$ npm run seed:demo -- --batch=run1 --write --today=2026-11-25 --backup-dir=<folder>   # write without the consultations opt-in
+  seed:demo batch=run1 SEED WRITE | target local database "topup" | 2026-11-25T06:08:25.244Z | today 2026-11-25 Asia/Colombo
+  Size before: data 30.94 MB + indexes 0.06 MB = 31.00 MB (6.1 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 747 synthetic consultations on 8 date(s), 3 history example alert(s); estimated 0.84 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+    2026-11-17: 109
+    2026-11-18: 89
+    2026-11-19: 95
+    2026-11-20: 93
+    2026-11-21: 82
+    2026-11-22: 54
+    2026-11-23: 116
+    2026-11-24: 109
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  STOPPED: REFUSED: the detector reads cases only from the consultations collection, so this run would INSERT labelled synthetic consultations. Add --allow-synthetic-consultations if you accept that.
+
+$ npm run seed:demo -- --batch=run1 --today=2026-11-25 --write --allow-synthetic-consultations --backup-dir=<folder>   # size limit (test limit 1 MB)
+  seed:demo batch=run1 SEED WRITE | target local database "topup" | 2026-11-25T06:08:25.410Z | today 2026-11-25 Asia/Colombo
+  Size before: data 30.94 MB + indexes 0.06 MB = 31.00 MB (6.1 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 747 synthetic consultations on 8 date(s), 3 history example alert(s); estimated 0.84 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+    2026-11-17: 109
+    2026-11-18: 89
+    2026-11-19: 95
+    2026-11-20: 93
+    2026-11-21: 82
+    2026-11-22: 54
+    2026-11-23: 116
+    2026-11-24: 109
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  STOPPED: REFUSED: size would reach 31.8 MB, above the 1 MB limit
+
+$ npm run seed:demo -- --batch=run1 --today=2026-11-25 --write --allow-synthetic-consultations --backup-dir=<folder>   # backup folder inside the repository
+  seed:demo batch=run1 SEED WRITE | target local database "topup" | 2026-11-25T06:08:25.573Z | today 2026-11-25 Asia/Colombo
+  Size before: data 30.94 MB + indexes 0.06 MB = 31.00 MB (6.1 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 747 synthetic consultations on 8 date(s), 3 history example alert(s); estimated 0.84 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+    2026-11-17: 109
+    2026-11-18: 89
+    2026-11-19: 95
+    2026-11-20: 93
+    2026-11-21: 82
+    2026-11-22: 54
+    2026-11-23: 116
+    2026-11-24: 109
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  STOPPED: BACKUP_DIR_MUST_BE_OUTSIDE_THE_REPOSITORY
+
+$ npm run seed:demo -- --batch=run1 --today=2026-11-25 --write --allow-synthetic-consultations --backup-dir=<folder>   # seed (2026-11-25)
+  seed:demo batch=run1 SEED WRITE | target local database "topup" | 2026-11-25T06:08:25.742Z | today 2026-11-25 Asia/Colombo
+  Size before: data 30.94 MB + indexes 0.06 MB = 31.00 MB (6.1 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 747 synthetic consultations on 8 date(s), 3 history example alert(s); estimated 0.84 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+    2026-11-17: 109
+    2026-11-18: 89
+    2026-11-19: 95
+    2026-11-20: 93
+    2026-11-21: 82
+    2026-11-22: 54
+    2026-11-23: 116
+    2026-11-24: 109
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  Backup: <temporary backup folder>\2026-11-25T06-08-25-908Z-run1\topup.archive.gz (2.51 MB). Restore help: mongorestore --gzip --archive=<file>
+  Inserted: 747 consultations, 3 history example alerts.
+  Size after: data 31.48 MB + indexes 0.06 MB = 31.54 MB (6.2 % of 512 MB); storage 0.04 MB
+  Detector preview (read-only, real rule, no alert created): 5073 cases, 5 signal(s); severity {"High":2,"Critical":2,"Moderate":1}, level {"Alert":2,"Critical":2,"Watch":1}
+    Jaffna ICD10:A90: Alert/High, 16 cases in 7 days [4,2,4,4,0,1,1] (NOT planted by this tool: background or other data)
+    Jaffna ICD10:A09: Critical/Critical, 13 cases in 7 days [1,0,1,1,2,3,5] (planted)
+    Matara ICD10:A90: Critical/Critical, 45 cases in 7 days [1,2,3,8,9,12,10] (planted)
+    Hambantota ICD10:A279: Watch/Moderate, 7 cases in 7 days [1,0,1,0,1,2,2] (NOT planted by this tool: background or other data)
+    Polonnaruwa ICD10:A279: Alert/High, 7 cases in 7 days [0,0,0,2,2,1,2] (planted)
+  To create the alerts, use "Force System Scan" in the admin page: a real scan also notifies users, so this tool does not run it.
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+
+$ npm run seed:demo -- --batch=run1 --today=2026-11-25 --write --allow-synthetic-consultations --backup-dir=<folder>   # same command again
+  seed:demo batch=run1 SEED WRITE | target local database "topup" | 2026-11-25T06:08:26.295Z | today 2026-11-25 Asia/Colombo
+  Size before: data 31.48 MB + indexes 0.06 MB = 31.54 MB (6.2 % of 512 MB); storage 0.04 MB
+  Window: 2026-09-16 to 2026-11-24 (Asia/Colombo).
+  Planned: 0 synthetic consultations on 0 date(s), 0 history example alert(s); estimated 0.00 MB. Skipped 2872 (disease, district, date) combinations that already exist.
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  Nothing new to add.
+  Inserted: 0 consultations, 0 history example alerts.
+  Size after: data 31.48 MB + indexes 0.06 MB = 31.54 MB (6.2 % of 512 MB); storage 0.04 MB
+  Detector preview (read-only, real rule, no alert created): 5073 cases, 5 signal(s); severity {"High":2,"Critical":2,"Moderate":1}, level {"Alert":2,"Critical":2,"Watch":1}
+    Jaffna ICD10:A90: Alert/High, 16 cases in 7 days [4,2,4,4,0,1,1] (NOT planted by this tool: background or other data)
+    Jaffna ICD10:A09: Critical/Critical, 13 cases in 7 days [1,0,1,1,2,3,5] (planted)
+    Matara ICD10:A90: Critical/Critical, 45 cases in 7 days [1,2,3,8,9,12,10] (planted)
+    Hambantota ICD10:A279: Watch/Moderate, 7 cases in 7 days [1,0,1,0,1,2,2] (NOT planted by this tool: background or other data)
+    Polonnaruwa ICD10:A279: Alert/High, 7 cases in 7 days [0,0,0,2,2,1,2] (planted)
+  To create the alerts, use "Force System Scan" in the admin page: a real scan also notifies users, so this tool does not run it.
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+
+$ npm run seed:demo -- --batch=run2 --today=2026-11-26 --write --allow-synthetic-consultations --backup-dir=<folder>   # seed (2026-11-26)
+  seed:demo batch=run2 SEED WRITE | target local database "topup" | 2026-11-25T06:08:27.513Z | today 2026-11-26 Asia/Colombo
+  Size before: data 31.48 MB + indexes 3.69 MB = 35.17 MB (6.9 % of 512 MB); storage 2.70 MB
+  Window: 2026-09-17 to 2026-11-25 (Asia/Colombo).
+  Planned: 110 synthetic consultations on 1 date(s), 0 history example alert(s); estimated 0.12 MB. Skipped 3235 (disease, district, date) combinations that already exist.
+    2026-11-25: 110
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  Planted days already present (from an earlier batch or other data), left alone: TOPUP-1 2026-11-21, TOPUP-1 2026-11-22, TOPUP-1 2026-11-23, TOPUP-1 2026-11-24, TOPUP-2 2026-11-21, TOPUP-2 2026-11-22, TOPUP-2 2026-11-23, TOPUP-2 2026-11-24, TOPUP-3 2026-11-21, TOPUP-3 2026-11-22, TOPUP-3 2026-11-23, TOPUP-3 2026-11-24
+  Backup: <temporary backup folder>\2026-11-25T06-08-27-672Z-run2\topup.archive.gz (2.54 MB). Restore help: mongorestore --gzip --archive=<file>
+  Inserted: 110 consultations, 0 history example alerts.
+  Size after: data 31.56 MB + indexes 3.69 MB = 35.25 MB (6.9 % of 512 MB); storage 2.70 MB
+  Detector preview (read-only, real rule, no alert created): 5128 cases, 5 signal(s); severity {"Moderate":2,"Critical":2,"High":1}, level {"Watch":2,"Critical":2,"Alert":1}
+    Jaffna ICD10:A90: Watch/Moderate, 16 cases in 7 days [2,4,4,0,1,1,4] (NOT planted by this tool: background or other data)
+    Jaffna ICD10:A09: Critical/Critical, 14 cases in 7 days [0,1,1,2,3,5,2] (planted)
+    Matara ICD10:A90: Critical/Critical, 56 cases in 7 days [2,3,8,9,12,10,12] (planted)
+    Hambantota ICD10:A279: Watch/Moderate, 7 cases in 7 days [0,1,0,1,2,2,1] (NOT planted by this tool: background or other data)
+    Polonnaruwa ICD10:A279: Alert/High, 8 cases in 7 days [0,0,2,2,1,2,1] (planted)
+  To create the alerts, use "Force System Scan" in the admin page: a real scan also notifies users, so this tool does not run it.
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+
+$ npm run seed:demo -- --batch=run3 --today=2026-11-27 --write --allow-synthetic-consultations --backup-dir=<folder>   # seed (2026-11-27)
+  seed:demo batch=run3 SEED WRITE | target local database "topup" | 2026-11-25T06:08:28.003Z | today 2026-11-27 Asia/Colombo
+  Size before: data 31.56 MB + indexes 3.69 MB = 35.25 MB (6.9 % of 512 MB); storage 2.70 MB
+  Window: 2026-09-18 to 2026-11-26 (Asia/Colombo).
+  Planned: 108 synthetic consultations on 1 date(s), 0 history example alert(s); estimated 0.12 MB. Skipped 3238 (disease, district, date) combinations that already exist.
+    2026-11-26: 108
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  Planted days already present (from an earlier batch or other data), left alone: TOPUP-1 2026-11-21, TOPUP-1 2026-11-22, TOPUP-1 2026-11-23, TOPUP-1 2026-11-24, TOPUP-1 2026-11-25, TOPUP-2 2026-11-21, TOPUP-2 2026-11-22, TOPUP-2 2026-11-23, TOPUP-2 2026-11-24, TOPUP-2 2026-11-25, TOPUP-3 2026-11-21, TOPUP-3 2026-11-22, TOPUP-3 2026-11-23, TOPUP-3 2026-11-24, TOPUP-3 2026-11-25
+  Backup: <temporary backup folder>\2026-11-25T06-08-28-159Z-run3\topup.archive.gz (2.54 MB). Restore help: mongorestore --gzip --archive=<file>
+  Inserted: 108 consultations, 0 history example alerts.
+  Size after: data 31.64 MB + indexes 3.69 MB = 35.32 MB (6.9 % of 512 MB); storage 2.70 MB
+  Detector preview (read-only, real rule, no alert created): 5164 cases, 7 signal(s); severity {"Moderate":4,"Critical":2,"High":1}, level {"Watch":4,"Critical":2,"Alert":1}
+    Jaffna ICD10:A90: Watch/Moderate, 14 cases in 7 days [4,4,0,1,1,4,0] (NOT planted by this tool: background or other data)
+    Jaffna ICD10:A09: Critical/Critical, 15 cases in 7 days [1,1,2,3,5,2,1] (planted)
+    Colombo ICD10:J111: Watch/Moderate, 25 cases in 7 days [4,2,0,1,4,7,7] (NOT planted by this tool: background or other data)
+    Matara ICD10:A90: Critical/Critical, 66 cases in 7 days [3,8,9,12,10,12,12] (planted)
+    Badulla ICD10:A09: Watch/Moderate, 6 cases in 7 days [0,1,1,2,2,0,0] (NOT planted by this tool: background or other data)
+    Hambantota ICD10:A279: Watch/Moderate, 7 cases in 7 days [1,0,1,2,2,1,0] (NOT planted by this tool: background or other data)
+    Polonnaruwa ICD10:A279: Alert/High, 9 cases in 7 days [0,2,2,1,2,1,1] (planted)
+  To create the alerts, use "Force System Scan" in the admin page: a real scan also notifies users, so this tool does not run it.
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+
+$ npm run seed:demo -- --batch=run5 --today=2026-11-28 --write --allow-synthetic-consultations --backup-dir=<folder>   # seed (2026-11-28)
+  seed:demo batch=run5 SEED WRITE | target local database "topup" | 2026-11-25T06:08:28.470Z | today 2026-11-28 Asia/Colombo
+  Size before: data 31.64 MB + indexes 3.69 MB = 35.32 MB (6.9 % of 512 MB); storage 2.70 MB
+  Window: 2026-09-19 to 2026-11-27 (Asia/Colombo).
+  Planned: 96 synthetic consultations on 1 date(s), 0 history example alert(s); estimated 0.11 MB. Skipped 3244 (disease, district, date) combinations that already exist.
+    2026-11-27: 96
+  Planted episode TOPUP-1: dengue, Matara, starts 2026-11-21
+  Planted episode TOPUP-2: leptospirosis, Polonnaruwa, starts 2026-11-21
+  Planted episode TOPUP-3: diarrhoeal, Jaffna, starts 2026-11-21
+  Planted days already present (from an earlier batch or other data), left alone: TOPUP-1 2026-11-21, TOPUP-1 2026-11-22, TOPUP-1 2026-11-23, TOPUP-1 2026-11-24, TOPUP-1 2026-11-25, TOPUP-1 2026-11-26, TOPUP-2 2026-11-21, TOPUP-2 2026-11-22, TOPUP-2 2026-11-23, TOPUP-2 2026-11-24, TOPUP-2 2026-11-25, TOPUP-2 2026-11-26, TOPUP-3 2026-11-21, TOPUP-3 2026-11-22, TOPUP-3 2026-11-23, TOPUP-3 2026-11-24, TOPUP-3 2026-11-25, TOPUP-3 2026-11-26
+  Backup: <temporary backup folder>\2026-11-25T06-08-28-626Z-run5\topup.archive.gz (2.55 MB). Restore help: mongorestore --gzip --archive=<file>
+  Inserted: 96 consultations, 0 history example alerts.
+  Size after: data 31.71 MB + indexes 3.69 MB = 35.39 MB (6.9 % of 512 MB); storage 2.70 MB
+  Detector preview (read-only, real rule, no alert created): 5189 cases, 6 signal(s); severity {"Moderate":3,"Critical":2,"High":1}, level {"Watch":3,"Critical":2,"Alert":1}
+    Badulla ICD10:A09: Watch/Moderate, 6 cases in 7 days [1,1,2,2,0,0,0] (NOT planted by this tool: background or other data)
+    Hambantota ICD10:A279: Watch/Moderate, 6 cases in 7 days [0,1,2,2,1,0,0] (NOT planted by this tool: background or other data)
+    Jaffna ICD10:A09: Critical/Critical, 16 cases in 7 days [1,2,3,5,2,1,2] (planted)
+    Polonnaruwa ICD10:A279: Alert/High, 10 cases in 7 days [2,2,1,2,1,1,1] (planted)
+    Matara ICD10:A90: Critical/Critical, 71 cases in 7 days [8,9,12,10,12,12,8] (planted)
+    Matara ICD10:A279: Watch/Moderate, 5 cases in 7 days [0,1,0,0,0,2,2] (NOT planted by this tool: background or other data)
+  To create the alerts, use "Force System Scan" in the admin page: a real scan also notifies users, so this tool does not run it.
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+
+$ npm run seed:demo -- --batch=run1 --rollback   # rollback dry run
+  seed:demo batch=run1 ROLLBACK DRY RUN | target local database "topup" | 2026-11-25T06:08:29.671Z | today 2026-11-25 Asia/Colombo
+  Size before: data 31.72 MB + indexes 3.70 MB = 35.41 MB (6.9 % of 512 MB); storage 2.70 MB
+  Rollback of batch "run1": 747 consultations and 3 history example alerts carry this seedBatch.
+  NOT removed: 6 alert(s) that a scan created from these rows (Badulla Pending; Hambantota Pending; Jaffna Pending; Polonnaruwa Pending; Matara Pending; Matara Pending). Resolve or dismiss them in the admin page.
+  DRY RUN: nothing deleted. Add --write to delete.
+
+$ npm run seed:demo -- --batch=run1 --rollback --write --backup-dir=<folder>   # rollback
+  seed:demo batch=run1 ROLLBACK WRITE | target local database "topup" | 2026-11-25T06:08:29.688Z | today 2026-11-25 Asia/Colombo
+  Size before: data 31.72 MB + indexes 3.70 MB = 35.41 MB (6.9 % of 512 MB); storage 2.70 MB
+  Rollback of batch "run1": 747 consultations and 3 history example alerts carry this seedBatch.
+  NOT removed: 6 alert(s) that a scan created from these rows (Badulla Pending; Hambantota Pending; Jaffna Pending; Polonnaruwa Pending; Matara Pending; Matara Pending). Resolve or dismiss them in the admin page.
+  Backup: <temporary backup folder>\2026-11-25T06-08-29-698Z-run1-rollback\topup.archive.gz (2.56 MB). Restore help: mongorestore --gzip --archive=<file>
+  Removed: 747 consultations, 3 history example alerts. Size after: data 31.18 MB + indexes 3.79 MB = 34.96 MB (6.8 % of 512 MB); storage 2.70 MB
+  Public cache: entries expire by themselves within 300 s. (--flush-cache not given)
+EXIT=0
