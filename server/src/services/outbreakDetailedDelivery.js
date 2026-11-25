@@ -31,14 +31,19 @@ async function resolveLanguages(emails, { db } = {}) {
   return out;
 }
 
-/** Numbers for the email, from verified consultations as of the alert's creation (stored snapshot preferred). */
+/**
+ * Numbers for the email, from verified consultations. An alert that a later scan updated uses the newest stored figures
+ * (latest72h) and their date, the same as the Monitor; any other alert is as of its creation (stored snapshot preferred).
+ */
 async function numbersForAlert(alert, { cases } = {}) {
   const projection = require('./alertProjection72h');
   const service = require('./surveillanceService');
-  const asOf = alert.createdAt ? new Date(alert.createdAt) : new Date();
+  const newest = alert.latest72h || null;
+  const newestEnd = newest && newest.window && newest.window.actualEnd ? new Date(newest.window.actualEnd) : null;
+  const asOf = newestEnd || (alert.createdAt ? new Date(alert.createdAt) : new Date());
   const rows = cases || (await service.loadCases({ mode: alert.isSimulation ? 'simulation' : 'real', now: new Date(), lookbackDays: 70 })).cases;
   const n = projection.computeAlertNumbers(alert, rows, { asOf, lookbackStart: +asOf - 63 * projection.DAY });
-  const snap = alert.projection72h;
+  const snap = newest || alert.projection72h;
   const pop = projection.populationFigures(alert.location || alert.district, snap ? snap.actual72h : n.actual72h);
   const previous72h = snap ? snap.previous72h : n.previous72h;
   const actual72h = snap ? snap.actual72h : n.actual72h;

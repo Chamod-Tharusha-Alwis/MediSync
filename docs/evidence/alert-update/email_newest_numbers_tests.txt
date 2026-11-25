@@ -1,0 +1,17 @@
+2026-11-25 13:24:39 +0530
+COMMAND (in server/): npx jest --rootDir . --verbose tests/outbreakEmailNewestNumbers.test.js
+  console.log
+    [OUTBREAK EMAIL] subject="[MediSync] Critical: Dengue alert for Colombo" messageIds=none accepted=1/1
+
+      at log (src/services/outbreakDetailedDelivery.js:108:15)
+
+  console.log
+    [OUTBREAK EMAIL] subject="[MediSync] Critical: Dengue alert for Colombo" messageIds=none accepted=1/1
+
+      at log (src/services/outbreakDetailedDelivery.js:108:15)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        0.433 s, estimated 1 s
+Ran all test suites matching tests/outbreakEmailNewestNumbers.test.js.
